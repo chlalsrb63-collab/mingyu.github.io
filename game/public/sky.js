@@ -46,7 +46,7 @@ export function weather() { return typeof globalThis.__skyWx === "number" ? glob
 export const weatherName = (w = weather()) => WEATHER[w] || "";
 /** The season's name (봄 여름 가을 겨울, the server's 63-festival.js), "" before the first `dn`. */
 export const seasonName = () => SEASONS[seasonNow] || "";
-/** Is 버드나무 장날 on (Sunday 10–22 KST)? */
+/** Is 버드나무 장날 on (Tue and Sat 19–21 KST, the server's word: `dn[3]`)? */
 export const fairOn = () => fairNow;
 export const phaseName = (h = hour()) => PHASES[phase(h)][0];
 /** "노을 18:40": the phase and the hour, to ten minutes. */

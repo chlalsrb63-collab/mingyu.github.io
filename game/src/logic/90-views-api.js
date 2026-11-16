@@ -158,6 +158,8 @@ export function viewFor(S, pid) {
     if (from) out.ginv = [from.ch.name, p.ginv.g];
   }
   if (p.dirty) out.self = selfPayload(p);
+  // a 장날 merchant's list, once when asked for (and after a purchase): fm (64-fair-market.js)
+  if (p.fmSend) { const fm = fairMktWire(S, p, p.fmSend); if (fm) out.fm = fm; p.fmSend = null; }
   if (p.gain.length) out.gain = p.gain;
   dimView(S, p, out);
   coopView(S, p, out);   // 협동 아르바이트: cj, C, cr (68-coop.js)

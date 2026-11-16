@@ -49,7 +49,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 26, name, job: "adventurer", jp: null,
+    v: 27, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -78,6 +78,8 @@ export function newChar(name, look, wk) {
     tro: [],
     // 버드나무 장날 (v26, 63-festival.js): the 장날 토큰 purse and today's tokens and best pan score
     fair: fairFresh(),
+    // the 장날 merchants' goods bought on the latest fair day (v27, 64-fair-market.js): { [KST day]: [product ids] }
+    fairBuy: {},
     // social and the weekly book (v14, 63-social-weekly.js): blk (blocked names), pity (enhancement gauge), wk
     ...socialFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
@@ -228,7 +230,9 @@ function migrate(ch) {
   sqItemsFix(ch);
   // 버드나무 장날 (v26): the token purse and today's counters, clamped; an older sheet starts empty (63-festival.js)
   ch.fair = fairClean(ch.fair);
-  ch.v = Math.max(ch.v | 0, 26);
+  // the 장날 merchants' purchases (v27): the newest fair day's product ids only (64-fair-market.js)
+  ch.fairBuy = fairBuyClean(ch.fairBuy);
+  ch.v = Math.max(ch.v | 0, 27);
   return ch;
 }
 
@@ -377,7 +381,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "cos_dye", "cos_sew", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "cos_dye", "cos_sew", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk", "fair_shop"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {

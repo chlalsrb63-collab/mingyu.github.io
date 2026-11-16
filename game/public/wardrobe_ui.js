@@ -141,7 +141,7 @@ function iconOf(id) {
   }
   return iconCache.get(id);
 }
-function iconCanvas(id) {
+export function iconCanvas(id) {
   const c = document.createElement("canvas");
   c.width = c.height = 16;
   const g = c.getContext("2d");
@@ -158,7 +158,7 @@ function sewText(d) {
 function fairText(d) {
   const F = C.G.defs.fair, id = Object.keys(C.G.defs.cos).find((k) => C.G.defs.cos[k] === d);
   const s = F ? F.shop.findIndex((rows) => rows.some((r) => r[0] === id)) : -1;
-  return s < 0 ? "버드나무 장날 장터" : `${F.season[s]} 장날 — 장꾼 다래에게 장날 토큰 ${F.shop[s].find((r) => r[0] === id)[1]}개`;
+  return s < 0 ? "버드나무 장날 장터" : `${F.season[s]} 장날 — 장꾼 다래에게 장날 토큰 ${F.shop[s].find((r) => r[0] === id)[1]}개 (철이 지나면 장날 저녁 옷 장수 나리에게서 골드로)`;
 }
 function srcText(d) {
   const ach = d.src === "ach" && C.G.defs.achievements.find((a) => a.id === d.ach);

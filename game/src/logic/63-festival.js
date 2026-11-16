@@ -1,9 +1,10 @@
 // ───────────────────────────── 버드나무 장날 and the seasons (P12) ─────────────────────────────
 // The year turns on the server clock alone: four seasons of 91 KST days, counted from 2026-03-01 (봄), so the
-// game's year is 364 days and drifts a day and a bit a year against the calendar — fine for a game. Every Sunday
-// 10:00–22:00 KST 버드나무 마을 holds its market: four festival rows on the 알바 board (JB `fair`, never counted in
-// perDay) and a cooking contest (the day's best pan score in the village) pay 장날 토큰 — never gold — up to
-// FAIR.cap a board day; 장꾼 다래 (role `fair`, by the market stalls) sells the season's pieces for them.
+// game's year is 364 days and drifts a day and a bit a year against the calendar — fine for a game. Every Tuesday and
+// Saturday 19:00–21:00 KST 버드나무 마을 holds its market (FAIR.days/open/close; owner 2026-11-16, it was Sunday 10–22): four
+// festival rows on the 알바 board (JB `fair`, never counted in perDay) and a cooking contest (the day's best pan score in
+// the village) pay 장날 토큰 — never gold — up to FAIR.cap a board day; 장꾼 다래 (role `fair`, by the market stalls) sells
+// the season's pieces for them. The travelling merchants of those two hours are 64-fair-market.js.
 // Sheet: `fair` { t: the purse, d: the board day `n`/`pan` belong to, n: tokens earned that day, pan: best pan score that day }.
 
 /** Seasons: KST calendar days from `epoch` (2026-03-01 = day 20513) in blocks of `len`, named in order. */
@@ -13,18 +14,29 @@ const kstDay = (now) => Math.floor((now + KST) / DAY_MS);
 /** The season now: 0 봄 · 1 여름 · 2 가을 · 3 겨울 (the cycle repeats every 364 days, before the epoch too). */
 const seasonOf = (now) => ((Math.floor((kstDay(now) - SEASON.epoch) / SEASON.len) % 4) + 4) % 4;
 /**
- * 장날: KST weekday `day` (0 Sunday; day 0 of the clock was a Thursday) from `open` to `close` o'clock, on `map`.
+ * 장날: on the KST weekdays `days` (0 Sunday … 6 Saturday; day 0 of the clock was a Thursday) from `open` to `close` o'clock, on
+ * `map`; `warn` minutes before it opens everyone hears "곧 열립니다" (fairWatch). The one table for the schedule: the HUD flag,
+ * the festival rows, the contest, the token cap and the merchants (64-fair-market.js) all read fairOpen.
  * Tokens: at most `cap` a board day and `max` in the purse; `job` per festival row by grade (쉬움 보통 어려움);
  * the contest's `pan` steps [score, tokens], each paid once a day when the day's best first reaches it.
  */
-const FAIR = { map: "willow", day: 0, open: 10, close: 22, cap: 8, max: 999, job: [1, 2, 2], pan: [[60, 1], [90, 1]] };
-const fairOpen = (now) => (kstDay(now) + 4) % 7 === FAIR.day && (now + KST) % DAY_MS >= FAIR.open * 3600000 && (now + KST) % DAY_MS < FAIR.close * 3600000;
+const FAIR = { map: "willow", days: [2, 6], open: 19, close: 21, warn: 10, cap: 8, max: 999, job: [1, 2, 2], pan: [[60, 1], [90, 1]] };
+const DOW_NAME = ["일", "월", "화", "수", "목", "금", "토"];
+/** The KST weekday of a moment, 0 Sunday … 6 Saturday. */
+const kstDow = (now) => (kstDay(now) + 4) % 7;
+/** The KST time of day in ms. */
+const kstTod = (now) => (now + KST) % DAY_MS;
+/** Is it a market day (any hour)? */
+const fairDay = (now) => FAIR.days.includes(kstDow(now));
+const fairOpen = (now) => fairDay(now) && kstTod(now) >= FAIR.open * 3600000 && kstTod(now) < FAIR.close * 3600000;
+/** "화·토 19–21시", for the lines that say when. */
+const fairWhen = () => `${FAIR.days.map((d) => DOW_NAME[d]).join("·")} ${FAIR.open}–${FAIR.close}시`;
 /** The board's festival rows (12-life-tables.js JB, `fair: true`). */
 const FAIR_JOBS = Object.keys(JB).filter((id) => JB[id].fair);
 /**
  * 장꾼 다래's stall, per season: [cosmetic id, tokens]; only the season now sells. Rows 2–5 are the 사계절 pieces (P11:
  * hat, top, back, weapon skin of 벚꽃 · 한여름 바다 · 단풍 · 눈꽃; COSMETICS src "fair"), the first an older piece that fits
- * the season. A row whose id is not in COSMETICS would show "곧 들어옵니다" and not sell. A season's four cost 100: ≈ 13 Sundays × 8.
+ * the season. A row whose id is not in COSMETICS would show "곧 들어옵니다" and not sell. A season's four cost 100: ≈ 13 fair days × 8 (a season holds ≈ 26).
  */
 const FAIR_SET = ["sakura", "sea", "maple", "snow"];
 const FAIR_NOW = ["hat_wreath_white", "hat_wreath_sun", "hat_straw_blue", "hat_santa"];
@@ -69,14 +81,28 @@ function fairPan(S, p, s) {
   Object.assign(top, { s, name: p.ch.name });
   for (const o of Object.values(S.players)) if (o.map === FAIR.map) { o.dirty = true; toast(o, `[장날 요리 대회] ${p.ch.name} 님이 ${s}점으로 1등!`); }
 }
-/** Once a tick (lifeTick): the market opening (also on arrival while it is open) and closing, said; the board re-sent. */
+/**
+ * Once a tick (lifeTick): the market's heads-up (FAIR.warn minutes ahead, once a fair day), its opening (also on arrival while
+ * it is open) and closing, said; the board re-sent.
+ */
 function fairWatch(S, p, now) {
-  const o = fairOpen(now);
+  const o = fairOpen(now), d = kstDay(now), left = FAIR.open * 3600000 - kstTod(now);
+  if (!o && fairDay(now) && left > 0 && left <= FAIR.warn * 60000 && p.fairWarn !== d) {
+    p.fairWarn = d;
+    toast(p, `곧 장날이 열립니다! ${Math.ceil(left / 60000)}분 뒤 ${FAIR.open}시부터 버드나무 마을에 떠돌이 상인들이 모여요.`);
+  }
   if (p.fairOn === o) return;
-  if (o) toast(p, `오늘은 버드나무 장날! ${FAIR.close}시까지 마을 게시판의 장날 알바와 공동 부엌 요리 대회로 장날 토큰을 모아 보세요.`);
-  else if (p.fairOn !== undefined) toast(p, "버드나무 장날이 끝났습니다. 다음 일요일에 또 만나요!");
+  if (o) toast(p, `버드나무 장날이 열렸습니다! ${FAIR.close}시까지 상인들이 머뭅니다. 마을 게시판의 장날 알바와 공동 부엌 요리 대회로 장날 토큰도 모아 보세요.`);
+  else if (p.fairOn !== undefined) toast(p, `버드나무 장날이 끝났습니다. 다음 장날(${fairWhen()})에 또 만나요!`);
   if (p.fairOn !== undefined) p.dirty = true;
   p.fairOn = o;
+}
+/** Once a tick per world (80-simulation.js): the opening, said once in the chat for everyone on this channel. */
+function fairWorld(S, now) {
+  const d = kstDay(now);
+  if (S.fairSay === d || !fairOpen(now)) return;
+  S.fairSay = d;
+  sys(S, `[장날] 버드나무 마을에 장날이 열렸습니다! ${FAIR.close}시까지 전설 장비·인챈트 스크롤·룬·의상·음식 상인이 모여 있어요. (상품마다 한 사람에 한 번씩만 살 수 있습니다)`);
 }
 
 /** `fair_buy {id}` beside 장꾼 다래: a piece of this season's stall, for tokens. */
@@ -106,7 +132,7 @@ function fairSelf(p) {
 }
 /** defs().fair: the seasons, the market's hours and pay, and each season's stall [id, price, on sale (drawn) 0/1, name, slot]. */
 const fairDefs = () => ({
-  season: SEASON.name, map: FAIR.map, open: FAIR.open, close: FAIR.close, cap: FAIR.cap, job: FAIR.job, pan: FAIR.pan,
+  season: SEASON.name, map: FAIR.map, days: FAIR.days, open: FAIR.open, close: FAIR.close, cap: FAIR.cap, job: FAIR.job, pan: FAIR.pan,
   shop: FAIR_SHOP.map((rows) => rows.map(([id, price]) => {
     const c = Object.hasOwn(COSMETICS, id) ? COSMETICS[id] : null;
     return [id, price, c ? 1 : 0, c ? c.name : "", COS_SLOT_NAME[c ? c.slot : id.startsWith("ws_") ? "wskin" : id.split("_")[0]]];

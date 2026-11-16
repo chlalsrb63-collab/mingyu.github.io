@@ -362,15 +362,15 @@ Consumables with roles, village produce, fish, crafted furniture. No combat stat
 
 ### P12 — 버드나무 장날과 계절 (rules + small art, after P9) · size M
 - **Season** from `S.now` only (KST day count ÷ 91, no `Date`): spring/summer/autumn/winter, shown on the sky/HUD.
-- **장날** every Sunday 10:00–22:00 KST in 버드나무 마을: produce stalls, a cooking contest (best `pan` score of the
-  day), 4 festival 알바 rows; pays 장날 토큰 (no gold). Tokens buy the season set pieces (P11), 6–8 tokens a Sunday,
-  a piece 20–30 → one season set ≈ a season of Sundays.
+- **장날** every Tuesday and Saturday 19:00–21:00 KST in 버드나무 마을 (owner 2026-11-16; first planned as Sunday 10–22): produce
+  stalls, a cooking contest (best `pan` score of the day), 4 festival 알바 rows; pays 장날 토큰 (no gold). Tokens buy the season set
+  pieces (P11), 6–8 tokens a fair day, a piece 20–30 → one season set ≈ 13 fair days (a season holds ≈ 26).
 - **Touches:** `60-content.js` or new `63-festival.js`, `12-life-tables.js`, `90` (defs), client banner. **Tests:** season
   boundaries, token cap per day. **Art:** stall props in the village (code-drawn).
 - **As built (2026-11-16):** `63-festival.js`. **Season** = (KST calendar day − 20513 [2026-03-01]) ÷ 91 mod 4 → 봄 여름 가을
   겨울 (a 364-day game year: 2026-11-16 is 가을, 겨울 from 11-29, 봄 again 2027-02-28). Wire: `dn` is now [wx, clock s,
   season, 장날 0/1], re-sent when the market opens or closes; `defs.sky.season`; the sky widget reads `낮 14:00 · 맑음 · 가을
-  · 장날`. **장날** Sunday 10:00–22:00 KST (`fairOpen`); a toast as it opens (and on joining while open) and as it closes
+  · 장날`. **장날** Sunday 10:00–22:00 KST (`fairOpen`; **moved 2026-11-16 to Tue and Sat 19:00–21:00**, see "Update" below); a toast as it opens (and on joining while open) and as it closes
   (`fairWatch` in lifeTick). **Festival rows** (JB `fair: true`, Lv 1): 장날 채소 좌판 (감자 → 장꾼 다래), 장터 생선 꼬치 (송사리 →
   공동 부엌), 장날 개시 떡 (배달 다래 → 촌장 버들), 장터 뒷정리 (litter chore) — offered only while open, never 긴급, outside
   perDay, pay `FAIR.job` 1/2/2 tokens by grade, no gold and no Willow token. **Contest**: any played `pan` mini-game (campfire
@@ -385,6 +385,27 @@ Consumables with roles, village produce, fish, crafted furniture. No combat stat
   it; board.js, not actions.js). Not done: a contest prize beyond the steps. Tests: `tests/festival.mjs`.
   Off-hours the willow stalls draw closed (net.js `sceneMap` swaps them for decor.js `stallShut` by `dn[3]`; map
   data and collision unchanged); 다래 stays all week for her token shop.
+- **Update 2026-11-16 — a bigger weekly market (`63-festival.js` schedule, new `64-fair-market.js`, `public/fairmkt.js`).**
+  *Schedule* — one table `FAIR`: `days` [2, 6] (Tue, Sat; KST weekday = (KST day + 4) mod 7), `open` 19, `close` 21, `warn` 10. Everything tied to 장날
+  (festival rows, cooking contest, the token cap per board day, HUD flag `dn[3]`, closed-stall look, the toasts) reads `fairOpen`. Heads-up: a
+  toast "곧 장날이 열립니다! N분 뒤 19시부터…" once per fair day to everyone online, 10 minutes ahead (`fairWatch`); a system chat line when it opens (`fairWorld`,
+  once per channel).
+  *Merchants* — six NPCs flagged `fair` in data/maps/willow.json (ids `fm_leg fm_scr fm_rune fm_cos fm_food fm_dye`, role `fairmkt`, around 장꾼 다래's
+  stalls): always in the map payload, the client (net.js `sceneMap`) shows them only while `dn[3]` is 1, the server serves them only while `fairOpen`
+  and within 56 px of that merchant. Each stock is a pure function of the KST day number (`fairStock(day, v)`: same for everyone, nothing stored).
+  | merchant | sells (per fair day) | price (gold) |
+  | --- | --- | --- |
+  | 보따리 상인 덕팔 `leg` | 4–6 legendary pieces (`rollGear` q3, a live power), one per slot, item levels spread over 30–190 in equal bands | `round(15,000 × (il/30)^1.35, 500)`: il 30 → 15,000 · 60 → 38,000 · 100 → 76,000 · 150 → 130,000 · 190 → 182,000 |
+  | 두루마리 몽실 `scr` | up to 4 of the `es_*` 인챈트 스크롤 items that exist (none yet → "오늘은 가져온 물건이 없어요") | 40,000 each |
+  | 룬 장수 모래 `rune` | the 3 runes of a 3-rune word (피의 맹세 or 불멸) + 2 others (the game has no "set"/"legendary" runes; these are the top-tier ones) | 15,000 each |
+  | 옷 장수 나리 `cos` | 4 off-season 장날 pieces (COSMETICS src `fair`, not this season's) | by rarity [10k, 30k, 60k, 120k, 200k]: all 60,000 |
+  | 푸짐 아저씨 곰돌 `food` | 5 of 7 rare dishes, packs of 5 | 5 × the dish's price × 5 (7,500–37,500) |
+  | 물감쟁이 개굴 `dye` | 4 of 루루's 6 dyes, packs of 3 | 3 × the dye's price × 10 (1,080–9,750) |
+  Calibration: 알바 ≈ 12k a day, hunting gold ≈ 6–9k an hour, 45 h to Lv.200 — a cheap piece is an hour or two of play, the top one about a week of a casual
+  player's savings; every figure is in the `FAIR_PRICE` table. *Once per player* — `ch.fairBuy` { KST day: [product ids] } (sheet v27, `fairBuyClean`, only the newest
+  day kept); actions `fair_open {v}` (answered once by the snapshot's `fm`) and `fair_shop {v, i, d}` (fair open, in reach, today's list, not bought, gold, bag room /
+  not already owned). Client: the `#w-fairmkt` window ("장날 한정 · 1인 1회", closing countdown, item cards with the usual tooltip, 구매 / 구매 완료).
+  Tests: `tests/festival.mjs`, `tests/fairmkt.mjs`.
 
 **Sizes:** S ≈ 30–50 k tokens, M ≈ 60–100 k, L > 100 k (split L by set). Build order: P1 → P2 ∥ P7 → P3 → P4 ∥ P8 →
 P5 → P6, then after the 64×64 hero: P9 → P10 ∥ P12 → P11.
@@ -434,7 +455,7 @@ Also: `species.js` head measures, `swing.js` grip points, and the `--page wardro
    (a) 네온 시티's power plant dug into the old spell-stone; (b) the 성에왕's dying wish; (c) leave it for the 비석.
 2. Retiring 7 plain side quests (P3, P5) — players who finished them keep their rewards; is retiring OK?
 3. Arc choices change small things (a line, a title, one 알바 row) — or should one choice change an NPC's home?
-4. The 장날 day and hours (P12: Sunday 10–22 KST) and whether season sets come back each year.
+4. The 장날 day and hours (P12: decided 2026-11-16 — Tue and Sat 19–21 KST) and whether season sets come back each year.
 5. Dye count per piece (6 trims) and whether dyes are tradeable.
 
 ## 7. P7/P8 as built (2026-11-15)

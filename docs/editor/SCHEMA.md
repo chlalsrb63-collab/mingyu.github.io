@@ -52,7 +52,8 @@ save format. Optional `req.main: true` requires completing the linear main quest
 
 - `role`: `talk` (lines only), `quest` (gives side quests whose `giver` is this id), or any built-in
   service role (`shop smith train bank warp daily collector achieve costume`; `charm` is 주아나 the
-  charm appraiser, `66-charms.js`).
+  charm appraiser, `66-charms.js`; `fair` is 장꾼 다래's 장날 stall, `63-festival.js`; `fairmkt` is a 장날
+  merchant, `64-fair-market.js`: its id must be `fm_<leg|scr|rune|cos|food|dye>`, it stands only while the market is open).
 - `look`: same 4-value array as built-in NPCs (see `34-maps-world.js buildTown`), or a full player
   look array (species.js) — the game accepts both.
 - Ground/object chars: the palette comes from the server (`GET /api/palette`), built from what

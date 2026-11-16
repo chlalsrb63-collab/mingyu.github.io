@@ -1393,6 +1393,17 @@ body.touch #wm .wm-tab { display: none; }
 .cm-quest .say { margin: 3px 0; padding: 0; background: none; border: 0; box-shadow: none; }
 #w-juana .btns { display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap; }
 #w-juana .btns small, #w-juana small.ok { font: var(--t11) var(--pix); color: var(--tx2, #a8a0b4); } #w-juana small.ok { display: block; color: var(--tx-ok, #9af0ae); }
+/* ── 장날 상인 (fairmkt.js): #w-fairmkt, one merchant's list; a bought row greys out ── */
+#w-fairmkt { --win-max: 420px; width: min(420px, calc(var(--zone-w) - 8px)); }
+#w-fairmkt .body { max-height: min(640px, calc(var(--zone-h) - 48px)); overflow-y: auto; }
+#w-fairmkt .fm-head { margin: 0 0 6px; }
+#w-fairmkt .fm-clock { color: var(--tx-gold, #f3dca6); white-space: nowrap; }
+#w-fairmkt .it canvas { width: 32px; height: 32px; flex: none; image-rendering: pixelated; background: var(--sf1, #1a1622); border: 2px solid var(--ink); }
+#w-fairmkt .it .nm { display: block; }
+#w-fairmkt .it .fm-lg { color: var(--tx-gold, #f3dca6); }
+#w-fairmkt .it > button { flex: none; }
+#w-fairmkt .it.bought { opacity: .5; filter: grayscale(.85); }
+#w-fairmkt .hint { font: var(--t11)/1.4 var(--pix); color: var(--tx2, #a8a0b4); margin: 3px 0; }
 .cm-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 3px 0; padding: 3px 5px; background: var(--scr); border: 2px solid var(--ink); font: var(--t11) var(--pix); color: var(--tx2, #cfc8b8); }
 .cm-row > img { flex: none; width: 32px; height: 32px; image-rendering: pixelated; }
 .cm-row .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; }

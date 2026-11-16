@@ -16,6 +16,7 @@ import * as Housing from "./housing.js";
 import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
+import * as FairMkt from "./fairmkt.js";
 import * as Chores from "./chores.js";
 import * as Charms from "./charms.js";
 import * as NPC from "./npclife.js";
@@ -176,7 +177,7 @@ const STATION_ROLE = new Set(["craft", "alch", "cook"]);
 const SERVICE_WINDOWS = {
   shop: "shop", smith: "smith", elder: "quest", stone: "warp", warp: "warp", daily: "daily",
   collector: "collect", achieve: "achieve", train: "train", job: "job", bank: "bank", costume: "costume",
-  dim: "dim", house: "house", craft: "craft", alch: "craft", cook: "craft", charm: "juana", jobs: "board",
+  dim: "dim", house: "house", craft: "craft", alch: "craft", cook: "craft", charm: "juana", jobs: "board", fairmkt: "fairmkt",
 };
 /** The waypoint stone, as something the player can talk to. */
 const STONE = { role: "stone", name: "이동의 돌" };
@@ -233,6 +234,7 @@ export function interact() {
   else if (STATION_ROLE.has(n.role)) Station.open(n.role, n.thing ? n.name : "");
   else if (n.role === "charm") Charms.openJuana();
   else if (n.role === "jobs") Board.open();
+  else if (n.role === "fairmkt") FairMkt.open(n);
   else openWin(panel);
   setServiceTalk(panel, n);
   // the townsfolk have a word to say as they serve you (npctalk.js)

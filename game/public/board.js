@@ -255,11 +255,11 @@ const nearFair = () => !!(G.map && G.me && G.map.npcs.some((n) => n.role === "fa
 function fairCard(box, s) {
   const F = G.defs.fair, [tok = 0, today = 0, pan = 0, top = 0, who = ""] = s.fair || [], open = Sky.fairOn(), near = nearFair();
   const card = el("div", "dcard jb-card" + (open ? " on" : ""));
-  const hd = el("div", "dh"), tags = el("span", ""), tg = el("span", "tag", open ? "열림" : "일요일");
+  const days = F.days.map((d) => "일월화수목금토"[d]), hd = el("div", "dh"), tags = el("span", ""), tg = el("span", "tag", open ? "열림" : days.join("·"));
   tg.style.background = open ? "#ffb04a" : "#8a8a9a";
   tags.append(tg);
   hd.append(el("b", "", "버드나무 장날"), tags);
-  card.append(hd, el("p", "say", `매주 일요일 ${F.open}:00–${F.close}:00 · 장날 알바와 요리 대회로 장날 토큰을 모아 이 계절의 옷과 바꿔요.`));
+  card.append(hd, el("p", "say", `매주 ${days.join("·")}요일 ${F.open}:00–${F.close}:00 · 떠돌이 상인들이 모이고, 장날 알바와 요리 대회로 장날 토큰을 모아 이 계절의 옷과 바꿔요.`));
   card.append(el("small", "where", `장날 토큰 ${tok}개 · 오늘 ${today}/${F.cap}`));
   card.append(el("small", "where", `요리 대회 (공동 부엌·모닥불) — 내 최고 ${pan}점 · 오늘 1등 ${top ? `${top}점 ${who}` : "아직 없음"} · ${F.pan.map(([at, k]) => `${at}점 +${k}`).join(", ")}`));
   const si = F.season.indexOf(Sky.seasonName()), rows = si >= 0 ? F.shop[si] : [];

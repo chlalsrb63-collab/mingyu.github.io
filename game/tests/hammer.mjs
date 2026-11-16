@@ -183,7 +183,7 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
   const old = L.newChar("옛망치", []); old.v = 13; delete old.wm.hammer;
   L.addPlayer(S, "migration", old);
   assert.deepEqual(S.players.migration.ch.wm.hammer, { lv: 1, xp: 0 });
-  assert.equal(S.players.migration.ch.v, 26);
+  assert.equal(S.players.migration.ch.v, 27);
   assert.equal(D.wkOrder.at(-1), "hammer");
   for (let tier = 1; tier <= 5; tier++) {
     const item = D.items[`w_h_${tier}`];
@@ -337,7 +337,7 @@ for (const duo of [false, true]) {
   rift.dim.t = 8; rift.dim.best = 7;
   L.addPlayer(S, "rift15", rift);
   const merged = L.exportChar(S, "rift15");
-  assert.equal(merged.v, 26);
+  assert.equal(merged.v, 27);
   assert.deepEqual(merged.jp, { lv: 5, xp: 0 });
   assert.equal(merged.dim.t, 1, "the old tier ladder is gone (v22)");
   assert.equal(merged.dim.best, 0, "an old sheet's best tier is no floor record");
@@ -350,7 +350,7 @@ for (const duo of [false, true]) {
   delete profession.dim;
   L.addPlayer(S, "job15", profession);
   const upgraded = L.exportChar(S, "job15");
-  assert.equal(upgraded.v, 26);
+  assert.equal(upgraded.v, 27);
   assert.deepEqual(upgraded.jp, { lv: 35, xp: 11 });
   assert.equal(upgraded.dim.t, 1);
   L.removePlayer(S, "job15");
