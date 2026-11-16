@@ -17,6 +17,7 @@ import { refreshUi, setOnce, section } from "./hud.js";
 import { K } from "./keymap.js";
 import * as Track from "./track.js";
 import * as SideQ from "./sidequests.js";
+import { monsterElementText } from "./elements.js";
 
 // ── waypoints ──
 const bandText = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
@@ -267,6 +268,8 @@ export function renderCollect(s) {
     const bar = el("div", "bar"), f = el("i"); f.style.width = `${clamp((n / need) * 100, 0, 100)}%`; bar.append(f);
     const progress = ok ? `Lv.${d.lv} · 등록됨` : `${n} / ${need}`;
     cell.append(im, el("b", "", name), el("small", "", d.optional ? `${progress} · 선택` : progress), bar);
+    const elemental = ok ? monsterElementText(d) : "";
+    if (elemental) cell.append(el("small", "col-elements", elemental));
     if (ok && d.lore) cell.append(el("p", "col-lore", d.lore));
     cell.title = `${name} — ${ok ? "등록됨" : `${need}마리를 잡으면 등록됩니다`} (처치 ${n})`;
     grid.append(cell);

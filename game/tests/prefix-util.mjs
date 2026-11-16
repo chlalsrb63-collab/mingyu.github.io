@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { LEGEND, PFX, PFX_FN, PX, MOBS, SKILL, plain, stats, deriveStats, newMob, hurtMob, hurtPlayer, lootFor, deathLoss, skMp, migrate, pfxPc, pfxReset, pfxLoot, pfxNum, pfxSkill, pfxMiti, aimIdx };\n";
+  "\nexport const __t = { LEGEND, PFX, PFX_FN, PX, MOBS, SKILL, plain, stats, deriveStats, newMob, hurtMob, hurtPlayer, lootFor, deathLoss, skMp, migrate, pfxPc, pfxReset, pfxLoot, pfxNum, pfxSkill, pfxMiti, aimIdx, elementResist, elementActive, elementOutgoing };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t;
 
@@ -48,6 +48,13 @@ function hurtBy(W, p, frac = 0.5, mob = null, seed = 4242) {
   W.S.now = W.now; p.hp = st.mhp; W.S.seed = seed;
   X.hurtPlayer(W.S, W.rt, p, Math.round(st.mhp * frac + st.def), mob);
   return st.mhp - p.hp;
+}
+/** Keep the elemental affixes and disable only the old % mitigation or shield hook for the comparison. */
+function hurtWithoutMitigation(W, p, frac) {
+  const hooks = X.deriveStats(p).pfx, restore = hooks.miti;
+  hooks.miti = [];
+  try { return hurtBy(W, p, frac); }
+  finally { hooks.miti = restore; }
 }
 /** p kills a fresh monster (a killing blow, no more); its xp gain is left in p.gain. */
 function kill(W, p, k, o = {}) {
@@ -153,20 +160,24 @@ assert.equal(Object.keys(ROWS).length, 16);
   // the entry: 4 hits of attack × 15 % a second, once per monster (a second crit neither stacks nor restarts it)
   const m1 = W.mob("twinhare", 230, 210); X.hurtMob(S, rt, m1, p, 1, true);
   assert.equal(list().length, 1); assert.deepEqual([list()[0].m === m1, list()[0].left, list()[0].dmg], [true, 4, per]);
-  const hp0 = m1.hp; tick(); assert.equal(hp0 - m1.hp, per, "one hit a second"); assert.equal(list()[0].left, 3);
+  assert.ok(X.elementActive(S, m1, "bleed"), "legacy bleed appears on the elemental status display");
+  const resolved = Math.max(1, Math.round(per * X.elementResist(S, m1, "bleed", st.element?.pen?.bleed || 0)));
+  const hp0 = m1.hp; tick(); assert.equal(hp0 - m1.hp, resolved, "one resisted hit a second"); assert.equal(list()[0].left, 3);
   S.now = W.now; X.hurtMob(S, rt, m1, p, 1, true); assert.equal(list().length, 1, "no second bleed on the same monster"); assert.equal(list()[0].left, 3, "and the first does not restart");
-  const hp1 = m1.hp; W.run(3000); assert.equal(hp1 - m1.hp, 3 * per, "…until it has run its four hits"); assert.equal(list().length, 0);
+  const hp1 = m1.hp; W.run(3000); assert.equal(hp1 - m1.hp, 3 * resolved, "…until it has run its four hits"); assert.equal(list().length, 0);
   // the dagger's dot (mob.dot) is left alone
   const m2 = W.mob("twinhare", 230, 220), dot = { until: W.now + 9e6, next: W.now + 9e6, dmg: 5, pid: p.pid }; m2.dot = dot;
   S.now = W.now; X.hurtMob(S, rt, m2, p, 1, true); assert.equal(m2.dot, dot, "mob.dot untouched"); assert.equal(list().length, 1);
   // a killing crit leaves nothing to bleed; the bleed itself can kill (xp is p's), and the entry goes
   p.pc.v.bleed = []; const fresh = W.mob("twinhare", 230, 230, { hp: 1 }); X.hurtMob(S, rt, fresh, p, 50, true); assert.equal(list().length, 0, "a killing crit does not bleed the corpse");
-  const dying = W.mob("twinhare", 230, 240); X.hurtMob(S, rt, dying, p, 1, true); dying.hp = per; const xp0 = p.ch.xp; tick();
+  const dying = W.mob("twinhare", 230, 240); X.hurtMob(S, rt, dying, p, 1, true); dying.hp = resolved; const xp0 = p.ch.xp; tick();
   assert.ok(dying.dead && list().length === 0 && p.ch.xp > xp0, "the bleed kills, and its kill counts for p");
   // at most DOT_MAX victims; a monster that died leaves the list; a fall clears it
   p.pc.v.bleed = []; for (let i = 0; i < 12; i++) X.hurtMob(S, rt, W.mob("twinhare", 230, 250 + i), p, 1, true); assert.equal(list().length, 8);
   const e = list()[0]; e.m.dead = true; e.m.respAt = W.now + 1e12; tick(); assert.ok(!list().includes(e), "a dead monster leaves the list");
+  const left = list()[0].m;
   X.pfxReset(p); assert.equal(list().length, 0, "a fall or a map change clears it");
+  assert.ok(!X.elementActive(S, left, "bleed"), "a removed prefix record leaves no ghost icon");
   // a plain weapon: none (the same blows)
   W.wear("weapon", "w_warrior_3", undefined); X.hurtMob(S, rt, W.mob("twinhare", 230, 270), p, 1, true); assert.equal(list().length, 0, "not worn");
 }
@@ -189,7 +200,10 @@ assert.equal(Object.keys(ROWS).length, 16);
   assert.ok(Math.abs(n / N - want) < 5 * sd + 0.01, `20 % × LUK: ${n / N} vs ${want}`);
   // the poison: five hits that no armour turns
   p.pc.v.bile = []; X.PFX.bile.p = 1e3; const c = striker(230); W.skip(1100); hurtBy(W, p, 0.1, c); X.PFX.bile.p = 0.2; assert.equal(list().length, 1);
-  const hp0 = c.hp; p.regenAt = W.now; W.run(5000); assert.equal(hp0 - c.hp, 5 * per, "five poison hits"); assert.equal(list().length, 0);
+  assert.ok(X.elementActive(S, c, "poison") && X.elementOutgoing(S, c) < 1, "legacy poison also weakens the target");
+  const resolved = Math.max(1, Math.round(per * X.elementResist(S, c, "poison", st.element?.pen?.poison || 0)));
+  const hp0 = c.hp; p.regenAt = W.now; W.run(5000); assert.equal(hp0 - c.hp, 5 * resolved, "five resisted poison hits"); assert.equal(list().length, 0);
+  assert.ok(!X.elementActive(S, c, "poison"));
   W.wear("armor", "a_3", undefined); X.PFX.bile.p = 1e3; hurtBy(W, p, 0.1, striker(240)); X.PFX.bile.p = 0.2; assert.equal(list().length, 0, "not worn");
 }
 
@@ -213,9 +227,9 @@ assert.equal(Object.keys(ROWS).length, 16);
 }
 {
   const W = world("bast"), p = W.p;
-  W.wear("helm", "h_3", undefined);
-  const mhp = X.stats(p).mhp, sh = Math.round(mhp * 0.12), v = () => (p.pc && p.pc.v.bastion) || 0, plain = hurtBy(W, p, 0.5);
-  W.wear("helm", "h_3", "bastion"); p.pc = null; p.hitAt = 0;
+  W.wear("helm", "h_3", "bastion");
+  const mhp = X.stats(p).mhp, sh = Math.round(mhp * 0.12), v = () => (p.pc && p.pc.v.bastion) || 0, plain = hurtWithoutMitigation(W, p, 0.5);
+  p.pc = null; p.hitAt = 0;
   assert.equal(plain - hurtBy(W, p, 0.5), sh, "the first blow after a calm spell raises a 12 % shield and is lighter by it"); assert.equal(v(), 0);
   W.skip(2000); assert.equal(hurtBy(W, p, 0.5), plain, "a blow within 5 s of the last raises none");
   W.skip(6000); p.hitAt = 0; assert.equal(hurtBy(W, p, 0.5), plain, "calm again, but the 25 s interval has not run out");
@@ -227,8 +241,9 @@ assert.equal(Object.keys(ROWS).length, 16);
   W.skip(26000); p.hitAt = 0; W.wear("armor", "a_3", "carap"); for (let i = 0; i < 6; i++) kill(W, p, "twinhare");
   const mhpA = X.stats(p).mhp; assert.equal(p.pc.v.carap, Math.round(mhpA * 0.15)); assert.equal(v(), 0);
   const shielded = hurtBy(W, p, 0.6);   // (bastion raises its own on this blow, the shield 갑각의 holds is already there)
+  const unshielded = hurtWithoutMitigation(W, p, 0.6);
   W.wear("helm", "h_3", undefined); W.wear("armor", "a_3", undefined); assert.equal(X.stats(p).mhp, mhpA, "(the same pieces, no powers)");
-  assert.equal(hurtBy(W, p, 0.6) - shielded, Math.floor(mhpA * 0.2), "absorb ≤ 20 % of max HP");
+  assert.equal(unshielded - shielded, Math.floor(mhpA * 0.2), "absorb ≤ 20 % of max HP");
 }
 
 // ── 5. AURA: 후광의 / 무리의

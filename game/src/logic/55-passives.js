@@ -47,7 +47,7 @@ function pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand) {
     if (!(mob.expAt > now && mob.expBy === p.pid)) pasFx(rt, p, "bow_quill50", mob.x, mob.y);
     mob.expAt = now + SKILL.bow_quill50.ms; mob.expBy = p.pid;
   }
-  if (brand > now && ps.has("book_return50") && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round(dmg * SKILL.book_return50.k)));
+  if (brand > now && ps.has("book_return50") && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round(dmg * SKILL.book_return50.k)) * elementHealFactor(S, p));
   if (!killed) return;
   if (ps.has("dagger_snap30")) {
     let cut = false;

@@ -1461,6 +1461,20 @@ const LEGEND_RUNES = [
   ["westglass", "서녘의 화톳불", [["hp", 90], ["atkp", 7], ["mf", 13]]],
 ];
 for (const [id, name, af] of LEGEND_RUNES) addRune(`ru_${id}`, 3, `${name} 룬`, af);
+
+/** Each element has a fixed stackable rune variant at every ordinary rarity. */
+function registerElementRunes() {
+  const stones = ["철심", "혈석", "잿불", "빙정", "뇌광", "독수정", "흑요", "광휘"];
+  const magicStat = ["dmg", "pen", "dmg", "res", "dmg", "res", "pen", "res"];
+  const points = { dmg: [6, 10, 16], pen: [5, 6, 8], res: [8, 10, 13] };
+  for (let i = 0; i < DAMAGE_TYPES.length; i++) {
+    const type = DAMAGE_TYPES[i], first = magicStat[i], middle = first === "dmg" ? "pen" : first === "pen" ? "res" : "dmg";
+    const line = (stat, q) => [`${stat}_${type}`, points[stat][q - 1]];
+    addRune(`ru_e_${type}_1`, 1, `${stones[i]} 가루의 룬`, [line(first, 1)]);
+    addRune(`ru_e_${type}_2`, 2, `${stones[i]} 파편의 룬`, [line(first, 2), line(middle, 2)]);
+    addRune(`ru_e_${type}_3`, 3, `${stones[i]} 결계의 룬`, [line("dmg", 3), line("pen", 3), line("res", 3)]);
+  }
+}
 // ───────────────────────────── life skills: tables (docs/design/life-and-coop.md B) ─────────────────────────────
 // Six life skills, levels 1–50 on one curve, separate from combat level and weapon mastery. What they give is
 // goods: L1 grew 낚시 and 요리 (graded fish by zone, cooking XP and bonuses); L2 (the second half of this file)
@@ -2314,6 +2328,152 @@ const COOP_LIB = {
   deskCap: 8, carry: 3, books: [1, 3], arriveMs: { 2: 7000, 3: 4200, 4: 3200 }, feverK: 2, queueCap: { 2: 6, 3: 7, 4: 8 }, patience: 60000,
   intakePts: 2, servedPts: 5, shelvePts: 10, sortK: 0.7, angryPen: 15, wrongPen: 10,
 };
+// Damage type indices are wire values. Append new types without reordering these keys.
+const DAMAGE_TYPES = ["physical", "bleed", "fire", "cold", "lightning", "poison", "dark", "light"];
+const ELEMENTS = {
+  physical: { name: "물리", color: "#fff4e8", enchant: "파쇄의" },
+  bleed: { name: "출혈", color: "#fb4b85", enchant: "유혈의" },
+  fire: { name: "화염", color: "#ff9246", enchant: "불꽃의" },
+  cold: { name: "냉기", color: "#87e4ff", enchant: "서리의" },
+  lightning: { name: "번개", color: "#fff07a", enchant: "감전의" },
+  poison: { name: "독", color: "#a5ef66", enchant: "맹독의" },
+  dark: { name: "어둠", color: "#d4a0ff", enchant: "저주의" },
+  light: { name: "빛", color: "#ffca83", enchant: "눈부심의" },
+};
+
+const WEAPON_ELEMENT = { staff: "lightning", book: "dark" };
+const WEAVE_ELEMENT = { f: "fire", i: "cold", l: "lightning" };
+const SKILL_ELEMENT_GROUPS = {
+  physical: ["slash", "rend", "spiral", "pierce", "leapshot", "verdict", "rain", "hammer_stamp", "hammer_fault", "hammer_final", "ironsiege", "cleave", "hook", "snipe", "whirl", "musou", "stomp", "dragonpierce", "rollshot", "shoulder", "parry", "mountain", "sword_weight40"],
+  bleed: ["ambush", "flurry", "bloodburst", "crosscut", "rupture", "bladevortex"],
+  fire: ["comet", "mortar"],
+  lightning: ["elemfan"],
+  poison: ["traps", "snare"],
+  dark: ["shade", "soulbolt", "gravity", "pact", "dive", "sanctuary", "inkshot", "drain"],
+  light: ["oathward", "runecircle"],
+};
+const SKILL_ELEMENTS = Object.fromEntries(Object.entries(SKILL_ELEMENT_GROUPS).flatMap(([type, ids]) => ids.map((id) => [id, type])));
+const SKILL_WITHOUT_DAMAGE = new Set(["rally_banner", "revive_binding", "smoke"]);
+for (const [id, sk] of Object.entries(SKILL)) {
+  sk.damageType = WEAVE_ELEMENT[sk.el] || SKILL_ELEMENTS[id] || (sk.kind === "p" || SKILL_WITHOUT_DAMAGE.has(id) ? null : WEAPON_ELEMENT[sk.wk] || "physical");
+}
+
+/** Skill objects and ids use the same table, including delayed spell hits. */
+function skillDamageType(skill, wk) {
+  const sk = typeof skill === "string" ? SKILL[skill] : skill;
+  return sk?.damageType || WEAVE_ELEMENT[sk?.el] || WEAPON_ELEMENT[wk] || "physical";
+}
+
+const CORE_AFFIX_KEYS = AFFIX.map(([key]) => key);
+const OFFENSE_ELEMENT_AFFIX = [];
+const DEFENSE_ELEMENT_AFFIX = ["res_all"];
+const ELEMENT_AFFIX = { res_all: ["res", "all"] };
+const CHANCE_AILMENTS = new Set(["bleed", "fire", "dark", "light"]);
+const ELEMENT_AFFIX_TYPES = [
+  ["dmg", "damage", "추가 피해", 2, 6, 0.28],
+  ["pen", "pen", "관통 %", 3, 7, 0.05],
+  ["proc", "proc", "상태이상 확률 %", 3, 7, 0.05],
+  ["dur", "dur", "상태이상 지속시간 %", 6, 13, 0.10],
+  ["res", "res", "저항 %", 4, 9, 0.10],
+];
+for (const type of DAMAGE_TYPES) {
+  const { name, enchant } = ELEMENTS[type];
+  for (const [prefix, stat, label, min, max, growth] of ELEMENT_AFFIX_TYPES) {
+    if (stat === "proc" && !CHANCE_AILMENTS.has(type)) continue;
+    const key = `${prefix}_${type}`;
+    AFFIX.push([key, `${name} ${label}`, enchant, min, max, growth]);
+    ELEMENT_AFFIX[key] = [stat, type];
+    (stat === "res" ? DEFENSE_ELEMENT_AFFIX : OFFENSE_ELEMENT_AFFIX).push(key);
+  }
+}
+AFFIX.push(["res_all", "모든 속성 저항 %", "조화의", 2, 4, 0.04]);
+const AFFIX_BY_KEY = Object.fromEntries(AFFIX.map((a) => [a[0], a]));
+registerElementRunes();
+
+/** One roll per line, preserving ordinary affix weighting and excluding duplicate keys. */
+function rollAffixKey(S, slotType, existing) {
+  const ordinary = CORE_AFFIX_KEYS.filter((key) => !existing.has(key));
+  const typed = (slotType === "weapon" ? OFFENSE_ELEMENT_AFFIX : DEFENSE_ELEMENT_AFFIX).filter((key) => !existing.has(key));
+  const roll = rnd(S), chance = 0.21;
+  if (!ordinary.length) return typed[Math.floor(roll * typed.length)];
+  if (!typed.length) return ordinary[Math.floor(roll * ordinary.length)];
+  return roll < chance ? typed[Math.floor((roll / chance) * typed.length)] : ordinary[Math.floor(((roll - chance) / (1 - chance)) * ordinary.length)];
+}
+
+const emptyElementStats = () => ({ damage: {}, pen: {}, res: {}, proc: {}, dur: {} });
+
+function addElementAffix(out, key, value) {
+  if (!Object.hasOwn(ELEMENT_AFFIX, key)) return;
+  const [kind, type] = ELEMENT_AFFIX[key], row = out[kind];
+  if (type === "all") for (const t of DAMAGE_TYPES) row[t] = (row[t] || 0) + value;
+  else row[type] = (row[type] || 0) + value;
+}
+
+// Signature weapon and armor benefits are static: existing gear receives them on load as well.
+const SIGNATURE_ELEMENT_AFFIX = {
+  w_bloodcrown: [["dmg_bleed", 12], ["proc_bleed", 5]],
+  w_cavhammer: [["dmg_lightning", 12], ["pen_lightning", 6]],
+  w_ribbook: [["dmg_dark", 10], ["dur_dark", 10]],
+  w_whalebow: [["dmg_cold", 12], ["pen_cold", 6]],
+  w_bloomstaff: [["dmg_light", 13], ["proc_light", 5]],
+  veil_h: [["res_dark", 12]], veil_a: [["res_dark", 14]], veil_r: [["res_bleed", 9]], veil_n: [["res_dark", 9], ["res_all", 3]],
+  bloom_h: [["res_cold", 12]], bloom_a: [["res_cold", 16]], bloom_r: [["res_light", 10]], bloom_n: [["res_cold", 10], ["res_all", 3]],
+};
+for (const [id, lines] of Object.entries(SIGNATURE_ELEMENT_AFFIX)) ITEMS[id].elementAf = lines;
+
+// These named bonuses follow the existing legendary power's equipped winner.
+const ELEMENT_PREFIX_AFFIX = {
+  chain: [["pen_lightning", 8], ["dur_lightning", 8]],
+  nova: [["dmg_fire", 6]],
+  bleed: [["pen_bleed", 8], ["dur_bleed", 10]],
+  bile: [["pen_poison", 8]],
+  hellfire: [["dmg_fire", 12], ["dur_fire", 10]],
+  blizzard: [["dmg_cold", 9], ["dur_cold", 8]],
+  rime: [["res_cold", 15]],
+  cure: [["res_poison", 10]],
+  purge: [["res_all", 4]],
+  halo: [["res_dark", 8]],
+  carap: [["res_physical", 8]],
+  bastion: [["res_all", 5]],
+};
+
+const MONSTER_PROFILES = {
+  neutral: { type: "physical", res: { bleed: -8 }, holyWeak: false },
+  hide: { type: "physical", res: { physical: 4, bleed: 16, fire: -12 }, holyWeak: false },
+  feral: { type: "bleed", res: { bleed: 24, cold: -16 }, holyWeak: false },
+  blood: { type: "bleed", res: { bleed: 44, dark: 12, light: -18 }, holyWeak: false },
+  ember: { type: "fire", res: { fire: 48, cold: -24 }, holyWeak: false },
+  inferno: { type: "fire", res: { fire: 80, bleed: 14, cold: -30 }, holyWeak: false },
+  frost: { type: "cold", res: { cold: 48, fire: -24 }, holyWeak: false },
+  rime: { type: "cold", res: { cold: 72, physical: 8, fire: -30 }, holyWeak: false },
+  storm: { type: "lightning", res: { lightning: 46, cold: -14, poison: -10 }, holyWeak: false },
+  toxin: { type: "poison", res: { poison: 54, fire: -20 }, holyWeak: false },
+  shadow: { type: "dark", res: { dark: 45, light: -22 }, holyWeak: true },
+  revenant: { type: "dark", res: { dark: 42, bleed: 24, poison: 18, light: -30 }, holyWeak: true },
+  radiant: { type: "light", res: { light: 48, dark: -25 }, holyWeak: false },
+  chest: { type: "physical", res: {}, holyWeak: false },
+};
+
+// Explicit profiles express the ecology rather than treating a different sprite as a different species.
+const MONSTER_ELEMENT_GROUPS = {
+  hide: ["meadowram", "splitboar", "ratking", "gatorhalf", "crabskull", "moleworm", "bearmaw", "twingoat", "loggator", "coralturtle", "cactushog", "stumpmaw", "burrlynx", "catsplit_gold", "foxtwine_gold", "twingoat_gold", "bearmaw_gold", "gatorhalf_steel", "ratking_gold", "spinescorp_gold", "ribdeer_gold", "moleworm_gold", "horsehalf_gold"],
+  feral: ["foxtwine", "catsplit", "gnawbadger", "dropsloth", "gigglehyena", "pigeonmass", "horsehalf", "lionhand", "spiderhand", "blightsquirrel", "wingcrane", "loomcolossus", "vinemonkey", "orchidmantis"],
+  blood: ["batcluster_blood", "crabskull_blood", "squidrat_blood", "fishwalker_blood", "twingoat_blood", "spiderhand_blood", "gravrose_blood", "barnacleseal_blood", "bloodhorn", "bloodshard"],
+  ember: ["wickhare", "smoggecko", "doghead_fire", "spinescorp_fire", "ribvulture_fire", "foxtwine_fire", "eyecrow_ash", "lionhand_gold"],
+  inferno: ["boss", "wickregent", "sandmaw"],
+  frost: ["splitboar_frost", "fishwalker_frost", "eelknot_frost", "crabskull_frost", "ribdeer_frost", "foxtwine_frost", "shroomboar_frost", "crowscare_frost", "hermitskull_frost", "rimehare", "frostmoth", "barnacleseal", "hagfishhead"],
+  rime: ["rimewalrus", "rootwarden", "crownstag", "bloomwhale"],
+  storm: ["sluiceeel", "spoolsnipe", "eelknot", "hydrasnake_steel", "eelknot_gold", "prismmole", "airship_gale", "airship_lookout", "eyegull", "brainjelly", "clubshrimp", "sluiceleviathan"],
+  toxin: ["hydrasnake", "mothface", "toadbrood", "gutfrog_poison", "ratking_bile", "slugtongue", "leechmaw", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile", "leechmaw_ash", "mothface_ash", "shroomboar", "gravrose", "dartbrood", "spinescorp", "sowseer", "knotwidow"],
+  shadow: ["owlstare", "crowscare", "bogcrown", "hollowowl", "batcluster", "nightbat", "serpentwing", "serpentwing_ash", "bearmaw_ash", "splitboar_ash", "fishwalker_ash", "wingcrane_ash", "abyssboss", "mistiger", "cloakbat"],
+  revenant: ["bellnewt", "gravecricket", "dunescarab", "ribdeer", "twinhare_bone", "bonehound", "bonehound_ash", "bonehound_gold", "lambmaw_bone", "leechmaw_bone", "spiderhand_bone", "serpentwing_bone", "rotstag", "hermitskull", "ribvulture_bone", "mummycamel", "spinescorp_bone", "ribvulture", "knellkeeper"],
+  radiant: ["prismcantor", "beadmonkey", "crownpeacock", "hydrasnake_gold", "sowseer_gold", "owlstare_gold", "ribvulture_gold"],
+};
+const MONSTER_ELEMENT = Object.fromEntries(Object.entries(MONSTER_ELEMENT_GROUPS).flatMap(([profile, kinds]) => kinds.map((kind) => [kind, MONSTER_PROFILES[profile]])));
+for (const [id, mob] of Object.entries(MOBS)) mob.element = mob.chest ? MONSTER_PROFILES.chest : MONSTER_ELEMENT[id] || MONSTER_PROFILES.neutral;
+
+/** A missing or neutral kind still has a complete damage profile. */
+const monsterElement = (kind) => MOBS[kind]?.element || MONSTER_PROFILES.neutral;
 // ───────────────────────────── helpers ─────────────────────────────
 
 /** Small seeded generator; `box.seed` is advanced in place. */
@@ -7739,11 +7899,12 @@ function migrate(ch) {
     if (oldQ === 4 && !out.lg) {
       const seed = { seed: [...id].reduce((n, c) => (Math.imul(n, 31) + c.charCodeAt(0)) >>> 0, out.il + out.enh) };
       out.lg = pfxPick(seed, ITEMS[id].type);
-      out.af = out.af.filter((line) => Array.isArray(line) && AFFIX.some(([stat]) => stat === line[0]) && Number.isFinite(line[1]) && line[1] > 0);
-      const pool = AFFIX.filter(([stat]) => !out.af.some(([key]) => key === stat));
+      out.af = out.af.filter((line) => Array.isArray(line) && Object.hasOwn(AFFIX_BY_KEY, line[0]) && Number.isFinite(line[1]) && line[1] > 0);
+      const used = new Set(out.af.map(([key]) => key));
       const tier = toTier(out.il);
-      while (out.af.length < RARITY_AFFIX[3][0] && pool.length) {
-        const [stat] = pool.splice(ri(seed, 0, pool.length - 1), 1)[0];
+      while (out.af.length < RARITY_AFFIX[3][0]) {
+        const stat = rollAffixKey(seed, ITEMS[id].type, used);
+        used.add(stat);
         out.af.push(rollLine(seed, stat, tier, AFFIX_MUL[3]));
       }
     }
@@ -7810,7 +7971,7 @@ function migrate(ch) {
   const cnt = isObj(ch.cnt) ? ch.cnt : {};
   ch.cnt = {};
   for (const k of CNT_KEYS) ch.cnt[k] = Math.max(0, cnt[k] | 0);
-  if ((ch.v | 0) < 27) {
+  if (Object.hasOwn(cnt, "set") || Object.hasOwn(cnt, "rw")) {
     ch.cnt.rune_find = Math.max(ch.cnt.rune_find, cnt.set | 0);
     ch.cnt.rune_bond = Math.max(ch.cnt.rune_bond, cnt.rw | 0);
   }
@@ -7947,8 +8108,11 @@ function masteryRank(ch, k) {
 /** The worn gear's ordinary stats, runes and legendary powers. */
 function gearBonus(ch) {
   const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
-  const lg = {}, runeCounts = {}, win = {}, off = [];
-  const add = (s, v) => { if (s in b) b[s] += v; };
+  const lg = {}, runeCounts = {}, win = {}, off = [], element = emptyElementStats();
+  const add = (s, v) => {
+    if (Object.hasOwn(b, s)) b[s] += v;
+    else addElementAffix(element, s, v);
+  };
   for (const k of SLOTS) {
     const g = ch.eq[k];
     if (!g) continue;
@@ -7960,10 +8124,11 @@ function gearBonus(ch) {
       if (rune.set) runeCounts[rune.set] = (runeCounts[rune.set] || 0) + 1;
     }
     if (k === "weapon2") continue;
-    const base = ITEMS[g.id].base;
+    const item = ITEMS[g.id], base = item.base;
     // enhancement raises the piece's own stats along ENH_PCT
     for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : enhMul(g.enh)));
     for (const [s, v] of g.af) add(s, v);
+    if (item.elementAf) for (const [s, v] of item.elementAf) add(s, v);
     // one power counts once however many pieces carry it: the higher item level wins, a tie goes to the earlier slot (SLOTS order)
     if (g.lg) {
       const il = gearIl(g), w = win[g.lg];
@@ -7977,8 +8142,15 @@ function gearBonus(ch) {
   if (ttl && ttl.bonus) for (const [s, v] of ttl.bonus) add(s, v);
   for (const id of REGIONS) if (regionDone(ch, id)) for (const [s, v] of REGION_BONUS[id]) add(s, v);
   // the powers that count, in slot order (the order their code runs in: 51-prefix.js), and the slots of the pieces whose power does not
-  for (const k of SLOTS) { const g = ch.eq[k]; if (g && g.lg && win[g.lg] && win[g.lg].k === k) lg[g.lg] = 1; }
+  for (const k of SLOTS) {
+    const g = ch.eq[k], id = g?.lg;
+    if (!id || win[id]?.k !== k) continue;
+    lg[id] = 1;
+    const intrinsic = ELEMENT_PREFIX_AFFIX[id];
+    if (intrinsic && !PFX[id]?.off) for (const [s, v] of intrinsic) add(s, v);
+  }
   b.gold += pfxGold(lg);
+  b.element = element;
   b.lg = lg;
   b.runeCounts = runeCounts;
   b.runeSets = activeRuneSets(runeCounts);
@@ -8001,6 +8173,10 @@ function stats(p) {
     guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
     spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.vitSpd > now ? 1 + SKILL.vitals.spd : 1) * (p.slowed > now ? SLOW : 1) * (p.hold ? SKILL[p.hold.id].holdSpd : 1), spd0: c.spd0,
   };
+  out.element = c.element;
+  const cold = elementMoveFactor(p.S, p);
+  // The old field slows already adjust spd above. Use the stronger of the two slows.
+  out.spd *= p.slowed > now ? Math.min(1, cold / SLOW) : cold;
   if (c.pfx.stat.length) pfxStat(p, out);   // the powers that change the moment's numbers (51-prefix.js)
   return out;
 }
@@ -8076,7 +8252,7 @@ function guildNear(S, p) {
 }
 
 function newMob(S, k, r, sp) {
-  return { fix: (sp && sp.el) || 0, ep: sp && sp.elite !== undefined ? sp.elite : 0.08, id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false, tr: [], act: null, mv: 0, cn: 0 };
+  return { fix: (sp && sp.el) || 0, ep: sp && sp.elite !== undefined ? sp.elite : 0.08, id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false, tr: [], act: null, mv: 0, cn: 0, elementRunAt: 0 };
 }
 /**
  * A channel's world. Maps come alive one at a time (runtime): the town at once, every other
@@ -8177,6 +8353,9 @@ function readyMob(S, mob) {
   mob.hp = mobMax(mob);
   mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null; mob.act = null; mob.mv = 0; mob.cn = 0;
   mob.runePoison = null;
+  elementClear(mob);
+  mob.elementRunAt = 0;
+  assignElementEnchant(S, mob);
   mob.wx = mob.x; mob.wy = mob.y;
   bsEnd(mob);   // a scripted boss risen again forgets its last fight (56-boss-script.js)
   mob.castAt = S.now + 3000 + rnd(S) * 3000;
@@ -8263,7 +8442,7 @@ export function addPlayer(S, pid, ch) {
   else if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, aim: AIM_N / 4, hp: 1, mp: 0, dead: false, stc: null,
-    cds: {}, atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
+    cds: {}, atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, elementRunAt: 0, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, inert: 0, inertAt: 0, reso: 0, vitSpd: 0, sanctAt: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };
@@ -8516,7 +8695,7 @@ function deriveStats(p) {
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
     ls: Math.min(15, b.ls + perk.ls), spd0: BASE_SPD * HERO_SPD_K * (1 + (Math.min(40, b.spd) + tf.move + perk.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
     mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk) + tf.drop,
-    lg: b.lg, lgOff: b.lgOff, runeSets: b.runeSets, runeCounts: b.runeCounts, pfx: pfxBuild(b.lg, b.runeSets), arm, wk, mag: arm.mag ? 1 : 0,
+    lg: b.lg, lgOff: b.lgOff, runeSets: b.runeSets, runeCounts: b.runeCounts, element: b.element, pfx: pfxBuild(b.lg, b.runeSets), arm, wk, mag: arm.mag ? 1 : 0,
     acd: Math.round(arm.cd * (1 - attackSpeed) * pfxIv(b.lg) * (1 - tf.aspd / 100)),
     aspd: attackSpeed,
     eva: Math.min(SFX.eva[1], SFX.eva[0] * dex),
@@ -9149,6 +9328,346 @@ function skeApply(S, p, a) {
   } else toast(p, `[${name}] 강화 실패... 스킬 강화석만 사라지고 단계는 그대로입니다.`);
   p.dirty = true;
 }
+// Damage components and temporary ailments shared by players and monsters.
+const ELEMENT_STATUS = [
+  { id: "shatter", name: "방어구 파쇄", type: "physical", icon: "파" },
+  { id: "bleed", name: "출혈", type: "bleed", icon: "혈" },
+  { id: "burn", name: "화상", type: "fire", icon: "화" },
+  { id: "chill", name: "오한", type: "cold", icon: "한" },
+  { id: "freeze", name: "빙결", type: "cold", icon: "빙" },
+  { id: "stagger", name: "경직", type: "lightning", icon: "경" },
+  { id: "shock", name: "감전", type: "lightning", icon: "감" },
+  { id: "poison", name: "중독", type: "poison", icon: "독" },
+  { id: "curse", name: "저주", type: "dark", icon: "저" },
+  { id: "blind", name: "실명", type: "light", icon: "실" },
+  { id: "ward", name: "신성 보호막", type: "light", icon: "호" },
+];
+
+const ELEMENT_RULE = {
+  physical: { chance: 1, duration: 2800 },
+  bleed: { chance: 0.36, duration: 4200, dot: 0.21, cap: 5 },
+  fire: { chance: 0.40, duration: 3400, dot: 0.32 },
+  cold: { chance: 1, duration: 2600 },
+  lightning: { chance: 1, duration: 2300 },
+  poison: { chance: 1, duration: 6300, dot: 0.12 },
+  dark: { chance: 0.34, duration: 3800 },
+  light: { chance: 0.34, duration: 2400 },
+};
+const ELEMENT_DOTS = [["bleed", "bleed"], ["burn", "fire"], ["poison", "poison"]];
+const NO_ELEMENT_ROWS = Object.freeze([]);
+const ELEMENT_EXPIRY_BUCKET_MS = 250;
+
+function elementRoll(S) {
+  S.elementRng ||= { seed: S.seed ^ 0x58c8f3d1 };
+  return rnd(S.elementRng);
+}
+
+const elementActive = (S, actor, id) => (actor?.ail?.[id]?.until || 0) > S.now || !!elementMarked(S, actor, id);
+const elementMob = (actor) => !!actor?.k;
+const elementGear = (actor, supplied) => supplied || (!elementMob(actor) && actor?.ch ? deriveStats(actor).element : null);
+const elementFirm = (actor) => elementMob(actor) && (actor.el === 2 || MOBS[actor.k]?.boss || MOBS[actor.k]?.still || MOBS[actor.k]?.chest);
+const elementMaxHp = (actor) => elementMob(actor) ? mobMax(actor) : deriveStats(actor).mhp;
+
+/** Resistance and penetration use percentage points. Penetration can remove resistance down to 0%. */
+function elementResist(S, target, type, penetration = 0) {
+  const res = elementMob(target) ? monsterElement(target.k).res : elementGear(target)?.res;
+  let n = res?.[type] || 0;
+  if (n > 0) n = Math.max(0, n - Math.max(0, penetration));
+  if (elementActive(S, target, "curse")) n -= 14;
+  return 1 - clamp(n, -65, 90) / 100;
+}
+
+/** Resolve single-hit components before final damage multipliers. Raw damage still includes physical armor. */
+function elementDamage(S, source, target, raw, armor, options = {}) {
+  const { type = "physical", enchant, typedOnly, pure, crit, extraScale = 1 } = options;
+  if (pure) return [[type, Math.max(0, raw)]];
+  const profile = elementGear(source, options.element);
+  const bonus = profile?.damage;
+  const converted = type !== "physical" ? (enchant === type ? 0.36 : 0.25) : 0;
+  const enchanted = enchant && enchant !== "physical" && enchant !== type ? 0.12 : 0;
+  const armourRate = (crit ? 0.88 : 1) * (elementActive(S, target, "shatter") ? 0.90 : 1);
+  const parts = [];
+  for (const key of DAMAGE_TYPES) {
+    let value = typedOnly ? (key === type ? raw : 0) : (bonus?.[key] || 0) * Math.max(0, extraScale);
+    if (!typedOnly) {
+      if (key === "physical") value += raw * (1 - converted - enchanted);
+      else {
+        if (key === type) value += raw * converted;
+        if (key === enchant) value += raw * enchanted;
+      }
+    }
+    if (value <= 0) continue;
+    if (key === "physical") value -= armor * armourRate;
+    if (value <= 0) continue;
+    if (key === "lightning" && !typedOnly) value *= 0.54 + 0.98 * elementRoll(S);
+    if (key === "fire" && !typedOnly) value *= 1.12;
+    if (key === "light" && elementMob(target) && monsterElement(target.k).holyWeak) value *= 1.35;
+    value *= elementResist(S, target, key, profile?.pen?.[key]);
+    if (value > 0) parts.push([key, value]);
+  }
+  return parts;
+}
+
+const elementTaken = (S, target) => elementActive(S, target, "shock") ? 1.10 : 1;
+const elementOutgoing = (S, source) => (elementActive(S, source, "poison") || source?.poison?.until > S.now) ? 0.92 : 1;
+const elementHealFactor = (S, target) => (elementActive(S, target, "burn") || target?.burn?.until > S.now) ? 0.63 : 1;
+const elementFrozen = (S, target) => elementActive(S, target, "freeze") || elementActive(S, target, "stagger");
+const elementChill = (S, target) => elementActive(S, target, "chill") ? target.ail.chill.stacks : 0;
+const elementMoveFactor = (S, target) => 1 - 0.11 * elementChill(S, target);
+const elementAttackFactor = (S, target) => 1 / (1 - 0.10 * elementChill(S, target));
+
+function elementMiss(S, source) {
+  const miss = (elementActive(S, source, "curse") ? 0.13 : 0) + (elementActive(S, source, "blind") ? 0.28 : 0);
+  return miss > 0 && elementRoll(S) < miss;
+}
+
+function elementShield(S, target, damage) {
+  if (!elementActive(S, target, "ward") || damage <= 0) return damage;
+  const ward = target.ail.ward, absorbed = Math.min(ward.amount, damage);
+  ward.amount -= absorbed;
+  if (ward.amount === 0) delete target.ail.ward;
+  return damage - absorbed;
+}
+
+function elementClear(target, ...ids) {
+  if (target.ch && target.ail?.chill && (!ids.length || ids.includes("chill"))) target.dirty = true;
+  if (!ids.length) {
+    target.ail = null;
+    target.ailMarks = null;
+    target.ailMotion = null;
+    target.elementFreezeAt = target.elementStaggerAt = 0;
+    return;
+  }
+  if (target.ail) for (const id of ids) delete target.ail[id];
+  if (target.ailMarks) for (const id of ids) delete target.ailMarks[id];
+}
+
+function elementTimed(S, target, id, duration, stacks = 1) {
+  const ail = (target.ail ||= {}), until = S.now + duration;
+  const timers = ail[id];
+  const effect = { until: Math.max(timers?.until || 0, until), stacks };
+  ail[id] = effect;
+  return effect;
+}
+
+/** Expose an ailment supplied by an existing periodic effect without scheduling another damage tick. */
+function elementMark(S, target, id, duration, source, key, entry) {
+  const marks = target.ailMarks ||= {};
+  const pending = marks[id] ||= new Map();
+  pending.set(source?.pid || "", { until: S.now + duration, map: source?.map, key, entry });
+}
+
+function elementMarked(S, target, id) {
+  const pending = target?.ailMarks?.[id];
+  if (!pending) return null;
+  let until = 0, stacks = 0;
+  for (const [pid, mark] of pending) {
+    const p = S.players?.[pid];
+    if (mark.until <= S.now || (mark.entry && (!p || p.dead || p.map !== mark.map || !p.pc?.v?.[mark.key]?.includes(mark.entry)))) {
+      pending.delete(pid);
+      continue;
+    }
+    until = Math.max(until, mark.until);
+    stacks++;
+  }
+  if (!stacks) {
+    delete target.ailMarks[id];
+    if (!Object.keys(target.ailMarks).length) target.ailMarks = null;
+    return null;
+  }
+  return { until, stacks };
+}
+
+/** Only voluntary motion amplifies bleed. Exact-position fixtures can sample coordinates directly. */
+function elementMoving(S, target) {
+  if (target.elementRunAt !== undefined) return target.elementRunAt > Math.max(0, S.now - 250);
+  const motion = (target.ailMotion ||= { x: target.x, y: target.y, at: -Infinity });
+  if (Math.abs((target.x || 0) - (motion.x || 0)) + Math.abs((target.y || 0) - (motion.y || 0)) > 0.5) {
+    motion.x = target.x;
+    motion.y = target.y;
+    motion.at = S.now;
+  }
+  return motion.at > S.now - 250;
+}
+
+function elementRestore(S, rt, actor, amount) {
+  if (!actor || actor.dead || !(actor.hp > 0)) return;
+  const heal = Math.min(elementMaxHp(actor) - actor.hp, Math.round(amount * elementHealFactor(S, actor)));
+  if (heal < 1) return;
+  actor.hp += heal;
+  rt.ev.push(["h", actor.eid ?? actor.id, -heal, 0, elementMob(actor) ? 0 : 1]);
+}
+
+function elementStatusScale(S, target, type) {
+  if (elementMob(target) || !target.ch) return 1;
+  const legacy = type === "fire" ? "burn" : type === "cold" ? "slow" : type;
+  return (1 - (deriveStats(target).res || 0)) * pfxStatus(S, target, legacy);
+}
+
+/** Bucket expirations per source, so poison can stack freely without storing one row per hit. */
+function elementDot(S, target, source, id, duration, damage) {
+  if (!(damage > 0)) return;
+  const ail = (target.ail ||= {}), end = Math.ceil((S.now + duration) / ELEMENT_EXPIRY_BUCKET_MS) * ELEMENT_EXPIRY_BUCKET_MS;
+  const dot = ail[id] && ail[id].until > S.now ? ail[id] : { until: end, next: S.now + 1000, stacks: 0, sources: new Map() };
+  ail[id] = dot;
+  const pid = source?.pid || "";
+  if (id === "burn") {
+    const active = dot.burn;
+    if (active?.until > S.now && active.damage > damage) return;
+    dot.burn = { pid, damage, until: end };
+    dot.until = end;
+    dot.stacks = 1;
+    return;
+  }
+  if (id === "bleed") {
+    elementMoving(S, target);
+    if (dot.stacks >= ELEMENT_RULE.bleed.cap) return;
+  }
+  let byEnd = dot.sources.get(pid);
+  if (!byEnd) dot.sources.set(pid, (byEnd = new Map()));
+  const bucket = byEnd.get(end);
+  if (bucket) { bucket.damage += damage; bucket.stacks++; }
+  else byEnd.set(end, { damage, stacks: 1 });
+  dot.stacks++;
+  dot.until = Math.max(dot.until, end);
+}
+
+function elementCold(S, target, duration, statusScale, crit) {
+  const stacks = Math.min(3, elementChill(S, target) + 1);
+  elementTimed(S, target, "chill", duration, stacks);
+  if (target.ch) target.dirty = true;
+  if (elementFirm(target) || elementActive(S, target, "freeze") || (target.elementFreezeAt || 0) > S.now) return;
+  if (stacks >= 3 || crit) {
+    const stop = Math.max(100, Math.round((elementMob(target) ? 1050 : 720) * statusScale));
+    elementTimed(S, target, "freeze", stop, stacks);
+    target.elementFreezeAt = S.now + stop + 2100;
+    delete target.ail.chill;
+  }
+}
+
+function elementLight(S, rt, source, target, duration) {
+  if (elementRoll(S) < 0.5 && !target.dead) {
+    elementTimed(S, target, "blind", duration);
+    return;
+  }
+  if (!source || source.dead || !(source.hp > 0)) return;
+  const max = elementMaxHp(source);
+  if (source.hp < max * 0.72) {
+    elementRestore(S, rt, source, max * 0.035);
+    return;
+  }
+  const reserve = elementActive(S, source, "ward") ? source.ail.ward.amount : 0;
+  elementTimed(S, source, "ward", 2800).amount = Math.max(reserve, Math.max(1, Math.round(max * 0.06)));
+}
+
+/** Apply one specified elemental ailment. `dotDamage` overrides the already-resisted damage per tick. */
+function elementInflict(S, rt, source, target, type, damage, options = {}) {
+  const rule = ELEMENT_RULE[type];
+  if (!rule || !target || !(damage > 0) || MOBS[target.k]?.chest || (target.dead && type !== "light")) return false;
+  const chance = clamp(options.chance ?? 1, 0, 1);
+  if (chance <= 0 || (chance < 1 && elementRoll(S) >= chance)) return false;
+  const scale = elementStatusScale(S, target, type);
+  if (scale <= 0) return false;
+  const stat = elementGear(source, options.element);
+  const duration = clamp(Math.round((options.duration ?? rule.duration) * (1 + (stat?.dur?.[type] || 0) / 100) * scale), 100, 18000);
+  switch (type) {
+    case "physical": elementTimed(S, target, "shatter", duration); break;
+    case "bleed":
+    case "fire":
+    case "poison": {
+      const id = type === "fire" ? "burn" : type;
+      elementDot(S, target, source, id, duration, Math.max(1, (options.dotDamage ?? damage * rule.dot) * scale));
+      break;
+    }
+    case "cold": elementCold(S, target, duration, scale, options.crit); break;
+    case "lightning":
+      elementTimed(S, target, "shock", duration);
+      if (!elementFirm(target) && (target.elementStaggerAt || 0) <= S.now) {
+        elementTimed(S, target, "stagger", 130);
+        target.elementStaggerAt = S.now + 980;
+      }
+      break;
+    case "dark": elementTimed(S, target, "curse", duration); break;
+    case "light": elementLight(S, rt, source, target, duration); break;
+  }
+  return true;
+}
+
+function elementApplyHit(S, rt, source, target, parts, options = {}) {
+  if (options.proc === false || !target || MOBS[target.k]?.chest) return;
+  const gear = elementGear(source, options.element);
+  // Multiple enemies often attack together. Their elemental precision is lower than a player's.
+  const precision = elementMob(source) ? (source.el || MOBS[source.k]?.boss ? 0.65 : 0.40) : 1;
+  for (const [type, amount] of parts) {
+    const damage = amount * (options.scale ?? 1);
+    if (!(damage > 0) || (type === "physical" && !options.crit)) continue;
+    if (type === "dark" && source?.hp > 0 && !source.dead) {
+      elementRestore(S, rt, source, Math.min(damage * 0.17, elementMaxHp(source) * 0.04));
+    }
+    const chance = (ELEMENT_RULE[type].chance + (gear?.proc?.[type] || 0) / 100) * precision;
+    elementInflict(S, rt, source, target, type, damage, { chance, crit: options.crit, element: gear });
+  }
+}
+
+function elementDotHit(S, rt, target, type, pid, amount) {
+  const dmg = Math.max(1, Math.round(amount));
+  if (!elementMob(target)) {
+    wound(S, rt, target, dmg, type);
+    return target.dead;
+  }
+  const source = S.players[pid];
+  if (!source || source.map !== rt.id) return false;
+  return dealMob(S, rt, target, source, dmg, false, 0, [[type, dmg]]);
+}
+
+/** Tick at the simulation cadence. Expired buckets are cleared before damage and the next snapshot. */
+function elementTick(S, rt, target) {
+  if (!target.dead && (target.dot || target.ail?.bleed || elementMarked(S, target, "bleed"))) elementMoving(S, target);
+  if (!target.ail || target.dead) return false;
+  if (target.ail.chill?.until <= S.now) elementClear(target, "chill");
+  for (const [id, type] of ELEMENT_DOTS) {
+    const dot = target.ail[id];
+    if (!dot) continue;
+    if (dot.until <= S.now) { delete target.ail[id]; continue; }
+    const moveK = id === "bleed" && elementMoving(S, target) ? 2 : 1;
+    const due = dot.next <= S.now;
+    if (due) dot.next = S.now + 1000;
+    if (id === "burn") {
+      if (due && elementDotHit(S, rt, target, type, dot.burn.pid, dot.burn.damage)) return true;
+      continue;
+    }
+    let count = 0;
+    for (const [pid, buckets] of dot.sources) {
+      let amount = 0;
+      for (const [until, hit] of buckets) {
+        if (until <= S.now) { buckets.delete(until); continue; }
+        count += hit.stacks;
+        amount += hit.damage;
+      }
+      if (!buckets.size) dot.sources.delete(pid);
+      if (due && amount > 0 && elementDotHit(S, rt, target, type, pid, amount * moveK)) return true;
+    }
+    dot.stacks = count;
+  }
+  return false;
+}
+
+/** Compact wire tuple: status index, remaining deciseconds, stack count. */
+function elementStatusRows(S, target) {
+  if (!target.ail && !target.ailMarks && !target.burn && !target.poison && !target.dot && !(target.slowed > S.now) && !(target.slow > S.now)) return NO_ELEMENT_ROWS;
+  const rows = [];
+  for (let i = 0; i < ELEMENT_STATUS.length; i++) {
+    const id = ELEMENT_STATUS[i].id, status = target.ail?.[id];
+    const oldUntil = id === "burn" ? target.burn?.until : id === "bleed" ? target.dot?.until : id === "poison" ? target.poison?.until
+      : id === "chill" ? Math.max(target.slowed || 0, target.slow || 0) : 0;
+    const marked = elementMarked(S, target, id);
+    const until = Math.max(status?.until || 0, oldUntil || 0, marked?.until || 0);
+    if (until <= S.now) continue;
+    const stacks = status?.until > S.now ? status.stacks : 0;
+    rows.push([i, Math.ceil((until - S.now) / 100), Math.max(1, stacks + (oldUntil > S.now ? 1 : 0) + (marked?.stacks || 0))]);
+  }
+  return rows.length ? rows : NO_ELEMENT_ROWS;
+}
 // ───────────────────────────── inventory & loot ─────────────────────────────
 
 /** Old clients asked for "W<tier>": the weapon of that tier of the kind in hand. */
@@ -9289,7 +9808,7 @@ function sellPrice(s) {
 }
 /** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`. */
 function rollLine(S, key, ilvl, mul) {
-  const [, , , min, max, grow] = AFFIX.find((x) => x[0] === key);
+  const [, , , min, max, grow] = AFFIX_BY_KEY[key];
   return [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * ilvl) * mul))];
 }
 /**
@@ -9302,9 +9821,13 @@ function rollGear(S, id, q, ilvl, rank = 0) {
   const g = plain(id);
   g.q = q;
   g.il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(it.tier | 0) - 1] || 1), 1, 200);
-  const pool = AFFIX.slice();
   const [lo, hi] = RARITY_AFFIX[q];
-  for (let n = ri(S, lo, hi); n > 0 && pool.length; n--) g.af.push(rollLine(S, pool.splice(ri(S, 0, pool.length - 1), 1)[0][0], ilvl, AFFIX_MUL[q]));
+  const used = new Set();
+  for (let n = ri(S, lo, hi); n > 0; n--) {
+    const key = rollAffixKey(S, it.type, used);
+    used.add(key);
+    g.af.push(rollLine(S, key, ilvl, AFFIX_MUL[q]));
+  }
   if (q === 3 || q === 5) g.lg = pfxPick(S, it.type);   // the power comes from the item type's pool (51-prefix.js)
   g.sk = ri(S, 0, sockCap(g));
   return g;
@@ -9396,29 +9919,57 @@ function gainXp(S, p, n) {
 // Optional presentation tag at h[6]. h[5] is reserved for HP costs.
 const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3, rally: 4, binding: 5 };
 
+const damageTotal = (parts) => parts.reduce((n, [, amount]) => n + amount, 0);
+
+/** Send the actual damage by element after shields and encounter modifiers. */
+function damageEvent(rt, eid, amount, crit, player, cue, parts) {
+  const event = ["h", eid, amount, crit, player];
+  const typed = amount > 0 && parts && (parts.length > 1 || parts[0]?.[0] !== "physical");
+  if (typed) {
+    const sum = damageTotal(parts), shown = [];
+    let cumulative = 0, prior = 0;
+    for (const [type, n] of parts) {
+      cumulative += n;
+      const end = Math.round(cumulative * amount / sum);
+      if (end > prior) shown.push([DAMAGE_TYPES.indexOf(type), end - prior]);
+      prior = end;
+    }
+    if (shown.length) event.push(0, cue || 0, shown);
+  }
+  if (cue && event.length === 5) event.push(0, cue);
+  rt.ev.push(event);
+}
+
 /** Take `dmg` off a monster on behalf of `p`; true if that killed it. */
-function dealMob(S, rt, mob, p, dmg, crit, cue) {
+function dealMob(S, rt, mob, p, dmg, crit, cue, parts) {
   // a boss that dived out of reach is not hit at all (56-boss-script.js)
   if (mob.dead || mob.dive) return false;
   const poison = runePoisonFactor(S, mob);
   if (poison !== 1) dmg = Math.max(1, Math.round(dmg * poison));
+  const taken = elementTaken(S, mob);
+  if (taken !== 1) dmg = Math.max(1, Math.round(dmg * taken));
   // a scripted boss stunned by a broken cast takes more (its script's vuln), half behind its shielding adds
   if (mob.bs) dmg = bsTaken(S, rt, mob, dmg);
   // a rift's monster is made tougher for a bigger or stronger party (64-dim.js dimHk)
   if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
+  dmg = elementShield(S, mob, dmg);
   mob.hp -= dmg;
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
   if (mob.dim) dimDealt(S, rt, mob, p, dmg);   // the carry guard's damage share (64-dim.js)
   if (mob.cast) bsDealt(S, rt, mob, dmg);      // a scripted boss's stagger gauge (56-boss-script.js)
   if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
   if (!mob.tgt) mob.tgt = p.pid;
-  const event = ["h", mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0];
-  if (cue) event.push(0, cue);
-  rt.ev.push(event);
+  damageEvent(rt, mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0, cue, parts);
   if (mob.hp > 0) return false;
   killMob(S, rt, mob);
   runeKillHeal(S, p, mob);
   return true;
+}
+
+/** Damage already fixed by a skill or an old affix still takes its type's resistance. */
+function dealTypedMob(S, rt, mob, p, amount, type, crit = false, cue = 0) {
+  const dmg = Math.max(1, Math.round(amount * elementResist(S, mob, type, stats(p).element?.pen[type] || 0)));
+  return dealMob(S, rt, mob, p, dmg, crit, cue, [[type, dmg]]);
 }
 
 /**
@@ -9467,6 +10018,7 @@ function stagger(S, mob, p, crit) {
  */
 function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (mob.dead || mob.dive) return;
+  if (elementMiss(S, p)) { damageEvent(rt, mob.id, 0, 3, 0); return false; }
   const st = stats(p);
   const d = MOBS[mob.k];
   const o = opt || {};
@@ -9480,8 +10032,10 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const ign = fx.ign ? 1 - (1 - (o.ign || 0)) * (1 - fx.ign) : (o.ign || 0);
   // 거검의 관성: each stack a sword carries adds to its critical damage
   const critd = st.critd + (st.wk === "sword" ? inertOf(p) * SKILL.inertia.critd : 0);
-  const defence = pure ? 0 : d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
-  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - defence;
+  const defence = d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
+  const raw = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) * elementOutgoing(S, p);
+  const parts = elementDamage(S, p, mob, raw, defence, { type: o.elem || skillDamageType(o.sk, st.wk), element: st.element, extraScale: o.px ? 0 : mult * (graze ? SFX.grazeK : 1), pure, crit, typedOnly: o.typedOnly });
+  let dmg = damageTotal(parts);
   if (pure) dmg *= RUNE_POWER.blackstar.damage;
   // a dagger in a back that is not watching you
   if (st.wk === "dagger" && mob.tgt !== p.pid) dmg *= 1 + st.sneak;
@@ -9510,10 +10064,11 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
     const back = Math.min(p.hp - 1, Math.max(1, Math.round(dmg * 0.12)));
     if (back > 0) { p.hp -= back; rt.ev.push(["h", p.eid, back, 0, 1]); }
   }
-  if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)));
+  if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)) * elementHealFactor(S, p));
   const x = mob.x, y = mob.y;
   wmHit(S, p, mob);
-  const brand = mob.brand, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue);
+  const brand = mob.brand, before = mob.hp, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue, parts);
+  if (!o.px && !pure && before > Math.max(0, mob.hp)) elementApplyHit(S, rt, p, mob, parts, { crit, element: st.element, proc: !graze, scale: (before - Math.max(0, mob.hp)) / Math.max(1, damageTotal(parts)) });
   if (pure) runeShock(S, rt, p, x, y, mob);
   pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand);
   if (!o.px) pfxHit(S, rt, p, st, mob, dmg, crit, killed, o);   // the powers that answer a blow landing (chance, status, crit)
@@ -9545,8 +10100,8 @@ function killMob(S, rt, mob) {
   if (mob.slot) { mob.slot.mob = null; mob.slot.due = mob.respAt; rt.lastKill[mob.slot.c] = S.now; mob.slot = null; mob.cellGone = true; }
   mob.tgt = null;
   mob.dot = null;
+  elementClear(mob);
   mob.runePoison = null;
-  mob.runeBurn = null;
   mob.mk = 0; mob.dec = null; mob.vuln = 0; mob.brand = 0;
   rt.ev.push(["k", mob.id]);
   if (S.dims[rt.id]?.story?.airship) { airshipKill(S, rt, mob); return; }
@@ -9649,28 +10204,37 @@ function blameOf(mob) {
   const rank = d.boss ? "보스 " : mob.el === 2 ? (mob.evt ? "침공 우두머리 " : mob.temp ? "우두머리 " : "수문장 ") : mob.el ? "정예 " : "";
   return { by: `Lv.${shownLv(d.lv)} ${rank}${d.name}`, lv: shownLv(d.lv), el: d.boss ? 3 : mob.el | 0 };
 }
-function hurtPlayer(S, rt, p, raw, mob) {
-  if (p.dead || S.now < (p.ghost || 0)) return;
+function hurtPlayer(S, rt, p, raw, mob, type) {
+  if (p.dead || S.now < (p.ghost || 0)) return 0;
   const st = stats(p);
   // inside a dark knight's blood sanctuary a blow lands lighter (57-weapon-skills.js)
   const ward = S.now < (p.sanctAt || 0) ? 1 - SKILL.sanctuary.guard : 1;
+  const primary = type || (mob ? monsterElement(mob.k).type : "physical");
+  const parts = elementDamage(S, mob, p, raw * (0.85 + rnd(S) * 0.3) * elementOutgoing(S, mob), st.def * 0.6,
+    { type: primary, enchant: mob?.enchant });
   // the powers that lighten a blow (51-prefix.js); a blow they stop altogether (0) shows as a dodge
-  const dmg = pfxMiti(S, rt, p, st, mob, Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard * ward * pasGuard(p))), raw);
+  const resisted = Math.max(1, Math.round(damageTotal(parts) * st.guard * ward * pasGuard(p) * elementTaken(S, p)));
+  const dmg = elementShield(S, p, pfxMiti(S, rt, p, st, mob, resisted, raw));
+  const before = p.hp;
   p.hp -= dmg;
   p.hitAt = S.now;
   rouse(S, p);
   if (mob) p.blame = blameOf(mob);
-  rt.ev.push(dmg ? ["h", p.eid, dmg, 0, 1] : ["h", p.eid, 0, 3, 1]);
+  damageEvent(rt, p.eid, dmg, dmg ? 0 : 3, 1, 0, parts);
   pfxHurt(S, rt, p, st, mob, dmg, raw);   // the powers that answer a hurt (thorn gives back 40%)
-  if (p.hp <= 0 && !pfxLethal(S, rt, p, st, mob, dmg)) fall(S, rt, p);
+  if (p.hp > 0 && dmg && mob) elementApplyHit(S, rt, mob, p, parts, { scale: Math.min(before, dmg) / Math.max(1, damageTotal(parts)) });
+  else if (p.hp <= 0 && !pfxLethal(S, rt, p, st, mob, dmg)) fall(S, rt, p);
+  return dmg;
 }
 /** Damage that no armour turns: fire, poison. */
-function wound(S, rt, p, dmg) {
+function wound(S, rt, p, dmg, type) {
   if (p.dead || S.now < (p.ghost || 0)) return;
+  dmg = elementShield(S, p, Math.max(1, Math.round(dmg * elementTaken(S, p))));
+  if (!dmg) return;
   cancelRecall(S, p, "귀환이 취소되었습니다.");
   p.hp -= dmg;
   p.hitAt = S.now;
-  rt.ev.push(["h", p.eid, dmg, 0, 1]);
+  damageEvent(rt, p.eid, dmg, 0, 1, 0, type ? [[type, dmg]] : null);
   if (p.hp <= 0 && !pfxLethal(S, rt, p, stats(p), null, dmg)) fall(S, rt, p);
 }
 function fall(S, rt, p) {
@@ -9679,6 +10243,7 @@ function fall(S, rt, p) {
   pfxReset(p);
   p.streak = 0;
   p.burn = null; p.poison = null; p.slowed = 0;
+  elementClear(p);
   weaponReset(p, true);
   dropAggro(S, p);
   rt.ev.push(["pd", p.eid]);
@@ -9753,7 +10318,7 @@ function aimVec(p, mob) {
 
 /** How long a basic attack takes now. */
 function atkCd(p) {
-  return Math.round(stats(p).acd * pasAspd(p));
+  return Math.round(stats(p).acd * pasAspd(p) * elementAttackFactor(p.S, p));
 }
 /** How far a basic attack reaches now: a greatsword with inertia (거검의 관성) reaches further. */
 function atkRange(p) {
@@ -9969,7 +10534,7 @@ const pfxChance = (S, st, base) => rnd(S) < base * Math.min(st.proc, PFX_CAP.pro
 function pfxHeal(S, p, st, amt) {
   const w = pfxPc(p).heal;
   if (S.now - w[0] >= 1000) { w[0] = S.now; w[1] = 0; }
-  const n = Math.max(0, Math.min(amt, st.mhp * PFX_CAP.heal - w[1], st.mhp - p.hp));
+  const n = Math.max(0, Math.min(amt * elementHealFactor(S, p), st.mhp * PFX_CAP.heal - w[1], st.mhp - p.hp));
   p.hp += n; w[1] += n;
   return n;
 }
@@ -10101,9 +10666,10 @@ const PFX_FN = {
     blow(S, rt, p, st, mob, x, y, fin, skip) {
       const c = PFX.chain;
       if (!(rnd(S) < c.p * st.proc)) return;
+      const opt = { ...PX, elem: "lightning", typedOnly: true };
       for (const o of mobsWithin(rt, x, y, c.r).filter((o) => o !== mob && !(skip && skip.includes(o))).slice(0, c.n)) {
         rt.ev.push(["z", Math.round(x), Math.round(y - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
-        hurtMob(S, rt, o, p, c.k, false, PX);
+        hurtMob(S, rt, o, p, c.k, false, opt);
       }
     },
   },
@@ -10111,10 +10677,10 @@ const PFX_FN = {
   nova: {
     kill(S, rt, p, st, mob, x, y) {
       if (p.chainKill) return;
-      const c = PFX.nova;
+      const c = PFX.nova, opt = { ...PX, elem: "fire", typedOnly: true };
       p.chainKill = true;
       rt.ev.push(["b", Math.round(x), Math.round(y), c.r, 1]);
-      for (const o of mobsWithin(rt, x, y, c.r)) hurtMob(S, rt, o, p, c.k, false, PX);
+      for (const o of mobsWithin(rt, x, y, c.r)) hurtMob(S, rt, o, p, c.k, false, opt);
       p.chainKill = false;
     },
   },
@@ -10134,7 +10700,7 @@ const PFX_FN = {
   // 가시의: part of what p takes goes back to the one who struck
   thorn: { hurt(S, rt, p, st, mob, dmg) { if (mob) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * PFX.thorn.k)), 0); } },
   // 포식자의: a kill heals (not through pfxHeal: as it always was)
-  feast: { kill(S, rt, p, st) { if (!p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * PFX.feast.k); } },
+  feast: { kill(S, rt, p, st) { if (!p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * PFX.feast.k * elementHealFactor(S, p)); } },
 };
 // ───────────────────────────── equipped rune sets ─────────────────────────────
 
@@ -10166,9 +10732,9 @@ const RUNE_SETS = Object.fromEntries([
   ["brassscale", "황동저울", 2, (c) => `전투 골드 획득 +${c.gold}%, 아이템 발견 +${c.mf}%. 떨어진 골드를 주울 때마다 ${c.per}골드당 공격력 1% 증가 (최대 ${runePct(c.atk)}%, ${runeSec(c.ms)}초).`],
   ["azureknot", "푸른매듭", 2, (c) => `스킬 재사용 대기시간과 MP 소모 각각 ${runePct(c.cdr)}%, ${runePct(1 - c.mp)}% 감소.`],
   ["ashbloom", "잿불꽃", 3, (c) => `공격 적중 시 ${runePct(c.chance)}% 확률로 적을 중심으로 최대 ${c.targets}명에게 공격력의 ${runePct(c.hit)}% 화염 피해. ${runeSec(c.ms)}초간 매초 공격력의 ${runePct(c.dot)}% 화상 피해 (${runeSec(c.icd)}초 간격).`],
-  ["silverlake", "은설호", 3, (c) => `공격 적중 시 ${runeSec(c.slow)}초간 오한으로 이동 속도를 절반으로 감소. 둔화 상태인 적에게 치명타 피해 +${runePct(c.crit - 1)}%. 보스와 우두머리에게 자신의 오한은 적용되지 않습니다.`],
+  ["silverlake", "은설호", 3, (c) => `공격 적중 시 ${runeSec(c.slow)}초간 오한. 오한 또는 빙결 상태의 적에게 치명타 피해 +${runePct(c.crit - 1)}%.`],
   ["stormsail", "폭풍항해", 3, (c) => `공격 적중 시 ${runePct(c.chance)}% 확률로 처음 맞은 적부터 최대 ${c.targets}명에게 연쇄 번개. 첫 피해는 공격력의 ${runePct(c.first)}%, 튕길 때마다 ${runePct(1 - c.fall)}% 감소 (${runeSec(c.icd)}초 간격).`],
-  ["inkthorn", "먹물가시", 3, (c) => `치명타 적중 시 ${runeSec(c.ms)}초간 맹독 중첩 (최대 ${c.stacks}회). 한 중첩당 매초 공격력의 ${runePct(c.dot)}% 피해를 주고 대상이 받는 피해 +${runePct(c.vuln)}%.`],
+  ["inkthorn", "먹물가시", 3, (c) => `치명타 적중 시 ${runeSec(c.ms)}초간 중독 중첩. 중첩마다 매초 공격력의 ${runePct(c.dot)}% 피해를 주고, 맹독으로 대상이 받는 피해 +${runePct(c.vuln)}% (피해 증폭은 최대 ${c.stacks}중첩).`],
   ["lastbell", "마지막 종", 3, (c) => `HP ${runePct(c.hp)}% 이하인 적에게 주는 피해 +${runePct(c.hit - 1)}%. 공격 후 HP ${runePct(c.execute)}% 이하인 적 즉시 처형 (보스와 우두머리 제외).`],
   ["redanvil", "붉은모루", 4, (c) => `잃은 HP 비율의 제곱에 비례해 공격력이 최대 ${runePct(c.atk)}% 증가하고 기본 공격 간격이 최대 ${runePct(c.iv)}% 감소. HP ${runePct(c.hp)}% 이하에서는 받는 피해 -${runePct(1 - c.miti)}%.`],
   ["astrolabe", "별의 궤도", 4, (c) => `스킬 사용 시 ${runePct(c.chance)}% 확률로 해당 스킬의 재사용 대기 초기화 (${runeSec(c.icd)}초 간격). 사용한 MP가 많을수록 ${runeSec(c.ms)}초 내 다음 공격 스킬의 피해 증가 (최대 ${runePct(c.cap)}%).`],
@@ -10229,33 +10795,13 @@ function runeNearest(rt, src, radius, seen) {
   return nearest;
 }
 
-function runeDebuff(S, p, old, ms, dmg, stacks = 1) {
-  return { pid: p.pid, map: p.map, until: S.now + ms, next: old && old.until >= S.now ? old.next : S.now + 1000, dmg, stacks };
-}
-
-function runeDotSource(S, dot, id) {
+function runeDotSource(S, dot) {
   const p = dot && S.players[dot.pid];
-  return dot && dot.until >= S.now && p && !p.dead && p.map === dot.map && runeOn(p, id) ? p : null;
+  return dot && dot.until >= S.now && p && !p.dead && p.map === dot.map && runeOn(p, "inkthorn") ? p : null;
 }
 
 function runePoisonFactor(S, mob) {
-  return runeDotSource(S, mob.runePoison, "inkthorn") ? 1 + RUNE_POWER.inkthorn.vuln * mob.runePoison.stacks : 1;
-}
-
-const RUNE_DOTS = [["runeBurn", "ashbloom"], ["runePoison", "inkthorn"]];
-/** Both rune DoTs share the same attribution and pass through the normal damage/loot path. */
-function runeDotTick(S, m, rt, mob) {
-  if (!mob.runeBurn && !mob.runePoison) return false;
-  for (const [key, id] of RUNE_DOTS) {
-    const dot = mob[key];
-    if (!dot) continue;
-    const p = runeDotSource(S, dot, id);
-    if (!p || p.map !== m.id) { mob[key] = null; continue; }
-    if (S.now < dot.next) continue;
-    dot.next = S.now + 1000;
-    if (dealMob(S, rt, mob, p, dot.dmg * dot.stacks, false)) return true;
-  }
-  return false;
+  return runeDotSource(S, mob.runePoison) ? 1 + RUNE_POWER.inkthorn.vuln * mob.runePoison.stacks : 1;
 }
 
 /** The previous cast charges the next damaging skill, including its delayed hits. */
@@ -10273,6 +10819,7 @@ function runeShade(S, p) {
 }
 
 function runeMoveSkill(S, p) {
+  p.elementRunAt = S.now;
   if (runeOn(p, "moonveil")) runeShade(S, p);
 }
 
@@ -10334,18 +10881,22 @@ const RUNE_SET_FN = {
       if (!mob.dead) hit.unshift(mob);
       runeDetonate(rt, mob.x, mob.y, c.radius, 2);
       for (const other of hit) {
-        hurtMob(S, rt, other, p, c.hit, false, PX);
-        if (!other.dead) other.runeBurn = runeDebuff(S, p, other.runeBurn, c.ms, Math.max(1, Math.round(st.atk * c.dot)));
+        const before = other.hp;
+        hurtMob(S, rt, other, p, c.hit, false, { ...PX, elem: "fire", typedOnly: true });
+        if (!other.dead && other.hp < before) {
+          const dotDamage = st.atk * c.dot * elementResist(S, other, "fire", st.element?.pen.fire || 0);
+          elementInflict(S, rt, p, other, "fire", before - other.hp, { duration: c.ms, dotDamage });
+        }
       }
     },
   },
   silverlake: {
     hit(S, rt, p, st, mob, dmg, crit, killed) {
-      if (killed || runeFirm(mob)) return;
-      mob.slow = Math.max(mob.slow || 0, S.now + RUNE_POWER.silverlake.slow);
+      if (killed || mob.dead || MOBS[mob.k].chest) return;
+      elementInflict(S, rt, p, mob, "cold", dmg, { duration: RUNE_POWER.silverlake.slow, crit });
     },
     mul(S, p, st, mob, d, o, crit) {
-      return crit && !o.px && mob.slow > S.now ? RUNE_POWER.silverlake.crit : 1;
+      return crit && !o.px && (mob.slow > S.now || elementActive(S, mob, "chill") || elementActive(S, mob, "freeze")) ? RUNE_POWER.silverlake.crit : 1;
     },
   },
   stormsail: {
@@ -10357,7 +10908,11 @@ const RUNE_SET_FN = {
         const prev = next;
         seen.add(prev);
         next = i < c.targets - 1 ? runeNearest(rt, prev, c.radius, seen) : null;
-        if (!prev.dead) hurtMob(S, rt, prev, p, mult, false, PX);
+        if (!prev.dead) {
+          const before = prev.hp;
+          hurtMob(S, rt, prev, p, mult, false, { ...PX, elem: "lightning", typedOnly: true });
+          if (!prev.dead && prev.hp < before) elementInflict(S, rt, p, prev, "lightning", before - prev.hp);
+        }
         if (next) runeBolt(rt, prev, next);
         mult *= c.fall;
       }
@@ -10366,11 +10921,11 @@ const RUNE_SET_FN = {
   inkthorn: {
     crit(S, rt, p, st, mob, dmg, crit, killed) {
       if (killed || mob.dead || MOBS[mob.k].chest) return;
-      const c = RUNE_POWER.inkthorn, recent = runeDotSource(S, mob.runePoison, "inkthorn") ? mob.runePoison : null;
+      const c = RUNE_POWER.inkthorn, recent = runeDotSource(S, mob.runePoison) ? mob.runePoison : null;
       if (recent && S.now < recent.addAt + c.hitGap) return;
-      const dot = runeDebuff(S, p, recent, c.ms, Math.max(1, Math.round(st.atk * c.dot)), Math.min(c.stacks, (recent?.stacks || 0) + 1));
-      dot.addAt = S.now;
-      mob.runePoison = dot;
+      const dotDamage = st.atk * c.dot * elementResist(S, mob, "poison", st.element?.pen.poison || 0);
+      elementInflict(S, rt, p, mob, "poison", dmg, { duration: c.ms, dotDamage });
+      mob.runePoison = { pid: p.pid, map: p.map, until: S.now + c.ms, addAt: S.now, stacks: Math.min(c.stacks, (recent?.stacks || 0) + 1) };
     },
   },
   lastbell: {
@@ -10441,12 +10996,14 @@ const SET_AFFIXES = {
   blackstar: ["atkp", "atk", "critd", "hp"],
 };
 const MAGIC_AFFIX = Object.fromEntries(MAGIC_RUNES.map(([, , stat, n]) => [stat, n]));
+const SET_ELEMENT_LINE = { ashbloom: ["dmg_fire", 6], silverlake: ["res_cold", 8], stormsail: ["pen_lightning", 5], inkthorn: ["dur_poison", 8] };
 for (const [set, def] of Object.entries(RUNE_SETS)) {
   const lines = SET_AFFIXES[set];
   for (let i = 0; i < lines.length; i++) {
     const stat = lines[i];
     addRune(`ru_${set}_${i + 1}`, 4, `${def.name}의 룬`, [[stat, MAGIC_AFFIX[stat]]], set);
   }
+  if (SET_ELEMENT_LINE[set]) addRune(`ru_${set}_${lines.length + 1}`, 4, `${def.name}의 룬`, [SET_ELEMENT_LINE[set]], set);
 }
 
 /** Normal packs mainly drop magic runes; elites and boss/chest rewards improve the rarity. */
@@ -10620,6 +11177,7 @@ Object.assign(PFX_FN, {
       pc.v.cure = 0;
       pc.t.cure = now + PFX.cure.imm;
       p.burn = null; p.poison = null; p.slowed = 0; p.dirty = true;
+      elementClear(p, "poison", "burn", "chill", "freeze");
       toast(p, "몸이 맑아졌습니다. 독·화상·둔화가 씻겨 나갔습니다.");
     },
   },
@@ -10710,7 +11268,7 @@ Object.assign(PFX_FN, {
       const c = PFX.emerg;
       if (p.hp <= 0 || p.hp > st.mhp * c.hp || !pgReady(S, p, "emerg")) return;
       pfxIcd(S, p, "emerg", c.icd);
-      const n = Math.min(st.mhp - p.hp, st.mhp * c.k);
+      const n = Math.min(st.mhp - p.hp, st.mhp * c.k * elementHealFactor(S, p));
       p.hp += n;
       rt.ev.push(["h", p.eid, -Math.round(n), 0, 1]);
       toast(p, "비상! 체력이 크게 회복되었습니다.");
@@ -10838,9 +11396,9 @@ Object.assign(PFX_FN, { moss: { tick(S, rt, p, st, now, calm) { if (calm) pfxHea
 // docs/design/prefix-effects.md §3.3 and the `단` = 2 rows of §3; the recipe and hook signatures are in the header of 51-prefix.js.
 //   helm utility   trace 추적자의 · sage 현자의 · mercy 자비로운 · homing 귀소의 · clever 영리한 · treasure 보물눈의 · tame 길들이는 · hearth 화덕의
 //   phase 2        DOT2 bleed 출혈의 · bile 담즙의   ABS carap 갑각의 · bastion 방벽의   AURA halo 후광의 · pack 무리의   ZN hellfire 지옥불의 · blizzard 눈보라의
-// How the phase-2 pieces work (no new status UI, nothing on the wire but the events that exist):
+// How the phase-2 pieces work:
 //  · DOT2: a second damage-over-time slot that never touches the dagger's `mob.dot`. The wearer keeps its victims in `pfxPc(p).v[key]` (≤ DOT_MAX, a monster once)
-//    and pays them in its own 1 s `tick`: a fixed hit of attack × k that no armour turns (dealMob, like the dagger's bleed). It stops when p falls or leaves the map.
+//    and pays them in its own 1 s `tick`, using the existing bleed/poison status display and typed damage. It stops when p falls or leaves the map.
 //  · ABS: a shield kept in `pfxPc(p).v[key]` until `pfxPc(p).t[key]`, offered through `miti`'s `r.abs` (shieldOffer: never past the blow, never past the
 //    20 % cap the dispatcher enforces, and it shrinks by what it took).
 //  · AURA: 후광의 lays `p.pc.aura = { f, until }` on every party member in range from its tick (pfxMiti reads it: the one edit in 51-prefix.js);
@@ -10876,14 +11434,14 @@ Object.assign(LEGEND, {
   treasure: ["보물눈의", pfxText("treasure", "상자 몬스터에게서 아이템 발견 +{mf}%"), "H", "U", "S", "eco"],
   tame: ["길들이는", pfxText("tame", "펫이 전리품을 줍는 속도가 {sp}배다"), "H", "U", "S", "util"],
   hearth: ["화덕의", pfxText("hearth", "모닥불 곁 휴식 회복 +{k:%}%"), "H", "U", "S", "util"],
-  bleed: ["출혈의", pfxText("bleed", "치명타 시 {ms:s}초간 출혈 (매초 공격력의 {k:%}%)"), "WGR", "O", "M", "crit"],
-  bile: ["담즙의", pfxText("bile", "피격 시 {p:%}% 확률로 공격한 적이 {ms:s}초간 매초 공격력의 {k:%}% 독 피해를 입는다"), "AB", "D", "M", "mit"],
+  bleed: ["출혈의", pfxText("bleed", "치명타 시 {ms:s}초간 출혈 (매초 공격력의 {k:%}%). 대상이 이동하면 2배 피해"), "WGR", "O", "M", "crit"],
+  bile: ["담즙의", pfxText("bile", "피격 시 {p:%}% 확률로 공격한 적이 {ms:s}초간 매초 공격력의 {k:%}% 독 피해를 입고 공격력이 낮아진다"), "AB", "D", "M", "mit"],
   carap: ["갑각의", pfxText("carap", "처치 시 최대 HP의 {k:%}% 보호막이 생긴다 (최대 {max:%}%, {ms:s}초 유지)"), "AN", "D", "M", "sus"],
   bastion: ["방벽의", pfxText("bastion", "{calm:s}초 넘게 피격이 없다가 맞으면 최대 HP의 {k:%}% 보호막이 {ms:s}초간 생긴다 ({icd:s}초 간격)"), "ANH", "D", "M", "mit"],
   halo: ["후광의", pfxText("halo", "근처(반경 {r}) 파티원이 받는 피해 -{k:-%}%"), "NH", "D", "S", "mit"],
   pack: ["무리의", pfxText("pack", "근처(반경 {r}) 파티원 1명마다 공격력 +{k:%}% (최대 +{max:%}%)"), "RG", "O", "M", "pass"],
-  hellfire: ["지옥불의", pfxText("hellfire", "처치 시 {p:%}% 확률로 그 자리에 {ms:s}초간 불길이 남아 {every:s}초마다 공격력의 {k:%}% 피해 (반경 {r}, 동시에 1개)"), "WR", "O", "M", "kill"],
-  blizzard: ["눈보라의", pfxText("blizzard", "스킬 사용 시 시전 위치에 {ms:s}초간 눈보라가 일어 반경 {r}의 적을 둔화시키고 {every:s}초마다 공격력의 {k:%}% 피해 (동시에 1개)"), "WR", "O", "M", "skill"],
+  hellfire: ["지옥불의", pfxText("hellfire", "처치 시 {p:%}% 확률로 그 자리에 {ms:s}초간 불길이 남아 {every:s}초마다 공격력의 {k:%}% 화염 피해 (반경 {r}, 동시에 1개)"), "WR", "O", "M", "kill"],
+  blizzard: ["눈보라의", pfxText("blizzard", "스킬 사용 시 시전 위치에 {ms:s}초간 눈보라가 일어 반경 {r}의 적을 둔화시키고 {every:s}초마다 공격력의 {k:%}% 냉기 피해 (동시에 1개)"), "WR", "O", "M", "skill"],
 });
 
 // ── shared helpers of the phase-2 powers
@@ -10892,19 +11450,26 @@ const DOT_MAX = 8;
 /** Put `mob` on p's DOT2 list `key` (a monster once: a bleed that runs does not stack with itself, nor restart); the hit is fixed now: attack × PFX[key].k. */
 function dotAdd(S, p, st, key, mob) {
   const c = PFX[key], v = pfxPc(p).v, a = v[key] || (v[key] = []);
-  if (mob.dead || a.length >= DOT_MAX) return;
+  if (mob.dead || MOBS[mob.k].chest || a.length >= DOT_MAX) return;
   for (let i = 0; i < a.length; i++) if (a[i].m === mob) return;
-  a.push({ m: mob, left: Math.max(1, Math.round(c.ms / 1000)), dmg: Math.max(1, Math.round(st.atk * c.k)), rs: mob.respAt });
+  const e = { m: mob, left: Math.max(1, Math.round(c.ms / 1000)), dmg: Math.max(1, Math.round(st.atk * c.k)), rs: mob.respAt };
+  a.push(e);
+  const type = key === "bleed" ? "bleed" : "poison";
+  elementMark(S, mob, type, c.ms, p, key, e);
+  if (type === "bleed") elementMoving(S, mob);
 }
 /** The 1 s payout of p's DOT2 list `key`: each victim takes its hit (a kill counts as p's: heals and resources run, px); gone, dead or respawned ones are dropped. */
 function dotPay(S, rt, p, st, key) {
   const a = pfxPc(p).v[key];
   if (!a || !a.length) return;
+  const type = key === "bleed" ? "bleed" : "poison";
   for (let i = a.length - 1; i >= 0; i--) {
     const e = a[i], m = e.m;
     if (m.dead || m.respAt !== e.rs) { a.splice(i, 1); continue; }
-    if (dealMob(S, rt, m, p, e.dmg, 0)) pfxKill(S, rt, p, st, m, m.x, m.y, PX);
+    const damage = e.dmg * (type === "bleed" && elementMoving(S, m) ? 2 : 1);
+    if (dealTypedMob(S, rt, m, p, damage, type)) pfxKill(S, rt, p, st, m, m.x, m.y, PX);
     if (--e.left <= 0 || m.dead) a.splice(i, 1);
+    else elementMark(S, m, type, e.left * 1000, p, key, e);
   }
 }
 /** ABS: offer p's shield `key` to a blow of `dmg` through r.abs; it never covers more than the blow still takes nor the dispatcher's 20 % cap, and shrinks by what it took. */
@@ -10932,9 +11497,12 @@ function pfxMates(S, p, r) {
 /** 눈보라의: slow what stands in its zone (not a boss, guardian or rooted thing). */
 function blizzChill(S, rt, z) {
   const until = S.now + PFX.blizzard.slow;
+  const p = S.players[z.pid];
   for (const o of mobsWithin(rt, z.x, z.y, z.r)) {
     const d = MOBS[o.k];
-    if (!d.boss && !d.still && o.el !== 2) o.slow = Math.max(o.slow || 0, until);
+    if (d.boss || d.still || o.el === 2) continue;
+    o.slow = Math.max(o.slow || 0, until);
+    elementInflict(S, rt, p, o, "cold", 1, { duration: PFX.blizzard.slow });
   }
 }
 
@@ -11000,13 +11568,13 @@ Object.assign(PFX_FN, {
     kill(S, rt, p, st, mob, x, y, o) {
       const c = PFX.hellfire;
       if ((o && o.px) || p.dead || !pfxChance(S, st, c.p)) return;
-      pfxZone(S, rt, p, "hellfire", { x, y, r: c.r, every: c.every, left: Math.round(c.ms / c.every), mult: c.k, kind: 2 });
+      pfxZone(S, rt, p, "hellfire", { x, y, r: c.r, every: c.every, left: Math.round(c.ms / c.every), mult: c.k, kind: 2, elem: "fire" });
     },
   },
   // 눈보라의: a skill raises a snowstorm where it was cast
   blizzard: {
     skill(S, rt, p) {
-      const c = PFX.blizzard, z = { x: p.x, y: p.y, r: c.r, every: c.every, left: Math.round(c.ms / c.every), mult: c.k, kind: 3 };
+      const c = PFX.blizzard, z = { x: p.x, y: p.y, r: c.r, every: c.every, left: Math.round(c.ms / c.every), mult: c.k, kind: 3, elem: "cold" };
       pfxZone(S, rt, p, "blizzard", z);
       blizzChill(S, rt, z);
     },
@@ -11062,7 +11630,7 @@ function pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand) {
     if (!(mob.expAt > now && mob.expBy === p.pid)) pasFx(rt, p, "bow_quill50", mob.x, mob.y);
     mob.expAt = now + SKILL.bow_quill50.ms; mob.expBy = p.pid;
   }
-  if (brand > now && ps.has("book_return50") && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round(dmg * SKILL.book_return50.k)));
+  if (brand > now && ps.has("book_return50") && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round(dmg * SKILL.book_return50.k)) * elementHealFactor(S, p));
   if (!killed) return;
   if (ps.has("dagger_snap30")) {
     let cut = false;
@@ -11384,7 +11952,7 @@ function bsTick(S, m, rt, mob, folk, alive) {
   }
   // its feeding adds still alive after `feed` fly into it and heal it
   for (const a of rt.mobs) if (a.add === mob.id && a.feedAt && now >= a.feedAt && !a.dead) {
-    a.dead = true; a.hp = 0; mob.hp = Math.min(mobMax(mob), mob.hp + Math.round(a.heal * mobMax(mob)));
+    a.dead = true; a.hp = 0; mob.hp = Math.min(mobMax(mob), mob.hp + Math.round(a.heal * mobMax(mob) * elementHealFactor(S, mob)));
     rt.ev.push(["bc", mob.id, 6]);
   }
   // the soft enrage: past `enrage` of a fight its blows grow every `enrageStep`
@@ -11716,7 +12284,8 @@ function react(S, rt, p, key, x, y, k) {
   for (const o of mobsWithin(rt, x, y, rx.r)) {
     if (rx.vuln) { o.vuln = now + rx.vuln; rt.ev.push(["vu", o.id, rx.vuln]); }
     if (rx.knock) { const d = dist(x, y, o.x, o.y) || 1; knock(m, o, (o.x - x) / d, (o.y - y) / d, rx.knock); }
-    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst) * (pasHas(p, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1), false, { mag: 1 });
+    const elem = rx.id === "steam" ? "fire" : rx.id === "super" ? "cold" : "lightning";
+    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst) * (pasHas(p, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1), false, { mag: 1, elem });
   }
   return rx;
 }
@@ -11750,7 +12319,7 @@ function dealt(p, mobs, fn) {
 /** Give `p` back `n` HP (a heal number over them). */
 function healP(rt, p, n, cue) {
   if (p.dead) return 0;
-  const amt = Math.min(stats(p).mhp - p.hp, Math.round(n));
+  const amt = Math.min(stats(p).mhp - p.hp, Math.round(n * elementHealFactor(p.S, p)));
   if (amt < 1) return 0;
   p.hp += amt;
   const event = ["h", p.eid, -amt, 0, 1];
@@ -11935,11 +12504,12 @@ function propPulse(S, rt, m, p, o, now) {
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
       for (const mob of rt.mobs) {
         if (mob.dead || !o.ids.includes(mob.id)) continue;
-        const bleed = mob.dot && mob.dot.until > now ? 1 : 0, br = mob.brand > now ? 1 : 0, mk = marksOf(S, mob);
+        const bleed = (mob.dot && mob.dot.until > now) || elementActive(S, mob, "bleed") ? 1 : 0, br = mob.brand > now ? 1 : 0, mk = marksOf(S, mob);
         const dmg = Math.max(1, Math.round(atk * (o.base + o.bleed * bleed + o.mark * mk + o.brandK * br) * o.k));
         mob.mk = 0; mob.dot = null; mob.brand = 0;
+        elementClear(mob, "bleed");
         wmHit(S, p, mob);
-        dealMob(S, rt, mob, p, dmg, 0);
+        dealTypedMob(S, rt, mob, p, dmg, "dark");
       }
       return true;
     }
@@ -12394,7 +12964,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
       if (mob) face(p, mob);
       ev(94, ...(mob ? [mob.x, mob.y] : ahead(80)));
-      const shot = fireArrow(S, rt, p, mob, sk.mult * k, 99, 2, { spd: sk.spd, len: sk.len, r: sk.r });
+      const shot = fireArrow(S, rt, p, mob, sk.mult * k, 99, 2, { spd: sk.spd, len: sk.len, r: sk.r, opt });
       if (deriveStats(p).cm.lg === "lens") shot.cl = 1;   // 길별의 렌즈참 (66-charms.js)
       break;
     }
@@ -12409,7 +12979,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const cap = { n: sk.per, h: {} }, a0 = Math.atan2(aimY, aimX);
       for (let j = 0; j < sk.n; j++) {
         const a = a0 + ((j - (sk.n - 1) / 2) * ((2 * sk.spread) / (sk.n - 1)) * Math.PI) / 180;
-        fireArrow(S, rt, p, null, sk.mult * k, 0, 3, { len: sk.len, ux: Math.cos(a), uy: Math.sin(a), cap });
+        fireArrow(S, rt, p, null, sk.mult * k, 0, 3, { len: sk.len, ux: Math.cos(a), uy: Math.sin(a), cap, opt });
       }
       break;
     }
@@ -12510,7 +13080,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
       if (mob) face(p, mob);
       ev(sk.fx, ...(mob ? [mob.x, mob.y] : ahead(80)), ace ? 2 : 1);
-      fireArrow(S, rt, p, mob, sk.mult * k * (ace ? sk.ace : 1), ace ? 99 : 0, 2, { len: sk.len });
+      fireArrow(S, rt, p, mob, sk.mult * k * (ace ? sk.ace : 1), ace ? 99 : 0, 2, { len: sk.len, opt });
       if (ace) { p.dashAt -= sk.dashCut; toast(p, "회심!"); }
       break;
     }
@@ -13363,7 +13933,7 @@ const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (i
 function weakAffix(g) {
   let best = -1, bv = Infinity;
   (g.af || []).forEach(([k, v], i) => {
-    const a = AFFIX.find((x) => x[0] === k);
+    const a = AFFIX_BY_KEY[k];
     const r = a ? v / Math.max(1, a[4]) : 0;
     if (r < bv) { bv = r; best = i; }
   });
@@ -13393,8 +13963,8 @@ function lifeUseApply(S, p, a) {
     const g = ch.eq[a.k];
     // Replace the weakest affix with a different line rolled at the gear's tier.
     const i = weakAffix(g), t = ITEMS[g.id].tier || 1;
-    const pool = AFFIX.filter((x) => !g.af.some(([k], j) => j !== i && k === x[0]));
-    g.af[i] = rollLine(S, pool[ri(S, 0, pool.length - 1)][0], GEAR_CRAFT.ilvl[t - 1], AFFIX_MUL[g.q | 0]);
+    const used = new Set(g.af.filter((_, j) => j !== i).map(([key]) => key));
+    g.af[i] = rollLine(S, rollAffixKey(S, ITEMS[g.id].type, used), GEAR_CRAFT.ilvl[t - 1], AFFIX_MUL[g.q | 0]);
     toast(p, `${gearName(g)}의 옵션을 새로 다듬었습니다.`);
     S.maps[p.map].ev.push(["e", p.eid, 1]);
     afterGear(S, p);
@@ -13831,7 +14401,7 @@ function dashEnd(p, m, ux, uy) {
 /** Why a dash is refused now, or "" — quiet codes, never a toast (the client keeps its own clock). */
 function dashWhy(S, p) {
   if (p.dead || p.dance) return "dash";
-  if (S.now < (p.stag || 0)) return "stag";
+  if (S.now < (p.stag || 0) || elementFrozen(S, p)) return "stag";
   return S.now < (p.dashAt || 0) + dashCd(p) - 60 ? "dash" : "";
 }
 /** The dash itself: stands you up, drops the line, the gathering and a recall, and moves you. */
@@ -13843,6 +14413,7 @@ function dashGo(S, p, m, a) {
   const [ux, uy] = AIM_V[p.aim | 0], x0 = p.x, y0 = p.y;
   const [x, y] = dashEnd(p, m, ux, uy);
   p.x = x; p.y = y; p.mvAt = now; p.fix = true;
+  if (x !== x0 || y !== y0) p.elementRunAt = now;
   p.dashAt = now;
   p.dodge = now + DASH.ms + DASH.inv;
   rt.ev.push(["ds", p.eid, Math.round(x0), Math.round(y0), Math.round(x), Math.round(y)]);
@@ -16221,7 +16792,8 @@ function chalSpawn(S, dim, k, n) {
 function chalReset(S, dim, mob) {
   const c = dim.chal, [tx, ty] = dim.map.dim.boss, now = S.now;
   mob.hp = mobMax(mob); mob.by = {}; mob.tgt = null; mob.st = 0; mob.cast = null; mob.act = null; mob.dot = null; mob.slow = 0;
-  mob.runeBurn = mob.runePoison = null;
+  mob.runePoison = null;
+  elementClear(mob);
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   mob.stun = now + 3000; mob.castAt = now + 7000; mob.ak = c.ak; mob.stag = 0;
   dim.rt.tele.length = 0; dim.rt.pools.length = 0;
@@ -16993,7 +17565,7 @@ function homeApply(S, p, a) {
     case "h_sort": H.storage = sortSlots(H.storage); break;
     case "h_rest": {
       const st = stats(p), host = S.players[here.owner], f = restOf(host.ch.house, a);
-      p.hp = Math.min(st.mhp, p.hp + Math.round(st.mhp * HOUSE_REST.hp));
+      p.hp = Math.min(st.mhp, p.hp + Math.round(st.mhp * HOUSE_REST.hp * elementHealFactor(S, p)));
       p.mp = Math.min(st.mmp, p.mp + Math.round(st.mmp * HOUSE_REST.mp));
       H.cozy = now + HOUSE_REST.ms;
       H.rest = now + HOUSE_REST.cd;
@@ -20160,11 +20732,12 @@ export function validateAction(S, pid, a) {
       if (carryOf(p)) return bad(CARRY_NO);
       if (p.dance) return bad("무영난무 중입니다");
       if (p.hammer) return bad("해머를 내려찍는 중입니다");
-      if (now < (p.stag || 0)) return bad("stag");
+      if (now < (p.stag || 0) || elementFrozen(S, p)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
     case "skr":
       // the key of a held skill came up (57-weapon-skills.js holdGo)
+      if (elementFrozen(S, p)) return bad("stag");
       return p.hold ? OK : bad("skr");
     case "dash": {
       // Space (59-dash.js): refused in silence while it cools, while reeling, when down
@@ -20202,7 +20775,7 @@ export function validateAction(S, pid, a) {
       if (p.charge) return bad("기술을 모으는 중입니다");
       // a held charge (E1): only the same skill again, which lets it go
       if (p.hold) return a.id === p.hold.id ? OK : bad("기술을 모으는 중입니다");
-      if (now < (p.stag || 0)) return bad("stag");
+      if (now < (p.stag || 0) || elementFrozen(S, p)) return bad("stag");
       if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
       if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");
       if (sk.hpPct && p.hp <= skillHpCost(p, sk)) return bad("HP가 부족합니다");
@@ -20484,13 +21057,13 @@ export function applyAction(S, pid, a) {
   switch (a.t) {
     case "nw": p.npcWhereAt = now + 5000; p.npcWhere = true; break;
     case "mv": {
-      if (p.dance) { p.fix = true; break; }
+      if (p.dance || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; break; }
       const dt = clamp(now - p.mvAt, 0, 600);
       p.mvAt = now;
       const max = (stats(p).spd * dt) / 1000 * 1.6 + 8;
       const d = dist(p.x, p.y, a.x, a.y);
       if (d > max || !canStand(m, a.x, a.y)) { p.fix = true; break; }
-      if (d > 1.5) rouse(S, p);
+      if (d > 1.5) { rouse(S, p); p.elementRunAt = now; }
       p.x = a.x; p.y = a.y;
       if (a.d >= 0 && a.d <= 3) p.dir = a.d | 0;
       if (validAim(a.a)) p.aim = a.a;
@@ -20559,12 +21132,16 @@ export function applyAction(S, pid, a) {
       }
       p.potAt = now + 900;
       if (it.heal) {
-        const amt = Math.min(Math.round(pfxPot(S, p, st, it.heal + st.mhp * (it.pct || 0))), Math.max(1, Math.round(st.mhp - p.hp)));
+        const amt = Math.min(Math.round(pfxPot(S, p, st, it.heal + st.mhp * (it.pct || 0)) * elementHealFactor(S, p)), Math.max(1, Math.round(st.mhp - p.hp)));
         p.hp = Math.min(st.mhp, p.hp + amt);
         S.maps[p.map].ev.push(["h", p.eid, -amt, 0, 1]);
       }
       if (it.mana) p.mp = Math.min(st.mmp, p.mp + it.mana);
-      if (it.cure) { p.burn = null; p.poison = null; p.slowed = 0; toast(p, "몸이 개운해졌습니다. 독·화상·둔화가 씻겨 나갔습니다."); }
+      if (it.cure) {
+        p.burn = null; p.poison = null; p.slowed = 0;
+        elementClear(p, "poison", "burn", "chill", "freeze");
+        toast(p, "몸이 개운해졌습니다. 중독·화상·오한·빙결이 씻겨 나갔습니다.");
+      }
       S.maps[p.map].ev.push(["u", p.eid, it.heal ? 0 : 1]);
       p.dirty = true;
       break;
@@ -21182,7 +21759,7 @@ function afterGear(S, p) {
 
 // ───────────────────────────── simulation ─────────────────────────────
 
-function stepMob(m, mob, tx, ty, speed, dt, fly) {
+function stepMob(m, mob, tx, ty, speed, dt, fly, now) {
   const d = dist(mob.x, mob.y, tx, ty);
   if (d < 1) return true;
   const step = Math.min(d, speed * dt);
@@ -21193,6 +21770,7 @@ function stepMob(m, mob, tx, ty, speed, dt, fly) {
   else if (ok(m, nx, mob.y)) mob.x = nx;
   else if (ok(m, mob.x, ny)) mob.y = ny;
   else return true;
+  if (step > 0.5) mob.elementRunAt = now;
   if (Math.abs(tx - mob.x) > 2) mob.dir = tx < mob.x ? 1 : 2;
   return d - step < 1;
 }
@@ -21204,7 +21782,7 @@ function rollTraits(S, n) {
   while (out.length < n && pool.length) out.push(pool.splice(ri(S, 0, pool.length - 1), 1)[0]);
   return out;
 }
-/** Put a lingering condition on a player: "burn" and "poison" bite once a second, "slow" drags the feet. */
+/** The existing guaranteed trait or ground-hazard ailment, using its established timing. */
 function afflict(S, p, kind, atk) {
   const f = pfxStatus(S, p, kind);                    // a prefix power may shorten it, or refuse it (0)
   if (!(f > 0)) return;
@@ -21221,6 +21799,7 @@ function afflict(S, p, kind, atk) {
  */
 function mobHit(S, rt, p, raw, mob, how = "blow") {
   if (p.dead || dodged(S, rt, p)) return;
+  if (mob && elementMiss(S, mob)) { damageEvent(rt, p.eid, 0, 3, 1); return; }
   if ((how === "blow" || how === "shot") && evadeBlow(S, rt, p)) return;
   const before = p.hp;
   const src = mob && !mob.dead ? mob : null;
@@ -21230,14 +21809,14 @@ function mobHit(S, rt, p, raw, mob, how = "blow") {
   raw = skGuard(S, rt, p, raw, src, how);
   if (!raw) return;
   p.hitHow = how;   // the kind of blow, for the prefix powers that tell a melee blow or a marked area apart (53-prefix-guard.js)
-  hurtPlayer(S, rt, p, raw, src);
+  const dmg = hurtPlayer(S, rt, p, raw, src, mob && !src ? monsterElement(mob.k).type : undefined);
   p.hitHow = "";
   // a telegraphed trick ("mv", special) only makes a player reel who has not just reeled: no chain of them stun-locks
   const reel = how === "mv" ? !(p.stag > S.now - MV_GRACE) : how === "charge" || (how === "tele" && mob) || (src && (src.el >= 1 || MOBS[src.k].boss));
   if (!p.dead && reel && p.braceAt !== S.now) staggerPlayer(S, rt, p, mob);
   if (!src || src.dead || !src.tr || !src.tr.length) return;
   const atk = MOBS[src.k].atk * ELITE[src.el].atk;
-  if (!p.dead) {
+  if (!p.dead && dmg > 0) {
     if (has(src, "fire")) afflict(S, p, "burn", atk);
     if (has(src, "poison")) afflict(S, p, "poison", atk);
     if (has(src, "frost")) afflict(S, p, "slow", atk);
@@ -21245,9 +21824,16 @@ function mobHit(S, rt, p, raw, mob, how = "blow") {
   if (has(src, "vamp")) {
     // it drinks what it spills
     // (a rift monster made tougher heals by the same measure: 64-dim.js dimHk)
-    const heal = Math.min(mobMax(src) - src.hp, (Math.max(0, before - p.hp) * 3) / (src.hk || 1));
+    const heal = Math.min(mobMax(src) - src.hp, (Math.max(0, before - p.hp) * 3 * elementHealFactor(S, src)) / (src.hk || 1));
     if (heal >= 1) { src.hp += heal; rt.ev.push(["h", src.id, -Math.round(heal), 0, 0]); }
   }
+}
+
+/** Each rare spawn rolls its own enchant without touching combat or loot randomness. */
+function assignElementEnchant(S, mob) {
+  const d = MOBS[mob.k];
+  mob.enchant = (mob.el > 0 || d.boss) && !d.chest
+    ? DAMAGE_TYPES[ri({ seed: (S.seed ^ Math.imul(mob.id, 0x9e3779b9)) >>> 0 }, 1, DAMAGE_TYPES.length - 1)] : "";
 }
 /** Three (or more) shots fanned out around the line to the target; each lands where it was aimed, a beat later. */
 function volley(S, rt, mob, tgt, dmg, n) {
@@ -21368,6 +21954,7 @@ function dash(S, m, rt, mob, atk) {
   let far = 0;
   for (let k = 4; k <= a.len; k += 4) { if (!ok(m, x0 + a.ux * k, y0 + a.uy * k)) break; far = k; }
   mob.x = x0 + a.ux * far; mob.y = y0 + a.uy * far;
+  if (far > 0) mob.elementRunAt = S.now;
   rt.ev.push(["m", mob.id]);
   for (const pid of Object.keys(S.players)) {
     const p = S.players[pid];
@@ -21387,20 +21974,23 @@ function tickMob(S, m, rt, mob, dt, here) {
     if (!mob.temp && !mob.cellGone && now >= mob.respAt) { placeMob(S, m, mob); rt.ev.push(["r", mob.id]); }
     return;
   }
+  if (mob.enchant === undefined) assignElementEnchant(S, mob);
+  if (elementTick(S, rt, mob)) return;
   if (mob.dot) {
     // poison keeps biting once a second
     const dot = mob.dot;
+    const moving = elementMoving(S, mob);
     if (now >= dot.until) mob.dot = null;
     else if (now >= dot.next) {
       dot.next = now + 1000;
       const o = S.players[dot.pid];
-      if (o && o.map === m.id && dealMob(S, rt, mob, o, dot.dmg, 0)) return;
+      if (o && o.map === m.id && dealTypedMob(S, rt, mob, o, dot.dmg * (moving ? 2 : 1), "bleed")) return;
     }
   }
-  if (runeDotTick(S, m, rt, mob)) return;
   // a scripted field boss: its phases, the marked cast, the enrage (a challenge's boss: chalTick, 64-dim.js)
   if (d.script && !mob.chal) bsField(S, m, rt, mob);
   if (d.still) return;
+  if (elementFrozen(S, mob)) return;
   // (a howl's rally: TRICKS.howl)
   const rage = mob.rage > now, atk = d.atk * ELITE[mob.el].atk * (rage ? TRICKS.howl.k : 1);
   // a charge already wound up goes off whatever is done to the charger in the meantime
@@ -21412,14 +22002,15 @@ function tickMob(S, m, rt, mob, dt, here) {
   if (mob.dive === 2) mob.dive = 0;
   if (mob.stun > now) return;
   const swift = has(mob, "swift");
-  const speed = d.spd * (mob.slow > now ? 0.5 : 1) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1);
+  const attackInterval = d.cd * elementAttackFactor(S, mob);
+  const speed = d.spd * Math.min(mob.slow > now ? 0.5 : 1, elementMoveFactor(S, mob)) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1);
   if (mob.dec) {
     // a rogue's puppet: walk up to it and strike it, which sets it off
     const dc = mob.dec;
     if (dc.gone || now >= dc.until) mob.dec = null;
     else {
-      if (dist(mob.x, mob.y, dc.x, dc.y) <= d.range + 4) { if (now >= mob.atkAt) { mob.atkAt = now + d.cd; rt.ev.push(["m", mob.id]); popDecoy(S, rt, dc); } }
-      else stepMob(m, mob, dc.x, dc.y, speed, dt, d.fly);
+      if (dist(mob.x, mob.y, dc.x, dc.y) <= d.range + 4) { if (now >= mob.atkAt) { mob.atkAt = now + attackInterval; rt.ev.push(["m", mob.id]); popDecoy(S, rt, dc); } }
+      else stepMob(m, mob, dc.x, dc.y, speed, dt, d.fly, now);
       return;
     }
   }
@@ -21470,7 +22061,7 @@ function tickMob(S, m, rt, mob, dt, here) {
     }
     if (dd <= d.range) {
       if (now >= mob.atkAt) {
-        mob.atkAt = now + d.cd * (swift ? 0.74 : 1);
+        mob.atkAt = now + attackInterval * (swift ? 0.74 : 1);
         mob.dir = tgt.x < mob.x ? 1 : 2;
         if (d.volley) { rt.ev.push(["m", mob.id]); volley(S, rt, mob, tgt, atk * 0.85, 3); }
         else {
@@ -21479,13 +22070,13 @@ function tickMob(S, m, rt, mob, dt, here) {
           else mobHit(S, rt, tgt, atk, mob);
         }
       }
-    } else stepMob(m, mob, tgt.x, tgt.y, speed, dt, d.fly);
+    } else stepMob(m, mob, tgt.x, tgt.y, speed, dt, d.fly, now);
     return;
   }
   if (mob.st === 2) {
     const max = mobMax(mob);
-    mob.hp = Math.min(max, mob.hp + max * 0.2 * dt);
-    if (stepMob(m, mob, mob.hx, mob.hy, speed * 1.4, dt, d.fly)) { mob.st = 0; mob.hp = max; }
+    mob.hp = Math.min(max, mob.hp + max * 0.2 * dt * elementHealFactor(S, mob));
+    if (stepMob(m, mob, mob.hx, mob.hy, speed * 1.4, dt, d.fly, now)) { mob.st = 0; mob.hp = max; }
     return;
   }
   if (now >= mob.mvAt) {
@@ -21493,7 +22084,7 @@ function tickMob(S, m, rt, mob, dt, here) {
     mob.wx = mob.hx + (rnd(S) - 0.5) * 70;
     mob.wy = mob.hy + (rnd(S) - 0.5) * 70;
   }
-  stepMob(m, mob, mob.wx, mob.wy, speed * 0.5, dt, d.fly);
+  stepMob(m, mob, mob.wx, mob.wy, speed * 0.5, dt, d.fly, now);
 }
 
 // ───────────────────────────── active-area cells ─────────────────────────────
@@ -21655,7 +22246,9 @@ export function tick(S, now) {
       for (const o of mobsWithin(rt, z.x, z.y, z.r)) {
         if (z.slow) o.slow = now + 2500;
         if (z.knock) { const d = dist(z.x, z.y, o.x, o.y) || 1; knock(m, o, (o.x - z.x) / d, (o.y - z.y) / d, z.knock); }
-        hurtMob(S, rt, o, p, z.mult, false, z.px ? PX : undefined);   // (a zone a prefix power laid: `px: 1`)
+        const before = o.hp;
+        hurtMob(S, rt, o, p, z.mult, false, { px: z.px, elem: z.elem });
+        if (!o.dead && o.hp < before && z.pfx === "hellfire") elementMark(S, o, "burn", z.every * 2);
       }
       if (--z.left <= 0) rt.zones.splice(i, 1);
     }
@@ -21684,7 +22277,7 @@ export function tick(S, now) {
         if (now < (p.poolAt || 0) + 600 || dodged(S, rt, p)) continue;
         p.poolAt = now;
         p.blame = { by: q.kind === 1 ? "불길" : q.kind === 2 ? "얼음 웅덩이" : "독 웅덩이", lv: 0, el: 0 };
-        hurtPlayer(S, rt, p, q.dmg);
+        hurtPlayer(S, rt, p, q.dmg, null, q.kind === 1 ? "fire" : q.kind === 2 ? "cold" : "poison");
         if (!p.dead) afflict(S, p, q.kind === 1 ? "burn" : q.kind === 2 ? "slow" : "poison", q.atk);
       }
     }
@@ -21737,15 +22330,21 @@ export function tick(S, now) {
         const s = p[key];
         if (!s) continue;
         if (now >= s.until) { p[key] = null; continue; }
-        if (now >= s.next) { s.next = now + 1000; wound(S, S.maps[p.map], p, s.dmg); if (p.dead) break; }
+        if (now >= s.next) {
+          s.next = now + 1000;
+          const type = key === "burn" ? "fire" : "poison";
+          wound(S, S.maps[p.map], p, s.dmg * elementResist(S, p, type), type);
+          if (p.dead) break;
+        }
       }
+      if (!p.dead) elementTick(S, S.maps[p.map], p);
     }
     if (p.recall && now >= p.recall.at && !p.dead) finishRecall(S, p);
     // life skills: gathering channels, parcels, node cooldowns, the 알바 board's day (58-life.js)
     lifeTick(S, p, now);
     windTouch(S, p, now);
     if (p.rallyAt && now >= p.rallyAt) { p.rallyAt = 0; p.dirty = true; }
-    if (!p.dead) weaponTick(S, p, now);
+    if (!p.dead && !elementFrozen(S, p)) weaponTick(S, p, now);
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;
     ensureDaily(S, p);
@@ -21757,7 +22356,7 @@ export function tick(S, now) {
     const rest = fire ? pfxNum(p, "rest", p.sit ? 0.12 : 0.06) : mapOfS(p.S, p.map).safe ? 0.08 : 0.02;
     // a fire's warmth carries on after you stand up, as long as you keep out of a fight
     const wr = calm ? warmRegen(p, now) : 0;
-    if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * (rest + wr) + 1);
+    if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + (st.mhp * (rest + wr) + 1) * elementHealFactor(S, p));
     if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr + st.mpReg) + 1);
     if (fire && p.sit) warmTick(S, p, fire, now);
     else p.warmT = 0;
@@ -21814,6 +22413,7 @@ function selfPayload(p) {
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
     runeSets, runeCounts,
+    element: st.element,
     // derived: attack type (0 physical, 1 magic), evasion %, attack speed %, cooldown cut %, status resist %, poise %,
     // knockback resist %, elemental burst %, item find from luck %, graze chance on a monster of your own tier %
     dv: [st.mag, r1(st.eva), r1(st.aspd * 100), r1(st.cdr * 100), r1(st.res * 100), r1(st.poise * 100), r1(st.kbr * 100), r1(st.burst * 100),
@@ -21859,6 +22459,12 @@ function selfPayload(p) {
   };
 }
 
+function elementView(S, out, eid, entity) {
+  if (entity.dead) return;
+  const rows = elementStatusRows(S, entity);
+  if (rows.length) (out.ail || (out.ail = [])).push([eid, rows]);
+}
+
 /**
  * One player's slice of the world for this tick: only their map, only what is
  * near them, and their own sheet only when it changed.
@@ -21876,12 +22482,16 @@ export function viewFor(S, pid) {
   // me[12] / a P row's [9]: the carry code (58-life.js carryOf), only while something is held
   const held = carryOf(p);
   if (held) out.me.push(held);
+  elementView(S, out, p.eid, p);
+  const elementSpeed = elementFrozen(S, p) ? 0 : elementMoveFactor(S, p);
+  if (elementSpeed !== 1) out.elspd = elementSpeed;
   for (const oid of Object.keys(S.players)) {
     const o = S.players[oid];
     if (o === p || o.map !== p.map || !near(o)) continue;
     const row = [o.eid, Math.round(o.x), Math.round(o.y), o.dir, o.dead ? 1 : 0, Math.round(o.hp), stats(o).mhp, o.sit ? 1 : 0, flagsOf(o, S.now)], c = carryOf(o);
     if (c) row.push(c);
     out.P.push(row);
+    elementView(S, out, o.eid, o);
   }
   for (const mob of rt.mobs) {
     // a field boss (or the rift invasion's lord) is shown on the radar wherever it stands on the map
@@ -21899,6 +22509,8 @@ export function viewFor(S, pid) {
       if (br) row.push(1);
     }
     out.M.push(row);
+    if (mob.enchant) (out.enc || (out.enc = {}))[mob.id] = DAMAGE_TYPES.indexOf(mob.enchant);
+    elementView(S, out, mob.id, mob);
     // a rift's toughness (64-dim.js hk: party size, level, tier) — only where it isn't 1, so the bar can show the real HP
     if (mob.hk && mob.hk !== 1) (out.HK || (out.HK = {}))[mob.id] = Math.round(mob.hk * 1000) / 1000;
   }
@@ -22023,8 +22635,10 @@ export function defs() {
   const mobs = {};
   for (const k of Object.keys(MOBS)) {
     const d = MOBS[k];
+    const { type, res, holyWeak } = monsterElement(k);
     // levels as players see them (4·tier − 3); `tier` the world's own
     mobs[k] = { name: d.name, lore: d.lore || MOB_LORE[k] || "", sp: d.sp, tint: d.tint || null, lv: shownLv(d.lv), tier: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0, aggro: d.aggro || 0 };
+    Object.assign(mobs[k], { element: type, resist: res, holyWeak });
     if (d.bonusOptional) mobs[k].optional = 1;
     if (d.questOnly) mobs[k].questOnly = 1;
   }
@@ -22051,6 +22665,8 @@ export function defs() {
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
     affix, runes: RUNES, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
+    elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
+    elementPrefixes: ELEMENT_PREFIX_AFFIX,
     rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     fieldParty: { tiles: FIELD_PARTY_RANGE / T, share: PARTY_SHARE },
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, mastery: MASTERY, bounty: BOUNTY_N, fbResp: FB_RESP,

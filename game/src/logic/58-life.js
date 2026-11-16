@@ -622,7 +622,7 @@ const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (i
 function weakAffix(g) {
   let best = -1, bv = Infinity;
   (g.af || []).forEach(([k, v], i) => {
-    const a = AFFIX.find((x) => x[0] === k);
+    const a = AFFIX_BY_KEY[k];
     const r = a ? v / Math.max(1, a[4]) : 0;
     if (r < bv) { bv = r; best = i; }
   });
@@ -652,8 +652,8 @@ function lifeUseApply(S, p, a) {
     const g = ch.eq[a.k];
     // Replace the weakest affix with a different line rolled at the gear's tier.
     const i = weakAffix(g), t = ITEMS[g.id].tier || 1;
-    const pool = AFFIX.filter((x) => !g.af.some(([k], j) => j !== i && k === x[0]));
-    g.af[i] = rollLine(S, pool[ri(S, 0, pool.length - 1)][0], GEAR_CRAFT.ilvl[t - 1], AFFIX_MUL[g.q | 0]);
+    const used = new Set(g.af.filter((_, j) => j !== i).map(([key]) => key));
+    g.af[i] = rollLine(S, rollAffixKey(S, ITEMS[g.id].type, used), GEAR_CRAFT.ilvl[t - 1], AFFIX_MUL[g.q | 0]);
     toast(p, `${gearName(g)}의 옵션을 새로 다듬었습니다.`);
     S.maps[p.map].ev.push(["e", p.eid, 1]);
     afterGear(S, p);

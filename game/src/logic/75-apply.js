@@ -17,13 +17,13 @@ export function applyAction(S, pid, a) {
   switch (a.t) {
     case "nw": p.npcWhereAt = now + 5000; p.npcWhere = true; break;
     case "mv": {
-      if (p.dance) { p.fix = true; break; }
+      if (p.dance || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; break; }
       const dt = clamp(now - p.mvAt, 0, 600);
       p.mvAt = now;
       const max = (stats(p).spd * dt) / 1000 * 1.6 + 8;
       const d = dist(p.x, p.y, a.x, a.y);
       if (d > max || !canStand(m, a.x, a.y)) { p.fix = true; break; }
-      if (d > 1.5) rouse(S, p);
+      if (d > 1.5) { rouse(S, p); p.elementRunAt = now; }
       p.x = a.x; p.y = a.y;
       if (a.d >= 0 && a.d <= 3) p.dir = a.d | 0;
       if (validAim(a.a)) p.aim = a.a;
@@ -92,12 +92,16 @@ export function applyAction(S, pid, a) {
       }
       p.potAt = now + 900;
       if (it.heal) {
-        const amt = Math.min(Math.round(pfxPot(S, p, st, it.heal + st.mhp * (it.pct || 0))), Math.max(1, Math.round(st.mhp - p.hp)));
+        const amt = Math.min(Math.round(pfxPot(S, p, st, it.heal + st.mhp * (it.pct || 0)) * elementHealFactor(S, p)), Math.max(1, Math.round(st.mhp - p.hp)));
         p.hp = Math.min(st.mhp, p.hp + amt);
         S.maps[p.map].ev.push(["h", p.eid, -amt, 0, 1]);
       }
       if (it.mana) p.mp = Math.min(st.mmp, p.mp + it.mana);
-      if (it.cure) { p.burn = null; p.poison = null; p.slowed = 0; toast(p, "몸이 개운해졌습니다. 독·화상·둔화가 씻겨 나갔습니다."); }
+      if (it.cure) {
+        p.burn = null; p.poison = null; p.slowed = 0;
+        elementClear(p, "poison", "burn", "chill", "freeze");
+        toast(p, "몸이 개운해졌습니다. 중독·화상·오한·빙결이 씻겨 나갔습니다.");
+      }
       S.maps[p.map].ev.push(["u", p.eid, it.heal ? 0 : 1]);
       p.dirty = true;
       break;

@@ -1861,6 +1861,15 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr)
 #tgt .tt[hidden] { display: none; }
 #tgt .tt span { display: inline-flex; align-items: center; gap: 2px; cursor: help; }
 #tgt .tt img { width: 12px; height: 12px; image-rendering: pixelated; }
+#tgt .te { margin-top: 3px; font: var(--t10) var(--pix9); }
+#tgt .te:empty, .element-statuses:empty { display: none; }
+.element-statuses { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.element-status { display: inline-flex; align-items: center; gap: 2px; padding: 1px 3px; border: 1px solid var(--element-color); background: #191521; color: #f8f1e6; font: var(--t10) var(--pix9); white-space: nowrap; }
+.element-status img { width: 12px; height: 12px; image-rendering: pixelated; }
+.element-sheet { display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; padding: 4px 2px; font-size: var(--t11); }
+.element-sheet span { min-width: 0; }
+.skill-element { padding: 0 3px; border: 1px solid currentColor; white-space: nowrap; }
+.col-cell .col-elements { text-align: center; white-space: normal; line-height: 1.35; }
 /* potion buttons: amber count when 2 or fewer, red and greyed when none (hud.js hotbar) */
 .act.pot.low .n { color: #ffbe4a; }
 .act.pot.none .n { color: #ff7a6a; }

@@ -204,7 +204,8 @@ function react(S, rt, p, key, x, y, k) {
   for (const o of mobsWithin(rt, x, y, rx.r)) {
     if (rx.vuln) { o.vuln = now + rx.vuln; rt.ev.push(["vu", o.id, rx.vuln]); }
     if (rx.knock) { const d = dist(x, y, o.x, o.y) || 1; knock(m, o, (o.x - x) / d, (o.y - y) / d, rx.knock); }
-    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst) * (pasHas(p, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1), false, { mag: 1 });
+    const elem = rx.id === "steam" ? "fire" : rx.id === "super" ? "cold" : "lightning";
+    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst) * (pasHas(p, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1), false, { mag: 1, elem });
   }
   return rx;
 }
@@ -238,7 +239,7 @@ function dealt(p, mobs, fn) {
 /** Give `p` back `n` HP (a heal number over them). */
 function healP(rt, p, n, cue) {
   if (p.dead) return 0;
-  const amt = Math.min(stats(p).mhp - p.hp, Math.round(n));
+  const amt = Math.min(stats(p).mhp - p.hp, Math.round(n * elementHealFactor(p.S, p)));
   if (amt < 1) return 0;
   p.hp += amt;
   const event = ["h", p.eid, -amt, 0, 1];
@@ -423,11 +424,12 @@ function propPulse(S, rt, m, p, o, now) {
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
       for (const mob of rt.mobs) {
         if (mob.dead || !o.ids.includes(mob.id)) continue;
-        const bleed = mob.dot && mob.dot.until > now ? 1 : 0, br = mob.brand > now ? 1 : 0, mk = marksOf(S, mob);
+        const bleed = (mob.dot && mob.dot.until > now) || elementActive(S, mob, "bleed") ? 1 : 0, br = mob.brand > now ? 1 : 0, mk = marksOf(S, mob);
         const dmg = Math.max(1, Math.round(atk * (o.base + o.bleed * bleed + o.mark * mk + o.brandK * br) * o.k));
         mob.mk = 0; mob.dot = null; mob.brand = 0;
+        elementClear(mob, "bleed");
         wmHit(S, p, mob);
-        dealMob(S, rt, mob, p, dmg, 0);
+        dealTypedMob(S, rt, mob, p, dmg, "dark");
       }
       return true;
     }
@@ -882,7 +884,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
       if (mob) face(p, mob);
       ev(94, ...(mob ? [mob.x, mob.y] : ahead(80)));
-      const shot = fireArrow(S, rt, p, mob, sk.mult * k, 99, 2, { spd: sk.spd, len: sk.len, r: sk.r });
+      const shot = fireArrow(S, rt, p, mob, sk.mult * k, 99, 2, { spd: sk.spd, len: sk.len, r: sk.r, opt });
       if (deriveStats(p).cm.lg === "lens") shot.cl = 1;   // 길별의 렌즈참 (66-charms.js)
       break;
     }
@@ -897,7 +899,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const cap = { n: sk.per, h: {} }, a0 = Math.atan2(aimY, aimX);
       for (let j = 0; j < sk.n; j++) {
         const a = a0 + ((j - (sk.n - 1) / 2) * ((2 * sk.spread) / (sk.n - 1)) * Math.PI) / 180;
-        fireArrow(S, rt, p, null, sk.mult * k, 0, 3, { len: sk.len, ux: Math.cos(a), uy: Math.sin(a), cap });
+        fireArrow(S, rt, p, null, sk.mult * k, 0, 3, { len: sk.len, ux: Math.cos(a), uy: Math.sin(a), cap, opt });
       }
       break;
     }
@@ -998,7 +1000,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
       if (mob) face(p, mob);
       ev(sk.fx, ...(mob ? [mob.x, mob.y] : ahead(80)), ace ? 2 : 1);
-      fireArrow(S, rt, p, mob, sk.mult * k * (ace ? sk.ace : 1), ace ? 99 : 0, 2, { len: sk.len });
+      fireArrow(S, rt, p, mob, sk.mult * k * (ace ? sk.ace : 1), ace ? 99 : 0, 2, { len: sk.len, opt });
       if (ace) { p.dashAt -= sk.dashCut; toast(p, "회심!"); }
       break;
     }

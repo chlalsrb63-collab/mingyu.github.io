@@ -2,9 +2,9 @@
 // docs/design/prefix-effects.md §3.3 and the `단` = 2 rows of §3; the recipe and hook signatures are in the header of 51-prefix.js.
 //   helm utility   trace 추적자의 · sage 현자의 · mercy 자비로운 · homing 귀소의 · clever 영리한 · treasure 보물눈의 · tame 길들이는 · hearth 화덕의
 //   phase 2        DOT2 bleed 출혈의 · bile 담즙의   ABS carap 갑각의 · bastion 방벽의   AURA halo 후광의 · pack 무리의   ZN hellfire 지옥불의 · blizzard 눈보라의
-// How the phase-2 pieces work (no new status UI, nothing on the wire but the events that exist):
+// How the phase-2 pieces work:
 //  · DOT2: a second damage-over-time slot that never touches the dagger's `mob.dot`. The wearer keeps its victims in `pfxPc(p).v[key]` (≤ DOT_MAX, a monster once)
-//    and pays them in its own 1 s `tick`: a fixed hit of attack × k that no armour turns (dealMob, like the dagger's bleed). It stops when p falls or leaves the map.
+//    and pays them in its own 1 s `tick`, using the existing bleed/poison status display and typed damage. It stops when p falls or leaves the map.
 //  · ABS: a shield kept in `pfxPc(p).v[key]` until `pfxPc(p).t[key]`, offered through `miti`'s `r.abs` (shieldOffer: never past the blow, never past the
 //    20 % cap the dispatcher enforces, and it shrinks by what it took).
 //  · AURA: 후광의 lays `p.pc.aura = { f, until }` on every party member in range from its tick (pfxMiti reads it: the one edit in 51-prefix.js);
@@ -40,14 +40,14 @@ Object.assign(LEGEND, {
   treasure: ["보물눈의", pfxText("treasure", "상자 몬스터에게서 아이템 발견 +{mf}%"), "H", "U", "S", "eco"],
   tame: ["길들이는", pfxText("tame", "펫이 전리품을 줍는 속도가 {sp}배다"), "H", "U", "S", "util"],
   hearth: ["화덕의", pfxText("hearth", "모닥불 곁 휴식 회복 +{k:%}%"), "H", "U", "S", "util"],
-  bleed: ["출혈의", pfxText("bleed", "치명타 시 {ms:s}초간 출혈 (매초 공격력의 {k:%}%)"), "WGR", "O", "M", "crit"],
-  bile: ["담즙의", pfxText("bile", "피격 시 {p:%}% 확률로 공격한 적이 {ms:s}초간 매초 공격력의 {k:%}% 독 피해를 입는다"), "AB", "D", "M", "mit"],
+  bleed: ["출혈의", pfxText("bleed", "치명타 시 {ms:s}초간 출혈 (매초 공격력의 {k:%}%). 대상이 이동하면 2배 피해"), "WGR", "O", "M", "crit"],
+  bile: ["담즙의", pfxText("bile", "피격 시 {p:%}% 확률로 공격한 적이 {ms:s}초간 매초 공격력의 {k:%}% 독 피해를 입고 공격력이 낮아진다"), "AB", "D", "M", "mit"],
   carap: ["갑각의", pfxText("carap", "처치 시 최대 HP의 {k:%}% 보호막이 생긴다 (최대 {max:%}%, {ms:s}초 유지)"), "AN", "D", "M", "sus"],
   bastion: ["방벽의", pfxText("bastion", "{calm:s}초 넘게 피격이 없다가 맞으면 최대 HP의 {k:%}% 보호막이 {ms:s}초간 생긴다 ({icd:s}초 간격)"), "ANH", "D", "M", "mit"],
   halo: ["후광의", pfxText("halo", "근처(반경 {r}) 파티원이 받는 피해 -{k:-%}%"), "NH", "D", "S", "mit"],
   pack: ["무리의", pfxText("pack", "근처(반경 {r}) 파티원 1명마다 공격력 +{k:%}% (최대 +{max:%}%)"), "RG", "O", "M", "pass"],
-  hellfire: ["지옥불의", pfxText("hellfire", "처치 시 {p:%}% 확률로 그 자리에 {ms:s}초간 불길이 남아 {every:s}초마다 공격력의 {k:%}% 피해 (반경 {r}, 동시에 1개)"), "WR", "O", "M", "kill"],
-  blizzard: ["눈보라의", pfxText("blizzard", "스킬 사용 시 시전 위치에 {ms:s}초간 눈보라가 일어 반경 {r}의 적을 둔화시키고 {every:s}초마다 공격력의 {k:%}% 피해 (동시에 1개)"), "WR", "O", "M", "skill"],
+  hellfire: ["지옥불의", pfxText("hellfire", "처치 시 {p:%}% 확률로 그 자리에 {ms:s}초간 불길이 남아 {every:s}초마다 공격력의 {k:%}% 화염 피해 (반경 {r}, 동시에 1개)"), "WR", "O", "M", "kill"],
+  blizzard: ["눈보라의", pfxText("blizzard", "스킬 사용 시 시전 위치에 {ms:s}초간 눈보라가 일어 반경 {r}의 적을 둔화시키고 {every:s}초마다 공격력의 {k:%}% 냉기 피해 (동시에 1개)"), "WR", "O", "M", "skill"],
 });
 
 // ── shared helpers of the phase-2 powers
@@ -56,19 +56,26 @@ const DOT_MAX = 8;
 /** Put `mob` on p's DOT2 list `key` (a monster once: a bleed that runs does not stack with itself, nor restart); the hit is fixed now: attack × PFX[key].k. */
 function dotAdd(S, p, st, key, mob) {
   const c = PFX[key], v = pfxPc(p).v, a = v[key] || (v[key] = []);
-  if (mob.dead || a.length >= DOT_MAX) return;
+  if (mob.dead || MOBS[mob.k].chest || a.length >= DOT_MAX) return;
   for (let i = 0; i < a.length; i++) if (a[i].m === mob) return;
-  a.push({ m: mob, left: Math.max(1, Math.round(c.ms / 1000)), dmg: Math.max(1, Math.round(st.atk * c.k)), rs: mob.respAt });
+  const e = { m: mob, left: Math.max(1, Math.round(c.ms / 1000)), dmg: Math.max(1, Math.round(st.atk * c.k)), rs: mob.respAt };
+  a.push(e);
+  const type = key === "bleed" ? "bleed" : "poison";
+  elementMark(S, mob, type, c.ms, p, key, e);
+  if (type === "bleed") elementMoving(S, mob);
 }
 /** The 1 s payout of p's DOT2 list `key`: each victim takes its hit (a kill counts as p's: heals and resources run, px); gone, dead or respawned ones are dropped. */
 function dotPay(S, rt, p, st, key) {
   const a = pfxPc(p).v[key];
   if (!a || !a.length) return;
+  const type = key === "bleed" ? "bleed" : "poison";
   for (let i = a.length - 1; i >= 0; i--) {
     const e = a[i], m = e.m;
     if (m.dead || m.respAt !== e.rs) { a.splice(i, 1); continue; }
-    if (dealMob(S, rt, m, p, e.dmg, 0)) pfxKill(S, rt, p, st, m, m.x, m.y, PX);
+    const damage = e.dmg * (type === "bleed" && elementMoving(S, m) ? 2 : 1);
+    if (dealTypedMob(S, rt, m, p, damage, type)) pfxKill(S, rt, p, st, m, m.x, m.y, PX);
     if (--e.left <= 0 || m.dead) a.splice(i, 1);
+    else elementMark(S, m, type, e.left * 1000, p, key, e);
   }
 }
 /** ABS: offer p's shield `key` to a blow of `dmg` through r.abs; it never covers more than the blow still takes nor the dispatcher's 20 % cap, and shrinks by what it took. */
@@ -96,9 +103,12 @@ function pfxMates(S, p, r) {
 /** 눈보라의: slow what stands in its zone (not a boss, guardian or rooted thing). */
 function blizzChill(S, rt, z) {
   const until = S.now + PFX.blizzard.slow;
+  const p = S.players[z.pid];
   for (const o of mobsWithin(rt, z.x, z.y, z.r)) {
     const d = MOBS[o.k];
-    if (!d.boss && !d.still && o.el !== 2) o.slow = Math.max(o.slow || 0, until);
+    if (d.boss || d.still || o.el === 2) continue;
+    o.slow = Math.max(o.slow || 0, until);
+    elementInflict(S, rt, p, o, "cold", 1, { duration: PFX.blizzard.slow });
   }
 }
 
@@ -164,13 +174,13 @@ Object.assign(PFX_FN, {
     kill(S, rt, p, st, mob, x, y, o) {
       const c = PFX.hellfire;
       if ((o && o.px) || p.dead || !pfxChance(S, st, c.p)) return;
-      pfxZone(S, rt, p, "hellfire", { x, y, r: c.r, every: c.every, left: Math.round(c.ms / c.every), mult: c.k, kind: 2 });
+      pfxZone(S, rt, p, "hellfire", { x, y, r: c.r, every: c.every, left: Math.round(c.ms / c.every), mult: c.k, kind: 2, elem: "fire" });
     },
   },
   // 눈보라의: a skill raises a snowstorm where it was cast
   blizzard: {
     skill(S, rt, p) {
-      const c = PFX.blizzard, z = { x: p.x, y: p.y, r: c.r, every: c.every, left: Math.round(c.ms / c.every), mult: c.k, kind: 3 };
+      const c = PFX.blizzard, z = { x: p.x, y: p.y, r: c.r, every: c.every, left: Math.round(c.ms / c.every), mult: c.k, kind: 3, elem: "cold" };
       pfxZone(S, rt, p, "blizzard", z);
       blizzChill(S, rt, z);
     },

@@ -10,12 +10,14 @@ const SET_AFFIXES = {
   blackstar: ["atkp", "atk", "critd", "hp"],
 };
 const MAGIC_AFFIX = Object.fromEntries(MAGIC_RUNES.map(([, , stat, n]) => [stat, n]));
+const SET_ELEMENT_LINE = { ashbloom: ["dmg_fire", 6], silverlake: ["res_cold", 8], stormsail: ["pen_lightning", 5], inkthorn: ["dur_poison", 8] };
 for (const [set, def] of Object.entries(RUNE_SETS)) {
   const lines = SET_AFFIXES[set];
   for (let i = 0; i < lines.length; i++) {
     const stat = lines[i];
     addRune(`ru_${set}_${i + 1}`, 4, `${def.name}의 룬`, [[stat, MAGIC_AFFIX[stat]]], set);
   }
+  if (SET_ELEMENT_LINE[set]) addRune(`ru_${set}_${lines.length + 1}`, 4, `${def.name}의 룬`, [SET_ELEMENT_LINE[set]], set);
 }
 
 /** Normal packs mainly drop magic runes; elites and boss/chest rewards improve the rarity. */

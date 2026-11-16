@@ -28,9 +28,9 @@ const RUNE_SETS = Object.fromEntries([
   ["brassscale", "황동저울", 2, (c) => `전투 골드 획득 +${c.gold}%, 아이템 발견 +${c.mf}%. 떨어진 골드를 주울 때마다 ${c.per}골드당 공격력 1% 증가 (최대 ${runePct(c.atk)}%, ${runeSec(c.ms)}초).`],
   ["azureknot", "푸른매듭", 2, (c) => `스킬 재사용 대기시간과 MP 소모 각각 ${runePct(c.cdr)}%, ${runePct(1 - c.mp)}% 감소.`],
   ["ashbloom", "잿불꽃", 3, (c) => `공격 적중 시 ${runePct(c.chance)}% 확률로 적을 중심으로 최대 ${c.targets}명에게 공격력의 ${runePct(c.hit)}% 화염 피해. ${runeSec(c.ms)}초간 매초 공격력의 ${runePct(c.dot)}% 화상 피해 (${runeSec(c.icd)}초 간격).`],
-  ["silverlake", "은설호", 3, (c) => `공격 적중 시 ${runeSec(c.slow)}초간 오한으로 이동 속도를 절반으로 감소. 둔화 상태인 적에게 치명타 피해 +${runePct(c.crit - 1)}%. 보스와 우두머리에게 자신의 오한은 적용되지 않습니다.`],
+  ["silverlake", "은설호", 3, (c) => `공격 적중 시 ${runeSec(c.slow)}초간 오한. 오한 또는 빙결 상태의 적에게 치명타 피해 +${runePct(c.crit - 1)}%.`],
   ["stormsail", "폭풍항해", 3, (c) => `공격 적중 시 ${runePct(c.chance)}% 확률로 처음 맞은 적부터 최대 ${c.targets}명에게 연쇄 번개. 첫 피해는 공격력의 ${runePct(c.first)}%, 튕길 때마다 ${runePct(1 - c.fall)}% 감소 (${runeSec(c.icd)}초 간격).`],
-  ["inkthorn", "먹물가시", 3, (c) => `치명타 적중 시 ${runeSec(c.ms)}초간 맹독 중첩 (최대 ${c.stacks}회). 한 중첩당 매초 공격력의 ${runePct(c.dot)}% 피해를 주고 대상이 받는 피해 +${runePct(c.vuln)}%.`],
+  ["inkthorn", "먹물가시", 3, (c) => `치명타 적중 시 ${runeSec(c.ms)}초간 중독 중첩. 중첩마다 매초 공격력의 ${runePct(c.dot)}% 피해를 주고, 맹독으로 대상이 받는 피해 +${runePct(c.vuln)}% (피해 증폭은 최대 ${c.stacks}중첩).`],
   ["lastbell", "마지막 종", 3, (c) => `HP ${runePct(c.hp)}% 이하인 적에게 주는 피해 +${runePct(c.hit - 1)}%. 공격 후 HP ${runePct(c.execute)}% 이하인 적 즉시 처형 (보스와 우두머리 제외).`],
   ["redanvil", "붉은모루", 4, (c) => `잃은 HP 비율의 제곱에 비례해 공격력이 최대 ${runePct(c.atk)}% 증가하고 기본 공격 간격이 최대 ${runePct(c.iv)}% 감소. HP ${runePct(c.hp)}% 이하에서는 받는 피해 -${runePct(1 - c.miti)}%.`],
   ["astrolabe", "별의 궤도", 4, (c) => `스킬 사용 시 ${runePct(c.chance)}% 확률로 해당 스킬의 재사용 대기 초기화 (${runeSec(c.icd)}초 간격). 사용한 MP가 많을수록 ${runeSec(c.ms)}초 내 다음 공격 스킬의 피해 증가 (최대 ${runePct(c.cap)}%).`],
@@ -91,33 +91,13 @@ function runeNearest(rt, src, radius, seen) {
   return nearest;
 }
 
-function runeDebuff(S, p, old, ms, dmg, stacks = 1) {
-  return { pid: p.pid, map: p.map, until: S.now + ms, next: old && old.until >= S.now ? old.next : S.now + 1000, dmg, stacks };
-}
-
-function runeDotSource(S, dot, id) {
+function runeDotSource(S, dot) {
   const p = dot && S.players[dot.pid];
-  return dot && dot.until >= S.now && p && !p.dead && p.map === dot.map && runeOn(p, id) ? p : null;
+  return dot && dot.until >= S.now && p && !p.dead && p.map === dot.map && runeOn(p, "inkthorn") ? p : null;
 }
 
 function runePoisonFactor(S, mob) {
-  return runeDotSource(S, mob.runePoison, "inkthorn") ? 1 + RUNE_POWER.inkthorn.vuln * mob.runePoison.stacks : 1;
-}
-
-const RUNE_DOTS = [["runeBurn", "ashbloom"], ["runePoison", "inkthorn"]];
-/** Both rune DoTs share the same attribution and pass through the normal damage/loot path. */
-function runeDotTick(S, m, rt, mob) {
-  if (!mob.runeBurn && !mob.runePoison) return false;
-  for (const [key, id] of RUNE_DOTS) {
-    const dot = mob[key];
-    if (!dot) continue;
-    const p = runeDotSource(S, dot, id);
-    if (!p || p.map !== m.id) { mob[key] = null; continue; }
-    if (S.now < dot.next) continue;
-    dot.next = S.now + 1000;
-    if (dealMob(S, rt, mob, p, dot.dmg * dot.stacks, false)) return true;
-  }
-  return false;
+  return runeDotSource(S, mob.runePoison) ? 1 + RUNE_POWER.inkthorn.vuln * mob.runePoison.stacks : 1;
 }
 
 /** The previous cast charges the next damaging skill, including its delayed hits. */
@@ -135,6 +115,7 @@ function runeShade(S, p) {
 }
 
 function runeMoveSkill(S, p) {
+  p.elementRunAt = S.now;
   if (runeOn(p, "moonveil")) runeShade(S, p);
 }
 
@@ -196,18 +177,22 @@ const RUNE_SET_FN = {
       if (!mob.dead) hit.unshift(mob);
       runeDetonate(rt, mob.x, mob.y, c.radius, 2);
       for (const other of hit) {
-        hurtMob(S, rt, other, p, c.hit, false, PX);
-        if (!other.dead) other.runeBurn = runeDebuff(S, p, other.runeBurn, c.ms, Math.max(1, Math.round(st.atk * c.dot)));
+        const before = other.hp;
+        hurtMob(S, rt, other, p, c.hit, false, { ...PX, elem: "fire", typedOnly: true });
+        if (!other.dead && other.hp < before) {
+          const dotDamage = st.atk * c.dot * elementResist(S, other, "fire", st.element?.pen.fire || 0);
+          elementInflict(S, rt, p, other, "fire", before - other.hp, { duration: c.ms, dotDamage });
+        }
       }
     },
   },
   silverlake: {
     hit(S, rt, p, st, mob, dmg, crit, killed) {
-      if (killed || runeFirm(mob)) return;
-      mob.slow = Math.max(mob.slow || 0, S.now + RUNE_POWER.silverlake.slow);
+      if (killed || mob.dead || MOBS[mob.k].chest) return;
+      elementInflict(S, rt, p, mob, "cold", dmg, { duration: RUNE_POWER.silverlake.slow, crit });
     },
     mul(S, p, st, mob, d, o, crit) {
-      return crit && !o.px && mob.slow > S.now ? RUNE_POWER.silverlake.crit : 1;
+      return crit && !o.px && (mob.slow > S.now || elementActive(S, mob, "chill") || elementActive(S, mob, "freeze")) ? RUNE_POWER.silverlake.crit : 1;
     },
   },
   stormsail: {
@@ -219,7 +204,11 @@ const RUNE_SET_FN = {
         const prev = next;
         seen.add(prev);
         next = i < c.targets - 1 ? runeNearest(rt, prev, c.radius, seen) : null;
-        if (!prev.dead) hurtMob(S, rt, prev, p, mult, false, PX);
+        if (!prev.dead) {
+          const before = prev.hp;
+          hurtMob(S, rt, prev, p, mult, false, { ...PX, elem: "lightning", typedOnly: true });
+          if (!prev.dead && prev.hp < before) elementInflict(S, rt, p, prev, "lightning", before - prev.hp);
+        }
         if (next) runeBolt(rt, prev, next);
         mult *= c.fall;
       }
@@ -228,11 +217,11 @@ const RUNE_SET_FN = {
   inkthorn: {
     crit(S, rt, p, st, mob, dmg, crit, killed) {
       if (killed || mob.dead || MOBS[mob.k].chest) return;
-      const c = RUNE_POWER.inkthorn, recent = runeDotSource(S, mob.runePoison, "inkthorn") ? mob.runePoison : null;
+      const c = RUNE_POWER.inkthorn, recent = runeDotSource(S, mob.runePoison) ? mob.runePoison : null;
       if (recent && S.now < recent.addAt + c.hitGap) return;
-      const dot = runeDebuff(S, p, recent, c.ms, Math.max(1, Math.round(st.atk * c.dot)), Math.min(c.stacks, (recent?.stacks || 0) + 1));
-      dot.addAt = S.now;
-      mob.runePoison = dot;
+      const dotDamage = st.atk * c.dot * elementResist(S, mob, "poison", st.element?.pen.poison || 0);
+      elementInflict(S, rt, p, mob, "poison", dmg, { duration: c.ms, dotDamage });
+      mob.runePoison = { pid: p.pid, map: p.map, until: S.now + c.ms, addAt: S.now, stacks: Math.min(c.stacks, (recent?.stacks || 0) + 1) };
     },
   },
   lastbell: {

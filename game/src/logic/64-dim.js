@@ -580,7 +580,8 @@ function chalSpawn(S, dim, k, n) {
 function chalReset(S, dim, mob) {
   const c = dim.chal, [tx, ty] = dim.map.dim.boss, now = S.now;
   mob.hp = mobMax(mob); mob.by = {}; mob.tgt = null; mob.st = 0; mob.cast = null; mob.act = null; mob.dot = null; mob.slow = 0;
-  mob.runeBurn = mob.runePoison = null;
+  mob.runePoison = null;
+  elementClear(mob);
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   mob.stun = now + 3000; mob.castAt = now + 7000; mob.ak = c.ak; mob.stag = 0;
   dim.rt.tele.length = 0; dim.rt.pools.length = 0;

@@ -30,6 +30,7 @@ function selfPayload(p) {
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
     runeSets, runeCounts,
+    element: st.element,
     // derived: attack type (0 physical, 1 magic), evasion %, attack speed %, cooldown cut %, status resist %, poise %,
     // knockback resist %, elemental burst %, item find from luck %, graze chance on a monster of your own tier %
     dv: [st.mag, r1(st.eva), r1(st.aspd * 100), r1(st.cdr * 100), r1(st.res * 100), r1(st.poise * 100), r1(st.kbr * 100), r1(st.burst * 100),
@@ -75,6 +76,12 @@ function selfPayload(p) {
   };
 }
 
+function elementView(S, out, eid, entity) {
+  if (entity.dead) return;
+  const rows = elementStatusRows(S, entity);
+  if (rows.length) (out.ail || (out.ail = [])).push([eid, rows]);
+}
+
 /**
  * One player's slice of the world for this tick: only their map, only what is
  * near them, and their own sheet only when it changed.
@@ -92,12 +99,16 @@ export function viewFor(S, pid) {
   // me[12] / a P row's [9]: the carry code (58-life.js carryOf), only while something is held
   const held = carryOf(p);
   if (held) out.me.push(held);
+  elementView(S, out, p.eid, p);
+  const elementSpeed = elementFrozen(S, p) ? 0 : elementMoveFactor(S, p);
+  if (elementSpeed !== 1) out.elspd = elementSpeed;
   for (const oid of Object.keys(S.players)) {
     const o = S.players[oid];
     if (o === p || o.map !== p.map || !near(o)) continue;
     const row = [o.eid, Math.round(o.x), Math.round(o.y), o.dir, o.dead ? 1 : 0, Math.round(o.hp), stats(o).mhp, o.sit ? 1 : 0, flagsOf(o, S.now)], c = carryOf(o);
     if (c) row.push(c);
     out.P.push(row);
+    elementView(S, out, o.eid, o);
   }
   for (const mob of rt.mobs) {
     // a field boss (or the rift invasion's lord) is shown on the radar wherever it stands on the map
@@ -115,6 +126,8 @@ export function viewFor(S, pid) {
       if (br) row.push(1);
     }
     out.M.push(row);
+    if (mob.enchant) (out.enc || (out.enc = {}))[mob.id] = DAMAGE_TYPES.indexOf(mob.enchant);
+    elementView(S, out, mob.id, mob);
     // a rift's toughness (64-dim.js hk: party size, level, tier) — only where it isn't 1, so the bar can show the real HP
     if (mob.hk && mob.hk !== 1) (out.HK || (out.HK = {}))[mob.id] = Math.round(mob.hk * 1000) / 1000;
   }
@@ -239,8 +252,10 @@ export function defs() {
   const mobs = {};
   for (const k of Object.keys(MOBS)) {
     const d = MOBS[k];
+    const { type, res, holyWeak } = monsterElement(k);
     // levels as players see them (4·tier − 3); `tier` the world's own
     mobs[k] = { name: d.name, lore: d.lore || MOB_LORE[k] || "", sp: d.sp, tint: d.tint || null, lv: shownLv(d.lv), tier: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0, aggro: d.aggro || 0 };
+    Object.assign(mobs[k], { element: type, resist: res, holyWeak });
     if (d.bonusOptional) mobs[k].optional = 1;
     if (d.questOnly) mobs[k].questOnly = 1;
   }
@@ -267,6 +282,8 @@ export function defs() {
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
     affix, runes: RUNES, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
+    elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
+    elementPrefixes: ELEMENT_PREFIX_AFFIX,
     rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     fieldParty: { tiles: FIELD_PARTY_RANGE / T, share: PARTY_SHARE },
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, mastery: MASTERY, bounty: BOUNTY_N, fbResp: FB_RESP,

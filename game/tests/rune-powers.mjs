@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { buildLogic } from "../scripts/build-logic.mjs";
 
-const source = buildLogic().text + "\nexport const testRunes = { RUNE_SETS, RUNE_SET_MAX, MOBS, activeRuneSets, pfxBuild, pfxStat, pfxLoot, pfxPre, pfxMul, pfxHit, pfxSkill, pfxMiti, pfxLethal, pfxNum, runePoisonFactor, runeDotTick, runeSkillDamage, runeMoveSkill, runeHidden, runeEarnGold, runeShock, syncRuneActive, newMob, stats, dealMob, hurtMob };\n";
+const source = buildLogic().text + "\nexport const testRunes = { RUNE_SETS, RUNE_SET_MAX, MOBS, activeRuneSets, pfxBuild, pfxStat, pfxLoot, pfxPre, pfxMul, pfxHit, pfxSkill, pfxMiti, pfxLethal, pfxNum, runePoisonFactor, elementTick, elementClear, elementActive, runeSkillDamage, runeMoveSkill, runeHidden, runeEarnGold, runeShock, syncRuneActive, newMob, stats, dealMob, hurtMob };\n";
 const { testRunes: X, ...L } = await import("data:text/javascript;base64," + Buffer.from(source).toString("base64"))
   .catch((error) => { throw new Error(error.message); });
 
@@ -79,19 +79,20 @@ st.pfx.sheet[0](p, kSheet, {});
 assert.ok(kSheet.cdr > 0.12);
 
 st = active("ashbloom");
-attempt(st, () => { X.pfxHit(S, rt, p, st, target, 100, false, false, {}); return !!target.runeBurn; });
-assert.ok(near.runeBurn && !distant.runeBurn);
-target.runeBurn = near.runeBurn = other.runeBurn = null;
+attempt(st, () => { X.pfxHit(S, rt, p, st, target, 100, false, false, {}); return X.elementActive(S, target, "burn"); });
+assert.ok(X.elementActive(S, near, "burn") && !X.elementActive(S, distant, "burn"));
+for (const mob of [target, near, other]) X.elementClear(mob);
 
 st = active("silverlake");
 X.pfxHit(S, rt, p, st, target, 100, false, false, {});
-assert.ok(target.slow > S.now);
+assert.ok(X.elementActive(S, target, "chill"));
 assert.ok(X.pfxMul(S, p, st, target, {}, {}, true) > X.pfxMul(S, p, st, target, {}, {}, false));
 
 st = active("stormsail");
 const lightningHp = near.hp;
 attempt(st, () => { X.pfxHit(S, rt, p, st, target, 100, false, false, {}); return near.hp < lightningHp; });
 assert.ok(rt.ev.some(([event]) => event === "z"));
+assert.ok(X.elementActive(S, near, "shock"));
 
 st = active("inkthorn");
 for (let i = 0; i < 9; i++) {
@@ -109,9 +110,10 @@ X.dealMob(S, rt, target, ally, 20, false);
 assert.ok(beforeSharedHit - target.hp > 20 && target.by[allyId] > 20, "another player's damage gains the same vulnerability");
 const poisonHp = target.hp;
 S.now += 1000;
-X.runeDotTick(S, { id: p.map }, rt, target);
+X.elementTick(S, rt, target);
 assert.ok(target.hp < poisonHp);
 target.runePoison = null;
+X.elementClear(target);
 
 st = active("lastbell");
 target.hp = 1;

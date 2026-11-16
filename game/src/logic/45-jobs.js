@@ -118,7 +118,7 @@ function deriveStats(p) {
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
     ls: Math.min(15, b.ls + perk.ls), spd0: BASE_SPD * HERO_SPD_K * (1 + (Math.min(40, b.spd) + tf.move + perk.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
     mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk) + tf.drop,
-    lg: b.lg, lgOff: b.lgOff, runeSets: b.runeSets, runeCounts: b.runeCounts, pfx: pfxBuild(b.lg, b.runeSets), arm, wk, mag: arm.mag ? 1 : 0,
+    lg: b.lg, lgOff: b.lgOff, runeSets: b.runeSets, runeCounts: b.runeCounts, element: b.element, pfx: pfxBuild(b.lg, b.runeSets), arm, wk, mag: arm.mag ? 1 : 0,
     acd: Math.round(arm.cd * (1 - attackSpeed) * pfxIv(b.lg) * (1 - tf.aspd / 100)),
     aspd: attackSpeed,
     eva: Math.min(SFX.eva[1], SFX.eva[0] * dex),

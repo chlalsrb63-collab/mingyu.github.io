@@ -36,6 +36,7 @@ const rarName = (q) => G.defs.rarity[q || 0] || (q === 5 ? "유니크" : "일반
 /** A legendary or 유니크 power: [name word, what it does], or null while `defs.legend` lacks it. */
 const legendOf = (k) => (k && G.defs.legend && G.defs.legend[k]) || null;
 const runeOf = (id) => G.defs.runes?.[id];
+const elementPowerLines = (entry) => G.defs.elementPrefixes?.[entry.lg] || [];
 export const itemRarity = (entry) => runeOf(entry.id)?.q || entry.q || G.defs.items[entry.id]?.q || 0;
 export const rarityLabel = (id, q) => runeOf(id) ? G.defs.runeRarity[q] : rarName(q);
 export const socketCap = (entry) => G.defs.sockCaps?.[G.defs.items[entry.id].type] || 0;
@@ -91,7 +92,7 @@ function lgDead(entry, o) {
   if (!s || !entry.lg) return false;
   const slot = o.eq || Object.keys(s.eq).find((k) => s.eq[k] === entry);
   if (slot) return (s.lgOff || []).includes(slot);
-  return Object.keys(s.eq).some((k) => k !== "weapon2" && s.eq[k] && s.eq[k].lg === entry.lg && ilOf(s.eq[k]) >= ilOf(entry));
+  return Object.keys(s.eq).some((k) => k !== "weapon2" && k !== o.replacing && s.eq[k] && s.eq[k].lg === entry.lg && ilOf(s.eq[k]) >= ilOf(entry));
 }
 /**
  * One tooltip card (hud.css "item tooltip"): a rarity-coloured frame, then sections split by divider lines —
@@ -117,7 +118,7 @@ function card(entry, o = {}) {
     for (const [k, v] of baseStats(entry)) base.append(statRow(k, v, "base"));
     if (it.cls) base.append(el("div", "tc-note", `${G.defs.wkinds[it.wk].name} · ${G.defs.classes[it.cls].name} 전용`));
   } else if (!rune) head.append(el("div", "tc-ds", itemDesc(entry)));
-  const lines = rune?.af || entry.af;
+  const lines = rune?.af || [...(entry.af || []), ...(it.elementAf || [])];
   if (lines?.length) {
     const af = sec();
     for (const [k, v] of lines) af.append(statRow(k, v, "af"));
@@ -130,6 +131,7 @@ function card(entry, o = {}) {
     const power = sec();
     power.append(l);
     if (lgDead(entry, o)) power.append(el("div", "tc-dead", "중복 적용되지 않음"));
+    else for (const [k, v] of elementPowerLines(entry)) power.append(statRow(k, v, "af"));
   }
   const cap = socketCap(entry);
   if (cap) {
@@ -180,13 +182,12 @@ export function itemTip(entry, host, o = {}) {
   wrap.append(main);
   host.append(wrap);
   if (o.worn || !s || !isGear(entry.id)) return;
-  const mine = statsOf(entry);
   for (const k of slotsFor(d.type)) {
     const w = s.eq[k];
     if (!w) continue;
     const cmp = el("div", "tc-sec");
     cmp.append(el("div", "tc-cmp", `장착 중 ${SLOT_NAME[k]} 대비`));
-    const dls = el("div", "tc-dls"), was = statsOf(w);
+    const dls = el("div", "tc-dls"), mine = statsOf(entry, { replacing: k }), was = statsOf(w, { eq: k });
     for (const key of Object.keys(G.defs.affix)) {
       const dv = (mine[key] || 0) - (was[key] || 0);
       if (!dv) continue;
@@ -202,11 +203,13 @@ export function itemTip(entry, host, o = {}) {
   }
 }
 /** Every unconditional number a piece gives: base, enhancement, affixes and runes. */
-function statsOf(entry) {
+function statsOf(entry, o) {
   const out = {};
   const add = (k, v) => { out[k] = (out[k] || 0) + v; };
   for (const [k, v] of baseStats(entry)) add(k, v);
   for (const [k, v] of entry.af || []) add(k, v);
+  for (const [k, v] of G.defs.items[entry.id].elementAf || []) add(k, v);
+  if (!lgDead(entry, o)) for (const [k, v] of elementPowerLines(entry)) add(k, v);
   for (const r of entry.ru || []) for (const [k, v] of runeOf(r)?.af || []) add(k, v);
   return out;
 }

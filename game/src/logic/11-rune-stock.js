@@ -53,3 +53,17 @@ const LEGEND_RUNES = [
   ["westglass", "서녘의 화톳불", [["hp", 90], ["atkp", 7], ["mf", 13]]],
 ];
 for (const [id, name, af] of LEGEND_RUNES) addRune(`ru_${id}`, 3, `${name} 룬`, af);
+
+/** Each element has a fixed stackable rune variant at every ordinary rarity. */
+function registerElementRunes() {
+  const stones = ["철심", "혈석", "잿불", "빙정", "뇌광", "독수정", "흑요", "광휘"];
+  const magicStat = ["dmg", "pen", "dmg", "res", "dmg", "res", "pen", "res"];
+  const points = { dmg: [6, 10, 16], pen: [5, 6, 8], res: [8, 10, 13] };
+  for (let i = 0; i < DAMAGE_TYPES.length; i++) {
+    const type = DAMAGE_TYPES[i], first = magicStat[i], middle = first === "dmg" ? "pen" : first === "pen" ? "res" : "dmg";
+    const line = (stat, q) => [`${stat}_${type}`, points[stat][q - 1]];
+    addRune(`ru_e_${type}_1`, 1, `${stones[i]} 가루의 룬`, [line(first, 1)]);
+    addRune(`ru_e_${type}_2`, 2, `${stones[i]} 파편의 룬`, [line(first, 2), line(middle, 2)]);
+    addRune(`ru_e_${type}_3`, 3, `${stones[i]} 결계의 룬`, [line("dmg", 3), line("pen", 3), line("res", 3)]);
+  }
+}

@@ -7,6 +7,9 @@ itemlevel
 rune-sockets
 socket-stone-quest
 rune-powers
+element-data
+element-engine
+element-combat
 prefix
 prefix-util
 prefix-guard

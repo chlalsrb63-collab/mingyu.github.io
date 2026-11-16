@@ -1,6 +1,6 @@
 // ───────────────────────────── simulation ─────────────────────────────
 
-function stepMob(m, mob, tx, ty, speed, dt, fly) {
+function stepMob(m, mob, tx, ty, speed, dt, fly, now) {
   const d = dist(mob.x, mob.y, tx, ty);
   if (d < 1) return true;
   const step = Math.min(d, speed * dt);
@@ -11,6 +11,7 @@ function stepMob(m, mob, tx, ty, speed, dt, fly) {
   else if (ok(m, nx, mob.y)) mob.x = nx;
   else if (ok(m, mob.x, ny)) mob.y = ny;
   else return true;
+  if (step > 0.5) mob.elementRunAt = now;
   if (Math.abs(tx - mob.x) > 2) mob.dir = tx < mob.x ? 1 : 2;
   return d - step < 1;
 }
@@ -22,7 +23,7 @@ function rollTraits(S, n) {
   while (out.length < n && pool.length) out.push(pool.splice(ri(S, 0, pool.length - 1), 1)[0]);
   return out;
 }
-/** Put a lingering condition on a player: "burn" and "poison" bite once a second, "slow" drags the feet. */
+/** The existing guaranteed trait or ground-hazard ailment, using its established timing. */
 function afflict(S, p, kind, atk) {
   const f = pfxStatus(S, p, kind);                    // a prefix power may shorten it, or refuse it (0)
   if (!(f > 0)) return;
@@ -39,6 +40,7 @@ function afflict(S, p, kind, atk) {
  */
 function mobHit(S, rt, p, raw, mob, how = "blow") {
   if (p.dead || dodged(S, rt, p)) return;
+  if (mob && elementMiss(S, mob)) { damageEvent(rt, p.eid, 0, 3, 1); return; }
   if ((how === "blow" || how === "shot") && evadeBlow(S, rt, p)) return;
   const before = p.hp;
   const src = mob && !mob.dead ? mob : null;
@@ -48,14 +50,14 @@ function mobHit(S, rt, p, raw, mob, how = "blow") {
   raw = skGuard(S, rt, p, raw, src, how);
   if (!raw) return;
   p.hitHow = how;   // the kind of blow, for the prefix powers that tell a melee blow or a marked area apart (53-prefix-guard.js)
-  hurtPlayer(S, rt, p, raw, src);
+  const dmg = hurtPlayer(S, rt, p, raw, src, mob && !src ? monsterElement(mob.k).type : undefined);
   p.hitHow = "";
   // a telegraphed trick ("mv", special) only makes a player reel who has not just reeled: no chain of them stun-locks
   const reel = how === "mv" ? !(p.stag > S.now - MV_GRACE) : how === "charge" || (how === "tele" && mob) || (src && (src.el >= 1 || MOBS[src.k].boss));
   if (!p.dead && reel && p.braceAt !== S.now) staggerPlayer(S, rt, p, mob);
   if (!src || src.dead || !src.tr || !src.tr.length) return;
   const atk = MOBS[src.k].atk * ELITE[src.el].atk;
-  if (!p.dead) {
+  if (!p.dead && dmg > 0) {
     if (has(src, "fire")) afflict(S, p, "burn", atk);
     if (has(src, "poison")) afflict(S, p, "poison", atk);
     if (has(src, "frost")) afflict(S, p, "slow", atk);
@@ -63,9 +65,16 @@ function mobHit(S, rt, p, raw, mob, how = "blow") {
   if (has(src, "vamp")) {
     // it drinks what it spills
     // (a rift monster made tougher heals by the same measure: 64-dim.js dimHk)
-    const heal = Math.min(mobMax(src) - src.hp, (Math.max(0, before - p.hp) * 3) / (src.hk || 1));
+    const heal = Math.min(mobMax(src) - src.hp, (Math.max(0, before - p.hp) * 3 * elementHealFactor(S, src)) / (src.hk || 1));
     if (heal >= 1) { src.hp += heal; rt.ev.push(["h", src.id, -Math.round(heal), 0, 0]); }
   }
+}
+
+/** Each rare spawn rolls its own enchant without touching combat or loot randomness. */
+function assignElementEnchant(S, mob) {
+  const d = MOBS[mob.k];
+  mob.enchant = (mob.el > 0 || d.boss) && !d.chest
+    ? DAMAGE_TYPES[ri({ seed: (S.seed ^ Math.imul(mob.id, 0x9e3779b9)) >>> 0 }, 1, DAMAGE_TYPES.length - 1)] : "";
 }
 /** Three (or more) shots fanned out around the line to the target; each lands where it was aimed, a beat later. */
 function volley(S, rt, mob, tgt, dmg, n) {
@@ -186,6 +195,7 @@ function dash(S, m, rt, mob, atk) {
   let far = 0;
   for (let k = 4; k <= a.len; k += 4) { if (!ok(m, x0 + a.ux * k, y0 + a.uy * k)) break; far = k; }
   mob.x = x0 + a.ux * far; mob.y = y0 + a.uy * far;
+  if (far > 0) mob.elementRunAt = S.now;
   rt.ev.push(["m", mob.id]);
   for (const pid of Object.keys(S.players)) {
     const p = S.players[pid];
@@ -205,20 +215,23 @@ function tickMob(S, m, rt, mob, dt, here) {
     if (!mob.temp && !mob.cellGone && now >= mob.respAt) { placeMob(S, m, mob); rt.ev.push(["r", mob.id]); }
     return;
   }
+  if (mob.enchant === undefined) assignElementEnchant(S, mob);
+  if (elementTick(S, rt, mob)) return;
   if (mob.dot) {
     // poison keeps biting once a second
     const dot = mob.dot;
+    const moving = elementMoving(S, mob);
     if (now >= dot.until) mob.dot = null;
     else if (now >= dot.next) {
       dot.next = now + 1000;
       const o = S.players[dot.pid];
-      if (o && o.map === m.id && dealMob(S, rt, mob, o, dot.dmg, 0)) return;
+      if (o && o.map === m.id && dealTypedMob(S, rt, mob, o, dot.dmg * (moving ? 2 : 1), "bleed")) return;
     }
   }
-  if (runeDotTick(S, m, rt, mob)) return;
   // a scripted field boss: its phases, the marked cast, the enrage (a challenge's boss: chalTick, 64-dim.js)
   if (d.script && !mob.chal) bsField(S, m, rt, mob);
   if (d.still) return;
+  if (elementFrozen(S, mob)) return;
   // (a howl's rally: TRICKS.howl)
   const rage = mob.rage > now, atk = d.atk * ELITE[mob.el].atk * (rage ? TRICKS.howl.k : 1);
   // a charge already wound up goes off whatever is done to the charger in the meantime
@@ -230,14 +243,15 @@ function tickMob(S, m, rt, mob, dt, here) {
   if (mob.dive === 2) mob.dive = 0;
   if (mob.stun > now) return;
   const swift = has(mob, "swift");
-  const speed = d.spd * (mob.slow > now ? 0.5 : 1) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1);
+  const attackInterval = d.cd * elementAttackFactor(S, mob);
+  const speed = d.spd * Math.min(mob.slow > now ? 0.5 : 1, elementMoveFactor(S, mob)) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1);
   if (mob.dec) {
     // a rogue's puppet: walk up to it and strike it, which sets it off
     const dc = mob.dec;
     if (dc.gone || now >= dc.until) mob.dec = null;
     else {
-      if (dist(mob.x, mob.y, dc.x, dc.y) <= d.range + 4) { if (now >= mob.atkAt) { mob.atkAt = now + d.cd; rt.ev.push(["m", mob.id]); popDecoy(S, rt, dc); } }
-      else stepMob(m, mob, dc.x, dc.y, speed, dt, d.fly);
+      if (dist(mob.x, mob.y, dc.x, dc.y) <= d.range + 4) { if (now >= mob.atkAt) { mob.atkAt = now + attackInterval; rt.ev.push(["m", mob.id]); popDecoy(S, rt, dc); } }
+      else stepMob(m, mob, dc.x, dc.y, speed, dt, d.fly, now);
       return;
     }
   }
@@ -288,7 +302,7 @@ function tickMob(S, m, rt, mob, dt, here) {
     }
     if (dd <= d.range) {
       if (now >= mob.atkAt) {
-        mob.atkAt = now + d.cd * (swift ? 0.74 : 1);
+        mob.atkAt = now + attackInterval * (swift ? 0.74 : 1);
         mob.dir = tgt.x < mob.x ? 1 : 2;
         if (d.volley) { rt.ev.push(["m", mob.id]); volley(S, rt, mob, tgt, atk * 0.85, 3); }
         else {
@@ -297,13 +311,13 @@ function tickMob(S, m, rt, mob, dt, here) {
           else mobHit(S, rt, tgt, atk, mob);
         }
       }
-    } else stepMob(m, mob, tgt.x, tgt.y, speed, dt, d.fly);
+    } else stepMob(m, mob, tgt.x, tgt.y, speed, dt, d.fly, now);
     return;
   }
   if (mob.st === 2) {
     const max = mobMax(mob);
-    mob.hp = Math.min(max, mob.hp + max * 0.2 * dt);
-    if (stepMob(m, mob, mob.hx, mob.hy, speed * 1.4, dt, d.fly)) { mob.st = 0; mob.hp = max; }
+    mob.hp = Math.min(max, mob.hp + max * 0.2 * dt * elementHealFactor(S, mob));
+    if (stepMob(m, mob, mob.hx, mob.hy, speed * 1.4, dt, d.fly, now)) { mob.st = 0; mob.hp = max; }
     return;
   }
   if (now >= mob.mvAt) {
@@ -311,7 +325,7 @@ function tickMob(S, m, rt, mob, dt, here) {
     mob.wx = mob.hx + (rnd(S) - 0.5) * 70;
     mob.wy = mob.hy + (rnd(S) - 0.5) * 70;
   }
-  stepMob(m, mob, mob.wx, mob.wy, speed * 0.5, dt, d.fly);
+  stepMob(m, mob, mob.wx, mob.wy, speed * 0.5, dt, d.fly, now);
 }
 
 // ───────────────────────────── active-area cells ─────────────────────────────
@@ -473,7 +487,9 @@ export function tick(S, now) {
       for (const o of mobsWithin(rt, z.x, z.y, z.r)) {
         if (z.slow) o.slow = now + 2500;
         if (z.knock) { const d = dist(z.x, z.y, o.x, o.y) || 1; knock(m, o, (o.x - z.x) / d, (o.y - z.y) / d, z.knock); }
-        hurtMob(S, rt, o, p, z.mult, false, z.px ? PX : undefined);   // (a zone a prefix power laid: `px: 1`)
+        const before = o.hp;
+        hurtMob(S, rt, o, p, z.mult, false, { px: z.px, elem: z.elem });
+        if (!o.dead && o.hp < before && z.pfx === "hellfire") elementMark(S, o, "burn", z.every * 2);
       }
       if (--z.left <= 0) rt.zones.splice(i, 1);
     }
@@ -502,7 +518,7 @@ export function tick(S, now) {
         if (now < (p.poolAt || 0) + 600 || dodged(S, rt, p)) continue;
         p.poolAt = now;
         p.blame = { by: q.kind === 1 ? "불길" : q.kind === 2 ? "얼음 웅덩이" : "독 웅덩이", lv: 0, el: 0 };
-        hurtPlayer(S, rt, p, q.dmg);
+        hurtPlayer(S, rt, p, q.dmg, null, q.kind === 1 ? "fire" : q.kind === 2 ? "cold" : "poison");
         if (!p.dead) afflict(S, p, q.kind === 1 ? "burn" : q.kind === 2 ? "slow" : "poison", q.atk);
       }
     }
@@ -555,15 +571,21 @@ export function tick(S, now) {
         const s = p[key];
         if (!s) continue;
         if (now >= s.until) { p[key] = null; continue; }
-        if (now >= s.next) { s.next = now + 1000; wound(S, S.maps[p.map], p, s.dmg); if (p.dead) break; }
+        if (now >= s.next) {
+          s.next = now + 1000;
+          const type = key === "burn" ? "fire" : "poison";
+          wound(S, S.maps[p.map], p, s.dmg * elementResist(S, p, type), type);
+          if (p.dead) break;
+        }
       }
+      if (!p.dead) elementTick(S, S.maps[p.map], p);
     }
     if (p.recall && now >= p.recall.at && !p.dead) finishRecall(S, p);
     // life skills: gathering channels, parcels, node cooldowns, the 알바 board's day (58-life.js)
     lifeTick(S, p, now);
     windTouch(S, p, now);
     if (p.rallyAt && now >= p.rallyAt) { p.rallyAt = 0; p.dirty = true; }
-    if (!p.dead) weaponTick(S, p, now);
+    if (!p.dead && !elementFrozen(S, p)) weaponTick(S, p, now);
     if (p.dead || now - p.regenAt < 1000) continue;
     p.regenAt = now;
     ensureDaily(S, p);
@@ -575,7 +597,7 @@ export function tick(S, now) {
     const rest = fire ? pfxNum(p, "rest", p.sit ? 0.12 : 0.06) : mapOfS(p.S, p.map).safe ? 0.08 : 0.02;
     // a fire's warmth carries on after you stand up, as long as you keep out of a fight
     const wr = calm ? warmRegen(p, now) : 0;
-    if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * (rest + wr) + 1);
+    if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + (st.mhp * (rest + wr) + 1) * elementHealFactor(S, p));
     if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr + st.mpReg) + 1);
     if (fire && p.sit) warmTick(S, p, fire, now);
     else p.warmT = 0;

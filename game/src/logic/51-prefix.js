@@ -110,7 +110,7 @@ const pfxChance = (S, st, base) => rnd(S) < base * Math.min(st.proc, PFX_CAP.pro
 function pfxHeal(S, p, st, amt) {
   const w = pfxPc(p).heal;
   if (S.now - w[0] >= 1000) { w[0] = S.now; w[1] = 0; }
-  const n = Math.max(0, Math.min(amt, st.mhp * PFX_CAP.heal - w[1], st.mhp - p.hp));
+  const n = Math.max(0, Math.min(amt * elementHealFactor(S, p), st.mhp * PFX_CAP.heal - w[1], st.mhp - p.hp));
   p.hp += n; w[1] += n;
   return n;
 }
@@ -242,9 +242,10 @@ const PFX_FN = {
     blow(S, rt, p, st, mob, x, y, fin, skip) {
       const c = PFX.chain;
       if (!(rnd(S) < c.p * st.proc)) return;
+      const opt = { ...PX, elem: "lightning", typedOnly: true };
       for (const o of mobsWithin(rt, x, y, c.r).filter((o) => o !== mob && !(skip && skip.includes(o))).slice(0, c.n)) {
         rt.ev.push(["z", Math.round(x), Math.round(y - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
-        hurtMob(S, rt, o, p, c.k, false, PX);
+        hurtMob(S, rt, o, p, c.k, false, opt);
       }
     },
   },
@@ -252,10 +253,10 @@ const PFX_FN = {
   nova: {
     kill(S, rt, p, st, mob, x, y) {
       if (p.chainKill) return;
-      const c = PFX.nova;
+      const c = PFX.nova, opt = { ...PX, elem: "fire", typedOnly: true };
       p.chainKill = true;
       rt.ev.push(["b", Math.round(x), Math.round(y), c.r, 1]);
-      for (const o of mobsWithin(rt, x, y, c.r)) hurtMob(S, rt, o, p, c.k, false, PX);
+      for (const o of mobsWithin(rt, x, y, c.r)) hurtMob(S, rt, o, p, c.k, false, opt);
       p.chainKill = false;
     },
   },
@@ -275,5 +276,5 @@ const PFX_FN = {
   // 가시의: part of what p takes goes back to the one who struck
   thorn: { hurt(S, rt, p, st, mob, dmg) { if (mob) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * PFX.thorn.k)), 0); } },
   // 포식자의: a kill heals (not through pfxHeal: as it always was)
-  feast: { kill(S, rt, p, st) { if (!p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * PFX.feast.k); } },
+  feast: { kill(S, rt, p, st) { if (!p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * PFX.feast.k * elementHealFactor(S, p)); } },
 };

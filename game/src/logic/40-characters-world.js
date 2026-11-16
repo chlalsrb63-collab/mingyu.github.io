@@ -128,11 +128,12 @@ function migrate(ch) {
     if (oldQ === 4 && !out.lg) {
       const seed = { seed: [...id].reduce((n, c) => (Math.imul(n, 31) + c.charCodeAt(0)) >>> 0, out.il + out.enh) };
       out.lg = pfxPick(seed, ITEMS[id].type);
-      out.af = out.af.filter((line) => Array.isArray(line) && AFFIX.some(([stat]) => stat === line[0]) && Number.isFinite(line[1]) && line[1] > 0);
-      const pool = AFFIX.filter(([stat]) => !out.af.some(([key]) => key === stat));
+      out.af = out.af.filter((line) => Array.isArray(line) && Object.hasOwn(AFFIX_BY_KEY, line[0]) && Number.isFinite(line[1]) && line[1] > 0);
+      const used = new Set(out.af.map(([key]) => key));
       const tier = toTier(out.il);
-      while (out.af.length < RARITY_AFFIX[3][0] && pool.length) {
-        const [stat] = pool.splice(ri(seed, 0, pool.length - 1), 1)[0];
+      while (out.af.length < RARITY_AFFIX[3][0]) {
+        const stat = rollAffixKey(seed, ITEMS[id].type, used);
+        used.add(stat);
         out.af.push(rollLine(seed, stat, tier, AFFIX_MUL[3]));
       }
     }
@@ -199,7 +200,7 @@ function migrate(ch) {
   const cnt = isObj(ch.cnt) ? ch.cnt : {};
   ch.cnt = {};
   for (const k of CNT_KEYS) ch.cnt[k] = Math.max(0, cnt[k] | 0);
-  if ((ch.v | 0) < 27) {
+  if (Object.hasOwn(cnt, "set") || Object.hasOwn(cnt, "rw")) {
     ch.cnt.rune_find = Math.max(ch.cnt.rune_find, cnt.set | 0);
     ch.cnt.rune_bond = Math.max(ch.cnt.rune_bond, cnt.rw | 0);
   }
@@ -336,8 +337,11 @@ function masteryRank(ch, k) {
 /** The worn gear's ordinary stats, runes and legendary powers. */
 function gearBonus(ch) {
   const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
-  const lg = {}, runeCounts = {}, win = {}, off = [];
-  const add = (s, v) => { if (s in b) b[s] += v; };
+  const lg = {}, runeCounts = {}, win = {}, off = [], element = emptyElementStats();
+  const add = (s, v) => {
+    if (Object.hasOwn(b, s)) b[s] += v;
+    else addElementAffix(element, s, v);
+  };
   for (const k of SLOTS) {
     const g = ch.eq[k];
     if (!g) continue;
@@ -349,10 +353,11 @@ function gearBonus(ch) {
       if (rune.set) runeCounts[rune.set] = (runeCounts[rune.set] || 0) + 1;
     }
     if (k === "weapon2") continue;
-    const base = ITEMS[g.id].base;
+    const item = ITEMS[g.id], base = item.base;
     // enhancement raises the piece's own stats along ENH_PCT
     for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : enhMul(g.enh)));
     for (const [s, v] of g.af) add(s, v);
+    if (item.elementAf) for (const [s, v] of item.elementAf) add(s, v);
     // one power counts once however many pieces carry it: the higher item level wins, a tie goes to the earlier slot (SLOTS order)
     if (g.lg) {
       const il = gearIl(g), w = win[g.lg];
@@ -366,8 +371,15 @@ function gearBonus(ch) {
   if (ttl && ttl.bonus) for (const [s, v] of ttl.bonus) add(s, v);
   for (const id of REGIONS) if (regionDone(ch, id)) for (const [s, v] of REGION_BONUS[id]) add(s, v);
   // the powers that count, in slot order (the order their code runs in: 51-prefix.js), and the slots of the pieces whose power does not
-  for (const k of SLOTS) { const g = ch.eq[k]; if (g && g.lg && win[g.lg] && win[g.lg].k === k) lg[g.lg] = 1; }
+  for (const k of SLOTS) {
+    const g = ch.eq[k], id = g?.lg;
+    if (!id || win[id]?.k !== k) continue;
+    lg[id] = 1;
+    const intrinsic = ELEMENT_PREFIX_AFFIX[id];
+    if (intrinsic && !PFX[id]?.off) for (const [s, v] of intrinsic) add(s, v);
+  }
   b.gold += pfxGold(lg);
+  b.element = element;
   b.lg = lg;
   b.runeCounts = runeCounts;
   b.runeSets = activeRuneSets(runeCounts);
@@ -390,6 +402,10 @@ function stats(p) {
     guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
     spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.vitSpd > now ? 1 + SKILL.vitals.spd : 1) * (p.slowed > now ? SLOW : 1) * (p.hold ? SKILL[p.hold.id].holdSpd : 1), spd0: c.spd0,
   };
+  out.element = c.element;
+  const cold = elementMoveFactor(p.S, p);
+  // The old field slows already adjust spd above. Use the stronger of the two slows.
+  out.spd *= p.slowed > now ? Math.min(1, cold / SLOW) : cold;
   if (c.pfx.stat.length) pfxStat(p, out);   // the powers that change the moment's numbers (51-prefix.js)
   return out;
 }
@@ -465,7 +481,7 @@ function guildNear(S, p) {
 }
 
 function newMob(S, k, r, sp) {
-  return { fix: (sp && sp.el) || 0, ep: sp && sp.elite !== undefined ? sp.elite : 0.08, id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false, tr: [], act: null, mv: 0, cn: 0 };
+  return { fix: (sp && sp.el) || 0, ep: sp && sp.elite !== undefined ? sp.elite : 0.08, id: S.nextId++, k, r, x: 0, y: 0, hx: 0, hy: 0, hp: 0, dir: 0, st: 0, tgt: null, atkAt: 0, mvAt: 0, wx: 0, wy: 0, by: {}, dead: false, respAt: 0, slow: 0, stun: 0, dot: null, castAt: 0, el: 0, temp: false, tr: [], act: null, mv: 0, cn: 0, elementRunAt: 0 };
 }
 /**
  * A channel's world. Maps come alive one at a time (runtime): the town at once, every other
@@ -566,6 +582,9 @@ function readyMob(S, mob) {
   mob.hp = mobMax(mob);
   mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null; mob.act = null; mob.mv = 0; mob.cn = 0;
   mob.runePoison = null;
+  elementClear(mob);
+  mob.elementRunAt = 0;
+  assignElementEnchant(S, mob);
   mob.wx = mob.x; mob.wy = mob.y;
   bsEnd(mob);   // a scripted boss risen again forgets its last fight (56-boss-script.js)
   mob.castAt = S.now + 3000 + rnd(S) * 3000;
@@ -652,7 +671,7 @@ export function addPlayer(S, pid, ch) {
   else if (typeof ch.map !== "string" || !Object.hasOwn(MAP_META, ch.map)) ch.map = START.map;
   const p = {
     S, pid, eid: S.nextId++, ch, map: ch.map, x: ch.x, y: ch.y, dir: 0, aim: AIM_N / 4, hp: 1, mp: 0, dead: false, stc: null,
-    cds: {}, atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, chatAt: 0, fullAt: 0, regenAt: S.now,
+    cds: {}, atkAt: 0, combo: 0, streak: 0, streakAt: 0, potAt: 0, hitAt: 0, mvAt: S.now, elementRunAt: 0, chatAt: 0, fullAt: 0, regenAt: S.now,
     sit: false, fish: null, food: null, warm: 0, warmPct: 0, warmT: 0, emoAt: 0, ginv: null, slowed: 0, burn: null, poison: null,
     atkBuff: 0, atkBuffK: 0.25, spdBuff: 0, inert: 0, inertAt: 0, reso: 0, vitSpd: 0, sanctAt: 0, dirty: true, sendMap: true, fix: true, gain: [], toast: [], party: 0, pinv: null, recall: null,
   };

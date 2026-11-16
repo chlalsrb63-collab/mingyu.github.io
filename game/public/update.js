@@ -200,7 +200,9 @@ export function update(dt, t) {
   Growth.autoPotion();
 
   // walk — applied immediately, checked by the server afterwards
-  const speed = s.spd * (t < G.buffEnd[1] ? 1.4 : 1) * (t < (G.buffEnd[4] || 0) ? G.defs.slow || 0.65 : 1);    // hasted, or slowed by frost
+  const slow = Math.min(G.elementSpeed, t < (G.buffEnd[4] || 0) ? G.defs.slow || 0.65 : 1);
+  const speed = s.spd * (t < G.buffEnd[1] ? 1.4 : 1) * slow;
+  if (slow === 0) { mx = my = 0; wantAtk = false; }
   const ox = me.x, oy = me.y;
   // the aim follows the way you walk; Shift held turns you on the spot without a step
   if (mx || my) me.aimI = aimIdx(mx, my);

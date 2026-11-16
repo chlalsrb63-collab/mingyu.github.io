@@ -27,6 +27,7 @@ import { entityPos } from "./net.js";
 import { addChat, banner, chatLog } from "./windows.js";
 import { fadeIn } from "./win_world.js";
 import { rarityLabel } from "./items.js";
+import { damageColor } from "./elements.js";
 
 const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3, banner: 4, binding: 5 }; // h[6], on selected impacts or healing spells
 
@@ -100,7 +101,7 @@ export function onEvent(e, t) {
       break;
     }
     case "h": {
-      const [, id, dmg, crit, isPlayer, cost, cue] = e;
+      const [, id, dmg, crit, isPlayer, cost, cue, parts] = e;
       const tgt = entityPos(id);
       if (!tgt) break;
       const h = heightOf(tgt);
@@ -119,7 +120,7 @@ export function onEvent(e, t) {
       } else {
         const hammer = cue === HIT_CUE.hammer; // the accompanying hm event plays the one landing cue
         const critical = crit === 1, grazing = crit === 2;
-        floatText(critical ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : critical ? "#ffd84a" : "#ffffff", critical, true);
+        floatDamage(dmg, parts, tgt, h, critical);
         tgt.hurtT = t; tgt.hsMs = 0;
         let wk, fin = false; // my own weapon kind, when it is my blow: the impact sound follows the weapon
         // recoil away from whoever struck last
@@ -338,9 +339,27 @@ export function onGain([kind, a, b, q]) {
 // ───────────────────────────── effects ─────────────────────────────
 // Effects live in the 3D scene; floating text is drawn over it and follows its point in the world.
 
-export function floatText(str, x, y, h, col, big, dmg = false) {
+function floatDamage(total, parts, tgt, h, crit) {
+  const x = tgt.x + (Math.random() * 8 - 4);
+  if (!parts?.length) {
+    floatText(crit ? `${total}!` : String(total), x, tgt.y, h + 0.25, damageColor(0), crit, true);
+    return;
+  }
+  const entries = parts;
+  const move = (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8);
+  const stride = Math.max(30, 11 * (String(Math.max(...entries.map(([, n]) => n))).length + (crit ? 1 : 0)));
+  for (let i = 0; i < entries.length; i++) {
+    const [type, n] = entries[i];
+    const group = Math.floor(i / 3), columns = Math.min(3, entries.length - group * 3);
+    const dx = (i % 3 - (columns - 1) / 2) * stride, dy = -group * (crit ? 23 : 17);
+    floatText(crit ? `${n}!` : String(n), x, tgt.y, h + 0.25, damageColor(type), crit, true, { dx, dy, move });
+  }
+}
+
+export function floatText(str, x, y, h, col, big, dmg = false, layout) {
   // a damage number bounces off to one side (dmg: true), the rest rise straight up
-  G.texts.push({ str, x, y, h, col, big: !!big, t0: now(), dmg, vx: dmg ? (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8) : 0 });
+  const vx = dmg ? layout?.move ?? (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8) : 0;
+  G.texts.push({ str, x, y, h, col, big: !!big, t0: now(), dmg, vx, dx: layout?.dx || 0, dy: layout?.dy || 0 });
 }
 /** A spark of magic gathering at the staff's or the book's tip, a few px from `src` toward (tx, ty). */
 function castFlash(f, src, tx, ty, col, fin) {
