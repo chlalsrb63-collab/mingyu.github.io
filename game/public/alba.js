@@ -40,7 +40,8 @@ const api = {
   sfx: (name) => { try { Sound.play(name); } catch { /* a missing sound is silent */ } },
   now: () => performance.now(),
 };
-const opened = () => !!st.k;
+/** A shift's window is open: input.js stands the hero still and takes no world keys. */
+export const active = () => !!st.k;
 
 // ── the window (built once)
 function build() {
@@ -93,6 +94,7 @@ function close() {
   st.k = null; st.mod = null; st.pending = null;
   if (st.dom) st.dom.root.hidden = true;
   document.body.classList.remove("alba-open");
+  dispatchEvent(new Event("blur"));   // input.js forgets the keys held (their keyup went to the window, not to the world)
 }
 
 /** Every snapshot: the shift in hand (or its absence = closed). */

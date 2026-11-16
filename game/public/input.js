@@ -13,6 +13,7 @@ import * as Housing from "./housing.js";
 import * as Gather from "./gather.js";
 import * as Charms from "./charms.js";
 import * as Coop from "./coop.js";
+import * as Alba from "./alba.js";
 import { G, $, dist, T, clamp, world, now, resize } from "./state.js";
 import { act } from "./net.js";
 import { usePotion, interact, stoneNear, aimAtPoint, attack, dash, talkKey } from "./actions.js";
@@ -41,7 +42,7 @@ export const typing = () => document.activeElement && ["INPUT", "TEXTAREA"].incl
 export function moveVector() {
   let x = 0, y = 0;
   // a mini-game, or the forge's rhythm lane (its movement keys are the flip arrows), holds you still
-  if (Mini.active() || Coop.lane()) { keys.clear(); G.path = null; return [0, 0]; }
+  if (Mini.active() || Coop.lane() || Alba.active()) { keys.clear(); G.path = null; G.auto = false; return [0, 0]; }
   if (Keymap.held(keys, "left")) x -= 1;
   if (Keymap.held(keys, "right")) x += 1;
   if (Keymap.held(keys, "up")) y -= 1;
@@ -200,7 +201,7 @@ export function setupInput() {
     Sound.unlock();
     if (!G.playing) return;
     if (typing()) { if (e.key === "Escape") document.activeElement.blur(); return; }
-    if (Mini.active() || Coop.boardActive()) return;  // a mini-game has the keyboard
+    if (Mini.active() || Coop.boardActive() || Alba.active()) return;  // a mini-game has the keyboard
     if (SX.onKey(e) || PMenu.onKey(e)) { e.preventDefault(); return; }   // 가위바위보 keys 1 2 3, Esc closes the player menu
     const act1 = Keymap.actionOf(e);
     if (e.code.startsWith("Arrow") || act1 === "dash" || act1 === "swap") e.preventDefault();
