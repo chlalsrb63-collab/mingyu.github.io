@@ -321,3 +321,6 @@ helm utility + phase-2 hooks = `54-prefix-util.js`; extension recipe, hook signa
 Known: 추적(trace) +25 % xp is cut to +15 % by the prefix xp cap (tooltip overpromises); 후광(halo) works solo; zone events shake the screen every 0.5 s; new weapons' `lg` have no weapon look
 (only the first 8 powers do, `tests/wardrobe.mjs LOOKS`). Codex W3-A/W2 will touch `itemlevel.mjs`/`wardrobe.mjs` the same way — keep the permissive wardrobe check.
 **W2 ownership (owner 2026-11-16):** the enchant system (scrolls + icons, 지선, window, fee, 추출의 마법망치) is **Codex's** task (a short Claude agent was started and stopped; nothing was built). Spec §3.3/§3.4.
+**장날 market merged (2026-11-16, suite 65/65, sheet v27):** `FAIR` = Tue+Sat 19:00–21:00 KST (`63-festival.js`), merchants `fm_leg fm_scr fm_rune fm_cos fm_food fm_dye` (`64-fair-market.js`, `public/fairmkt.js`),
+once per player per product per day (`ch.fairBuy`), prices in `FAIR_PRICE` (legendary 15k×(il/30)^1.35, scroll 40k, costume 60k …). 몽실 (scroll vendor) fills itself once `es_*` items exist (Codex W2).
+**Sheet `v` is now 27:** Codex's branches that bump `v` must rebase and re-pin the ~16 tests that assert it. Help/Guide read days from `defs.fair.days`.
