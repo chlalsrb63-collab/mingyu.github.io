@@ -1,6 +1,7 @@
 # 접두사 고유 효과 — prefix effects (design, 2026-11-16)
 
-Status: **design only, nothing built.** Owner request: a wide variety of `[접두사]` effects (Diablo legendary powers and Mabinogi
+Status: **P1a infrastructure built (2026-11-16, `logic/51-prefix.js`, how-to in `ai/HANDOFF.md` §0.11); the 87 new effects are not.** Where this doc and the code differ the code wins: a 유니크 has no
+`UNIQ.fx` / first-line convention any more (4 ordinary ×1.45 lines, no special first line), `st.lg[key]` stays `1` (the loser is `lgOff`), hook names are those of the `51-prefix.js` header. Owner request: a wide variety of `[접두사]` effects (Diablo legendary powers and Mabinogi
 enchants as the mood, all originals), different kinds per equipment type: **weapon / ring / gloves = offensive**, **armor (상의) /
 boots (하의) / amulet (목걸이) = defensive**, helm = mixed defence + utility, **the same effect never stacks**.
 Context: a 전설 (q3) and a 유니크 (q5) carry exactly ONE 고유 효과 `lg`; its name word is the item's prefix ("뇌명의 강철 양손검").

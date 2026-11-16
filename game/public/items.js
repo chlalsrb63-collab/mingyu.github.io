@@ -80,6 +80,19 @@ function statRow(k, v, cls) {
   d.append(el("span", "", label.replace(" %", "")), el("b", "", `+${v}${label.includes("%") ? "%" : ""}`));
   return d;
 }
+/** A piece's item level as the rules count it (50-loot-combat.js gearIl): its `il`, or for an old piece its base's req + the gap. */
+const ilOf = (e) => (e.il > 0 ? e.il : G.defs.items[e.id].req > 1 ? G.defs.items[e.id].req + (G.defs.ilGap ?? 10) : 1);
+/**
+ * Does this piece's 고유 효과 not count? The same power on two worn pieces counts once (higher item level, a tie to the earlier slot):
+ * a worn piece is dead when its slot is in `self.lgOff`; one in the bag when a worn piece with the same power has an item level ≥ its own.
+ */
+function lgDead(entry, o) {
+  const s = G.self;
+  if (!s || !entry.lg) return false;
+  const slot = o.eq || Object.keys(s.eq).find((k) => s.eq[k] === entry);
+  if (slot) return (s.lgOff || []).includes(slot);
+  return Object.keys(s.eq).some((k) => k !== "weapon2" && s.eq[k] && s.eq[k].lg === entry.lg && ilOf(s.eq[k]) >= ilOf(entry));
+}
 /**
  * One tooltip card (hud.css "item tooltip"): a rarity-coloured frame, then sections split by divider lines —
  * name · rarity and item level, the base stats, the plain affix lines, the 고유 효과 (a 전설's or 유니크's power, emphasised) /
@@ -115,6 +128,7 @@ function card(entry, o = {}) {
     const l = el("div", "tc-lg");
     l.append(el("i", "tc-tag", "고유 효과"), `◆ ${lg[1]}`);
     pw.push(l);
+    if (lgDead(entry, o)) pw.push(el("div", "tc-dead", "중복 적용되지 않음"));
   }
   if (entry.set) {
     const set = G.defs.sets[entry.set], worn = setWorn(entry.set);
