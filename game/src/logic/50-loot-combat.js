@@ -13,7 +13,7 @@ function countItem(ch, id) {
 }
 function canAdd(ch, id, n) {
   if (isGear(id)) return ch.inv.length + n <= bagCap(ch);
-  let room = (bagCap(ch) - ch.inv.length) * STACK + pouchRoom(ch, id);
+  let room = Math.max(0, bagCap(ch) - ch.inv.length) * STACK + pouchRoom(ch, id);
   for (const s of ch.inv) if (s.id === id) room += STACK - s.n;
   return room >= n;
 }
@@ -77,17 +77,17 @@ function pickUp(S, p, dr) {
   if (!fits(p.ch, dr)) { bagFull(S, p); return false; }
   if (dr.it === "gold") {
     p.ch.gold += dr.n;
+    runeEarnGold(S, p, dr.n);
     p.gain.push(["gold", dr.n]);
   } else if (dr.g) {
     p.ch.inv.push(dr.g);
     p.gain.push(["item", dr.it, 1, dr.q]);
     if (dr.q === 3 || dr.q === 5) p.ch.cnt.leg++;   // a 유니크 counts as a legendary find (the 첫 전설 achievement)
-    if (dr.q === 4) p.ch.cnt.set++;
     if (dr.q >= 3) checkAch(S, p);
     if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]${pp(gearName(dr.g), "을를")} 획득했습니다!`);
   } else {
     addItem(p.ch, dr.it, dr.n);
-    p.gain.push(["item", dr.it, dr.n, 0]);
+    foundItem(S, p, dr.it, dr.n);
     sqPicked(p, dr.it);
   }
   p.dirty = true;
@@ -117,9 +117,9 @@ function gearIl(g) {
 }
 /** The player level a piece can be worn from: its item level minus IL_GAP (at least 1). */
 const gearReq = (g) => Math.max(1, gearIl(g) - IL_GAP);
-/** A piece's name word: a legendary's or unique's power, or a set's name. Plain stat lines lend no word (owner 2026-11-16). */
+/** A piece's name word comes from a legendary or unique power. */
 function gearWord(g) {
-  return g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : "";
+  return g.lg ? `${LEGEND[g.lg][0]} ` : "";
 }
 /** "+3 뇌명의 강철 양손검" (a 유니크 is named like a 전설: by its power's word) */
 function gearName(g) {
@@ -136,15 +136,6 @@ function sellPrice(s) {
   if (!isGear(s.id)) return Math.floor(it.price * 0.4);
   return Math.floor(it.price * 0.05 * (1 + 0.8 * (s.q | 0)) * (1 + 0.3 * (s.enh | 0)));
 }
-/** The set a base item can belong to, if any. */
-function setFor(it) {
-  if (it.set) return it.set;   // a boss's own set piece (10-tables.js, bosses-2 §7)
-  for (const id of Object.keys(SETS)) {
-    if (SETS[id].types.includes(it.type) && SETS[id].tiers.includes(it.tier)) return id;
-  }
-  return null;
-}
-
 /** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`. */
 function rollLine(S, key, ilvl, mul) {
   const [, , , min, max, grow] = AFFIX.find((x) => x[0] === key);
@@ -156,7 +147,7 @@ function rollLine(S, key, ilvl, mul) {
  */
 function rollGear(S, id, q, ilvl, rank = 0) {
   const it = ITEMS[id];
-  if (q === 4 && !setFor(it)) q = 3;
+  if (q === 4) q = 3;
   const g = plain(id);
   g.q = q;
   g.il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(it.tier | 0) - 1] || 1), 1, 200);
@@ -164,12 +155,7 @@ function rollGear(S, id, q, ilvl, rank = 0) {
   const [lo, hi] = RARITY_AFFIX[q];
   for (let n = ri(S, lo, hi); n > 0 && pool.length; n--) g.af.push(rollLine(S, pool.splice(ri(S, 0, pool.length - 1), 1)[0][0], ilvl, AFFIX_MUL[q]));
   if (q === 3 || q === 5) g.lg = pfxPick(S, it.type);   // the power comes from the item type's pool (51-prefix.js)
-  if (q === 4) g.set = setFor(it);
-  if (!isJewel(id)) {
-    const r = rnd(S);
-    const most = it.type === "gloves" || it.type === "boots" ? 1 : 3;
-    g.sk = Math.min(most, (r < 0.12 ? 2 : r < 0.45 ? 1 : 0) + (q >= 3 ? 1 : 0));
-  }
+  g.sk = ri(S, 0, sockCap(g));
   return g;
 }
 /** `rank`: 0 for ordinary monsters, 1 elite, 2 field boss or boss. */
@@ -180,10 +166,10 @@ function rollRarity(S, rank, mf) {
   const uq = UNIQ_P[rank] * k;
   if (r < uq) return 5;
   r -= uq;
-  const top = [0.012, 0.07, 0.2][rank] * k;       // legendary or set
+  const top = [0.012, 0.07, 0.2][rank] * k;
   const rare = [0.09, 0.3, 0.55][rank] * k;
   const magic = 0.36 * k;
-  if (r < top) return rnd(S) < 0.4 ? 4 : 3;
+  if (r < top) return 3;
   return r < top + rare ? 2 : r < top + rare + magic ? 1 : 0;
 }
 function tierFor(lv) {
@@ -218,17 +204,16 @@ function lootFor(S, rt, mob, p) {
     if (isJewel(id) && q === 0) q = 1;
     out.push({ g: rollGear(S, id, q, d.lv, rank) });
   }
-  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
+  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: rollRuneId(S, rank), n: 1 });
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
   if (fx.stone) out.push({ it: "stone", n: 1 });   // (a power's extra stone: at most one a kill)
-  // a kind's own finds (MOBS[k].drops: [item, chance, min, max]); its weapon always drops legendary
-  // (a boss set's own piece always drops as that set)
-  for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(ITEMS[it].set ? { g: rollGear(S, it, 4, d.lv, rank) } : ITEMS[it].type === "weapon" ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
+  // A kind's own finds (MOBS[k].drops: [item, chance, min, max]); its signature gear always drops legendary.
+  for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(isGear(it) ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
   if (rnd(S) < 0.1) out.push({ it: d.lv < 8 ? "hp_s" : d.lv < 26 ? "hp_m" : "hp_l", n: 1 });
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   for (const o of out) {
     rt.drops.push({
-      id: S.nextId++, it: o.g ? o.g.id : o.it, g: o.g || null, n: o.n || 1, q: o.g ? o.g.q : 0,
+      id: S.nextId++, it: o.g ? o.g.id : o.it, g: o.g || null, n: o.n || 1, q: o.g ? o.g.q : RUNES[o.it]?.q || 0,
       x: mob.x + ri(S, -14, 14), y: mob.y + ri(S, -8, 10), own: p.pid, freeAt: S.now + 20000, dieAt: S.now + 60000,
     });
   }
@@ -259,6 +244,8 @@ const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3, rally: 4, binding: 5 };
 function dealMob(S, rt, mob, p, dmg, crit, cue) {
   // a boss that dived out of reach is not hit at all (56-boss-script.js)
   if (mob.dead || mob.dive) return false;
+  const poison = runePoisonFactor(S, mob);
+  if (poison !== 1) dmg = Math.max(1, Math.round(dmg * poison));
   // a scripted boss stunned by a broken cast takes more (its script's vuln), half behind its shielding adds
   if (mob.bs) dmg = bsTaken(S, rt, mob, dmg);
   // a rift's monster is made tougher for a bigger or stronger party (64-dim.js dimHk)
@@ -274,6 +261,7 @@ function dealMob(S, rt, mob, p, dmg, crit, cue) {
   rt.ev.push(event);
   if (mob.hp > 0) return false;
   killMob(S, rt, mob);
+  runeKillHeal(S, p, mob);
   return true;
 }
 
@@ -322,11 +310,12 @@ function stagger(S, mob, p, crit) {
  * never starts another power's chance, status or crit effect; its passive multipliers and a kill's heal still count).
  */
 function hurtMob(S, rt, mob, p, mult, sure, opt) {
-  if (mob.dead) return;
+  if (mob.dead || mob.dive) return;
   const st = stats(p);
   const d = MOBS[mob.k];
   const o = opt || {};
   const fx = pfxPre(S, p, st, mob, d, o);   // the powers that bend this blow before it rolls: armour ignored, crit chance, a sure crit
+  const pure = fx.pure;
   // a blow beyond your depth, or from an unpractised hand, may only graze (×0.5, never a crit)
   const graze = !sure && !fx.sure && rnd(S) * 100 < grazeChance(p, mob);
   // 급소 도려내기: a dagger finds the gaps its marks point to (+4% critical chance per mark)
@@ -335,12 +324,14 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const ign = fx.ign ? 1 - (1 - (o.ign || 0)) * (1 - fx.ign) : (o.ign || 0);
   // 거검의 관성: each stack a sword carries adds to its critical damage
   const critd = st.critd + (st.wk === "sword" ? inertOf(p) * SKILL.inertia.critd : 0);
-  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
+  const defence = pure ? 0 : d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
+  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - defence;
+  if (pure) dmg *= RUNE_POWER.blackstar.damage;
   // a dagger in a back that is not watching you
   if (st.wk === "dagger" && mob.tgt !== p.pid) dmg *= 1 + st.sneak;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
   dmg *= pfxMul(S, p, st, mob, d, o, crit);   // the powers that raise the blow (giant: +30% on elites and bosses), one product capped ×1.6
-  if (has(mob, "tough")) dmg *= 0.6;
+  if (!pure && has(mob, "tough")) dmg *= 0.6;
   if (mob.vuln > S.now) dmg *= 1.3;
   // 금서의 낙인: a branded monster takes more from everyone
   if (mob.brand > S.now) dmg *= 1 + SKILL.brand.k;
@@ -367,6 +358,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const x = mob.x, y = mob.y;
   wmHit(S, p, mob);
   const brand = mob.brand, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue);
+  if (pure) runeShock(S, rt, p, x, y, mob);
   pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand);
   if (!o.px) pfxHit(S, rt, p, st, mob, dmg, crit, killed, o);   // the powers that answer a blow landing (chance, status, crit)
   if (!killed) {
@@ -397,6 +389,8 @@ function killMob(S, rt, mob) {
   if (mob.slot) { mob.slot.mob = null; mob.slot.due = mob.respAt; rt.lastKill[mob.slot.c] = S.now; mob.slot = null; mob.cellGone = true; }
   mob.tgt = null;
   mob.dot = null;
+  mob.runePoison = null;
+  mob.runeBurn = null;
   mob.mk = 0; mob.dec = null; mob.vuln = 0; mob.brand = 0;
   rt.ev.push(["k", mob.id]);
   if (S.dims[rt.id]?.story?.airship) { airshipKill(S, rt, mob); return; }

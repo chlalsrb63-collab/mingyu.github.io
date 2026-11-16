@@ -10,7 +10,7 @@
  *      and lists it in public/assets/manifest.json under "images" or "audio" with a key:
  *        "images": { "weapon.sword.t3": { "src": "assets/weapons/sword/sword_t3.png?v=1a2b", "w": 44, "h": 32 } }
  *        "audio":  { "sfx.coin": { "src": "assets/sfx/coin.ogg", "vol": 0.6 } }
- *      Weapon keys: weapon.<kind>.t<tier> · .lg.<power> · .set.<set> · .skin.<motif>, and
+ *      Weapon keys: weapon.<kind>.t<tier> · .lg.<power> · .skin.<motif>, and
  *      icon.weapon.<kind>.… for the 16×16 bag icons; other bag icons: icon.item.<item id>.
  *   2. prefer the file and keep the code as the fallback:
  *        const cv = Assets.canvas("mob.twinhare") || drawTwinhareInCode();

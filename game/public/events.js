@@ -26,6 +26,7 @@ import { G, dist, T, now, $, el } from "./state.js";
 import { entityPos } from "./net.js";
 import { addChat, banner, chatLog } from "./windows.js";
 import { fadeIn } from "./win_world.js";
+import { rarityLabel } from "./items.js";
 
 const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3, banner: 4, binding: 5 }; // h[6], on selected impacts or healing spells
 
@@ -290,7 +291,7 @@ export function onEvent(e, t) {
 
 /** The loot feed at the play view's lower right: one line per kind, repeats add up (`들꽃잎 ×3`), each fades after 4 s. */
 const feed = new Map();
-/** Rarity as a shape too, not colour alone: 마법 ◇ · 희귀 ◆ · 전설 ★ · 세트 ◈ · 유니크 ▣. */
+/** Rarity as a shape too: 마법 ◇ · 희귀 ◆ · 전설 ★ · 세트 룬 ◈ · 유니크 ▣. */
 const RARITY_MARK = ["", "◇ ", "◆ ", "★ ", "◈ ", "▣ "];
 function lootLine(key, text, col, n) {
   const box = $("#loot");
@@ -324,11 +325,12 @@ export function onGain([kind, a, b, q]) {
     // a material for the 재료 주머니 rises over the head too (gathering's reward, gather.js)
     const d = G.defs.items[a];
     if (d && (d.type === "lmat" || a === "staple" || a === "flask")) floatText(`+${d.name}${b > 1 ? ` ×${b}` : ""}`, me.x, me.y, h + 0.55, "#b8f07a");
-    const p = addChat(`획득: ${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${b > 1 ? ` ×${b}` : ""}`, "loot");
+    const rarity = q ? `[${rarityLabel(a, q)}] ` : "";
+    const p = addChat(`획득: ${rarity}${d.name}${b > 1 ? ` ×${b}` : ""}`, "loot");
     if (q) p.style.color = Art.RARITY_COL[q];
-    lootLine(`i:${a}:${q | 0}`, (n) => `${RARITY_MARK[q | 0]}${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${n > 1 ? ` ×${n}` : ""}`, q ? Art.RARITY_COL[q] : "#f0e6d0", b || 1);
+    lootLine(`i:${a}:${q | 0}`, (n) => `${RARITY_MARK[q | 0]}${rarity}${d.name}${n > 1 ? ` ×${n}` : ""}`, q ? Art.RARITY_COL[q] : "#f0e6d0", b || 1);
     Sound.play("loot", q | 0);
-    if (q >= 3) banner(q === 4 ? "세트 획득!" : "전설 획득!", true);
+    if (q >= 3) banner(`${rarityLabel(a, q)}${d.type === "rune" ? " 룬" : ""} 획득!`, true);
   } else if (kind === "cos") { const d = G.defs.cos[a]; const p = addChat(`외형 획득: ${d ? d.name : a}`, "loot"); if (d) p.style.color = Art.RARITY_COL[d.q]; lootLine(`c:${a}`, () => `외형 · ${d ? d.name : a}`, d ? Art.RARITY_COL[d.q] : "#f0e6d0", 1); Sound.play("loot", d ? d.q : 1);
   } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y, h + 0.9, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a} 달성!`, "sys"); }
 }

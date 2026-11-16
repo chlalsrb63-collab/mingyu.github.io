@@ -418,11 +418,10 @@ export { charSprite, drawFigure, setStyle, playerLook, npcLook, HAIR, SKIN, STYL
 
 // ───────────────────────────── icons ─────────────────────────────
 
-/** Item rarity colours: 일반 · 마법 blue · 희귀 yellow · 전설 orange · 세트 green · 유니크 golden beige. */
+/** Item rarity colours. Green is used for set runes and wardrobe rarities. */
 export const RARITY_COL = ["#d8d4c8", "#6a9cff", "#f0d050", "#ff8a30", "#5fd47a", "#d2b48c"];
 // tier 6 운철 (meteor iron): night-blue metal; its accents are starlight gold
 const METAL = [null, ["#a8acb4", "#74787f"], ["#c8ccd4", "#8e94a0"], ["#9ab8e0", "#5a78b0"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"], ["#8a9ae0", "#3a4680"]];
-const RUNE_COL = { ign: "#ff6a3a", aeg: "#8aa0c0", vit: "#e84a5a", men: "#4a8aff", cel: "#7ae8a0", acu: "#ffd84a", san: "#c03048", lum: "#fff0a0", fos: "#b07aff" };
 
 function potion(liquid, light, big) {
   const [c, g] = canvas(16, 16);
@@ -482,23 +481,25 @@ function coin() {
   outline(c, g, "#3a2a08");
   return c;
 }
-function runeIcon(key) {
+function runeIcon(id, rune) {
   const [c, g] = canvas(16, 16);
-  disc(g, 8, 8.5, 5.5, 6, "#3a3d48");
-  disc(g, 7.5, 8, 4.5, 5, "#4c505c");
-  const col = RUNE_COL[key] || "#fff";
+  const q = rune?.q || 1, col = RARITY_COL[q];
+  let glyph = 0;
+  for (const ch of rune?.set || rune?.af?.[0]?.[0] || id) glyph = (glyph * 31 + ch.charCodeAt(0)) >>> 0;
+  paint(g, [
+    "...LLL..", "..LMMMM.", ".LMMMMMS", "LMMMMMSS", "MMMMMMSS",
+    "MMMMMMS.", "MMMMMSS.", ".MMMSS..", "..SSS...",
+  ], { L: "#757489", M: "#484858", S: "#2c2e40" }, 4, 3);
   g.fillStyle = col;
-  const n = RUNE_KEYS_ART.indexOf(key);
-  g.fillRect(7, 4, 2, 9);
-  if (n % 3 === 0) { g.fillRect(5, 6, 6, 1); g.fillRect(9, 9, 2, 1); }
-  else if (n % 3 === 1) { g.fillRect(5, 5, 2, 1); g.fillRect(9, 8, 2, 1); g.fillRect(5, 11, 2, 1); }
-  else { g.fillRect(9, 5, 2, 2); g.fillRect(5, 9, 2, 2); }
-  if (n >= 3) px(g, 10, 12, col);
-  if (n >= 6) px(g, 5, 4, col);
+  g.fillRect(7, 5, 1, 6);
+  for (let i = 0; i < 3; i++) {
+    const left = glyph & (1 << i), right = glyph & (1 << (i + 3));
+    g.fillRect(left ? 5 : 7, 5 + i * 2, 1 + (left ? 2 : 0) + (right ? 2 : 0), 1);
+  }
+  if (q === 4) g.fillRect(10, 10, 1, 1);
   outline(c, g, "#111118");
   return c;
 }
-const RUNE_KEYS_ART = Object.keys(RUNE_COL);
 
 function weaponIcon(cls, tier) {
   const [c, g] = canvas(16, 16);
@@ -748,7 +749,7 @@ export const charmIconUrl = (kind) => { const k = "url:" + kind; return charmCac
 export const charmKind = (c) => (!c || !c.rev ? "sealed" : c.lg && CHARM_ART[c.lg] ? c.lg : `g${c.g || 1}`);
 
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
-export function buildIcons(items) {
+export function buildIcons(items, runes = {}) {
   const cv = { camp: campIcon(), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem(),
     cafe_coffee: mugIcon("#f4ecdc", "#cfc4b2", "#5a3420", "#c8a070"), cafe_cocoa: mugIcon("#d86a6a", "#b04e56", "#8a4a2a", "#ffffff"), cafe_tea: mugIcon("#8ac0a0", "#6a9a80", "#c8b040", null),
     charm: charmIcon("sealed"), charm_nail: charmIcon("nail"),
@@ -768,7 +769,7 @@ export function buildIcons(items) {
     else if (it.type === "boots") cv[id] = bootsIcon(it.tier);
     else if (it.type === "ring") cv[id] = ringIcon(it.tier);
     else if (it.type === "amulet") cv[id] = amuletIcon(it.tier);
-    else if (it.type === "rune") cv[id] = runeIcon(it.rune);
+    else if (it.type === "rune") cv[id] = runeIcon(id, runes[it.rune]);
     else if (it.type === "furn") cv[id] = furnIcon(id) || cv[id] || gem();   // crafted pieces (P8) draw in lifeicons.js
     // the 재료 주머니's goods: herbs, ores, woods and ingots by grade, 식재료 꾸러미, 빈 병 (gatherart.js)
     else if (it.type === "lmat" || id === "staple" || id === "flask") { const m = matIcon(id, it); if (m) cv[id] = m; }

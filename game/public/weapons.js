@@ -1,6 +1,6 @@
 /**
  * Weapon art: a distinct look for every tier of every weapon kind, special looks
- * for legendary powers and set pieces, weapon skins (외형) and the glow of a
+ * for legendary powers, weapon skins (외형) and the glow of a
  * well-enhanced weapon (+7, +10).
  *
  * Every weapon is described ONCE, as flat shapes in weapon space — `s` runs
@@ -19,7 +19,7 @@
  *
  * An approved external image (asset/ → scripts/import-art.mjs --install → public/assets/
  * manifest.json) replaces a look when it is listed: "weapon.<kind>.t<tier>",
- * ".lg.<power>", ".set.<set>", ".skin.<motif>", and "icon.weapon.<kind>.…" for the bag
+ * ".lg.<power>", ".skin.<motif>", and "icon.weapon.<kind>.…" for the bag
  * icon. The rarity outline and the +7/+10 glow are still applied on top. Unlisted looks
  * (the default: the manifest is empty) are drawn in code as below.
  */
@@ -29,7 +29,7 @@ import { porcelainWeaponSprite, porcelainWeaponIcon, PORCELAIN_MOTIF } from "./w
 
 const GRIP = [5, 16];
 const INK = "#2b2233";
-const RARE_INK = [INK, "#2c4a8c", "#8a6a14", "#9a4a12", "#1f6a3a"];
+const RARE_INK = [INK, "#2c4a8c", "#8a6a14", "#9a4a12", INK, "#826845"];
 const ICON_INK = "#111118";
 
 // ───────────────────────────── materials ─────────────────────────────
@@ -890,7 +890,7 @@ export function silhouetteSamples(kind) {
 
 // ───────────────────────────── motifs ─────────────────────────────
 // A motif recolours a design's blade and adds a few shapes over its striking part.
-// Legendary powers, set pieces and weapon skins are all motifs.
+// Legendary powers and weapon skins are motifs.
 
 const along = (h, n, f) => { const out = []; for (let i = 0; i < n; i++) out.push(...[].concat(f(h[0] + ((h[1] - h[0]) * (i + 0.5)) / n, i))); return out; };
 const MOTIF = {
@@ -903,13 +903,6 @@ const MOTIF = {
   feast: { name: "포식자", blade: ["#ffb0a0", "#d0485a", "#7a2040"], add: (h) => along(h, 4, (s) => P([[s - 1, h[3] + 0.1], [s + 1, h[3] + 0.1], [s, h[3] - 1.2]], null)) },
   echo: { name: "메아리", blade: ["#f0d8ff", "#b48ae8", "#6a4aa8"], add: (h) => along(h, 3, (s) => D(s, (h[2] + h[3]) / 2 - 0.5, "white")) },
   giant: { name: "거인 사냥꾼", blade: M.bone, add: (h) => along(h, 2, (s) => L(s, h[2], s, h[3] - 1, "ink")) },
-  // set pieces
-  rift: { name: "균열 추적자", blade: M.void, add: (h) => [L(h[0] + 1, (h[2] + h[3]) / 2 - 0.5, h[1] - 2, (h[2] + h[3]) / 2 - 0.5, "energy"), D(h[1] + 2, h[2] - 1, "energy")] },
-  pioneer: { name: "개척자", blade: M.steel, fit: M.leather, add: () => [] },
-  runner: { name: "네온 러너", blade: M.carbon, add: (h) => [L(h[0], h[3] - 1, h[1] - 1, h[3] - 1, "glow")] },
-  // the bosses-2 raid sets (no weapon piece yet: here so every set has a look)
-  nightveil: { name: "밤장막", blade: M.void, add: (h) => [L(h[0], h[3] - 1, h[1] - 1, h[3] - 1, "glow")] },
-  bloomgrave: { name: "꽃무덤", blade: M.steel, add: (h) => [D(h[1] + 2, h[2] - 1, "energy")] },
   // weapon skins
   sakura: { name: "벚꽃", blade: ["#fff0f6", "#f4b4cc", "#c06a90"], fit: ["#8a5a4a", "#6a3e36", "#4a2a2e"], add: (h) => along(h, 3, (s, i) => C(s, i % 2 ? h[3] : h[2], 1.2, "petal", { top: true })) },
   frost: { name: "서리", blade: ["#f4fcff", "#b8e4f8", "#6aa0d0"], add: (h) => along(h, 3, (s) => P([[s - 1, h[2] + 0.5], [s + 1, h[2] + 0.5], [s, h[2] - 2]], "ice")) },
@@ -1095,11 +1088,10 @@ function paint(d, W, H, xf, inv, glow, inks) {
 const GLOW7 = "#fff2a8", GLOW10 = "#ffd84a";
 
 // ───────────────────────────── external images ─────────────────────────────
-const SET_MOTIFS = new Set(["rift", "pioneer", "runner", "nightveil", "bloomgrave"]);
-/** The manifest key of a look: a skin wins over a legendary/set power, which wins over the tier. */
+/** The manifest key of a look: a skin wins over a legendary power, which wins over the tier. */
 export function assetKey(kind, tier, o = {}) {
   if (MOTIF[o.ws]) return `${kind}.skin.${o.ws}`;
-  if (MOTIF[o.wl]) return `${kind}.${SET_MOTIFS.has(o.wl) ? "set" : "lg"}.${o.wl}`;
+  if (MOTIF[o.wl]) return `${kind}.lg.${o.wl}`;
   return `${kind}.t${tier}`;
 }
 /**
@@ -1167,7 +1159,7 @@ export function bowSprite(gear = {}, pull = 0, arrow = false) {
   return sprite("bow", gear, { pull: q / 8, arrow: !!arrow, q });
 }
 function sprite(kind, gear, o) {
-  const wt = Math.max(1, Math.min(6, gear.wt | 0 || 1)), wq = Math.max(0, Math.min(4, gear.wq | 0)), we = gear.we | 0;
+  const wt = Math.max(1, Math.min(6, gear.wt | 0 || 1)), wq = Math.max(0, Math.min(5, gear.wq | 0)), we = gear.we | 0;
   const motif = MOTIF[gear.ws] ? gear.ws : MOTIF[gear.wl] ? gear.wl : "";
   const key = `${kind}:${wt}:${wq}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}:${motif}${o ? `:${o.q}:${o.arrow ? 1 : 0}` : ""}`;
   let c = cache.get(key);
@@ -1241,7 +1233,7 @@ const urls = new Map();
 /** A data URL for an item entry's icon when it looks different from its base item (legendary, set, +7, skin), else null. */
 export function entryIconUrl(entry, it) {
   if (!entry || !it || it.type !== "weapon") return null;
-  const wl = entry.lg || entry.set || (MOTIF[it.id || entry.id] ? it.id || entry.id : ""), we = entry.enh | 0;
+  const wl = entry.lg || (MOTIF[it.id || entry.id] ? it.id || entry.id : ""), we = entry.enh | 0;
   if (!wl && we < 7) return null;
   const key = `${it.wk}:${it.tier}:${wl}:${we >= 10 ? 10 : 7 * (we >= 7)}`;
   if (!urls.has(key)) urls.set(key, weaponIcon(it.wk, it.tier, { wl, we }).toDataURL());

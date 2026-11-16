@@ -94,7 +94,7 @@ assert.equal(self.st.str, 15); assert.equal(self.lvl, 11);
 assert.ok(self.atk >= before + 9 && self.atk <= before + 10, "ten points of STR at grade A and ten character levels: +9.5 attack before rounding");
 assert.ok(self.xp < 5000);
 
-// ── runes: socket two in order and the runeword appears
+// ── runes: socket two and apply their individual stats
 pa.dirty = true;
 const critd0 = L.viewFor(S, A).self.critd;
 pa.ch.eq.weapon.sk = 2;
@@ -103,8 +103,9 @@ const slot = (id) => pa.ch.inv.findIndex((s) => s.id === id);
 assert.equal(act(A, { t: "rune", s: slot("ru_ign"), k: "weapon", i: 5 }).ok, false, "no such socket");
 assert.ok(act(A, { t: "rune", s: slot("ru_ign"), k: "weapon", i: 0 }).ok);
 assert.ok(act(A, { t: "rune", s: slot("ru_acu"), k: "weapon", i: 1 }).ok);
-assert.deepEqual(pa.ch.eq.weapon.ru, ["ign", "acu"]);
-assert.equal(L.viewFor(S, A).self.critd, critd0 + 25, "runeword 섬광 adds critical damage");
+assert.deepEqual(pa.ch.eq.weapon.ru, ["ru_ign", "ru_acu"]);
+const bonus = ["ru_ign", "ru_acu"].flatMap((id) => L.defs().runes[id].af).filter(([s]) => s === "critd").reduce((n, [, v]) => n + v, 0);
+assert.equal(L.viewFor(S, A).self.critd, critd0 + bonus);
 
 // ── a reload: back within a minute, the party is whole again; later than that, it stays gone
 let chB = L.removePlayer(S, B);

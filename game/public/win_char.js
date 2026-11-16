@@ -20,7 +20,7 @@ import * as Gather from "./gather.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
 import { isOpen, touch, hideTip, closeDrawer, openWin, hoverTip, ask, chatLink } from "./windows.js";
-import { invOrder, itemSlot, QS_USE, useSlot, isGear, emptyEquipSlot, reqLv, sellPrice, itemTip, itemName, SLOT_NAME, SLOT_GLYPH, setWorn, statText } from "./items.js";
+import { invOrder, itemSlot, QS_USE, useSlot, isGear, emptyEquipSlot, reqLv, sellPrice, itemTip, itemName, itemRarity, SLOT_NAME, SLOT_GLYPH, runeSetStatus, runeSetMax } from "./items.js";
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
@@ -64,7 +64,7 @@ export function renderInv(s) {
   if (charmTab) Charms.renderBagList(s, $("#inv-charms"));
   if (G.sel >= s.inv.length) G.sel = -1;
   const order = invOrder(s.inv);
-  for (let n = 0; n < cap; n++) {
+  for (let n = 0; n < Math.max(cap, order.length); n++) {
     const i = order[n];
     if (i === undefined) { grid.append(itemSlot(null)); continue; }
     const entry = s.inv[i], item = it[entry.id];
@@ -111,7 +111,7 @@ export function renderInv(s) {
   const d = it[entry.id];
   // on a touch screen there is no hovering, so the pane says everything the tooltip would
   if (touch()) itemTip(entry, det);
-  else { const nm = el("div", "nm", itemName(entry)); nm.style.color = Art.RARITY_COL[entry.q || 0]; det.append(nm); }
+  else { const nm = el("div", "nm", itemName(entry)); nm.style.color = Art.RARITY_COL[itemRarity(entry)]; det.append(nm); }
   const btns = el("div", "btns");
   const add = (label, fn, off, gold) => { const b = el("button", gold ? "btn gold small" : "btn small", label); b.disabled = !!off; b.addEventListener("click", () => { hideTip(); fn(); }); btns.append(b); };
   if (d.type === "pot") add("사용", () => act({ t: "use", id: entry.id }), false, true);
@@ -140,16 +140,26 @@ export function renderInv(s) {
     });
   }
   if (d.type === "rune") {
-    let any = false;
+    const targets = [];
     for (const k of G.defs.slots) {
       const g = s.eq[k];
       for (let i = 0; g && i < g.sk; i++) {
-        any = true;
         const cur = g.ru && g.ru[i];
-        add(`${SLOT_NAME[k]} 홈 ${i + 1}${cur ? ` (${G.defs.runes[cur][0]} 교체)` : ""}`, () => { act({ t: "rune", s: G.sel, k, i }); });
+        targets.push({ k, i, cur });
       }
     }
-    if (!any) btns.append(el("span", "ds", "홈이 있는 장비를 장착해야 끼울 수 있습니다."));
+    targets.sort((a, b) => Number(!!a.cur) - Number(!!b.cur));
+    det.append(el("div", "ds", targets.length ? "룬을 끼울 소켓을 고르세요." : "소켓이 열린 장비를 장착하면 룬을 끼울 수 있습니다."));
+    for (const { k, i, cur } of targets) {
+      const target = `${SLOT_NAME[k]} ${i + 1}번`;
+      add(`${target} · ${cur ? "교체" : "빈 소켓"}`, () => {
+        const s = G.sel;
+        if (!cur) { act({ t: "rune", s, k, i }); return; }
+        ask(`${target}의 「${G.defs.runes[cur].name}」이 사라집니다.\n「${itemName(entry)}」으로 교체할까요?`, "교체", () => {
+          if (G.self?.inv[s]?.id === entry.id && G.self?.eq[k]?.ru?.[i] === cur) act({ t: "rune", s, k, i, r: 1 });
+        });
+      }, false, !cur);
+    }
   }
   if (isOpen("shop")) {
     const each = sellPrice(entry);
@@ -229,7 +239,7 @@ export function renderDoll(s) {
   resetDoll();
   drawPortrait(now());
 }
-/** The 장비 / 상세 tab's sheet: stat groups, legendary powers, sets. */
+/** The equipment sheet shows legendary powers and the server's current rune set status. */
 function renderSheet(s) {
   const st = $("#char-stats");
   st.textContent = "";
@@ -239,15 +249,18 @@ function renderSheet(s) {
     for (const [key, val] of rows) grp.append(Info.statChip(key, val(s)));
     st.append(grp);
   }
-  const pw = $("#char-sets");
+  const pw = $("#char-powers");
   pw.textContent = "";
-  const sets = Object.keys(G.defs.sets).filter((id) => setWorn(id));
-  if (s.lg.length || sets.length) pw.append(section("고유 능력 · 세트", "gem"));
+  const sets = Object.keys(s.runeCounts || {});
+  if (s.lg.length) pw.append(section("장비 고유 효과", "gem"));
   for (const k of s.lg) pw.append(el("div", "lg", `◆ ${G.defs.legend[k][0].replace(/의$/, "")} — ${G.defs.legend[k][1]}`));
-  for (const id of sets) {
-    const worn = setWorn(id), set = G.defs.sets[id];
-    pw.append(el("div", "st", `${set.name} 세트 ${worn}개`));
-    for (const [n, list] of set.bonus) pw.append(el("div", worn >= n ? "st on" : "st off", `${n}세트: ${list.map(([a, v]) => statText(a, v)).join(", ")}`));
+  if (sets.length) {
+    pw.append(section(`세트 룬 · 활성 ${s.runeSets?.length || 0}/${runeSetMax()}`, "gem"));
+    for (const id of sets) {
+      const set = runeSetStatus(s, id);
+      pw.append(el("div", set.active ? "st on" : "st", `${set.name} · ${set.count}/${set.need} · ${set.status}`));
+      pw.append(el("div", "ds", set.desc));
+    }
   }
 }
 

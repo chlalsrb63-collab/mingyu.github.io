@@ -191,7 +191,7 @@ function tipFor(id, host, extra) {
   host.classList.add("wr-tip");
   const nm = C.el("div", "nm", d.name);
   nm.style.color = RARITY_COL[d.q];
-  host.append(nm, C.el("div", "rar", `${D.rarity[d.q]} 외형 · ${D.cosSlotName[d.slot]}`), C.el("div", "ds", d.desc));
+  host.append(nm, C.el("div", "rar", `${d.q === 4 ? "세트" : D.rarity[d.q]} 외형 · ${D.cosSlotName[d.slot]}`), C.el("div", "ds", d.desc));
   if (d.set && D.cosSets && D.cosSets[d.set]) host.append(C.el("div", "set", `세트 · ${D.cosSets[d.set]}`));
   host.append(C.el("div", "src", own ? (s.cos.on[d.slot] === id ? "입고 있음" : "보유 중") : `얻는 곳: ${srcText(d)}`));
   if (extra) host.append(C.el("div", "hint", extra));

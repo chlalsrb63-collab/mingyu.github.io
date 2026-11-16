@@ -341,7 +341,7 @@ function recipeWhy(ch, r) {
   if (r.sq && !Object.hasOwn(ch.sq.on, r.sq)) return "퀘스트를 받아야 만들 수 있습니다";   // a quest's own recipe (arc A5's 기록 보존액)
   return "";
 }
-const runeCount = (ch) => RUNE_KEYS.reduce((n, k) => n + countItem(ch, `ru_${k}`), 0);
+const runeCount = (ch) => ch.inv.reduce((n, s) => n + (RUNES[s.id] ? s.n : 0), 0);
 /** How many of an input the character has (bag + pouch; "rune*" = every rune). */
 const haveOf = (ch, id) => (id === "rune*" ? runeCount(ch) : countItem(ch, id));
 /** Take `n` runes, the most plentiful kind first; returns the ids taken. */
@@ -349,7 +349,9 @@ function takeRunes(ch, n) {
   const out = [];
   for (let i = 0; i < n; i++) {
     let best = "", bn = 0;
-    for (const k of RUNE_KEYS) { const c = countItem(ch, `ru_${k}`); if (c > bn) { bn = c; best = `ru_${k}`; } }
+    const stacks = {};
+    for (const s of ch.inv) if (RUNES[s.id]) stacks[s.id] = (stacks[s.id] || 0) + s.n;
+    for (const id of RUNE_KEYS) { const c = stacks[id] || 0; if (c > bn) { bn = c; best = id; } }
     if (!best) break;
     takeItem(ch, best, 1);
     out.push(best);
@@ -408,7 +410,7 @@ function craftOnce(S, p, r, s) {
     p.gain.push(["item", g.id, 1, g.q]);
   } else {
     const n = r.out[1] * (roll.great ? 2 : 1);
-    if (r.out[0] === "rune*") for (let i = 0; i < n; i++) { const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`; if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]); }
+    if (r.out[0] === "rune*") for (let i = 0; i < n; i++) gainRune(S, p, roll.great ? 1 : 0);
     else if (addItem(ch, r.out[0], n)) p.gain.push(["item", r.out[0], n, 0]);
   }
   gainLife(S, p, r.sk, xp);
@@ -616,8 +618,6 @@ function jbPay(S, p) {
 // ── items with a life use (B.11): elixirs, the punch, the whetstone
 
 const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (ITEMS[id].type === "tool" || ITEMS[id].el === 1);
-/** How many sockets a piece can ever have (as rollGear: gloves and boots 1, the rest 3; jewellery none). */
-const sockCap = (g) => (isJewel(g.id) ? 0 : ITEMS[g.id].type === "gloves" || ITEMS[g.id].type === "boots" ? 1 : 3);
 /** The weakest affix of a piece (value against its range's top), by index; −1 without one. */
 function weakAffix(g) {
   let best = -1, bv = Infinity;
@@ -635,7 +635,7 @@ function lifeUseValidate(S, p, a) {
   if (it.type !== "tool") return OK;
   const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
   if (!g) return bad("장착한 장비를 골라 주세요");
-  if (a.id === "punch" && g.sk >= sockCap(g)) return bad(sockCap(g) ? "더 이상 홈을 뚫을 수 없습니다" : "장신구에는 홈을 뚫을 수 없습니다");
+  if (a.id === "punch" && g.sk >= sockCap(g)) return bad("더 이상 홈을 뚫을 수 없습니다");
   if (a.id === "whet" && weakAffix(g) < 0) return bad("새로 굴릴 옵션이 없습니다");
   return OK;
 }

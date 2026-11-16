@@ -1,6 +1,7 @@
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
+const SHEET_VERSION = 27;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -49,7 +50,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 27, name, job: "adventurer", jp: null,
+    v: SHEET_VERSION, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -76,6 +77,8 @@ export function newChar(name, look, wk) {
     charms: charmsEmpty(),
     // 보스전리품 (v17): the field-boss kinds whose trophy this hero holds, in the order won (67-trophies.js)
     tro: [],
+    // The dawnpillar rune's rescue cooldown survives a reconnect (v27).
+    runeWardAt: 0,
     // 버드나무 장날 (v26, 63-festival.js): the 장날 토큰 purse and today's tokens and best pan score
     fair: fairFresh(),
     // the 장날 merchants' goods bought on the latest fair day (v27, 64-fair-market.js): { [KST day]: [product ids] }
@@ -101,16 +104,38 @@ function migrate(ch) {
   cleanJobs(ch);
   // an older, shorter look is padded with "as before"
   ch.look = cleanLook(ch.look);
+  const recovered = [];
+  const runeId = (key) => {
+    if (typeof key !== "string") return null;
+    const id = Object.hasOwn(RUNES, key) ? key : `ru_${key}`;
+    return Object.hasOwn(RUNES, id) ? id : null;
+  };
   const fix = (g) => {
     if (!g || typeof g.id !== "string") return null;
     const id = OLD_ID[g.id] || g.id.replace("w_ranger_", "w_lancer_");
     if (!ITEMS[id]) return null;
     if (id === "charm") return charmFix(g);
     if (!isGear(id)) return { id, n: g.n | 0 || 1 };
-    const out = { id, q: clamp(g.q | 0, 0, 5), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
+    const oldQ = clamp(g.q | 0, 0, 5), oldSk = clamp(g.sk | 0, 0, 3);
+    const sk = Math.min(oldSk, SOCK_CAPS[ITEMS[id].type]);
+    const ru = Array.from({ length: oldSk }, (_, i) => runeId(g.ru?.[i]));
+    recovered.push(...ru.slice(sk).filter(Boolean));
+    const out = { id, q: oldQ === 4 ? 3 : oldQ, enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk, ru: ru.slice(0, sk) };
     // item level (no sheet version bump: a missing `il` is derived, so an old piece asks what it always did — gearIl)
     out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, 200) : gearIl(out);
     if (LEGEND[g.lg]) out.lg = g.lg;
+    // A retired set piece keeps its base item, item level, enhancement and existing ordinary lines.
+    if (oldQ === 4 && !out.lg) {
+      const seed = { seed: [...id].reduce((n, c) => (Math.imul(n, 31) + c.charCodeAt(0)) >>> 0, out.il + out.enh) };
+      out.lg = pfxPick(seed, ITEMS[id].type);
+      out.af = out.af.filter((line) => Array.isArray(line) && AFFIX.some(([stat]) => stat === line[0]) && Number.isFinite(line[1]) && line[1] > 0);
+      const pool = AFFIX.filter(([stat]) => !out.af.some(([key]) => key === stat));
+      const tier = toTier(out.il);
+      while (out.af.length < RARITY_AFFIX[3][0] && pool.length) {
+        const [stat] = pool.splice(ri(seed, 0, pool.length - 1), 1)[0];
+        out.af.push(rollLine(seed, stat, tier, AFFIX_MUL[3]));
+      }
+    }
     // a 유니크 keeps its lines, `il` and power (`lg`); `un` (words of the first 유니크 sheets) is dropped. The first sheets had `un: [prefix, suffix]`
     // and no power: the prefix picks one (UNIQ_OLD_LG). One with no power to keep or derive is no unique (it stays a 희귀 with its lines).
     if (out.q === 5 && !out.lg) {
@@ -119,7 +144,6 @@ function migrate(ch) {
     }
     // cu: 1 cursed by a failed enhancement (no more tries until lifted), 2 lifted (the next try +ENH_UNCURSE %p) — v19
     if ((g.cu | 0) > 0) out.cu = clamp(g.cu | 0, 1, 2);
-    if (SETS[g.set]) out.set = g.set;
     return out;
   };
   ch.inv = (Array.isArray(ch.inv) ? ch.inv : []).map(fix).filter(Boolean);
@@ -168,12 +192,18 @@ function migrate(ch) {
   ch.tw = TOWN_REV;
   ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => typeof id === "string" && Object.hasOwn(MAP_META, id));
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
-  ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
+  const oldRuneAch = (id) => id === "set" ? "rune_find" : id === "rw" ? "rune_bond" : id;
+  ch.ach = [...new Set((Array.isArray(ch.ach) ? ch.ach : []).map(oldRuneAch).filter((id) => Object.hasOwn(ACH_BY, id)))];
   ch.title = typeof ch.title === "string" && ch.ach.includes(ch.title) && ACH_BY[ch.title].title ? ch.title : "";
   // achievement counters (kept in `st` before the six stats took that name)
   const cnt = isObj(ch.cnt) ? ch.cnt : {};
   ch.cnt = {};
   for (const k of CNT_KEYS) ch.cnt[k] = Math.max(0, cnt[k] | 0);
+  if ((ch.v | 0) < 27) {
+    ch.cnt.rune_find = Math.max(ch.cnt.rune_find, cnt.set | 0);
+    ch.cnt.rune_bond = Math.max(ch.cnt.rune_bond, cnt.rw | 0);
+  }
+  ch.runeWardAt = Number.isSafeInteger(ch.runeWardAt) ? Math.max(0, ch.runeWardAt) : 0;
   const dl = ch.daily;
   ch.daily = isObj(dl) && Number.isInteger(dl.day) && Array.isArray(dl.tasks) && dl.tasks.length === 3 && dl.tasks.every((t) => isObj(t) && DAILY_TEXT[t.kind] && (t.kind !== "kill" || MOBS[t.k]))
     ? { day: dl.day, tasks: dl.tasks.map((t) => ({ kind: t.kind, k: t.kind === "kill" ? t.k : null, n: clamp(t.n | 0, 0, t.need | 0), need: Math.max(1, t.need | 0) })), claimed: [0, 1, 2].map((i) => !!(Array.isArray(dl.claimed) && dl.claimed[i])), bonus: !!dl.bonus }
@@ -228,11 +258,17 @@ function migrate(ch) {
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
   // quest items (v23): a delivery under way has its parcel, nothing else carries one (62-side-quests.js; after the bag is cleaned)
   sqItemsFix(ch);
+  // Over-limit sockets return their runes. If both stores are full, the bag displays extra occupied slots until they are cleared.
+  for (const id of recovered) {
+    if (roomIn(ch.inv, bagCap(ch), id, 1)) stackInto(ch.inv, id, 1);
+    else if (whRoom(ch.wh, id, 1)) stackInto(ch.wh.items, id, 1);
+    else stackInto(ch.inv, id, 1);
+  }
   // 버드나무 장날 (v26): the token purse and today's counters, clamped; an older sheet starts empty (63-festival.js)
   ch.fair = fairClean(ch.fair);
   // the 장날 merchants' purchases (v27): the newest fair day's product ids only (64-fair-market.js)
   ch.fairBuy = fairBuyClean(ch.fairBuy);
-  ch.v = Math.max(ch.v | 0, 27);
+  ch.v = Math.max(ch.v | 0, SHEET_VERSION);
   return ch;
 }
 
@@ -278,7 +314,7 @@ function qsFollow(ch) {
 const qsStarter = (ch) => skillsFor(ch).filter((id) => SKILL[id].kind !== "p" && !skWhy(ch, SKILL[id]));
 
 /** Counters kept for achievements (`ch.cnt`; `dim` = 레이드던전 clears). */
-const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim",
+const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "rune_find", "enh", "rune_bond", "gfound", "evt", "daily", "dim",
   // life skills L2: gathered, crafted (any station), delivered
   "gat", "craft", "deliver",
   // top of a boss's damage ranking (50 dmgBoard; added 2026-11-15, old sheets start at 0)
@@ -287,13 +323,6 @@ const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest"
   "coop", "coopS_apt", "coopS_diner", "coopS_forge", "coopS_alch", "coopS_lib",
   // 버드나무 마을 chores handed in (58-life.js jbPay; added 2026-11-16, old sheets start at 0)
   "chore"];
-function runeword(g) {
-  if (!g.sk || g.ru.length !== g.sk) return null;
-  for (const rw of RUNEWORDS) {
-    if (rw.seq.length === g.sk && rw.seq.every((r, i) => g.ru[i] === r)) return rw;
-  }
-  return null;
-}
 /** The kind of weapon in hand; bare hands fight like the job's weapon, or a dagger. */
 const weaponKind = (ch) => (ch.eq.weapon && ITEMS[ch.eq.weapon.id].wk) || (JOBS[ch.job] && JOBS[ch.job].wk[0]) || "dagger";
 /** Mastery rank (0–5) against one kind of monster. */
@@ -304,21 +333,26 @@ function masteryRank(ch, k) {
   return r;
 }
 
-/** Everything gear adds up to: base stats, affixes, runes, runewords, set bonuses, legendary powers. */
+/** The worn gear's ordinary stats, runes and legendary powers. */
 function gearBonus(ch) {
   const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
-  const lg = {}, sets = {}, win = {}, off = [];
+  const lg = {}, runeCounts = {}, win = {}, off = [];
   const add = (s, v) => { if (s in b) b[s] += v; };
   for (const k of SLOTS) {
     const g = ch.eq[k];
-    if (!g || k === "weapon2") continue;
+    if (!g) continue;
+    // Rune effects come from the whole loadout, including the equipped backup weapon.
+    for (let i = 0; i < Math.min(g.sk, sockCap(g)); i++) {
+      const rune = RUNES[g.ru?.[i]];
+      if (!rune) continue;
+      for (const [stat, n] of rune.af) add(stat, n);
+      if (rune.set) runeCounts[rune.set] = (runeCounts[rune.set] || 0) + 1;
+    }
+    if (k === "weapon2") continue;
     const base = ITEMS[g.id].base;
     // enhancement raises the piece's own stats along ENH_PCT
     for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : enhMul(g.enh)));
     for (const [s, v] of g.af) add(s, v);
-    for (const r of g.ru) if (r && RUNES[r]) add(RUNES[r][1], RUNES[r][2]);
-    const rw = runeword(g);
-    if (rw) for (const [s, v] of rw.add) add(s, v);
     // one power counts once however many pieces carry it: the higher item level wins, a tie goes to the earlier slot (SLOTS order)
     if (g.lg) {
       const il = gearIl(g), w = win[g.lg];
@@ -326,10 +360,6 @@ function gearBonus(ch) {
       else if (il > w.il) { off.push(w.k); win[g.lg] = { k, il }; }
       else off.push(k);
     }
-    if (g.set) sets[g.set] = (sets[g.set] || 0) + 1;
-  }
-  for (const id of Object.keys(sets)) {
-    for (const [n, list] of SETS[id].bonus) if (sets[id] >= n) for (const [s, v] of list) add(s, v);
   }
   // a worn title and every finished region of the monster collection add their bit
   const ttl = ch.title && ACH_BY[ch.title];
@@ -339,6 +369,8 @@ function gearBonus(ch) {
   for (const k of SLOTS) { const g = ch.eq[k]; if (g && g.lg && win[g.lg] && win[g.lg].k === k) lg[g.lg] = 1; }
   b.gold += pfxGold(lg);
   b.lg = lg;
+  b.runeCounts = runeCounts;
+  b.runeSets = activeRuneSets(runeCounts);
   b.lgOff = off.sort((a, c) => SLOTS.indexOf(a) - SLOTS.indexOf(c));
   return b;
 }
@@ -381,7 +413,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "cos_dye", "cos_sew", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk", "fair_shop"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "cos_dye", "cos_sew", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk", "fair_shop", "rune", "socket"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {
@@ -533,6 +565,7 @@ function readyMob(S, mob) {
   mob.tr = mob.el ? rollTraits(S, mob.el) : [];
   mob.hp = mobMax(mob);
   mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null; mob.act = null; mob.mv = 0; mob.cn = 0;
+  mob.runePoison = null;
   mob.wx = mob.x; mob.wy = mob.y;
   bsEnd(mob);   // a scripted boss risen again forgets its last fight (56-boss-script.js)
   mob.castAt = S.now + 3000 + rnd(S) * 3000;

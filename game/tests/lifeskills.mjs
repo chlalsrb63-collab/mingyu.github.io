@@ -642,17 +642,19 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   let plainDrop = false;
   for (let k = 0; k < 200 && !plainDrop; k++) { w.enh = 7; give("stone", 3); act({ t: "enh", k: "weapon" }); plainDrop = w.enh === 6; }
   assert.ok(plainDrop, "without the blessing +7 can still drop");
-  // the punch: one more socket up to the slot's cap (3; gloves and boots 1; jewellery none)
-  w.sk = 2;
+  // The existing tool shares the smith's caps (weapon 2, gloves and ring 1).
+  w.sk = 1;
   give("punch", 3);
   assert.ok(act({ t: "use", id: "punch", k: "weapon" }).ok);
-  assert.equal(w.sk, 3);
+  assert.equal(w.sk, 2);
   assert.equal(act({ t: "use", id: "punch", k: "weapon" }).error, "더 이상 홈을 뚫을 수 없습니다");
   assert.equal(act({ t: "use", id: "punch", k: "helm" }).error, "장착한 장비를 골라 주세요");
   ch.eq.gloves = X.rollGear(S, "g_3", 1, 20); ch.eq.gloves.sk = 1;
   assert.equal(act({ t: "use", id: "punch", k: "gloves" }).error, "더 이상 홈을 뚫을 수 없습니다");
-  ch.eq.ring1 = X.rollGear(S, "r_3", 1, 20);
-  assert.equal(act({ t: "use", id: "punch", k: "ring1" }).error, "장신구에는 홈을 뚫을 수 없습니다");
+  ch.eq.ring1 = X.rollGear(S, "r_3", 1, 20); ch.eq.ring1.sk = 0;
+  assert.ok(act({ t: "use", id: "punch", k: "ring1" }).ok);
+  assert.equal(ch.eq.ring1.sk, 1);
+  assert.equal(act({ t: "use", id: "punch", k: "ring1" }).error, "더 이상 홈을 뚫을 수 없습니다");
   delete ch.eq.gloves; delete ch.eq.ring1;
   wipe("punch");
   // the whetstone: the weakest affix rolls again, the rest stay, no key twice

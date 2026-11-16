@@ -43,14 +43,22 @@ const PFX_CAP = { dmg: 1.6, iv: 0.8, acd: 0.45, miti: 0.6, abs: 0.2, heal: 0.08,
 const PX = Object.freeze({ px: 1 });
 
 // ── what a player's gear gives (cached with the sheet in p.stc: deriveStats)
-/** The active powers' code by hook: { pre: [fn…], … }, in slot order. A retired power (PFX[k].off) is inert. */
-function pfxBuild(lg) {
+/** The active powers' code by hook: equipment powers in slot order, then eligible rune sets. */
+function pfxBuild(lg, runeSets = []) {
   const h = {};
   for (const n of PFX_HOOKS) h[n] = [];
   for (const key in lg) {
     const f = Object.hasOwn(PFX_FN, key) ? PFX_FN[key] : null;
     if (!f || (PFX[key] && PFX[key].off)) continue;
     for (const n of PFX_HOOKS) if (typeof f[n] === "function") h[n].push(f[n]);
+  }
+  for (const key of runeSets) {
+    const f = RUNE_SET_FN[key];
+    for (const n of PFX_HOOKS) if (typeof f[n] === "function") {
+      // A set's full revive is preferred over the legendary fallback at HP 1.
+      if (n === "lethal") h[n].unshift(f[n]);
+      else h[n].push(f[n]);
+    }
   }
   return h;
 }
@@ -108,15 +116,15 @@ function pfxHeal(S, p, st, amt) {
 }
 
 // ── the dispatchers (a hook list is empty for most players: every one returns at once then)
-const PFX_R0 = Object.freeze({ ign: 0, crit: 0, sure: 0, xp: 0, gold: 0, mf: 0, gx: 0, stone: 0 });
-const pfxPreR = { ign: 0, crit: 0, sure: 0 }, pfxMiR = { f: 1, abs: 0, block: 0 }, pfxStR = { iv: 1 }, pfxStaR = { f: 1 };
+const PFX_R0 = Object.freeze({ ign: 0, crit: 0, sure: 0, pure: 0, xp: 0, gold: 0, mf: 0, gx: 0, stone: 0 });
+const pfxPreR = { ign: 0, crit: 0, sure: 0, pure: 0 }, pfxMiR = { f: 1, abs: 0, block: 0 }, pfxStR = { iv: 1, riv: 1 }, pfxStaR = { f: 1 };
 
 /** Before a blow rolls → { ign, crit, sure } (read them at once: the object is reused). The crit it adds keeps the total under SFX.critCap. */
 function pfxPre(S, p, st, mob, d, o) {
   const a = st.pfx.pre;
   if (!a.length) return PFX_R0;
   const r = pfxPreR;
-  r.ign = 0; r.crit = 0; r.sure = 0;
+  r.ign = 0; r.crit = 0; r.sure = 0; r.pure = 0;
   for (let i = 0; i < a.length; i++) a[i](S, p, st, mob, d, o, r);
   r.crit = Math.max(0, Math.min(r.crit, SFX.critCap - st.crit));
   return r;
@@ -216,8 +224,9 @@ function pfxLoot(S, rt, p, mob, kind) {
 function pfxStat(p, st) {
   const a = st.pfx.stat, acd0 = st.acd, r = pfxStR;
   r.iv = 1;
+  r.riv = 1;
   for (let i = 0; i < a.length; i++) a[i](p, st, r);
-  if (r.iv < 1) st.acd = Math.max(Math.round(st.acd * Math.max(PFX_CAP.iv, r.iv)), Math.min(acd0, Math.round(st.arm.cd * PFX_CAP.acd)));
+  if (r.iv < 1 || r.riv < 1) st.acd = Math.max(Math.round(st.acd * Math.max(PFX_CAP.iv, r.iv) * r.riv), Math.min(acd0, Math.round(st.arm.cd * PFX_CAP.acd)));
 }
 /** A named number after the powers that change it (see `num` above). */
 function pfxNum(p, name, v) {

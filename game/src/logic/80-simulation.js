@@ -215,6 +215,7 @@ function tickMob(S, m, rt, mob, dt, here) {
       if (o && o.map === m.id && dealMob(S, rt, mob, o, dot.dmg, 0)) return;
     }
   }
+  if (runeDotTick(S, m, rt, mob)) return;
   // a scripted field boss: its phases, the marked cast, the enrage (a challenge's boss: chalTick, 64-dim.js)
   if (d.script && !mob.chal) bsField(S, m, rt, mob);
   if (d.still) return;
@@ -245,11 +246,13 @@ function tickMob(S, m, rt, mob, dt, here) {
   if (tgt && (tgt.map !== m.id || tgt.dead || dist(mob.x, mob.y, mob.hx, mob.hy) > leash + 60 || dist(mob.x, mob.y, tgt.x, tgt.y) > leash)) {
     tgt = null; mob.tgt = null; mob.st = 2; mob.by = {};
   }
+  const seesShade = d.boss || mob.el === 2;
+  if (tgt && !seesShade && runeHidden(tgt, now)) return;
   if (!tgt && d.aggro > 0 && mob.st !== 2 && !(mob.daze > now)) {
     // fog: monsters see a little less far
     let bd = d.aggro * (rt.wx === WX.fog ? WX_FOG_AGGRO : 1);
     for (const p of here) {
-      if (p.map !== m.id || p.dead || (p.foes || 0) >= AGGRO_CAP || p.hide > now) continue;
+      if (p.map !== m.id || p.dead || (p.foes || 0) >= AGGRO_CAP || p.hide > now || (!seesShade && runeHidden(p, now))) continue;
       const dd = dist(mob.x, mob.y, p.x, p.y);
       if (dd < bd) { bd = dd; tgt = p; }
     }

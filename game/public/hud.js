@@ -282,13 +282,13 @@ export function refreshUi() {
   // the C window: 장비 or 능력치 (points can be bought by a campfire or at 수련관 카이)
   draw("char", () => G.charTab === "cos" ? ["cos", s.xp, s.nx] : G.charTab === "stat"
     ? ["stat", s.st, s.lvl, s.xp, s.xpt, s.nx, s.rs, s.dv, s.atk, s.mhp, s.mmp, s.def, s.crit, s.critd, s.mf, s.job, s.wk, s.eq.weapon && s.eq.weapon.id, s.dead, fireNear(), near, StatWin.key()]
-    : ["gear", s.xp, s.nx, s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.lvl, s.name, s.guild], renderChar);
+    : ["gear", s.xp, s.nx, s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.runeSets, s.runeCounts, s.lvl, s.name, s.guild], renderChar);
   // K: 무기 · 스킬 or 전직의 길
   draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.jp?.join(), s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey(), G.skTab === "lo" && [Loadout.key(), G.near && G.near.role]], renderSkills);
   draw("trophy", Trophies.key, Trophies.render);   // 보스 전리품 (trophies.js)
   draw("dex", Dex.key, Dex.render);               // 아이템도감: the prefixes (dex.js)
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near, s.rep], renderShop);
-  draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone"), s.pity], renderSmith);
+  draw("smith", () => [s.eq, s.enh, s.gold, s.dead, countItem("stone"), countItem("uncurse"), s.pity], renderSmith);
   draw("train", () => [s.xp, s.xpt, s.nx, s.rs, s.sw, s.lvl, s.gold, s.respecCost, s.inv.length,
     s.inv.some((item) => item.id === G.defs.jf.respecItem), near, StatWin.trainerKey()],
   (s) => StatWin.renderTrainer($("#train-body"), s, { atTrainer: near === "train" }));

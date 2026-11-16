@@ -6,8 +6,8 @@
  * A party-hunting RPG set where worlds overlap: a fantasy meadow, a neon city
  * and a crystal rift all hang off one hub. Three ideas drive the rules:
  *   - loot is rolled, not listed: eight slots of gear, each piece with a rarity,
- *     random affixes and sockets; legendaries carry a unique power, set pieces
- *     grow stronger together, and runes in the right order form runewords;
+ *     random affixes and sockets; legendaries carry a unique power, and matching
+ *     set runes socketed across the loadout unlock another power;
  *   - a hunting ground is worth another lap: kill streaks, per-monster mastery,
  *     bounties that renew themselves, and a field boss the kills call out;
  *   - experience never stops mattering: it levels you up, and it can also be
@@ -643,33 +643,15 @@ for (const type of Object.keys(GEAR)) {
   }
 }
 Object.assign(ITEMS, {
-  veil_h: { ...ITEMS.h_4, name: "박쥐 가면", set: "nightveil" },
-  veil_a: { ...ITEMS.a_4, name: "장막 망토", set: "nightveil" },
-  veil_r: { ...ITEMS.r_4, name: "송곳니 반지", set: "nightveil" },
-  veil_n: { ...ITEMS.n_4, name: "흉곽 부적", set: "nightveil" },
-  bloom_h: { ...ITEMS.h_5, name: "고래뼈 투구", set: "bloomgrave" },
-  bloom_a: { ...ITEMS.a_5, name: "갈비 흉갑", set: "bloomgrave" },
-  bloom_r: { ...ITEMS.r_5, name: "혼꽃 반지", set: "bloomgrave" },
-  bloom_n: { ...ITEMS.n_5, name: "결정 심장", set: "bloomgrave" },
+  veil_h: { ...ITEMS.h_4, name: "박쥐 가면" },
+  veil_a: { ...ITEMS.a_4, name: "장막 망토" },
+  veil_r: { ...ITEMS.r_4, name: "송곳니 반지" },
+  veil_n: { ...ITEMS.n_4, name: "흉곽 부적" },
+  bloom_h: { ...ITEMS.h_5, name: "고래뼈 투구" },
+  bloom_a: { ...ITEMS.a_5, name: "갈비 흉갑" },
+  bloom_r: { ...ITEMS.r_5, name: "혼꽃 반지" },
+  bloom_n: { ...ITEMS.n_5, name: "결정 심장" },
 });
-
-/** Runes: one stat each. Socket them into equipped gear; the right sequence forms a runeword. */
-const RUNES = {
-  ign: ["이그", "atkp", 5], aeg: ["에기", "def", 4], vit: ["비타", "hp", 35], men: ["멘", "mp", 25], cel: ["셀", "spd", 4],
-  acu: ["아쿠", "crit", 3], san: ["산", "ls", 2], lum: ["룸", "xp", 6], fos: ["포스", "mf", 10],
-};
-for (const k of Object.keys(RUNES)) {
-  ITEMS[`ru_${k}`] = { name: `${RUNES[k][0]} 룬`, type: "rune", rune: k, price: 500, desc: "장착한 장비의 홈에 끼울 수 있다. 가방에서 선택해 사용." };
-}
-const RUNE_KEYS = Object.keys(RUNES);
-const RUNEWORDS = [
-  { name: "섬광", seq: ["ign", "acu"], add: [["atkp", 10], ["critd", 25]] },
-  { name: "철벽", seq: ["vit", "aeg"], add: [["hp", 90], ["def", 8]] },
-  { name: "탐구자", seq: ["lum", "fos"], add: [["xp", 10], ["mf", 20]] },
-  { name: "질풍", seq: ["cel", "acu"], add: [["spd", 6], ["crit", 6]] },
-  { name: "피의 맹세", seq: ["san", "ign", "acu"], add: [["ls", 4], ["atkp", 15], ["crit", 5]] },
-  { name: "불멸", seq: ["vit", "aeg", "men"], add: [["hp", 180], ["def", 12], ["mp", 60]] },
-];
 
 /** Affixes a dropped item can roll: [key, label, prefix word, min, max, per-item-level growth]. */
 const AFFIX = [
@@ -678,18 +660,19 @@ const AFFIX = [
   ["critd", "치명타 피해 %", "잔혹한", 8, 20, 0], ["ls", "흡혈 %", "흡혈의", 1, 3, 0], ["spd", "이동속도 %", "신속의", 3, 7, 0],
   ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
 ];
-const RARITY = ["일반", "마법", "희귀", "전설", "세트", "유니크"];
+// Gear reserved index 4 in its saved format. The green rarity belongs to runes.
+const RARITY = ["일반", "마법", "희귀", "전설", null, "유니크"];
 /**
  * How many ordinary affix lines each rarity rolls: [min, max] (owner 2026-11-16: 마법 exactly 2, 희귀 3, 전설 4, 유니크 4).
  * Rarities are told apart by the NUMBER of lines only; just an item with a separate strong effect (`lg`, see LEGEND) gets a name prefix.
  */
-const RARITY_AFFIX = [[0, 0], [2, 2], [3, 3], [4, 4], [2, 3], [4, 4]];
+const RARITY_AFFIX = [[0, 0], [2, 2], [3, 3], [4, 4], null, [4, 4]];
 /**
- * What an ordinary line is multiplied by, by rarity: 마법 weak (x0.85), 희귀 as rolled, 전설 and 세트 x1.3.
+ * What an ordinary line is multiplied by, by rarity: 마법 weak (x0.85), 희귀 as rolled, 전설 x1.3.
  * 유니크 (rarity 5, beige) = a 전설's power (`lg`, named by its LEGEND word, works the same in combat) plus stronger lines: x1.45,
  * which makes its 4 lines about 11 % over a 전설's 4 (owner: 10-15 %).
  */
-const AFFIX_MUL = [1, 0.85, 1, 1.3, 1.3, 1.45];
+const AFFIX_MUL = [1, 0.85, 1, 1.3, null, 1.45];
 /** The first 유니크 sheets (earlier on 2026-11-16) were `un: [prefix, suffix]` with no power; the prefix index picks the power they load with (migrate). `un` is dropped now. */
 const UNIQ_OLD_LG = ["nova", "giant", "thorn", "feast", "echo", "chain", "haste", "feast", "greed", "echo"];
 /** The chance a gear roll is a 유니크, by rank (0 ordinary monster, 1 elite or chest, 2 boss): about 1/12 to 1/20 of the 전설/세트 chance at each rank, x (1 + MF/100). */
@@ -743,16 +726,6 @@ const LEGEND = {
   echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 재사용 대기시간이 사라진다"), "WRG", "O", "L", "skill"],
   giant: ["거인 사냥꾼의", pfxText("giant", "정예와 우두머리에게 주는 피해 +{k:+%}%"), "WRG", "O", "L", "pass"],
 };
-/** Set pieces grow stronger the more of the same set is worn: [pieces, [[stat, value]…]]. */
-const SETS = {
-  pioneer: { name: "개척자", tiers: [1, 2], types: ["helm", "armor", "gloves", "boots"], bonus: [[2, [["hp", 60]]], [4, [["spd", 10], ["xp", 12]]]] },
-  runner: { name: "네온 러너", tiers: [3, 4], types: ["gloves", "boots", "ring", "amulet"], bonus: [[2, [["crit", 6]]], [4, [["atkp", 15], ["spd", 8]]]] },
-  rift: { name: "균열 추적자", tiers: [4, 5, 6], types: ["weapon", "helm", "armor", "ring", "amulet"], bonus: [[2, [["mf", 25]]], [3, [["atkp", 12]]], [5, [["ls", 4], ["critd", 40]]]] },
-  // the weekly raids' sets (bosses-2 §7): no tiers, so no ordinary piece rolls into them — only their own rows (ITEMS `set`)
-  nightveil: { name: "밤장막", tiers: [], types: ["helm", "armor", "ring", "amulet"], bonus: [[2, [["ls", 3]]], [4, [["atkp", 12], ["crit", 5]]]] },
-  bloomgrave: { name: "꽃무덤", tiers: [], types: ["helm", "armor", "ring", "amulet"], bonus: [[2, [["hp", 150]]], [4, [["atkp", 15], ["critd", 35]]]] },
-};
-
 /** A warehouse (창고) holds this many slots per character, besides gold. */
 const WH = 60;
 /** The loot filter: the least rarity of gear a label is shown for and a pet fetches. */
@@ -1433,6 +1406,55 @@ const MOB_LORE = {
   bloomwhale: "균열 밑바닥에 가라앉은 고래. 그 몸에서 피어난 꽃밭이 아직도 노래를 부른다.",
   hagfishhead: "고래의 상처를 파고들어 살던 먹장어. 이제는 고래의 머리인 척을 한다.",
 };
+// Socket limits, rune variants and deterministic drops. A variant has fixed lines so identical runes stack.
+const SOCK_CAPS = { weapon: 2, armor: 2, helm: 1, gloves: 1, boots: 1, ring: 1, amulet: 1 };
+const SOCK_COST = [1200, 3500];
+const sockCap = (g) => SOCK_CAPS[ITEMS[g.id].type];
+const RUNE_RARITY = { 1: "마법", 2: "희귀", 3: "전설", 4: "세트" };
+const RUNE_PRICE = { 1: 500, 2: 900, 3: 1650, 4: 850 };
+const RUNES = {};
+const RUNE_KEYS = [];
+const RUNE_POOLS = { 1: [], 2: [], 3: [], 4: { 2: [], 3: [], 4: [] } };
+
+function addRune(id, q, name, af, set) {
+  RUNES[id] = set ? { name, q, af, set } : { name, q, af };
+  RUNE_KEYS.push(id);
+  ITEMS[id] = { name, type: "rune", rune: id, price: RUNE_PRICE[q], desc: "장착한 장비의 홈에 끼울 수 있다." };
+  (set ? RUNE_POOLS[4][RUNE_SETS[set].need] : RUNE_POOLS[q]).push(id);
+}
+
+// The first nine ids keep the stats of runes that were already in shops, quest rewards and player bags.
+const MAGIC_RUNES = [
+  ["ign", "이그", "atkp", 5], ["aeg", "에기", "def", 4], ["vit", "비타", "hp", 35],
+  ["men", "멘", "mp", 25], ["cel", "셀", "spd", 4], ["acu", "아쿠", "crit", 3],
+  ["san", "산", "ls", 2], ["lum", "룸", "xp", 6], ["fos", "포스", "mf", 10],
+  ["doran", "도란", "atk", 7], ["nem", "넴", "critd", 10], ["mel", "멜", "gold", 10],
+];
+for (const [id, name, stat, n] of MAGIC_RUNES) addRune(`ru_${id}`, 1, `${name} 룬`, [[stat, n]]);
+
+const RARE_RUNES = [
+  ["micasalt", "운모소금", [["atkp", 5], ["crit", 3]]],
+  ["cedar", "삼나무껍질", [["hp", 65], ["def", 6]]],
+  ["silkpath", "비단길", [["spd", 4], ["mp", 30]]],
+  ["pearlchip", "진주톱밥", [["gold", 12], ["mf", 10]]],
+  ["cutamber", "깎은 호박", [["atk", 12], ["ls", 2]]],
+  ["moonink", "달먹물", [["mp", 35], ["critd", 12]]],
+  ["cedarseed", "솔방울", [["def", 5], ["xp", 7]]],
+  ["quarry", "석공", [["hp", 55], ["atkp", 5]]],
+];
+for (const [id, name, af] of RARE_RUNES) addRune(`ru_${id}`, 2, `${name} 룬`, af);
+
+const LEGEND_RUNES = [
+  ["firstsun", "여명의 유리", [["atkp", 7], ["crit", 4], ["critd", 16]]],
+  ["rootiron", "천년 뿌리", [["hp", 115], ["def", 8], ["ls", 2]]],
+  ["fallstar", "별이 내린 자리", [["mp", 55], ["atkp", 7], ["critd", 14]]],
+  ["oathroad", "순례자의 길", [["spd", 5], ["hp", 100], ["xp", 9]]],
+  ["lostmint", "잊힌 주화", [["mf", 14], ["gold", 17], ["atk", 18]]],
+  ["bonesong", "백골의 노래", [["ls", 3], ["atk", 18], ["crit", 4]]],
+  ["cloudwood", "구름목", [["spd", 5], ["mp", 50], ["def", 8]]],
+  ["westglass", "서녘의 화톳불", [["hp", 90], ["atkp", 7], ["mf", 13]]],
+];
+for (const [id, name, af] of LEGEND_RUNES) addRune(`ru_${id}`, 3, `${name} 룬`, af);
 // ───────────────────────────── life skills: tables (docs/design/life-and-coop.md B) ─────────────────────────────
 // Six life skills, levels 1–50 on one curve, separate from combat level and weapon mastery. What they give is
 // goods: L1 grew 낚시 and 요리 (graded fish by zone, cooking XP and bonuses); L2 (the second half of this file)
@@ -7587,6 +7609,7 @@ export function devPlace(ch, map, tx, ty) {
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
+const SHEET_VERSION = 27;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -7635,7 +7658,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 27, name, job: "adventurer", jp: null,
+    v: SHEET_VERSION, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -7662,6 +7685,8 @@ export function newChar(name, look, wk) {
     charms: charmsEmpty(),
     // 보스전리품 (v17): the field-boss kinds whose trophy this hero holds, in the order won (67-trophies.js)
     tro: [],
+    // The dawnpillar rune's rescue cooldown survives a reconnect (v27).
+    runeWardAt: 0,
     // 버드나무 장날 (v26, 63-festival.js): the 장날 토큰 purse and today's tokens and best pan score
     fair: fairFresh(),
     // the 장날 merchants' goods bought on the latest fair day (v27, 64-fair-market.js): { [KST day]: [product ids] }
@@ -7687,16 +7712,38 @@ function migrate(ch) {
   cleanJobs(ch);
   // an older, shorter look is padded with "as before"
   ch.look = cleanLook(ch.look);
+  const recovered = [];
+  const runeId = (key) => {
+    if (typeof key !== "string") return null;
+    const id = Object.hasOwn(RUNES, key) ? key : `ru_${key}`;
+    return Object.hasOwn(RUNES, id) ? id : null;
+  };
   const fix = (g) => {
     if (!g || typeof g.id !== "string") return null;
     const id = OLD_ID[g.id] || g.id.replace("w_ranger_", "w_lancer_");
     if (!ITEMS[id]) return null;
     if (id === "charm") return charmFix(g);
     if (!isGear(id)) return { id, n: g.n | 0 || 1 };
-    const out = { id, q: clamp(g.q | 0, 0, 5), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
+    const oldQ = clamp(g.q | 0, 0, 5), oldSk = clamp(g.sk | 0, 0, 3);
+    const sk = Math.min(oldSk, SOCK_CAPS[ITEMS[id].type]);
+    const ru = Array.from({ length: oldSk }, (_, i) => runeId(g.ru?.[i]));
+    recovered.push(...ru.slice(sk).filter(Boolean));
+    const out = { id, q: oldQ === 4 ? 3 : oldQ, enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk, ru: ru.slice(0, sk) };
     // item level (no sheet version bump: a missing `il` is derived, so an old piece asks what it always did — gearIl)
     out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, 200) : gearIl(out);
     if (LEGEND[g.lg]) out.lg = g.lg;
+    // A retired set piece keeps its base item, item level, enhancement and existing ordinary lines.
+    if (oldQ === 4 && !out.lg) {
+      const seed = { seed: [...id].reduce((n, c) => (Math.imul(n, 31) + c.charCodeAt(0)) >>> 0, out.il + out.enh) };
+      out.lg = pfxPick(seed, ITEMS[id].type);
+      out.af = out.af.filter((line) => Array.isArray(line) && AFFIX.some(([stat]) => stat === line[0]) && Number.isFinite(line[1]) && line[1] > 0);
+      const pool = AFFIX.filter(([stat]) => !out.af.some(([key]) => key === stat));
+      const tier = toTier(out.il);
+      while (out.af.length < RARITY_AFFIX[3][0] && pool.length) {
+        const [stat] = pool.splice(ri(seed, 0, pool.length - 1), 1)[0];
+        out.af.push(rollLine(seed, stat, tier, AFFIX_MUL[3]));
+      }
+    }
     // a 유니크 keeps its lines, `il` and power (`lg`); `un` (words of the first 유니크 sheets) is dropped. The first sheets had `un: [prefix, suffix]`
     // and no power: the prefix picks one (UNIQ_OLD_LG). One with no power to keep or derive is no unique (it stays a 희귀 with its lines).
     if (out.q === 5 && !out.lg) {
@@ -7705,7 +7752,6 @@ function migrate(ch) {
     }
     // cu: 1 cursed by a failed enhancement (no more tries until lifted), 2 lifted (the next try +ENH_UNCURSE %p) — v19
     if ((g.cu | 0) > 0) out.cu = clamp(g.cu | 0, 1, 2);
-    if (SETS[g.set]) out.set = g.set;
     return out;
   };
   ch.inv = (Array.isArray(ch.inv) ? ch.inv : []).map(fix).filter(Boolean);
@@ -7754,12 +7800,18 @@ function migrate(ch) {
   ch.tw = TOWN_REV;
   ch.seen = (Array.isArray(ch.seen) ? ch.seen : []).filter((id) => typeof id === "string" && Object.hasOwn(MAP_META, id));
   if (!ch.seen.includes("town")) ch.seen.unshift("town");
-  ch.ach = (Array.isArray(ch.ach) ? ch.ach : []).filter((id) => ACH_BY[id]);
+  const oldRuneAch = (id) => id === "set" ? "rune_find" : id === "rw" ? "rune_bond" : id;
+  ch.ach = [...new Set((Array.isArray(ch.ach) ? ch.ach : []).map(oldRuneAch).filter((id) => Object.hasOwn(ACH_BY, id)))];
   ch.title = typeof ch.title === "string" && ch.ach.includes(ch.title) && ACH_BY[ch.title].title ? ch.title : "";
   // achievement counters (kept in `st` before the six stats took that name)
   const cnt = isObj(ch.cnt) ? ch.cnt : {};
   ch.cnt = {};
   for (const k of CNT_KEYS) ch.cnt[k] = Math.max(0, cnt[k] | 0);
+  if ((ch.v | 0) < 27) {
+    ch.cnt.rune_find = Math.max(ch.cnt.rune_find, cnt.set | 0);
+    ch.cnt.rune_bond = Math.max(ch.cnt.rune_bond, cnt.rw | 0);
+  }
+  ch.runeWardAt = Number.isSafeInteger(ch.runeWardAt) ? Math.max(0, ch.runeWardAt) : 0;
   const dl = ch.daily;
   ch.daily = isObj(dl) && Number.isInteger(dl.day) && Array.isArray(dl.tasks) && dl.tasks.length === 3 && dl.tasks.every((t) => isObj(t) && DAILY_TEXT[t.kind] && (t.kind !== "kill" || MOBS[t.k]))
     ? { day: dl.day, tasks: dl.tasks.map((t) => ({ kind: t.kind, k: t.kind === "kill" ? t.k : null, n: clamp(t.n | 0, 0, t.need | 0), need: Math.max(1, t.need | 0) })), claimed: [0, 1, 2].map((i) => !!(Array.isArray(dl.claimed) && dl.claimed[i])), bonus: !!dl.bonus }
@@ -7814,11 +7866,17 @@ function migrate(ch) {
   // 직업 자유 (v18): per-job progress and loadouts were cleaned in cleanJobs (jfClean, 47-job-freedom.js)
   // quest items (v23): a delivery under way has its parcel, nothing else carries one (62-side-quests.js; after the bag is cleaned)
   sqItemsFix(ch);
+  // Over-limit sockets return their runes. If both stores are full, the bag displays extra occupied slots until they are cleared.
+  for (const id of recovered) {
+    if (roomIn(ch.inv, bagCap(ch), id, 1)) stackInto(ch.inv, id, 1);
+    else if (whRoom(ch.wh, id, 1)) stackInto(ch.wh.items, id, 1);
+    else stackInto(ch.inv, id, 1);
+  }
   // 버드나무 장날 (v26): the token purse and today's counters, clamped; an older sheet starts empty (63-festival.js)
   ch.fair = fairClean(ch.fair);
   // the 장날 merchants' purchases (v27): the newest fair day's product ids only (64-fair-market.js)
   ch.fairBuy = fairBuyClean(ch.fairBuy);
-  ch.v = Math.max(ch.v | 0, 27);
+  ch.v = Math.max(ch.v | 0, SHEET_VERSION);
   return ch;
 }
 
@@ -7864,7 +7922,7 @@ function qsFollow(ch) {
 const qsStarter = (ch) => skillsFor(ch).filter((id) => SKILL[id].kind !== "p" && !skWhy(ch, SKILL[id]));
 
 /** Counters kept for achievements (`ch.cnt`; `dim` = 레이드던전 clears). */
-const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim",
+const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "rune_find", "enh", "rune_bond", "gfound", "evt", "daily", "dim",
   // life skills L2: gathered, crafted (any station), delivered
   "gat", "craft", "deliver",
   // top of a boss's damage ranking (50 dmgBoard; added 2026-11-15, old sheets start at 0)
@@ -7873,13 +7931,6 @@ const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest"
   "coop", "coopS_apt", "coopS_diner", "coopS_forge", "coopS_alch", "coopS_lib",
   // 버드나무 마을 chores handed in (58-life.js jbPay; added 2026-11-16, old sheets start at 0)
   "chore"];
-function runeword(g) {
-  if (!g.sk || g.ru.length !== g.sk) return null;
-  for (const rw of RUNEWORDS) {
-    if (rw.seq.length === g.sk && rw.seq.every((r, i) => g.ru[i] === r)) return rw;
-  }
-  return null;
-}
 /** The kind of weapon in hand; bare hands fight like the job's weapon, or a dagger. */
 const weaponKind = (ch) => (ch.eq.weapon && ITEMS[ch.eq.weapon.id].wk) || (JOBS[ch.job] && JOBS[ch.job].wk[0]) || "dagger";
 /** Mastery rank (0–5) against one kind of monster. */
@@ -7890,21 +7941,26 @@ function masteryRank(ch, k) {
   return r;
 }
 
-/** Everything gear adds up to: base stats, affixes, runes, runewords, set bonuses, legendary powers. */
+/** The worn gear's ordinary stats, runes and legendary powers. */
 function gearBonus(ch) {
   const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
-  const lg = {}, sets = {}, win = {}, off = [];
+  const lg = {}, runeCounts = {}, win = {}, off = [];
   const add = (s, v) => { if (s in b) b[s] += v; };
   for (const k of SLOTS) {
     const g = ch.eq[k];
-    if (!g || k === "weapon2") continue;
+    if (!g) continue;
+    // Rune effects come from the whole loadout, including the equipped backup weapon.
+    for (let i = 0; i < Math.min(g.sk, sockCap(g)); i++) {
+      const rune = RUNES[g.ru?.[i]];
+      if (!rune) continue;
+      for (const [stat, n] of rune.af) add(stat, n);
+      if (rune.set) runeCounts[rune.set] = (runeCounts[rune.set] || 0) + 1;
+    }
+    if (k === "weapon2") continue;
     const base = ITEMS[g.id].base;
     // enhancement raises the piece's own stats along ENH_PCT
     for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : enhMul(g.enh)));
     for (const [s, v] of g.af) add(s, v);
-    for (const r of g.ru) if (r && RUNES[r]) add(RUNES[r][1], RUNES[r][2]);
-    const rw = runeword(g);
-    if (rw) for (const [s, v] of rw.add) add(s, v);
     // one power counts once however many pieces carry it: the higher item level wins, a tie goes to the earlier slot (SLOTS order)
     if (g.lg) {
       const il = gearIl(g), w = win[g.lg];
@@ -7912,10 +7968,6 @@ function gearBonus(ch) {
       else if (il > w.il) { off.push(w.k); win[g.lg] = { k, il }; }
       else off.push(k);
     }
-    if (g.set) sets[g.set] = (sets[g.set] || 0) + 1;
-  }
-  for (const id of Object.keys(sets)) {
-    for (const [n, list] of SETS[id].bonus) if (sets[id] >= n) for (const [s, v] of list) add(s, v);
   }
   // a worn title and every finished region of the monster collection add their bit
   const ttl = ch.title && ACH_BY[ch.title];
@@ -7925,6 +7977,8 @@ function gearBonus(ch) {
   for (const k of SLOTS) { const g = ch.eq[k]; if (g && g.lg && win[g.lg] && win[g.lg].k === k) lg[g.lg] = 1; }
   b.gold += pfxGold(lg);
   b.lg = lg;
+  b.runeCounts = runeCounts;
+  b.runeSets = activeRuneSets(runeCounts);
   b.lgOff = off.sort((a, c) => SLOTS.indexOf(a) - SLOTS.indexOf(c));
   return b;
 }
@@ -7967,7 +8021,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "cos_dye", "cos_sew", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk", "fair_shop"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "cos_dye", "cos_sew", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk", "fair_shop", "rune", "socket"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {
@@ -8119,6 +8173,7 @@ function readyMob(S, mob) {
   mob.tr = mob.el ? rollTraits(S, mob.el) : [];
   mob.hp = mobMax(mob);
   mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null; mob.act = null; mob.mv = 0; mob.cn = 0;
+  mob.runePoison = null;
   mob.wx = mob.x; mob.wy = mob.y;
   bsEnd(mob);   // a scripted boss risen again forgets its last fight (56-boss-script.js)
   mob.castAt = S.now + 3000 + rnd(S) * 3000;
@@ -8446,6 +8501,7 @@ function deriveStats(p) {
   const jl = Math.max(0, (ch.jp?.lv || 0) - 1);
   const luk = E.luk, dex = E.dex, wil = E.wil, wis = E.wis;
   const attackSpeed = Math.min(0.6, Math.min(SFX.aspd[1], SFX.aspd[0] * dex) + perk.aspd / 100);
+  syncRuneActive(p, b.runeSets);
   p.stc = {
     mhp: Math.round((SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp) * (1 + JOB_PROGRESS.hp * jl) * (1 + tf.hp / 100) * plus(perk.hp)),
     mmp: Math.round((SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp) * (1 + JOB_PROGRESS.mp * jl) * plus(perk.mp)),
@@ -8457,7 +8513,7 @@ function deriveStats(p) {
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
     ls: Math.min(15, b.ls + perk.ls), spd0: BASE_SPD * HERO_SPD_K * (1 + (Math.min(40, b.spd) + tf.move + perk.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
     mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk) + tf.drop,
-    lg: b.lg, lgOff: b.lgOff, pfx: pfxBuild(b.lg), arm, wk, mag: arm.mag ? 1 : 0,
+    lg: b.lg, lgOff: b.lgOff, runeSets: b.runeSets, runeCounts: b.runeCounts, pfx: pfxBuild(b.lg, b.runeSets), arm, wk, mag: arm.mag ? 1 : 0,
     acd: Math.round(arm.cd * (1 - attackSpeed) * pfxIv(b.lg) * (1 - tf.aspd / 100)),
     aspd: attackSpeed,
     eva: Math.min(SFX.eva[1], SFX.eva[0] * dex),
@@ -8870,9 +8926,10 @@ function sortSlots(list) {
   }
   return out;
 }
-/** The bag's size on a sheet being migrated (v10): 40 to 100 in steps of 5, never less than what it holds. */
+/** The bag's saved size. Loose runes recovered from old sockets may temporarily exceed the cap. */
 function bagClean(ch) {
-  const want = Math.max(INV_BASE, ch.bagCap | 0, Array.isArray(ch.inv) ? ch.inv.length : 0);
+  const carried = (ch.v | 0) < 27 && Array.isArray(ch.inv) ? ch.inv.length : 0;
+  const want = Math.max(INV_BASE, ch.bagCap | 0, carried);
   ch.bagCap = Math.min(INV_MAX, INV_BASE + Math.ceil((want - INV_BASE) / BAG_STEP) * BAG_STEP);
 }
 
@@ -9104,7 +9161,7 @@ function countItem(ch, id) {
 }
 function canAdd(ch, id, n) {
   if (isGear(id)) return ch.inv.length + n <= bagCap(ch);
-  let room = (bagCap(ch) - ch.inv.length) * STACK + pouchRoom(ch, id);
+  let room = Math.max(0, bagCap(ch) - ch.inv.length) * STACK + pouchRoom(ch, id);
   for (const s of ch.inv) if (s.id === id) room += STACK - s.n;
   return room >= n;
 }
@@ -9168,17 +9225,17 @@ function pickUp(S, p, dr) {
   if (!fits(p.ch, dr)) { bagFull(S, p); return false; }
   if (dr.it === "gold") {
     p.ch.gold += dr.n;
+    runeEarnGold(S, p, dr.n);
     p.gain.push(["gold", dr.n]);
   } else if (dr.g) {
     p.ch.inv.push(dr.g);
     p.gain.push(["item", dr.it, 1, dr.q]);
     if (dr.q === 3 || dr.q === 5) p.ch.cnt.leg++;   // a 유니크 counts as a legendary find (the 첫 전설 achievement)
-    if (dr.q === 4) p.ch.cnt.set++;
     if (dr.q >= 3) checkAch(S, p);
     if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]${pp(gearName(dr.g), "을를")} 획득했습니다!`);
   } else {
     addItem(p.ch, dr.it, dr.n);
-    p.gain.push(["item", dr.it, dr.n, 0]);
+    foundItem(S, p, dr.it, dr.n);
     sqPicked(p, dr.it);
   }
   p.dirty = true;
@@ -9208,9 +9265,9 @@ function gearIl(g) {
 }
 /** The player level a piece can be worn from: its item level minus IL_GAP (at least 1). */
 const gearReq = (g) => Math.max(1, gearIl(g) - IL_GAP);
-/** A piece's name word: a legendary's or unique's power, or a set's name. Plain stat lines lend no word (owner 2026-11-16). */
+/** A piece's name word comes from a legendary or unique power. */
 function gearWord(g) {
-  return g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : "";
+  return g.lg ? `${LEGEND[g.lg][0]} ` : "";
 }
 /** "+3 뇌명의 강철 양손검" (a 유니크 is named like a 전설: by its power's word) */
 function gearName(g) {
@@ -9227,15 +9284,6 @@ function sellPrice(s) {
   if (!isGear(s.id)) return Math.floor(it.price * 0.4);
   return Math.floor(it.price * 0.05 * (1 + 0.8 * (s.q | 0)) * (1 + 0.3 * (s.enh | 0)));
 }
-/** The set a base item can belong to, if any. */
-function setFor(it) {
-  if (it.set) return it.set;   // a boss's own set piece (10-tables.js, bosses-2 §7)
-  for (const id of Object.keys(SETS)) {
-    if (SETS[id].types.includes(it.type) && SETS[id].tiers.includes(it.tier)) return id;
-  }
-  return null;
-}
-
 /** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`. */
 function rollLine(S, key, ilvl, mul) {
   const [, , , min, max, grow] = AFFIX.find((x) => x[0] === key);
@@ -9247,7 +9295,7 @@ function rollLine(S, key, ilvl, mul) {
  */
 function rollGear(S, id, q, ilvl, rank = 0) {
   const it = ITEMS[id];
-  if (q === 4 && !setFor(it)) q = 3;
+  if (q === 4) q = 3;
   const g = plain(id);
   g.q = q;
   g.il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(it.tier | 0) - 1] || 1), 1, 200);
@@ -9255,12 +9303,7 @@ function rollGear(S, id, q, ilvl, rank = 0) {
   const [lo, hi] = RARITY_AFFIX[q];
   for (let n = ri(S, lo, hi); n > 0 && pool.length; n--) g.af.push(rollLine(S, pool.splice(ri(S, 0, pool.length - 1), 1)[0][0], ilvl, AFFIX_MUL[q]));
   if (q === 3 || q === 5) g.lg = pfxPick(S, it.type);   // the power comes from the item type's pool (51-prefix.js)
-  if (q === 4) g.set = setFor(it);
-  if (!isJewel(id)) {
-    const r = rnd(S);
-    const most = it.type === "gloves" || it.type === "boots" ? 1 : 3;
-    g.sk = Math.min(most, (r < 0.12 ? 2 : r < 0.45 ? 1 : 0) + (q >= 3 ? 1 : 0));
-  }
+  g.sk = ri(S, 0, sockCap(g));
   return g;
 }
 /** `rank`: 0 for ordinary monsters, 1 elite, 2 field boss or boss. */
@@ -9271,10 +9314,10 @@ function rollRarity(S, rank, mf) {
   const uq = UNIQ_P[rank] * k;
   if (r < uq) return 5;
   r -= uq;
-  const top = [0.012, 0.07, 0.2][rank] * k;       // legendary or set
+  const top = [0.012, 0.07, 0.2][rank] * k;
   const rare = [0.09, 0.3, 0.55][rank] * k;
   const magic = 0.36 * k;
-  if (r < top) return rnd(S) < 0.4 ? 4 : 3;
+  if (r < top) return 3;
   return r < top + rare ? 2 : r < top + rare + magic ? 1 : 0;
 }
 function tierFor(lv) {
@@ -9309,17 +9352,16 @@ function lootFor(S, rt, mob, p) {
     if (isJewel(id) && q === 0) q = 1;
     out.push({ g: rollGear(S, id, q, d.lv, rank) });
   }
-  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
+  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: rollRuneId(S, rank), n: 1 });
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
   if (fx.stone) out.push({ it: "stone", n: 1 });   // (a power's extra stone: at most one a kill)
-  // a kind's own finds (MOBS[k].drops: [item, chance, min, max]); its weapon always drops legendary
-  // (a boss set's own piece always drops as that set)
-  for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(ITEMS[it].set ? { g: rollGear(S, it, 4, d.lv, rank) } : ITEMS[it].type === "weapon" ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
+  // A kind's own finds (MOBS[k].drops: [item, chance, min, max]); its signature gear always drops legendary.
+  for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(isGear(it) ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
   if (rnd(S) < 0.1) out.push({ it: d.lv < 8 ? "hp_s" : d.lv < 26 ? "hp_m" : "hp_l", n: 1 });
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   for (const o of out) {
     rt.drops.push({
-      id: S.nextId++, it: o.g ? o.g.id : o.it, g: o.g || null, n: o.n || 1, q: o.g ? o.g.q : 0,
+      id: S.nextId++, it: o.g ? o.g.id : o.it, g: o.g || null, n: o.n || 1, q: o.g ? o.g.q : RUNES[o.it]?.q || 0,
       x: mob.x + ri(S, -14, 14), y: mob.y + ri(S, -8, 10), own: p.pid, freeAt: S.now + 20000, dieAt: S.now + 60000,
     });
   }
@@ -9350,6 +9392,8 @@ const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3, rally: 4, binding: 5 };
 function dealMob(S, rt, mob, p, dmg, crit, cue) {
   // a boss that dived out of reach is not hit at all (56-boss-script.js)
   if (mob.dead || mob.dive) return false;
+  const poison = runePoisonFactor(S, mob);
+  if (poison !== 1) dmg = Math.max(1, Math.round(dmg * poison));
   // a scripted boss stunned by a broken cast takes more (its script's vuln), half behind its shielding adds
   if (mob.bs) dmg = bsTaken(S, rt, mob, dmg);
   // a rift's monster is made tougher for a bigger or stronger party (64-dim.js dimHk)
@@ -9365,6 +9409,7 @@ function dealMob(S, rt, mob, p, dmg, crit, cue) {
   rt.ev.push(event);
   if (mob.hp > 0) return false;
   killMob(S, rt, mob);
+  runeKillHeal(S, p, mob);
   return true;
 }
 
@@ -9413,11 +9458,12 @@ function stagger(S, mob, p, crit) {
  * never starts another power's chance, status or crit effect; its passive multipliers and a kill's heal still count).
  */
 function hurtMob(S, rt, mob, p, mult, sure, opt) {
-  if (mob.dead) return;
+  if (mob.dead || mob.dive) return;
   const st = stats(p);
   const d = MOBS[mob.k];
   const o = opt || {};
   const fx = pfxPre(S, p, st, mob, d, o);   // the powers that bend this blow before it rolls: armour ignored, crit chance, a sure crit
+  const pure = fx.pure;
   // a blow beyond your depth, or from an unpractised hand, may only graze (×0.5, never a crit)
   const graze = !sure && !fx.sure && rnd(S) * 100 < grazeChance(p, mob);
   // 급소 도려내기: a dagger finds the gaps its marks point to (+4% critical chance per mark)
@@ -9426,12 +9472,14 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const ign = fx.ign ? 1 - (1 - (o.ign || 0)) * (1 - fx.ign) : (o.ign || 0);
   // 거검의 관성: each stack a sword carries adds to its critical damage
   const critd = st.critd + (st.wk === "sword" ? inertOf(p) * SKILL.inertia.critd : 0);
-  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
+  const defence = pure ? 0 : d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
+  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - defence;
+  if (pure) dmg *= RUNE_POWER.blackstar.damage;
   // a dagger in a back that is not watching you
   if (st.wk === "dagger" && mob.tgt !== p.pid) dmg *= 1 + st.sneak;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
   dmg *= pfxMul(S, p, st, mob, d, o, crit);   // the powers that raise the blow (giant: +30% on elites and bosses), one product capped ×1.6
-  if (has(mob, "tough")) dmg *= 0.6;
+  if (!pure && has(mob, "tough")) dmg *= 0.6;
   if (mob.vuln > S.now) dmg *= 1.3;
   // 금서의 낙인: a branded monster takes more from everyone
   if (mob.brand > S.now) dmg *= 1 + SKILL.brand.k;
@@ -9458,6 +9506,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const x = mob.x, y = mob.y;
   wmHit(S, p, mob);
   const brand = mob.brand, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue);
+  if (pure) runeShock(S, rt, p, x, y, mob);
   pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand);
   if (!o.px) pfxHit(S, rt, p, st, mob, dmg, crit, killed, o);   // the powers that answer a blow landing (chance, status, crit)
   if (!killed) {
@@ -9488,6 +9537,8 @@ function killMob(S, rt, mob) {
   if (mob.slot) { mob.slot.mob = null; mob.slot.due = mob.respAt; rt.lastKill[mob.slot.c] = S.now; mob.slot = null; mob.cellGone = true; }
   mob.tgt = null;
   mob.dot = null;
+  mob.runePoison = null;
+  mob.runeBurn = null;
   mob.mk = 0; mob.dec = null; mob.vuln = 0; mob.brand = 0;
   rt.ev.push(["k", mob.id]);
   if (S.dims[rt.id]?.story?.airship) { airshipKill(S, rt, mob); return; }
@@ -9843,14 +9894,22 @@ const PFX_CAP = { dmg: 1.6, iv: 0.8, acd: 0.45, miti: 0.6, abs: 0.2, heal: 0.08,
 const PX = Object.freeze({ px: 1 });
 
 // ── what a player's gear gives (cached with the sheet in p.stc: deriveStats)
-/** The active powers' code by hook: { pre: [fn…], … }, in slot order. A retired power (PFX[k].off) is inert. */
-function pfxBuild(lg) {
+/** The active powers' code by hook: equipment powers in slot order, then eligible rune sets. */
+function pfxBuild(lg, runeSets = []) {
   const h = {};
   for (const n of PFX_HOOKS) h[n] = [];
   for (const key in lg) {
     const f = Object.hasOwn(PFX_FN, key) ? PFX_FN[key] : null;
     if (!f || (PFX[key] && PFX[key].off)) continue;
     for (const n of PFX_HOOKS) if (typeof f[n] === "function") h[n].push(f[n]);
+  }
+  for (const key of runeSets) {
+    const f = RUNE_SET_FN[key];
+    for (const n of PFX_HOOKS) if (typeof f[n] === "function") {
+      // A set's full revive is preferred over the legendary fallback at HP 1.
+      if (n === "lethal") h[n].unshift(f[n]);
+      else h[n].push(f[n]);
+    }
   }
   return h;
 }
@@ -9908,15 +9967,15 @@ function pfxHeal(S, p, st, amt) {
 }
 
 // ── the dispatchers (a hook list is empty for most players: every one returns at once then)
-const PFX_R0 = Object.freeze({ ign: 0, crit: 0, sure: 0, xp: 0, gold: 0, mf: 0, gx: 0, stone: 0 });
-const pfxPreR = { ign: 0, crit: 0, sure: 0 }, pfxMiR = { f: 1, abs: 0, block: 0 }, pfxStR = { iv: 1 }, pfxStaR = { f: 1 };
+const PFX_R0 = Object.freeze({ ign: 0, crit: 0, sure: 0, pure: 0, xp: 0, gold: 0, mf: 0, gx: 0, stone: 0 });
+const pfxPreR = { ign: 0, crit: 0, sure: 0, pure: 0 }, pfxMiR = { f: 1, abs: 0, block: 0 }, pfxStR = { iv: 1, riv: 1 }, pfxStaR = { f: 1 };
 
 /** Before a blow rolls → { ign, crit, sure } (read them at once: the object is reused). The crit it adds keeps the total under SFX.critCap. */
 function pfxPre(S, p, st, mob, d, o) {
   const a = st.pfx.pre;
   if (!a.length) return PFX_R0;
   const r = pfxPreR;
-  r.ign = 0; r.crit = 0; r.sure = 0;
+  r.ign = 0; r.crit = 0; r.sure = 0; r.pure = 0;
   for (let i = 0; i < a.length; i++) a[i](S, p, st, mob, d, o, r);
   r.crit = Math.max(0, Math.min(r.crit, SFX.critCap - st.crit));
   return r;
@@ -10016,8 +10075,9 @@ function pfxLoot(S, rt, p, mob, kind) {
 function pfxStat(p, st) {
   const a = st.pfx.stat, acd0 = st.acd, r = pfxStR;
   r.iv = 1;
+  r.riv = 1;
   for (let i = 0; i < a.length; i++) a[i](p, st, r);
-  if (r.iv < 1) st.acd = Math.max(Math.round(st.acd * Math.max(PFX_CAP.iv, r.iv)), Math.min(acd0, Math.round(st.arm.cd * PFX_CAP.acd)));
+  if (r.iv < 1 || r.riv < 1) st.acd = Math.max(Math.round(st.acd * Math.max(PFX_CAP.iv, r.iv) * r.riv), Math.min(acd0, Math.round(st.arm.cd * PFX_CAP.acd)));
 }
 /** A named number after the powers that change it (see `num` above). */
 function pfxNum(p, name, v) {
@@ -10068,6 +10128,345 @@ const PFX_FN = {
   // 포식자의: a kill heals (not through pfxHeal: as it always was)
   feast: { kill(S, rt, p, st) { if (!p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * PFX.feast.k); } },
 };
+// ───────────────────────────── equipped rune sets ─────────────────────────────
+
+const RUNE_SET_MAX = 2;
+const RUNE_POWER = {
+  willowwind: { move: 1.18, iv: 0.84, ms: 2800 },
+  duskfang: { kill: 0.035, chance: 0.25, leech: 0.15, icd: 1200 },
+  lantern: { shield: 0.16, ms: 5500, icd: 14000 },
+  brassscale: { gold: 22, mf: 16, per: 180, atk: 0.12, ms: 30000 },
+  azureknot: { cdr: 0.12, mp: 0.8 },
+  ashbloom: { chance: 0.2, hit: 1.3, dot: 0.22, ms: 4000, radius: 64, targets: 5, icd: 4300 },
+  silverlake: { slow: 1800, crit: 1.5 },
+  stormsail: { chance: 0.22, first: 1.35, fall: 0.78, radius: 94, targets: 5, icd: 3300 },
+  inkthorn: { dot: 0.09, vuln: 0.055, stacks: 5, ms: 6000, hitGap: 500 },
+  lastbell: { hp: 0.3, hit: 1.48, execute: 0.09 },
+  redanvil: { atk: 1.08, iv: 0.45, hp: 0.25, miti: 0.72 },
+  astrolabe: { chance: 0.18, cap: 0.8, ratio: 4, ms: 20000, icd: 10000 },
+  dawnpillar: { heal: 0.55, ms: 3200, icd: 360000 },
+  moonveil: { ms: 1700, ign: 0.82, icd: 6300 },
+  blackstar: { chance: 0.30, damage: 1.35, splash: 0.85, radius: 84, targets: 6, icd: 2800 },
+};
+
+const runePct = (n) => +(n * 100).toFixed(1);
+const runeSec = (n) => n / 1000;
+const RUNE_SETS = Object.fromEntries([
+  ["willowwind", "버들바람", 2, (c) => `이동 속도 +${runePct(c.move - 1)}%. 회피 성공 시 ${runeSec(c.ms)}초간 기본 공격 간격 -${runePct(1 - c.iv)}%.`],
+  ["duskfang", "저녁송곳니", 2, (c) => `적을 처치하면 최대 HP의 ${runePct(c.kill)}% 회복. 공격 적중 시 ${runePct(c.chance)}% 확률로 준 피해의 ${runePct(c.leech)}%만큼 회복 (${runeSec(c.icd)}초 간격).`],
+  ["lantern", "등불파수", 2, (c) => `피격 시 ${runeSec(c.ms)}초간 최대 HP의 ${runePct(c.shield)}%만큼 피해를 흡수하는 보호막 생성 (${runeSec(c.icd)}초 간격).`],
+  ["brassscale", "황동저울", 2, (c) => `전투 골드 획득 +${c.gold}%, 아이템 발견 +${c.mf}%. 떨어진 골드를 주울 때마다 ${c.per}골드당 공격력 1% 증가 (최대 ${runePct(c.atk)}%, ${runeSec(c.ms)}초).`],
+  ["azureknot", "푸른매듭", 2, (c) => `스킬 재사용 대기시간과 MP 소모 각각 ${runePct(c.cdr)}%, ${runePct(1 - c.mp)}% 감소.`],
+  ["ashbloom", "잿불꽃", 3, (c) => `공격 적중 시 ${runePct(c.chance)}% 확률로 적을 중심으로 최대 ${c.targets}명에게 공격력의 ${runePct(c.hit)}% 화염 피해. ${runeSec(c.ms)}초간 매초 공격력의 ${runePct(c.dot)}% 화상 피해 (${runeSec(c.icd)}초 간격).`],
+  ["silverlake", "은설호", 3, (c) => `공격 적중 시 ${runeSec(c.slow)}초간 오한으로 이동 속도를 절반으로 감소. 둔화 상태인 적에게 치명타 피해 +${runePct(c.crit - 1)}%. 보스와 우두머리에게 자신의 오한은 적용되지 않습니다.`],
+  ["stormsail", "폭풍항해", 3, (c) => `공격 적중 시 ${runePct(c.chance)}% 확률로 처음 맞은 적부터 최대 ${c.targets}명에게 연쇄 번개. 첫 피해는 공격력의 ${runePct(c.first)}%, 튕길 때마다 ${runePct(1 - c.fall)}% 감소 (${runeSec(c.icd)}초 간격).`],
+  ["inkthorn", "먹물가시", 3, (c) => `치명타 적중 시 ${runeSec(c.ms)}초간 맹독 중첩 (최대 ${c.stacks}회). 한 중첩당 매초 공격력의 ${runePct(c.dot)}% 피해를 주고 대상이 받는 피해 +${runePct(c.vuln)}%.`],
+  ["lastbell", "마지막 종", 3, (c) => `HP ${runePct(c.hp)}% 이하인 적에게 주는 피해 +${runePct(c.hit - 1)}%. 공격 후 HP ${runePct(c.execute)}% 이하인 적 즉시 처형 (보스와 우두머리 제외).`],
+  ["redanvil", "붉은모루", 4, (c) => `잃은 HP 비율의 제곱에 비례해 공격력이 최대 ${runePct(c.atk)}% 증가하고 기본 공격 간격이 최대 ${runePct(c.iv)}% 감소. HP ${runePct(c.hp)}% 이하에서는 받는 피해 -${runePct(1 - c.miti)}%.`],
+  ["astrolabe", "별의 궤도", 4, (c) => `스킬 사용 시 ${runePct(c.chance)}% 확률로 해당 스킬의 재사용 대기 초기화 (${runeSec(c.icd)}초 간격). 사용한 MP가 많을수록 ${runeSec(c.ms)}초 내 다음 공격 스킬의 피해 증가 (최대 ${runePct(c.cap)}%).`],
+  ["dawnpillar", "새벽기둥", 4, (c) => `치명상을 입으면 살아남아 최대 HP의 ${runePct(c.heal)}%를 회복하고 ${runeSec(c.ms)}초간 무적 (재발동 ${c.icd / 60000}분).`],
+  ["moonveil", "달그늘", 4, (c) => `회피나 이동기 사용 시 ${runeSec(c.ms)}초간 은신 (${runeSec(c.icd)}초 간격). 은신 중 첫 공격은 확정 치명타, 방어력 ${runePct(c.ign)}% 관통. 보스와 우두머리는 은신한 대상을 추적합니다.`],
+  ["blackstar", "검은별", 4, (c) => `공격 시 ${runePct(c.chance)}% 확률로 적의 방어력을 무시하고 공격 피해 +${runePct(c.damage - 1)}%. 방어력을 무시하는 충격파가 주변 최대 ${c.targets}명에게 공격력의 ${runePct(c.splash)}% 피해 (${runeSec(c.icd)}초 간격).`],
+].map(([id, name, need, desc]) => [id, { name, need, desc: desc(RUNE_POWER[id]) }]));
+
+// Higher requirements win. Equally sized sets keep their order in the table.
+const RUNE_PRIORITY = Object.keys(RUNE_SETS).sort((a, b) => RUNE_SETS[b].need - RUNE_SETS[a].need);
+function activeRuneSets(counts) {
+  return RUNE_PRIORITY.filter((id) => (counts[id] || 0) >= RUNE_SETS[id].need).slice(0, RUNE_SET_MAX);
+}
+
+const runeOn = (p, id) => deriveStats(p).runeSets?.includes(id) === true;
+const runeTimed = (p, id, now) => (p.pc?.t[id] || 0) > now;
+const runeFirm = (mob) => MOBS[mob.k].boss || mob.el === 2 || MOBS[mob.k].chest || MOBS[mob.k].still;
+const runeReady = (S, p, id) => S.now >= (p.pc?.cd[id] || 0);
+const runeProc = (S, p, st, id) => {
+  const c = RUNE_POWER[id];
+  return runeReady(S, p, id) && pfxChance(S, st, c.chance) && pfxIcd(S, p, id, c.icd);
+};
+
+/** Changing which sets win drops their active states, without refreshing their cooldowns. */
+function syncRuneActive(p, ids) {
+  if (!p.pc) return;
+  for (const id of Object.keys(p.pc.t)) if (Object.hasOwn(RUNE_SETS, id) && !ids.includes(id)) {
+    delete p.pc.t[id];
+    delete p.pc.v[id];
+  }
+}
+
+function runeEarnGold(S, p, amount) {
+  if (!runeOn(p, "brassscale")) return;
+  const c = RUNE_POWER.brassscale, pc = pfxPc(p);
+  const old = runeTimed(p, "brassscale", S.now) ? pc.v.brassscale : 0;
+  pc.v.brassscale = Math.min(c.per * Math.round(c.atk * 100), old + amount);
+  pc.t.brassscale = S.now + c.ms;
+}
+
+/** The killing player can heal regardless of whether a blow, trap or DoT took the last HP. */
+function runeKillHeal(S, p, mob) {
+  if (p.dead || MOBS[mob.k].chest || !runeOn(p, "duskfang")) return;
+  const st = deriveStats(p);
+  pfxHeal(S, p, st, st.mhp * RUNE_POWER.duskfang.kill);
+}
+
+const runeDetonate = (rt, x, y, radius, color) => rt.ev.push(["b", Math.round(x), Math.round(y), radius, color]);
+const runeBolt = (rt, src, dst) => rt.ev.push(["z", Math.round(src.x), Math.round(src.y - 6), Math.round(dst.x), Math.round(dst.y - 6), 0]);
+
+function runeNearest(rt, src, radius, seen) {
+  let nearest = null, range = radius;
+  for (const mob of mobsWithin(rt, src.x, src.y, radius)) {
+    if (seen.has(mob) || MOBS[mob.k].chest) continue;
+    const d = dist(src.x, src.y, mob.x, mob.y);
+    if (d < range) { nearest = mob; range = d; }
+  }
+  return nearest;
+}
+
+function runeDebuff(S, p, old, ms, dmg, stacks = 1) {
+  return { pid: p.pid, map: p.map, until: S.now + ms, next: old && old.until >= S.now ? old.next : S.now + 1000, dmg, stacks };
+}
+
+function runeDotSource(S, dot, id) {
+  const p = dot && S.players[dot.pid];
+  return dot && dot.until >= S.now && p && !p.dead && p.map === dot.map && runeOn(p, id) ? p : null;
+}
+
+function runePoisonFactor(S, mob) {
+  return runeDotSource(S, mob.runePoison, "inkthorn") ? 1 + RUNE_POWER.inkthorn.vuln * mob.runePoison.stacks : 1;
+}
+
+const RUNE_DOTS = [["runeBurn", "ashbloom"], ["runePoison", "inkthorn"]];
+/** Both rune DoTs share the same attribution and pass through the normal damage/loot path. */
+function runeDotTick(S, m, rt, mob) {
+  if (!mob.runeBurn && !mob.runePoison) return false;
+  for (const [key, id] of RUNE_DOTS) {
+    const dot = mob[key];
+    if (!dot) continue;
+    const p = runeDotSource(S, dot, id);
+    if (!p || p.map !== m.id) { mob[key] = null; continue; }
+    if (S.now < dot.next) continue;
+    dot.next = S.now + 1000;
+    if (dealMob(S, rt, mob, p, dot.dmg * dot.stacks, false)) return true;
+  }
+  return false;
+}
+
+/** The previous cast charges the next damaging skill, including its delayed hits. */
+function runeSkillDamage(S, p, st, sk) {
+  if (!st.runeSets?.includes("astrolabe") || typeof sk.mult !== "number" || !runeTimed(p, "astrolabe", S.now)) return 1;
+  const pc = pfxPc(p), bonus = pc.v.astrolabe || 0;
+  delete pc.t.astrolabe;
+  delete pc.v.astrolabe;
+  return 1 + bonus;
+}
+
+function runeShade(S, p) {
+  const c = RUNE_POWER.moonveil;
+  if (pfxIcd(S, p, "moonveil", c.icd)) pfxPc(p).t.moonveil = S.now + c.ms;
+}
+
+function runeMoveSkill(S, p) {
+  if (runeOn(p, "moonveil")) runeShade(S, p);
+}
+
+const runeHidden = (p, now) => runeTimed(p, "moonveil", now) && runeOn(p, "moonveil");
+
+/** The true-damage proc cannot recur on its own shockwave. */
+function runeShock(S, rt, p, x, y, first) {
+  const c = RUNE_POWER.blackstar, atk = stats(p).atk;
+  runeDetonate(rt, x, y, c.radius, 3);
+  const hit = mobsWithin(rt, x, y, c.radius).filter((mob) => mob !== first && !MOBS[mob.k].chest).slice(0, c.targets);
+  for (const mob of hit) dealMob(S, rt, mob, p, Math.max(1, Math.round(atk * c.splash)), false);
+}
+
+const RUNE_SET_FN = {
+  willowwind: {
+    sheet(p, c) { c.spd0 *= RUNE_POWER.willowwind.move; },
+    evade(S, rt, p) { pfxPc(p).t.willowwind = S.now + RUNE_POWER.willowwind.ms; },
+    stat(p, st, r) { if (runeTimed(p, "willowwind", p.S.now)) r.riv *= RUNE_POWER.willowwind.iv; },
+  },
+  duskfang: {
+    hit(S, rt, p, st, mob, dmg) {
+      if (!p.dead && p.hp < st.mhp && !MOBS[mob.k].chest && runeProc(S, p, st, "duskfang")) pfxHeal(S, p, st, dmg * RUNE_POWER.duskfang.leech);
+    },
+  },
+  lantern: {
+    miti(S, rt, p, st, mob, dmg, raw, r) {
+      const c = RUNE_POWER.lantern, pc = pfxPc(p), id = "lantern";
+      if (r.block) return;
+      if (pfxIcd(S, p, id, c.icd)) { pc.t[id] = S.now + c.ms; pc.v[id] = Math.round(st.mhp * c.shield); }
+      if (!runeTimed(p, id, S.now) || !pc.v[id]) return;
+      const taken = Math.round(dmg * clamp(r.f, PFX_CAP.miti, 1));
+      const absorbed = Math.max(0, Math.min(pc.v[id], taken - r.abs, st.mhp * PFX_CAP.abs - r.abs));
+      r.abs += absorbed;
+      pc.v[id] -= absorbed;
+    },
+  },
+  brassscale: {
+    loot(S, rt, p, st, mob, r, kind) {
+      if (kind !== "drop") return;
+      r.gold += RUNE_POWER.brassscale.gold;
+      r.mf += RUNE_POWER.brassscale.mf;
+    },
+    stat(p, st) {
+      if (!runeTimed(p, "brassscale", p.S.now)) return;
+      const c = RUNE_POWER.brassscale;
+      const bonus = Math.min(c.atk, Math.floor(p.pc.v.brassscale / c.per) / 100);
+      st.atk = Math.round(st.atk * (1 + bonus));
+    },
+  },
+  azureknot: {
+    sheet(p, c) { c.cdr = 1 - (1 - c.cdr) * (1 - RUNE_POWER.azureknot.cdr); },
+    num(p, name, value) { if (name === "mp") return value * RUNE_POWER.azureknot.mp; },
+  },
+  ashbloom: {
+    hit(S, rt, p, st, mob) {
+      if (MOBS[mob.k].chest || !runeProc(S, p, st, "ashbloom")) return;
+      const c = RUNE_POWER.ashbloom;
+      const hit = mobsWithin(rt, mob.x, mob.y, c.radius).filter((other) => other !== mob && !MOBS[other.k].chest).slice(0, c.targets - 1);
+      if (!mob.dead) hit.unshift(mob);
+      runeDetonate(rt, mob.x, mob.y, c.radius, 2);
+      for (const other of hit) {
+        hurtMob(S, rt, other, p, c.hit, false, PX);
+        if (!other.dead) other.runeBurn = runeDebuff(S, p, other.runeBurn, c.ms, Math.max(1, Math.round(st.atk * c.dot)));
+      }
+    },
+  },
+  silverlake: {
+    hit(S, rt, p, st, mob, dmg, crit, killed) {
+      if (killed || runeFirm(mob)) return;
+      mob.slow = Math.max(mob.slow || 0, S.now + RUNE_POWER.silverlake.slow);
+    },
+    mul(S, p, st, mob, d, o, crit) {
+      return crit && !o.px && mob.slow > S.now ? RUNE_POWER.silverlake.crit : 1;
+    },
+  },
+  stormsail: {
+    hit(S, rt, p, st, mob) {
+      if (MOBS[mob.k].chest || !runeProc(S, p, st, "stormsail")) return;
+      const c = RUNE_POWER.stormsail, seen = new Set();
+      let next = mob, mult = c.first;
+      for (let i = 0; i < c.targets && next; i++) {
+        const prev = next;
+        seen.add(prev);
+        next = i < c.targets - 1 ? runeNearest(rt, prev, c.radius, seen) : null;
+        if (!prev.dead) hurtMob(S, rt, prev, p, mult, false, PX);
+        if (next) runeBolt(rt, prev, next);
+        mult *= c.fall;
+      }
+    },
+  },
+  inkthorn: {
+    crit(S, rt, p, st, mob, dmg, crit, killed) {
+      if (killed || mob.dead || MOBS[mob.k].chest) return;
+      const c = RUNE_POWER.inkthorn, recent = runeDotSource(S, mob.runePoison, "inkthorn") ? mob.runePoison : null;
+      if (recent && S.now < recent.addAt + c.hitGap) return;
+      const dot = runeDebuff(S, p, recent, c.ms, Math.max(1, Math.round(st.atk * c.dot)), Math.min(c.stacks, (recent?.stacks || 0) + 1));
+      dot.addAt = S.now;
+      mob.runePoison = dot;
+    },
+  },
+  lastbell: {
+    mul(S, p, st, mob) { return mob.hp <= mobMax(mob) * RUNE_POWER.lastbell.hp ? RUNE_POWER.lastbell.hit : 1; },
+    hit(S, rt, p, st, mob, dmg, crit, killed, o) {
+      if (killed || mob.dead || runeFirm(mob) || mob.hp > mobMax(mob) * RUNE_POWER.lastbell.execute) return;
+      const { x, y } = mob;
+      if (dealMob(S, rt, mob, p, Math.ceil(mob.hp * (mob.hk || 1)), true)) pfxKill(S, rt, p, st, mob, x, y, o);
+    },
+  },
+  redanvil: {
+    stat(p, st, r) {
+      const c = RUNE_POWER.redanvil, lost = 1 - clamp(p.hp / st.mhp, 0, 1);
+      st.atk = Math.round(st.atk * (1 + c.atk * lost * lost));
+      r.riv *= 1 - c.iv * lost * lost;
+    },
+    miti(S, rt, p, st, mob, dmg, raw, r) { if (p.hp <= st.mhp * RUNE_POWER.redanvil.hp) r.f *= RUNE_POWER.redanvil.miti; },
+  },
+  astrolabe: {
+    skill(S, rt, p, st, sk, id, cost) {
+      const c = RUNE_POWER.astrolabe, pc = pfxPc(p);
+      if (cost > 0) { pc.v.astrolabe = Math.min(c.cap, (cost / st.mmp) * c.ratio); pc.t.astrolabe = S.now + c.ms; }
+      if (p.cds[id] <= S.now || !runeProc(S, p, st, "astrolabe")) return;
+      p.cds[id] = S.now;
+      toast(p, `별의 궤도 · [${sk.name}] 재사용 대기 초기화`);
+    },
+  },
+  dawnpillar: {
+    lethal(S, rt, p, st) {
+      const c = RUNE_POWER.dawnpillar;
+      if (S.now < (p.ch.runeWardAt || 0) || !runeReady(S, p, "fate")) return false;
+      p.ch.runeWardAt = S.now + c.icd;
+      pfxPc(p).cd.fate = p.ch.runeWardAt;
+      p.hp = Math.max(1, Math.round(st.mhp * c.heal));
+      p.ghost = Math.max(p.ghost || 0, S.now + c.ms);
+      p.dirty = true;
+      saveSoon(p);
+      toast(p, "새벽기둥 · 쓰러지기 직전 되살아났습니다.");
+      rt.ev.push(["h", p.eid, -p.hp, 0, 1]);
+      return true;
+    },
+  },
+  moonveil: {
+    dash(S, rt, p) { runeShade(S, p); },
+    evade(S, rt, p) { runeShade(S, p); },
+    pre(S, p, st, mob, d, o, r) {
+      if (o.px || d.chest || !runeTimed(p, "moonveil", S.now)) return;
+      delete p.pc.t.moonveil;
+      r.sure = 1;
+      r.ign = Math.max(r.ign, RUNE_POWER.moonveil.ign);
+    },
+  },
+  blackstar: {
+    pre(S, p, st, mob, d, o, r) {
+      if (!o.px && !d.chest && runeProc(S, p, st, "blackstar")) r.pure = 1;
+    },
+  },
+};
+// Four one-line variants per prefix encourage different builds under the same set effect.
+const SET_AFFIXES = {
+  willowwind: ["spd", "crit", "mp", "xp"], duskfang: ["ls", "atk", "hp", "critd"],
+  lantern: ["hp", "def", "ls", "mp"], brassscale: ["gold", "mf", "xp", "atk"],
+  azureknot: ["mp", "spd", "def", "crit"], ashbloom: ["atkp", "atk", "critd", "mp"],
+  silverlake: ["critd", "crit", "def", "mp"], stormsail: ["spd", "atk", "crit", "atkp"],
+  inkthorn: ["crit", "critd", "ls", "atkp"], lastbell: ["atkp", "atk", "critd", "ls"],
+  redanvil: ["hp", "atk", "atkp", "ls"], astrolabe: ["mp", "atkp", "critd", "spd"],
+  dawnpillar: ["hp", "def", "ls", "crit"], moonveil: ["spd", "critd", "crit", "atk"],
+  blackstar: ["atkp", "atk", "critd", "hp"],
+};
+const MAGIC_AFFIX = Object.fromEntries(MAGIC_RUNES.map(([, , stat, n]) => [stat, n]));
+for (const [set, def] of Object.entries(RUNE_SETS)) {
+  const lines = SET_AFFIXES[set];
+  for (let i = 0; i < lines.length; i++) {
+    const stat = lines[i];
+    addRune(`ru_${set}_${i + 1}`, 4, `${def.name}의 룬`, [[stat, MAGIC_AFFIX[stat]]], set);
+  }
+}
+
+/** Normal packs mainly drop magic runes; elites and boss/chest rewards improve the rarity. */
+const RUNE_ODDS = [[73, 20, 2], [59, 25, 6], [45, 30, 12]];
+function rollRuneId(S, rank = 0) {
+  const [magic, rare, legendary] = RUNE_ODDS[rank];
+  const roll = rnd(S) * 100;
+  const q = roll < magic ? 1 : roll < magic + rare ? 2 : roll < magic + rare + legendary ? 3 : 4;
+  const tierRoll = q === 4 ? rnd(S) : 0;
+  const pool = q === 4 ? RUNE_POOLS[4][tierRoll < 0.5 ? 2 : tierRoll < 0.83 ? 3 : 4] : RUNE_POOLS[q];
+  return pool[ri(S, 0, pool.length - 1)];
+}
+
+function foundItem(S, p, id, n) {
+  const rune = RUNES[id];
+  p.gain.push(["item", id, n, rune?.q || 0]);
+  if (rune?.set) {
+    p.ch.cnt.rune_find += n;
+    checkAch(S, p);
+  }
+}
+
+function gainRune(S, p, rank = 0) {
+  const id = rollRuneId(S, rank);
+  if (!addItem(p.ch, id, 1)) return false;
+  foundItem(S, p, id, 1);
+  return true;
+}
 // ───────────────────────────── 접두사 고유 효과: defense, phase 1 (docs/design/prefix-effects.md §3.2) ─────────────────────────────
 // 33 powers of the armor / boots / amulet / helm pools that need no phase-2 hook (thorn and feast are in 51-prefix.js). Three lines each, as
 // 51-prefix.js teaches: the numbers (PFX), the tooltip row (LEGEND), the code (PFX_FN). Numbers are the design's first pass; a balance pass edits them here.
@@ -11606,6 +12005,7 @@ function danceStep(S, p, now) {
   }
   if (!mob) {
     if (canStand(m, dn.ox, dn.oy)) { p.x = dn.ox; p.y = dn.oy; }
+    if (p.x !== ox || p.y !== oy) runeMoveSkill(S, p);
     p.fix = true; p.mvAt = now; p.dance = null; p.dirty = true;
     rt.ev.push(["ln", 5, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
     return;
@@ -11615,6 +12015,7 @@ function danceStep(S, p, now) {
   dn.next = now + dn.every;
   const [ux, uy] = aimVec(p, mob);
   for (const k of [14, -14, 0]) { const nx = mob.x + ux * k, ny = mob.y + uy * k; if (canStand(m, nx, ny)) { p.x = nx; p.y = ny; break; } }
+  if (p.x !== ox || p.y !== oy) runeMoveSkill(S, p);
   p.fix = true; p.mvAt = now;
   face(p, mob);
   rt.ev.push(["ln", 5, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
@@ -11645,7 +12046,7 @@ function weaponReset(p, death) {
 }
 /** The bits other players see: 4 untouchable in the air, 16 dancing, 32 resonance full, 64 hidden, 128 focused, 256 holding a charge (its tier × 512). */
 function flagsOf(p, now) {
-  return (p.hold ? 256 | (holdTier(p, now) << 9) : 0) | (p.ghost > now ? 4 : 0) | (p.dance ? 16 : 0) | ((p.reso | 0) >= SKILL.reso.n && inHand(p.ch) === "staff" ? 32 : 0) | (p.hide > now ? 64 : 0) | (pasFocus(p, pasSet(p), now) ? 128 : 0);
+  return (p.hold ? 256 | (holdTier(p, now) << 9) : 0) | (p.ghost > now ? 4 : 0) | (p.dance ? 16 : 0) | ((p.reso | 0) >= SKILL.reso.n && inHand(p.ch) === "staff" ? 32 : 0) | (p.hide > now || runeHidden(p, now) ? 64 : 0) | (pasFocus(p, pasSet(p), now) ? 128 : 0);
 }
 const WEAVE_CODE = { f: 1, i: 2, l: 3 };
 /** The gauge's live number on every snapshot: inertia stacks, or resonance + 4 × the element held. */
@@ -11717,6 +12118,7 @@ function castSkill(S, p, id) {
   const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
   // mastery grows a skill; a full resonance makes a staff skill free and 30% stronger
   let k = skGrow(p.ch, sk) * charmSkd(p, id);   // (and what the charm board adds to this skill, 66-charms.js)
+  k *= runeSkillDamage(S, p, st, sk);
   // 정신 집중 (55-passives.js): standing still, the next skill lands harder
   if (pasFocus(p, pasSet(p), now)) { k *= 1 + SKILL.staff_spark40.k; p.focusAt = now; pasFx(rt, p, "staff_spark40", p.x, p.y); }
   const cost = skMp(p, sk);
@@ -11768,6 +12170,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const ox = p.x, oy = p.y, len = stepTo(m, ox, oy, aimX, aimY, sk.len);
       const passed = mobsInLine(rt, ox, oy, aimX, aimY, len, sk.half).slice(0, 4);
       p.x += aimX * len; p.y += aimY * len; p.fix = true; p.mvAt = now;
+      if (len > 0) runeMoveSkill(S, p);
       const struck = mobsWithin(rt, p.x, p.y, sk.r).slice(0, 4);
       rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(sk.fx, p.x, p.y - 6, sk.r);
@@ -11822,6 +12225,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       while (far > 0 && !canStand(m, p.x + aimX * far, p.y + aimY * far)) far -= 3;
       const ox = p.x, oy = p.y;
       p.x += aimX * Math.max(0, far); p.y += aimY * Math.max(0, far);
+      if (far > 0) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(81, p.x, p.y - 6, sk.r);
@@ -11855,6 +12259,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       // behind it as seen from where you stood: sure of a crit if it was not watching you
       const sure = mob.tgt !== p.pid, [ux, uy] = aimVec(p, mob), ox = p.x, oy = p.y;
       for (const d of [sk.behind, sk.behind / 2, 0, -sk.behind]) { const nx = mob.x + ux * d, ny = mob.y + uy * d; if (canStand(m, nx, ny)) { p.x = nx; p.y = ny; break; } }
+      if (p.x !== ox || p.y !== oy) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       p.aim = aimIdx(mob.x - p.x, mob.y - p.y);
       face(p, mob);
@@ -11898,6 +12303,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, aimX, aimY, sk.len);
       const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 14, sk.half);
       p.x = ox + aimX * far; p.y = oy + aimY * far;
+      if (far > 0) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       p.ghost = Math.max(p.ghost || 0, now + 300);
       rt.ev.push(["ln", 3, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
@@ -11985,6 +12391,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       // a hop back out of reach, and a fan of five loosed in the air
       const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
       p.x = ox - aimX * far; p.y = oy - aimY * far;
+      if (far > 0) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       rt.ev.push(["ln", 8, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(95, ...ahead(60));
@@ -12079,7 +12486,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       ev(sk.fx, ...ahead(far), far);
       for (const o of mobsInLine(rt, ox, oy, aimX, aimY, far, sk.half)) hit(o, sk.mult * hawk);
       const back = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
-      if (back) { p.x = ox - aimX * back; p.y = oy - aimY * back; p.fix = true; p.mvAt = now; }
+      if (back) { p.x = ox - aimX * back; p.y = oy - aimY * back; p.fix = true; p.mvAt = now; runeMoveSkill(S, p); }
       break;
     }
     case "rollshot": {
@@ -12087,6 +12494,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const ace = p.dashAt > 0 && now >= p.dashAt && now - p.dashAt <= DASH.ms + sk.win;
       const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
       p.x = ox - aimX * far; p.y = oy - aimY * far; p.fix = true; p.mvAt = now;
+      if (far > 0) runeMoveSkill(S, p);
       rt.ev.push(["ln", 8, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
       if (mob) face(p, mob);
@@ -12120,6 +12528,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 14, sk.half);
       const carry = line.filter((o) => !MOBS[o.k].boss && !MOBS[o.k].still && o.el !== 2);
       p.x = ox + aimX * far; p.y = oy + aimY * far; p.fix = true; p.mvAt = now;
+      if (far > 0) runeMoveSkill(S, p);
       rt.ev.push(["ln", 3, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(sk.fx, p.x, p.y - 6, carry.length);
       carry.forEach((o, j) => { if (pullTo(m, o, p.x + aimX * 14 - aimY * ((j % 3) - 1) * 8, p.y + aimY * 14 + aimX * ((j % 3) - 1) * 8)) o.drag = now + DRAG_MS; });
@@ -12200,6 +12609,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       p.spdBuff = Math.max(p.spdBuff, now + sk.hide);
       const far = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
       p.x = ox - aimX * far; p.y = oy - aimY * far;
+      if (far > 0) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       rt.ev.push(["ln", 8, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(98, ox, oy - 6);
@@ -12224,6 +12634,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       while (far > 0 && !canStand(m, p.x + ux * far, p.y + uy * far)) far -= 3;
       const ox = p.x, oy = p.y;
       p.x += ux * Math.max(0, far); p.y += uy * Math.max(0, far);
+      if (far > 0) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       p.ghost = Math.max(p.ghost || 0, now + sk.ghost);
       rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
@@ -12660,7 +13071,7 @@ function recipeWhy(ch, r) {
   if (r.sq && !Object.hasOwn(ch.sq.on, r.sq)) return "퀘스트를 받아야 만들 수 있습니다";   // a quest's own recipe (arc A5's 기록 보존액)
   return "";
 }
-const runeCount = (ch) => RUNE_KEYS.reduce((n, k) => n + countItem(ch, `ru_${k}`), 0);
+const runeCount = (ch) => ch.inv.reduce((n, s) => n + (RUNES[s.id] ? s.n : 0), 0);
 /** How many of an input the character has (bag + pouch; "rune*" = every rune). */
 const haveOf = (ch, id) => (id === "rune*" ? runeCount(ch) : countItem(ch, id));
 /** Take `n` runes, the most plentiful kind first; returns the ids taken. */
@@ -12668,7 +13079,9 @@ function takeRunes(ch, n) {
   const out = [];
   for (let i = 0; i < n; i++) {
     let best = "", bn = 0;
-    for (const k of RUNE_KEYS) { const c = countItem(ch, `ru_${k}`); if (c > bn) { bn = c; best = `ru_${k}`; } }
+    const stacks = {};
+    for (const s of ch.inv) if (RUNES[s.id]) stacks[s.id] = (stacks[s.id] || 0) + s.n;
+    for (const id of RUNE_KEYS) { const c = stacks[id] || 0; if (c > bn) { bn = c; best = id; } }
     if (!best) break;
     takeItem(ch, best, 1);
     out.push(best);
@@ -12727,7 +13140,7 @@ function craftOnce(S, p, r, s) {
     p.gain.push(["item", g.id, 1, g.q]);
   } else {
     const n = r.out[1] * (roll.great ? 2 : 1);
-    if (r.out[0] === "rune*") for (let i = 0; i < n; i++) { const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`; if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]); }
+    if (r.out[0] === "rune*") for (let i = 0; i < n; i++) gainRune(S, p, roll.great ? 1 : 0);
     else if (addItem(ch, r.out[0], n)) p.gain.push(["item", r.out[0], n, 0]);
   }
   gainLife(S, p, r.sk, xp);
@@ -12935,8 +13348,6 @@ function jbPay(S, p) {
 // ── items with a life use (B.11): elixirs, the punch, the whetstone
 
 const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (ITEMS[id].type === "tool" || ITEMS[id].el === 1);
-/** How many sockets a piece can ever have (as rollGear: gloves and boots 1, the rest 3; jewellery none). */
-const sockCap = (g) => (isJewel(g.id) ? 0 : ITEMS[g.id].type === "gloves" || ITEMS[g.id].type === "boots" ? 1 : 3);
 /** The weakest affix of a piece (value against its range's top), by index; −1 without one. */
 function weakAffix(g) {
   let best = -1, bv = Infinity;
@@ -12954,7 +13365,7 @@ function lifeUseValidate(S, p, a) {
   if (it.type !== "tool") return OK;
   const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
   if (!g) return bad("장착한 장비를 골라 주세요");
-  if (a.id === "punch" && g.sk >= sockCap(g)) return bad(sockCap(g) ? "더 이상 홈을 뚫을 수 없습니다" : "장신구에는 홈을 뚫을 수 없습니다");
+  if (a.id === "punch" && g.sk >= sockCap(g)) return bad("더 이상 홈을 뚫을 수 없습니다");
   if (a.id === "whet" && weakAffix(g) < 0) return bad("새로 굴릴 옵션이 없습니다");
   return OK;
 }
@@ -13565,7 +13976,7 @@ function rewardGear(S, p, ilvl, minQ) {
   let id;
   if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
   else id = `${GEAR[type].pre}_${tier}`;
-  const g = rollGear(S, id, Math.max(minQ, Math.min(4, rollRarity(S, 1, 0))), ilvl);   // (never a 유니크: those are monster drops)
+  const g = rollGear(S, id, Math.max(minQ, Math.min(3, rollRarity(S, 1, 0))), ilvl);   // uniques come from monster drops
   p.ch.inv.push(g);
   p.gain.push(["item", g.id, 1, g.q]);
 }
@@ -13573,7 +13984,7 @@ function payout(S, p, r) {
   const ch = p.ch;
   if (r.gold) { ch.gold += r.gold; p.gain.push(["gold", r.gold]); }
   if (r.stone && addItem(ch, "stone", r.stone)) p.gain.push(["item", "stone", r.stone, 0]);
-  if (r.rune) { const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`; if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]); }
+  if (r.rune) gainRune(S, p, r.gearQ >= 3 ? 2 : 1);
   if (r.gear) rewardGear(S, p, Math.floor(toTier(ch.lvl)), r.gearQ || 2);
   if (r.xp) gainXp(S, p, r.xp);
   p.dirty = true;
@@ -13638,10 +14049,10 @@ const ACH = [
   ...Object.keys(REP_PERK).map((id) => [`rep_${id}`, "함께", REP_PERK[id].title, `${REP_PERK[id].who}의 신뢰 ${REP_TIER[2]} (${REP_NAME[2]})`, 10, (c) => !!c.rep && (c.rep[id] | 0) >= REP_TIER[2], REP_PERK[id].title]),
   ["repwillow", "함께", "버드나무 이웃", `버드나무 마을 이웃 셋과 ${REP_NAME[1]} (신뢰 ${REP_TIER[1]})`, 10, (c) => !!c.rep && Object.keys(c.rep).filter((id) => id.startsWith("willow_") && c.rep[id] >= REP_TIER[1]).length >= 3],
   ["leg", "장비", "첫 전설", "전설 장비 획득", 10, (c) => c.cnt.leg >= 1],
-  ["set", "장비", "세트 수집가", "세트 장비 획득", 10, (c) => c.cnt.set >= 1],
+  ["rune_find", "장비", "룬 수집가", "세트 룬 획득", 10, (c) => c.cnt.rune_find >= 1],
   ["enh7", "장비", "강화의 손길", "장비 +7 강화 성공", 10, (c) => c.cnt.enh >= 7],
   ["enh10", "장비", "명장", "장비 +10 강화 성공", 30, (c) => c.cnt.enh >= 10, "명장", [["def", 4]]],
-  ["rw", "장비", "룬어 완성", "룬어 완성", 10, (c) => c.cnt.rw >= 1],
+  ["rune_bond", "장비", "새겨진 맹세", "세트 룬 효과 처음 발동", 10, (c) => c.cnt.rune_bond >= 1],
   ["party100", "함께", "함께하는 사냥", "파티로 몬스터 100마리 처치", 10, (c) => c.cnt.party >= 100, "동료"],
   ["guild", "함께", "길드원", "길드 가입", 5, (c) => !!c.guild],
   ["gfound", "함께", "길드장", "길드 창설", 10, (c) => c.cnt.gfound >= 1, "길드장"],
@@ -15805,6 +16216,7 @@ function chalSpawn(S, dim, k, n) {
 function chalReset(S, dim, mob) {
   const c = dim.chal, [tx, ty] = dim.map.dim.boss, now = S.now;
   mob.hp = mobMax(mob); mob.by = {}; mob.tgt = null; mob.st = 0; mob.cast = null; mob.act = null; mob.dot = null; mob.slow = 0;
+  mob.runeBurn = mob.runePoison = null;
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   mob.stun = now + 3000; mob.castAt = now + 7000; mob.ak = c.ak; mob.stag = 0;
   dim.rt.tele.length = 0; dim.rt.pools.length = 0;
@@ -19825,9 +20237,21 @@ export function validateAction(S, pid, a) {
     case "rune": {
       const s = invAt(ch, a.s);
       if (!s || ITEMS[s.id].type !== "rune") return bad("룬이 아닙니다");
+      if (p.dead) return bad("쓰러진 상태입니다");
       const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
       if (!g) return bad("장착한 장비가 없습니다");
-      if (!Number.isInteger(a.i) || a.i < 0 || a.i >= g.sk) return bad("빈 홈이 없습니다");
+      if (!Number.isInteger(a.i) || a.i < 0 || a.i >= Math.min(g.sk, sockCap(g))) return bad("뚫린 홈이 없습니다");
+      if (g.ru[a.i] === s.id) return bad("이미 같은 룬이 끼워져 있습니다");
+      if (g.ru[a.i] && a.r !== 1) return bad("끼워진 룬을 교체하면 사라집니다. 교체를 확인하세요");
+      return OK;
+    }
+    case "socket": {
+      const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
+      if (!g) return bad("장착한 장비가 없습니다");
+      if (p.dead) return bad("쓰러진 상태입니다");
+      if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
+      if (g.sk >= sockCap(g)) return bad("더 이상 홈을 뚫을 수 없습니다");
+      if (ch.gold < SOCK_COST[g.sk]) return bad(`골드가 부족합니다 (${gStr(SOCK_COST[g.sk])}G 필요)`);
       return OK;
     }
     case "train": {
@@ -20150,15 +20574,23 @@ export function applyAction(S, pid, a) {
     }
     case "rune": {
       const g = ch.eq[a.k];
-      const key = ITEMS[ch.inv[a.s].id].rune;
-      takeItem(ch, `ru_${key}`, 1);
+      const slot = ch.inv[a.s];
+      if (--slot.n === 0) ch.inv.splice(a.s, 1);
       while (g.ru.length < g.sk) g.ru.push(null);
-      g.ru[a.i] = key;
-      const rw = runeword(g);
-      toast(p, rw ? `룬어 [${rw.name}] 완성!` : `${RUNES[key][0]} 룬을 끼웠습니다.`);
-      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]${pp(rw.name, "을를")} 완성했습니다!`); ch.cnt.rw++; checkAch(S, p); }
+      g.ru[a.i] = slot.id;
+      const name = RUNES[slot.id].name;
+      toast(p, `[${name}]${pp(name, "을를")} 끼웠습니다.`);
       S.maps[p.map].ev.push(["e", p.eid, 1]);
       afterGear(S, p);
+      break;
+    }
+    case "socket": {
+      const g = ch.eq[a.k];
+      ch.gold -= SOCK_COST[g.sk];
+      g.sk++;
+      toast(p, `[${gearName(g)}]에 홈을 뚫었습니다 (${g.sk}/${sockCap(g)}).`);
+      S.maps[p.map].ev.push(["e", p.eid, 1]);
+      p.dirty = true;
       break;
     }
     case "train": {
@@ -20246,7 +20678,7 @@ export function applyAction(S, pid, a) {
       const n = a.n | 0;
       ch.gold -= buyCost(p, a.id, id, n);
       addItem(ch, id, n);
-      p.gain.push(["item", id, n, 0]);
+      foundItem(S, p, id, n);
       if (ITEMS[id].type === "pot") tutStep(S, p, "buy");
       p.dirty = true;
       break;
@@ -20391,10 +20823,7 @@ export function applyAction(S, pid, a) {
         ch.bn++;
         // every third report earns a stone, every tenth a rune
         if (ch.bn % 3 === 0 && addItem(ch, "stone", 1)) p.gain.push(["item", "stone", 1, 0]);
-        if (ch.bn % 10 === 0) {
-          const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`;
-          if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]);
-        }
+        if (ch.bn % 10 === 0) gainRune(S, p);
         toast(p, `반복 의뢰 완료 (${ch.bn}회째) — 같은 의뢰가 다시 시작됩니다.`);
         dailyProg(S, p, "bounty");
         const xp = Math.round(d.xp * ch.bq.need * 0.5);
@@ -20414,7 +20843,7 @@ export function applyAction(S, pid, a) {
       } else {
         ch.gold += quest.gold;
         p.gain.push(["gold", quest.gold]);
-        for (const [id, n] of quest.items) { addItem(ch, id, n); p.gain.push(["item", id, n, 0]); }
+        for (const [id, n] of quest.items) if (addItem(ch, id, n)) foundItem(S, p, id, n);
         ch.q = { i: ch.q.i + 1, n: 0, st: 0 };
         toast(p, `의뢰 완료: ${quest.title}`);
         if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "의뢰 보상");
@@ -20727,6 +21156,10 @@ function handChanged(p) {
 function afterGear(S, p) {
   p.stc = null;
   const st = stats(p);
+  if (!p.ch.cnt.rune_bond && deriveStats(p).runeSets.length) {
+    p.ch.cnt.rune_bond = 1;
+    checkAch(S, p);
+  }
   p.hp = Math.min(p.hp, st.mhp);
   p.mp = Math.min(p.mp, st.mmp);
   p.dirty = true;
@@ -20950,6 +21383,7 @@ function tickMob(S, m, rt, mob, dt, here) {
       if (o && o.map === m.id && dealMob(S, rt, mob, o, dot.dmg, 0)) return;
     }
   }
+  if (runeDotTick(S, m, rt, mob)) return;
   // a scripted field boss: its phases, the marked cast, the enrage (a challenge's boss: chalTick, 64-dim.js)
   if (d.script && !mob.chal) bsField(S, m, rt, mob);
   if (d.still) return;
@@ -20980,11 +21414,13 @@ function tickMob(S, m, rt, mob, dt, here) {
   if (tgt && (tgt.map !== m.id || tgt.dead || dist(mob.x, mob.y, mob.hx, mob.hy) > leash + 60 || dist(mob.x, mob.y, tgt.x, tgt.y) > leash)) {
     tgt = null; mob.tgt = null; mob.st = 2; mob.by = {};
   }
+  const seesShade = d.boss || mob.el === 2;
+  if (tgt && !seesShade && runeHidden(tgt, now)) return;
   if (!tgt && d.aggro > 0 && mob.st !== 2 && !(mob.daze > now)) {
     // fog: monsters see a little less far
     let bd = d.aggro * (rt.wx === WX.fog ? WX_FOG_AGGRO : 1);
     for (const p of here) {
-      if (p.map !== m.id || p.dead || (p.foes || 0) >= AGGRO_CAP || p.hide > now) continue;
+      if (p.map !== m.id || p.dead || (p.foes || 0) >= AGGRO_CAP || p.hide > now || (!seesShade && runeHidden(p, now))) continue;
       const dd = dist(mob.x, mob.y, p.x, p.y);
       if (dd < bd) { bd = dd; tgt = p; }
     }
@@ -21343,6 +21779,7 @@ function dailyView(p) {
 function selfPayload(p) {
   const ch = p.ch;
   const st = stats(p);
+  const { runeSets, runeCounts } = deriveStats(p);
   const now = p.S.now;
   const enh = {};
   for (const k of SLOTS) enh[k] = ch.eq[k] && !isJewel(ch.eq[k].id) ? enhCost(ch.eq[k]) : null;
@@ -21362,6 +21799,7 @@ function selfPayload(p) {
     gold: ch.gold,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
+    runeSets, runeCounts,
     // derived: attack type (0 physical, 1 magic), evasion %, attack speed %, cooldown cut %, status resist %, poise %,
     // knockback resist %, elemental burst %, item find from luck %, graze chance on a monster of your own tier %
     dv: [st.mag, r1(st.eva), r1(st.aspd * 100), r1(st.cdr * 100), r1(st.res * 100), r1(st.poise * 100), r1(st.kbr * 100), r1(st.burst * 100),
@@ -21474,7 +21912,7 @@ export function viewFor(S, pid) {
       out.who.push([o.eid, o.ch.name, o.ch.job, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
         wp ? wp.q : 0, wp ? wp.enh : 0, o.ch.pet || 0, weaponKind(o.ch), o.ch.guild, titleOf(o.ch),
         // the outfit (cosmetic codes, slot order) and the weapon's legendary power or set, for its look
-        cosWire(o.ch), wp ? wp.lg || wp.set || (ITEMS[wp.id].uniq ? wp.id : "") : "",   // a unique (bosses-2) weapon: its own look (weapons.js MOTIF[id])
+        cosWire(o.ch), wp ? wp.lg || (ITEMS[wp.id].uniq ? wp.id : "") : "",   // a signature weapon can have its own look
         // a hybrid's second weapon, on the back
         o.ch.eq.weapon2 ? ITEMS[o.ch.eq.weapon2.id].wk : ""]);
     }
@@ -21598,9 +22036,10 @@ export function defs() {
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
-    affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
+    affix, runes: RUNES, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST,
+    rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     fieldParty: { tiles: FIELD_PARTY_RANGE / T, share: PARTY_SHARE },
-    slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbResp: FB_RESP,
+    slots: SLOTS, wkinds: WKIND, legend: LEGEND, mastery: MASTERY, bounty: BOUNTY_N, fbResp: FB_RESP,
     traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], dash: [DASH.px, DASH.ms, DASH.cd, DASH.inv], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
     waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: stoneNames(id), minLv: MAP_META[id].minLv || undefined })),

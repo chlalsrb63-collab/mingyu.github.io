@@ -92,7 +92,6 @@ assert.deepEqual(X.PFX_W, { S: 1, M: 2, L: 1 }); assert.equal(X.SLOT_L.ring1, "R
   // the other rarities carry none; a set piece (q4) no `lg`
   const box = { seed: 5 };
   for (const q of [0, 1, 2]) for (let i = 0; i < 200; i++) assert.equal(X.rollGear(box, "w_warrior_3", q, 30).lg, undefined);
-  for (let i = 0; i < 200; i++) { const g = X.rollGear(box, "g_3", 4, 30); assert.equal(g.q, 4); assert.equal(g.lg, undefined); }
   // the same box seed gives the same piece
   assert.deepEqual(X.rollGear({ seed: 99 }, "h_2", 3, 30), X.rollGear({ seed: 99 }, "h_2", 3, 30));
   // a key that is not `on` never drops, a key that is, does, and the weights follow the rating (the amulet pool has room for the three; it holds ~30 live powers by now, so the sample is large)

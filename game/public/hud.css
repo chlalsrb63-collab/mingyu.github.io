@@ -1908,10 +1908,15 @@ body[data-hud="contrast"] .tcard { background: rgba(0, 0, 0, .97); }
 .tcard .tc-lg { margin: 0 -4px; padding: 0 4px 0 6px; color: #f6dca8; background: rgba(210, 180, 140, .16); box-shadow: inset 2px 0 0 #d2b48c; }
 .tcard .tc-dead { margin: 0 -4px; padding: 0 4px 0 6px; font: var(--t11)/1.4 var(--pix); color: #7d7566; }
 .tcard .tc-st { color: #8fe8a8; }
-.tcard .tc-st.on { color: #b4f8c4; }
-.tcard .tc-st.off { color: #78887e; }
 .tcard .tc-so { color: #b9ae98; }
-.tcard .tc-rw { color: #ffd24a; }
+.tcard .tc-socket { display: flex; align-items: flex-start; gap: 6px; padding: 3px 5px; margin-top: 3px; background: #28212e; border-left: 2px solid #8b7451; }
+.tcard .tc-socket.locked { border-left-color: #57515f; background: #201b25; color: #a29aaa; }
+.tcard .tc-socket-mark { flex: none; width: 12px; text-align: center; }
+.tcard .tc-socket-label { flex: 1; min-width: 0; }
+.tcard .tc-socket-label > b { font-weight: 400; }
+.tcard .tc-rune-set .tc-note { margin-top: 5px; }
+#smith-list .smith-actions { display: grid; gap: 3px; flex: none; }
+#smith-list .smith-socket { color: var(--tx-hd2, #e1c599); }
 .tcard .tc-req { color: #bfb39b; }
 .tcard .tc-req.bad { color: #ff6f5e; font-weight: 700; }
 .tcard .tc-err { font-size: var(--t11); color: #ff9a8a; }

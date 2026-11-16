@@ -504,6 +504,7 @@ function danceStep(S, p, now) {
   }
   if (!mob) {
     if (canStand(m, dn.ox, dn.oy)) { p.x = dn.ox; p.y = dn.oy; }
+    if (p.x !== ox || p.y !== oy) runeMoveSkill(S, p);
     p.fix = true; p.mvAt = now; p.dance = null; p.dirty = true;
     rt.ev.push(["ln", 5, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
     return;
@@ -513,6 +514,7 @@ function danceStep(S, p, now) {
   dn.next = now + dn.every;
   const [ux, uy] = aimVec(p, mob);
   for (const k of [14, -14, 0]) { const nx = mob.x + ux * k, ny = mob.y + uy * k; if (canStand(m, nx, ny)) { p.x = nx; p.y = ny; break; } }
+  if (p.x !== ox || p.y !== oy) runeMoveSkill(S, p);
   p.fix = true; p.mvAt = now;
   face(p, mob);
   rt.ev.push(["ln", 5, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
@@ -543,7 +545,7 @@ function weaponReset(p, death) {
 }
 /** The bits other players see: 4 untouchable in the air, 16 dancing, 32 resonance full, 64 hidden, 128 focused, 256 holding a charge (its tier × 512). */
 function flagsOf(p, now) {
-  return (p.hold ? 256 | (holdTier(p, now) << 9) : 0) | (p.ghost > now ? 4 : 0) | (p.dance ? 16 : 0) | ((p.reso | 0) >= SKILL.reso.n && inHand(p.ch) === "staff" ? 32 : 0) | (p.hide > now ? 64 : 0) | (pasFocus(p, pasSet(p), now) ? 128 : 0);
+  return (p.hold ? 256 | (holdTier(p, now) << 9) : 0) | (p.ghost > now ? 4 : 0) | (p.dance ? 16 : 0) | ((p.reso | 0) >= SKILL.reso.n && inHand(p.ch) === "staff" ? 32 : 0) | (p.hide > now || runeHidden(p, now) ? 64 : 0) | (pasFocus(p, pasSet(p), now) ? 128 : 0);
 }
 const WEAVE_CODE = { f: 1, i: 2, l: 3 };
 /** The gauge's live number on every snapshot: inertia stacks, or resonance + 4 × the element held. */
@@ -615,6 +617,7 @@ function castSkill(S, p, id) {
   const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
   // mastery grows a skill; a full resonance makes a staff skill free and 30% stronger
   let k = skGrow(p.ch, sk) * charmSkd(p, id);   // (and what the charm board adds to this skill, 66-charms.js)
+  k *= runeSkillDamage(S, p, st, sk);
   // 정신 집중 (55-passives.js): standing still, the next skill lands harder
   if (pasFocus(p, pasSet(p), now)) { k *= 1 + SKILL.staff_spark40.k; p.focusAt = now; pasFx(rt, p, "staff_spark40", p.x, p.y); }
   const cost = skMp(p, sk);
@@ -666,6 +669,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const ox = p.x, oy = p.y, len = stepTo(m, ox, oy, aimX, aimY, sk.len);
       const passed = mobsInLine(rt, ox, oy, aimX, aimY, len, sk.half).slice(0, 4);
       p.x += aimX * len; p.y += aimY * len; p.fix = true; p.mvAt = now;
+      if (len > 0) runeMoveSkill(S, p);
       const struck = mobsWithin(rt, p.x, p.y, sk.r).slice(0, 4);
       rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(sk.fx, p.x, p.y - 6, sk.r);
@@ -720,6 +724,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       while (far > 0 && !canStand(m, p.x + aimX * far, p.y + aimY * far)) far -= 3;
       const ox = p.x, oy = p.y;
       p.x += aimX * Math.max(0, far); p.y += aimY * Math.max(0, far);
+      if (far > 0) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(81, p.x, p.y - 6, sk.r);
@@ -753,6 +758,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       // behind it as seen from where you stood: sure of a crit if it was not watching you
       const sure = mob.tgt !== p.pid, [ux, uy] = aimVec(p, mob), ox = p.x, oy = p.y;
       for (const d of [sk.behind, sk.behind / 2, 0, -sk.behind]) { const nx = mob.x + ux * d, ny = mob.y + uy * d; if (canStand(m, nx, ny)) { p.x = nx; p.y = ny; break; } }
+      if (p.x !== ox || p.y !== oy) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       p.aim = aimIdx(mob.x - p.x, mob.y - p.y);
       face(p, mob);
@@ -796,6 +802,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, aimX, aimY, sk.len);
       const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 14, sk.half);
       p.x = ox + aimX * far; p.y = oy + aimY * far;
+      if (far > 0) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       p.ghost = Math.max(p.ghost || 0, now + 300);
       rt.ev.push(["ln", 3, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
@@ -883,6 +890,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       // a hop back out of reach, and a fan of five loosed in the air
       const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
       p.x = ox - aimX * far; p.y = oy - aimY * far;
+      if (far > 0) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       rt.ev.push(["ln", 8, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(95, ...ahead(60));
@@ -977,7 +985,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       ev(sk.fx, ...ahead(far), far);
       for (const o of mobsInLine(rt, ox, oy, aimX, aimY, far, sk.half)) hit(o, sk.mult * hawk);
       const back = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
-      if (back) { p.x = ox - aimX * back; p.y = oy - aimY * back; p.fix = true; p.mvAt = now; }
+      if (back) { p.x = ox - aimX * back; p.y = oy - aimY * back; p.fix = true; p.mvAt = now; runeMoveSkill(S, p); }
       break;
     }
     case "rollshot": {
@@ -985,6 +993,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const ace = p.dashAt > 0 && now >= p.dashAt && now - p.dashAt <= DASH.ms + sk.win;
       const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
       p.x = ox - aimX * far; p.y = oy - aimY * far; p.fix = true; p.mvAt = now;
+      if (far > 0) runeMoveSkill(S, p);
       rt.ev.push(["ln", 8, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       const mob = aimMob(rt, p, sk.len, WKIND.bow.arc);
       if (mob) face(p, mob);
@@ -1018,6 +1027,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       const line = mobsInLine(rt, ox, oy, aimX, aimY, far + 14, sk.half);
       const carry = line.filter((o) => !MOBS[o.k].boss && !MOBS[o.k].still && o.el !== 2);
       p.x = ox + aimX * far; p.y = oy + aimY * far; p.fix = true; p.mvAt = now;
+      if (far > 0) runeMoveSkill(S, p);
       rt.ev.push(["ln", 3, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(sk.fx, p.x, p.y - 6, carry.length);
       carry.forEach((o, j) => { if (pullTo(m, o, p.x + aimX * 14 - aimY * ((j % 3) - 1) * 8, p.y + aimY * 14 + aimX * ((j % 3) - 1) * 8)) o.drag = now + DRAG_MS; });
@@ -1098,6 +1108,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       p.spdBuff = Math.max(p.spdBuff, now + sk.hide);
       const far = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
       p.x = ox - aimX * far; p.y = oy - aimY * far;
+      if (far > 0) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       rt.ev.push(["ln", 8, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(98, ox, oy - 6);
@@ -1122,6 +1133,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       while (far > 0 && !canStand(m, p.x + ux * far, p.y + uy * far)) far -= 3;
       const ox = p.x, oy = p.y;
       p.x += ux * Math.max(0, far); p.y += uy * Math.max(0, far);
+      if (far > 0) runeMoveSkill(S, p);
       p.fix = true; p.mvAt = now;
       p.ghost = Math.max(p.ghost || 0, now + sk.ghost);
       rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);

@@ -9,6 +9,7 @@ function dailyView(p) {
 function selfPayload(p) {
   const ch = p.ch;
   const st = stats(p);
+  const { runeSets, runeCounts } = deriveStats(p);
   const now = p.S.now;
   const enh = {};
   for (const k of SLOTS) enh[k] = ch.eq[k] && !isJewel(ch.eq[k].id) ? enhCost(ch.eq[k]) : null;
@@ -28,6 +29,7 @@ function selfPayload(p) {
     gold: ch.gold,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
+    runeSets, runeCounts,
     // derived: attack type (0 physical, 1 magic), evasion %, attack speed %, cooldown cut %, status resist %, poise %,
     // knockback resist %, elemental burst %, item find from luck %, graze chance on a monster of your own tier %
     dv: [st.mag, r1(st.eva), r1(st.aspd * 100), r1(st.cdr * 100), r1(st.res * 100), r1(st.poise * 100), r1(st.kbr * 100), r1(st.burst * 100),
@@ -140,7 +142,7 @@ export function viewFor(S, pid) {
       out.who.push([o.eid, o.ch.name, o.ch.job, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
         wp ? wp.q : 0, wp ? wp.enh : 0, o.ch.pet || 0, weaponKind(o.ch), o.ch.guild, titleOf(o.ch),
         // the outfit (cosmetic codes, slot order) and the weapon's legendary power or set, for its look
-        cosWire(o.ch), wp ? wp.lg || wp.set || (ITEMS[wp.id].uniq ? wp.id : "") : "",   // a unique (bosses-2) weapon: its own look (weapons.js MOTIF[id])
+        cosWire(o.ch), wp ? wp.lg || (ITEMS[wp.id].uniq ? wp.id : "") : "",   // a signature weapon can have its own look
         // a hybrid's second weapon, on the back
         o.ch.eq.weapon2 ? ITEMS[o.ch.eq.weapon2.id].wk : ""]);
     }
@@ -264,9 +266,10 @@ export function defs() {
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
-    affix, runes: RUNES, runewords: RUNEWORDS, rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
+    affix, runes: RUNES, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST,
+    rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     fieldParty: { tiles: FIELD_PARTY_RANGE / T, share: PARTY_SHARE },
-    slots: SLOTS, wkinds: WKIND, legend: LEGEND, sets: SETS, mastery: MASTERY, bounty: BOUNTY_N, fbResp: FB_RESP,
+    slots: SLOTS, wkinds: WKIND, legend: LEGEND, mastery: MASTERY, bounty: BOUNTY_N, fbResp: FB_RESP,
     traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], dash: [DASH.px, DASH.ms, DASH.cd, DASH.inv], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
     waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: stoneNames(id), minLv: MAP_META[id].minLv || undefined })),

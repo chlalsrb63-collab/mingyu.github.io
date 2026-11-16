@@ -117,15 +117,23 @@ export function applyAction(S, pid, a) {
     }
     case "rune": {
       const g = ch.eq[a.k];
-      const key = ITEMS[ch.inv[a.s].id].rune;
-      takeItem(ch, `ru_${key}`, 1);
+      const slot = ch.inv[a.s];
+      if (--slot.n === 0) ch.inv.splice(a.s, 1);
       while (g.ru.length < g.sk) g.ru.push(null);
-      g.ru[a.i] = key;
-      const rw = runeword(g);
-      toast(p, rw ? `룬어 [${rw.name}] 완성!` : `${RUNES[key][0]} 룬을 끼웠습니다.`);
-      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]${pp(rw.name, "을를")} 완성했습니다!`); ch.cnt.rw++; checkAch(S, p); }
+      g.ru[a.i] = slot.id;
+      const name = RUNES[slot.id].name;
+      toast(p, `[${name}]${pp(name, "을를")} 끼웠습니다.`);
       S.maps[p.map].ev.push(["e", p.eid, 1]);
       afterGear(S, p);
+      break;
+    }
+    case "socket": {
+      const g = ch.eq[a.k];
+      ch.gold -= SOCK_COST[g.sk];
+      g.sk++;
+      toast(p, `[${gearName(g)}]에 홈을 뚫었습니다 (${g.sk}/${sockCap(g)}).`);
+      S.maps[p.map].ev.push(["e", p.eid, 1]);
+      p.dirty = true;
       break;
     }
     case "train": {
@@ -213,7 +221,7 @@ export function applyAction(S, pid, a) {
       const n = a.n | 0;
       ch.gold -= buyCost(p, a.id, id, n);
       addItem(ch, id, n);
-      p.gain.push(["item", id, n, 0]);
+      foundItem(S, p, id, n);
       if (ITEMS[id].type === "pot") tutStep(S, p, "buy");
       p.dirty = true;
       break;
@@ -358,10 +366,7 @@ export function applyAction(S, pid, a) {
         ch.bn++;
         // every third report earns a stone, every tenth a rune
         if (ch.bn % 3 === 0 && addItem(ch, "stone", 1)) p.gain.push(["item", "stone", 1, 0]);
-        if (ch.bn % 10 === 0) {
-          const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`;
-          if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]);
-        }
+        if (ch.bn % 10 === 0) gainRune(S, p);
         toast(p, `반복 의뢰 완료 (${ch.bn}회째) — 같은 의뢰가 다시 시작됩니다.`);
         dailyProg(S, p, "bounty");
         const xp = Math.round(d.xp * ch.bq.need * 0.5);
@@ -381,7 +386,7 @@ export function applyAction(S, pid, a) {
       } else {
         ch.gold += quest.gold;
         p.gain.push(["gold", quest.gold]);
-        for (const [id, n] of quest.items) { addItem(ch, id, n); p.gain.push(["item", id, n, 0]); }
+        for (const [id, n] of quest.items) if (addItem(ch, id, n)) foundItem(S, p, id, n);
         ch.q = { i: ch.q.i + 1, n: 0, st: 0 };
         toast(p, `의뢰 완료: ${quest.title}`);
         if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "의뢰 보상");
@@ -694,6 +699,10 @@ function handChanged(p) {
 function afterGear(S, p) {
   p.stc = null;
   const st = stats(p);
+  if (!p.ch.cnt.rune_bond && deriveStats(p).runeSets.length) {
+    p.ch.cnt.rune_bond = 1;
+    checkAch(S, p);
+  }
   p.hp = Math.min(p.hp, st.mhp);
   p.mp = Math.min(p.mp, st.mmp);
   p.dirty = true;

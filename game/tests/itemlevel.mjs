@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { PFX, ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ_P, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollRarity, lootFor, gearIl, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, SETS, gearBonus, countItem, stats, chainBlow, newMob };\n";
+  "\nexport const __t = { PFX, ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ_P, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollRarity, lootFor, gearIl, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, gearBonus, countItem, stats, chainBlow, newMob };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs();
 const VERBOSE = process.argv.includes("-v");
@@ -18,7 +18,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
 
 // ── the contract the client reads: rarity names, the gap, the power words; a 유니크 has no words of its own (owner 2026-11-16)
 {
-  assert.deepEqual(D.rarity, ["일반", "마법", "희귀", "전설", "세트", "유니크"]);
+  assert.deepEqual(D.rarity.filter(Boolean), ["일반", "마법", "희귀", "전설", "유니크"]);
   assert.equal(D.ilGap, 10);
   assert.equal(D.uniq, undefined, "no defs.uniq: no suffix words");
   assert.ok(!/\bUNIQ(_MUL)?\b/.test(src),"the suffix table and its multiplier are gone from the rules");
@@ -29,20 +29,17 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
 // ── affix lines by rarity: exactly 2 / 3 / 4 / 4 (유니크 = 전설's power + stronger lines), the strength of each
 {
   const box = { seed: 424242 };
-  const N = 1200, by = { 1: [], 2: [], 3: [], 4: [], 5: [] };
-  for (let i = 0; i < N; i++) for (const q of [1, 2, 3, 4, 5]) by[q].push(roll(box, q, i));
+  const rarities = [1, 2, 3, 5], N = 1200, by = { 1: [], 2: [], 3: [], 5: [] };
+  for (let i = 0; i < N; i++) for (const q of rarities) by[q].push(roll(box, q, i));
   assert.ok(by[1].every((g) => g.q === 1 && g.af.length === 2), "마법: exactly 2");
   assert.ok(by[2].every((g) => g.q === 2 && g.af.length === 3), "희귀: exactly 3");
   assert.ok(by[3].every((g) => g.q === 3 && g.af.length === 4 && X.LEGEND[g.lg]), "전설: exactly 4 and its power");
   assert.ok(by[5].every((g) => g.q === 5 && g.af.length === 4 && X.LEGEND[g.lg] && !g.set), "유니크: 4 lines and a legendary's power, every time");
-  // 세트 is unchanged (2–3 lines, a set piece; a base with no set falls back to 전설)
-  assert.deepEqual([...new Set(by[4].filter((g) => g.q === 4).map((g) => g.af.length))].sort(), [2, 3]);
-  assert.ok(by[4].some((g) => g.q === 4 && g.set), "some set pieces");
-  for (const q of [1, 2, 3, 4, 5]) for (const g of by[q]) {
+  for (const q of rarities) for (const g of by[q]) {
     assert.equal(new Set(g.af.map((a) => a[0])).size, g.af.length, `no key twice (q${q})`);
     assert.ok(g.af.every(([, v]) => Number.isInteger(v) && v >= 1));
   }
-  // strength of an ordinary line: 마법 ×0.85, 희귀 ×1.0, 전설 / 세트 ×1.3, 유니크 ×1.45
+  // Strength of an ordinary line: 마법 ×0.85, 희귀 ×1.0, 전설 ×1.3, 유니크 ×1.45.
   const lines = (q, from = 0) => by[q].flatMap((g) => g.af.slice(from).map((a) => rel(a, 30)));
   near(mean(lines(1)), 0.85, 0.05, "마법 is weak");
   near(mean(lines(2)), 1.0, 0.05, "희귀 as rolled");
@@ -54,12 +51,11 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   const tot = (q) => mean(by[q].map((g) => g.af.reduce((s, a) => s + rel(a, 30), 0)));
   assert.ok(tot(5) > tot(3) * 1.10 && tot(5) < tot(3) * 1.15, `unique ${tot(5).toFixed(3)} vs legendary ${tot(3).toFixed(3)} = ${(tot(5) / tot(3)).toFixed(3)}`);
   assert.ok(tot(3) > tot(2) && tot(2) > tot(1));
-  // every power is drawn, and the sockets follow the rarity as for the others (never fewer than a legendary's)
+  // Every power in these slots is drawn. Socket distribution is covered in rune-sockets.mjs.
   // (the pools follow the item type now, 51-prefix.js: the eight first powers are all drawn, along with the live ones that came later)
   const drawn = new Set(by[5].map((g) => g.lg));
   for (const k of ["chain", "nova", "haste", "giant", "echo", "greed", "thorn", "feast"]) assert.ok(drawn.has(k), `${k} is drawn`);
   assert.ok(drawn.size >= 8 && [...drawn].every((k) => X.PFX[k] && X.PFX[k].on), "the live powers are drawn (more arrive with each prefix part)");
-  assert.ok(by[5].filter((g) => !["r_3", "n_4"].includes(g.id)).every((g) => g.sk >= 1));
   if (VERBOSE) console.log("line strength", [1, 2, 3, 5].map((q) => [q, tot(q).toFixed(3)]), "unique / legendary", (tot(5) / tot(3)).toFixed(3));
 }
 
@@ -81,7 +77,8 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   const count = (rank, mf, n, seed) => { const box = { seed }, c = [0, 0, 0, 0, 0, 0]; for (let i = 0; i < n; i++) c[X.rollRarity(box, rank, mf)]++; return c; };
   const a = count(0, 0, 400000, 1);
   assert.ok(a[5] >= 300 && a[5] <= 520, `ordinary monster ≈ 0.1 %: ${a[5]} / 400000`);
-  assert.ok(a[3] + a[4] >= 4500 && a[3] + a[4] <= 5100, `전설/세트 stay ≈ 1.2 %: ${a[3] + a[4]}`);
+  assert.ok(a[3] >= 4500 && a[3] <= 5100, `전설 ≈ 1.2 %: ${a[3]}`);
+  assert.equal(a[4], 0, "gear does not roll the set rarity");
   assert.ok(a[2] >= 34800 && a[2] <= 37200, `희귀 stays ≈ 9 %: ${a[2]}`);
   assert.ok(a[1] >= 142000 && a[1] <= 146000, `마법 stays ≈ 36 %: ${a[1]}`);
   const e = count(1, 0, 100000, 2), b = count(2, 0, 50000, 3);
@@ -90,7 +87,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.ok(e[5] / 100000 > a[5] / 400000 * 2 && b[5] / 50000 > e[5] / 100000 * 1.5, "higher for elites and bosses");
   const m = count(0, 100, 200000, 4);
   assert.ok(m[5] >= 320 && m[5] <= 480, `MF 100 doubles it: ${m[5]} / 200000`);
-  // against the 전설/세트 chance it is a twelfth to a twentieth at every rank
+  // Against the 전설 chance it is a twelfth to a twentieth at every rank.
   for (const r of [0, 1, 2]) { const q = [0.012, 0.07, 0.2][r] / X.UNIQ_P[r]; assert.ok(q >= 11 && q <= 21, `rank ${r}: ${q}`); }
 }
 
@@ -145,12 +142,12 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
     assert.equal(X.gearIl({ id }), req > 1 ? req + 10 : 1);
     assert.equal(X.plain(id).il, X.gearIl({ id }));
   }
-  // the raids' own set pieces are whole rows (they were empty stubs: copied before the gear table existed)
-  for (const [id, type, tier, set] of [["veil_h", "helm", 4, "nightveil"], ["veil_a", "armor", 4, "nightveil"], ["veil_r", "ring", 4, "nightveil"], ["veil_n", "amulet", 4, "nightveil"],
-    ["bloom_h", "helm", 5, "bloomgrave"], ["bloom_a", "armor", 5, "bloomgrave"], ["bloom_r", "ring", 5, "bloomgrave"], ["bloom_n", "amulet", 5, "bloomgrave"]]) {
+  // The raid's named finds have their original gear bases and no set link.
+  for (const [id, type, tier] of [["veil_h", "helm", 4], ["veil_a", "armor", 4], ["veil_r", "ring", 4], ["veil_n", "amulet", 4],
+    ["bloom_h", "helm", 5], ["bloom_a", "armor", 5], ["bloom_r", "ring", 5], ["bloom_n", "amulet", 5]]) {
     const it = X.ITEMS[id];
-    assert.ok(it.type === type && it.tier === tier && it.set === set && it.base && it.req === X.G_REQ[tier - 1], id);
-    assert.ok(gearIds.includes(id) && X.gearReq(X.rollGear({ seed: 4 }, id, 4, 38)) === 139, `${id}: a drop at tier 38 asks Lv.139`);
+    assert.ok(it.type === type && it.tier === tier && it.set === undefined && it.base && it.req === X.G_REQ[tier - 1], id);
+    assert.ok(gearIds.includes(id) && X.gearReq(X.rollGear({ seed: 4 }, id, 3, 38)) === 139, `${id}: a drop at tier 38 asks Lv.139`);
   }
   assert.equal(X.gearIl({ id: "a_3", il: 0 }), 71, "il 0 = not set");
   // an entry with il: il − 10, whatever its base says
@@ -234,8 +231,9 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.equal(ch.inv[5].il, 111, "a negative il is derived (tier 4 → 101 + 10)");
   assert.deepEqual(ch.inv[6], { id: "hp_s", n: 3 });
   assert.equal(ch.wh.items[0].q, 5); assert.equal(ch.wh.items[0].il, 88); assert.equal(ch.wh.items[0].lg, uq.lg, "the warehouse keeps a unique");
-  assert.equal(ch.wh.items[1].set, "rift"); assert.equal(ch.wh.items[1].il, 111);
-  assert.equal(ch.v, 27, "a missing il is derived (no sheet version of its own)");
+  assert.equal(ch.wh.items[1].set, undefined); assert.equal(ch.wh.items[1].il, 111);
+  assert.equal(ch.wh.items[1].q, 3); assert.ok(X.LEGEND[ch.wh.items[1].lg]);
+  assert.equal(ch.v, 27, "the set-rune migration upgraded the sheet");
   // a second pass changes nothing
   assert.equal(JSON.stringify(X.migrate(JSON.parse(JSON.stringify(ch)))), JSON.stringify(ch));
   // and it plays: the old sheet joins, wears and sorts
@@ -274,7 +272,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   {
     const g = uniq("h_3"), base = X.sellPrice(X.plain("h_3"));
     assert.equal(X.sellPrice(g), Math.floor(X.ITEMS.h_3.price * 0.05 * (1 + 0.8 * 5)));
-    assert.ok(X.sellPrice(g) > X.sellPrice({ ...g, q: 4 }) && X.sellPrice(g) > base * 4);
+    assert.ok(X.sellPrice(g) > X.sellPrice({ ...g, q: 3 }) && X.sellPrice(g) > base * 4);
     assert.equal(X.junk(g), false);
     near(p, "smith");
     ch.inv = [g];
@@ -289,7 +287,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
     ch.inv = [{ id: "ru_ign", n: 1 }, { id: "whet", n: 30 }, { id: "stone", n: 99 }];
     const rr = act("a@s1", { t: "rune", s: 0, k: "weapon", i: 0 });
     assert.ok(rr.ok, rr.error);
-    assert.equal(g.ru[0], "ign", "a rune sits in a unique's socket");
+    assert.equal(g.ru[0], "ru_ign", "a rune sits in a unique's socket");
     const lg0 = g.lg, lines0 = JSON.stringify(g.af);
     for (let i = 0; i < 25; i++) {
       const r = act("a@s1", { t: "use", id: "whet", k: "weapon" });
@@ -311,7 +309,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
     ch.eq.armor = X.plain("a_3");
     const b0 = X.gearBonus(ch);
     ch.eq = prev;
-    for (const k of Object.keys(b0)) if (k !== "lg") assert.equal(Math.round((b1[k] - b0[k]) * 1e6) / 1e6, g.af.filter((a) => a[0] === k).reduce((s, a) => s + a[1], 0), `${k}: the four lines add`);
+    for (const k of Object.keys(b0)) if (typeof b0[k] === "number") assert.equal(Math.round((b1[k] - b0[k]) * 1e6) / 1e6, g.af.filter((a) => a[0] === k).reduce((s, a) => s + a[1], 0), `${k}: the four lines add`);
     assert.deepEqual(b1.lg, { [g.lg]: 1 }, "and its legendary power comes with them");
     if (g.lg === "greed") assert.equal(b1.gold - b0.gold, g.af.filter((a) => a[0] === "gold").reduce((s, a) => s + a[1], 0) + 60);
   }

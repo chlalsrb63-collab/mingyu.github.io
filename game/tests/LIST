@@ -4,6 +4,8 @@ sim
 party
 loot
 itemlevel
+rune-sockets
+rune-powers
 prefix
 prefix-util
 prefix-guard

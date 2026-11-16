@@ -116,7 +116,7 @@ function onMessage(msg) {
         for (const id of Object.keys(G.defs.jobs)) { const k = G.defs.jobs[id].wk[0] || "dagger"; CLASS_ICON[id] = k === "book" ? "book" : k; }
         Sky.configure(G.defs.sky);
         setJobDefs(G.defs);
-        G.icons = Growth.icons(Art.buildIcons(G.defs.items));
+        G.icons = Growth.icons(Art.buildIcons(G.defs.items, G.defs.runes));
         Growth.init({ G, act, el, iconImg, itemSlot, section, countItem, usePotion, isGear: (id) => isGear(id), sellPrice: (e) => sellPrice(e) });
         Wardrobe.init({ G, act, el, hoverTip });
         QS.init({ G, act, el, toast, castSkill, useSlot, countItem, showTip, hideTip, touch, addChat });

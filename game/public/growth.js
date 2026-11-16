@@ -162,7 +162,7 @@ function jobScroll() {
     "...llsd.ssss....", "......s.........", "................", "................",
   ], { l: "#f1e3b9", m: "#c5a976", s: "#8d6e62", a: "#2aa89a" });
 }
-// 밤장막 (bat: violet with crimson) and 꽃무덤 (whale bone with soul-flower pink and blue) set pieces, one kind each.
+// Signature 밤장막 and 꽃무덤 boss equipment icons.
 const VEIL = { v: "#7a46b8", V: "#4a2a78", l: "#b890f0", r: "#d02a48", k: "#1a1022", w: "#f0e8f0" };
 const BLOOM = { b: "#f0eadc", B: "#b8b0a0", d: "#8a8272", p: "#f0a0c0", P: "#c8648c", u: "#8ac8f0", U: "#4a88c0", w: "#ffffff" };
 const SET_ART = {
@@ -346,7 +346,7 @@ export function renderBank(s) {
     const grid = el("div", "grid bank-grid");
     // a click moves a stack (Shift: one); a drag onto the other pane does the same (a bag stack also from the side bag)
     const there = a === "put" ? "#w-bank .pane.take" : "#w-bank .pane.put, #w-inv";
-    for (let i = 0; i < size; i++) {
+    for (let i = 0; i < Math.max(size, list.length); i++) {
       const e = list[i];
       if (!e) { grid.append(itemSlot(null)); continue; }
       const move = (n) => { act({ t: "wh", a, s: i, n }); Sound.play("item"); };

@@ -32,21 +32,30 @@ const items = {
   w_sword_5: { name: "강철 양손검", type: "weapon", wk: "sword", cls: "warrior", tier: 5, base: { atk: 48 }, req: 46, price: 9000 },
   h_5: { name: "고래뼈 투구", type: "helm", tier: 5, base: { def: 14, hp: 80 }, req: 46, price: 6000 },
   r_3: { name: "은 반지", type: "ring", tier: 3, base: { crit: 3 }, req: 22, price: 1200 },
-  rn_4: { name: "네온 장갑", type: "gloves", tier: 4, base: { def: 9, spd: 4 }, req: 34, price: 3000, set: "runner" },
+  ru_sample: { name: "은설호의 룬", type: "rune", rune: "ru_sample", price: 500 },
+  ru_legend: { name: "황혼석 룬", type: "rune", rune: "ru_legend", price: 500 },
   hp_2: { name: "붉은 물약", type: "pot", price: 40, desc: "HP를 120 회복합니다." },
 };
 G.defs = {
   items,
-  rarity: ["일반", "마법", "희귀", "전설", "세트", "유니크"],
+  rarity: ["일반", "마법", "희귀", "전설", null, "유니크"],
+  runeRarity: { 1: "마법", 2: "희귀", 3: "전설", 4: "세트" },
   affix: {
     atk: ["공격력", "날카로운"], atkp: ["공격력 %", "맹렬한"], def: ["방어력", "단단한"], hp: ["최대 HP", "강인한"], mp: ["최대 MP", "지혜의"],
     crit: ["치명타 %", "예리한"], critd: ["치명타 피해 %", "잔혹한"], ls: ["흡혈 %", "흡혈의"], spd: ["이동속도 %", "신속의"], xp: ["경험치 %", "깨달음의"],
   },
   wkinds: { sword: { name: "양손검" } }, classes: { warrior: { name: "전사" } },
   legend: { chain: ["뇌명의", "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)"], thorn: ["가시의", "받은 피해의 40%를 공격한 적에게 되돌려 준다"] },
-  sets: { runner: { name: "네온 러너", bonus: [[2, [["crit", 6]]], [4, [["atkp", 15], ["spd", 8]]]] } },
-  runes: { cel: ["셀", "spd", 3], acu: ["아쿠", "crit", 3] },
-  runewords: [{ name: "질풍", seq: ["cel", "acu"], add: [["spd", 6], ["crit", 6]] }],
+  runeSets: {
+    lake: { name: "은설호", need: 3, desc: "공격한 적을 느리게 합니다. 느려지거나 빙결된 적에게 치명타 피해가 증가합니다." },
+    willow: { name: "버들바람", need: 2, desc: "이동 속도가 증가합니다." },
+  },
+  runeSetMax: 2,
+  runes: {
+    ru_sample: { name: items.ru_sample.name, q: 4, set: "lake", af: [["crit", 2]] },
+    ru_legend: { name: items.ru_legend.name, q: 3, af: [["hp", 30], ["def", 4], ["ls", 2]] },
+  },
+  sockCaps: { weapon: 2, armor: 2, helm: 1, ring: 1 },
   slots: ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet"],
 };
 const legArmor = { id: "a_6", q: 3, il: 62, enh: 2, lg: "chain", af: [["hp", 90], ["def", 6], ["ls", 2], ["critd", 14]] };
@@ -54,22 +63,22 @@ const eq = {
   armor: legArmor,
   weapon: { id: "w_sword_5", q: 2, il: 50, af: [["atk", 7], ["crit", 3], ["spd", 4]] },
   ring1: { id: "r_3", q: 1, il: 30, af: [["atk", 2], ["hp", 15]] },
-  ring2: { id: "r_3", q: 2, il: 38, af: [["crit", 4], ["xp", 5], ["ls", 1]] },
-  gloves: { id: "rn_4", q: 4, il: 45, set: "runner", af: [["atk", 3], ["spd", 3]] },
+  ring2: { id: "r_3", q: 2, il: 38, af: [["crit", 4], ["xp", 5], ["ls", 1]], sk: 1, ru: [] },
 };
-G.self = { lvl: 60, cls: "warrior", eq, inv: [] };
+G.self = { lvl: 60, cls: "warrior", eq, inv: [], runeCounts: { lake: 1, willow: 2 }, runeSets: ["willow"] };
 
 // a 유니크: a legendary's power `lg` (its name's prefix is defs.legend[lg][0], no suffix) + four plain, stronger lines
 const unique = { id: "a_6", q: 5, il: 66, lg: "thorn", af: [["def", 21], ["hp", 160], ["crit", 4], ["ls", 3]] };
 const scenes = [
   ["유니크 갑옷 vs 장착 중인 전설 갑옷", unique, {}],
-  ["전설 무기 (홈·룬어) vs 장착 중인 희귀 무기", { id: "w_sword_5", q: 3, il: 80, enh: 3, lg: "chain", af: [["atk", 9], ["atkp", 6], ["crit", 4], ["critd", 12]], sk: 2, ru: ["cel", "acu"] }, {}],
+  ["전설 무기 (룬 장착·미개방 소켓)", { id: "w_sword_5", q: 3, il: 80, enh: 3, lg: "chain", af: [["atk", 9], ["atkp", 6], ["crit", 4], ["critd", 12]], sk: 1, ru: ["ru_sample"] }, {}],
   ["착용 레벨 부족 (희귀 투구, il 80 → 착용 레벨 70, 내 레벨 60)", { id: "h_5", q: 2, il: 80, af: [["hp", 40], ["def", 5], ["mp", 20]] }, {}],
   ["마법 반지 vs 반지 2개 모두", { id: "r_3", q: 1, il: 40, af: [["atk", 3], ["crit", 2]] }, {}],
   ["상점 물건 (il 없음 → 기본 착용 레벨), 가격", { id: "a_4" }, { price: "4,000G" }],
-  ["세트 조각 (장갑)", { id: "rn_4", q: 4, set: "runner", af: [["atk", 3], ["spd", 2]] }, {}],
+  ["세트 룬", { id: "ru_sample" }, {}],
   ["착용 중인 물건 (비교 없음)", unique, { worn: true }],
   ["물약", { id: "hp_2" }, { price: "40G" }],
+  ["전설 룬", { id: "ru_legend" }, {}],
 ];
 const stage = document.getElementById("stage");
 scenes.forEach(([label, entry, o], i) => {
