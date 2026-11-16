@@ -1860,6 +1860,8 @@ body[data-hud="contrast"] .tcard { background: rgba(0, 0, 0, .97); }
 .tcard .tc-note { margin-top: 2px; font: var(--t11)/1.4 var(--pix); color: #a99c86; }
 .tcard .tc-ds { margin-top: 3px; color: #cfc4ac; }
 .tcard .tc-lg { color: #ffa45c; }
+.tcard .tc-lg.un { margin: 0 -4px; padding: 0 4px 0 6px; color: #f6dca8; background: rgba(210, 180, 140, .16); box-shadow: inset 2px 0 0 #d2b48c; }
+.tcard .tc-lg .tc-tag { margin: 0 5px 0 0; }
 .tcard .tc-st { color: #8fe8a8; }
 .tcard .tc-st.on { color: #b4f8c4; }
 .tcard .tc-st.off { color: #78887e; }

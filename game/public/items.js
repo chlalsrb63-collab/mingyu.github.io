@@ -33,12 +33,13 @@ export function emptyEquipSlot(it, s, entry) {
 export const reqLv = (entry) => (entry.il > 0 ? Math.max(1, entry.il - 10) : G.defs.items[entry.id].req);
 /** The rarity's name; 유니크 (q5) comes from the rules table once it lists it. */
 const rarName = (q) => G.defs.rarity[q || 0] || (q === 5 ? "유니크" : "일반");
-/** A 유니크's prefix and suffix words (`un` = [prefix index, suffix index] into `defs.uniq`); "" while the rules do not send them. */
-function uniqWords(entry) {
-  const u = G.defs.uniq, un = entry.q === 5 && entry.un;
-  const w = (list, i) => { const x = list && list[i]; return (Array.isArray(x) ? x[0] : x) || ""; };
-  return u && un ? [w(u.pre, un[0]), w(u.suf, un[1])] : ["", ""];
+/** A 유니크's suffix word (`un` = [suffix index] into `defs.uniq.suf`); "" while the rules do not send it. (Its prefix is its power's `defs.legend` word.) */
+function uniqSuffix(entry) {
+  const u = G.defs.uniq, un = entry.q === 5 && entry.un, x = u && un && u.suf && u.suf[un[0]];
+  return (Array.isArray(x) ? x[0] : x) || "";
 }
+/** A legendary or 유니크 power: [name word, what it does], or null while `defs.legend` lacks it. */
+const legendOf = (k) => (k && G.defs.legend && G.defs.legend[k]) || null;
 function runewordOf(g) {
   if (!g.sk || !g.ru || g.ru.length !== g.sk) return null;
   return G.defs.runewords.find((rw) => rw.seq.length === g.sk && rw.seq.every((r, i) => g.ru[i] === r)) || null;
@@ -48,11 +49,11 @@ export function statText(k, v) {
   const label = G.defs.affix[k][0];
   return `${label.replace(" %", "")} +${v}${label.includes("%") ? "%" : ""}`;
 }
-/** "+3 뇌명의 강철 양손검" — a legendary's power, a set's name, or the first affix lends the prefix; a 유니크 is "[접두사] 이름 [접미사]". */
+/** "+3 뇌명의 강철 양손검" — a legendary's power, a set's name, or the first affix lends the prefix; a 유니크 is "[효과 접두사] 이름 [접미사]" (the prefix is its power's word). */
 export function itemName(entry) {
   if (Charms.isCharm(entry)) return Charms.charmName(entry);       // a charm's name comes from its wire, not ITEMS (charms.js)
-  const it = G.defs.items[entry.id], [pre, suf] = uniqWords(entry);
-  const word = pre || (entry.lg ? G.defs.legend[entry.lg][0] : entry.set ? G.defs.sets[entry.set].name : entry.af && entry.af.length ? G.defs.affix[entry.af[0][0]][1] : "");
+  const it = G.defs.items[entry.id], lg = legendOf(entry.lg), suf = uniqSuffix(entry);
+  const word = lg ? lg[0] : entry.set ? G.defs.sets[entry.set].name : entry.af && entry.af.length ? G.defs.affix[entry.af[0][0]][1] : "";
   return (entry.cu === 1 ? "저주받은 " : "") + (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name + (suf ? ` ${suf}` : "");
 }
 /** The piece's own stats, enhancement included: [[key, value]…] (speed and crit do not scale). */
@@ -115,7 +116,14 @@ function card(entry, o = {}) {
     entry.af.forEach(([k, v], i) => af.append(statRow(k, v, un && i < 2 ? "af un" : "af", un && i < 2 ? "고유" : "")));
   }
   const pw = [];
-  if (entry.lg) pw.push(el("div", "tc-lg", `◆ ${G.defs.legend[entry.lg][1]}`));
+  const lg = legendOf(entry.lg);
+  if (lg) {
+    // a 유니크's power is its 고유 효과: the same ◆ line as a legendary's, in the beige of its own lines
+    const l = el("div", un ? "tc-lg un" : "tc-lg");
+    if (un) l.append(el("i", "tc-tag", "고유 효과"));
+    l.append(`◆ ${lg[1]}`);
+    pw.push(l);
+  }
   if (entry.set) {
     const set = G.defs.sets[entry.set], worn = setWorn(entry.set);
     pw.push(el("div", "tc-st", `${set.name} 세트 (${worn}개 착용)`));
@@ -170,7 +178,8 @@ export function itemTip(entry, host, o = {}) {
     }
     if (!dls.firstChild) dls.append(el("span", "tc-d", "능력치 차이 없음"));
     cmp.append(dls);
-    if (w.lg && w.lg !== entry.lg) cmp.append(el("div", "tc-d dn", `◆ 잃는 힘: ${G.defs.legend[w.lg][1]}`));
+    if (legendOf(entry.lg) && entry.lg !== w.lg) cmp.append(el("div", "tc-d up", `◆ 얻는 힘: ${legendOf(entry.lg)[0].replace(/의$/, "")}`));
+    if (legendOf(w.lg) && w.lg !== entry.lg) cmp.append(el("div", "tc-d dn", `◆ 잃는 힘: ${legendOf(w.lg)[1]}`));
     if (w.set && w.set !== entry.set && setWorn(w.set) > 1) cmp.append(el("div", "tc-d dn", `${G.defs.sets[w.set].name} 세트가 ${setWorn(w.set) - 1}개로 줄어듭니다`));
     main.append(cmp);
     wrap.append(card(w, { eq: k }));

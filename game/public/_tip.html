@@ -43,13 +43,13 @@ G.defs = {
     crit: ["치명타 %", "예리한"], critd: ["치명타 피해 %", "잔혹한"], ls: ["흡혈 %", "흡혈의"], spd: ["이동속도 %", "신속의"], xp: ["경험치 %", "깨달음의"],
   },
   wkinds: { sword: { name: "양손검" } }, classes: { warrior: { name: "전사" } },
-  legend: { chain: ["뇌명의", "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)"] },
+  legend: { chain: ["뇌명의", "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)"], thorn: ["가시의", "받은 피해의 40%를 공격한 적에게 되돌려 준다"] },
   sets: { runner: { name: "네온 러너", bonus: [[2, [["crit", 6]]], [4, [["atkp", 15], ["spd", 8]]]] } },
   runes: { cel: ["셀", "spd", 3], acu: ["아쿠", "crit", 3] },
   runewords: [{ name: "질풍", seq: ["cel", "acu"], add: [["spd", 6], ["crit", 6]] }],
   slots: ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet"],
-  // the rules agent's contract: un = [prefix index, suffix index], words in defs.uniq
-  uniq: { pre: ["서리불꽃의", "잿빛 가면의"], suf: ["지평선을 거니는 자", "끝없는 겨울"] },
+  // the rules' contract: a 유니크 has a legendary's power `lg` (its name's prefix is defs.legend[lg][0]) and un = [suffix index] into defs.uniq.suf
+  uniq: { suf: ["파멸의 낙인", "황금왕의 탐욕", "학살의 서약", "철옹성의 맹세", "불사의 맹약"] },
 };
 const legArmor = { id: "a_6", q: 3, il: 62, enh: 2, lg: "chain", af: [["hp", 90], ["def", 6], ["ls", 2], ["critd", 14]] };
 const eq = {
@@ -61,7 +61,7 @@ const eq = {
 };
 G.self = { lvl: 60, cls: "warrior", eq, inv: [] };
 
-const unique = { id: "a_6", q: 5, il: 66, un: [0, 1], af: [["def", 11], ["hp", 160], ["crit", 4], ["ls", 3]] };
+const unique = { id: "a_6", q: 5, il: 66, lg: "thorn", un: [4], af: [["def", 21], ["hp", 160], ["crit", 4], ["ls", 3]] };
 const scenes = [
   ["유니크 갑옷 vs 장착 중인 전설 갑옷", unique, {}],
   ["전설 무기 (홈·룬어) vs 장착 중인 희귀 무기", { id: "w_sword_5", q: 3, il: 80, enh: 3, lg: "chain", af: [["atk", 9], ["atkp", 6], ["crit", 4], ["critd", 12]], sk: 2, ru: ["cel", "acu"] }, {}],
