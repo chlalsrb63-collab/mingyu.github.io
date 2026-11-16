@@ -809,7 +809,7 @@ const TRICK_EL = [1, 0.75, 0.6];
 const MV_GRACE = 1200;
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 17 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 15 };
 const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
@@ -867,6 +867,9 @@ const MOBS = {
   prismcantor: { name: "쌍결정 성가박쥐", lv: 36, hp: 19600, atk: 164, def: 34, spd: 38, xp: 6700, gold: [315, 510], aggro: 140, range: 28, cd: 1380, fly: true, boss: true },
   // 바람초원
   twinhare: { name: "쌍두 토끼", lv: 1, hp: 28, atk: 5, def: 0, spd: 26, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300, pounce: 70 },   // the second head springs first: the first ring a new player learns to step out of
+  // the two steps the meadow lacked (Lv.5–8 and Lv.13–16): optional for the collection, so no finished region comes undone
+  twinhare_blood: { name: "붉은 솔기 쌍두 토끼", sp: "twinhare", tint: "blood", lv: 2, hp: 44, atk: 7, def: 0, spd: 28, xp: 13, gold: [3, 8], aggro: 0, range: 16, cd: 1300, bonusOptional: true },
+  gutfrog_frost: { name: "서리 창자 개구리", sp: "gutfrog", tint: "frost", lv: 4, hp: 72, atk: 11, def: 1, spd: 25, xp: 24, gold: [5, 12], aggro: 0, range: 16, cd: 1300, leap: 80, bonusOptional: true },
   gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80, pounce: 90 },
   eyecrow: { name: "눈알 까마귀", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true, spit: 90 },   // circles the pond and minds its own business, so the shore stays a fishing spot
   lambmaw: { name: "뒤집힌 양", lv: 6, hp: 110, atk: 15, def: 1, spd: 38, xp: 38, gold: [7, 16], aggro: 72, range: 18, cd: 1300, charge: 110, spit: 100 },
@@ -972,6 +975,8 @@ const MOBS = {
   spiderhand_blood: { name: "매화 손가락 거미", sp: "plumspider", lv: 44, hp: 3200, atk: 128, def: 22, spd: 56, xp: 1780, gold: [108, 186], aggro: 96, range: 18, cd: 1000, leap: 100, pool: 28 },
   gravrose_blood: { name: "붉은 묘지 매화", sp: "inkrose", lv: 45, hp: 3400, atk: 132, def: 24, spd: 22, xp: 1980, gold: [110, 190], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
   foxtwine_frost: { name: "흰 꼬인 여우", sp: "inkfox", lv: 44, hp: 3500, atk: 128, def: 22, spd: 62, xp: 2400, gold: [150, 250], aggro: 98, range: 17, cd: 850, leap: 100 },
+  // the lake's far isles reach Lv.185–188 (maple was the only ground past Lv.181)
+  wingcrane_frost: { name: "서리 겹날개 두루미", sp: "wingcrane", tint: "frost", lv: 47, hp: 3600, atk: 138, def: 22, spd: 44, xp: 2300, gold: [118, 186], aggro: 98, range: 74, cd: 1700, fly: true, volley: true, bonusOptional: true },
   serpentwing_ash: { name: "먹빛 날개 구렁이", sp: "inkserpent", lv: 46, hp: 5000, atk: 136, def: 30, spd: 46, xp: 2200, gold: [120, 204], aggro: 100, range: 78, cd: 1500, fly: true, fan: 150, pool: 30, poolKind: 2, charge: 130 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes
@@ -1247,6 +1252,9 @@ const MOB_LORE = {
 
   // Crypt
   ratking: "왕좌 밑의 꼬리를 따라가면 수십 개의 발자국이 하나로 모인다.",
+  twinhare_blood: "꿰맨 자리가 아물지 않아 뛸 때마다 솔기가 붉게 번진다.",
+  gutfrog_frost: "새벽 서리를 삼킨 배가 하얗게 얼어, 울음 대신 김을 뱉는다.",
+  wingcrane_frost: "먹이 얼어붙은 깃으로 날아, 지나간 물 위에 살얼음 한 줄을 남긴다.",
   twinhare_bone: "턱 없는 쪽은 아무것도 먹지 못해 뼈를 달각이며 뛴다.",
   bonehound: "코가 사라진 뒤부터 관 밖의 발소리를 듣고 사냥한다.",
   toadbrood: "등의 알을 품느라 돌아갈 관까지 통째로 업고 다닌다.",
@@ -2463,7 +2471,7 @@ const MONSTER_ELEMENT_GROUPS = {
   blood: ["batcluster_blood", "crabskull_blood", "squidrat_blood", "fishwalker_blood", "twingoat_blood", "spiderhand_blood", "gravrose_blood", "barnacleseal_blood", "bloodhorn", "bloodshard"],
   ember: ["wickhare", "smoggecko", "doghead_fire", "spinescorp_fire", "ribvulture_fire", "foxtwine_fire", "eyecrow_ash", "lionhand_gold"],
   inferno: ["boss", "wickregent", "sandmaw"],
-  frost: ["splitboar_frost", "fishwalker_frost", "eelknot_frost", "crabskull_frost", "ribdeer_frost", "foxtwine_frost", "shroomboar_frost", "crowscare_frost", "hermitskull_frost", "rimehare", "frostmoth", "barnacleseal", "hagfishhead"],
+  frost: ["gutfrog_frost", "wingcrane_frost", "splitboar_frost", "fishwalker_frost", "eelknot_frost", "crabskull_frost", "ribdeer_frost", "foxtwine_frost", "shroomboar_frost", "crowscare_frost", "hermitskull_frost", "rimehare", "frostmoth", "barnacleseal", "hagfishhead"],
   rime: ["rimewalrus", "rootwarden", "crownstag", "bloomwhale"],
   storm: ["sluiceeel", "spoolsnipe", "eelknot", "hydrasnake_steel", "eelknot_gold", "prismmole", "airship_gale", "airship_lookout", "eyegull", "brainjelly", "clubshrimp", "sluiceleviathan"],
   toxin: ["hydrasnake", "mothface", "toadbrood", "gutfrog_poison", "ratking_bile", "slugtongue", "leechmaw", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile", "leechmaw_ash", "mothface_ash", "shroomboar", "gravrose", "dartbrood", "spinescorp", "sowseer", "knotwidow"],
@@ -6608,7 +6616,7 @@ const GEN = {
     tiers: 3, tierOpen: 0.6, ramp: 2, roadW: 3, pools: 2.6, widen: "TPBRulYAe", pen: ["meadowram", 0.45],
     ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 4, lakeR: 5, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
-    mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "eyecrow", "lambmaw", "lambmaw", "meadowram"], pondMob: "eyecrow", chest: "chest_meadow",
+    mobs: ["twinhare", "twinhare", "twinhare", "twinhare_blood", "gutfrog", "gutfrog", "gutfrog_frost", "eyecrow", "lambmaw", "lambmaw", "meadowram"], pondMob: "eyecrow", chest: "chest_meadow",
     vaultKinds: ["shrine", "circle", "bloom", "lookout", "cache", "menhir"], biomes: { plain: "plain" }, featureP: 0.6, features: ["pond", "boulders", "bigtree", "pen", "cairn", "logs", "stones"],
     // wet low ground flowers or grows tall; high ground is stony; dry ground is orchard or plain grass
     // by level: the valley floor wet and in flower, the middle shelves orchard and tall grass, the tops stony heath
@@ -6872,20 +6880,20 @@ const GEN = {
   // red mesa (south door) and the old kingdom (north door). The whole inner ground is walkable mirror shallows; the barriers
   // are deep ink pools ringed by grey sand bars, and chains of rock-and-pine islets. South to north: A the ferry landing,
   // B the open mirror shallows, C the pine islets (west) and D the red plum banks (east), E the reed mist (elite ground),
-  // F the ink pools (pockets), G the lone pagoda's isle (the field boss). Few monsters, each strong (DENSITY 17).
+  // F the ink pools (pockets), G the lone pagoda's isle (the field boss). Few monsters, each strong (DENSITY 15).
   // Theme `mist` (grey on paper, pagodas on Π) until the art step gives it an `ink` theme of its own.
-  inklake: { make: wilds, route: "maple", band: [40, 46], stones: 3, stoneNames: ["나루터", "붉은 매화 둔덕", "외딴 탑 섬"], cfg: () => {
+  inklake: { make: wilds, route: "maple", band: [40, 47], stones: 3, stoneNames: ["나루터", "붉은 매화 둔덕", "외딴 탑 섬"], cfg: () => {
     const W = 176, H = 120;
     const LEECH = "leechmaw_ash", FISH = "fishwalker_ash", CRANE = "wingcrane_ash", MOTH = "mothface_ash", SPIDER = "spiderhand_blood", ROSE = "gravrose_blood";
     // the region a place lies in, by how far north it is (and east of the middle for the plum banks)
     const area = (x, y) => { const f = y / H; return f > 0.8 ? "A" : f > 0.6 ? "B" : f > 0.4 ? (x < 0.5 * W ? "C" : "D") : f > 0.2 ? "E" : x < 0.36 * W || x > 0.64 * W ? "F" : "G"; };
-    const ROSTER = { A: [LEECH], B: [LEECH, FISH], C: [FISH, CRANE], D: [MOTH, SPIDER], E: [SPIDER, ROSE], F: [ROSE], G: [ROSE] };
+    const ROSTER = { A: [LEECH], B: [LEECH, FISH], C: [FISH, CRANE], D: [MOTH, SPIDER], E: [SPIDER, ROSE], F: [ROSE, "serpentwing_ash"], G: ["serpentwing_ash", "wingcrane_frost"] };
     return {
       id: "inklake", name: "먹빛 호수", theme: "mist", bgm: "autumn", seed: 47251, w: W, h: H, r: 9.6, warp: 9, wind: 0.6, loops: 0.3, merge: 0.3, cliff: 0.2, gap: 2,
       stoneFr: [], widen: "TPBRulYAeΣΘO",
       ground: "~", edge: "Θ", treeCh: "Σ", treeCh2: "T", road: "~", shore: "S", river: false, lakes: 9, lakeR: 7, vaults: 12, ruins: 2, tpm: 15.5,
       walls: [["rocks", 0.5], ["bramble", 0.3], ["trees", 0.2]], rocks: ["Θ", "R"], gates: [["south", "s", 0.5], ["north", "n", 0.5]], exit: "north",
-      mobs: [LEECH, FISH, CRANE, MOTH, SPIDER, ROSE], pondMob: null, chest: "chest_inklake",
+      mobs: [LEECH, FISH, CRANE, MOTH, SPIDER, ROSE, "serpentwing_ash", "wingcrane_frost"], pondMob: null, chest: "chest_inklake",
       // the rare kind keeps the plum banks' pagoda court (its chest) until the rare-spawn rule exists
       campPiece: "pilgrimcamp", vaultKinds: ["pavilion", "lanterncourt", "mistfall", "pillartop", "pavilion", "cache"], vaultMobs: { mistfall: ROSE },
       courts: [{ piece: "belltower", at: [0.5, 0.12], field: true, guards: [ROSE, 2], stone: 2 }, { piece: "pagoda", at: [0.74, 0.5], guards: ["foxtwine_frost", 1], stone: 1 }],

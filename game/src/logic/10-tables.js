@@ -308,7 +308,7 @@ const TRICK_EL = [1, 0.75, 0.6];
 const MV_GRACE = 1200;
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 17 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 15 };
 const GEAR_CUT = 0.3, MOB_ATK = 1.27;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
@@ -366,6 +366,9 @@ const MOBS = {
   prismcantor: { name: "쌍결정 성가박쥐", lv: 36, hp: 19600, atk: 164, def: 34, spd: 38, xp: 6700, gold: [315, 510], aggro: 140, range: 28, cd: 1380, fly: true, boss: true },
   // 바람초원
   twinhare: { name: "쌍두 토끼", lv: 1, hp: 28, atk: 5, def: 0, spd: 26, xp: 9, gold: [2, 6], aggro: 0, range: 16, cd: 1300, pounce: 70 },   // the second head springs first: the first ring a new player learns to step out of
+  // the two steps the meadow lacked (Lv.5–8 and Lv.13–16): optional for the collection, so no finished region comes undone
+  twinhare_blood: { name: "붉은 솔기 쌍두 토끼", sp: "twinhare", tint: "blood", lv: 2, hp: 44, atk: 7, def: 0, spd: 28, xp: 13, gold: [3, 8], aggro: 0, range: 16, cd: 1300, bonusOptional: true },
+  gutfrog_frost: { name: "서리 창자 개구리", sp: "gutfrog", tint: "frost", lv: 4, hp: 72, atk: 11, def: 1, spd: 25, xp: 24, gold: [5, 12], aggro: 0, range: 16, cd: 1300, leap: 80, bonusOptional: true },
   gutfrog: { name: "창자 개구리", lv: 3, hp: 60, atk: 9, def: 1, spd: 24, xp: 18, gold: [4, 10], aggro: 0, range: 16, cd: 1300, leap: 80, pounce: 90 },
   eyecrow: { name: "눈알 까마귀", lv: 5, hp: 82, atk: 13, def: 0, spd: 34, xp: 30, gold: [6, 14], aggro: 0, range: 17, cd: 1200, fly: true, spit: 90 },   // circles the pond and minds its own business, so the shore stays a fishing spot
   lambmaw: { name: "뒤집힌 양", lv: 6, hp: 110, atk: 15, def: 1, spd: 38, xp: 38, gold: [7, 16], aggro: 72, range: 18, cd: 1300, charge: 110, spit: 100 },
@@ -471,6 +474,8 @@ const MOBS = {
   spiderhand_blood: { name: "매화 손가락 거미", sp: "plumspider", lv: 44, hp: 3200, atk: 128, def: 22, spd: 56, xp: 1780, gold: [108, 186], aggro: 96, range: 18, cd: 1000, leap: 100, pool: 28 },
   gravrose_blood: { name: "붉은 묘지 매화", sp: "inkrose", lv: 45, hp: 3400, atk: 132, def: 24, spd: 22, xp: 1980, gold: [110, 190], aggro: 96, range: 72, cd: 1600, volley: true, pool: 28, poolKind: 2 },
   foxtwine_frost: { name: "흰 꼬인 여우", sp: "inkfox", lv: 44, hp: 3500, atk: 128, def: 22, spd: 62, xp: 2400, gold: [150, 250], aggro: 98, range: 17, cd: 850, leap: 100 },
+  // the lake's far isles reach Lv.185–188 (maple was the only ground past Lv.181)
+  wingcrane_frost: { name: "서리 겹날개 두루미", sp: "wingcrane", tint: "frost", lv: 47, hp: 3600, atk: 138, def: 22, spd: 44, xp: 2300, gold: [118, 186], aggro: 98, range: 74, cd: 1700, fly: true, volley: true, bonusOptional: true },
   serpentwing_ash: { name: "먹빛 날개 구렁이", sp: "inkserpent", lv: 46, hp: 5000, atk: 136, def: 30, spd: 46, xp: 2200, gold: [120, 204], aggro: 100, range: 78, cd: 1500, fly: true, fan: 150, pool: 30, poolKind: 2, charge: 130 },
   // 단풍 왕도 — the fallen kingdom's forest above the chasm, where the blight came up through the roots:
   // beasts and plants alike sprouting violet rot and eyes

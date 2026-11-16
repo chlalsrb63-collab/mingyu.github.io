@@ -32,6 +32,7 @@ function world(name, o) {
   const p = W.p;
   L.runtime(S, p.map).n--; p.map = "meadow"; L.runtime(S, "meadow").n++; p.sendMap = true;
   const mp = W.step().map;
+  S.seed = 31337;   // the dice start from the same place whatever the meadow spawned (these numbers are measured over a few hundred rolls)
   const clear = (x, y) => mp.o[y] && mp.o[y][x] === " " && !"wW".includes(mp.g[y][x]);
   let spot = null;
   for (let y = 4; y < mp.h - 4 && !spot; y++) for (let x = 6; x < mp.w - 10 && !spot; x++) {

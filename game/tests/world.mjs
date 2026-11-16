@@ -196,7 +196,7 @@ JSON.stringify(L.removePlayer(S, PID));
   const want = { cloudtemple: { band: [30, 36], courts: ["summithall", "belltower", "pagoda", "pagoda"], boss: "belltower", falls: 2, rare: "ribdeer_frost", names: ["산문", "탑전 마당", "종루"] },
     mesa: { band: [36, 42], courts: ["thronecourt", "goldhall", "belltower", "lowertown"], boss: "thronecourt", falls: 3, rare: "serpentwing_bone", names: ["협곡 아랫마을", "황금 지붕 궁", "소나무 벼랑길"] },
     // batch 2: the ink lake — a pagoda court on the plum banks (the rare fox keeps it) and the lone pagoda isle (field boss)
-    inklake: { band: [40, 46], courts: ["belltower", "pagoda"], boss: "belltower", falls: 0, halls: 2, rare: "foxtwine_frost", names: ["나루터", "붉은 매화 둔덕", "외딴 탑 섬"] } };
+    inklake: { band: [40, 47], courts: ["belltower", "pagoda"], boss: "belltower", falls: 0, halls: 2, rare: "foxtwine_frost", names: ["나루터", "붉은 매화 둔덕", "외딴 탑 섬"] } };
   for (const id of Object.keys(want)) {
     const m = maps[id], W = m.w, w = want[id], meta = D.maps.find((q) => q.id === id);
     assert.deepEqual(meta.band, w.band.map((t) => 4 * t - 3), id + ": its band");

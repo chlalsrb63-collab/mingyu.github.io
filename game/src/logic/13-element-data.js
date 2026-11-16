@@ -133,7 +133,7 @@ const MONSTER_ELEMENT_GROUPS = {
   blood: ["batcluster_blood", "crabskull_blood", "squidrat_blood", "fishwalker_blood", "twingoat_blood", "spiderhand_blood", "gravrose_blood", "barnacleseal_blood", "bloodhorn", "bloodshard"],
   ember: ["wickhare", "smoggecko", "doghead_fire", "spinescorp_fire", "ribvulture_fire", "foxtwine_fire", "eyecrow_ash", "lionhand_gold"],
   inferno: ["boss", "wickregent", "sandmaw"],
-  frost: ["splitboar_frost", "fishwalker_frost", "eelknot_frost", "crabskull_frost", "ribdeer_frost", "foxtwine_frost", "shroomboar_frost", "crowscare_frost", "hermitskull_frost", "rimehare", "frostmoth", "barnacleseal", "hagfishhead"],
+  frost: ["gutfrog_frost", "wingcrane_frost", "splitboar_frost", "fishwalker_frost", "eelknot_frost", "crabskull_frost", "ribdeer_frost", "foxtwine_frost", "shroomboar_frost", "crowscare_frost", "hermitskull_frost", "rimehare", "frostmoth", "barnacleseal", "hagfishhead"],
   rime: ["rimewalrus", "rootwarden", "crownstag", "bloomwhale"],
   storm: ["sluiceeel", "spoolsnipe", "eelknot", "hydrasnake_steel", "eelknot_gold", "prismmole", "airship_gale", "airship_lookout", "eyegull", "brainjelly", "clubshrimp", "sluiceleviathan"],
   toxin: ["hydrasnake", "mothface", "toadbrood", "gutfrog_poison", "ratking_bile", "slugtongue", "leechmaw", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile", "leechmaw_ash", "mothface_ash", "shroomboar", "gravrose", "dartbrood", "spinescorp", "sowseer", "knotwidow"],

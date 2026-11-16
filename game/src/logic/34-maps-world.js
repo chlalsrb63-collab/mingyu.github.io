@@ -300,7 +300,7 @@ const GEN = {
     tiers: 3, tierOpen: 0.6, ramp: 2, roadW: 3, pools: 2.6, widen: "TPBRulYAe", pen: ["meadowram", 0.45],
     ground: ".", edge: "T", treeCh: "T", treeCh2: "B", road: "p", shore: "s", river: true, lakes: 4, lakeR: 5, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["trees", 0.42], ["hedge", 0.3], ["rocks", 0.28]], gates: [["west", "w", 0.5], ["east", "e", 0.5]], exit: "east",
-    mobs: ["twinhare", "twinhare", "twinhare", "gutfrog", "gutfrog", "eyecrow", "lambmaw", "lambmaw", "meadowram"], pondMob: "eyecrow", chest: "chest_meadow",
+    mobs: ["twinhare", "twinhare", "twinhare", "twinhare_blood", "gutfrog", "gutfrog", "gutfrog_frost", "eyecrow", "lambmaw", "lambmaw", "meadowram"], pondMob: "eyecrow", chest: "chest_meadow",
     vaultKinds: ["shrine", "circle", "bloom", "lookout", "cache", "menhir"], biomes: { plain: "plain" }, featureP: 0.6, features: ["pond", "boulders", "bigtree", "pen", "cairn", "logs", "stones"],
     // wet low ground flowers or grows tall; high ground is stony; dry ground is orchard or plain grass
     // by level: the valley floor wet and in flower, the middle shelves orchard and tall grass, the tops stony heath
@@ -564,20 +564,20 @@ const GEN = {
   // red mesa (south door) and the old kingdom (north door). The whole inner ground is walkable mirror shallows; the barriers
   // are deep ink pools ringed by grey sand bars, and chains of rock-and-pine islets. South to north: A the ferry landing,
   // B the open mirror shallows, C the pine islets (west) and D the red plum banks (east), E the reed mist (elite ground),
-  // F the ink pools (pockets), G the lone pagoda's isle (the field boss). Few monsters, each strong (DENSITY 17).
+  // F the ink pools (pockets), G the lone pagoda's isle (the field boss). Few monsters, each strong (DENSITY 15).
   // Theme `mist` (grey on paper, pagodas on Π) until the art step gives it an `ink` theme of its own.
-  inklake: { make: wilds, route: "maple", band: [40, 46], stones: 3, stoneNames: ["나루터", "붉은 매화 둔덕", "외딴 탑 섬"], cfg: () => {
+  inklake: { make: wilds, route: "maple", band: [40, 47], stones: 3, stoneNames: ["나루터", "붉은 매화 둔덕", "외딴 탑 섬"], cfg: () => {
     const W = 176, H = 120;
     const LEECH = "leechmaw_ash", FISH = "fishwalker_ash", CRANE = "wingcrane_ash", MOTH = "mothface_ash", SPIDER = "spiderhand_blood", ROSE = "gravrose_blood";
     // the region a place lies in, by how far north it is (and east of the middle for the plum banks)
     const area = (x, y) => { const f = y / H; return f > 0.8 ? "A" : f > 0.6 ? "B" : f > 0.4 ? (x < 0.5 * W ? "C" : "D") : f > 0.2 ? "E" : x < 0.36 * W || x > 0.64 * W ? "F" : "G"; };
-    const ROSTER = { A: [LEECH], B: [LEECH, FISH], C: [FISH, CRANE], D: [MOTH, SPIDER], E: [SPIDER, ROSE], F: [ROSE], G: [ROSE] };
+    const ROSTER = { A: [LEECH], B: [LEECH, FISH], C: [FISH, CRANE], D: [MOTH, SPIDER], E: [SPIDER, ROSE], F: [ROSE, "serpentwing_ash"], G: ["serpentwing_ash", "wingcrane_frost"] };
     return {
       id: "inklake", name: "먹빛 호수", theme: "mist", bgm: "autumn", seed: 47251, w: W, h: H, r: 9.6, warp: 9, wind: 0.6, loops: 0.3, merge: 0.3, cliff: 0.2, gap: 2,
       stoneFr: [], widen: "TPBRulYAeΣΘO",
       ground: "~", edge: "Θ", treeCh: "Σ", treeCh2: "T", road: "~", shore: "S", river: false, lakes: 9, lakeR: 7, vaults: 12, ruins: 2, tpm: 15.5,
       walls: [["rocks", 0.5], ["bramble", 0.3], ["trees", 0.2]], rocks: ["Θ", "R"], gates: [["south", "s", 0.5], ["north", "n", 0.5]], exit: "north",
-      mobs: [LEECH, FISH, CRANE, MOTH, SPIDER, ROSE], pondMob: null, chest: "chest_inklake",
+      mobs: [LEECH, FISH, CRANE, MOTH, SPIDER, ROSE, "serpentwing_ash", "wingcrane_frost"], pondMob: null, chest: "chest_inklake",
       // the rare kind keeps the plum banks' pagoda court (its chest) until the rare-spawn rule exists
       campPiece: "pilgrimcamp", vaultKinds: ["pavilion", "lanterncourt", "mistfall", "pillartop", "pavilion", "cache"], vaultMobs: { mistfall: ROSE },
       courts: [{ piece: "belltower", at: [0.5, 0.12], field: true, guards: [ROSE, 2], stone: 2 }, { piece: "pagoda", at: [0.74, 0.5], guards: ["foxtwine_frost", 1], stone: 1 }],
