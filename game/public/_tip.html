@@ -1,6 +1,6 @@
 <!doctype html><meta charset="utf-8">
 <!-- Item tooltips with fake entries, no server: node scripts/shot.mjs --page tip [--q "hud=linen&ts=l&w=300"]
-     (the real items.js itemTip over a stub G.defs / G.self; the 유니크 words and item levels are stubs of the rules' contract) -->
+     (the real items.js itemTip over a stub G.defs / G.self; the item levels are stubs of the rules' contract) -->
 <link rel="stylesheet" href="style.css"><link rel="stylesheet" href="hud.css">
 <style>
   body { margin: 0; padding: 10px; background: #46604c; min-height: 100vh; box-sizing: border-box; }
@@ -48,8 +48,6 @@ G.defs = {
   runes: { cel: ["셀", "spd", 3], acu: ["아쿠", "crit", 3] },
   runewords: [{ name: "질풍", seq: ["cel", "acu"], add: [["spd", 6], ["crit", 6]] }],
   slots: ["weapon", "helm", "armor", "gloves", "boots", "ring1", "ring2", "amulet"],
-  // the rules' contract: a 유니크 has a legendary's power `lg` (its name's prefix is defs.legend[lg][0]) and un = [suffix index] into defs.uniq.suf
-  uniq: { suf: ["파멸의 낙인", "황금왕의 탐욕", "학살의 서약", "철옹성의 맹세", "불사의 맹약"] },
 };
 const legArmor = { id: "a_6", q: 3, il: 62, enh: 2, lg: "chain", af: [["hp", 90], ["def", 6], ["ls", 2], ["critd", 14]] };
 const eq = {
@@ -61,7 +59,8 @@ const eq = {
 };
 G.self = { lvl: 60, cls: "warrior", eq, inv: [] };
 
-const unique = { id: "a_6", q: 5, il: 66, lg: "thorn", un: [4], af: [["def", 21], ["hp", 160], ["crit", 4], ["ls", 3]] };
+// a 유니크: a legendary's power `lg` (its name's prefix is defs.legend[lg][0], no suffix) + four plain, stronger lines
+const unique = { id: "a_6", q: 5, il: 66, lg: "thorn", af: [["def", 21], ["hp", 160], ["crit", 4], ["ls", 3]] };
 const scenes = [
   ["유니크 갑옷 vs 장착 중인 전설 갑옷", unique, {}],
   ["전설 무기 (홈·룬어) vs 장착 중인 희귀 무기", { id: "w_sword_5", q: 3, il: 80, enh: 3, lg: "chain", af: [["atk", 9], ["atkp", 6], ["crit", 4], ["critd", 12]], sk: 2, ru: ["cel", "acu"] }, {}],

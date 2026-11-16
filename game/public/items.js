@@ -33,11 +33,6 @@ export function emptyEquipSlot(it, s, entry) {
 export const reqLv = (entry) => (entry.il > 0 ? Math.max(1, entry.il - 10) : G.defs.items[entry.id].req);
 /** The rarity's name; 유니크 (q5) comes from the rules table once it lists it. */
 const rarName = (q) => G.defs.rarity[q || 0] || (q === 5 ? "유니크" : "일반");
-/** A 유니크's suffix word (`un` = [suffix index] into `defs.uniq.suf`); "" while the rules do not send it. (Its prefix is its power's `defs.legend` word.) */
-function uniqSuffix(entry) {
-  const u = G.defs.uniq, un = entry.q === 5 && entry.un, x = u && un && u.suf && u.suf[un[0]];
-  return (Array.isArray(x) ? x[0] : x) || "";
-}
 /** A legendary or 유니크 power: [name word, what it does], or null while `defs.legend` lacks it. */
 const legendOf = (k) => (k && G.defs.legend && G.defs.legend[k]) || null;
 function runewordOf(g) {
@@ -49,12 +44,12 @@ export function statText(k, v) {
   const label = G.defs.affix[k][0];
   return `${label.replace(" %", "")} +${v}${label.includes("%") ? "%" : ""}`;
 }
-/** "+3 뇌명의 강철 양손검" — a legendary's power, a set's name, or the first affix lends the prefix; a 유니크 is "[효과 접두사] 이름 [접미사]" (the prefix is its power's word). */
+/** "+3 뇌명의 강철 양손검" — a 전설's or 유니크's power word (its 고유 효과), a set's name, or the first affix lends the prefix. */
 export function itemName(entry) {
   if (Charms.isCharm(entry)) return Charms.charmName(entry);       // a charm's name comes from its wire, not ITEMS (charms.js)
-  const it = G.defs.items[entry.id], lg = legendOf(entry.lg), suf = uniqSuffix(entry);
+  const it = G.defs.items[entry.id], lg = legendOf(entry.lg);
   const word = lg ? lg[0] : entry.set ? G.defs.sets[entry.set].name : entry.af && entry.af.length ? G.defs.affix[entry.af[0][0]][1] : "";
-  return (entry.cu === 1 ? "저주받은 " : "") + (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name + (suf ? ` ${suf}` : "");
+  return (entry.cu === 1 ? "저주받은 " : "") + (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name;
 }
 /** The piece's own stats, enhancement included: [[key, value]…] (speed and crit do not scale). */
 function baseStats(entry) {
@@ -79,21 +74,19 @@ export function setWorn(id) {
   if (G.self) for (const k of G.defs.slots) if (G.self.eq[k] && G.self.eq[k].set === id) n++;
   return n;
 }
-/** One stat as a row of a tooltip card: the name on the left, the value on the right; `tag` is a small badge after the name. */
-function statRow(k, v, cls, tag) {
-  const label = G.defs.affix[k][0], d = el("div", `tc-row ${cls}`), l = el("span", "", label.replace(" %", ""));
-  if (tag) l.append(el("i", "tc-tag", tag));
-  d.append(l, el("b", "", `+${v}${label.includes("%") ? "%" : ""}`));
+/** One stat as a row of a tooltip card: the name on the left, the value on the right. */
+function statRow(k, v, cls) {
+  const label = G.defs.affix[k][0], d = el("div", `tc-row ${cls}`);
+  d.append(el("span", "", label.replace(" %", "")), el("b", "", `+${v}${label.includes("%") ? "%" : ""}`));
   return d;
 }
 /**
  * One tooltip card (hud.css "item tooltip"): a rarity-coloured frame, then sections split by divider lines —
- * name · rarity and item level, the base stats, the affixes (a 유니크's first two are its own, tagged 고유),
- * the legendary power / set / sockets / runeword, and last the level it needs. `o.eq` marks the piece being
- * worn in that slot (the [장착 중] banner).
+ * name · rarity and item level, the base stats, the plain affix lines, the 고유 효과 (a 전설's or 유니크's power, emphasised) /
+ * set / sockets / runeword, and last the level it needs. `o.eq` marks the piece being worn in that slot (the [장착 중] banner).
  */
 function card(entry, o = {}) {
-  const it = G.defs.items[entry.id], s = G.self, q = entry.q || 0, gear = isGear(entry.id), un = q === 5;
+  const it = G.defs.items[entry.id], s = G.self, q = entry.q || 0, gear = isGear(entry.id);
   const c = el("div", `tcard q${q}`);
   c.style.setProperty("--rc", Art.RARITY_COL[q] || Art.RARITY_COL[0]);
   const sec = (cls) => c.appendChild(el("div", `tc-sec ${cls || ""}`));
@@ -113,15 +106,14 @@ function card(entry, o = {}) {
   } else head.append(el("div", "tc-ds", itemDesc(entry)));
   if (entry.af && entry.af.length) {
     const af = sec();
-    entry.af.forEach(([k, v], i) => af.append(statRow(k, v, un && i < 2 ? "af un" : "af", un && i < 2 ? "고유" : "")));
+    for (const [k, v] of entry.af) af.append(statRow(k, v, "af"));
   }
   const pw = [];
   const lg = legendOf(entry.lg);
   if (lg) {
-    // a 유니크's power is its 고유 효과: the same ◆ line as a legendary's, in the beige of its own lines
-    const l = el("div", un ? "tc-lg un" : "tc-lg");
-    if (un) l.append(el("i", "tc-tag", "고유 효과"));
-    l.append(`◆ ${lg[1]}`);
+    // the one separate strong effect (a 전설's or 유니크's `lg`): a beige ◆ row tagged 고유 효과
+    const l = el("div", "tc-lg");
+    l.append(el("i", "tc-tag", "고유 효과"), `◆ ${lg[1]}`);
     pw.push(l);
   }
   if (entry.set) {
