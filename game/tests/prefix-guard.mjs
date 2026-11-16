@@ -17,10 +17,10 @@ const DOC = {
   root: ["BH", "S", "mit", { ms: 1500, k: 0.85 }, 1], heavy: ["ABH", "S", "mit", { k: 0.5 }, 1], purge: ["ABNH", "S", "mit", { k: 0.5 }, 1],
   cure: ["BNH", "S", "mit", { ms: 3000, imm: 8000, icd: 30000 }, 1], rime: ["AB", "S", "mit", { p: 0.3, ms: 2000, icd: 1000 }, 1],
   counter: ["AB", "M", "mit", { p: 0.15, k: 1.5, icd: 2000 }, 1], fate: ["AN", "L", "mit", { ms: 3000, icd: 360000 }, 1],
-  panic: ["AB", "M", "mob", { hp: 0.35, ms: 5000, spd: 1.3, k: 0.85, icd: 60000 }, 0], wisp: ["B", "M", "mob", { k: 0.75 }, 1],
-  dust: ["B", "S", "mob", { r: 40, ms: 600, icd: 6000, n: 4 }, 1], after: ["B", "S", "mob", { ms: 1500, spd: 1.25 }, 0], nimble: ["BN", "S", "sus", { k: 0.02, icd: 1000 }, 1],
-  reflex: ["B", "S", "mob", { ms: 2000, k: 1.15 }, 1], relax: ["B", "S", "mob", { ms: 5000, spd: 1.15 }, 0], chase: ["B", "S", "mob", { ms: 3000, spd: 1.2 }, 0],
-  slick: ["B", "S", "mob", { ms: 1000, spd: 1.3 }, 0], share: ["NH", "S", "sus", { r: 160, k: 0.03 }, 1], spring: ["AN", "M", "sus", { hp: 0.5, k: 0.012 }, 1],
+  panic: ["AB", "M", "mob", { hp: 0.35, ms: 5000, spd: 1.3, k: 0.85, icd: 60000 }, 1], wisp: ["B", "M", "mob", { k: 0.75 }, 1],
+  dust: ["B", "S", "mob", { r: 40, ms: 600, icd: 6000, n: 4 }, 1], after: ["B", "S", "mob", { ms: 1500, spd: 1.25 }, 1], nimble: ["BN", "S", "sus", { k: 0.02, icd: 1000 }, 1],
+  reflex: ["B", "S", "mob", { ms: 2000, k: 1.15 }, 1], relax: ["B", "S", "mob", { ms: 5000, spd: 1.15 }, 1], chase: ["B", "S", "mob", { ms: 3000, spd: 1.2 }, 1],
+  slick: ["B", "S", "mob", { ms: 1000, spd: 1.3 }, 1], share: ["NH", "S", "sus", { r: 160, k: 0.03 }, 1], spring: ["AN", "M", "sus", { hp: 0.5, k: 0.012 }, 1],
   pot: ["NH", "M", "sus", { k: 1.35 }, 1], elixir: ["N", "S", "sus", { ms: 6000, k: 0.01 }, 1], med: ["NH", "S", "sus", { ms: 2000, k: 0.02 }, 1],
   moss: ["AN", "S", "sus", { k: 0.015 }, 1], emerg: ["ABNH", "M", "sus", { hp: 0.3, k: 0.2, icd: 90000 }, 1], owl: ["NH", "S", "mit", { k: 0.9 }, 1],
 };
@@ -379,7 +379,11 @@ for (const k of KEYS) { const t0 = performance.now(); CASES[k](); if (process.en
 // ── 4. the roll: the live powers drop on their own slots, the held ones never
 {
   const TYPES = { A: "a_4", B: "b_3", N: "n_4", H: "h_2" }, HELD = KEYS.filter((k) => !DOC[k][4]);
-  assert.deepEqual(HELD.sort(), ["after", "chase", "panic", "relax", "slick"], "five move-speed powers wait for the client");
+  assert.deepEqual(HELD, [], "none is held back: the move-speed five ride the wire's pspd (90-views-api.js)");
+  { // the walk a power speeds reaches the client: stats().pspd is the ratio, and it is gone with the power
+    const st0 = fresh("slick"); assert.equal(st0.pspd, undefined, "no speed-up, no field");
+    p.stag = S.now - 500; assert.ok(Math.abs(X.stats(p).pspd - X.PFX.slick.spd) < 1e-9, "pspd = the factor while it runs"); p.stag = 0;
+  }
   for (const [c, id] of Object.entries(TYPES)) {
     const box = { seed: 4242 + c.charCodeAt(0) }, seen = new Set();
     for (let i = 0; i < 5000; i++) seen.add(X.rollGear(box, id, i % 2 ? 3 : 5, 30).lg);

@@ -201,7 +201,7 @@ export function update(dt, t) {
 
   // walk — applied immediately, checked by the server afterwards
   const slow = Math.min(G.elementSpeed, t < (G.buffEnd[4] || 0) ? G.defs.slow || 0.65 : 1);
-  const speed = s.spd * (t < G.buffEnd[1] ? 1.4 : 1) * slow;
+  const speed = s.spd * (t < G.buffEnd[1] ? 1.4 : 1) * slow * (G.prefixSpeed || 1);
   if (slow === 0) { mx = my = 0; wantAtk = false; }
   const ox = me.x, oy = me.y;
   // the aim follows the way you walk; Shift held turns you on the spot without a step

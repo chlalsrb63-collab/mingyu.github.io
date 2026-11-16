@@ -105,6 +105,8 @@ export function viewFor(S, pid) {
   elementView(S, out, p.eid, p);
   const elementSpeed = elementFrozen(S, p) ? 0 : elementMoveFactor(S, p);
   if (elementSpeed !== 1) out.elspd = elementSpeed;
+  // a prefix power speeding the walk for a moment (질주·추격 …): only while it does, so the client's own steps keep up with the rules'
+  if (deriveStats(p).pfx.stat.length) { const ps = stats(p).pspd; if (ps) out.pspd = Math.round(ps * 1000) / 1000; }
   for (const oid of Object.keys(S.players)) {
     const o = S.players[oid];
     if (o === p || o.map !== p.map || !near(o)) continue;

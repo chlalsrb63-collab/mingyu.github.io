@@ -406,7 +406,8 @@ function stats(p) {
   const cold = elementMoveFactor(p.S, p);
   // The old field slows already adjust spd above. Use the stronger of the two slows.
   out.spd *= p.slowed > now ? Math.min(1, cold / SLOW) : cold;
-  if (c.pfx.stat.length) pfxStat(p, out);   // the powers that change the moment's numbers (51-prefix.js)
+  // the powers that change the moment's numbers (51-prefix.js); `pspd` = what they did to the walk, for the client's own steps (wire `pspd`)
+  if (c.pfx.stat.length) { const spd = out.spd; pfxStat(p, out); if (spd > 0 && out.spd !== spd) out.pspd = out.spd / spd; }
   return out;
 }
 

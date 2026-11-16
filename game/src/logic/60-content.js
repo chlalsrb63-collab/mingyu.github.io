@@ -112,9 +112,10 @@ function dailyProg(S, p, kind, k) {
     if (t.n >= t.need) toast(p, `일일 과제 완료: ${dailyText(t)} — 보상을 받으세요.`);
   }
 }
-/** A piece of gear for the looter's class, of at least rarity `minQ`, if the bag has room. */
+/** A piece of gear for the looter's class, of at least rarity `minQ`. */
 function rewardGear(S, p, ilvl, minQ) {
-  if (p.ch.inv.length >= bagCap(p.ch)) { toast(p, "가방이 가득 차 장비 보상을 받지 못했습니다."); return; }
+  // a reward earned is never lost: with a full bag it sits in an extra slot until room is made (as a recovered rune does, 40 migrate)
+  if (p.ch.inv.length >= bagCap(p.ch)) toast(p, "가방이 가득 차 보상 장비를 임시 칸에 넣었습니다. 가방을 비워 주세요.");
   let roll = rnd(S) * 100, type = "weapon";
   for (const [ty, w] of DROP_TYPES) { if (roll < w) { type = ty; break; } roll -= w; }
   const tier = tierFor(ilvl);

@@ -253,6 +253,7 @@ function onSnap(s) {
   G.ailments.clear();
   for (const [id, rows] of s.ail || []) G.ailments.set(id, rows.map(([kind, left, stacks]) => [kind, t + left * 100, stacks]));
   G.elementSpeed = s.elspd ?? 1;
+  G.prefixSpeed = s.pspd ?? 1;   // a prefix power speeding the walk right now (53-prefix-guard.js)
   SkillFx.onSnap(s, G, t);
 
   if (s.self) {

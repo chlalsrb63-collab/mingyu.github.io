@@ -8182,7 +8182,8 @@ function stats(p) {
   const cold = elementMoveFactor(p.S, p);
   // The old field slows already adjust spd above. Use the stronger of the two slows.
   out.spd *= p.slowed > now ? Math.min(1, cold / SLOW) : cold;
-  if (c.pfx.stat.length) pfxStat(p, out);   // the powers that change the moment's numbers (51-prefix.js)
+  // the powers that change the moment's numbers (51-prefix.js); `pspd` = what they did to the walk, for the client's own steps (wire `pspd`)
+  if (c.pfx.stat.length) { const spd = out.spd; pfxStat(p, out); if (spd > 0 && out.spd !== spd) out.pspd = out.spd / spd; }
   return out;
 }
 
@@ -11214,7 +11215,7 @@ Object.assign(PFX_FN, {
 });
 
 // 미끄러운 (held): no slow at all, and a quicker step on getting up from a stagger (p.stag is when it ends; the window follows it)
-Object.assign(PFX, { slick: { on: 0, ms: 1000, spd: 1.3 } });
+Object.assign(PFX, { slick: { on: 1, ms: 1000, spd: 1.3 } });
 Object.assign(LEGEND, { slick: ["미끄러운", pfxText("slick", "둔화에 걸리지 않고, 경직에서 일어나면 {ms:s}초간 이동속도 +{spd:+%}%"), "B", "D", "S", "mob"] });
 Object.assign(PFX_FN, {
   slick: {
@@ -11273,7 +11274,7 @@ Object.assign(PFX_FN, {
 });
 
 // 다급한 (held): low HP starts a short rush and a thinner blow
-Object.assign(PFX, { panic: { on: 0, hp: 0.35, ms: 5000, spd: 1.3, k: 0.85, icd: 60000 } });
+Object.assign(PFX, { panic: { on: 1, hp: 0.35, ms: 5000, spd: 1.3, k: 0.85, icd: 60000 } });
 Object.assign(LEGEND, { panic: ["다급한", pfxText("panic", "HP가 {hp:%}% 이하로 떨어지면 {ms:s}초간 이동속도 +{spd:+%}%, 받는 피해 -{k:-%}% ({icd:s}초 간격)"), "AB", "D", "M", "mob"] });
 Object.assign(PFX_FN, {
   panic: {
@@ -11331,7 +11332,7 @@ Object.assign(PFX_FN, {
 });
 
 // 잔상의 (held)
-Object.assign(PFX, { after: { on: 0, ms: 1500, spd: 1.25 } });
+Object.assign(PFX, { after: { on: 1, ms: 1500, spd: 1.25 } });
 Object.assign(LEGEND, { after: ["잔상의", pfxText("after", "대시 직후 {ms:s}초간 이동속도 +{spd:+%}%"), "B", "D", "S", "mob"] });
 Object.assign(PFX_FN, {
   after: {
@@ -11356,12 +11357,12 @@ Object.assign(PFX_FN, {
 });
 
 // 한가로운 (held): no hit for `ms`
-Object.assign(PFX, { relax: { on: 0, ms: 5000, spd: 1.15 } });
+Object.assign(PFX, { relax: { on: 1, ms: 5000, spd: 1.15 } });
 Object.assign(LEGEND, { relax: ["한가로운", pfxText("relax", "{ms:s}초 넘게 피격이 없으면 이동속도 +{spd:+%}%"), "B", "D", "S", "mob"] });
 Object.assign(PFX_FN, { relax: { stat(p, st) { if (p.S.now - p.hitAt > PFX.relax.ms) st.spd *= PFX.relax.spd; } } });
 
 // 추격의 (held): a kill starts a short rush
-Object.assign(PFX, { chase: { on: 0, ms: 3000, spd: 1.2 } });
+Object.assign(PFX, { chase: { on: 1, ms: 3000, spd: 1.2 } });
 Object.assign(LEGEND, { chase: ["추격의", pfxText("chase", "처치 후 {ms:s}초간 이동속도 +{spd:+%}%"), "B", "D", "S", "mob"] });
 Object.assign(PFX_FN, {
   chase: {
@@ -14627,9 +14628,10 @@ function dailyProg(S, p, kind, k) {
     if (t.n >= t.need) toast(p, `일일 과제 완료: ${dailyText(t)} — 보상을 받으세요.`);
   }
 }
-/** A piece of gear for the looter's class, of at least rarity `minQ`, if the bag has room. */
+/** A piece of gear for the looter's class, of at least rarity `minQ`. */
 function rewardGear(S, p, ilvl, minQ) {
-  if (p.ch.inv.length >= bagCap(p.ch)) { toast(p, "가방이 가득 차 장비 보상을 받지 못했습니다."); return; }
+  // a reward earned is never lost: with a full bag it sits in an extra slot until room is made (as a recovered rune does, 40 migrate)
+  if (p.ch.inv.length >= bagCap(p.ch)) toast(p, "가방이 가득 차 보상 장비를 임시 칸에 넣었습니다. 가방을 비워 주세요.");
   let roll = rnd(S) * 100, type = "weapon";
   for (const [ty, w] of DROP_TYPES) { if (roll < w) { type = ty; break; } roll -= w; }
   const tier = tierFor(ilvl);
@@ -22580,6 +22582,8 @@ export function viewFor(S, pid) {
   elementView(S, out, p.eid, p);
   const elementSpeed = elementFrozen(S, p) ? 0 : elementMoveFactor(S, p);
   if (elementSpeed !== 1) out.elspd = elementSpeed;
+  // a prefix power speeding the walk for a moment (질주·추격 …): only while it does, so the client's own steps keep up with the rules'
+  if (deriveStats(p).pfx.stat.length) { const ps = stats(p).pspd; if (ps) out.pspd = Math.round(ps * 1000) / 1000; }
   for (const oid of Object.keys(S.players)) {
     const o = S.players[oid];
     if (o === p || o.map !== p.map || !near(o)) continue;

@@ -147,7 +147,7 @@ Object.assign(PFX_FN, {
 });
 
 // 미끄러운 (held): no slow at all, and a quicker step on getting up from a stagger (p.stag is when it ends; the window follows it)
-Object.assign(PFX, { slick: { on: 0, ms: 1000, spd: 1.3 } });
+Object.assign(PFX, { slick: { on: 1, ms: 1000, spd: 1.3 } });
 Object.assign(LEGEND, { slick: ["미끄러운", pfxText("slick", "둔화에 걸리지 않고, 경직에서 일어나면 {ms:s}초간 이동속도 +{spd:+%}%"), "B", "D", "S", "mob"] });
 Object.assign(PFX_FN, {
   slick: {
@@ -206,7 +206,7 @@ Object.assign(PFX_FN, {
 });
 
 // 다급한 (held): low HP starts a short rush and a thinner blow
-Object.assign(PFX, { panic: { on: 0, hp: 0.35, ms: 5000, spd: 1.3, k: 0.85, icd: 60000 } });
+Object.assign(PFX, { panic: { on: 1, hp: 0.35, ms: 5000, spd: 1.3, k: 0.85, icd: 60000 } });
 Object.assign(LEGEND, { panic: ["다급한", pfxText("panic", "HP가 {hp:%}% 이하로 떨어지면 {ms:s}초간 이동속도 +{spd:+%}%, 받는 피해 -{k:-%}% ({icd:s}초 간격)"), "AB", "D", "M", "mob"] });
 Object.assign(PFX_FN, {
   panic: {
@@ -264,7 +264,7 @@ Object.assign(PFX_FN, {
 });
 
 // 잔상의 (held)
-Object.assign(PFX, { after: { on: 0, ms: 1500, spd: 1.25 } });
+Object.assign(PFX, { after: { on: 1, ms: 1500, spd: 1.25 } });
 Object.assign(LEGEND, { after: ["잔상의", pfxText("after", "대시 직후 {ms:s}초간 이동속도 +{spd:+%}%"), "B", "D", "S", "mob"] });
 Object.assign(PFX_FN, {
   after: {
@@ -289,12 +289,12 @@ Object.assign(PFX_FN, {
 });
 
 // 한가로운 (held): no hit for `ms`
-Object.assign(PFX, { relax: { on: 0, ms: 5000, spd: 1.15 } });
+Object.assign(PFX, { relax: { on: 1, ms: 5000, spd: 1.15 } });
 Object.assign(LEGEND, { relax: ["한가로운", pfxText("relax", "{ms:s}초 넘게 피격이 없으면 이동속도 +{spd:+%}%"), "B", "D", "S", "mob"] });
 Object.assign(PFX_FN, { relax: { stat(p, st) { if (p.S.now - p.hitAt > PFX.relax.ms) st.spd *= PFX.relax.spd; } } });
 
 // 추격의 (held): a kill starts a short rush
-Object.assign(PFX, { chase: { on: 0, ms: 3000, spd: 1.2 } });
+Object.assign(PFX, { chase: { on: 1, ms: 3000, spd: 1.2 } });
 Object.assign(LEGEND, { chase: ["추격의", pfxText("chase", "처치 후 {ms:s}초간 이동속도 +{spd:+%}%"), "B", "D", "S", "mob"] });
 Object.assign(PFX_FN, {
   chase: {
