@@ -44,11 +44,11 @@ export function statText(k, v) {
   const label = G.defs.affix[k][0];
   return `${label.replace(" %", "")} +${v}${label.includes("%") ? "%" : ""}`;
 }
-/** "+3 뇌명의 강철 양손검" — a 전설's or 유니크's power word (its 고유 효과), a set's name, or the first affix lends the prefix. */
+/** "+3 뇌명의 강철 양손검" — a 전설's or 유니크's power word (its 고유 효과), or a set's name; plain stat lines lend no word. */
 export function itemName(entry) {
   if (Charms.isCharm(entry)) return Charms.charmName(entry);       // a charm's name comes from its wire, not ITEMS (charms.js)
   const it = G.defs.items[entry.id], lg = legendOf(entry.lg);
-  const word = lg ? lg[0] : entry.set ? G.defs.sets[entry.set].name : entry.af && entry.af.length ? G.defs.affix[entry.af[0][0]][1] : "";
+  const word = lg ? lg[0] : entry.set ? G.defs.sets[entry.set].name : "";
   return (entry.cu === 1 ? "저주받은 " : "") + (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name;
 }
 /** The piece's own stats, enhancement included: [[key, value]…] (speed and crit do not scale). */

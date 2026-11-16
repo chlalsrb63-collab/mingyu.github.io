@@ -85,7 +85,7 @@ assert.ok(act({ t: "enh", k: "helm" }).ok);
   ch.eq.boots = gear("b_2", { q: 2, enh: 5, af: [["critd", 10]] });
   for (let i = 0; i < 40 && ch.eq.boots.enh === 5; i++) { S.players[PID].toast.length = 0; ch.eq.boots.enh = 5; delete ch.eq.boots.cu; assert.ok(act({ t: "enh", k: "boots" }).ok); }
   const b = S.players[PID].toast.at(-1);
-  assert.ok(b.includes(`희귀 잔혹한 ${D.items.b_2.name} +${ch.eq.boots.enh}`), b);
+  assert.ok(b.includes(`희귀 ${D.items.b_2.name} +${ch.eq.boots.enh}`), b);
   delete ch.eq.boots;
 }
 assert.equal(act({ t: "enh", k: "ring1" }).ok, false);

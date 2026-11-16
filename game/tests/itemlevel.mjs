@@ -70,7 +70,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.equal(X.gearFull(g), `유니크 ${pre} ${base} +2`);
   // the others read as before
   assert.equal(X.gearName({ ...X.plain("h_1"), q: 3, lg: "haste", enh: 1 }), `+1 ${X.LEGEND.haste[0]} ${X.ITEMS.h_1.name}`);
-  assert.equal(X.gearFull({ ...X.plain("h_1"), q: 2, af: [["critd", 9]] }), `희귀 잔혹한 ${X.ITEMS.h_1.name}`);
+  assert.equal(X.gearFull({ ...X.plain("h_1"), q: 2, af: [["critd", 9]] }), `희귀 ${X.ITEMS.h_1.name}`);
 }
 
 // ── the 유니크 chance: very low, scaled by rank and MF; the other rarities keep their own odds
