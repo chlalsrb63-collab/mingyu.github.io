@@ -283,3 +283,12 @@ crafts keep their old levels, tier 6 still Lv.181), affix lines 마법 2 / 희�
 Client: items.js `itemTip` Diablo card + side-by-side `[장착 중]` compare, `public/_tip.html` (`shot.mjs --page tip`) preview,
 HUD menu icons now show a label under the glyph (desktop glyph 24→12 px) + hover tooltip name (key). Sheet stays v26 (`il` additive).
 Unverified: unique drop rate and strength in real play; server wear gate vs client `reqLv` agree in tests only.
+
+## 0.11 Prefix effects: build plan in progress (owner: "implement all 95, balance later")
+Design: docs/design/prefix-effects.md (95 effects, 87 phase 1 + 8 phase 2, incl. 단련의/약탈의). Order: P1a infrastructure (agent running;
+registry LEGEND/PFX/PFX_FN, dispatchers in 51-prefix.js, no-stack, pools) → P1b-A offense + **Enchant** → P1b-B defense/utility + P2 hooks.
+New files for effects go in part files ≥ 52 extending the registry with Object.assign (no edits to 10-tables/51-prefix).
+**Enchant (owner 2026-11-16):** each prefix has a low-chance drop scroll (item `es_<key>`, generated late from LEGEND); a town enchant NPC applies it.
+Only 희귀(q2)+ gear; 희귀 → +1 random affix line, becomes 전설 with the prefix; 전설/유니크 → the prefix is overwritten (same key refused);
+the scroll only fits slots its prefix may roll on; set pieces excluded; **costs gold scaled by item level** (constant table, below a craft fee,
+shown in the window, validated server-side).
