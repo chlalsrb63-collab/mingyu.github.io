@@ -753,12 +753,32 @@ function wilds(cfg) {
     },
     banners(k, x, y) { obj(k, x - 2, y, "V"); obj(k, x + 2, y, "V"); for (let dy = 0; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (ok(k, x + dx, y + dy)) m.g[y + dy][x + dx] = "="; },
     graves(k, x, y) { for (const [dx, dy] of [[-2, 0], [0, -1], [2, 0], [-1, 2], [1, 2]]) if (rnd(box) < 0.8) obj(k, x + dx, y + dy, "J"); },
+    // the 2026-11-16 variety pass: a stand of the land's own trees on lusher ground, a henge round an old statue, a spring under trees
+    grove(k, x, y) {
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -4; dx <= 4; dx++) {
+        const X = x + dx, Y = y + dy, d = Math.hypot(dx * 0.8, dy);
+        if (!ok(k, X, Y) || d > 3.4) continue;
+        if (d < 2.6 && N2[Y * W + X] > 0.35) m.g[Y][X] = '"';
+        if ((dx || dy) && h2(X, Y, S0 + 31) < 0.3) obj(k, X, Y, h2(X, Y, S0 + 32) < 0.7 ? cfg.treeCh : cfg.treeCh2 || cfg.treeCh);
+      }
+      obj(k, x, y, "l");
+    },
+    henge(k, x, y) {
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (ok(k, x + dx, y + dy)) m.g[y + dy][x + dx] = "=";
+      obj(k, x, y, "z");
+      for (let a = 0; a < 10; a++) if (a !== 2 && a !== 7) obj(k, x + Math.round(Math.cos(a * 0.628) * 3.6), y + Math.round(Math.sin(a * 0.628) * 2.8), a % 3 ? "Y" : "U");
+    },
+    spring(k, x, y) {
+      FEATURE.pond(k, x, y);
+      for (const [dx, dy] of [[-4, -1], [4, 0], [-3, 3], [3, -3], [0, 4]]) obj(k, x + dx, y + dy, cfg.treeCh2 || cfg.treeCh);
+      obj(k, x + 4, y + 2, "R"); obj(k, x - 4, y + 2, "O");
+    },
     shrooms(k, x, y) {
       for (let dy = -2; dy <= 2; dy++) for (let dx = -3; dx <= 3; dx++) if (ok(k, x + dx, y + dy) && Math.hypot(dx * 0.8, dy) < 2.6 && N1[(y + dy) * W + x + dx] > 0.3) m.g[y + dy][x + dx] = "&";
       for (let a = 0; a < 6; a++) if (a !== 1 && a !== 4) obj(k, x + Math.round(Math.cos(a * 1.047) * 2.6), y + Math.round(Math.sin(a * 1.047) * 2), "Y");
     },
   };
-  for (const r of R) {
+  for (const r of R) for (let nth = 0; nth < 1 + (cfg.featureMore && r.area > 260 ? 1 : 0) + (cfg.featureMore && r.area > 700 ? 1 : 0); nth++) {   // wide regions of the big grounds hold two or three (featureMore)
     if (role[r.k] !== "field" || r.inr < 3 || rnd(box) > cfg.featureP) continue;
     for (let tries = 0; tries < 8; tries++) {
       const i = r.tiles[ri(box, 0, r.area - 1)], [x, y] = at(i);

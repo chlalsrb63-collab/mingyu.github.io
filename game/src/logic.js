@@ -3918,12 +3918,32 @@ function wilds(cfg) {
     },
     banners(k, x, y) { obj(k, x - 2, y, "V"); obj(k, x + 2, y, "V"); for (let dy = 0; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (ok(k, x + dx, y + dy)) m.g[y + dy][x + dx] = "="; },
     graves(k, x, y) { for (const [dx, dy] of [[-2, 0], [0, -1], [2, 0], [-1, 2], [1, 2]]) if (rnd(box) < 0.8) obj(k, x + dx, y + dy, "J"); },
+    // the 2026-11-16 variety pass: a stand of the land's own trees on lusher ground, a henge round an old statue, a spring under trees
+    grove(k, x, y) {
+      for (let dy = -3; dy <= 3; dy++) for (let dx = -4; dx <= 4; dx++) {
+        const X = x + dx, Y = y + dy, d = Math.hypot(dx * 0.8, dy);
+        if (!ok(k, X, Y) || d > 3.4) continue;
+        if (d < 2.6 && N2[Y * W + X] > 0.35) m.g[Y][X] = '"';
+        if ((dx || dy) && h2(X, Y, S0 + 31) < 0.3) obj(k, X, Y, h2(X, Y, S0 + 32) < 0.7 ? cfg.treeCh : cfg.treeCh2 || cfg.treeCh);
+      }
+      obj(k, x, y, "l");
+    },
+    henge(k, x, y) {
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if (ok(k, x + dx, y + dy)) m.g[y + dy][x + dx] = "=";
+      obj(k, x, y, "z");
+      for (let a = 0; a < 10; a++) if (a !== 2 && a !== 7) obj(k, x + Math.round(Math.cos(a * 0.628) * 3.6), y + Math.round(Math.sin(a * 0.628) * 2.8), a % 3 ? "Y" : "U");
+    },
+    spring(k, x, y) {
+      FEATURE.pond(k, x, y);
+      for (const [dx, dy] of [[-4, -1], [4, 0], [-3, 3], [3, -3], [0, 4]]) obj(k, x + dx, y + dy, cfg.treeCh2 || cfg.treeCh);
+      obj(k, x + 4, y + 2, "R"); obj(k, x - 4, y + 2, "O");
+    },
     shrooms(k, x, y) {
       for (let dy = -2; dy <= 2; dy++) for (let dx = -3; dx <= 3; dx++) if (ok(k, x + dx, y + dy) && Math.hypot(dx * 0.8, dy) < 2.6 && N1[(y + dy) * W + x + dx] > 0.3) m.g[y + dy][x + dx] = "&";
       for (let a = 0; a < 6; a++) if (a !== 1 && a !== 4) obj(k, x + Math.round(Math.cos(a * 1.047) * 2.6), y + Math.round(Math.sin(a * 1.047) * 2), "Y");
     },
   };
-  for (const r of R) {
+  for (const r of R) for (let nth = 0; nth < 1 + (cfg.featureMore && r.area > 260 ? 1 : 0) + (cfg.featureMore && r.area > 700 ? 1 : 0); nth++) {   // wide regions of the big grounds hold two or three (featureMore)
     if (role[r.k] !== "field" || r.inr < 3 || rnd(box) > cfg.featureP) continue;
     for (let tries = 0; tries < 8; tries++) {
       const i = r.tiles[ri(box, 0, r.area - 1)], [x, y] = at(i);
@@ -6734,7 +6754,7 @@ const GEN = {
     ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 6, lakeR: 7, vaults: 9, ruins: 4, tpm: 15.5,
     walls: [["rocks", 0.6], ["ruin", 0.2], ["palms", 0.2]], rocks: ["R", "A"], gates: [["west", "w", 0.55], ["north", "n", 0.7]], exit: "north", doors: [["south", "s", 0.2143], ["east", "e", 0.36]],
     mobs: ["foxtwine_gold", "hydrasnake_gold", "spinescorp_gold", "ribvulture_bone", "cactushog", "mummycamel"], pondMob: "ribvulture_bone", chest: "chest_oasis",
-    campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "hamlet"], biomes: { plain: "flat" }, featureP: 0.65, features: ["pond", "boulders", "cairn", "stones", "dead"],
+    campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "hamlet"], biomes: { plain: "flat" }, featureP: 0.7, featureMore: 1, features: ["pond", "boulders", "cairn", "stones", "dead", "henge", "grove", "graves"],
     // by level: scrub and flats below, rippled dunes on the middle shelves, bare stony ridges on top
     biome: (e, mo, r, t) => (t === 2 ? "ridge" : t === 1 ? (r < 0.55 ? "dune" : "flat") : mo > 0.55 ? "scrub" : "flat"),
     paint: (b, n1, n2) => (b === "ridge" ? (n1 > 0.45 ? "z" : n1 < 0.15 ? "r" : null) : b === "dune" ? (n1 > 0.5 ? "z" : null) : b === "scrub" ? (n1 > 0.72 ? "," : n2 > 0.76 ? "z" : null) : n2 > 0.8 ? "z" : null),
@@ -6752,7 +6772,7 @@ const GEN = {
     ground: "S", edge: "T", treeCh: "Ψ", treeCh2: "T", road: "p", shore: "S", river: false, lakes: 2, lakeR: 4, vaults: 9, ruins: 3, tpm: 15.5,
     walls: [["palms", 0.45], ["rocks", 0.35], ["trees", 0.2]], rocks: ["Ω", "R"], gates: [["north", "n", 0.16], ["east", "e", 0.5]], exit: "east", doors: [["west", "w", 0.375]],
     mobs: ["hermitskull", "barnacleseal", "brainjelly", "eyegull", "leechmaw_bone", "coralturtle"], pondMob: null, chest: "chest_coast",
-    vaultKinds: ["palmring", "tidepool", "cove", "cache", "menhir", "lookout"], biomes: { plain: "beach" }, featureP: 0.6, features: ["boulders", "logs", "cairn", "stones", "pond"],
+    vaultKinds: ["palmring", "tidepool", "cove", "cache", "menhir", "lookout"], biomes: { plain: "beach" }, featureP: 0.7, featureMore: 1, features: ["boulders", "logs", "cairn", "stones", "pond", "grove", "henge", "bigtree"],
     // the upper level is dune and palm grove (the jungle's edge), the lower the open beach
     biome: (e, mo, r, t) => (t === 1 ? (r < 0.5 ? "dune" : "grove") : mo > 0.6 ? "grove" : "beach"),
     paint: (b, n1, n2) => (b === "dune" ? (n1 > 0.5 ? "z" : n2 > 0.72 ? "," : null) : b === "grove" ? (n1 > 0.35 ? "." : n2 > 0.6 ? "," : null) : n2 > 0.82 ? "z" : null),
@@ -6779,7 +6799,7 @@ const GEN = {
       ground: "s", edge: "C", treeCh: "Ψ", treeCh2: "A", road: "p", shore: "t", river: false, lakes: 0, lakeR: 6, vaults: 12, ruins: 6, tpm: 15.5,
       walls: [["rocks", 0.55], ["ruin", 0.15], ["palms", 0.3]], rocks: ["R", "A"], gates: [["north", "n", 0.3], ["east", "e", 0.64]], exit: "east",
       mobs: ["ratking_gold", "spinescorp_bone", "bonehound_gold", "ribvulture_gold", "barnacleseal_blood", "hermitskull_frost", "sandmaw"], pondMob: null, chest: "chest_dunesea",
-      campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "cove"], biomes: { plain: "flat" }, featureP: 0.6, features: ["boulders", "cairn", "stones", "dead", "boulders", "dead"],
+      campPiece: "caravan", vaultKinds: ["hamlet", "drywell", "menhir", "palmring", "cache", "cove"], biomes: { plain: "flat" }, featureP: 0.75, featureMore: 1, features: ["boulders", "cairn", "stones", "dead", "henge", "statue", "graves", "grove", "dead"],
       // levels by place: the shore and the sea lowest, the oasis belt a step up, the dunes above in long ridges by turns
       tierOf: (r) => (r.sd > -10 ? 0 : salt(r.px, r.py) ? 2 : belt(r.px, r.py) ? (r.e > 0.64 ? 2 : 1) : 2 + ((Math.floor((r.py + r.px * 0.22 + 7 * Math.sin(r.px / 17)) / 24) & 1) ^ (r.e > 0.62 ? 1 : 0))),
       tierOpen: (a, b) => (a.sd > 2 && b.sd > 2 ? 0.86 : salt(a.px, a.py) && salt(b.px, b.py) ? 0.9 : 0.4),
@@ -6858,7 +6878,7 @@ const GEN = {
         // 혈루 왕도마뱀's lair (bosses-2 owner decision: its own walled court; crownpeacock stays the field boss)
         { piece: "belltower", at: [0.86, 0.6], boss: "bloodhorn" },
         { piece: "lowertown", at: [0.1, 0.3] }],
-      biomes: { plain: "town" }, featureP: 0.5, features: ["boulders", "cairn", "stones", "dead", "boulders"],
+      biomes: { plain: "town" }, featureP: 0.7, featureMore: 1, features: ["boulders", "cairn", "stones", "dead", "spring", "henge", "grove", "statue", "logs"],
       tierOf: (r) => tierAt(r.px, r.py, r.e),
       // every barrier is red rock, but on the pine ledges (level 1) a belt of pines; the floor and the tops are canyon country
       wallAt: (kind, x, y) => (tierAt(x, y) === 1 ? "trees" : "cliff"),
@@ -6897,7 +6917,7 @@ const GEN = {
       // the rare kind keeps the plum banks' pagoda court (its chest) until the rare-spawn rule exists
       campPiece: "pilgrimcamp", vaultKinds: ["pavilion", "lanterncourt", "mistfall", "pillartop", "pavilion", "cache"], vaultMobs: { mistfall: ROSE },
       courts: [{ piece: "belltower", at: [0.5, 0.12], field: true, guards: [ROSE, 2], stone: 2 }, { piece: "pagoda", at: [0.74, 0.5], guards: ["foxtwine_frost", 1], stone: 1 }],
-      biomes: { plain: "landing" }, featureP: 0.45, features: ["boulders", "cairn", "stones", "boulders"],
+      biomes: { plain: "landing" }, featureP: 0.6, featureMore: 1, features: ["boulders", "cairn", "stones", "grove", "henge", "statue", "graves"],
       rosterAt: (x, y) => ROSTER[area(x, y)],
       biome: (e, mo, rr, t, r) => { const a = area(r.px, r.py); return a === "C" ? "islet" : a === "D" ? "plum" : a === "E" ? "reeds" : a === "F" || a === "G" ? "pools" : "mirror"; },
       // the open middle and the reeds are shallows with grey sand bars; the islets, banks, pool rims and the landing are dry
