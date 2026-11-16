@@ -174,7 +174,7 @@ const RARITY_AFFIX = [[0, 0], [2, 2], [3, 3], [4, 4], null, [4, 4]];
 const AFFIX_MUL = [1, 0.85, 1, 1.3, null, 1.45];
 /** The first 유니크 sheets (earlier on 2026-11-16) were `un: [prefix, suffix]` with no power; the prefix index picks the power they load with (migrate). `un` is dropped now. */
 const UNIQ_OLD_LG = ["nova", "giant", "thorn", "feast", "echo", "chain", "haste", "feast", "greed", "echo"];
-/** The chance a gear roll is a 유니크, by rank (0 ordinary monster, 1 elite or chest, 2 boss): about 1/12 to 1/20 of the 전설/세트 chance at each rank, x (1 + MF/100). */
+/** Unique gear chance for ordinary monsters, elites or chests, and bosses, scaled by magic find. */
 const UNIQ_P = [0.001, 0.004, 0.01];
 /**
  * Item level (`il`, the shown 1–200 scale): a drop gets the shown level of the monster that left it plus IL_RANK[rank]

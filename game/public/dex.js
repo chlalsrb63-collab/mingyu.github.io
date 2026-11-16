@@ -43,7 +43,7 @@ export const key = () => [F, G.self && wornMap(G.self), G.defs.legend && Object.
 let pools = null, poolsOf = null;
 function pool(type) {
   if (poolsOf !== G.defs.items) { pools = {}; poolsOf = G.defs.items; }
-  return pools[type] || (pools[type] = Object.values(G.defs.items).filter((it) => it.type === type && !it.set && it.tier >= 2 && it.tier <= 3).map((it) => it.name));
+  return pools[type] || (pools[type] = Object.values(G.defs.items).filter((it) => it.type === type && it.tier >= 2 && it.tier <= 3).map((it) => it.name));
 }
 const hash = (k) => { let h = 7; for (const c of k) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h; };
 function sample(k, word, slots) {

@@ -206,7 +206,7 @@ const ING_FEE = [5, 10, 20, 40, 60];
 for (let g = 1; g <= 5; g++) RECIPES[`ing_${g}`] = recipeRow("craft", GRADE_LV[g - 1], "craft", [[`m_o${g}`, 3]], `ing_${g}`, 1, ING_FEE[g - 1]);
 /**
  * Gear (B.6): tier t (2–5) at Lv 12/22/32/42 (tier 6: Lv 50, grade-5 materials ×2) — four ingots and two planks of grade t, a fee of 30 % of the shop
- * price; rarity q[0]..q[1] (마법..희귀; a 대성공 raises it one step, never 전설/세트), affixes rolled at item level
+ * price; rarity q[0]..q[1] (마법..희귀; a 대성공 raises it one step up to 희귀), affixes rolled at item level
  * ilvl[t−1]. No batch mode. 48 recipes: six weapon kinds + six other pieces × four tiers.
  * P7: tier 2's small pieces (helm, gloves, boots, ring, amulet; shop 360–480 G) take `ing2` ingots (four cost more than
  * the piece); a fee never below what the economy guard needs (inputs at sell value + fee ≥ 60 % of the shop's price).

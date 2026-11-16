@@ -141,7 +141,7 @@ export function viewFor(S, pid) {
       const ar = o.ch.eq.armor, wp = o.ch.eq.weapon;
       out.who.push([o.eid, o.ch.name, o.ch.job, o.ch.lvl, o.ch.look, ar ? ITEMS[ar.id].tier : 0, wp ? ITEMS[wp.id].tier : 0, o.party,
         wp ? wp.q : 0, wp ? wp.enh : 0, o.ch.pet || 0, weaponKind(o.ch), o.ch.guild, titleOf(o.ch),
-        // the outfit (cosmetic codes, slot order) and the weapon's legendary power or set, for its look
+        // the outfit (cosmetic codes, slot order) and the weapon's legendary power, for its look
         cosWire(o.ch), wp ? wp.lg || (ITEMS[wp.id].uniq ? wp.id : "") : "",   // a signature weapon can have its own look
         // a hybrid's second weapon, on the back
         o.ch.eq.weapon2 ? ITEMS[o.ch.eq.weapon2.id].wk : ""]);
@@ -301,9 +301,8 @@ export function defs() {
     streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: worldMapDefs(),
     // ITEM LEVEL (owner 2026-11-16). A gear entry on the wire carries `il` (shown 1–200 scale); the level it can be worn from is
     //   max(1, entry.il − ilGap)   (what validateAction "eq" checks; an entry without `il` = items[id].req + ilGap, or 1 for req 1)
-    // `rarity` has 6 names (index = entry.q, 0–5; 5 = 유니크, beige). A q 5 entry carries a legendary's power `lg` (legend[lg]) like a
-    // 전설 and is named like one (`<legend[lg][0]> <item name>`); rarities differ only by the number of lines (마법 2, 희귀 3, 전설 4 + lg, 세트 2–3,
-    // 유니크 4 + lg, stronger) and only an item with an `lg` has a name prefix word.
+    // Gear `rarity` uses 0, 1, 2, 3 and 5, with 5 retained as the existing unique code.
+    // Legendary and unique gear use their `lg` power's name prefix. Runes have a separate grade table.
     ilGap: IL_GAP,
     // the 아이템도감 (public/dex.js): the keys of `legend` that are live (can drop); the other rows are listed there as 준비 중
     pfxOn: Object.keys(LEGEND).filter((k) => PFX[k] && PFX[k].on && !PFX[k].off),
