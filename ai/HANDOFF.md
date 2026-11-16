@@ -292,3 +292,5 @@ New files for effects go in part files ≥ 52 extending the registry with Object
 Only 희귀(q2)+ gear; 희귀 → +1 random affix line, becomes 전설 with the prefix; 전설/유니크 → the prefix is overwritten (same key refused);
 the scroll only fits slots its prefix may roll on; set pieces excluded; **costs gold scaled by item level** (constant table, below a craft fee,
 shown in the window, validated server-side).
+**Enchant NPC (owner):** name **지선** — a cute 햄스터 NPC who stays at the 대장간 (forge) and is **대장장이 볼칸's younger sister** (owner wrote 불칸 = the town smith `smith` "대장장이 볼칸", 34-maps-world.js:231).
+Give her a look (햄스터 species), a few talk lines mentioning 볼칸 as her older brother, and a one-line mention in 볼칸's own talk if cheap.
