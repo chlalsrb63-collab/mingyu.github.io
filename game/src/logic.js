@@ -9822,7 +9822,7 @@ function magicLand(S, rt, p, s, mob) {
 //   stat(p, st, r)                          every stats(p) call (the moment's numbers: change fields of st; r.iv *= x quickens the attack, floor ×0.8 and 45 % of the weapon's wait). Cheap; never call stats(p) here
 //   sheet(p, c, b)                          deriveStats (cached with the gear): change fields of c (poise, kbr, res …); b = gearBonus
 //   num(p, name, v) → v                     a named number: "loss" (xp lost at death) "recall" (ms) "pet" (ms) "mp" (a skill's MP) "dashCd" (ms) "rest" (campfire regen a second)
-// STATE: pfxPc(p) = { cd, n, t, v, heal }, in memory only: cd {key: ready-at} (pfxIcd), n {key: count} (pfxStack), t {key: until} (a timed buff), v {key: anything};
+// STATE: pfxPc(p) = { cd, n, t, v, heal, aura? }, in memory only: cd {key: ready-at} (pfxIcd), n {key: count} (pfxStack), t {key: until} (a timed buff), v {key: anything};
 // n, t, v, heal reset when p changes map or falls, cd does not (a 6-minute cheat death cannot be reset by walking through a gate). Relogging resets all.
 // RULES: chances are rnd(S) < base × min(st.proc, 1.5) (pfxChance); a power that can fire more than once a second takes an ICD ≥ 1 s (pfxIcd); damage a power
 // deals goes through hurtMob(S, rt, mob, p, mult, false, PX) (a `px` blow never starts another power); heals go through pfxHeal (≤ 8 % mhp a second);
@@ -9945,10 +9945,11 @@ function pfxSkill(S, rt, p, st, sk, id, cost) {
 }
 /** An incoming blow of `dmg` (after armour) → what p takes: the prefix factors (floor ×0.6) and a flat absorb (≤ 20 % mhp); 0 = stopped. */
 function pfxMiti(S, rt, p, st, mob, dmg, raw) {
-  const a = st.pfx.miti;
-  if (!a.length) return dmg;
+  const a = st.pfx.miti, au = p.pc && p.pc.aura;   // (au: a party member's 후광의 lays { f, until } on p.pc.aura from its tick, 54-prefix-util.js)
+  if (!a.length && !au) return dmg;
   const r = pfxMiR;
   r.f = 1; r.abs = 0; r.block = 0;
+  if (au && S.now < au.until) r.f *= au.f;
   for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, mob, dmg, raw, r);
   if (r.block) return 0;
   return Math.max(0, Math.round(dmg * Math.min(1, Math.max(PFX_CAP.miti, r.f))) - Math.min(r.abs, st.mhp * PFX_CAP.abs));
