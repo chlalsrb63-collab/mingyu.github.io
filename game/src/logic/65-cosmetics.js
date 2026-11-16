@@ -223,11 +223,29 @@ const COSMETICS = Object.fromEntries([
   ["ws_star_candy", 181, "wskin", "별사탕 무기 외형", 1, "daily", 0, "알록달록 별사탕이 날에 콕콕 박혔다."],
   // 이야기 기념품 (Q1 follow-up): 여울's grandmother's 삿갓 from 「나루터의 먹물」
   ["hat_ink_satgat", 182, "hat", "먹물 삿갓", 2, "sew", 0, "여울 할머니의 갈대 삿갓. 챙 끝에 밴 먹물이 등불 아래서는 금빛으로 비친다.", "story"],
+  ["hat_career_police", 183, "hat", "경찰 정모", 2, "shop", 6000, "직업 제복 세트의 한 벌. 입으면 그 일의 달인처럼 보인다.", "career"],
+  ["top_career_police", 184, "top", "경찰 제복", 2, "shop", 6000, "직업 제복 세트의 한 벌. 입으면 그 일의 달인처럼 보인다.", "career"],
+  ["hat_career_nurse", 185, "hat", "간호사 캡", 2, "shop", 6000, "직업 제복 세트의 한 벌. 입으면 그 일의 달인처럼 보인다.", "career"],
+  ["top_career_nurse", 186, "top", "간호사 가운", 2, "shop", 6000, "직업 제복 세트의 한 벌. 입으면 그 일의 달인처럼 보인다.", "career"],
+  ["hat_career_fire", 187, "hat", "소방 헬멧", 2, "shop", 6000, "직업 제복 세트의 한 벌. 입으면 그 일의 달인처럼 보인다.", "career"],
+  ["top_career_fire", 188, "top", "소방 방화복", 2, "shop", 6000, "직업 제복 세트의 한 벌. 입으면 그 일의 달인처럼 보인다.", "career"],
+  ["hat_career_pilot", 189, "hat", "기장 정모", 2, "shop", 6000, "직업 제복 세트의 한 벌. 입으면 그 일의 달인처럼 보인다.", "career"],
+  ["top_career_pilot", 190, "top", "기장 제복", 2, "shop", 6000, "직업 제복 세트의 한 벌. 입으면 그 일의 달인처럼 보인다.", "career"],
+  ["hat_hanbok_seonbi", 191, "hat", "흑립 갓", 2, "shop", 6000, "전통 한복 세트의 한 벌. 고운 매무새가 눈에 띈다.", "hanbok"],
+  ["top_hanbok_seonbi", 192, "top", "옥색 학창의", 2, "shop", 6000, "전통 한복 세트의 한 벌. 고운 매무새가 눈에 띈다.", "hanbok"],
+  ["hat_hanbok_assi", 193, "hat", "금박 족두리", 2, "shop", 6000, "전통 한복 세트의 한 벌. 고운 매무새가 눈에 띈다.", "hanbok"],
+  ["top_hanbok_assi", 194, "top", "연홍 당의", 2, "shop", 6000, "전통 한복 세트의 한 벌. 고운 매무새가 눈에 띈다.", "hanbok"],
+  ["hat_hanbok_king", 195, "hat", "익선관", 2, "shop", 8000, "전통 한복 세트의 한 벌. 고운 매무새가 눈에 띈다.", "hanbok"],
+  ["top_hanbok_king", 196, "top", "홍룡포", 2, "shop", 8000, "전통 한복 세트의 한 벌. 고운 매무새가 눈에 띈다.", "hanbok"],
+  ["hat_hanbok_musa", 197, "hat", "공작깃 전립", 2, "shop", 6000, "전통 한복 세트의 한 벌. 고운 매무새가 눈에 띈다.", "hanbok"],
+  ["top_hanbok_musa", 198, "top", "청철릭 쾌자", 2, "shop", 6000, "전통 한복 세트의 한 벌. 고운 매무새가 눈에 띈다.", "hanbok"],
+
+
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" || src === "token" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
 const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근", coop: "협동 알바", willowpatrol: "버들 순찰대", coraltrade: "산호 항구 상단", brasssurvey: "황동 탐사대", moonarchive: "달빛 기록원", mapleramblers: "단풍길 탐험대",
   willow: "버드나무 마을", coopking: "협동 알바 왕", fishlog: "낚시 기록가",
-  spring: "봄 장날 · 벚꽃", summer: "여름 장날 · 한여름 바다", autumn: "가을 장날 · 단풍", winter: "겨울 장날 · 눈꽃", story: "이야기 기념품" };
+  spring: "봄 장날 · 벚꽃", summer: "여름 장날 · 한여름 바다", autumn: "가을 장날 · 단풍", winter: "겨울 장날 · 눈꽃", story: "이야기 기념품", career: "직업 제복", hanbok: "전통 한복" };
 const COS_IDS = Object.keys(COSMETICS);
 const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
 /** achievement id → the cosmetic ids it pays. */
