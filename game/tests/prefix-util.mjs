@@ -61,7 +61,7 @@ const BOSS = Object.keys(X.MOBS).find((k) => X.MOBS[k].boss && !X.MOBS[k].still)
 
 // ── 1. the rows and the numbers of the design doc (every power of this part, exactly)
 const ROWS = {   // key: [word, slots, cat, rating, fam, PFX numbers, a piece of its tooltip]
-  trace: ["추적자의", "H", "U", "S", "xp", { xp: 25 }, "+25%"], sage: ["현자의", "H", "U", "S", "xp", { xp: 8 }, "+8%"], mercy: ["자비로운", "H", "U", "S", "util", { k: 0.5 }, "50%"],
+  trace: ["추적자의", "H", "U", "S", "xp", { xp: 15 }, "+15%"], sage: ["현자의", "H", "U", "S", "xp", { xp: 8 }, "+8%"], mercy: ["자비로운", "H", "U", "S", "util", { k: 0.5 }, "50%"],
   homing: ["귀소의", "H", "U", "S", "util", { k: 0.5 }, "50%"], clever: ["영리한", "H", "U", "M", "util", { k: 0.85 }, "-15%"], treasure: ["보물눈의", "H", "U", "S", "eco", { mf: 50 }, "+50%"],
   tame: ["길들이는", "H", "U", "S", "util", { sp: 2 }, "2배"], hearth: ["화덕의", "H", "U", "S", "util", { k: 0.5 }, "+50%"],
   bleed: ["출혈의", "WGR", "O", "M", "crit", { ms: 4000, k: 0.15 }, "4초간 출혈 (매초 공격력의 15%)"], bile: ["담즙의", "AB", "D", "M", "mit", { p: 0.2, ms: 5000, k: 0.1 }, "20% 확률"],
@@ -83,7 +83,7 @@ assert.equal(Object.keys(ROWS).length, 16);
   // 추적자의 / 현자의: a kill's xp, and the shared +15 % cap (a fresh world per run: the same state both ways)
   const xp = (lg, { party = false, mob = {} } = {}) => { const W = world("xp", party ? 2 : 1); W.wear("helm", "h_3", lg); kill(W, W.p, FAT, mob); return xpGain(W.p); };
   const base = xp(undefined), elite = xp(undefined, { mob: { el: 1 } });
-  assert.ok(Math.abs(xp("trace", { mob: { el: 1 } }) / elite - 1.15) < 0.01, "trace on an elite: its +25 % is cut to the shared +15 % cap");
+  assert.ok(Math.abs(xp("trace", { mob: { el: 1 } }) / elite - 1.15) < 0.01, "trace on an elite: +15 %, the shared xp cap");
   assert.equal(xp("trace"), base, "trace: a plain monster gives nothing extra");
   assert.ok(Math.abs(xp("sage", { party: true }) / xp(undefined, { party: true }) - 1.08) < 0.01, "sage: +8 % in a party"); assert.equal(xp("sage"), base, "sage alone: nothing");
   const W = world("xp0", 2), [p, q] = W.ps, S = W.S;

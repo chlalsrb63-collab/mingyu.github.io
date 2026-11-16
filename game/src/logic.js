@@ -10439,7 +10439,7 @@ Object.assign(PFX_FN, { moss: { tick(S, rt, p, st, now, calm) { if (calm) pfxHea
 //    (that one slows bosses too): it is laid at the cast and kept up by the tick, and skips bosses, guardians and rooted things (design §5).
 
 Object.assign(PFX, {
-  trace: { on: 1, xp: 25 },
+  trace: { on: 1, xp: 15 },   // the shared prefix xp cap is +15 (prefix-effects §5): 25 only promised more than it gave
   sage: { on: 1, xp: 8 },
   mercy: { on: 1, k: 0.5 },
   homing: { on: 1, k: 0.5 },

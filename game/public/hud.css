@@ -1943,7 +1943,7 @@ body[data-hud="contrast"] .tcard { background: rgba(0, 0, 0, .97); }
 .dx-q:focus { border-color: var(--b-mid); }
 .dx-bar { display: flex; align-items: center; gap: 4px; }
 .dx-bar .dx-n { margin-right: auto; }
-.dx-n { font: 700 var(--t12) var(--pix); color: var(--tx-hd, var(--b-hi)); }
+.dx-n { white-space: nowrap; font: 700 var(--t12) var(--pix); color: var(--tx-hd, var(--b-hi)); }
 .dx-card { margin: 0 0 4px; padding: 3px 6px 5px 7px; background: var(--sf1, #1c1726); border: 2px solid var(--sf3, #2c2537); border-left: 4px solid var(--dc, #6b5a3c); }
 .dx-card.O { --dc: var(--tx-bad, #ff8a86); } .dx-card.D { --dc: var(--tx-info, #8ab4ff); } .dx-card.U { --dc: var(--tx-ok, #8ff0a6); }
 .dx-card.worn { background: var(--sf3, #2a2236); border-color: var(--b-lo, #7c5326); border-left-color: var(--dc, #6b5a3c); }
