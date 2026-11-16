@@ -434,14 +434,14 @@ const cloneData = () => JSON.parse(JSON.stringify(EMPTY_DATA()));
   const S = L.setup();
   L.addPlayer(S, "old", old);
   assert.deepEqual(S.players.old.ch.sq, { on: {}, done: {}, flags: {}, t: {} });
-  assert.equal(S.players.old.ch.v, 26);
+  assert.equal(S.players.old.ch.v, 27);
   const messy = L.newChar("엉망", "rogue", []);
   messy.sq = { on: { sq_willow_letter: 99, sq_gone: 3, "Bad Id": 1 }, done: { sq_willow_frogs: 2, sq_retired: 1, "x y": 1 } };
   L.addPlayer(S, "messy", messy);
   assert.deepEqual(S.players.messy.ch.sq.on, { sq_willow_letter: 1 }, "progress clamped, unknown quests dropped");
   assert.deepEqual(S.players.messy.ch.sq.done, { sq_willow_frogs: 2, sq_retired: 1 }, "finished quests remembered");
   assert.equal(S.players.messy.ch.inv.find((it) => it.id === "q_flower_letter")?.n, 1, "a letter errand from before deliveries (v22) gets its letter");
-  assert.equal(L.newChar("새내기", "warrior", []).v, 26);
+  assert.equal(L.newChar("새내기", "warrior", []).v, 27);
 }
 
 // ── the playtest spot (room.ts, local dev only) lands on ground a player can stand on

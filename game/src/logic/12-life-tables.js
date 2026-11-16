@@ -428,7 +428,7 @@ const JB = {
   jb_ch_litter: { kind: "chore", job: "litter", npc: "willow_sweeper", lv: 1, sk: "gather", n: 6, text: "환경미화원 쓱싹이 길가와 광장에 떨어진 쓰레기를 주워 달래요." },
   jb_ch_water: { kind: "chore", job: "water", npc: "willow_granny", lv: 5, sk: "gather", n: 5, text: "꽃집 할머니 수국의 꽃밭에 물을 주세요. 물뿌리개는 우물이나 물가에서 채워요." },
   jb_ch_dog: { kind: "chore", job: "dog", npc: "willow_florist", lv: 8, sk: "deliver", n: 4, text: "꽃집 아이 봄이의 강아지 콩떡이를 산책시켜 주세요. 나무 냄새 맡는 걸 좋아해요." },
-  // 버드나무 장날 (P12, 63-festival.js): `fair` rows are offered only on Sunday 10–22 KST, are never 긴급 and never
+  // 버드나무 장날 (P12, 63-festival.js): `fair` rows are offered only while 장날 is open (Tue and Sat 19–21 KST, FAIR), are never 긴급 and never
   // count toward perDay, and pay 장날 토큰 (FAIR.job by grade) instead of gold and the Willow token
   jb_fair_potato: { kind: "bring", npc: "willow_fair", lv: 1, sk: "gather", item: "m_c1", n: 5, fair: true, text: "장날 채소 좌판 · 장꾼 다래의 좌판에 올릴 [감자]를 캐다 주세요. 아침에 캔 감자가 제일 잘 팔린대요." },
   jb_fair_fish: { kind: "fish", npc: "willow_kitchen", lv: 1, sk: "fish", item: "fish_s", n: 4, fair: true, text: "장터 생선 꼬치 · 요리 대회로 바쁜 공동 부엌 화덕에 [송사리]를 낚아다 주세요." },

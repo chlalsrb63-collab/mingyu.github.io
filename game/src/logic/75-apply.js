@@ -673,6 +673,7 @@ export function applyAction(S, pid, a) {
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": coopApply(S, p, a); break;
     case "fair_buy": fairApply(S, p, a); break;
+    case "fair_open": case "fair_shop": fairMktApply(S, p, a); break;
     // player to player: requests, trade, mini-games (69-social-play.js)
     case "sx": sxApply(S, p, a); break;
   }

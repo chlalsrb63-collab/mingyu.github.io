@@ -17,8 +17,8 @@ const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "d
   // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
   // alchemist, 포포 the 알바 broker — until L2 they only talk ("곧 문을 엽니다", public/npctalk.js)
   "cook", "craft", "alch", "jobs",
-  // 주아나 the charm appraiser (66-charms.js); 장꾼 다래's 장날 stall (63-festival.js)
-  "charm", "fair"];
+  // 주아나 the charm appraiser (66-charms.js); 장꾼 다래's 장날 stall (63-festival.js); the 장날 merchants (64-fair-market.js)
+  "charm", "fair", "fairmkt"];
 const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
@@ -32,6 +32,8 @@ function npcFrom(n, m) {
   const lines = Array.isArray(n.lines) ? n.lines.filter((l) => typeof l === "string" && l).slice(0, 12).map((l) => l.slice(0, 240)) : [];
   if (lines.length) { out.lines = lines; out.say = lines[0]; }
   if (n.custom) out.custom = 1;
+  // a 장날 merchant stands only while the market is open: the client hides it otherwise (64-fair-market.js)
+  if (out.role === "fairmkt") out.fair = 1;
   // a shopkeeper with their own counter sells only these (items that exist and can be bought)
   if (out.role === "shop" && Array.isArray(n.goods)) {
     const goods = [...new Set(n.goods.filter((id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && ITEMS[id].price > 0))].slice(0, 24);

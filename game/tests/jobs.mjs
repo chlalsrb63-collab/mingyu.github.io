@@ -71,7 +71,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 // ═════════ the sheet ═════════
 {
   const ch = L.newChar("새싹", [1, 2]);
-  assert.equal(ch.v, 26); assert.equal(ch.job, "adventurer"); assert.equal(ch.lvl, 1); assert.equal(ch.xp, 0); assert.equal(ch.xpt, 0);
+  assert.equal(ch.v, 27); assert.equal(ch.job, "adventurer"); assert.equal(ch.lvl, 1); assert.equal(ch.xp, 0); assert.equal(ch.xpt, 0);
   assert.deepEqual(ch.st, { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 });
   assert.deepEqual(Object.keys(ch.wm), ["sword", "dagger", "spear", "staff", "book", "bow", "hammer"]);
   assert.ok(Object.values(ch.wm).every((r) => r.lv === 1 && r.xp === 0));
@@ -918,7 +918,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   const codexV15 = L.newChar("망치열다섯", []); codexV15.v = 15; codexV15.job = job; codexV15.jp = { lv: 12, xp: 3 }; codexV15.dim = { day: 20000, n: 2 };
   L.addPlayer(S, "m15", mainV15); L.addPlayer(S, "c15", codexV15);
   const a = S.players.m15.ch, b = S.players.c15.ch;
-  assert.deepEqual([a.v, b.v], [26, 26]);
+  assert.deepEqual([a.v, b.v], [27, 27]);
   assert.deepEqual(a.jp, { lv: 5, xp: 0 }, "a changed job without a job level starts at the signature level");
   assert.deepEqual(b.jp, { lv: 12, xp: 3 }, "a job level survives");
   assert.deepEqual(b.dim, { day: 20000, n: 2, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: D.dim.chal.bosses.map(() => 0) }, "the old rift record gains the tier ladder");

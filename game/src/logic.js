@@ -116,7 +116,7 @@ const DATA = {
     {"v":1,"id":"starlight_inn","replaces":null,"name":"모닥별 여관","theme":"interior","style":"inn","bgm":"inn","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","fffffffffffllllllllf","ffffxxxffffllllllllf","fffffffffffllllllllf","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffffffefffffffff"],"objects":["===+==@=+==~===+=+==","=w  r#r    popop *g_","=                  _","=  s   s           _","=                  _","=                  _","+                  _","+  kkkkk           _","=  -----           _","=* kkkkk        ww _","=                 ]_","=ok          mmmmm _","=k                 _","=g                *_","=                  _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"inn_maru","name":"여관 주인 마루","role":"shop","x":15,"y":9,"look":[2,3,1,"#8a6a3a","#e6cca4",0],"pose":"wipe","goods":["inn_stew","inn_bread","hp_s","hp_m","mp_s","mp_m","recall","camp"],"lines":["모닥별 여관에 어서 오시게! 스튜가 막 끓었다네.","벽난로 곁에 앉아 쉬면 온기가 오래 남지. 먼 길 떠나기 전엔 꼭 쉬어 가게."]},{"id":"inn_lira","name":"음유시인 리라","role":"talk","x":9,"y":5,"look":[1,2,0,"#7a3a5a","#fff0e4",0],"lines":["♪ 별이 모닥불에 내려앉은 밤, 꼬리 긴 영웅이 길을 떠났네 ♪","심연의 노래를 아나? 아직 끝까지 들은 사람이 없다지."]},{"id":"inn_toto","name":"졸린 나그네 토토","role":"talk","x":8,"y":3,"look":[1,0,3,"#5e6a88","#c8b090",3],"pose":"doze","lines":["음냐… 오 분만 더…","…아, 미안. 숲에서 사흘을 걸었더니 눈이 감기네."]}],"portals":[{"x":10,"y":15,"to":"town","tx":68,"ty":51}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"tales_cafe","replaces":null,"name":"테일즈 카페","theme":"interior","style":"cafe","bgm":"cafe","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","ffffffffffffffffffff","ffffxxxfffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","ffffffqqqqqqffffffff","fuuuuuqqqqqqffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","fuuuuuffffffffffffff","ffffffffffefffffffff"],"objects":["==++===@=^^=~=======","=g  b#b      rrrb g_","=   %            ] _","=  s   s           _","=           m$$jmm _","=                 w_","+ k               g_","+ o          k     _","= k          o     _","=      kok   k ko  _","=*              k  _","=                  _","=  ok              _","=  k              *_","=g                 _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"cafe_moka","name":"카페 주인 모카","role":"shop","x":16,"y":2,"look":[0,3,1,"#7a4a2c","#f4e0c8",0],"pose":"wipe","goods":["cafe_coffee","cafe_cocoa","cafe_tea","cafe_scone","cafe_pie"],"lines":["어서 와요, 테일즈 카페예요! 오늘의 블렌드는 고소한 맛이 일품이죠.","사냥 나가기 전에 따뜻한 거 한 잔 어때요? 힘이 날 거예요.","벽난로 앞에 앉아 쉬면 몸이 금방 녹아요. 고양이 깨우지는 말고요!"]},{"id":"cafe_somi","name":"단골 손님 솜이","role":"talk","x":10,"y":10,"look":[3,1,0,"#d86a8a","#fff4e8",1],"pose":"sip","lines":["여기 코코아는 마시멜로가 두 개나 들어 있어!","창가 자리에 햇살이 들면 깜빡 졸게 된다니까.","바람초원 들꽃으로 우린 허브차, 꼭 마셔 봐."]},{"id":"cafe_lumi","name":"책벌레 루미","role":"talk","x":3,"y":9,"look":[1,4,2,"#3e6a8a","#d8ccff",0],"pose":"read","lines":["쉿, 지금 제일 재밌는 대목이야… 피의 심연 끝에는 뭐가 있을까?","옛날 모험가들은 이 카페에서 파티를 짰대. 지금 너처럼!"]}],"portals":[{"x":10,"y":15,"to":"town","tx":79,"ty":50}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"town_hall","replaces":null,"name":"버드나무광장 회관","theme":"interior","style":"hall","bgm":"hall","safe":true,"band":null,"w":22,"h":18,"ground":["llllllllllllllllllllll","llllllllllllllllllllll","llllllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llxxllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyeylllllllll"],"objects":["==++=!==!=~~~=!==!=++=","=g    tt *   * tt   g_","=                    _","=                    _","=#                   _","=                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=  kkkkk      kkkkk  _","+                    _","+                    _","=  kkkkk      kkkkk  _","=  -----      -----  _","=b kkkkk      kkkkk v_","=b                   _","=b       *   *       _","=g                  g_","___________ __________"],"entry":[11,16],"spawns":[],"npcs":[{"id":"hall_bori","name":"이장 보리","role":"talk","x":11,"y":3,"look":[2,0,3,"#5a3a6a","#e6d8c0",0],"lines":["버드나무광장 회관에 온 걸 환영하네. 이 마을은 모험가들 덕에 버티고 있지.","벽에 걸린 지도를 보게. 동쪽은 바람초원, 서쪽은 네온 시티 — 그 너머는 아직 아무도 다 그리지 못했다네.","피곤하면 벽난로 곁에 앉아 쉬어 가게. 회관의 불은 꺼진 적이 없어."]},{"id":"hall_hana","name":"게시판지기 해나","role":"daily","x":19,"y":14,"look":[3,0,1,"#4a8ad0","#ffd0a0",2],"lines":["회관 게시판에도 오늘의 과제가 붙어 있어요. 매일 아침 6시에 새로 바뀐답니다!"]},{"id":"hall_map","name":"마을 지도","role":"talk","x":11,"y":0,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["【중앙 광장】 분수와 이동의 돌, 정령나무 모닥불. 리나의 노점과 균열의 오벨리스크도 여기 있다.","【윗마을】 계단 위 마을회관, 서쪽 올빼미 도서관, 동쪽 버드나무광장 수련관과 수련장.","【장터 거리】 동쪽 길 따라 다람쥐 잡화점, 캉캉대장간, 늑대발 용병사무소. 골목 위엔 보글연금공방.","【모닥별 뜰】 남동쪽 광장에 쥬쥬식당, 테일즈 카페, 모닥별 여관.","【살림 마을】 개울 건너 서쪽에 동동아파트와 내 집. 개울가에 마을 창고와 몽글 펫 돌봄집.","【광장 남쪽】 루루 의상실, 그리고 남쪽 길 끝 버드나무 마을과 연못."]},{"id":"popo","name":"알바 중개인 포포","role":"jobs","x":4,"y":9,"look":[6,1,2,9,1,0,3,5,4,2,0],"pose":"write","lines":["일손 구하는 데가 많아요! 하루에 세 건까지 소개해 드릴게요.","일을 잘 해 주면 맡긴 분들이 당신을 믿게 돼요. 단골이 되면 좋은 일이 생기죠!","배달은 시간이 생명! 늦으면 꾸러미가 어디론가 사라진대요…","회관 수도가 또 말썽이에요. 파티원과 함께 오시면 배관 고치는 일도 맡으실 수 있어요."]}],"portals":[{"x":11,"y":17,"to":"town","tx":49,"ty":26}],"fires":[[2,4]],"waypoint":null,"fishing":false,"boss":null},
-    {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"willow","safe":true,"band":null,"w":70,"h":56,"ground":[".......,.,......,........,....,.,.pp.....,.....................,......",".,,...............................pp.......,...........,....,.........","...::.::::.::::.::.::....:..:,.:::pp.:.::.:,..::::.,::...:..::::::::..","..,.::rrrr.:.,,t,t:ttt,.....,,,...pp....:.......,:...........::...,...",",.::rrrrrrrr..tttttt,,,......,.,..pp.rrrrr......,,...........,....::.,","..:rrrrrrrrrr.tttt,,t,,.....,,,...pp.rrrrr.................,....,.....","...rrrrrrrrrr.,t,tt,t,t,.....,..,ppp,rrrrr........................::,,","...rrrrrrrrrr.........,.......,.,pp............rrrrrrrrrrr.,.........,","..:rrrrrrrrrr...,,,.........,,..ppp............rrrrrrrrrrr.,....,.,.,.",",...rrrrrrrr,..,......,.........ppppppppppppppprrrrrrrrrrr..,.ssss.:,.","...:..rrrr.,...................ppp.........,.,,.,...,........swwww:...","..:...,.rr.....................pp,........,.,...,..,...,.,..swwwwww:..","..:....,pr.....................pp..........,.,,......,,.,...swwwwww...","..:.....p,,....,.,....\"\"....\"\".pp........,.,.,,,.,..........,swwww:.,.",".,:.,..,ppppppppppppppppppppppppp....,...,,,.,..,,..,.,.......swww.:.,","..:..,,...p....................pp.,......,....,,,,.,,.,.,,....swww:...","..::,.....p...,........,.......pp...................,,pp,.....swww::..","......,...p,.,.................ppp....,.......,...,.,.pp,,....swww....","......,...p,.........,.,.......,pp...........,.,,.....pp,.,..,swww.:..",".....,....p..,,......,.....,....pp.......,.........,..pp......swwws.,.","..,.......p..............t,t....ppp..,.,,..........,..pp.......www::..",",.:,......p,.............,,,..,.,pp........,...,......pp...,..swwws...","..:,.....pp.......,......ttt.....ppp........rrrrrrrrrrpp....,..www....",".,::..ppp..,,....................oooo\"\"\"....rrrrrrrrrrp.....,.swww....","..:,pppppppppppppppppppppppppp,\"\"ooooooo\"\"..rrrrrrrrrr....,..swwwws:.,","....p.\"\"\"\",...\"\"\"\",......,...,\"ooooooooooo\".rrrrrrrrrr.....,.swwww::..","..:.p............,...........\"ooooooooooooo\"rrrrrrrrrr,,....swwwws.:..","..::p.....................,.,ooooooooooooooorrrrrrrrrr.....sswwwws.:..","..:.p......,.......,.....,,..\"ooooooooooooo\"rrrrrrrrrr....swwwwws.....","..:.p..,.,..,,...,...,........\"ooooooooooo\",rrrrrrrrrr...swwwwwws..:,.","...,pppppppppppppppppppppppppp.\"\"ooooooo\"\",.rrrrrr,...sswwwwwwws......","..:......,....,..........,...,...oooo\"\"\"....rrrrrrs.sswwwwwww.....:...",".,:.,..........,tttttttt...,....,..pp....,..sssss,wwwwwwwwww.......:..","..tt,tttt.,.....tttt,,t,.......,...ppsss...wwwwwwwwwwwwwwwss.,...,:...","..ttt,ttt.......,tt,tttt.......,.s.pbwwwwwwwwwwwwwbwwwwwss,,......,:..","..tt,,tt,...........,.....,ss.swwwwbbwwwwwwwwwwwwwbwsss.....,..,......",".,:,,ttt,....,.....,,....s.wwwwwwwwbbwwwwwwwws.sssps.......,.......:..","...:.,.........p.......,swwwwwwwwwbbbws.sssss,.,..p.,............,,:,.",",.,:...,.......p.....s.wwwwwwwwww.pp,..,..ttt,tt..p...................","...,.....s.sssspss.,swwwwwwwws,.s.pp.....,,,tt,t..p..............,,:..",".,:...,.swwwwwbbwws.swwwwwws......ppp.....tttttt..p......,...........,","..:...swwwwwwwbbwwwwswwwbss........pp.\"\"\"\".,....,.p.\"\"\"\"........,....,",",.:..swwwwwwwwbbwwwwwss,p.::t::t::.pppppppppppppppppppppppppppppp,.:..","....swwwwwwwwwbbwwwwww,.p.:pppppp:,pp.......,...p.,.............,.....","..:.swwwwwwwwwwwwwwwww.pp.:t::t:t:.pp...,.....,.p.................::..",".,..wwwwwwwwwwwwwwwwwwwsp.:pppppp:.pp..,.,..,...p.,.............,..:..","..:.,wwwwwwwwwwwwwwwwws.ppppppppppppp...........p.........\"\"\"\"........","...:swwwwwwwwwwwwwwwwws...t::t::::.pp.......,,..ppppppppppppppppp.....",".....swwwwwwwwwwwwwww.....::t::t::..,.,,........p.................:..,",",.....swwwwwwwwwwwww.....,:pppppp:..........,,..p........,.........:..",".,:,...s.wwwwwwwwwss.....,:t::t::t..............p..................:..",".........s.sss.sss...,....:pppppp:.............,p...,.....,....,.....,","......:..:::..:.::.......:.:...:.::,.......::...ppppppppppppppppp,::..",",.:..:.::::.,:::....:::::::.:::..,:.:.:.......:,::::.:.::.::.::::..:..","..,..............,..............,.....,.....,,...........,............","..,..,,................,.............................................."],"objects":["TTPPTTPTPPTTTTTTPTTPTTPTTPPTTTPTTP  TPPPTTPPTTTTTPPTPTPPPTTPTPPTPPTPPT","TTTTTPTTPTPPTTPTTTTPPTTPPTTTTTPPPT  TPTPPTPTTTTPTTPTPTTPPPTTPTTTPPTTTT","TT PT PRCP TPTTHPPHTPHHH T  T  PTP   T TT P   TTPP  PT   T  TTTTTPPTTT","TP  CC    CC      T                 G   T        Thhhhh      PP     TT","TTPC      R C                        ]  ]w hhhh   hhhhh           TPPP","PPP   aa                         L       w hhhh   hhhhh             PT","PPC   aa     R                        aa   hhhh   hhhhh           TPTT","TPC          C            T           T                 ww          TT","TTP R                                                    ]          PP","PT R        C                                                      PPT","PP PRC    RR hhhh  hhhh hhhh            FFFFFFFFFFFFF   FFF       T TT","TTP    C     hhhh  hhhh hhhh            F                 F        TTP","TPP          hhhh  hhhh hhhh  L         F  aa      B      F         TT","TTT        L                            F                 F       R TP","TTP                                     F      u          F        TPP","TTT                 L                   F T               FCCCR   CCTP","PTTT                                    FFFFFFFFFFFFFF  FFFRCRR   CRPP","PT          T              T                               CCC    CCTP","PPWWWWWWW   WWWWWWWWWWWWWWWWW      WWWWWWWWWWWWWWWWWW   WWWRCR    CRTT","TP                      H HH                               CCC    CCTT","PT   hhhh    hhhh  hhhh                  T                 RCR    CRTT","TTP  hhhh    hhhh  hhhh                                    CCC    CCPP","TTP  hhhh    hhhh  hhhh              G      ]  w     L     RCR    CRPP","PTPP        B     B              v      B    aa  aa  aa             TT","TTP                                                 E              PTT","PP        G                 L L           L L        ]            PTTP","TTT   hhhh   hhhh    hhhh           aa        kok    w             PPP","TPPT  hhhh   hhhh    hhhh           aa             aa              TPT","PTT   hhhh   hhhh    hhhh                    w                      TP","TPP     L               L     L           L                        PPP","TT                                          w: --                   PP","PTP       aa   HH H HHHH        B       B                         R PP","TTTH HHHH                T     ]&     aa             e             TTT","TP                                                                P TP","TP                                          e                    Y TTP","PT                  T                                        T      TP","TTT                           e                                 l  PPT","PP T     u  R                             HHHHRH                   PTT","PP PY                                   T           hhhh  hhhh      PP","TP Y                                 G              hhhh  hhhh     TPP","PTT                                                 hhhh  hhhhaa    TT","TTR     e          e     FFFFFFFFFF  L                  B           TP","PTT                      F        F                                TPP","TT   e                   F        F            L   hhhh  hhhh       PT","PTP                      F        F  a             hhhh  hhhh     PTTP","TT                       F        F                hhhh  hhhh B    PTT","PTP                      F                    T         L           TP","TP P e               e L F             w                            TT","PT                       F        F    ]           hhhh   hhhh    P TP","TP                       F        F                hhhh   hhhh     TPP","TPT                  R   F        F       Y        hhhh   hhhh     TPP","PT l                    RF        F        Y                L       TT","TP    Y  TPP  P TPl   u  FFFFFFFFFF     l  TT                     PTPT","TPP  T TTTP  TTP    TPTPTTT PPP   T T P       T TPTT T TP TT TTTT  TPP","PPTPTPTTTTTPTTTTTTTPPTTTTTPTPPTTTPPTPTPTTTTPTTTTPTPTPPPTTTTTPPTTTPPPPT","PPTPTTTTTTPTTTTTPTTPPPPTTPTTPTTTPPTTPPTTTPTPPTPPTTTTTPPPPPTTPPTTTTTPPT"],"entry":[34,3],"spawns":[],"npcs":[{"id":"willow_board","name":"마을 알바 게시판","role":"jobs","x":33,"y":23,"look":[0,0,0,"#8a6a3a"],"lines":[],"thing":true},{"id":"willow_depot","name":"마을 집하장","role":"talk","x":37,"y":4,"look":[0,0,0,"#8a6a3a"],"lines":["버드나무광장으로 보낼 보급품을 모아 두는 곳이다.","상자마다 꼬리표가 붙어 있다: 생선, 주먹밥, 목재, 등불 병."],"thing":true},{"id":"willow_kitchen","name":"공동 부엌 화덕","role":"cook","x":45,"y":30,"look":[0,0,0,"#8a6a3a"],"lines":[],"thing":true},{"id":"willow_repair","name":"버들의 수리대","role":"craft","x":32,"y":32,"look":[0,0,0,"#8a6a3a"],"lines":[],"thing":true},{"id":"willow_elder","name":"촌장 버들","role":"quest","x":34,"y":31,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 광장 게시판에 마을 알바가 붙어 있으니 한번 보게나.","우유 배달, 제초, 전단지, 쓰레기 줍기, 꽃밭 물주기… 다들 자네 같은 일손을 기다리지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":15,"y":43,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."],"pose":"fish"},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":24,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 할머니랑 같이 가꿔!","우리 강아지 콩떡이 산책 좀 시켜 줄래? 나무 냄새 맡는 걸 제일 좋아해.","버드나무광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":23,"y":46,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 버드나무광장이야. 거기서 동쪽은 바람초원이고."]},{"id":"willow_dairy","name":"목장 주인 음메","role":"talk","x":52,"y":8,"look":[2,0,1,"#4a7aa8","#f4ecdc",2],"lines":["음메~ 우리 목장 우유는 아침에 짜서 아침에 배달해야 제맛이지!","우유 배달을 맡았으면 여기서 병을 받아 가. 집집마다 우편함에 하나씩 넣으면 돼.","꾸물대면 우유가 미지근해져! 시간 안에 돌아야 해."],"pose":"carry"},{"id":"willow_granny","name":"꽃집 할머니 수국","role":"talk","x":17,"y":24,"look":[3,0,0,"#9a6ab8","#e8e0d0",0],"lines":["봄이 할미란다. 꽃은 물을 먹고 자라지, 사람은 정을 먹고 자라고.","꽃밭에 물 주는 걸 도와주겠니? 물뿌리개는 우물이나 연못에서 채우면 된단다."],"pose":"water"},{"id":"willow_flyer","name":"전단지 아저씨 팔랑","role":"talk","x":43,"y":27,"look":[1,2,0,"#c8503a","#c89a5a",1],"lines":["장터 소식이요, 장터 소식! 전단지 붙일 사람 구해요!","가로등이랑 게시판, 표지판에 한 장씩 붙이면 돼. 바람에 날리지 않게 꾹꾹!"],"pose":"wave"},{"id":"willow_sweeper","name":"환경미화원 쓱싹","role":"talk","x":40,"y":40,"look":[4,1,0,"#e89a2a","#8a8a8a",0],"lines":["길에 떨어진 쓰레기 하나가 마을 인상을 망친다고!","쓰레기 줍기를 맡으면 길가에 떨어진 걸 주워 줘. 내 눈엔 다 보인다니까.","마른 가지? 바람초원 울타리 밖 고목 밑에 수북해. 쓸어도 쓸어도 또 떨어지거든."],"pose":"sweep"},{"id":"willow_farmer","name":"텃밭 농부 감자","role":"talk","x":36,"y":47,"look":[0,0,2,"#6a8a3a","#b07a4a",0],"lines":["잡초는 뽑아도 뽑아도 또 나! 텃밭이랑 뒷마당 풀숲 좀 도와줘.","길게 자란 풀숲이 보이면 거기가 잡초 자리야. 뿌리까지 쏙!"]},{"id":"willow_doran","name":"피난민 도란","role":"quest","x":25,"y":30,"look":[12,0,11,10,0,7,5,14,8,3,0],"lines":["네온 시티에서 왔어요. 가진 건 이 꼬리하고 우리 콩알이뿐이에요.","오두막 바닥이 아직 축축해요. 그래도 지붕이 있으니 살 것 같아요.","밤마다 광장 쪽 하늘을 봐요. 혹시 불빛이 보일까 해서요."],"pose":"knit"},{"id":"willow_kong","name":"꼬마 콩알","role":"quest","x":26,"y":29,"look":[12,0,11,10,2,7,1,14,8,2,0],"lines":["우리 아빠는 간판을 고쳐. 밤에도 반짝반짝하게!","도토리 세 개 모았어. 아빠 오면 하나 줄 거야.","엄마가 울면 나는 안 울어. 내가 형아니까."]},{"id":"willow_fair","name":"장꾼 다래","role":"fair","x":47,"y":24,"look":[2,1,0,"#d88a3a","#f4ecdc",2],"lines":["일요일엔 장이 서요! 아침 10시부터 밤 10시까지.","장날 알바를 하면 장날 토큰을 드려요. 토큰으로는 이 계절의 옷을 살 수 있죠.","공동 부엌 요리 대회도 열려요. 오늘 제일 잘 부친 사람이 1등!"],"pose":"wave"}],"portals":[{"x":34,"y":1,"to":"town","tx":49,"ty":71},{"x":35,"y":1,"to":"town","tx":50,"ty":71}],"fires":[[23,44]],"waypoint":[40,27,40,28],"fishing":true,"boss":null,"big":[{"t":"fountain","x":36,"y":26},{"t":"prop","k":"stall","x":45,"y":23,"w":2,"h":1},{"t":"prop","k":"stall","x":49,"y":23,"w":2,"h":1},{"t":"prop","k":"stall","x":53,"y":23,"w":2,"h":1},{"t":"prop","k":"cart","x":51,"y":27,"w":2,"h":1},{"t":"house","x":13,"y":10,"v":0},{"t":"house","x":19,"y":10,"v":2},{"t":"house","x":24,"y":10,"v":1},{"t":"house","x":5,"y":20,"v":3},{"t":"house","x":13,"y":20,"v":1},{"t":"house","x":19,"y":20,"v":0},{"t":"house","x":6,"y":26,"v":2},{"t":"house","x":13,"y":26,"v":3},{"t":"house","x":21,"y":26,"v":1},{"t":"house","x":52,"y":38,"v":0},{"t":"house","x":58,"y":38,"v":2},{"t":"house","x":51,"y":43,"v":3},{"t":"house","x":57,"y":43,"v":1},{"t":"house","x":51,"y":48,"v":2},{"t":"house","x":58,"y":48,"v":0},{"t":"house","x":43,"y":4,"v":3},{"t":"bld","k":"barn","x":50,"y":3,"w":5,"h":4,"door":"s","dx":2,"name":"음메 목장 외양간","icon":"crate"},{"t":"prop","k":"cart","x":43,"y":12,"w":2,"h":1},{"t":"prop","k":"lookout","x":6,"y":5,"w":2,"h":2},{"t":"prop","k":"well","x":37,"y":44,"w":1,"h":1},{"t":"prop","k":"laundry","x":62,"y":40,"w":2,"h":1},{"t":"prop","k":"laundry","x":10,"y":31,"w":2,"h":1},{"t":"prop","k":"bench","x":38,"y":32,"w":2,"h":1},{"t":"prop","k":"cart","x":38,"y":6,"w":2,"h":1}],"marks":[{"x":36,"y":3,"kind":"sign","label":"↑ 버드나무광장","to":"town"},{"x":37,"y":22,"kind":"sign","label":"← 마을 길 · 목장 ↗ · 장터 →"},{"x":37,"y":39,"kind":"sign","label":"← 연못 · 텃밭 · 남쪽 마을 →"},{"x":10,"y":25,"kind":"sign","label":"봄이네 꽃밭"}],"crops":[[27,43,1],[28,43,1],[29,43,1],[30,43,1],[31,43,1],[32,43,1],[27,45,2],[28,45,2],[29,45,2],[30,45,2],[31,45,2],[32,45,2],[27,49,3],[28,49,3],[29,49,3],[30,49,4],[31,49,4],[32,49,4],[27,51,5],[28,51,5],[29,51,5],[30,51,6],[31,51,6],[32,51,6]]},
+    {"v":1,"id":"willow","replaces":null,"name":"버드나무 마을","theme":"town","bgm":"willow","safe":true,"band":null,"w":70,"h":56,"ground":[".......,.,......,........,....,.,.pp.....,.....................,......",".,,...............................pp.......,...........,....,.........","...::.::::.::::.::.::....:..:,.:::pp.:.::.:,..::::.,::...:..::::::::..","..,.::rrrr.:.,,t,t:ttt,.....,,,...pp....:.......,:...........::...,...",",.::rrrrrrrr..tttttt,,,......,.,..pp.rrrrr......,,...........,....::.,","..:rrrrrrrrrr.tttt,,t,,.....,,,...pp.rrrrr.................,....,.....","...rrrrrrrrrr.,t,tt,t,t,.....,..,ppp,rrrrr........................::,,","...rrrrrrrrrr.........,.......,.,pp............rrrrrrrrrrr.,.........,","..:rrrrrrrrrr...,,,.........,,..ppp............rrrrrrrrrrr.,....,.,.,.",",...rrrrrrrr,..,......,.........ppppppppppppppprrrrrrrrrrr..,.ssss.:,.","...:..rrrr.,...................ppp.........,.,,.,...,........swwww:...","..:...,.rr.....................pp,........,.,...,..,...,.,..swwwwww:..","..:....,pr.....................pp..........,.,,......,,.,...swwwwww...","..:.....p,,....,.,....\"\"....\"\".pp........,.,.,,,.,..........,swwww:.,.",".,:.,..,ppppppppppppppppppppppppp....,...,,,.,..,,..,.,.......swww.:.,","..:..,,...p....................pp.,......,....,,,,.,,.,.,,....swww:...","..::,.....p...,........,.......pp...................,,pp,.....swww::..","......,...p,.,.................ppp....,.......,...,.,.pp,,....swww....","......,...p,.........,.,.......,pp...........,.,,.....pp,.,..,swww.:..",".....,....p..,,......,.....,....pp.......,.........,..pp......swwws.,.","..,.......p..............t,t....ppp..,.,,..........,..pp.......www::..",",.:,......p,.............,,,..,.,pp........,...,......pp...,..swwws...","..:,.....pp.......,......ttt.....ppp........rrrrrrrrrrpp....,..www....",".,::..ppp..,,....................oooo\"\"\"....rrrrrrrrrrp.....,.swww....","..:,pppppppppppppppppppppppppp,\"\"ooooooo\"\"..rrrrrrrrrr....,..swwwws:.,","....p.\"\"\"\",...\"\"\"\",......,...,\"ooooooooooo\".rrrrrrrrrr.....,.swwww::..","..:.p............,...........\"ooooooooooooo\"rrrrrrrrrr,,....swwwws.:..","..::p.....................,.,ooooooooooooooorrrrrrrrrr.....sswwwws.:..","..:.p......,.......,.....,,..\"ooooooooooooo\"rrrrrrrrrr....swwwwws.....","..:.p..,.,..,,...,...,........\"ooooooooooo\",rrrrrrrrrr...swwwwwws..:,.","...,pppppppppppppppppppppppppp.\"\"ooooooo\"\",.rrrrrr,...sswwwwwwws......","..:......,....,..........,...,...oooo\"\"\"....rrrrrrs.sswwwwwww.....:...",".,:.,..........,tttttttt...,....,..pp....,..sssss,wwwwwwwwww.......:..","..tt,tttt.,.....tttt,,t,.......,...ppsss...wwwwwwwwwwwwwwwss.,...,:...","..ttt,ttt.......,tt,tttt.......,.s.pbwwwwwwwwwwwwwbwwwwwss,,......,:..","..tt,,tt,...........,.....,ss.swwwwbbwwwwwwwwwwwwwbwsss.....,..,......",".,:,,ttt,....,.....,,....s.wwwwwwwwbbwwwwwwwws.sssps.......,.......:..","...:.,.........p.......,swwwwwwwwwbbbws.sssss,.,..p.,............,,:,.",",.,:...,.......p.....s.wwwwwwwwww.pp,..,..ttt,tt..p...................","...,.....s.sssspss.,swwwwwwwws,.s.pp.....,,,tt,t..p..............,,:..",".,:...,.swwwwwbbwws.swwwwwws......ppp.....tttttt..p......,...........,","..:...swwwwwwwbbwwwwswwwbss........pp.\"\"\"\".,....,.p.\"\"\"\"........,....,",",.:..swwwwwwwwbbwwwwwss,p.::t::t::.pppppppppppppppppppppppppppppp,.:..","....swwwwwwwwwbbwwwwww,.p.:pppppp:,pp.......,...p.,.............,.....","..:.swwwwwwwwwwwwwwwww.pp.:t::t:t:.pp...,.....,.p.................::..",".,..wwwwwwwwwwwwwwwwwwwsp.:pppppp:.pp..,.,..,...p.,.............,..:..","..:.,wwwwwwwwwwwwwwwwws.ppppppppppppp...........p.........\"\"\"\"........","...:swwwwwwwwwwwwwwwwws...t::t::::.pp.......,,..ppppppppppppppppp.....",".....swwwwwwwwwwwwwww.....::t::t::..,.,,........p.................:..,",",.....swwwwwwwwwwwww.....,:pppppp:..........,,..p........,.........:..",".,:,...s.wwwwwwwwwss.....,:t::t::t..............p..................:..",".........s.sss.sss...,....:pppppp:.............,p...,.....,....,.....,","......:..:::..:.::.......:.:...:.::,.......::...ppppppppppppppppp,::..",",.:..:.::::.,:::....:::::::.:::..,:.:.:.......:,::::.:.::.::.::::..:..","..,..............,..............,.....,.....,,...........,............","..,..,,................,.............................................."],"objects":["TTPPTTPTPPTTTTTTPTTPTTPTTPPTTTPTTP  TPPPTTPPTTTTTPPTPTPPPTTPTPPTPPTPPT","TTTTTPTTPTPPTTPTTTTPPTTPPTTTTTPPPT  TPTPPTPTTTTPTTPTPTTPPPTTPTTTPPTTTT","TT PT PRCP TPTTHPPHTPHHH T  T  PTP   T TT P   TTPP  PT   T  TTTTTPPTTT","TP  CC    CC      T                 G   T        Thhhhh      PP     TT","TTPC      R C                        ]  ]w hhhh   hhhhh           TPPP","PPP   aa                         L       w hhhh   hhhhh             PT","PPC   aa     R                        aa   hhhh   hhhhh           TPTT","TPC          C            T           T                 ww          TT","TTP R                                                    ]          PP","PT R        C                                                      PPT","PP PRC    RR hhhh  hhhh hhhh            FFFFFFFFFFFFF   FFF       T TT","TTP    C     hhhh  hhhh hhhh            F                 F        TTP","TPP          hhhh  hhhh hhhh  L         F  aa      B      F         TT","TTT        L                            F                 F       R TP","TTP                                     F      u          F        TPP","TTT                 L                   F T               FCCCR   CCTP","PTTT                                    FFFFFFFFFFFFFF  FFFRCRR   CRPP","PT          T              T                               CCC    CCTP","PPWWWWWWW   WWWWWWWWWWWWWWWWW      WWWWWWWWWWWWWWWWWW   WWWRCR    CRTT","TP                      H HH                               CCC    CCTT","PT   hhhh    hhhh  hhhh                  T                 RCR    CRTT","TTP  hhhh    hhhh  hhhh                                    CCC    CCPP","TTP  hhhh    hhhh  hhhh              G      ]  w     L     RCR    CRPP","PTPP        B     B              v      B    aa  aa  aa             TT","TTP                                                 E              PTT","PP        G                 L L           L L        ]            PTTP","TTT   hhhh   hhhh    hhhh           aa        kok    w             PPP","TPPT  hhhh   hhhh    hhhh           aa             aa              TPT","PTT   hhhh   hhhh    hhhh                    w                      TP","TPP     L               L     L           L                        PPP","TT                                          w: --                   PP","PTP       aa   HH H HHHH        B       B                         R PP","TTTH HHHH                T     ]&     aa             e             TTT","TP                                                                P TP","TP                                          e                    Y TTP","PT                  T                                        T      TP","TTT                           e                                 l  PPT","PP T     u  R                             HHHHRH                   PTT","PP PY                                   T           hhhh  hhhh      PP","TP Y                                 G              hhhh  hhhh     TPP","PTT                                                 hhhh  hhhhaa    TT","TTR     e          e     FFFFFFFFFF  L                  B           TP","PTT                      F        F                                TPP","TT   e                   F        F            L   hhhh  hhhh       PT","PTP                      F        F  a             hhhh  hhhh     PTTP","TT                       F        F                hhhh  hhhh B    PTT","PTP                      F                    T         L           TP","TP P e               e L F             w                            TT","PT                       F        F    ]           hhhh   hhhh    P TP","TP                       F        F                hhhh   hhhh     TPP","TPT                  R   F        F       Y        hhhh   hhhh     TPP","PT l                    RF        F        Y                L       TT","TP    Y  TPP  P TPl   u  FFFFFFFFFF     l  TT                     PTPT","TPP  T TTTP  TTP    TPTPTTT PPP   T T P       T TPTT T TP TT TTTT  TPP","PPTPTPTTTTTPTTTTTTTPPTTTTTPTPPTTTPPTPTPTTTTPTTTTPTPTPPPTTTTTPPTTTPPPPT","PPTPTTTTTTPTTTTTPTTPPPPTTPTTPTTTPPTTPPTTTPTPPTPPTTTTTPPPPPTTPPTTTTTPPT"],"entry":[34,3],"spawns":[],"npcs":[{"id":"willow_board","name":"마을 알바 게시판","role":"jobs","x":33,"y":23,"look":[0,0,0,"#8a6a3a"],"lines":[],"thing":true},{"id":"willow_depot","name":"마을 집하장","role":"talk","x":37,"y":4,"look":[0,0,0,"#8a6a3a"],"lines":["버드나무광장으로 보낼 보급품을 모아 두는 곳이다.","상자마다 꼬리표가 붙어 있다: 생선, 주먹밥, 목재, 등불 병."],"thing":true},{"id":"willow_kitchen","name":"공동 부엌 화덕","role":"cook","x":45,"y":30,"look":[0,0,0,"#8a6a3a"],"lines":[],"thing":true},{"id":"willow_repair","name":"버들의 수리대","role":"craft","x":32,"y":32,"look":[0,0,0,"#8a6a3a"],"lines":[],"thing":true},{"id":"willow_elder","name":"촌장 버들","role":"quest","x":34,"y":31,"look":[5,0,0,"#5a8a4a"],"lines":["어서 오게, 꼬마 모험가. 버드나무 마을은 처음인가?","이 마을은 작아도 손이 모자라. 광장 게시판에 마을 알바가 붙어 있으니 한번 보게나.","우유 배달, 제초, 전단지, 쓰레기 줍기, 꽃밭 물주기… 다들 자네 같은 일손을 기다리지."]},{"id":"willow_fisher","name":"낚시꾼 갈대","role":"talk","x":15,"y":43,"look":[1,0,0,"#3a6a8a"],"lines":["쉿… 물고기가 놀라잖아.","연못가에서 F를 누르면 낚싯줄을 던질 수 있어. 찌가 흔들리면 그때야!","구운 생선은 모닥불에서 요리하면 돼. 든든하지."],"pose":"fish"},{"id":"willow_florist","name":"꽃집 아이 봄이","role":"talk","x":9,"y":24,"look":[3,1,0,"#d86a9a"],"lines":["우리 꽃밭 예쁘지? 할머니랑 같이 가꿔!","우리 강아지 콩떡이 산책 좀 시켜 줄래? 나무 냄새 맡는 걸 제일 좋아해.","버드나무광장 보급상 언니가 우리 꽃을 좋아해."]},{"id":"willow_bard","name":"음유시인 솔","role":"talk","x":23,"y":46,"look":[2,3,0,"#8a6a3a"],"lines":["♪ 버드나무 아래 모닥불 피우면, 지친 발도 쉬어 가네 ♪","모닥불 곁에 앉아 있으면 몸이 따뜻해져서 경험치를 더 받는대.","북쪽 길로 가면 버드나무광장이야. 거기서 동쪽은 바람초원이고."]},{"id":"willow_dairy","name":"목장 주인 음메","role":"talk","x":52,"y":8,"look":[2,0,1,"#4a7aa8","#f4ecdc",2],"lines":["음메~ 우리 목장 우유는 아침에 짜서 아침에 배달해야 제맛이지!","우유 배달을 맡았으면 여기서 병을 받아 가. 집집마다 우편함에 하나씩 넣으면 돼.","꾸물대면 우유가 미지근해져! 시간 안에 돌아야 해."],"pose":"carry"},{"id":"willow_granny","name":"꽃집 할머니 수국","role":"talk","x":17,"y":24,"look":[3,0,0,"#9a6ab8","#e8e0d0",0],"lines":["봄이 할미란다. 꽃은 물을 먹고 자라지, 사람은 정을 먹고 자라고.","꽃밭에 물 주는 걸 도와주겠니? 물뿌리개는 우물이나 연못에서 채우면 된단다."],"pose":"water"},{"id":"willow_flyer","name":"전단지 아저씨 팔랑","role":"talk","x":43,"y":27,"look":[1,2,0,"#c8503a","#c89a5a",1],"lines":["장터 소식이요, 장터 소식! 전단지 붙일 사람 구해요!","가로등이랑 게시판, 표지판에 한 장씩 붙이면 돼. 바람에 날리지 않게 꾹꾹!"],"pose":"wave"},{"id":"willow_sweeper","name":"환경미화원 쓱싹","role":"talk","x":40,"y":40,"look":[4,1,0,"#e89a2a","#8a8a8a",0],"lines":["길에 떨어진 쓰레기 하나가 마을 인상을 망친다고!","쓰레기 줍기를 맡으면 길가에 떨어진 걸 주워 줘. 내 눈엔 다 보인다니까.","마른 가지? 바람초원 울타리 밖 고목 밑에 수북해. 쓸어도 쓸어도 또 떨어지거든."],"pose":"sweep"},{"id":"willow_farmer","name":"텃밭 농부 감자","role":"talk","x":36,"y":47,"look":[0,0,2,"#6a8a3a","#b07a4a",0],"lines":["잡초는 뽑아도 뽑아도 또 나! 텃밭이랑 뒷마당 풀숲 좀 도와줘.","길게 자란 풀숲이 보이면 거기가 잡초 자리야. 뿌리까지 쏙!"]},{"id":"willow_doran","name":"피난민 도란","role":"quest","x":25,"y":30,"look":[12,0,11,10,0,7,5,14,8,3,0],"lines":["네온 시티에서 왔어요. 가진 건 이 꼬리하고 우리 콩알이뿐이에요.","오두막 바닥이 아직 축축해요. 그래도 지붕이 있으니 살 것 같아요.","밤마다 광장 쪽 하늘을 봐요. 혹시 불빛이 보일까 해서요."],"pose":"knit"},{"id":"willow_kong","name":"꼬마 콩알","role":"quest","x":26,"y":29,"look":[12,0,11,10,2,7,1,14,8,2,0],"lines":["우리 아빠는 간판을 고쳐. 밤에도 반짝반짝하게!","도토리 세 개 모았어. 아빠 오면 하나 줄 거야.","엄마가 울면 나는 안 울어. 내가 형아니까."]},{"id":"willow_fair","name":"장꾼 다래","role":"fair","x":47,"y":24,"look":[2,1,0,"#d88a3a","#f4ecdc",2],"lines":["화요일과 토요일 저녁 7시부터 9시까지 장이 서요! 먼 데서 떠돌이 상인들이 모여든답니다.","장날 알바를 하면 장날 토큰을 드려요. 토큰으로는 이 계절의 옷을 살 수 있죠.","공동 부엌 요리 대회도 열려요. 오늘 제일 잘 부친 사람이 1등!"],"pose":"wave"},{"id":"fm_leg","name":"보따리 상인 덕팔","role":"fairmkt","x":49,"y":25,"look":[2,13,0,14,3,5,8,11,9,9,4],"lines":["어이쿠 어서 오이소! 오늘 보따리엔 전설이 들었다니까, 전설이!","물건은 하나뿐이라 먼저 보는 사람이 임자야. 아, 한 분에 한 번씩만 파는 거 알지?","값이 세다고? 허허, 이 장에서 이만한 물건은 못 구한다니까."],"pose":"carry"},{"id":"fm_scr","name":"두루마리 몽실","role":"fairmkt","x":45,"y":25,"look":[9,4,2,3,4,0,4,9,5,2,0],"lines":["메에… 어서 오세요. 두루마리가 구겨지지 않게 조심해 주세요.","한 장 한 장에 접두사의 힘이 잠들어 있어요. 오늘 몇 장 가져왔는지는 비밀!","두루마리가 아직 다 안 말랐나 봐요… 빈 날은 다음 장에 꼭 가져올게요."],"pose":"read"},{"id":"fm_rune","name":"룬 장수 모래","role":"fairmkt","x":52,"y":25,"look":[13,2,6,16,0,0,5,5,4,1,0],"lines":["사막 건너 가져온 룬이야. 만져 봐, 아직도 따뜻하지?","오늘은 어떤 룬이 모였을까. 순서가 맞아야 힘이 깨어난다는 거, 알지?","셈은 정확히. 한 알도 두 번은 안 팔아, 욕심내면 모래가 쏟아져."],"pose":"write"},{"id":"fm_cos","name":"옷 장수 나리","role":"fairmkt","x":47,"y":28,"look":[8,9,3,11,0,4,3,12,2,2,1],"lines":["어머, 어서 와요! 철 지난 옷이라고 얕보면 안 돼요. 유행은 돌고 도니까.","한 벌씩만 가져왔어요. 입어 보면 못 벗을걸요?","제철 옷은 다래네 좌판에서 토큰으로, 철 지난 옷은 여기서! 값은… 아시죠?"],"pose":"knit"},{"id":"fm_food","name":"푸짐 아저씨 곰돌","role":"fairmkt","x":50,"y":28,"look":[2,0,7,9,2,0,3,4,2,2,0],"lines":["허허, 배고파 보이는데? 아저씨 솥에 귀한 게 한가득이야.","다섯 그릇씩 묶어 팔아. 든든히 먹고 한 판 뛰어야지!","맛보기는 없어. 대신 한 번 먹어 보면 단골이 된다니까."],"pose":"stir"},{"id":"fm_dye","name":"물감쟁이 개굴","role":"fairmkt","x":53,"y":28,"look":[11,6,13,19,3,7,5,7,1,2,0],"lines":["개굴! 손에 물감 묻었지? 괜찮아, 나도 맨날 묻혀.","오늘 물감은 방금 짜 온 거야. 옷 가장자리에 한 방울이면 색이 확 달라져!","루루 누나한테 가져가 봐. 예쁘게 물들여 줄 거야."],"pose":"wipe"}],"portals":[{"x":34,"y":1,"to":"town","tx":49,"ty":71},{"x":35,"y":1,"to":"town","tx":50,"ty":71}],"fires":[[23,44]],"waypoint":[40,27,40,28],"fishing":true,"boss":null,"big":[{"t":"fountain","x":36,"y":26},{"t":"prop","k":"stall","x":45,"y":23,"w":2,"h":1},{"t":"prop","k":"stall","x":49,"y":23,"w":2,"h":1},{"t":"prop","k":"stall","x":53,"y":23,"w":2,"h":1},{"t":"prop","k":"cart","x":51,"y":27,"w":2,"h":1},{"t":"house","x":13,"y":10,"v":0},{"t":"house","x":19,"y":10,"v":2},{"t":"house","x":24,"y":10,"v":1},{"t":"house","x":5,"y":20,"v":3},{"t":"house","x":13,"y":20,"v":1},{"t":"house","x":19,"y":20,"v":0},{"t":"house","x":6,"y":26,"v":2},{"t":"house","x":13,"y":26,"v":3},{"t":"house","x":21,"y":26,"v":1},{"t":"house","x":52,"y":38,"v":0},{"t":"house","x":58,"y":38,"v":2},{"t":"house","x":51,"y":43,"v":3},{"t":"house","x":57,"y":43,"v":1},{"t":"house","x":51,"y":48,"v":2},{"t":"house","x":58,"y":48,"v":0},{"t":"house","x":43,"y":4,"v":3},{"t":"bld","k":"barn","x":50,"y":3,"w":5,"h":4,"door":"s","dx":2,"name":"음메 목장 외양간","icon":"crate"},{"t":"prop","k":"cart","x":43,"y":12,"w":2,"h":1},{"t":"prop","k":"lookout","x":6,"y":5,"w":2,"h":2},{"t":"prop","k":"well","x":37,"y":44,"w":1,"h":1},{"t":"prop","k":"laundry","x":62,"y":40,"w":2,"h":1},{"t":"prop","k":"laundry","x":10,"y":31,"w":2,"h":1},{"t":"prop","k":"bench","x":38,"y":32,"w":2,"h":1},{"t":"prop","k":"cart","x":38,"y":6,"w":2,"h":1}],"marks":[{"x":36,"y":3,"kind":"sign","label":"↑ 버드나무광장","to":"town"},{"x":37,"y":22,"kind":"sign","label":"← 마을 길 · 목장 ↗ · 장터 →"},{"x":37,"y":39,"kind":"sign","label":"← 연못 · 텃밭 · 남쪽 마을 →"},{"x":10,"y":25,"kind":"sign","label":"봄이네 꽃밭"}],"crops":[[27,43,1],[28,43,1],[29,43,1],[30,43,1],[31,43,1],[32,43,1],[27,45,2],[28,45,2],[29,45,2],[30,45,2],[31,45,2],[32,45,2],[27,49,3],[28,49,3],[29,49,3],[30,49,4],[31,49,4],[32,49,4],[27,51,5],[28,51,5],[29,51,5],[30,51,6],[31,51,6],[32,51,6]]},
   ],
   links: [{"map":"town","x":49,"y":73,"to":"willow","tx":34,"ty":3,"label":"버드나무 마을"},{"map":"town","x":50,"y":73,"to":"willow","tx":35,"ty":3,"label":"버드나무 마을"},{"map":"town","x":49,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":50,"y":25,"to":"town_hall","tx":11,"ty":16,"label":"버드나무광장 회관"},{"map":"town","x":36,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"올빼미 도서관"},{"map":"town","x":37,"y":21,"to":"owl_library","tx":11,"ty":14,"label":"올빼미 도서관"},{"map":"town","x":62,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":63,"y":20,"to":"dojo","tx":9,"ty":12,"label":"버드나무광장 수련관"},{"map":"town","x":65,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":66,"y":37,"to":"general_store","tx":8,"ty":10,"label":"다람쥐 잡화점"},{"map":"town","x":72,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":73,"y":37,"to":"kangkang_forge","tx":9,"ty":10,"label":"캉캉대장간"},{"map":"town","x":85,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":86,"y":36,"to":"merc_office","tx":10,"ty":12,"label":"늑대발 용병사무소"},{"map":"town","x":80,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":81,"y":28,"to":"bogle_lab","tx":9,"ty":10,"label":"보글연금공방"},{"map":"town","x":72,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":73,"y":49,"to":"juju_diner","tx":10,"ty":12,"label":"쥬쥬식당 · 선술집"},{"map":"town","x":79,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":80,"y":49,"to":"tales_cafe","tx":10,"ty":14,"label":"테일즈 카페"},{"map":"town","x":67,"y":51,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":67,"y":52,"to":"starlight_inn","tx":10,"ty":14,"label":"모닥별 여관"},{"map":"town","x":45,"y":51,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":45,"y":52,"to":"boutique","tx":8,"ty":10,"label":"루루 의상실"},{"map":"town","x":29,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":30,"y":47,"to":"pet_house","tx":7,"ty":8,"label":"몽글 펫 돌봄집"},{"map":"town","x":10,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"},{"map":"town","x":11,"y":34,"to":"dongdong_apt","tx":7,"ty":8,"label":"동동아파트"},{"map":"oasis","x":13,"y":63,"to":"airship","tx":9,"ty":16,"label":"바람등호 승선"},{"map":"airship","x":8,"y":16,"to":"oasis","tx":12,"ty":64,"label":"모래바람 오아시스 Lv.109–133 하선"}],
   npcs: [{"map":"town","id":"town_willow_guide","name":"길잡이 다람","role":"talk","x":52,"y":70,"look":[3,2,0,"#7a8a3a"],"lines":["남쪽 길 끝으로 가면 버드나무 마을이야. 조용하고 예쁜 곳이지!","버드나무 마을 촌장님이 일손을 구하신대. 한번 들러 봐."]},{"map":"town","id":"town_job_arsen","name":"전직관 아르센","role":"job","x":70,"y":23,"look":[5,1,0,"#3a4a7a"],"lines":["무기 하나를 숙련 20까지 다루면 그 무기의 길로 전직할 수 있다네.","두 무기를 모두 숙련 15까지 익힌 모험가라면, 두 갈래 길도 열려 있지.","초기화 주문서와 골드가 있으면 직업도 레벨도 다시 고를 수 있다네. 걸었던 길은 잊히지 않지."]},{"map":"town","id":"town_charm_juana","name":"참감정사 주아나","role":"charm","x":66,"y":23,"look":[7,0,11,11,0,0,4,6,2,0,0],"lines":["볼주머니에 넣기엔 제법 무거운 조각이네요. 빛을 품을 자리를 같이 찾아봐요.","여기, 테두리에 무늬가 보여요. 돌려 보면 작은 빈자리에도 맞겠어요.","사냥터에서 빛나는 조각을 주우면 가져오세요. 감정해서 참 보드에 놓으면 힘이 된답니다."]},{"map":"meadow","id":"trail_fence","name":"울타리지기 마루","role":"quest","x":9,"y":55,"look":[1,0,0,"#816b43"],"lines":["땅에 처음 금이 갔을 때, 토끼의 두 머리가 서로 다른 쪽을 봤어.","울타리 밑의 오래된 배관을 따라가면 초원의 균열이 어느 쪽으로 꺾이는지 보일 거야."]},{"map":"forest","id":"trail_sap","name":"수액지기 느티","role":"quest","x":14,"y":51,"look":[2,1,0,"#405d52"],"lines":["나무가 발소리를 들으면 뿌리를 거둬. 검은 수액이 흐르는 쪽은 그 반대야.","지하묘지의 돌뚜껑이 깨진 뒤로 수액이 위로 흘러. 숲을 지날 때 뿌리 사이의 계단을 찾아 봐."]},{"map":"crypt","id":"trail_crown","name":"탁본쟁이 오로","role":"quest","x":9,"y":84,"look":[3,2,0,"#615a8b"],"lines":["묘비에서 이름만 깎여 나갔다. 누군가 장부의 앞장과 뒷장을 바꿔 낀 거야.","남은 탁본에 네온 시티의 옛 인장이 찍혀 있었어. 여기서 들인 불은 거기서 팔았지."]},{"map":"city","id":"trail_clock","name":"종지기 치치","role":"quest","x":143,"y":62,"look":[4,3,0,"#a35168"],"lines":["시곗바늘은 정오를 가리키는데 저 종은 두 번씩 울어. 세 머리 들개가 몸을 낮추거든 옆으로 피해.","급수실 흙 밑에서 장부를 찾았어. 밸브 번호 아래에 마을 이름들이 적혀 있더라."]},{"map":"city","id":"city_dotol","name":"간판장이 도톨","role":"quest","x":153,"y":62,"look":[12,0,11,9,0,7,6,14,8,1,0],"lines":["이 불이 꺼지면 아직 오는 이들이 광장 쪽 길을 잃어. 그러니 난 못 떠나.","간판 글씨는 반쯤 나갔지만 불빛은 살아 있지. 우리 가게 이름이 \"도톨 네온\"이었어."],"pose":"hammer"},{"map":"sewer","id":"trail_drain","name":"물때지기 토룩","role":"quest","x":8,"y":5,"look":[5,0,0,"#497b7f"],"lines":["물빛보다 거품을 봐. 하얗게 솟으면 한 걸음 물러나.","배수관을 따라 물이 거꾸로 올라가. 수정 동굴이 목마르기라도 한 것처럼."]},{"map":"cave","id":"trail_echo","name":"채음사 울로","role":"quest","x":7,"y":39,"look":[6,1,0,"#74629a"],"lines":["수정에 귀를 대니 어릴 때 장터에서 듣던 목소리가 들렸어. 그 집의 등불이 이 안에 있는 걸까?","수정 속 불빛이 동굴 깊은 곳으로 기울어. 피의 심연 쪽이야."]},{"map":"abyss","id":"trail_abyss","name":"마지막 등불지기 유리","role":"quest","x":8,"y":80,"look":[7,2,0,"#a6514b"],"lines":["돌아오는 길에 표시를 남겨. 여기서는 길을 표시한 실도 푸른 불로 번져 버려.","어미의 등불에 우리 마을 문양이 새겨져 있었어. 불을 끊으면 옛 불빛이 돌아갈지도 몰라."]},{"map":"town","id":"lamplighter_mori","name":"등불수리공 모리","role":"quest","x":47,"y":66,"look":[8,1,0,6,4,1,1,5,2,0,0],"lines":["등불을 건너편까지 들고 가 본 적 있니? 자기 집으로 돌아올 길을 잃은 불이 있어.","유리가 남긴 점괘는 그 애가 돌아올 때 읽어 달라고 맡긴 거야. 그때까지 문을 열어 두려고."]},{"map":"oasis","id":"airship_signal","name":"신호수 노을","role":"quest","x":12,"y":61,"look":[2,2,0,"#477186"],"lines":["저 위의 바람등호는 우리 피난민이 띄운 정찰선이야. 감염이 번진 곳을 살피고 모험단이 길을 잃지 않도록 신호를 보내 왔어.","구름 위라면 안전할 줄 알았는데, 감염된 독수리가 돛대를 덮쳤어. 바람등호가 긴급 구조 신호를 보냈네. 승강장은 내 뒤쪽, 이동의 돌 옆에 있어."]},{"map":"frostkeep","id":"lunelsha_tablet","name":"서리 속 고대비석","role":"quest","thing":true,"x":55,"y":5,"lines":["서리 아래로 가느다란 새김 자국이 이어진다. 왕좌를 등지고 서면 옅은 빛이 첫 글자에 닿는다."]},{"map":"cloudtemple","id":"temple_eunha","name":"종지기 은하","role":"quest","x":37,"y":62,"look":[3,1,0,"#c8a040"],"lines":["종루엔 종이 여덟 개 걸려 있었어. 지금은 일곱 개야. 바람이 불면 빈 자리에서 소리가 나.","구름 바다는 종소리로 길을 내. 하나가 모자라면 꼭대기 길이 반쯤 닫히지."]},{"map":"mesa","id":"mesa_norang","name":"금세공사 노랑","role":"quest","x":34,"y":10,"look":[5,2,0,"#d8a830"],"lines":["황금궁 지붕도 처음엔 놋쇠였어. 누가 금박을 입혔는지는 아무도 몰라.","쇠붙이는 거짓말을 못 해. 두드려 보면 어디서 왔는지 다 말해 주지."]},{"map":"maple","id":"maple_galpi","name":"사관 갈피","role":"quest","x":168,"y":63,"look":[2,4,0,"#7a7a8a"],"lines":["나는 이 왕도의 마지막 사관이었네. 몸은 오래전에 단풍이 되었고, 지금은 이 등불만 남았지.","기록이 다 썩기 전엔 떠날 수가 없어. 사관은 끝까지 적는 사람이니까."]},{"map":"maple","id":"maple_altar","name":"무너진 예배당 비문","role":"quest","thing":true,"x":182,"y":130,"lines":["이끼 아래 글자가 남아 있다. '왕관 쓴 사슴은 여기 백성의 짐승이었다. 우리는 그 땅을 빼앗고 사슴에게 왕관을 씌웠다.'"]},{"map":"inklake","id":"ink_yeoul","name":"사공 여울","role":"quest","x":84,"y":108,"look":[11,2,0,"#3e4652"],"lines":["나룻배는 묶어 뒀어. 노를 저으면 노 끝이 까맣게 녹아 버리거든.","이 호수, 원래는 하늘이 비치는 거울이었어. 외딴 탑에 불이 켜져 있을 땐."]},{"map":"inklake","id":"ink_pagoda","name":"외딴 탑의 빈 등걸이","role":"quest","thing":true,"x":94,"y":33,"lines":["탑 꼭대기 등걸이가 비어 있다. 바닥엔 쏟아진 등기름 자국이 먹처럼 번졌고, 벽에 작은 글씨가 남아 있다. '기름이 흐려지면 물도 흐려진다.'"]},{"map":"maple","id":"maple_frostgate","name":"서리 덮인 경계석","role":"quest","thing":true,"x":166,"y":131,"lines":["성채로 가는 길목에 선 낡은 경계석. 서리 위에 단풍잎 모양 자국이 줄지어 찍혀 있다. 교대하러 간 이들의 것일까, 돌아오지 못한 이들의 것일까."]}],
@@ -1863,7 +1863,7 @@ const JB = {
   jb_ch_litter: { kind: "chore", job: "litter", npc: "willow_sweeper", lv: 1, sk: "gather", n: 6, text: "환경미화원 쓱싹이 길가와 광장에 떨어진 쓰레기를 주워 달래요." },
   jb_ch_water: { kind: "chore", job: "water", npc: "willow_granny", lv: 5, sk: "gather", n: 5, text: "꽃집 할머니 수국의 꽃밭에 물을 주세요. 물뿌리개는 우물이나 물가에서 채워요." },
   jb_ch_dog: { kind: "chore", job: "dog", npc: "willow_florist", lv: 8, sk: "deliver", n: 4, text: "꽃집 아이 봄이의 강아지 콩떡이를 산책시켜 주세요. 나무 냄새 맡는 걸 좋아해요." },
-  // 버드나무 장날 (P12, 63-festival.js): `fair` rows are offered only on Sunday 10–22 KST, are never 긴급 and never
+  // 버드나무 장날 (P12, 63-festival.js): `fair` rows are offered only while 장날 is open (Tue and Sat 19–21 KST, FAIR), are never 긴급 and never
   // count toward perDay, and pay 장날 토큰 (FAIR.job by grade) instead of gold and the Willow token
   jb_fair_potato: { kind: "bring", npc: "willow_fair", lv: 1, sk: "gather", item: "m_c1", n: 5, fair: true, text: "장날 채소 좌판 · 장꾼 다래의 좌판에 올릴 [감자]를 캐다 주세요. 아침에 캔 감자가 제일 잘 팔린대요." },
   jb_fair_fish: { kind: "fish", npc: "willow_kitchen", lv: 1, sk: "fish", item: "fish_s", n: 4, fair: true, text: "장터 생선 꼬치 · 요리 대회로 바쁜 공동 부엌 화덕에 [송사리]를 낚아다 주세요." },
@@ -7241,8 +7241,8 @@ const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "d
   // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
   // alchemist, 포포 the 알바 broker — until L2 they only talk ("곧 문을 엽니다", public/npctalk.js)
   "cook", "craft", "alch", "jobs",
-  // 주아나 the charm appraiser (66-charms.js); 장꾼 다래's 장날 stall (63-festival.js)
-  "charm", "fair"];
+  // 주아나 the charm appraiser (66-charms.js); 장꾼 다래's 장날 stall (63-festival.js); the 장날 merchants (64-fair-market.js)
+  "charm", "fair", "fairmkt"];
 const BUILTIN_MAPS = ["town", ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
@@ -7256,6 +7256,8 @@ function npcFrom(n, m) {
   const lines = Array.isArray(n.lines) ? n.lines.filter((l) => typeof l === "string" && l).slice(0, 12).map((l) => l.slice(0, 240)) : [];
   if (lines.length) { out.lines = lines; out.say = lines[0]; }
   if (n.custom) out.custom = 1;
+  // a 장날 merchant stands only while the market is open: the client hides it otherwise (64-fair-market.js)
+  if (out.role === "fairmkt") out.fair = 1;
   // a shopkeeper with their own counter sells only these (items that exist and can be bought)
   if (out.role === "shop" && Array.isArray(n.goods)) {
     const goods = [...new Set(n.goods.filter((id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && ITEMS[id].price > 0))].slice(0, 24);
@@ -7633,7 +7635,7 @@ export function newChar(name, look, wk) {
   const lk = Array.isArray(look) ? look : Array.isArray(wk) ? wk : [];
   const picked = typeof wk === "string" && STARTER_WKS.includes(wk), kind = picked ? wk : "dagger";
   const ch = {
-    v: 26, name, job: "adventurer", jp: null,
+    v: 27, name, job: "adventurer", jp: null,
     // 직업 자유 (v18, 47-job-freedom.js): every job's {lv, xp} (ch.jp is the current one's), skill loadouts set per job
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
@@ -7662,6 +7664,8 @@ export function newChar(name, look, wk) {
     tro: [],
     // 버드나무 장날 (v26, 63-festival.js): the 장날 토큰 purse and today's tokens and best pan score
     fair: fairFresh(),
+    // the 장날 merchants' goods bought on the latest fair day (v27, 64-fair-market.js): { [KST day]: [product ids] }
+    fairBuy: {},
     // social and the weekly book (v14, 63-social-weekly.js): blk (blocked names), pity (enhancement gauge), wk
     ...socialFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
@@ -7812,7 +7816,9 @@ function migrate(ch) {
   sqItemsFix(ch);
   // 버드나무 장날 (v26): the token purse and today's counters, clamped; an older sheet starts empty (63-festival.js)
   ch.fair = fairClean(ch.fair);
-  ch.v = Math.max(ch.v | 0, 26);
+  // the 장날 merchants' purchases (v27): the newest fair day's product ids only (64-fair-market.js)
+  ch.fairBuy = fairBuyClean(ch.fairBuy);
+  ch.v = Math.max(ch.v | 0, 27);
   return ch;
 }
 
@@ -7961,7 +7967,7 @@ export function exportChar(S, pid) {
  * Progress worth more than the 15 s save cycle risks (a quest taken or handed in, an enhancement,
  * a level, a skill, the wardrobe, the warehouse) asks for a save soon; the room batches these.
  */
-const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "cos_dye", "cos_sew", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk"]);
+const SAVE_SOON = new Set(["quest", "bq", "sq", "tut", "daily", "enh", "uncurse", "ske", "train", "respec", "starter", "job_change", "wh", "cos_buy", "cos_dye", "cos_sew", "bag_expand", "house_buy", "house_upgrade", "furn_buy", "furn_place", "furn_pick", "h_dep", "h_wd", "craft", "jb", "blk", "wk", "fair_shop"]);
 const saveSoon = (p) => { p.save = true; };
 /** The players whose characters asked to be saved soon, cleared as they are handed out. */
 export function takeSaves(S) {
@@ -14764,10 +14770,11 @@ const sqView = (ch, now) => SIDE.map((q) => {
 }).filter(Boolean);
 // ───────────────────────────── 버드나무 장날 and the seasons (P12) ─────────────────────────────
 // The year turns on the server clock alone: four seasons of 91 KST days, counted from 2026-03-01 (봄), so the
-// game's year is 364 days and drifts a day and a bit a year against the calendar — fine for a game. Every Sunday
-// 10:00–22:00 KST 버드나무 마을 holds its market: four festival rows on the 알바 board (JB `fair`, never counted in
-// perDay) and a cooking contest (the day's best pan score in the village) pay 장날 토큰 — never gold — up to
-// FAIR.cap a board day; 장꾼 다래 (role `fair`, by the market stalls) sells the season's pieces for them.
+// game's year is 364 days and drifts a day and a bit a year against the calendar — fine for a game. Every Tuesday and
+// Saturday 19:00–21:00 KST 버드나무 마을 holds its market (FAIR.days/open/close; owner 2026-11-16, it was Sunday 10–22): four
+// festival rows on the 알바 board (JB `fair`, never counted in perDay) and a cooking contest (the day's best pan score in
+// the village) pay 장날 토큰 — never gold — up to FAIR.cap a board day; 장꾼 다래 (role `fair`, by the market stalls) sells
+// the season's pieces for them. The travelling merchants of those two hours are 64-fair-market.js.
 // Sheet: `fair` { t: the purse, d: the board day `n`/`pan` belong to, n: tokens earned that day, pan: best pan score that day }.
 
 /** Seasons: KST calendar days from `epoch` (2026-03-01 = day 20513) in blocks of `len`, named in order. */
@@ -14777,18 +14784,29 @@ const kstDay = (now) => Math.floor((now + KST) / DAY_MS);
 /** The season now: 0 봄 · 1 여름 · 2 가을 · 3 겨울 (the cycle repeats every 364 days, before the epoch too). */
 const seasonOf = (now) => ((Math.floor((kstDay(now) - SEASON.epoch) / SEASON.len) % 4) + 4) % 4;
 /**
- * 장날: KST weekday `day` (0 Sunday; day 0 of the clock was a Thursday) from `open` to `close` o'clock, on `map`.
+ * 장날: on the KST weekdays `days` (0 Sunday … 6 Saturday; day 0 of the clock was a Thursday) from `open` to `close` o'clock, on
+ * `map`; `warn` minutes before it opens everyone hears "곧 열립니다" (fairWatch). The one table for the schedule: the HUD flag,
+ * the festival rows, the contest, the token cap and the merchants (64-fair-market.js) all read fairOpen.
  * Tokens: at most `cap` a board day and `max` in the purse; `job` per festival row by grade (쉬움 보통 어려움);
  * the contest's `pan` steps [score, tokens], each paid once a day when the day's best first reaches it.
  */
-const FAIR = { map: "willow", day: 0, open: 10, close: 22, cap: 8, max: 999, job: [1, 2, 2], pan: [[60, 1], [90, 1]] };
-const fairOpen = (now) => (kstDay(now) + 4) % 7 === FAIR.day && (now + KST) % DAY_MS >= FAIR.open * 3600000 && (now + KST) % DAY_MS < FAIR.close * 3600000;
+const FAIR = { map: "willow", days: [2, 6], open: 19, close: 21, warn: 10, cap: 8, max: 999, job: [1, 2, 2], pan: [[60, 1], [90, 1]] };
+const DOW_NAME = ["일", "월", "화", "수", "목", "금", "토"];
+/** The KST weekday of a moment, 0 Sunday … 6 Saturday. */
+const kstDow = (now) => (kstDay(now) + 4) % 7;
+/** The KST time of day in ms. */
+const kstTod = (now) => (now + KST) % DAY_MS;
+/** Is it a market day (any hour)? */
+const fairDay = (now) => FAIR.days.includes(kstDow(now));
+const fairOpen = (now) => fairDay(now) && kstTod(now) >= FAIR.open * 3600000 && kstTod(now) < FAIR.close * 3600000;
+/** "화·토 19–21시", for the lines that say when. */
+const fairWhen = () => `${FAIR.days.map((d) => DOW_NAME[d]).join("·")} ${FAIR.open}–${FAIR.close}시`;
 /** The board's festival rows (12-life-tables.js JB, `fair: true`). */
 const FAIR_JOBS = Object.keys(JB).filter((id) => JB[id].fair);
 /**
  * 장꾼 다래's stall, per season: [cosmetic id, tokens]; only the season now sells. Rows 2–5 are the 사계절 pieces (P11:
  * hat, top, back, weapon skin of 벚꽃 · 한여름 바다 · 단풍 · 눈꽃; COSMETICS src "fair"), the first an older piece that fits
- * the season. A row whose id is not in COSMETICS would show "곧 들어옵니다" and not sell. A season's four cost 100: ≈ 13 Sundays × 8.
+ * the season. A row whose id is not in COSMETICS would show "곧 들어옵니다" and not sell. A season's four cost 100: ≈ 13 fair days × 8 (a season holds ≈ 26).
  */
 const FAIR_SET = ["sakura", "sea", "maple", "snow"];
 const FAIR_NOW = ["hat_wreath_white", "hat_wreath_sun", "hat_straw_blue", "hat_santa"];
@@ -14833,14 +14851,28 @@ function fairPan(S, p, s) {
   Object.assign(top, { s, name: p.ch.name });
   for (const o of Object.values(S.players)) if (o.map === FAIR.map) { o.dirty = true; toast(o, `[장날 요리 대회] ${p.ch.name} 님이 ${s}점으로 1등!`); }
 }
-/** Once a tick (lifeTick): the market opening (also on arrival while it is open) and closing, said; the board re-sent. */
+/**
+ * Once a tick (lifeTick): the market's heads-up (FAIR.warn minutes ahead, once a fair day), its opening (also on arrival while
+ * it is open) and closing, said; the board re-sent.
+ */
 function fairWatch(S, p, now) {
-  const o = fairOpen(now);
+  const o = fairOpen(now), d = kstDay(now), left = FAIR.open * 3600000 - kstTod(now);
+  if (!o && fairDay(now) && left > 0 && left <= FAIR.warn * 60000 && p.fairWarn !== d) {
+    p.fairWarn = d;
+    toast(p, `곧 장날이 열립니다! ${Math.ceil(left / 60000)}분 뒤 ${FAIR.open}시부터 버드나무 마을에 떠돌이 상인들이 모여요.`);
+  }
   if (p.fairOn === o) return;
-  if (o) toast(p, `오늘은 버드나무 장날! ${FAIR.close}시까지 마을 게시판의 장날 알바와 공동 부엌 요리 대회로 장날 토큰을 모아 보세요.`);
-  else if (p.fairOn !== undefined) toast(p, "버드나무 장날이 끝났습니다. 다음 일요일에 또 만나요!");
+  if (o) toast(p, `버드나무 장날이 열렸습니다! ${FAIR.close}시까지 상인들이 머뭅니다. 마을 게시판의 장날 알바와 공동 부엌 요리 대회로 장날 토큰도 모아 보세요.`);
+  else if (p.fairOn !== undefined) toast(p, `버드나무 장날이 끝났습니다. 다음 장날(${fairWhen()})에 또 만나요!`);
   if (p.fairOn !== undefined) p.dirty = true;
   p.fairOn = o;
+}
+/** Once a tick per world (80-simulation.js): the opening, said once in the chat for everyone on this channel. */
+function fairWorld(S, now) {
+  const d = kstDay(now);
+  if (S.fairSay === d || !fairOpen(now)) return;
+  S.fairSay = d;
+  sys(S, `[장날] 버드나무 마을에 장날이 열렸습니다! ${FAIR.close}시까지 전설 장비·인챈트 스크롤·룬·의상·음식 상인이 모여 있어요. (상품마다 한 사람에 한 번씩만 살 수 있습니다)`);
 }
 
 /** `fair_buy {id}` beside 장꾼 다래: a piece of this season's stall, for tokens. */
@@ -14870,7 +14902,7 @@ function fairSelf(p) {
 }
 /** defs().fair: the seasons, the market's hours and pay, and each season's stall [id, price, on sale (drawn) 0/1, name, slot]. */
 const fairDefs = () => ({
-  season: SEASON.name, map: FAIR.map, open: FAIR.open, close: FAIR.close, cap: FAIR.cap, job: FAIR.job, pan: FAIR.pan,
+  season: SEASON.name, map: FAIR.map, days: FAIR.days, open: FAIR.open, close: FAIR.close, cap: FAIR.cap, job: FAIR.job, pan: FAIR.pan,
   shop: FAIR_SHOP.map((rows) => rows.map(([id, price]) => {
     const c = Object.hasOwn(COSMETICS, id) ? COSMETICS[id] : null;
     return [id, price, c ? 1 : 0, c ? c.name : "", COS_SLOT_NAME[c ? c.slot : id.startsWith("ws_") ? "wskin" : id.split("_")[0]]];
@@ -15974,6 +16006,144 @@ function dimDefs() {
     chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0]), stepNames: DIM_CHAL.stepNames,
       stepR: DIM_CHAL.stepR },
   };
+}
+// ───────────────────────────── 장날 상인 (the fair market's merchants) ─────────────────────────────
+// While 버드나무 장날 is open (63-festival.js fairOpen: Tue and Sat 19–21 KST) six travelling merchants stand in the middle of
+// 버드나무 마을: NPCs `fm_<vendor>` (role "fairmkt", data/maps/willow.json; the client draws them only while `dn[3]` says the
+// market is open). Each sells a short, limited stock that is a pure function of the KST day number (the same for everyone,
+// nothing is stored, nothing is saved); a product can be bought ONCE per player: `ch.fairBuy` { [KST day]: [product ids] }, only
+// the newest day kept. Goods are dear — every figure is in FAIR_PRICE below.
+//   leg   전설 장비 (4–6 legendary pieces of different slots, item levels spread over 30–190, rolled by rollGear at q3)
+//   scr   인챈트 스크롤 (every `es_*` item that exists; none yet → an empty counter, no error)
+//   rune  룬 (the game has no "set"/"legendary" runes; the rarest are the six that make the 3-rune words: the day's word's runes + 2)
+//   cos   의상 (off-season 장날 pieces: COSMETICS src "fair", the ones 장꾼 다래 sells for tokens only in their own season)
+//   food  음식 (five rare dishes in packs of five)
+//   dye   염료 (four of 루루's six dyes in packs of three)
+// Actions: `fair_open {v}` asks for a vendor's list (answered once, as snapshot `fm`, never every tick); `fair_shop {v, i, d}`
+// buys row i of vendor v's list of KST day d (d guards against a window left open from another day).
+
+/** The vendors, in wire/seed order. The NPC of vendor `v` is `fm_<v>`. */
+const FAIR_VENDORS = ["leg", "scr", "rune", "cos", "food", "dye"];
+const fairNpcId = (v) => `fm_${v}`;
+/**
+ * Prices in gold — the one table. Calibration (balance 2026-11-15/16: 알바 ≈ 12k a day at Lv40, hunting gold ≈ 6–9k an hour at every
+ * level, 45 h to Lv.200): a cheap piece is an hour or two of play, the top one about a week of a casual player's savings.
+ *   gear   price(il) = round(base × (il / ref) ^ pow, to step): il 30 → 15,000 · 60 → 38,000 · 100 → 76,000 · 150 → 130,000 · 190 → 182,000
+ *          (a crafted tier-2 piece costs ≈ 1.5k, a tier-6 ≈ 30k; a dropped 전설 sells for ≤ 8.5k)
+ *   scroll a flat price per 인챈트 스크롤 (one prefix, one scroll)         rune   per rune (shop price 500)
+ *   food   a pack of `n` dishes costs mul × n × the dish's own price        dye    the same, for a pack of dyes
+ *   cos    by the piece's rarity 0–4
+ */
+const FAIR_PRICE = {
+  gear: { base: 15000, ref: 30, pow: 1.35, step: 500 }, scroll: 40000, rune: 15000,
+  food: { n: 5, mul: 5 }, dye: { n: 3, mul: 10 }, cos: [10000, 30000, 60000, 120000, 200000],
+};
+/** The legendary stock: how many pieces a day, over which item levels, from which slots (each at most once a day). */
+const FAIR_GEAR = { n: [4, 6], il: [30, 190], types: ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet"] };
+/** The dishes worth the trip, best first (a day sells FAIR_FOOD.pick of the ones that exist). */
+const FAIR_FOOD = { pool: ["fd_feast", "food_l", "fd_steam", "food_v", "food_c", "fd_honeybread", "fd_stew"], pick: 5 };
+
+const fairGearPrice = (il) => { const P = FAIR_PRICE.gear; return Math.round((P.base * Math.pow(il / P.ref, P.pow)) / P.step) * P.step; };
+/** The dice of one vendor on one KST day: same day, same vendor, same stock (every call starts from a fresh box). */
+function fairBox(day, v) {
+  const b = { seed: Math.imul(day, 0x9e3779b1) ^ Math.imul(FAIR_VENDORS.indexOf(v) + 1, 0x85ebca6b) };
+  rnd(b); rnd(b);
+  return b;
+}
+/** `k` of `list`, shuffled by the box (the list itself is left alone). */
+function fairPick(box, list, k) {
+  const a = list.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = ri(box, 0, i); [a[i], a[j]] = [a[j], a[i]]; }
+  return a.slice(0, k);
+}
+/** A pack of `n` of item `id`: its row id is the item id (a vendor never lists one twice). */
+const fairPack = (id, n, price) => ({ id, it: id, n, price });
+
+/** 전설 장비: n pieces on n different slots; piece i takes its item level from the i-th of n equal bands of FAIR_GEAR.il. */
+function fairGear(box) {
+  const [lo, hi] = FAIR_GEAR.il, n = ri(box, FAIR_GEAR.n[0], FAIR_GEAR.n[1]);
+  return fairPick(box, FAIR_GEAR.types, n).map((type, i) => {
+    const il = Math.round(lo + ((i + rnd(box)) * (hi - lo)) / n);
+    const tier = G_REQ.filter((r) => r <= il).length;   // the highest tier whose level the piece has reached
+    const id = type === "weapon" ? `w_${WK_ID[WK_ORDER[ri(box, 0, WK_ORDER.length - 1)]]}_${tier}` : `${GEAR[type].pre}_${tier}`;
+    const g = rollGear(box, id, 3, Math.ceil((il + 3) / 4));   // (the power comes from the live pool, 51-prefix.js pfxPick)
+    return { id: `l${i}`, g, price: fairGearPrice(g.il) };
+  });
+}
+/** 룬: the three runes of one of the 3-rune words (피의 맹세, 불멸) and two others. */
+function fairRunes(box) {
+  const words = RUNEWORDS.filter((w) => w.seq.length === 3), word = words[ri(box, 0, words.length - 1)];
+  const more = fairPick(box, RUNE_KEYS.filter((k) => !word.seq.includes(k)), 2);
+  return [...word.seq, ...more].map((k) => fairPack(`ru_${k}`, 1, FAIR_PRICE.rune));
+}
+/** The rows vendor `v` sells on KST day `day`: { id (product), price, and g (a gear piece) | it + n (items) | cos (a cosmetic) }. */
+function fairStock(day, v) {
+  const box = fairBox(day, v), P = FAIR_PRICE;
+  switch (v) {
+    case "leg": return fairGear(box);
+    case "scr": return fairPick(box, Object.keys(ITEMS).filter((k) => k.startsWith("es_")).sort(), 4).map((id) => fairPack(id, 1, P.scroll));
+    case "rune": return fairRunes(box);
+    case "cos": return fairPick(box, COS_IDS.filter((id) => COSMETICS[id].src === "fair" && !id.endsWith(`_${FAIR_SET[seasonOf(day * DAY_MS - KST)]}`)), 4).map((id) => ({ id, cos: id, price: P.cos[COSMETICS[id].q] }));
+    case "food": return fairPick(box, FAIR_FOOD.pool.filter((id) => Object.hasOwn(ITEMS, id)), FAIR_FOOD.pick).map((id) => fairPack(id, P.food.n, P.food.mul * P.food.n * ITEMS[id].price));
+    case "dye": return fairPick(box, COS_DYES, 4).map((id) => fairPack(id, P.dye.n, P.dye.mul * P.dye.n * ITEMS[id].price));
+    default: return [];
+  }
+}
+
+/** The product ids this sheet bought on KST day `day`. */
+const fairBought = (ch, day) => (Object.hasOwn(ch.fairBuy, day) ? ch.fairBuy[day] : []);
+/** A saved `fairBuy` cleaned (migrate): only the newest day, its product ids as short unique strings; an old sheet starts empty. */
+function fairBuyClean(v) {
+  if (!isObj(v)) return {};
+  const days = Object.keys(v).map(Number).filter((d) => Number.isInteger(d) && d >= 0 && d < 1e7).sort((a, b) => b - a);
+  if (!days.length) return {};
+  const ids = Array.isArray(v[days[0]]) ? [...new Set(v[days[0]].filter((x) => typeof x === "string" && x.length <= 32))].slice(0, 32) : [];
+  return { [days[0]]: ids };
+}
+
+/** The vendor `v`'s NPC when `p` stands within reach of it on 버드나무 마을 (the 56 px every NPC has), else null. */
+function fairVendorAt(p, v) {
+  if (typeof v !== "string" || !FAIR_VENDORS.includes(v) || p.map !== FAIR.map) return null;
+  return mapOfS(p.S, p.map).npcs.find((n) => n.id === fairNpcId(v) && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < 56) || null;
+}
+/** `fair_open {v}` and `fair_shop {v, i, d}` (see the head of this file). */
+function fairMktValidate(S, p, a) {
+  const ch = p.ch;
+  if (!fairOpen(S.now)) return bad("장날이 아닙니다");
+  if (!fairVendorAt(p, a.v)) return bad("장날 상인이 너무 멉니다");
+  if (a.t === "fair_open") return OK;
+  const day = kstDay(S.now);
+  if (a.d !== day) return bad("장날 목록이 바뀌었습니다. 창을 다시 열어 주세요");
+  const row = Number.isInteger(a.i) ? fairStock(day, a.v)[a.i] : null;
+  if (!row) return bad("그런 상품은 없습니다");
+  if (fairBought(ch, day).includes(row.id)) return bad("이미 구매한 상품입니다 (상품마다 한 사람에 한 번)");
+  if (row.cos && ch.cos.own.includes(row.cos)) return bad("이미 가지고 있는 외형입니다");
+  if (ch.gold < row.price) return bad("골드가 부족합니다");
+  if (row.g ? ch.inv.length >= bagCap(ch) : row.it && !canAdd(ch, row.it, row.n)) return bad("가방이 가득 찼습니다");
+  return OK;
+}
+function fairMktApply(S, p, a) {
+  if (a.t === "fair_open") { p.fmSend = a.v; return; }
+  const ch = p.ch, day = kstDay(S.now), row = fairStock(day, a.v)[a.i];
+  ch.gold -= row.price;
+  let name;
+  if (row.g) { ch.inv.push(row.g); name = gearName(row.g); p.gain.push(["item", row.g.id, 1, row.g.q]); sys(S, `${ch.name}님이 장날 상인에게서 전설 장비 [${name}]${pp(name, "을를")} 샀습니다!`); }
+  else if (row.it) { addItem(ch, row.it, row.n); name = `${ITEMS[row.it].name} ×${row.n}`; p.gain.push(["item", row.it, row.n, 0]); }
+  else { giveCos(S, p, row.cos, ""); name = COSMETICS[row.cos].name; }
+  ch.fairBuy = { [day]: [...fairBought(ch, day), row.id] };
+  p.fmSend = a.v;
+  p.dirty = true;
+  toast(p, `[${name}]${pp(name, "을를")} ${row.price.toLocaleString()}G에 샀습니다.`);
+}
+/**
+ * snapshot `fm` (once per window open and after a purchase): [vendor, KST day, the market's closing time in epoch ms, rows, ids bought
+ * today]; a row is [id, price, 0, gear piece] · [id, price, 1, item id, n] · [id, price, 2, cosmetic id].
+ */
+function fairMktWire(S, p, v) {
+  if (!fairOpen(S.now) || !fairVendorAt(p, v)) return null;
+  const day = kstDay(S.now);
+  const rows = fairStock(day, v).map((r) => (r.g ? [r.id, r.price, 0, r.g] : r.cos ? [r.id, r.price, 2, r.cos] : [r.id, r.price, 1, r.it, r.n]));
+  return [v, day, day * DAY_MS - KST + FAIR.close * 3600000, rows, fairBought(p.ch, day)];
 }
 // ───────────────────────────── housing: a house of one's own ─────────────────────────────
 // A sheet's `house` = { tier 0..3, style: { floor, wall }, furn: [{ id, uid, x, y, dir }], storage,
@@ -19852,6 +20022,8 @@ export function validateAction(S, pid, a) {
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": return coopValidate(S, p, a);
     case "fair_buy": return fairValidate(S, p, a);
+    // the 장날 merchants (64-fair-market.js)
+    case "fair_open": case "fair_shop": return fairMktValidate(S, p, a);
     // player to player: requests, trade, mini-games (69-social-play.js)
     case "sx": return sxValidate(S, p, a);
     default:
@@ -20534,6 +20706,7 @@ export function applyAction(S, pid, a) {
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": coopApply(S, p, a); break;
     case "fair_buy": fairApply(S, p, a); break;
+    case "fair_open": case "fair_shop": fairMktApply(S, p, a); break;
     // player to player: requests, trade, mini-games (69-social-play.js)
     case "sx": sxApply(S, p, a); break;
   }
@@ -20999,6 +21172,7 @@ export function tick(S, now) {
   S.last = now;
   S.now = now;
   worldEvent(S, now);
+  fairWorld(S, now);   // 버드나무 장날 opening, said once in the chat (63-festival.js)
   skyTick(S, now);
   dimTick(S, now);
   storyTick(S, now);
@@ -21318,6 +21492,8 @@ export function viewFor(S, pid) {
     if (from) out.ginv = [from.ch.name, p.ginv.g];
   }
   if (p.dirty) out.self = selfPayload(p);
+  // a 장날 merchant's list, once when asked for (and after a purchase): fm (64-fair-market.js)
+  if (p.fmSend) { const fm = fairMktWire(S, p, p.fmSend); if (fm) out.fm = fm; p.fmSend = null; }
   if (p.gain.length) out.gain = p.gain;
   dimView(S, p, out);
   coopView(S, p, out);   // 협동 아르바이트: cj, C, cr (68-coop.js)

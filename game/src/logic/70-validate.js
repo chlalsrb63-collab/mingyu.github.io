@@ -505,6 +505,8 @@ export function validateAction(S, pid, a) {
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": return coopValidate(S, p, a);
     case "fair_buy": return fairValidate(S, p, a);
+    // the 장날 merchants (64-fair-market.js)
+    case "fair_open": case "fair_shop": return fairMktValidate(S, p, a);
     // player to player: requests, trade, mini-games (69-social-play.js)
     case "sx": return sxValidate(S, p, a);
     default:

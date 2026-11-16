@@ -235,7 +235,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.deepEqual(ch.inv[6], { id: "hp_s", n: 3 });
   assert.equal(ch.wh.items[0].q, 5); assert.equal(ch.wh.items[0].il, 88); assert.equal(ch.wh.items[0].lg, uq.lg, "the warehouse keeps a unique");
   assert.equal(ch.wh.items[1].set, "rift"); assert.equal(ch.wh.items[1].il, 111);
-  assert.equal(ch.v, 26, "no new sheet version: a missing il is derived");
+  assert.equal(ch.v, 27, "a missing il is derived (no sheet version of its own)");
   // a second pass changes nothing
   assert.equal(JSON.stringify(X.migrate(JSON.parse(JSON.stringify(ch)))), JSON.stringify(ch));
   // and it plays: the old sheet joins, wears and sorts

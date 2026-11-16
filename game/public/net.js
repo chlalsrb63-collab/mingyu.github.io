@@ -12,6 +12,7 @@ import * as S3 from "./scene2d.js";
 import { iconImg, CLASS_ICON } from "./uiicons.js";
 import * as Growth from "./growth.js";
 import * as Wardrobe from "./wardrobe_ui.js";
+import * as FairMkt from "./fairmkt.js";
 import * as QS from "./quickslots.js";
 import * as SideQ from "./sidequests.js";
 import * as SkillFx from "./skillfx.js";
@@ -178,12 +179,16 @@ export function stopGame() {
 }
 
 /**
- * The scene's copy of a map: on the 장날 map outside market hours its stalls stand closed (decor.js stallShut).
+ * The scene's copy of a map: on the 장날 map outside market hours its stalls stand closed (decor.js stallShut) and the
+ * merchants (NPCs flagged `fair`, 64-fair-market.js) are not there: `m.npcs` is the list for now, `m.all` the whole one.
  * Map data and collision stay as the server sent them; only the drawn prop changes.
  */
 function sceneMap(m) {
   G.stallsOpen = Sky.fairOn();
-  if (!G.defs?.fair || m.id !== G.defs.fair.map || G.stallsOpen) return m;
+  if (!G.defs?.fair || m.id !== G.defs.fair.map) return m;
+  m.all ||= m.npcs;
+  m.npcs = G.stallsOpen ? m.all : m.all.filter((n) => !n.fair);
+  if (G.stallsOpen) return m;
   return { ...m, big: m.big.map((b) => (b.t === "prop" && b.k === "stall" ? { ...b, k: "stallShut" } : b)) };
 }
 function loadMap(m) {
@@ -267,6 +272,7 @@ function onSnap(s) {
     Growth.onSelf(s.self);
     if (isOpen("guild")) renderGuild();
   }
+  if (s.fm) FairMkt.onFm(s.fm);              // a 장날 merchant's list, when asked for or after a purchase (fairmkt.js)
   if (s.ev) for (const e of s.ev) {
     const wait = G.impactAt - t;
     if (wait > 8 && ((e[0] === "h" && !e[4] && e[2] > 0) || e[0] === "k")) setTimeout(() => onEvent(e, now()), wait);

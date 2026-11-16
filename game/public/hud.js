@@ -26,6 +26,7 @@ import { G, $, clamp, VP, el } from "./state.js";
 import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
+import * as FairMkt from "./fairmkt.js";
 import * as Chores from "./chores.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
@@ -308,6 +309,7 @@ export function refreshUi() {
   draw("charm", Charms.boardKey, Charms.renderBoard);   // 참 보드 (charms.js)
   draw("juana", Charms.juanaKey, Charms.renderJuana);   // 참감정사 주아나
   draw("board", Board.key, Board.render);       // the 알바 board (board.js)
+  draw("fairmkt", FairMkt.key, FairMkt.render); // a 장날 merchant's list (fairmkt.js)
   draw("alba", Board.albaKey, Board.renderAlba);   // the 알바 window: the job in hand, its clock, co-op, trust (board.js)
   tutCard(s);
 }
@@ -354,6 +356,7 @@ export function hudTick(t) {
   skyTick(t);
   castBar(t);
   Board.tick(t);                                    // a parcel's countdown (board.js)
+  FairMkt.tick();                                   // a 장날 merchant's countdown, and the window closes when you walk off (fairmkt.js)
   Track.tick();                                     // a 추적 trip under way (track.js)
   Chores.tick();                                    // the village chore's spots (chores.js)
   if (isOpen("daily")) tickDaily(t);

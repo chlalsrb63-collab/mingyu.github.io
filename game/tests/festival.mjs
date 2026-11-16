@@ -1,6 +1,7 @@
 // Headless test of 버드나무 장날 and the seasons (P12, 63-festival.js): season boundaries (and the year's wrap),
-// the Sunday 10–22 KST window, the festival 알바 rows offered only then (outside perDay, paid in tokens), the daily
-// token cap, the cooking contest, 장꾼 다래's stall, the `dn` sky field and an old sheet's migration. node tests/festival.mjs
+// the Tuesday and Saturday 19–21 KST window (and its heads-up), the festival 알바 rows offered only then (outside perDay, paid
+// in tokens), the daily token cap, the cooking contest, 장꾼 다래's stall, the `dn` sky field and an old sheet's migration.
+// (The merchants of those two hours: tests/fairmkt.mjs.) node tests/festival.mjs
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
@@ -27,18 +28,27 @@ assert.equal(X.seasonOf(kst("2025-03-02T00:00")), 0, "364 days before the epoch 
 assert.equal(X.seasonOf(kst("2025-12-01T00:00")), 3, "a day before the epoch's year: 겨울");
 for (let d = -800; d < 800; d += 7) { const s = X.seasonOf(kst("2026-03-01T12:00") + d * 24 * H); assert.ok(s >= 0 && s <= 3); }
 
-// ── the market: Sunday 10:00–22:00 KST (2026-11-15 is a Sunday)
-assert.equal(X.fairOpen(kst("2026-11-15T09:59") + 59999), false, "not before ten");
-assert.equal(X.fairOpen(kst("2026-11-15T10:00")), true, "opens at ten");
-assert.equal(X.fairOpen(kst("2026-11-15T21:59") + 59999), true, "open till the last ms before 22");
-assert.equal(X.fairOpen(kst("2026-11-15T22:00")), false, "closed at 22");
-assert.equal(X.fairOpen(kst("2026-11-14T12:00")), false, "Saturday: no market");
-assert.equal(X.fairOpen(kst("2026-11-16T12:00")), false, "Monday: no market");
-assert.equal(X.fairOpen(kst("2026-11-22T15:00")), true, "next Sunday");
+// ── the market: Tuesday and Saturday 19:00–21:00 KST (2026-11-15 is a Sunday: 11-17 a Tuesday, 11-21 a Saturday)
+assert.deepEqual([X.FAIR.days, X.FAIR.open, X.FAIR.close], [[2, 6], 19, 21], "the one schedule table");
+for (const day of ["2026-11-17", "2026-11-21"]) {
+  assert.equal(X.fairOpen(kst(`${day}T18:59`) + 59999), false, `${day}: not before 19`);
+  assert.equal(X.fairOpen(kst(`${day}T19:00`)), true, `${day}: opens at 19`);
+  assert.equal(X.fairOpen(kst(`${day}T20:59`) + 59999), true, `${day}: open till the last ms before 21`);
+  assert.equal(X.fairOpen(kst(`${day}T21:00`)), false, `${day}: closed at 21`);
+  assert.equal(X.fairOpen(kst(`${day}T10:00`)), false, `${day}: the old Sunday-style morning is closed`);
+}
+for (const day of ["2026-11-15", "2026-11-16", "2026-11-18", "2026-11-19", "2026-11-20"]) assert.equal(X.fairOpen(kst(`${day}T20:00`)), false, `${day}: no market`);
+assert.equal(X.fairOpen(kst("2026-11-24T20:00")), true, "next Tuesday");
+// every evening of three years against the calendar's own weekday (the KST day count across year wraps and leap days)
+for (let d = 0; d < 1100; d++) {
+  const dt = new Date(Date.UTC(2026, 0, 1 + d)), day = dt.toISOString().slice(0, 10), dow = dt.getUTCDay();
+  assert.equal(X.fairOpen(kst(`${day}T19:30`)), dow === 2 || dow === 6, `${day} (weekday ${dow})`);
+  assert.equal(X.fairOpen(kst(`${day}T21:30`)), false, `${day}: closed at 21:30`);
+}
 assert.equal(X.FAIR_JOBS.length, 4, "four festival rows");
 
 // ── a world in 버드나무 마을
-const SUN = kst("2026-11-15T12:00"), MON = kst("2026-11-16T12:00");
+const SUN = kst("2026-11-17T20:00"), MON = kst("2026-11-16T12:00");   // (SUN: now a fair evening, a Tuesday)
 function world(t0) {
   const S = L.setup();
   S.now = t0;
@@ -68,7 +78,7 @@ const toasts = (p) => p.toast.splice(0).join(" | ");
 {
   const w = world(SUN), S = w.S, p = hero(w, "a", "일요장꾼", "willow_board");
   const offers = X.jbOffersOf(S, p);
-  for (const id of X.FAIR_JOBS) assert.ok(offers.includes(id), `${id}: offered on Sunday`);
+  for (const id of X.FAIR_JOBS) assert.ok(offers.includes(id), `${id}: offered on a fair evening`);
   // the regular offers are drawn without them
   assert.ok(p.jbOff.ids.every((id) => !X.JB[id].fair), "the day's draw holds no festival row");
   for (const id of X.FAIR_JOBS) assert.equal(X.jbRoll(p.ch, p.ch.jobBoard.day, id).rush, 0, "never 긴급");
@@ -94,7 +104,7 @@ const toasts = (p) => p.toast.splice(0).join(" | ");
   assert.equal(p.ch.fair.n, X.FAIR.cap, "today's cap");
   assert.equal(p.ch.fair.t, X.FAIR.cap, "the purse holds what was paid");
   assert.equal(X.fairGain(S, p, 1), 0, "nothing past the cap");
-  S.now = SUN + 24 * H;   // Monday: a new board day
+  S.now = SUN + 24 * H;   // Wednesday: a new board day
   assert.equal(X.fairGain(S, p, 3), 3, "a new day pays again");
   assert.deepEqual([p.ch.fair.n, p.ch.fair.t], [3, X.FAIR.cap + 3]);
   S.now = SUN;
@@ -154,7 +164,7 @@ const toasts = (p) => p.toast.splice(0).join(" | ");
   assert.ok(p.ch.cos.on.hat === "hat_ssn_maple" && p.ch.fair.t === 50 - now[1] - 20, "bought and worn");
   assert.match(act(w, "a", { t: "fair_buy", id: "top_ssn_maple" }).error, /장날 토큰이 부족합니다/);
   for (const rows of X.FAIR_SHOP) for (const [, price] of rows) assert.ok(price >= 20 && price <= 30, "prices 20–30");
-  for (const rows of X.FAIR_SHOP) assert.ok(rows.slice(1).reduce((n, r) => n + r[1], 0) <= 13 * X.FAIR.cap, "a season's set within a season of Sundays");
+  for (const rows of X.FAIR_SHOP) assert.ok(rows.slice(1).reduce((n, r) => n + r[1], 0) <= 13 * X.FAIR.cap, "a season's set within half a season of fair days");
   const D = L.defs();
   assert.equal(D.fair.shop[2][0][2], 1, "defs: the straw hat is on sale");
   assert.deepEqual(D.fair.shop[2][1].slice(2), [1, "단풍잎 화관", "모자"], "defs: a 사계절 piece on sale, its slot named");
@@ -163,18 +173,31 @@ const toasts = (p) => p.toast.splice(0).join(" | ");
 }
 {
   // ── the sky field: [weather, clock s, season, 장날 0/1], re-sent when the market opens
-  const w = world(kst("2026-11-15T09:59")), S = w.S, p = hero(w, "a", "하늘보기", "willow_board");
-  L.tick(S, S.now);
-  let v = L.viewFor(S, "a"); L.endTick(S);
-  assert.ok(!(v.toast || []).some((t) => /장날/.test(t)), "no toast while closed");
+  const w = world(kst("2026-11-17T18:30")), S = w.S, p = hero(w, "a", "하늘보기", "willow_board");
+  const step = (at) => { S.now = kst(at); w.now = S.now; L.tick(S, S.now); const v = L.viewFor(S, "a"); L.endTick(S); return v; };
+  let v = step("2026-11-17T18:30");
+  assert.ok(!(v.toast || []).some((t) => /장날/.test(t)), "no toast while closed and far from the opening");
   assert.deepEqual(v.dn.slice(2), [2, 0], "가을, closed");
-  S.now = kst("2026-11-15T10:00"); w.now = S.now;
-  L.tick(S, S.now);
-  v = L.viewFor(S, "a"); L.endTick(S);
+  // the heads-up: ten minutes ahead, once
+  v = step("2026-11-17T18:49");
+  assert.ok(!(v.toast || []).some((t) => /곧 장날/.test(t)), "eleven minutes ahead: not yet");
+  v = step("2026-11-17T18:51");
+  assert.match((v.toast || []).join(" "), /곧 장날이 열립니다! 9분 뒤 19시부터/, "the heads-up");
+  v = step("2026-11-17T18:55");
+  assert.ok(!(v.toast || []).some((t) => /곧 장날/.test(t)), "said once");
+  assert.ok(!v.dn || v.dn[3] === 0, "the sky flag stays 0");
+  v = step("2026-11-17T19:00");
   assert.ok(v.dn, "sent when the market opens");
   assert.deepEqual(v.dn.slice(2), [2, 1], "open");
-  assert.match((v.toast || []).join(" "), /버드나무 장날/, "a toast as it opens");
+  assert.match((v.toast || []).join(" "), /버드나무 장날이 열렸습니다/, "a toast as it opens");
   assert.ok(v.self.jb[1].some((o) => o[0] === "jb_fair_cake"), "the board re-sent with the festival rows");
+  assert.ok(v.chat.some((c) => c.sys && /\[장날\].*21시까지/.test(c.m)), "the opening in the chat");
+  v = step("2026-11-17T21:00");
+  assert.deepEqual(v.dn.slice(2), [2, 0], "closed again");
+  assert.match((v.toast || []).join(" "), /다음 장날\(화·토 19–21시\)/, "the closing toast names the next ones");
+  // no heads-up on a day without a market, even at 18:55
+  v = step("2026-11-18T18:55");
+  assert.ok(!(v.toast || []).some((t) => /곧 장날/.test(t)), "Wednesday: no heads-up");
 }
 {
   // ── an old sheet (v25, no `fair`) and a junk one
@@ -183,7 +206,7 @@ const toasts = (p) => p.toast.splice(0).join(" | ");
   const S = L.setup(); S.now = SUN;
   L.addPlayer(S, "o", old);
   assert.deepEqual(S.players.o.ch.fair, { t: 0, d: 0, n: 0, pan: 0 }, "an old sheet starts an empty purse");
-  assert.equal(S.players.o.ch.v, 26);
+  assert.equal(S.players.o.ch.v, 27);
   assert.deepEqual(X.fairClean({ t: 1e9, d: -3, n: 50, pan: "x" }), { t: X.FAIR.max, d: 0, n: X.FAIR.cap, pan: 0 }, "clamped");
   assert.deepEqual(X.fairClean(null), { t: 0, d: 0, n: 0, pan: 0 });
   const back = JSON.parse(JSON.stringify(L.exportChar(S, "o")));
