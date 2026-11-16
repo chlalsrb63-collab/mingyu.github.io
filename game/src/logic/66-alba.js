@@ -18,7 +18,8 @@
 const ALBA = {};
 const ALBA_RULES = {};
 /** The window's order (a game whose part is missing is skipped). More games are appended here. */
-const ALBA_ORDER = ["pipe", "fly", "store", "parcel", "laundry", "taiyaki"];
+const ALBA_ORDER = ["pipe", "fly", "store", "parcel", "laundry", "taiyaki",
+  "pest", "wall", "cross", "lamp", "rhythm", "garland"];
 const ALBA_T = {
   briefMs: 6000, runMs: 240000, resultMs: 90000, rushMs: 30000, actMs: 35,
   feverMs: 15000, feverMax: 2, feverEvery: 10,   // a fever at combo 10 and 20 (at most two per shift)

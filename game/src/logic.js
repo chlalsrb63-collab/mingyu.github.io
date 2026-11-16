@@ -18223,7 +18223,8 @@ function cosBossRare(S, p, why) {
 const ALBA = {};
 const ALBA_RULES = {};
 /** The window's order (a game whose part is missing is skipped). More games are appended here. */
-const ALBA_ORDER = ["pipe", "fly", "store", "parcel", "laundry", "taiyaki"];
+const ALBA_ORDER = ["pipe", "fly", "store", "parcel", "laundry", "taiyaki",
+  "pest", "wall", "cross", "lamp", "rhythm", "garland"];
 const ALBA_T = {
   briefMs: 6000, runMs: 240000, resultMs: 90000, rushMs: 30000, actMs: 35,
   feverMs: 15000, feverMax: 2, feverEvery: 10,   // a fever at combo 10 and 20 (at most two per shift)
@@ -19096,6 +19097,14 @@ function airshipKill(S, rt, mob) {
 function airshipReturn(st) {
   return st.won ? AIRSHIP_DECK : st.from;
 }
+// 일일 아르바이트 · 횡단 배달 (STUB: the real game replaces this file; contract in 66-alba.js)
+Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 1700, mul: 1, outfit: ["hat_coop_cap","top_appr_deliver"], tool: "parcelbag", hint: "마차와 통나무 사이를 건너 꾸러미를 전하세요." } });
+ALBA_RULES.cross = {
+  init(S, p, ab) { ab.g = { n: 0 }; },
+  adv() {},
+  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
+  view(ab) { return [ab.g.n]; },
+};
 // 일일 아르바이트 · 파리잡기 (docs/design/daily-alba-minigames-2026-11-16.md §3.2): whack-a-mole with flies on a 3×3 grid of trash cans. Contract: 66-alba.js.
 // The whole 240 s spawn schedule is rolled at `init` from `ab.box` (a seed always gives the same flies); play only moves it when a can is hit
 // (that can shuts for 1 s and its later flies slide back). `ab.g` = { F: flies by id, Q: per can its fly ids in time order, H: per can the first
@@ -19185,6 +19194,22 @@ ALBA_RULES.fly = {
     }
     return [fl, cl];
   },
+};
+// 일일 아르바이트 · 화환 엮기 (STUB: the real game replaces this file; contract in 66-alba.js)
+Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 1600, mul: 0.95, outfit: ["hat_wreath_pink","top_willow_apron"], tool: "shears", hint: "꽃줄을 이끌어 꽃을 모아 화환을 완성하세요." } });
+ALBA_RULES.garland = {
+  init(S, p, ab) { ab.g = { n: 0 }; },
+  adv() {},
+  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
+  view(ab) { return [ab.g.n]; },
+};
+// 일일 아르바이트 · 가로등 점등 (STUB: the real game replaces this file; contract in 66-alba.js)
+Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 1900, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "골목의 가로등을 모두 켜세요. 그림자를 조심하세요!" } });
+ALBA_RULES.lamp = {
+  init(S, p, ab) { ab.g = { n: 0 }; },
+  adv() {},
+  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
+  view(ab) { return [ab.g.n]; },
 };
 // 일일 아르바이트 · 세탁소: a Puyo-style washer, 6 columns × 12 rows (plan §3.5; contract and shift engine in 66-alba.js).
 // Pairs of coloured laundry fall; 4+ of one colour touching (orthogonally) are washed, the rest falls, chains go on. Stains (7) only come off by a
@@ -19490,9 +19515,25 @@ ALBA_RULES.parcel = {
       Math.max(0, (c ? g.fallAt : g.spawnAt) - now), parcelDrop(g, ab, now), g.rows, g.ev];
   },
 };
+// 일일 아르바이트 · 해충 방제 (STUB: the real game replaces this file; contract in 66-alba.js)
+Object.assign(ALBA, { pest: { name: "해충 방제", npc: "bogle", place: "보글연금공방 지하 창고", skill: "alch", par: 2000, mul: 1.1, outfit: ["hat_goggles","top_alch"], tool: "sprayer", hint: "분무기로 해충 편대를 쏘세요. 급강하하는 놈을 놓치지 마세요!" } });
+ALBA_RULES.pest = {
+  init(S, p, ab) { ab.g = { n: 0 }; },
+  adv() {},
+  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
+  view(ab) { return [ab.g.n]; },
+};
 // 일일 아르바이트 · 배관 수리 (STUB: the real game replaces this file; contract in 66-alba.js)
 Object.assign(ALBA, { pipe: { name: "배관 수리", npc: "popo", place: "마을회관 배관실", skill: "craft", par: 1500, mul: 1, outfit: ["hat_coop_cap","top_coop_vest"], tool: "wrench", hint: "조각을 칸에 놓아 급수구에서 배수구까지 길을 이으세요." } });
 ALBA_RULES.pipe = {
+  init(S, p, ab) { ab.g = { n: 0 }; },
+  adv() {},
+  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
+  view(ab) { return [ab.g.n]; },
+};
+// 일일 아르바이트 · 여관 공연 (STUB: the real game replaces this file; contract in 66-alba.js)
+Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 2100, mul: 1.05, outfit: ["hat_beret","top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 연주하세요." } });
+ALBA_RULES.rhythm = {
   init(S, p, ab) { ab.g = { n: 0 }; },
   adv() {},
   act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
@@ -19615,6 +19656,14 @@ ALBA_RULES.taiyaki = {
     return [g.n, g.sl.map((x, i) => (i >= g.n || x.s < 3 || x.s === 5 ? [x.s, x.f] : [x.s, x.f, x.q, x.a - rt, x.d, ...x.z])),
       g.cu.map((c) => [c.id, c.need[0], c.need[1], c.need[2], c.until - rt, c.wait, c.grp]), g.tray, g.n < 8 ? Math.max(0, TAI.more - rt) : 0];
   },
+};
+// 일일 아르바이트 · 철거 알바 (STUB: the real game replaces this file; contract in 66-alba.js)
+Object.assign(ALBA, { wall: { name: "철거 알바", npc: "kangkang", place: "캉캉대장간 옆 헌 벽", skill: "craft", par: 1800, mul: 1.1, outfit: ["hat_coop_cap","top_smith"], tool: "chain", hint: "철구로 벽돌을 부수세요. 발판으로 공을 받아 주세요." } });
+ALBA_RULES.wall = {
+  init(S, p, ab) { ab.g = { n: 0 }; },
+  adv() {},
+  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
+  view(ab) { return [ab.g.n]; },
 };
 // ───────────────────────────── 보스전리품 (boss trophies) and the solo story fight ─────────────────────────────
 // docs/design/boss-trophies.md. Every hunting ground's field boss (FIELD_BOSS) stands at its spot (fbHome) and is back

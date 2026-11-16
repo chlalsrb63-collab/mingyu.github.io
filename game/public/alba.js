@@ -23,10 +23,14 @@ const GAMES = {};   // k → module, loaded on first use
 const LOADERS = {
   pipe: () => import("./alba_pipe.js"), fly: () => import("./alba_fly.js"), store: () => import("./alba_store.js"),
   parcel: () => import("./alba_parcel.js"), laundry: () => import("./alba_laundry.js"), taiyaki: () => import("./alba_taiyaki.js"),
+  pest: () => import("./alba_pest.js"), wall: () => import("./alba_wall.js"), cross: () => import("./alba_cross.js"),
+  lamp: () => import("./alba_lamp.js"), rhythm: () => import("./alba_rhythm.js"), garland: () => import("./alba_garland.js"),
 };
 const THEME = {   // stage colours by tool: [wall, floor, accent]
   wrench: ["#3a4a5c", "#5c5c64", "#6ab0ff"], swatter: ["#5a4a3a", "#3a3a32", "#9ae06a"], scanner: ["#3c5a46", "#d8d4c0", "#ff6a5a"],
   box: ["#5a4a36", "#6a5a46", "#e2c486"], basket: ["#3a5a7a", "#9ab6d0", "#ffffff"], spatula: ["#7a4a2a", "#4a3022", "#ffd070"],
+  sprayer: ["#2a4a3a", "#3a4a44", "#b4f04a"], chain: ["#4a3a3a", "#5a4a40", "#ff8a4a"], parcelbag: ["#4a5a3a", "#6a6a4a", "#ffd070"], torch: ["#1f2438", "#2c3248", "#ffc84a"],
+  lute: ["#4a2a4a", "#5a3a3a", "#ff8ac0"], shears: ["#3a5a3a", "#6a8a4a", "#ff9ad0"],
 };
 const st = { ab: null, k: null, mod: null, recv: 0, toStart: 0, toEnd: 0, fever: 0, host: null, stageAt: 0, react: null, parts: [], dom: null, shown: "", result: null, loading: false, last: { t: "", s: -1, c: -1 } };
 
@@ -159,6 +163,12 @@ function drawTool(g, tool, x, y, ang) {
   else if (tool === "box") { r("#c8a06a", -9, -10, 22, 18); r("#a8803a", -9, -10, 22, 3); r("#f0e0b0", 0, -10, 4, 18); }
   else if (tool === "basket") { r("#4a78b8", -9, -2, 20, 12); r("#6a98d8", -9, -2, 20, 3); r("#ffffff", -6, -8, 8, 7); r("#ff8ac0", 2, -9, 7, 8); }
   else if (tool === "spatula") { r("#7a5a3a", -1, 2, 3, 18); r("#cfd4da", -6, -12, 13, 14); r("#aab0b8", -4, -10, 9, 10); }
+  else if (tool === "sprayer") { r("#cfd4da", -3, -4, 8, 16); r("#6a9a4a", -2, -10, 6, 7); r("#3a3e44", 4, -2, 9, 3); r("#b4f04a", 14, -3, 3, 5); }
+  else if (tool === "chain") { for (let i = 0; i < 5; i++) r("#8a8e96", -2 + i * 3, -4 + (i % 2) * 3, 4, 3); r("#4a4e56", 12, -6, 10, 10); }
+  else if (tool === "parcelbag") { r("#a8803a", -8, -6, 18, 16); r("#c8a050", -8, -6, 18, 4); r("#e8d8b0", -1, -6, 3, 16); }
+  else if (tool === "torch") { r("#7a5a3a", -1, -2, 3, 22); r("#ffc84a", -3, -12, 8, 10); r("#fff0a0", -1, -9, 4, 5); }
+  else if (tool === "lute") { r("#8a5a2a", -7, 0, 14, 12); r("#6a3e1a", -5, 3, 10, 6); r("#7a5a3a", 6, -14, 3, 16); r("#e8d8a0", -1, 6, 2, 2); }
+  else if (tool === "shears") { r("#9aa0aa", -6, -14, 3, 16); r("#9aa0aa", 3, -14, 3, 16); r("#c04a4a", -7, 2, 5, 8); r("#c04a4a", 3, 2, 5, 8); }
   else { r("#aab4c0", -2, -14, 4, 24); r("#d8e0ea", -7, -18, 14, 7); r("#6a7480", -3, -17, 6, 3); r("#7a4a2a", -1, 8, 3, 12); }   // wrench
   g.restore();
 }
