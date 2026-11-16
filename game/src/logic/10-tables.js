@@ -201,16 +201,46 @@ const UNIQ_P = [0.001, 0.004, 0.01];
  */
 const IL_RANK = [0, 4, 8];
 const IL_GAP = 10;
-/** A legendary piece carries one power no affix can give: [name word, what it does]. */
+/**
+ * 접두사 고유 효과 (docs/design/prefix-effects.md): a 전설 or 유니크 piece carries ONE power `lg` no affix can give. Three tables per power,
+ * all keyed by `lg`; the later parts 52+ extend them with Object.assign and never edit this file (the recipe is in 51-prefix.js):
+ *   PFX     its numbers, the only place a number lives. `on: 1` lets it drop (rollGear), `off: 1` retires it (a piece loads inert);
+ *           `iv` (attack interval ×) and `gold` (+% gold) are read directly, they need no code
+ *   LEGEND  [name word, tooltip, slots, cat, rating, fam] — the client reads [0] and [1]. slots: letters W weapon · R ring · G gloves ·
+ *           A armor · B boots · N amulet · H helm = where it may ROLL (a piece that has it elsewhere keeps working); cat O offense ·
+ *           D defense · U utility; rating S · M · L = roll weight PFX_W; fam = family (blow kill pass crit skill mit sus mob eco xp util)
+ *   PFX_FN  its code (51-prefix.js)
+ */
+const PFX = {
+  chain: { on: 1, p: 0.25, n: 2, k: 0.6, r: 70 },
+  nova: { on: 1, k: 0.8, r: 34 },
+  haste: { on: 1, iv: 0.85 },
+  giant: { on: 1, k: 1.3 },
+  echo: { on: 1, p: 0.2, ms: 400 },
+  greed: { on: 1, gold: 60 },
+  thorn: { on: 1, k: 0.4 },
+  feast: { on: 1, k: 0.04 },
+};
+/** The roll weight of a power by rating (S 1 · M 2 · L 1), and the letter of each slot / item type (`ring` = the item type of both rings). */
+const PFX_W = { S: 1, M: 2, L: 1 };
+const SLOT_L = { weapon: "W", ring1: "R", ring2: "R", ring: "R", gloves: "G", armor: "A", boots: "B", amulet: "N", helm: "H" };
+/** A tooltip from a power's numbers: {k} the number · {k:%} ×100 · {k:+%} (×−1)×100 · {k:-%} (1−×)×100 · {k:s} ms as seconds. A typo throws at load. */
+function pfxText(key, tpl) {
+  return tpl.replace(/\{(\w+)(?::(%|\+%|-%|s))?\}/g, (_, n, f) => {
+    const v = PFX[key][n];
+    if (typeof v !== "number") throw new Error(`pfxText ${key}.${n}`);
+    return String(f === "%" ? Math.round(v * 100) : f === "+%" ? Math.round((v - 1) * 100) : f === "-%" ? Math.round((1 - v) * 100) : f === "s" ? +(v / 1000).toFixed(2) : v);
+  });
+}
 const LEGEND = {
-  chain: ["뇌명의", "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)"],
-  nova: ["폭렬의", "적을 처치하면 폭발해 주변에 피해를 준다 (80%)"],
-  greed: ["황금손의", "골드 획득 +60%"],
-  haste: ["질주의", "공격 속도 +15%"],
-  thorn: ["가시의", "받은 피해의 40%를 공격한 적에게 되돌려 준다"],
-  feast: ["포식자의", "적을 처치할 때마다 최대 HP의 4% 회복"],
-  echo: ["메아리의", "스킬 사용 시 20% 확률로 재사용 대기시간이 사라진다"],
-  giant: ["거인 사냥꾼의", "정예와 우두머리에게 주는 피해 +30%"],
+  chain: ["뇌명의", pfxText("chain", "공격 시 {p:%}% 확률로 번개가 주변 적 {n}명에게 튄다 ({k:%}%)"), "WG", "O", "M", "blow"],
+  nova: ["폭렬의", pfxText("nova", "적을 처치하면 폭발해 주변에 피해를 준다 ({k:%}%)"), "WGR", "O", "M", "kill"],
+  greed: ["황금손의", pfxText("greed", "골드 획득 +{gold}%"), "RG", "O", "M", "eco"],
+  haste: ["질주의", pfxText("haste", "공격 속도 +{iv:-%}%"), "WG", "O", "M", "pass"],
+  thorn: ["가시의", pfxText("thorn", "받은 피해의 {k:%}%를 공격한 적에게 되돌려 준다"), "ABH", "D", "M", "mit"],
+  feast: ["포식자의", pfxText("feast", "적을 처치할 때마다 최대 HP의 {k:%}% 회복"), "ANH", "D", "L", "sus"],
+  echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 재사용 대기시간이 사라진다"), "WRG", "O", "L", "skill"],
+  giant: ["거인 사냥꾼의", pfxText("giant", "정예와 우두머리에게 주는 피해 +{k:+%}%"), "WRG", "O", "L", "pass"],
 };
 /** Set pieces grow stronger the more of the same set is worn: [pieces, [[stat, value]…]]. */
 const SETS = {

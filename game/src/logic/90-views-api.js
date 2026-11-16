@@ -46,7 +46,7 @@ function selfPayload(p) {
       // then 안락한 휴식 (a bed or a hearth at home, 64-housing.js)
       Math.max(0, ch.house.cozy - now)],
     wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, cosDye: ch.cosDye, sq: sqView(ch, now), keep: Object.keys(ch.keep),
-    dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather"), by: p.blame ? p.blame.by : null, lv: p.blame ? p.blame.lv : 0, el: p.blame ? p.blame.el : 0 } : null,
+    dead: p.dead ? { loss: deathLoss(ch, p), feather: countItem(ch, "feather"), by: p.blame ? p.blame.by : null, lv: p.blame ? p.blame.lv : 0, el: p.blame ? p.blame.el : 0 } : null,
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     // waypoint stones woken: { mapId: bitmask } (bit 0 = the map's first stone)
     wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), cnt: ch.cnt,
@@ -68,6 +68,8 @@ function selfPayload(p) {
     ...socialSelf(p),
     // 협동 아르바이트 paid today (68-coop.js)
     coop: coopSelf(p),
+    // the slots whose 고유 효과 does not count (the same power on a better or earlier piece): the tooltip greys it (51-prefix.js)
+    lgOff: st.lgOff,
   };
 }
 

@@ -94,7 +94,7 @@ function pickUp(S, p, dr) {
   return true;
 }
 /** What dying costs: 3% of the unspent experience, up to about one old level's worth (a revive feather spares it). */
-const deathLoss = (ch) => Math.floor(Math.min(ch.xp, 4 * pointCost(ch.lvl, STAT_K0)) * 0.03);
+const deathLoss = (ch, p) => { const n = Math.floor(Math.min(ch.xp, 4 * pointCost(ch.lvl, STAT_K0)) * 0.03); return p ? Math.max(0, Math.floor(pfxNum(p, "loss", n))) : n; };
 function takeItem(ch, id, n) {
   for (let i = ch.inv.length - 1; i >= 0 && n > 0; i--) {
     const s = ch.inv[i];
@@ -152,7 +152,7 @@ function rollLine(S, key, ilvl, mul) {
 }
 /**
  * Roll one piece of gear: rarity decides how many affixes, `ilvl` (a monster's tier, 1–50) how big and, shown, its item
- * level `il` (+ IL_RANK[rank] for an elite or boss). A 전설 or 유니크 also rolls one `lg` power (a 유니크: 4 stronger lines, AFFIX_MUL[5]).
+ * level `il` (+ IL_RANK[rank] for an elite or boss). A 전설 or 유니크 also rolls one `lg` power of its item type's pool (a 유니크: 4 stronger lines, AFFIX_MUL[5]).
  */
 function rollGear(S, id, q, ilvl, rank = 0) {
   const it = ITEMS[id];
@@ -163,7 +163,7 @@ function rollGear(S, id, q, ilvl, rank = 0) {
   const pool = AFFIX.slice();
   const [lo, hi] = RARITY_AFFIX[q];
   for (let n = ri(S, lo, hi); n > 0 && pool.length; n--) g.af.push(rollLine(S, pool.splice(ri(S, 0, pool.length - 1), 1)[0][0], ilvl, AFFIX_MUL[q]));
-  if (q === 3 || q === 5) { const keys = Object.keys(LEGEND); g.lg = keys[ri(S, 0, keys.length - 1)]; }
+  if (q === 3 || q === 5) g.lg = pfxPick(S, it.type);   // the power comes from the item type's pool (51-prefix.js)
   if (q === 4) g.set = setFor(it);
   if (!isJewel(id)) {
     const r = rnd(S);
@@ -201,11 +201,12 @@ function lootFor(S, rt, mob, p) {
   const out = [];
   const share = allies(S, p).length;
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + st.gold / 100) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1);
+  const fx = pfxLoot(S, rt, p, mob, "drop");   // the powers that add to this kill's loot (51-prefix.js); all 0 without one
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
   const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
   for (let i = 0; i < tries; i++) {
-    if (rnd(S) >= (rank === 2 || d.chest ? 1 : rank === 1 ? 0.35 : d.gear) * (1 + st.mf / 100)) continue;
+    if (rnd(S) >= (rank === 2 || d.chest ? 1 : rank === 1 ? 0.35 : d.gear) * (1 + (st.mf + fx.mf) / 100)) continue;
     let tier = tierFor(d.lv);
     if (rank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
@@ -213,12 +214,13 @@ function lootFor(S, rt, mob, p) {
     let id;
     if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
     else id = `${GEAR[type].pre}_${tier}`;
-    let q = rollRarity(S, rank, st.mf);
+    let q = rollRarity(S, rank, st.mf + fx.mf);
     if (isJewel(id) && q === 0) q = 1;
     out.push({ g: rollGear(S, id, q, d.lv, rank) });
   }
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
+  if (fx.stone) out.push({ it: "stone", n: 1 });   // (a power's extra stone: at most one a kill)
   // a kind's own finds (MOBS[k].drops: [item, chance, min, max]); its weapon always drops legendary
   // (a boss set's own piece always drops as that set)
   for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(ITEMS[it].set ? { g: rollGear(S, it, 4, d.lv, rank) } : ITEMS[it].type === "weapon" ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
@@ -316,25 +318,28 @@ function stagger(S, mob, p, crit) {
 /**
  * A blow from `p` on `mob` for `mult` × attack. `sure`: a crit that cannot graze. `opt` (skills):
  * `mag` magic damage whatever the weapon, `ign` share of armour ignored (the spear's tip), `crit` extra
- * crit chance, `sk` the skill it came from (a book's skill brands what it hits).
+ * crit chance, `sk` the skill it came from (a book's skill brands what it hits), `px` a blow a prefix power dealt (51-prefix.js: it
+ * never starts another power's chance, status or crit effect; its passive multipliers and a kill's heal still count).
  */
 function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (mob.dead) return;
   const st = stats(p);
   const d = MOBS[mob.k];
   const o = opt || {};
+  const fx = pfxPre(S, p, st, mob, d, o);   // the powers that bend this blow before it rolls: armour ignored, crit chance, a sure crit
   // a blow beyond your depth, or from an unpractised hand, may only graze (×0.5, never a crit)
-  const graze = !sure && rnd(S) * 100 < grazeChance(p, mob);
+  const graze = !sure && !fx.sure && rnd(S) * 100 < grazeChance(p, mob);
   // 급소 도려내기: a dagger finds the gaps its marks point to (+4% critical chance per mark)
   const vit = st.wk === "dagger" && pasOn(p, "vitals") ? marksOf(S, mob) * SKILL.vitals.crit : 0;
-  const crit = !graze && (sure || pasFirst(p, mob) || rnd(S) * 100 < st.crit + vit + (o.crit || 0));
+  const crit = !graze && (sure || pasFirst(p, mob) || fx.sure > 0 || rnd(S) * 100 < st.crit + vit + (o.crit || 0) + fx.crit);
+  const ign = fx.ign ? 1 - (1 - (o.ign || 0)) * (1 - fx.ign) : (o.ign || 0);
   // 거검의 관성: each stack a sword carries adds to its critical damage
   const critd = st.critd + (st.wk === "sword" ? inertOf(p) * SKILL.inertia.critd : 0);
-  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - (o.ign || 0));
+  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
   // a dagger in a back that is not watching you
   if (st.wk === "dagger" && mob.tgt !== p.pid) dmg *= 1 + st.sneak;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
-  if (st.lg.giant && (mob.el || d.boss)) dmg *= 1.3;
+  dmg *= pfxMul(S, p, st, mob, d, o, crit);   // the powers that raise the blow (giant: +30% on elites and bosses), one product capped ×1.6
   if (has(mob, "tough")) dmg *= 0.6;
   if (mob.vuln > S.now) dmg *= 1.3;
   // 금서의 낙인: a branded monster takes more from everyone
@@ -363,19 +368,14 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   wmHit(S, p, mob);
   const brand = mob.brand, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue);
   pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand);
+  if (!o.px) pfxHit(S, rt, p, st, mob, dmg, crit, killed, o);   // the powers that answer a blow landing (chance, status, crit)
   if (!killed) {
     // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
     if (!mob.dead) stagger(S, mob, p, crit);
     return crit;
   }
-  // legendary powers that answer a kill
-  if (st.lg.feast && !p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * 0.04);
-  if (st.lg.nova && !p.chainKill) {
-    p.chainKill = true;
-    rt.ev.push(["b", Math.round(x), Math.round(y), 34, 1]);
-    for (const o of mobsWithin(rt, x, y, 34)) hurtMob(S, rt, o, p, 0.8);
-    p.chainKill = false;
-  }
+  // the powers that answer a kill (feast heals, nova bursts; a `px` kill counts too)
+  pfxKill(S, rt, p, st, mob, x, y, o);
   return crit;
 }
 
@@ -434,7 +434,7 @@ function killMob(S, rt, mob) {
     const early = hitters[p.pid] > 0 && wmEligible(p, d) && d.lv <= toTier(ch.lvl) + HUNT_EARLY.ahead
       ? HUNT_EARLY.extra * clamp((HUNT_EARLY.end - ch.lvl) / (HUNT_EARLY.end - HUNT_EARLY.full), 0, 1)
       : 0;
-    gainXp(S, p, xp * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
+    gainXp(S, p, xp * (1 + pfxLoot(S, rt, p, mob, "xp").xp / 100) * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
     ch.kills = (ch.kills || 0) + 1;
     ch.mk[mob.k] = (ch.mk[mob.k] || 0) + 1;
     const now = masteryRank(ch, mob.k);
@@ -504,14 +504,15 @@ function hurtPlayer(S, rt, p, raw, mob) {
   const st = stats(p);
   // inside a dark knight's blood sanctuary a blow lands lighter (57-weapon-skills.js)
   const ward = S.now < (p.sanctAt || 0) ? 1 - SKILL.sanctuary.guard : 1;
-  const dmg = Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard * ward * pasGuard(p)));
+  // the powers that lighten a blow (51-prefix.js); a blow they stop altogether (0) shows as a dodge
+  const dmg = pfxMiti(S, rt, p, st, mob, Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard * ward * pasGuard(p))), raw);
   p.hp -= dmg;
   p.hitAt = S.now;
   rouse(S, p);
   if (mob) p.blame = blameOf(mob);
-  rt.ev.push(["h", p.eid, dmg, 0, 1]);
-  if (mob && st.lg.thorn) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * 0.4)), 0);
-  if (p.hp <= 0) fall(S, rt, p);
+  rt.ev.push(dmg ? ["h", p.eid, dmg, 0, 1] : ["h", p.eid, 0, 3, 1]);
+  pfxHurt(S, rt, p, st, mob, dmg, raw);   // the powers that answer a hurt (thorn gives back 40%)
+  if (p.hp <= 0 && !pfxLethal(S, rt, p, st, mob, dmg)) fall(S, rt, p);
 }
 /** Damage that no armour turns: fire, poison. */
 function wound(S, rt, p, dmg) {
@@ -520,11 +521,12 @@ function wound(S, rt, p, dmg) {
   p.hp -= dmg;
   p.hitAt = S.now;
   rt.ev.push(["h", p.eid, dmg, 0, 1]);
-  if (p.hp <= 0) fall(S, rt, p);
+  if (p.hp <= 0 && !pfxLethal(S, rt, p, stats(p), null, dmg)) fall(S, rt, p);
 }
 function fall(S, rt, p) {
   p.hp = 0;
   p.dead = true;
+  pfxReset(p);
   p.streak = 0;
   p.burn = null; p.poison = null; p.slowed = 0;
   weaponReset(p, true);
@@ -673,7 +675,7 @@ function basicAttack(S, p) {
     addMarks(S, mob, 1);
   }
   for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6); }
-  chainBlow(S, rt, p, st, mob, zx, zy);
+  chainBlow(S, rt, p, st, mob, zx, zy, fin);
 }
 /**
  * A basic blow lands with weight: whatever it hits is shoved back along (ux, uy) and reels, the
@@ -684,13 +686,9 @@ function shoveMob(S, p, o, ux, uy, kb, fin, more) {
   if (!o.el) knock(mapOfS(p.S, p.map), o, ux, uy, kb * (fin ? FINISH.kb : 1));
   holdMob(S, o, (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + more);   // reels: cooldowns paused
 }
-/** 연쇄 (legendary): now and then a basic blow on `mob` leaps on to two more near (zx, zy). */
-function chainBlow(S, rt, p, st, mob, zx, zy) {
-  if (!(st.lg.chain && rnd(S) < 0.25 * st.proc)) return;
-  for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
-    rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
-    hurtMob(S, rt, o, p, 0.6);
-  }
+/** A basic blow landed on `mob` at (zx, zy) (`fin`: the combo's finisher): the prefix powers that answer one (뇌명의 leaps on: 51-prefix.js). */
+function chainBlow(S, rt, p, st, mob, zx, zy, fin) {
+  pfxBlow(S, rt, p, st, mob, zx, zy, !!fin);
 }
 /**
  * A staff's missile or a book's orb (45-jobs.js magicShot) strikes `mob`: the basic blow lands now,
@@ -706,6 +704,6 @@ function magicLand(S, rt, p, s, mob) {
     const by = mobsWithin(rt, zx, zy, s.ring).filter((o) => o !== mob && (o.x - s.x0) * s.ux + (o.y - s.y0) * s.uy > -4).slice(0, 4);
     for (const o of by) { shoveMob(S, p, o, s.ux, s.uy, c.kb * 0.6, fin, 0); hurtMob(S, rt, o, p, s.mult * 0.6, false, mag); }
   } else if (fin) s.ring = 18;
-  chainBlow(S, rt, p, st, mob, zx, zy);
+  chainBlow(S, rt, p, st, mob, zx, zy, fin);
 }
 

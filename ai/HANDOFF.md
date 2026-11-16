@@ -298,3 +298,18 @@ Give her a look (햄스터 species), a few talk lines mentioning 볼칸 as her o
 (requirements, contracts, who does what). **Claude agents:** W0 infrastructure (running) and W3-B (defense 39 + helm 8 + phase-2 hooks 8).
 **Codex:** W5 content plan (start now), W1 affix categories, W2 enchant + NPC 지선, W3-A offense 48, W4 balance — tasks are in ai/TASKS.md CODEX.
 After W0 merges, remove its claim row from ai/TASKS.md and write "P1a merged <hash>" here so Codex starts W1/W2/W3-A.
+## 0.11 Prefix powers, P1a infrastructure (2026-11-16) — main green 62/62, no sheet change (`lg:"key"` as before)
+Design: `docs/design/prefix-effects.md` (95 powers). Built: the registry, the hooks, the caps, the roll by slot pool, no-stack + `self.lgOff` + the grey tooltip line, the
+8 old powers moved onto `PFX_FN` with identical results (differential run of 24 bots × 8 powers over 2500 ticks: same hashes). **How to add powers (do NOT edit 10-tables / 51-prefix / any shared file):**
+- One NEW part per group, name `NN-prefix-<group>.js` with NN ≥ 52 (`52-prefix-blow.js`, `53-prefix-guard.js` …; the build loads parts by name, after 51). Per power, three load-time lines:
+  `Object.assign(PFX, { frost: { p: 0.15, ms: 1200, elite: 0.5 } });` (numbers only here; add `on: 1` when code + test are done, until then it never drops),
+  `Object.assign(LEGEND, { frost: ["빙결의", pfxText("frost", "공격 시 {p:%}% 확률로 적을 {ms:s}초 얼린다"), "WG", "O", "M", "blow"] });` (`{k}` raw · `{k:%}` ×100 · `{k:+%}` (×−1)×100 · `{k:-%}` (1−×)×100 · `{k:s}` ms→s; slots W R G A B N H; cat O/D/U; rating S/M/L; fam as in the design §3),
+  `Object.assign(PFX_FN, { frost: { blow(S, rt, p, st, mob, x, y, fin, skip) { … } } });`.
+- Hooks (all signatures in the header of `51-prefix.js`): `pre mul hit crit kill blow skill miti hurt lethal dash evade tick status pot loot stat sheet num`. Damage a power deals: `hurtMob(S, rt, mob, p, mult, false, PX)`
+  (a `px` blow runs no `blow/hit/crit` hook; `pre/mul` and `kill` still run). Chances `pfxChance(S, st, base)`; ICD `pfxIcd(S, p, key, ms)`; counters `pfxStack`; heals `pfxHeal` (≤ 8 % mhp/s);
+  state `pfxPc(p)` (`cd` survives map change and death, `n t v heal` do not). Caps are enforced by the dispatchers (dmg ×1.6, speed ×0.8 / 45 %, miti ×0.6, absorb 20 %, xp +15, gold +100, 1 stone).
+- Test: `tests/prefix.mjs` already walks every `LEGEND` row (shape, slots vs cat, Korean tooltip with a number, PFX numbers, PFX_FN hooks, `defs.legend`) and, once all 95 exist, the pool sizes. Add your own per-power
+  tests in the same file's style (or a new `tests/prefix-<group>.mjs` + `tests/LIST`): fire with `rnd` forced via `S.seed`, numbers from `PFX`, ICD, `px` no-chain, bosses immune where stated. Wear a power on any piece: `W.wear(slot, id, "key", il)` pattern in `prefix.mjs`.
+- Phase 2 needs no new hook: ZN = `rt.zones.push({ …, px: 1 })` (the zone loop honours `px`); ABS = a shield kept in `pfxPc(p).v` and offered through `miti`'s `r.abs` (the dispatcher caps it at 20 % mhp; reduce your shield by what you offered);
+  AURA = the `tick` hook walking `members(S, p)`; DOT2 = a `mob.pd` your `hit` hook sets and your own `tick` hook (1 s) pays out with `hurtMob(…, PX)` (the dagger's `mob.dot` is untouched).
+Known: a basic arrow now calls `blow` (so 뇌명의 works on a bow; before it silently did not); `deathLoss(ch, p)`, `skMp`, `dashCd(p)`, recall, pet interval, campfire rest read `pfxNum`.

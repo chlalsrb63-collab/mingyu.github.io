@@ -7,6 +7,8 @@
 // owner (2026-11-15): the dodge went too far — 72 → 36 px (same time and invulnerable window)
 const DASH = { px: 36, ms: 180, cd: 4000, inv: 60, step: 4 };
 const DASH_CD = DASH.cd;
+/** The wait between two dashes of `p` now (a prefix power may shorten it: 51-prefix.js). */
+const dashCd = (p) => Math.round(pfxNum(p, "dashCd", DASH_CD));
 
 /** Would a walker standing here be taken through a gate, or the "내 집" door? A dash stops short of those. */
 function gateAt(p, m, x, y) {
@@ -35,7 +37,7 @@ function dashEnd(p, m, ux, uy) {
 function dashWhy(S, p) {
   if (p.dead || p.dance) return "dash";
   if (S.now < (p.stag || 0)) return "stag";
-  return S.now < (p.dashAt || 0) + DASH_CD - 60 ? "dash" : "";
+  return S.now < (p.dashAt || 0) + dashCd(p) - 60 ? "dash" : "";
 }
 /** The dash itself: stands you up, drops the line, the gathering and a recall, and moves you. */
 function dashGo(S, p, m, a) {
@@ -49,14 +51,15 @@ function dashGo(S, p, m, a) {
   p.dashAt = now;
   p.dodge = now + DASH.ms + DASH.inv;
   rt.ev.push(["ds", p.eid, Math.round(x0), Math.round(y0), Math.round(x), Math.round(y)]);
+  pfxDash(S, rt, p, x0, y0, x, y);
 }
 /** Mid-dash nothing a monster throws lands — a blow, a charge, a slam, a volley, a puddle: true, and "회피!". */
 function dodged(S, rt, p) {
   if (S.now >= (p.dodge || 0)) return false;
-  if (p.dgAt !== S.now) { p.dgAt = S.now; rt.ev.push(["dg", p.eid]); }
+  if (p.dgAt !== S.now) { p.dgAt = S.now; rt.ev.push(["dg", p.eid]); pfxEvade(S, rt, p, "dash"); }
   return true;
 }
 /** Ms until the next dash may go (the last `me` field, rounded to 100 ms): 0 when ready. */
 function dashLeft(S, p) {
-  return p.dashAt ? Math.max(0, Math.ceil((p.dashAt + DASH_CD - S.now) / 100) * 100) : 0;
+  return p.dashAt ? Math.max(0, Math.ceil((p.dashAt + dashCd(p) - S.now) / 100) * 100) : 0;
 }

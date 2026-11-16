@@ -18,6 +18,11 @@ leaves. Skills/jobs (J2), life skills and housing internals are being rewritten:
 | `goodsNear(p)`, `SHOP` (70/10) | shop NPC (role `shop`, within 56 px) sells `n.goods \|\| SHOP`; `W1`-style key resolves to the hand's weapon kind (`resolveItem`) |
 | `case buy/sell/sellall/enh/salv/rune/wh/bag_expand` (70-validate, 75-apply) | the actions |
 
+## 접두사 고유 효과 (`lg`) — pools and no-stack (docs/design/prefix-effects.md; machinery `51-prefix.js`, tables in 10-tables)
+- A power is `LEGEND[key] = [word, tooltip, slots, cat, rating, fam]` + numbers `PFX[key]` + code `PFX_FN[key]`. `rollGear` (q3 / q5) draws from the pool of the item type (`SLOT_L`: W weapon · R ring · G gloves · A armor · B boots · N amulet · H helm; offense on W R G, defense on A B N, helm mixed + utility) over the keys with `PFX[key].on`, weighted by rating S 1 · M 2 · L 1 (`PFX_W`; `pfxPick`, one `rnd`). The slot letters restrict ROLLING only: an old piece keeps its power anywhere.
+- The same power on several worn pieces counts once (`gearBonus`): the highest item level (`gearIl`) wins, a tie goes to the earlier `SLOTS` entry; the others' slots are `b.lgOff` (wire `self.lgOff`, the tooltip greys them "중복 적용되지 않음"; a bag piece is greyed when a worn piece with the same power has `il ≥` its own). Their ordinary lines still count. `st.lg` stays `{key: 1}` in slot order.
+- Today's eight run through `PFX_FN` with the same numbers as before (a basic arrow now answers `blow` too, so a bow wearing 뇌명의 chains; before it silently did not).
+
 ## Data shapes
 - Gear piece: `{id, q, il, enh, af:[[stat,value]…], sk, ru:[runeKey|null…], lg?, set?, un?}`; `il` = item level (shown 1–200); worn from player level `gearReq(g)` = max(1, il − `IL_GAP` 10); a piece without `il` (old sheet, shop stock, test fixtures) counts as `ITEMS[id].req + 10` (1 for req 1), so its wear level never moved (`gearIl`/`gearReq`, 50). `un` only at q 5; stack `{id,n}`. `ch.inv` (len ≤ `bagCap`), `ch.eq` slots (`weapon helm armor gloves boots ring1 ring2 amulet weapon2`), `ch.wh={items,gold}` (`WH`=60 slots, unlimited gold).
 - Drop (on map): `{id, it, g, n, q, x, y, own, freeAt, dieAt}`; wire `D` (see wire page).

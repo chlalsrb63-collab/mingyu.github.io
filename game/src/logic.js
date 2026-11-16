@@ -702,16 +702,46 @@ const UNIQ_P = [0.001, 0.004, 0.01];
  */
 const IL_RANK = [0, 4, 8];
 const IL_GAP = 10;
-/** A legendary piece carries one power no affix can give: [name word, what it does]. */
+/**
+ * 접두사 고유 효과 (docs/design/prefix-effects.md): a 전설 or 유니크 piece carries ONE power `lg` no affix can give. Three tables per power,
+ * all keyed by `lg`; the later parts 52+ extend them with Object.assign and never edit this file (the recipe is in 51-prefix.js):
+ *   PFX     its numbers, the only place a number lives. `on: 1` lets it drop (rollGear), `off: 1` retires it (a piece loads inert);
+ *           `iv` (attack interval ×) and `gold` (+% gold) are read directly, they need no code
+ *   LEGEND  [name word, tooltip, slots, cat, rating, fam] — the client reads [0] and [1]. slots: letters W weapon · R ring · G gloves ·
+ *           A armor · B boots · N amulet · H helm = where it may ROLL (a piece that has it elsewhere keeps working); cat O offense ·
+ *           D defense · U utility; rating S · M · L = roll weight PFX_W; fam = family (blow kill pass crit skill mit sus mob eco xp util)
+ *   PFX_FN  its code (51-prefix.js)
+ */
+const PFX = {
+  chain: { on: 1, p: 0.25, n: 2, k: 0.6, r: 70 },
+  nova: { on: 1, k: 0.8, r: 34 },
+  haste: { on: 1, iv: 0.85 },
+  giant: { on: 1, k: 1.3 },
+  echo: { on: 1, p: 0.2, ms: 400 },
+  greed: { on: 1, gold: 60 },
+  thorn: { on: 1, k: 0.4 },
+  feast: { on: 1, k: 0.04 },
+};
+/** The roll weight of a power by rating (S 1 · M 2 · L 1), and the letter of each slot / item type (`ring` = the item type of both rings). */
+const PFX_W = { S: 1, M: 2, L: 1 };
+const SLOT_L = { weapon: "W", ring1: "R", ring2: "R", ring: "R", gloves: "G", armor: "A", boots: "B", amulet: "N", helm: "H" };
+/** A tooltip from a power's numbers: {k} the number · {k:%} ×100 · {k:+%} (×−1)×100 · {k:-%} (1−×)×100 · {k:s} ms as seconds. A typo throws at load. */
+function pfxText(key, tpl) {
+  return tpl.replace(/\{(\w+)(?::(%|\+%|-%|s))?\}/g, (_, n, f) => {
+    const v = PFX[key][n];
+    if (typeof v !== "number") throw new Error(`pfxText ${key}.${n}`);
+    return String(f === "%" ? Math.round(v * 100) : f === "+%" ? Math.round((v - 1) * 100) : f === "-%" ? Math.round((1 - v) * 100) : f === "s" ? +(v / 1000).toFixed(2) : v);
+  });
+}
 const LEGEND = {
-  chain: ["뇌명의", "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)"],
-  nova: ["폭렬의", "적을 처치하면 폭발해 주변에 피해를 준다 (80%)"],
-  greed: ["황금손의", "골드 획득 +60%"],
-  haste: ["질주의", "공격 속도 +15%"],
-  thorn: ["가시의", "받은 피해의 40%를 공격한 적에게 되돌려 준다"],
-  feast: ["포식자의", "적을 처치할 때마다 최대 HP의 4% 회복"],
-  echo: ["메아리의", "스킬 사용 시 20% 확률로 재사용 대기시간이 사라진다"],
-  giant: ["거인 사냥꾼의", "정예와 우두머리에게 주는 피해 +30%"],
+  chain: ["뇌명의", pfxText("chain", "공격 시 {p:%}% 확률로 번개가 주변 적 {n}명에게 튄다 ({k:%}%)"), "WG", "O", "M", "blow"],
+  nova: ["폭렬의", pfxText("nova", "적을 처치하면 폭발해 주변에 피해를 준다 ({k:%}%)"), "WGR", "O", "M", "kill"],
+  greed: ["황금손의", pfxText("greed", "골드 획득 +{gold}%"), "RG", "O", "M", "eco"],
+  haste: ["질주의", pfxText("haste", "공격 속도 +{iv:-%}%"), "WG", "O", "M", "pass"],
+  thorn: ["가시의", pfxText("thorn", "받은 피해의 {k:%}%를 공격한 적에게 되돌려 준다"), "ABH", "D", "M", "mit"],
+  feast: ["포식자의", pfxText("feast", "적을 처치할 때마다 최대 HP의 {k:%}% 회복"), "ANH", "D", "L", "sus"],
+  echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 재사용 대기시간이 사라진다"), "WRG", "O", "L", "skill"],
+  giant: ["거인 사냥꾼의", pfxText("giant", "정예와 우두머리에게 주는 피해 +{k:+%}%"), "WRG", "O", "L", "pass"],
 };
 /** Set pieces grow stronger the more of the same set is worn: [pieces, [[stat, value]…]]. */
 const SETS = {
@@ -7857,7 +7887,7 @@ function masteryRank(ch, k) {
 /** Everything gear adds up to: base stats, affixes, runes, runewords, set bonuses, legendary powers. */
 function gearBonus(ch) {
   const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
-  const lg = {}, sets = {};
+  const lg = {}, sets = {}, win = {}, off = [];
   const add = (s, v) => { if (s in b) b[s] += v; };
   for (const k of SLOTS) {
     const g = ch.eq[k];
@@ -7869,7 +7899,13 @@ function gearBonus(ch) {
     for (const r of g.ru) if (r && RUNES[r]) add(RUNES[r][1], RUNES[r][2]);
     const rw = runeword(g);
     if (rw) for (const [s, v] of rw.add) add(s, v);
-    if (g.lg) lg[g.lg] = 1;
+    // one power counts once however many pieces carry it: the higher item level wins, a tie goes to the earlier slot (SLOTS order)
+    if (g.lg) {
+      const il = gearIl(g), w = win[g.lg];
+      if (!w) win[g.lg] = { k, il };
+      else if (il > w.il) { off.push(w.k); win[g.lg] = { k, il }; }
+      else off.push(k);
+    }
     if (g.set) sets[g.set] = (sets[g.set] || 0) + 1;
   }
   for (const id of Object.keys(sets)) {
@@ -7879,8 +7915,11 @@ function gearBonus(ch) {
   const ttl = ch.title && ACH_BY[ch.title];
   if (ttl && ttl.bonus) for (const [s, v] of ttl.bonus) add(s, v);
   for (const id of REGIONS) if (regionDone(ch, id)) for (const [s, v] of REGION_BONUS[id]) add(s, v);
-  if (lg.greed) b.gold += 60;
+  // the powers that count, in slot order (the order their code runs in: 51-prefix.js), and the slots of the pieces whose power does not
+  for (const k of SLOTS) { const g = ch.eq[k]; if (g && g.lg && win[g.lg] && win[g.lg].k === k) lg[g.lg] = 1; }
+  b.gold += pfxGold(lg);
   b.lg = lg;
+  b.lgOff = off.sort((a, c) => SLOTS.indexOf(a) - SLOTS.indexOf(c));
   return b;
 }
 
@@ -7891,14 +7930,16 @@ function stats(p) {
   const food = p.food && p.food.until > now ? p.food : null;
   const scr = p.ch.scr || {};
   const rally = p.rallyAt > now ? 1 + SKILL.rally_banner.haste : 1;
-  return {
+  const out = {
     mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf, wk: c.wk, mag: c.mag,
     eva: c.eva, aspd: rally === 1 ? c.aspd : 1 - (1 - c.aspd) / rally, sneak: c.sneak, cdr: c.cdr, mpReg: c.mpReg, burst: c.burst, proc: c.proc, kbr: c.kbr, poise: c.poise, res: c.res,
-    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: Math.round(c.acd / rally),
+    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, lgOff: c.lgOff, pfx: c.pfx, arm: c.arm, acd: Math.round(c.acd / rally),
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
     spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.vitSpd > now ? 1 + SKILL.vitals.spd : 1) * (p.slowed > now ? SLOW : 1) * (p.hold ? SKILL[p.hold.id].holdSpd : 1), spd0: c.spd0,
   };
+  if (c.pfx.stat.length) pfxStat(p, out);   // the powers that change the moment's numbers (51-prefix.js)
+  return out;
 }
 
 export function exportChar(S, pid) {
@@ -8250,6 +8291,7 @@ function changeMap(S, p, to, x, y) {
   p.map = to;
   p.swordBeat = null; p.x = x; p.y = y;
   weaponReset(p, false);
+  pfxReset(p);
   const rt = runtime(S, to);
   rt.n++;
   rt.who = true;
@@ -8409,8 +8451,8 @@ function deriveStats(p) {
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
     ls: Math.min(15, b.ls + perk.ls), spd0: BASE_SPD * HERO_SPD_K * (1 + (Math.min(40, b.spd) + tf.move + perk.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
     mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk) + tf.drop,
-    lg: b.lg, arm, wk, mag: arm.mag ? 1 : 0,
-    acd: Math.round(arm.cd * (1 - attackSpeed) * (b.lg.haste ? 0.85 : 1) * (1 - tf.aspd / 100)),
+    lg: b.lg, lgOff: b.lgOff, pfx: pfxBuild(b.lg), arm, wk, mag: arm.mag ? 1 : 0,
+    acd: Math.round(arm.cd * (1 - attackSpeed) * pfxIv(b.lg) * (1 - tf.aspd / 100)),
     aspd: attackSpeed,
     eva: Math.min(SFX.eva[1], SFX.eva[0] * dex),
     sneak: SFX.sneak * dex,
@@ -8422,6 +8464,7 @@ function deriveStats(p) {
     poise: Math.min(0.85, Math.min(SFX.poise[1], SFX.poise[0] * wil) + perk.poise / 100),
     res: Math.min(SFX.res[1], SFX.res[0] * wil),
   };
+  for (const f of p.stc.pfx.sheet) f(p, p.stc, b);   // a power that changes the sheet's own numbers (51-prefix.js)
   return p.stc;
 }
 
@@ -8529,6 +8572,7 @@ function evadeBlow(S, rt, p) {
   const e = deriveStats(p).eva;
   if (!(e > 0) || rnd(S) * 100 >= e) return false;
   rt.ev.push(["h", p.eid, 0, 3, 1]);
+  pfxEvade(S, rt, p, "eva");
   return true;
 }
 /** A charge, a leap, a slam, a fan, or any blow of an elite or a boss shoves `p` back and makes them reel. */
@@ -8619,7 +8663,11 @@ function shotTick(S, rt, dt) {
       if (s.cap) s.cap.h[o.id] = (s.cap.h[o.id] | 0) + 1;
       p.hitAct = [s.act, s.gain];
       if (s.blow) magicLand(S, rt, p, s, o);
-      else hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
+      else {
+        const zx = o.x, zy = o.y;
+        hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
+        if (s.kind < 2 && deriveStats(p).pfx.blow.length) pfxBlow(S, rt, p, stats(p), o, zx, zy, s.kind === 1);   // a plain or finisher arrow is a basic blow (a skill's volley is not)
+      }
       p.hitAct = null;
       // 길별의 렌즈참: a 관통 화살 that strikes a second target marks it (66-charms.js)
       if (s.cl && s.hit.length === 2) charmLens(S, rt, p, o);
@@ -9131,7 +9179,7 @@ function pickUp(S, p, dr) {
   return true;
 }
 /** What dying costs: 3% of the unspent experience, up to about one old level's worth (a revive feather spares it). */
-const deathLoss = (ch) => Math.floor(Math.min(ch.xp, 4 * pointCost(ch.lvl, STAT_K0)) * 0.03);
+const deathLoss = (ch, p) => { const n = Math.floor(Math.min(ch.xp, 4 * pointCost(ch.lvl, STAT_K0)) * 0.03); return p ? Math.max(0, Math.floor(pfxNum(p, "loss", n))) : n; };
 function takeItem(ch, id, n) {
   for (let i = ch.inv.length - 1; i >= 0 && n > 0; i--) {
     const s = ch.inv[i];
@@ -9189,7 +9237,7 @@ function rollLine(S, key, ilvl, mul) {
 }
 /**
  * Roll one piece of gear: rarity decides how many affixes, `ilvl` (a monster's tier, 1–50) how big and, shown, its item
- * level `il` (+ IL_RANK[rank] for an elite or boss). A 전설 or 유니크 also rolls one `lg` power (a 유니크: 4 stronger lines, AFFIX_MUL[5]).
+ * level `il` (+ IL_RANK[rank] for an elite or boss). A 전설 or 유니크 also rolls one `lg` power of its item type's pool (a 유니크: 4 stronger lines, AFFIX_MUL[5]).
  */
 function rollGear(S, id, q, ilvl, rank = 0) {
   const it = ITEMS[id];
@@ -9200,7 +9248,7 @@ function rollGear(S, id, q, ilvl, rank = 0) {
   const pool = AFFIX.slice();
   const [lo, hi] = RARITY_AFFIX[q];
   for (let n = ri(S, lo, hi); n > 0 && pool.length; n--) g.af.push(rollLine(S, pool.splice(ri(S, 0, pool.length - 1), 1)[0][0], ilvl, AFFIX_MUL[q]));
-  if (q === 3 || q === 5) { const keys = Object.keys(LEGEND); g.lg = keys[ri(S, 0, keys.length - 1)]; }
+  if (q === 3 || q === 5) g.lg = pfxPick(S, it.type);   // the power comes from the item type's pool (51-prefix.js)
   if (q === 4) g.set = setFor(it);
   if (!isJewel(id)) {
     const r = rnd(S);
@@ -9238,11 +9286,12 @@ function lootFor(S, rt, mob, p) {
   const out = [];
   const share = allies(S, p).length;
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + st.gold / 100) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1);
+  const fx = pfxLoot(S, rt, p, mob, "drop");   // the powers that add to this kill's loot (51-prefix.js); all 0 without one
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
   const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
   for (let i = 0; i < tries; i++) {
-    if (rnd(S) >= (rank === 2 || d.chest ? 1 : rank === 1 ? 0.35 : d.gear) * (1 + st.mf / 100)) continue;
+    if (rnd(S) >= (rank === 2 || d.chest ? 1 : rank === 1 ? 0.35 : d.gear) * (1 + (st.mf + fx.mf) / 100)) continue;
     let tier = tierFor(d.lv);
     if (rank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
@@ -9250,12 +9299,13 @@ function lootFor(S, rt, mob, p) {
     let id;
     if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
     else id = `${GEAR[type].pre}_${tier}`;
-    let q = rollRarity(S, rank, st.mf);
+    let q = rollRarity(S, rank, st.mf + fx.mf);
     if (isJewel(id) && q === 0) q = 1;
     out.push({ g: rollGear(S, id, q, d.lv, rank) });
   }
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`, n: 1 });
   if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
+  if (fx.stone) out.push({ it: "stone", n: 1 });   // (a power's extra stone: at most one a kill)
   // a kind's own finds (MOBS[k].drops: [item, chance, min, max]); its weapon always drops legendary
   // (a boss set's own piece always drops as that set)
   for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(ITEMS[it].set ? { g: rollGear(S, it, 4, d.lv, rank) } : ITEMS[it].type === "weapon" ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
@@ -9353,25 +9403,28 @@ function stagger(S, mob, p, crit) {
 /**
  * A blow from `p` on `mob` for `mult` × attack. `sure`: a crit that cannot graze. `opt` (skills):
  * `mag` magic damage whatever the weapon, `ign` share of armour ignored (the spear's tip), `crit` extra
- * crit chance, `sk` the skill it came from (a book's skill brands what it hits).
+ * crit chance, `sk` the skill it came from (a book's skill brands what it hits), `px` a blow a prefix power dealt (51-prefix.js: it
+ * never starts another power's chance, status or crit effect; its passive multipliers and a kill's heal still count).
  */
 function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (mob.dead) return;
   const st = stats(p);
   const d = MOBS[mob.k];
   const o = opt || {};
+  const fx = pfxPre(S, p, st, mob, d, o);   // the powers that bend this blow before it rolls: armour ignored, crit chance, a sure crit
   // a blow beyond your depth, or from an unpractised hand, may only graze (×0.5, never a crit)
-  const graze = !sure && rnd(S) * 100 < grazeChance(p, mob);
+  const graze = !sure && !fx.sure && rnd(S) * 100 < grazeChance(p, mob);
   // 급소 도려내기: a dagger finds the gaps its marks point to (+4% critical chance per mark)
   const vit = st.wk === "dagger" && pasOn(p, "vitals") ? marksOf(S, mob) * SKILL.vitals.crit : 0;
-  const crit = !graze && (sure || pasFirst(p, mob) || rnd(S) * 100 < st.crit + vit + (o.crit || 0));
+  const crit = !graze && (sure || pasFirst(p, mob) || fx.sure > 0 || rnd(S) * 100 < st.crit + vit + (o.crit || 0) + fx.crit);
+  const ign = fx.ign ? 1 - (1 - (o.ign || 0)) * (1 - fx.ign) : (o.ign || 0);
   // 거검의 관성: each stack a sword carries adds to its critical damage
   const critd = st.critd + (st.wk === "sword" ? inertOf(p) * SKILL.inertia.critd : 0);
-  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - (o.ign || 0));
+  let dmg = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) - d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
   // a dagger in a back that is not watching you
   if (st.wk === "dagger" && mob.tgt !== p.pid) dmg *= 1 + st.sneak;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
-  if (st.lg.giant && (mob.el || d.boss)) dmg *= 1.3;
+  dmg *= pfxMul(S, p, st, mob, d, o, crit);   // the powers that raise the blow (giant: +30% on elites and bosses), one product capped ×1.6
   if (has(mob, "tough")) dmg *= 0.6;
   if (mob.vuln > S.now) dmg *= 1.3;
   // 금서의 낙인: a branded monster takes more from everyone
@@ -9400,19 +9453,14 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   wmHit(S, p, mob);
   const brand = mob.brand, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue);
   pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand);
+  if (!o.px) pfxHit(S, rt, p, st, mob, dmg, crit, killed, o);   // the powers that answer a blow landing (chance, status, crit)
   if (!killed) {
     // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
     if (!mob.dead) stagger(S, mob, p, crit);
     return crit;
   }
-  // legendary powers that answer a kill
-  if (st.lg.feast && !p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * 0.04);
-  if (st.lg.nova && !p.chainKill) {
-    p.chainKill = true;
-    rt.ev.push(["b", Math.round(x), Math.round(y), 34, 1]);
-    for (const o of mobsWithin(rt, x, y, 34)) hurtMob(S, rt, o, p, 0.8);
-    p.chainKill = false;
-  }
+  // the powers that answer a kill (feast heals, nova bursts; a `px` kill counts too)
+  pfxKill(S, rt, p, st, mob, x, y, o);
   return crit;
 }
 
@@ -9471,7 +9519,7 @@ function killMob(S, rt, mob) {
     const early = hitters[p.pid] > 0 && wmEligible(p, d) && d.lv <= toTier(ch.lvl) + HUNT_EARLY.ahead
       ? HUNT_EARLY.extra * clamp((HUNT_EARLY.end - ch.lvl) / (HUNT_EARLY.end - HUNT_EARLY.full), 0, 1)
       : 0;
-    gainXp(S, p, xp * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
+    gainXp(S, p, xp * (1 + pfxLoot(S, rt, p, mob, "xp").xp / 100) * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
     ch.kills = (ch.kills || 0) + 1;
     ch.mk[mob.k] = (ch.mk[mob.k] || 0) + 1;
     const now = masteryRank(ch, mob.k);
@@ -9541,14 +9589,15 @@ function hurtPlayer(S, rt, p, raw, mob) {
   const st = stats(p);
   // inside a dark knight's blood sanctuary a blow lands lighter (57-weapon-skills.js)
   const ward = S.now < (p.sanctAt || 0) ? 1 - SKILL.sanctuary.guard : 1;
-  const dmg = Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard * ward * pasGuard(p)));
+  // the powers that lighten a blow (51-prefix.js); a blow they stop altogether (0) shows as a dodge
+  const dmg = pfxMiti(S, rt, p, st, mob, Math.max(1, Math.round((raw * (0.85 + rnd(S) * 0.3) - st.def * 0.6) * st.guard * ward * pasGuard(p))), raw);
   p.hp -= dmg;
   p.hitAt = S.now;
   rouse(S, p);
   if (mob) p.blame = blameOf(mob);
-  rt.ev.push(["h", p.eid, dmg, 0, 1]);
-  if (mob && st.lg.thorn) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * 0.4)), 0);
-  if (p.hp <= 0) fall(S, rt, p);
+  rt.ev.push(dmg ? ["h", p.eid, dmg, 0, 1] : ["h", p.eid, 0, 3, 1]);
+  pfxHurt(S, rt, p, st, mob, dmg, raw);   // the powers that answer a hurt (thorn gives back 40%)
+  if (p.hp <= 0 && !pfxLethal(S, rt, p, st, mob, dmg)) fall(S, rt, p);
 }
 /** Damage that no armour turns: fire, poison. */
 function wound(S, rt, p, dmg) {
@@ -9557,11 +9606,12 @@ function wound(S, rt, p, dmg) {
   p.hp -= dmg;
   p.hitAt = S.now;
   rt.ev.push(["h", p.eid, dmg, 0, 1]);
-  if (p.hp <= 0) fall(S, rt, p);
+  if (p.hp <= 0 && !pfxLethal(S, rt, p, stats(p), null, dmg)) fall(S, rt, p);
 }
 function fall(S, rt, p) {
   p.hp = 0;
   p.dead = true;
+  pfxReset(p);
   p.streak = 0;
   p.burn = null; p.poison = null; p.slowed = 0;
   weaponReset(p, true);
@@ -9710,7 +9760,7 @@ function basicAttack(S, p) {
     addMarks(S, mob, 1);
   }
   for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6); }
-  chainBlow(S, rt, p, st, mob, zx, zy);
+  chainBlow(S, rt, p, st, mob, zx, zy, fin);
 }
 /**
  * A basic blow lands with weight: whatever it hits is shoved back along (ux, uy) and reels, the
@@ -9721,13 +9771,9 @@ function shoveMob(S, p, o, ux, uy, kb, fin, more) {
   if (!o.el) knock(mapOfS(p.S, p.map), o, ux, uy, kb * (fin ? FINISH.kb : 1));
   holdMob(S, o, (fin ? FINISH.stun : 150) * (o.el ? 0.6 : 1) + more);   // reels: cooldowns paused
 }
-/** 연쇄 (legendary): now and then a basic blow on `mob` leaps on to two more near (zx, zy). */
-function chainBlow(S, rt, p, st, mob, zx, zy) {
-  if (!(st.lg.chain && rnd(S) < 0.25 * st.proc)) return;
-  for (const o of mobsWithin(rt, zx, zy, 70).filter((o) => o !== mob).slice(0, 2)) {
-    rt.ev.push(["z", Math.round(zx), Math.round(zy - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
-    hurtMob(S, rt, o, p, 0.6);
-  }
+/** A basic blow landed on `mob` at (zx, zy) (`fin`: the combo's finisher): the prefix powers that answer one (뇌명의 leaps on: 51-prefix.js). */
+function chainBlow(S, rt, p, st, mob, zx, zy, fin) {
+  pfxBlow(S, rt, p, st, mob, zx, zy, !!fin);
 }
 /**
  * A staff's missile or a book's orb (45-jobs.js magicShot) strikes `mob`: the basic blow lands now,
@@ -9743,9 +9789,278 @@ function magicLand(S, rt, p, s, mob) {
     const by = mobsWithin(rt, zx, zy, s.ring).filter((o) => o !== mob && (o.x - s.x0) * s.ux + (o.y - s.y0) * s.uy > -4).slice(0, 4);
     for (const o of by) { shoveMob(S, p, o, s.ux, s.uy, c.kb * 0.6, fin, 0); hurtMob(S, rt, o, p, s.mult * 0.6, false, mag); }
   } else if (fin) s.ring = 18;
-  chainBlow(S, rt, p, st, mob, zx, zy);
+  chainBlow(S, rt, p, st, mob, zx, zy, fin);
 }
 
+// ───────────────────────────── 접두사 고유 효과: the machinery (docs/design/prefix-effects.md) ─────────────────────────────
+// A 전설 / 유니크 carries one power `lg`. This part holds what runs it: the hook dispatchers the combat code calls, the caps of
+// design §5, the per-player state `p.pc`, the roll (pfxPick), the winner rule's helpers, and the code of today's eight powers.
+// The tables (PFX numbers, LEGEND rows, PFX_W, SLOT_L, pfxText) are in 10-tables.js.
+//
+// ADDING POWERS (never edit a shared file): put them in a NEW part, a name with a two-digit prefix of 52 or more
+// (52-prefix-blow.js, 53-prefix-guard.js …: the build loads parts in name order, so this part's tables exist when yours runs), and write
+//   Object.assign(PFX, { frost: { p: 0.15, ms: 1200, elite: 0.5 } });     // its numbers; add `on: 1` when code and test are done (until then it never drops)
+//   Object.assign(LEGEND, { frost: ["빙결의", pfxText("frost", "공격 시 {p:%}% 확률로 적을 {ms:s}초 얼린다"), "WG", "O", "M", "blow"] });
+//   Object.assign(PFX_FN, { frost: { blow(S, rt, p, st, mob, x, y, fin, skip) { … } } });   // its code: only the hooks it needs
+// (a statement in a part runs at load, so these three lines are all the registration there is; PFX first, pfxText reads it.)
+//
+// HOOKS (a PFX_FN[key] member; PFX_HOOKS lists them). `st` is stats(p), `rt` the map runtime, `o` the hurtMob options of the blow, `mob`/`d` the monster and
+// MOBS[mob.k]. A hook runs only while its power counts (the winning piece of the key, 51 gearBonus) and only for the hooks it defines.
+//   pre(S, p, st, mob, d, o, r)             before a blow rolls; r.ign (share of armour ignored, 0–1), r.crit (+% crit chance), r.sure (1 = a sure crit)
+//   mul(S, p, st, mob, d, o, crit)          → a damage factor > 0; all of them multiply, the product is capped at ×1.6 (PFX_CAP.dmg)
+//   hit(S, rt, p, st, mob, dmg, crit, killed, o)   a blow of any kind landed (skills too); NOT for a `px` blow. crit(…same) too, only on a crit
+//   kill(S, rt, p, st, mob, x, y, o)        the blow killed mob (it stood at x, y); also for a `px` blow (heals and resources still count)
+//   blow(S, rt, p, st, mob, x, y, fin, skip)  a BASIC blow landed (melee, missile, orb, plain arrow, hammer); fin = combo finisher; skip = mobs it already struck, or undefined
+//   skill(S, rt, p, st, sk, id, cost)       a skill was cast (MP paid, p.cds[id] set)
+//   miti(S, rt, p, st, mob, dmg, raw, r)    an incoming blow (dmg after armour; mob null = a marked area): r.f *= x (all prefix factors floor at ×0.6), r.abs += n (flat, ≤ 20 % mhp), r.block = 1
+//   hurt(S, rt, p, st, mob, dmg, raw)       after the HP was taken (also when p is about to fall)
+//   lethal(S, rt, p, st, mob, dmg)          p.hp <= 0: return true if you kept p alive (p.hp is raised to 1 if you left it ≤ 0)
+//   dash(S, rt, p, st, x0, y0, x, y)        a dash went; evade(S, rt, p, st, how)   a blow was dodged, how "eva" (DEX) or "dash" (i-frames)
+//   tick(S, rt, p, st, now, calm)           once a second while p lives; calm = no hit for 5 s
+//   status(S, p, st, kind, r)               a burn / poison / slow is put on p: r.f *= x shortens it and its bite; r.f = 0 refuses it
+//   pot(S, p, st, amt) → amt                a healing potion's heal; loot(S, rt, p, st, mob, r, kind) kind "xp" | "drop": r.xp / r.gold / r.mf (+%), r.gx (extra multiples of the kill's gold), r.stone (+1)
+//   stat(p, st, r)                          every stats(p) call (the moment's numbers: change fields of st; r.iv *= x quickens the attack, floor ×0.8 and 45 % of the weapon's wait). Cheap; never call stats(p) here
+//   sheet(p, c, b)                          deriveStats (cached with the gear): change fields of c (poise, kbr, res …); b = gearBonus
+//   num(p, name, v) → v                     a named number: "loss" (xp lost at death) "recall" (ms) "pet" (ms) "mp" (a skill's MP) "dashCd" (ms) "rest" (campfire regen a second)
+// STATE: pfxPc(p) = { cd, n, t, v, heal }, in memory only: cd {key: ready-at} (pfxIcd), n {key: count} (pfxStack), t {key: until} (a timed buff), v {key: anything};
+// n, t, v, heal reset when p changes map or falls, cd does not (a 6-minute cheat death cannot be reset by walking through a gate). Relogging resets all.
+// RULES: chances are rnd(S) < base × min(st.proc, 1.5) (pfxChance); a power that can fire more than once a second takes an ICD ≥ 1 s (pfxIcd); damage a power
+// deals goes through hurtMob(S, rt, mob, p, mult, false, PX) (a `px` blow never starts another power); heals go through pfxHeal (≤ 8 % mhp a second);
+// statuses skip bosses and elite=2 and honour holdMob; write determinism-clean code (rnd(S), S.now).
+
+/** The hook names a PFX_FN member may define. */
+const PFX_HOOKS = ["pre", "mul", "hit", "crit", "kill", "blow", "skill", "miti", "hurt", "lethal", "dash", "evade", "tick", "status", "pot", "loot", "stat", "sheet", "num"];
+/** The caps of design §5: dmg (all prefix damage factors), iv (their attack-interval factor) and acd (× the weapon's wait, the floor), miti (the damage-taken factor floor),
+ * abs (absorb, × mhp), heal (× mhp a second), xp (+%), gold (+%, with the static gold of PFX[k].gold), proc (LUK's most). */
+const PFX_CAP = { dmg: 1.6, iv: 0.8, acd: 0.45, miti: 0.6, abs: 0.2, heal: 0.08, xp: 15, gold: 100, proc: 1.5 };
+/** The hurtMob options of a blow a power dealt: it starts no other power's chance, status or crit effect. */
+const PX = Object.freeze({ px: 1 });
+
+// ── what a player's gear gives (cached with the sheet in p.stc: deriveStats)
+/** The active powers' code by hook: { pre: [fn…], … }, in slot order. A retired power (PFX[k].off) is inert. */
+function pfxBuild(lg) {
+  const h = {};
+  for (const n of PFX_HOOKS) h[n] = [];
+  for (const key in lg) {
+    const f = Object.hasOwn(PFX_FN, key) ? PFX_FN[key] : null;
+    if (!f || (PFX[key] && PFX[key].off)) continue;
+    for (const n of PFX_HOOKS) if (typeof f[n] === "function") h[n].push(f[n]);
+  }
+  return h;
+}
+/** The attack-interval factor of the active powers that carry a static `iv` (질주의 0.85), read before the sheet's rounding. */
+function pfxIv(lg) {
+  let m = 1;
+  for (const k in lg) if (PFX[k] && !PFX[k].off && PFX[k].iv) m *= PFX[k].iv;
+  return m;
+}
+/** The gold % the active powers carry as a static `gold` (황금손의 60). */
+function pfxGold(lg) {
+  let g = 0;
+  for (const k in lg) if (PFX[k] && !PFX[k].off && PFX[k].gold) g += PFX[k].gold;
+  return g;
+}
+/** The `lg` a new 전설 / 유니크 of this item type rolls: the live powers (PFX.on) whose slots hold its letter, weighted by rating (PFX_W), one rnd(S). */
+function pfxPick(S, type) {
+  const L = SLOT_L[type], live = (k) => PFX[k] && PFX[k].on && !PFX[k].off;
+  let pool = Object.keys(LEGEND).filter((k) => live(k) && (!L || LEGEND[k][2].includes(L)));
+  if (!pool.length) pool = Object.keys(LEGEND).filter(live);
+  const w = (k) => PFX_W[LEGEND[k][4]] || 1;
+  let r = rnd(S) * pool.reduce((s, k) => s + w(k), 0);
+  for (const k of pool) { r -= w(k); if (r < 0) return k; }
+  return pool[pool.length - 1];
+}
+
+// ── per-player state (in memory only; see STATE above)
+const pfxPc = (p) => p.pc || (p.pc = { cd: {}, n: {}, t: {}, v: {}, heal: [0, 0] });
+/** Stacks, timed buffs and the heal window go when p changes map or falls (cooldown stamps stay). */
+function pfxReset(p) {
+  const c = p.pc;
+  if (c) { c.n = {}; c.t = {}; c.v = {}; c.heal = [0, 0]; }
+}
+/** True (and the key is on cooldown for `ms`) when its internal cooldown is over. */
+function pfxIcd(S, p, key, ms) {
+  const cd = pfxPc(p).cd;
+  if (S.now < (cd[key] || 0)) return false;
+  cd[key] = S.now + ms;
+  return true;
+}
+/** A counter: add `add` (0 reads), never above `max`; returns it. Set pfxPc(p).n[key] = 0 to clear. */
+function pfxStack(p, key, add = 1, max = Infinity) {
+  const n = pfxPc(p).n;
+  return (n[key] = Math.min(max, (n[key] || 0) + add));
+}
+/** A proc roll: `base` × LUK's proc factor (at most ×1.5), one rnd(S). */
+const pfxChance = (S, st, base) => rnd(S) < base * Math.min(st.proc, PFX_CAP.proc);
+/** Heal p by up to `amt` HP through the prefix budget (all prefix heals ≤ 8 % of max HP in a one-second window); returns what it healed. */
+function pfxHeal(S, p, st, amt) {
+  const w = pfxPc(p).heal;
+  if (S.now - w[0] >= 1000) { w[0] = S.now; w[1] = 0; }
+  const n = Math.max(0, Math.min(amt, st.mhp * PFX_CAP.heal - w[1], st.mhp - p.hp));
+  p.hp += n; w[1] += n;
+  return n;
+}
+
+// ── the dispatchers (a hook list is empty for most players: every one returns at once then)
+const PFX_R0 = Object.freeze({ ign: 0, crit: 0, sure: 0, xp: 0, gold: 0, mf: 0, gx: 0, stone: 0 });
+const pfxPreR = { ign: 0, crit: 0, sure: 0 }, pfxMiR = { f: 1, abs: 0, block: 0 }, pfxStR = { iv: 1 }, pfxStaR = { f: 1 };
+
+/** Before a blow rolls → { ign, crit, sure } (read them at once: the object is reused). The crit it adds keeps the total under SFX.critCap. */
+function pfxPre(S, p, st, mob, d, o) {
+  const a = st.pfx.pre;
+  if (!a.length) return PFX_R0;
+  const r = pfxPreR;
+  r.ign = 0; r.crit = 0; r.sure = 0;
+  for (let i = 0; i < a.length; i++) a[i](S, p, st, mob, d, o, r);
+  r.crit = Math.max(0, Math.min(r.crit, SFX.critCap - st.crit));
+  return r;
+}
+/** The damage factor of the active powers: one product, capped. */
+function pfxMul(S, p, st, mob, d, o, crit) {
+  const a = st.pfx.mul;
+  if (!a.length) return 1;
+  let m = 1;
+  for (let i = 0; i < a.length; i++) { const v = a[i](S, p, st, mob, d, o, crit); if (v > 0) m *= v; }
+  return Math.min(m, PFX_CAP.dmg);
+}
+/** A blow landed (hurtMob, not for a `px` blow): `hit`, and `crit` on a crit. */
+function pfxHit(S, rt, p, st, mob, dmg, crit, killed, o) {
+  const a = st.pfx.hit;
+  for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, mob, dmg, crit, killed, o);
+  if (!crit) return;
+  const c = st.pfx.crit;
+  for (let i = 0; i < c.length; i++) c[i](S, rt, p, st, mob, dmg, crit, killed, o);
+}
+function pfxKill(S, rt, p, st, mob, x, y, o) {
+  const a = st.pfx.kill;
+  for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, mob, x, y, o);
+}
+function pfxBlow(S, rt, p, st, mob, x, y, fin, skip) {
+  const a = st.pfx.blow;
+  for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, mob, x, y, fin, skip);
+}
+function pfxSkill(S, rt, p, st, sk, id, cost) {
+  const a = st.pfx.skill;
+  for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, sk, id, cost);
+}
+/** An incoming blow of `dmg` (after armour) → what p takes: the prefix factors (floor ×0.6) and a flat absorb (≤ 20 % mhp); 0 = stopped. */
+function pfxMiti(S, rt, p, st, mob, dmg, raw) {
+  const a = st.pfx.miti;
+  if (!a.length) return dmg;
+  const r = pfxMiR;
+  r.f = 1; r.abs = 0; r.block = 0;
+  for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, mob, dmg, raw, r);
+  if (r.block) return 0;
+  return Math.max(0, Math.round(dmg * Math.min(1, Math.max(PFX_CAP.miti, r.f))) - Math.min(r.abs, st.mhp * PFX_CAP.abs));
+}
+function pfxHurt(S, rt, p, st, mob, dmg, raw) {
+  const a = st.pfx.hurt;
+  for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, mob, dmg, raw);
+}
+/** Is p's fall stopped? (the first power that says so wins; its HP is at least 1) */
+function pfxLethal(S, rt, p, st, mob, dmg) {
+  const a = st.pfx.lethal;
+  for (let i = 0; i < a.length; i++) if (a[i](S, rt, p, st, mob, dmg)) { if (p.hp < 1) p.hp = 1; return true; }
+  return false;
+}
+function pfxDash(S, rt, p, x0, y0, x, y) {
+  const a = deriveStats(p).pfx.dash;
+  if (!a.length) return;
+  const st = stats(p);
+  for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, x0, y0, x, y);
+}
+function pfxEvade(S, rt, p, how) {
+  const a = deriveStats(p).pfx.evade;
+  if (!a.length) return;
+  const st = stats(p);
+  for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, how);
+}
+function pfxTick(S, rt, p, st, now, calm) {
+  const a = st.pfx.tick;
+  for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, now, calm);
+}
+/** The factor on a status's length and bite (1 = as is, 0 = refused). */
+function pfxStatus(S, p, kind) {
+  const a = deriveStats(p).pfx.status;
+  if (!a.length) return 1;
+  const st = stats(p), r = pfxStaR;
+  r.f = 1;
+  for (let i = 0; i < a.length; i++) a[i](S, p, st, kind, r);
+  return Math.max(0, r.f);
+}
+/** A potion's heal after the powers that raise it. */
+function pfxPot(S, p, st, amt) {
+  const a = st.pfx.pot;
+  for (let i = 0; i < a.length; i++) { const v = a[i](S, p, st, amt); if (v >= 0) amt = v; }
+  return amt;
+}
+/** What the powers add to a kill's loot for p (`kind` "xp" | "drop") → { xp, gold, mf, gx, stone }, capped (xp +15 %, gold +100 % with the static gold, 1 stone). */
+function pfxLoot(S, rt, p, mob, kind) {
+  const a = deriveStats(p).pfx.loot;
+  if (!a.length) return PFX_R0;
+  const st = stats(p), r = { ign: 0, crit: 0, sure: 0, xp: 0, gold: 0, mf: 0, gx: 0, stone: 0 };
+  for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, mob, r, kind);
+  r.xp = Math.min(r.xp, PFX_CAP.xp);
+  r.gold = Math.min(r.gold, Math.max(0, PFX_CAP.gold - pfxGold(st.lg)));
+  r.stone = Math.min(r.stone, 1);
+  return r;
+}
+/** The moment's stats after the powers that change them (called by stats(p) when there are any). */
+function pfxStat(p, st) {
+  const a = st.pfx.stat, acd0 = st.acd, r = pfxStR;
+  r.iv = 1;
+  for (let i = 0; i < a.length; i++) a[i](p, st, r);
+  if (r.iv < 1) st.acd = Math.max(Math.round(st.acd * Math.max(PFX_CAP.iv, r.iv)), Math.min(acd0, Math.round(st.arm.cd * PFX_CAP.acd)));
+}
+/** A named number after the powers that change it (see `num` above). */
+function pfxNum(p, name, v) {
+  const a = deriveStats(p).pfx.num;
+  for (let i = 0; i < a.length; i++) { const r = a[i](p, name, v); if (Number.isFinite(r)) v = r; }
+  return v;
+}
+
+// ── the code of the powers that were there first (numbers: PFX in 10-tables.js)
+const PFX_FN = {
+  // 뇌명의: a basic blow now and then leaps on to two more near it (the hammer skips what it struck)
+  chain: {
+    blow(S, rt, p, st, mob, x, y, fin, skip) {
+      const c = PFX.chain;
+      if (!(rnd(S) < c.p * st.proc)) return;
+      for (const o of mobsWithin(rt, x, y, c.r).filter((o) => o !== mob && !(skip && skip.includes(o))).slice(0, c.n)) {
+        rt.ev.push(["z", Math.round(x), Math.round(y - 6), Math.round(o.x), Math.round(o.y - 6), 0]);
+        hurtMob(S, rt, o, p, c.k, false, PX);
+      }
+    },
+  },
+  // 폭렬의: a kill bursts and hurts what stands near (a burst's own kills do not burst again)
+  nova: {
+    kill(S, rt, p, st, mob, x, y) {
+      if (p.chainKill) return;
+      const c = PFX.nova;
+      p.chainKill = true;
+      rt.ev.push(["b", Math.round(x), Math.round(y), c.r, 1]);
+      for (const o of mobsWithin(rt, x, y, c.r)) hurtMob(S, rt, o, p, c.k, false, PX);
+      p.chainKill = false;
+    },
+  },
+  // 질주의 (PFX.haste.iv) and 황금손의 (PFX.greed.gold) are plain numbers read by deriveStats and gearBonus
+  haste: {},
+  greed: {},
+  // 거인 사냥꾼의
+  giant: { mul(S, p, st, mob, d) { return mob.el || d.boss ? PFX.giant.k : 1; } },
+  // 메아리의: a skill's wait may vanish
+  echo: {
+    skill(S, rt, p, st, sk, id) {
+      if (!(rnd(S) < PFX.echo.p * st.proc)) return;
+      p.cds[id] = S.now + PFX.echo.ms;
+      toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`);
+    },
+  },
+  // 가시의: part of what p takes goes back to the one who struck
+  thorn: { hurt(S, rt, p, st, mob, dmg) { if (mob) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * PFX.thorn.k)), 0); } },
+  // 포식자의: a kill heals (not through pfxHeal: as it always was)
+  feast: { kill(S, rt, p, st) { if (!p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * PFX.feast.k); } },
+};
 // ───────────────────────────── felt passives (docs/design/skills-v2.md) ─────────────────────────────
 // The weapon passives at mastery 30/40/50 (and a few at 20) that used to add 3–8 % to a stat now each change
 // how a fight goes: a low-HP rally, a finisher shockwave, an execute, cooldown refunds on kills, a sure first
@@ -10225,12 +10540,7 @@ function hammerTick(S, p, now) {
     for (const target of targets) if (move.stun && !target.dead && !MOBS[target.k].boss && !MOBS[target.k].still && target.el !== 2) {
       holdMob(S, target, move.stun * (target.el ? STAGGER.elite : 1));
     }
-    if (!skill && st.lg.chain && rnd(S) < 0.25 * st.proc) {
-      for (const target of mobsWithin(rt, x, y, 70).filter(o => !targets.includes(o)).slice(0, 2)) {
-        rt.ev.push(["z", Math.round(x), Math.round(y - 6), Math.round(target.x), Math.round(target.y - 6), 0]);
-        hurtMob(S, rt, target, p, 0.6);
-      }
-    }
+    if (!skill) pfxBlow(S, rt, p, st, primary, x, y, false, targets);   // a basic hammer blow answers like any basic blow (what it struck is skipped)
   }
   rt.ev.push(["hm", p.eid, Math.round(x), Math.round(y), move.r, +!!primary, +critical, move.fx]);
 }
@@ -10297,7 +10607,7 @@ function skGrow(ch, sk) {
 const resoReady = (p, sk) => skOf(sk, "staff") && (p.reso | 0) >= SKILL.reso.n && pasOn(p, "reso");
 const skJobBonus = (p, sk) => sk.job === p.ch.job ? JOB_SKILL_RANKS[jobSkillRank(p.ch.jp?.lv || 0)] : null;
 /** What a skill costs right now. */
-const skMp = (p, sk) => resoReady(p, sk) ? 0 : Math.ceil(sk.mp * (100 - (skJobBonus(p, sk)?.mp || 0)) / 100);
+const skMp = (p, sk) => resoReady(p, sk) ? 0 : Math.max(0, Math.ceil(pfxNum(p, "mp", sk.mp * (100 - (skJobBonus(p, sk)?.mp || 0)) / 100)));
 const skCooldown = (p, sk) => Math.round(sk.cd * (1 - stats(p).cdr) * (100 - (skJobBonus(p, sk)?.cd || 0)) / 100);
 function skillHpCost(p, sk) {
   if (!sk.hpPct) return 0;
@@ -10876,9 +11186,9 @@ function castSkill(S, p, id) {
   const hpSpent = skillHpCost(p, sk);
   if (hpSpent) { p.hp -= hpSpent; rt.ev.push(["h", p.eid, hpSpent, 0, 1, 1]); }
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1, 1]); } }
-  // WIS shortens every wait; an echo (legendary) may give it straight back
+  // WIS shortens every wait; a prefix power (메아리의) may give it straight back
   p.cds[id] = now + skCooldown(p, sk);
-  if (st.lg.echo && rnd(S) < 0.2 * st.proc) { p.cds[id] = now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
+  pfxSkill(S, rt, p, st, sk, id, cost);
   p.atkAt = now;
   p.swordBeat = null;
   p.dirty = true;
@@ -12534,6 +12844,8 @@ function choreView(ch, a) {
 // owner (2026-11-15): the dodge went too far — 72 → 36 px (same time and invulnerable window)
 const DASH = { px: 36, ms: 180, cd: 4000, inv: 60, step: 4 };
 const DASH_CD = DASH.cd;
+/** The wait between two dashes of `p` now (a prefix power may shorten it: 51-prefix.js). */
+const dashCd = (p) => Math.round(pfxNum(p, "dashCd", DASH_CD));
 
 /** Would a walker standing here be taken through a gate, or the "내 집" door? A dash stops short of those. */
 function gateAt(p, m, x, y) {
@@ -12562,7 +12874,7 @@ function dashEnd(p, m, ux, uy) {
 function dashWhy(S, p) {
   if (p.dead || p.dance) return "dash";
   if (S.now < (p.stag || 0)) return "stag";
-  return S.now < (p.dashAt || 0) + DASH_CD - 60 ? "dash" : "";
+  return S.now < (p.dashAt || 0) + dashCd(p) - 60 ? "dash" : "";
 }
 /** The dash itself: stands you up, drops the line, the gathering and a recall, and moves you. */
 function dashGo(S, p, m, a) {
@@ -12576,16 +12888,17 @@ function dashGo(S, p, m, a) {
   p.dashAt = now;
   p.dodge = now + DASH.ms + DASH.inv;
   rt.ev.push(["ds", p.eid, Math.round(x0), Math.round(y0), Math.round(x), Math.round(y)]);
+  pfxDash(S, rt, p, x0, y0, x, y);
 }
 /** Mid-dash nothing a monster throws lands — a blow, a charge, a slam, a volley, a puddle: true, and "회피!". */
 function dodged(S, rt, p) {
   if (S.now >= (p.dodge || 0)) return false;
-  if (p.dgAt !== S.now) { p.dgAt = S.now; rt.ev.push(["dg", p.eid]); }
+  if (p.dgAt !== S.now) { p.dgAt = S.now; rt.ev.push(["dg", p.eid]); pfxEvade(S, rt, p, "dash"); }
   return true;
 }
 /** Ms until the next dash may go (the last `me` field, rounded to 100 ms): 0 when ready. */
 function dashLeft(S, p) {
-  return p.dashAt ? Math.max(0, Math.ceil((p.dashAt + DASH_CD - S.now) / 100) * 100) : 0;
+  return p.dashAt ? Math.max(0, Math.ceil((p.dashAt + dashCd(p) - S.now) / 100) * 100) : 0;
 }
 // ───────────────────────────── content: the long game ─────────────────────────────
 // What keeps a character coming back, each after a live game that does it well:
@@ -19052,8 +19365,9 @@ export function applyAction(S, pid, a) {
       const st = stats(p);
       if (it.type === "scroll") {
         rouse(S, p);
-        p.recall = { at: now + RECALL_MS };
-        S.maps[p.map].ev.push(["rc", p.eid, RECALL_MS]);
+        const rms = Math.round(pfxNum(p, "recall", RECALL_MS));   // (a prefix power may shorten the cast)
+        p.recall = { at: now + rms };
+        S.maps[p.map].ev.push(["rc", p.eid, rms]);
         toast(p, "귀환 주문서를 읽는 중… (움직이거나 피해를 입으면 취소)");
         p.dirty = true;
         break;
@@ -19091,7 +19405,7 @@ export function applyAction(S, pid, a) {
       }
       p.potAt = now + 900;
       if (it.heal) {
-        const amt = Math.min(Math.round(it.heal + st.mhp * (it.pct || 0)), Math.max(1, Math.round(st.mhp - p.hp)));
+        const amt = Math.min(Math.round(pfxPot(S, p, st, it.heal + st.mhp * (it.pct || 0))), Math.max(1, Math.round(st.mhp - p.hp)));
         p.hp = Math.min(st.mhp, p.hp + amt);
         S.maps[p.map].ev.push(["h", p.eid, -amt, 0, 1]);
       }
@@ -19417,7 +19731,7 @@ export function applyAction(S, pid, a) {
       }
       // inside a 레이드던전: up again in its start room, at no cost (64-dim.js)
       if (dimRespawn(S, p)) break;
-      const lost = deathLoss(ch);
+      const lost = deathLoss(ch, p);
       ch.xp -= lost;
       p.dead = false;
       changeMap(S, p, START.map, START.x, START.y);
@@ -19736,7 +20050,9 @@ function rollTraits(S, n) {
 }
 /** Put a lingering condition on a player: "burn" and "poison" bite once a second, "slow" drags the feet. */
 function afflict(S, p, kind, atk) {
-  const now = S.now, k = 1 - deriveStats(p).res;     // WIL shortens it and dulls its bite
+  const f = pfxStatus(S, p, kind);                    // a prefix power may shorten it, or refuse it (0)
+  if (!(f > 0)) return;
+  const now = S.now, k = (1 - deriveStats(p).res) * f;     // WIL shortens it and dulls its bite
   if (kind === "slow") p.slowed = Math.max(p.slowed || 0, now + Math.round(SLOW_MS * k));
   else if (kind === "burn") p.burn = { until: now + Math.round(4000 * k), next: (p.burn && p.burn.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.14 * k)) };
   else p.poison = { until: now + Math.round(6000 * k), next: (p.poison && p.poison.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.09 * k)) };
@@ -20177,7 +20493,7 @@ export function tick(S, now) {
       for (const o of mobsWithin(rt, z.x, z.y, z.r)) {
         if (z.slow) o.slow = now + 2500;
         if (z.knock) { const d = dist(z.x, z.y, o.x, o.y) || 1; knock(m, o, (o.x - z.x) / d, (o.y - z.y) / d, z.knock); }
-        hurtMob(S, rt, o, p, z.mult);
+        hurtMob(S, rt, o, p, z.mult, false, z.px ? PX : undefined);   // (a zone a prefix power laid: `px: 1`)
       }
       if (--z.left <= 0) rt.zones.splice(i, 1);
     }
@@ -20238,7 +20554,7 @@ export function tick(S, now) {
         if (d <= bd) { bd = d; best = i; }
       }
       if (best < 0) continue;
-      p.petAt = now + PET_MS;
+      p.petAt = now + pfxNum(p, "pet", PET_MS);
       const dr = rt.drops[best];
       if (pickUp(S, p, dr)) { rt.drops.splice(best, 1); rt.ev.push(["pk", p.eid, Math.round(dr.x), Math.round(dr.y)]); }
     }
@@ -20276,13 +20592,14 @@ export function tick(S, now) {
     const calm = now - p.hitAt > 5000;
     // a campfire is a place to catch your breath; sitting by it is better still
     const fire = calm ? fireNear(S.maps[p.map], p) : null;
-    const rest = fire ? (p.sit ? 0.12 : 0.06) : mapOfS(p.S, p.map).safe ? 0.08 : 0.02;
+    const rest = fire ? pfxNum(p, "rest", p.sit ? 0.12 : 0.06) : mapOfS(p.S, p.map).safe ? 0.08 : 0.02;
     // a fire's warmth carries on after you stand up, as long as you keep out of a fight
     const wr = calm ? warmRegen(p, now) : 0;
     if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * (rest + wr) + 1);
     if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr + st.mpReg) + 1);
     if (fire && p.sit) warmTick(S, p, fire, now);
     else p.warmT = 0;
+    pfxTick(S, S.maps[p.map], p, st, now, calm);   // the prefix powers that work once a second (regen, cleanse, resting)
   }
   return S;
 }
@@ -20351,7 +20668,7 @@ function selfPayload(p) {
       // then 안락한 휴식 (a bed or a hearth at home, 64-housing.js)
       Math.max(0, ch.house.cozy - now)],
     wh: ch.wh, pet: ch.pet, opt: ch.opt, cos: ch.cos, cosDye: ch.cosDye, sq: sqView(ch, now), keep: Object.keys(ch.keep),
-    dead: p.dead ? { loss: deathLoss(ch), feather: countItem(ch, "feather"), by: p.blame ? p.blame.by : null, lv: p.blame ? p.blame.lv : 0, el: p.blame ? p.blame.el : 0 } : null,
+    dead: p.dead ? { loss: deathLoss(ch, p), feather: countItem(ch, "feather"), by: p.blame ? p.blame.by : null, lv: p.blame ? p.blame.lv : 0, el: p.blame ? p.blame.el : 0 } : null,
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     // waypoint stones woken: { mapId: bitmask } (bit 0 = the map's first stone)
     wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), cnt: ch.cnt,
@@ -20373,6 +20690,8 @@ function selfPayload(p) {
     ...socialSelf(p),
     // 협동 아르바이트 paid today (68-coop.js)
     coop: coopSelf(p),
+    // the slots whose 고유 효과 does not count (the same power on a better or earlier piece): the tooltip greys it (51-prefix.js)
+    lgOff: st.lgOff,
   };
 }
 

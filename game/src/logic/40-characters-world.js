@@ -303,7 +303,7 @@ function masteryRank(ch, k) {
 /** Everything gear adds up to: base stats, affixes, runes, runewords, set bonuses, legendary powers. */
 function gearBonus(ch) {
   const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
-  const lg = {}, sets = {};
+  const lg = {}, sets = {}, win = {}, off = [];
   const add = (s, v) => { if (s in b) b[s] += v; };
   for (const k of SLOTS) {
     const g = ch.eq[k];
@@ -315,7 +315,13 @@ function gearBonus(ch) {
     for (const r of g.ru) if (r && RUNES[r]) add(RUNES[r][1], RUNES[r][2]);
     const rw = runeword(g);
     if (rw) for (const [s, v] of rw.add) add(s, v);
-    if (g.lg) lg[g.lg] = 1;
+    // one power counts once however many pieces carry it: the higher item level wins, a tie goes to the earlier slot (SLOTS order)
+    if (g.lg) {
+      const il = gearIl(g), w = win[g.lg];
+      if (!w) win[g.lg] = { k, il };
+      else if (il > w.il) { off.push(w.k); win[g.lg] = { k, il }; }
+      else off.push(k);
+    }
     if (g.set) sets[g.set] = (sets[g.set] || 0) + 1;
   }
   for (const id of Object.keys(sets)) {
@@ -325,8 +331,11 @@ function gearBonus(ch) {
   const ttl = ch.title && ACH_BY[ch.title];
   if (ttl && ttl.bonus) for (const [s, v] of ttl.bonus) add(s, v);
   for (const id of REGIONS) if (regionDone(ch, id)) for (const [s, v] of REGION_BONUS[id]) add(s, v);
-  if (lg.greed) b.gold += 60;
+  // the powers that count, in slot order (the order their code runs in: 51-prefix.js), and the slots of the pieces whose power does not
+  for (const k of SLOTS) { const g = ch.eq[k]; if (g && g.lg && win[g.lg] && win[g.lg].k === k) lg[g.lg] = 1; }
+  b.gold += pfxGold(lg);
   b.lg = lg;
+  b.lgOff = off.sort((a, c) => SLOTS.indexOf(a) - SLOTS.indexOf(c));
   return b;
 }
 
@@ -337,14 +346,16 @@ function stats(p) {
   const food = p.food && p.food.until > now ? p.food : null;
   const scr = p.ch.scr || {};
   const rally = p.rallyAt > now ? 1 + SKILL.rally_banner.haste : 1;
-  return {
+  const out = {
     mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf, wk: c.wk, mag: c.mag,
     eva: c.eva, aspd: rally === 1 ? c.aspd : 1 - (1 - c.aspd) / rally, sneak: c.sneak, cdr: c.cdr, mpReg: c.mpReg, burst: c.burst, proc: c.proc, kbr: c.kbr, poise: c.poise, res: c.res,
-    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, arm: c.arm, acd: Math.round(c.acd / rally),
+    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, lgOff: c.lgOff, pfx: c.pfx, arm: c.arm, acd: Math.round(c.acd / rally),
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
     spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.vitSpd > now ? 1 + SKILL.vitals.spd : 1) * (p.slowed > now ? SLOW : 1) * (p.hold ? SKILL[p.hold.id].holdSpd : 1), spd0: c.spd0,
   };
+  if (c.pfx.stat.length) pfxStat(p, out);   // the powers that change the moment's numbers (51-prefix.js)
+  return out;
 }
 
 export function exportChar(S, pid) {
@@ -696,6 +707,7 @@ function changeMap(S, p, to, x, y) {
   p.map = to;
   p.swordBeat = null; p.x = x; p.y = y;
   weaponReset(p, false);
+  pfxReset(p);
   const rt = runtime(S, to);
   rt.n++;
   rt.who = true;

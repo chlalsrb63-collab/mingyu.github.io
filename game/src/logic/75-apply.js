@@ -40,8 +40,9 @@ export function applyAction(S, pid, a) {
       const st = stats(p);
       if (it.type === "scroll") {
         rouse(S, p);
-        p.recall = { at: now + RECALL_MS };
-        S.maps[p.map].ev.push(["rc", p.eid, RECALL_MS]);
+        const rms = Math.round(pfxNum(p, "recall", RECALL_MS));   // (a prefix power may shorten the cast)
+        p.recall = { at: now + rms };
+        S.maps[p.map].ev.push(["rc", p.eid, rms]);
         toast(p, "귀환 주문서를 읽는 중… (움직이거나 피해를 입으면 취소)");
         p.dirty = true;
         break;
@@ -79,7 +80,7 @@ export function applyAction(S, pid, a) {
       }
       p.potAt = now + 900;
       if (it.heal) {
-        const amt = Math.min(Math.round(it.heal + st.mhp * (it.pct || 0)), Math.max(1, Math.round(st.mhp - p.hp)));
+        const amt = Math.min(Math.round(pfxPot(S, p, st, it.heal + st.mhp * (it.pct || 0))), Math.max(1, Math.round(st.mhp - p.hp)));
         p.hp = Math.min(st.mhp, p.hp + amt);
         S.maps[p.map].ev.push(["h", p.eid, -amt, 0, 1]);
       }
@@ -405,7 +406,7 @@ export function applyAction(S, pid, a) {
       }
       // inside a 레이드던전: up again in its start room, at no cost (64-dim.js)
       if (dimRespawn(S, p)) break;
-      const lost = deathLoss(ch);
+      const lost = deathLoss(ch, p);
       ch.xp -= lost;
       p.dead = false;
       changeMap(S, p, START.map, START.x, START.y);
