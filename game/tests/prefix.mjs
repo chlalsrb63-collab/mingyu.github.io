@@ -94,11 +94,11 @@ assert.deepEqual(X.PFX_W, { S: 1, M: 2, L: 1 }); assert.equal(X.SLOT_L.ring1, "R
   for (let i = 0; i < 200; i++) { const g = X.rollGear(box, "g_3", 4, 30); assert.equal(g.q, 4); assert.equal(g.lg, undefined); }
   // the same box seed gives the same piece
   assert.deepEqual(X.rollGear({ seed: 99 }, "h_2", 3, 30), X.rollGear({ seed: 99 }, "h_2", 3, 30));
-  // a key that is not `on` never drops, a key that is, does, and the weights follow the rating (the amulet pool has room for the three)
+  // a key that is not `on` never drops, a key that is, does, and the weights follow the rating (the amulet pool has room for the three; it holds ~30 live powers by now, so the sample is large)
   Object.assign(X.PFX, { zs: { on: 1 }, zm: { on: 1 }, zl: { on: 1 }, zh: {} });
   for (const [k, r] of [["zs", "S"], ["zm", "M"], ["zl", "L"], ["zh", "M"]]) X.LEGEND[k] = ["시험" + k.replace(/./g, "의"), "시험 1", "N", "D", r, "sus"];
   const seen = {}, bx = { seed: 8 };
-  for (let i = 0; i < N * 2; i++) { const k = X.rollGear(bx, "n_4", 3, 30).lg; seen[k] = (seen[k] || 0) + 1; }
+  for (let i = 0; i < N * 10; i++) { const k = X.rollGear(bx, "n_4", 3, 30).lg; seen[k] = (seen[k] || 0) + 1; }
   assert.equal(seen.zh, undefined, "a power not yet `on` never drops");
   assert.ok(Math.abs(seen.zm / seen.zs - 2) < 0.25 && Math.abs(seen.zl / seen.zs - 1) < 0.2, `weights 1:2:1 — ${seen.zs} ${seen.zm} ${seen.zl}`);
   for (const k of ["zs", "zm", "zl", "zh"]) { delete X.PFX[k]; delete X.LEGEND[k]; }

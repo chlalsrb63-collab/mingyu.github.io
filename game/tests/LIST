@@ -6,6 +6,7 @@ loot
 itemlevel
 prefix
 prefix-util
+prefix-guard
 life
 lifeskills
 jobaudit

@@ -47,7 +47,9 @@ function mobHit(S, rt, p, raw, mob, how = "blow") {
   // a parry, a braced charge, the smoke (57-weapon-skills.js skGuard)
   raw = skGuard(S, rt, p, raw, src, how);
   if (!raw) return;
+  p.hitHow = how;   // the kind of blow, for the prefix powers that tell a melee blow or a marked area apart (53-prefix-guard.js)
   hurtPlayer(S, rt, p, raw, src);
+  p.hitHow = "";
   // a telegraphed trick ("mv", special) only makes a player reel who has not just reeled: no chain of them stun-locks
   const reel = how === "mv" ? !(p.stag > S.now - MV_GRACE) : how === "charge" || (how === "tele" && mob) || (src && (src.el >= 1 || MOBS[src.k].boss));
   if (!p.dead && reel && p.braceAt !== S.now) staggerPlayer(S, rt, p, mob);
