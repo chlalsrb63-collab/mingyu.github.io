@@ -111,4 +111,5 @@ export function installFrames() {
   const P = palette(getComputedStyle(hud || root)), a = parseFloat(getComputedStyle(root).getPropertyValue("--hud-a")) || 1;
   r.setProperty("--frt-brass-a", brass({ ...P, face: fade(P.face, a) }));
   r.setProperty("--frt-screen-a", screen({ ...P, scr: fade(P.scr, a) }));
+  dispatchEvent(new Event("hud-skin"));   // the smartphone's bezel (phone.js) is drawn in the same theme colours
 }

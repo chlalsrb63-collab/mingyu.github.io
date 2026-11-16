@@ -32,7 +32,7 @@ import { G, el, $, resize, $$, tg, text, now, T } from "./state.js";
 import { JOB_ALIAS, onEvent, onGain } from "./events.js";
 import { countItem, usePotion, castSkill } from "./actions.js";
 import { snd } from "./update.js";
-import { addChat, chatTo, chatHint, hoverTip, toast, showTip, hideTip, touch, closeWin, banner, isOpen, saveOpen, restoreOpen } from "./windows.js";
+import { addChat, chatTo, chatHint, hoverTip, toast, showTip, hideTip, touch, closeWin, banner, isOpen, saveOpen, restoreOpen, phoneShut } from "./windows.js";
 import { itemSlot, isGear, sellPrice, useSlot } from "./items.js";
 import { section, refreshUi, resetPurse, hudBars } from "./hud.js";
 import { openStats, openTree } from "./win_char.js";
@@ -174,6 +174,7 @@ export function stopGame() {
   $("#hud").hidden = true; $("#dead").hidden = true; G.me.dead = false; $("#tip").hidden = true;
   saveOpen(true);   // which windows were open, before they close (windows.js)
   for (const w of $$("#windows .window, #panel .window")) if (!w.hidden) closeWin(w.id.slice(2));
+  phoneShut();
   resize();
   tg.clearRect(0, 0, text.width, text.height);
 }

@@ -8,6 +8,9 @@
  * is open); the ones that need room (skills, life, dex, collection, achievements, ranking, settings, help …) float
  * over the world by default. Each has a 분리 / 붙이기 button in its title bar that switches it (remembered per
  * window in `lumentale:dock:<id>`); on a phone they all float as before.
+ * The smartphone menu (phone.js, the default on a desktop; 설정 → 화면 → 메뉴 방식 turns the side panel back on) is the same
+ * machinery with no side column: every DOCKABLE window is a PANEL one, `#panel` moves into the phone's screen, and opening
+ * one pulls the phone out (`phoneHook`); Esc closes the app, then the phone.
  */
 
 import { Sound } from "./audio.js";
@@ -65,15 +68,24 @@ const dockWant = (id) => {
 };
 /** The windows in the side panel right now: none on a phone, else DOCKABLE as the defaults and the title-bar buttons say. Refilled in place. */
 export const PANEL = new Set();
-const syncPanel = () => { PANEL.clear(); if (VP.lay === "full") for (const id of DOCKABLE) if (dockWant(id)) PANEL.add(id); };
+const syncPanel = () => { PANEL.clear(); if (VP.lay === "full") for (const id of DOCKABLE) if (VP.phone || dockWant(id)) PANEL.add(id); };
+/** phone.js plugs in here (it imports this file, not the other way round): pull the phone out / put it away, is it out, the app on its screen, where the player stands. */
+export const phoneHook = { open() {}, close() {}, out: () => false, app() {}, edge: () => null };
+let autoPhone = false;   // a shop pulled the phone out for the bag: it goes back in with the bag
 const BAG_WITH = ["shop", "smith", "craft", "hstore"];
 const panelBox = $("#panel"), winBox = $("#windows");
 let panelId = null, autoBag = false, wasDocked = null;
+const trackBox = $("#quest-track"), sideBox = $("#side"), menuBox = $("#menu");
+/** Where #panel sits: on the phone's screen (the app area) in phone mode, else in the side column under the minimap with the quest tracker as its first child. */
+function homePanel(inPhone) {
+  if (inPhone) { $("#ph-app").append(panelBox); sideBox.insertBefore(trackBox, menuBox); }
+  else { sideBox.insertBefore(panelBox, menuBox); panelBox.prepend(trackBox); }
+}
 /** Is this window docked (in the side panel, or the bag in the phone drawer)? Docked windows are never placed, dragged or folded. */
 const paned = (id) => winEl(id).classList.contains("docked");
 /** The window shown in the side panel, or null (the quest tracker). */
 export const panelWin = () => panelId;
-function setPanel(id) { panelId = id; panelBox.classList.toggle("on", !!id); }
+function setPanel(id) { panelId = id; panelBox.classList.toggle("on", !!id); phoneHook.app(id); }
 /** The title bar's 분리 / 붙이기 button shows what a press does. */
 function popBtn(id) {
   const b = winEl(id).querySelector(".pop");
@@ -108,9 +120,11 @@ function setDock(id, on) {
   seat(id);
 }
 function dockPanel() {
-  const full = VP.lay === "full";
-  if (full === wasDocked) return;
-  wasDocked = full;
+  const full = VP.lay === "full", mode = full ? (VP.phone ? "phone" : "panel") : "float";
+  if (mode === wasDocked) return;
+  const from = wasDocked;   // null on the first pass: nothing is open yet
+  wasDocked = mode;
+  homePanel(mode === "phone");
   syncPanel();
   const inv = winEl("inv");
   if (full) {
@@ -127,12 +141,15 @@ function dockPanel() {
       } else {
         w.classList.remove("docked");
         if (w.parentNode !== winBox) winBox.append(w);
+        if (from && !w.hidden) { placeWin(id); front(id); }   // it left the phone / the panel (the 메뉴 방식 changed): float where it belongs
       }
       popBtn(id);
     }
     inv.hidden = true;   // the bag opens with I (or a shop) on a desktop
     setPanel(open[0] || null);
     layTabs();
+    if (mode === "phone" && open[0] && from) phoneHook.open();   // changed live with a window open: the phone comes out with it
+    if (mode !== "phone") phoneHook.close();
   } else {
     const keep = panelId && panelId !== "inv" ? panelId : null;
     for (const id of DOCKABLE) {
@@ -144,6 +161,7 @@ function dockPanel() {
     inv.hidden = false;
     setPanel(null);
     if (keep) { placeWin(keep); front(keep); }
+    phoneHook.close();
   }
   syncMenu();
 }
@@ -160,7 +178,7 @@ let zTop = 20;
 const WIN_KEY = (id) => `lumentale:win2:${id}`;
 const roomy = () => VP.lay === "full";
 /** Where windows may sit: over the viewport on a desktop, anywhere on a phone. */
-const winArea = () => (VP.lay === "land" ? [Math.max(320, innerWidth - 300), innerHeight] : [VP.w, VP.h]);
+const winArea = () => (VP.lay === "land" ? [Math.max(320, innerWidth - 300), innerHeight] : [VP.zw, VP.h]);
 /**
  * Window placement. Windows live in a safe zone: the world viewport (never over the side column or the
  * dock), 4 px in from its edges, less a strip along the bottom while folded windows sit there. CSS caps
@@ -176,7 +194,11 @@ const floated = () => WIN.filter((id) => !paned(id) && !winEl(id).hidden);
 const tabsOut = () => floated().filter(folded);
 function zone() {
   const [W, H] = winArea();
-  return [EDGE, EDGE, W - EDGE, H - EDGE - (tabsOut().length ? TAB_H : 0)];
+  let x0 = EDGE, x1 = W - EDGE;
+  // the smartphone out beside the player: windows keep to the other side of it
+  const ph = VP.phone && phoneHook.edge();
+  if (ph) { if (ph[0] + ph[1] > VP.w) x1 = Math.max(x0 + 160, Math.min(x1, ph[0] - GAP)); else x0 = Math.min(x1 - 160, Math.max(x0, ph[1] + GAP)); }
+  return [x0, EDGE, x1, H - EDGE - (tabsOut().length ? TAB_H : 0)];
 }
 const boxOf = (id) => { const w = winEl(id); return [parseFloat(w.style.left) || 0, parseFloat(w.style.top) || 0, w.offsetWidth, w.offsetHeight]; };
 const hits = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] + b[3] && b[1] < a[1] + a[3];
@@ -184,7 +206,8 @@ const hits = (a, b) => a[0] < b[0] + b[2] && b[0] < a[0] + a[2] && a[1] < b[1] +
 /** Where a window first opens, before the player moves it: inside the viewport, the shop and smith on the right next to the bag. */
 function homeOf(id, w, h) {
   const [x0, y0, x1, y1] = zone(), top = y0 + 4;
-  const right = x1 - w - 4, mid = (x0 + x1 - w) / 2;
+  // the phone out on the right of the player: the right-hand windows (shops …) take the left side instead, never the player's own spot
+  const ph = VP.phone && phoneHook.edge(), right = ph && ph[0] + ph[1] > VP.w ? x0 + 4 : x1 - w - 4, mid = (x0 + x1 - w) / 2;
   switch (id) {
     case "char": case "shop": case "smith": case "train": case "job": case "bank": case "house": case "hstore": case "juana": case "fairmkt": return [right, top];
     case "deco": return [x0 + 4, top + 32];
@@ -306,10 +329,11 @@ export function openWin(id) {
   if (paned(id) && panelId !== id) {
     // the side panel shows one window: this one takes the place of whatever was there
     if (panelId) closeWin(panelId);
-    autoBag = false;
+    autoBag = false; autoPhone = false;
     setPanel(id);
     const bd = w.querySelector(".body"); if (bd) bd.scrollTop = 0;
   }
+  if (VP.phone && paned(id)) phoneHook.open();   // an app of the smartphone: it comes out (if it is not already) and shows it
   w.hidden = false;
   delete shown[id];
   if (id === "inv") tutTry("bag");
@@ -319,13 +343,14 @@ export function openWin(id) {
   if (id === "guild") { act({ t: "glist" }); renderGuild(); }
   if (id === "map") Radar.opened();
   refreshUi();
+  // a shop, the smith, a station or the house chest: the bag goes in the panel (to sell, salvage, craft from, store); first,
+  // so a phone it pulls out is there before the window is placed (the window then keeps to the other side of the player)
+  if (BAG_WITH.includes(id) && !compact() && panelId !== "inv") { const had = phoneHook.out(); openWin("inv"); autoBag = true; autoPhone = VP.phone && !had; }
   if (!paned(id)) {
     if (was && folded(id)) unfold(id);
     else if (!was) placeWin(id);
     front(id);
   }
-  // a shop, the smith, a station or the house chest: the bag goes in the panel (to sell, salvage, craft from, store)
-  if (BAG_WITH.includes(id) && !compact() && panelId !== "inv") { openWin("inv"); autoBag = true; }
   syncMenu();
 }
 /** Hooks a module sets for its own window being closed (the trade window cancels the trade: sxwin.js). */
@@ -352,13 +377,20 @@ export function closeWin(id) {
   if (tip.from && w.contains(tip.from)) hideTip();
   // the bag a shop brought in goes away with the last such window
   if (BAG_WITH.includes(id) && autoBag && panelId === "inv" && !BAG_WITH.some((o) => isOpen(o))) closeWin("inv");
+  if (autoPhone && !panelId) { autoPhone = false; phoneHook.close(); }   // the phone the shop pulled out goes back with the bag
   syncMenu();
 }
+/** Put the phone away (leaving the game). */
+export const phoneShut = () => phoneHook.close();
+/** The phone came out or went in (the safe zone changed): every open floating window is kept inside it again. */
+export const keepAll = () => layTabs();
 /** Out of the way for a mini-game or a campfire: the phone drawer closes; the desktop side panel stays. */
 export function closeDrawer() { if (compact()) closeWin("inv"); }
 export function toggleWin(id) {
   if (id === "inv" && compact()) { if (drawerOpen()) closeWin("inv"); else { Sound.play("open"); openWin("inv"); } return; }
   if (isOpen(id) && !paned(id) && folded(id)) { Sound.play("open"); unfold(id); syncMenu(); return; }
+  // its key again while it is the app on the phone's screen: the app and the phone go away together
+  if (VP.phone && paned(id) && isOpen(id)) { closeWin(id); phoneHook.close(); Sound.play("close"); return; }
   Sound.play(isOpen(id) ? "close" : "open"); isOpen(id) ? closeWin(id) : openWin(id);
 }
 export function closeAll() { for (const id of WIN) closeWin(id); }
@@ -369,6 +401,7 @@ export function closeTop() {
   for (const id of WIN) if (!paned(id) && isOpen(id)) { const z = (+winEl(id).style.zIndex || 0) + (folded(id) ? 0 : 1e6); if (z > bz) { bz = z; best = id; } }
   if (best) { closeWin(best); Sound.play("close"); }
   else if (panelId) { closeWin(panelId); Sound.play("close"); }
+  else if (phoneHook.out()) { phoneHook.close(); Sound.play("close"); }   // the app first (above), then the phone itself
   else if (drawerOpen() || G.sel >= 0) closeWin("inv");
 }
 /**
@@ -400,6 +433,7 @@ export function restoreOpen() {
   for (const r of list) {
     const id = Array.isArray(r) ? r[0] : "";
     if (!KEEP.includes(id) || isOpen(id)) continue;
+    if (VP.phone && PANEL.has(id)) continue;   // an app of the phone: the phone stays in the pocket at log-in
     openWin(id);
     if (paned(id)) continue;
     if (Number.isFinite(r[1]) && Number.isFinite(r[2])) keepIn(id, r[1], r[2]);
@@ -642,7 +676,7 @@ export function showTip(anchor, fill, above) {
     return;
   }
   // beside the window the item sits in, so it never covers the grid it describes
-  const side = (anchor.closest(".window") || anchor).getBoundingClientRect();
+  const side = (anchor.closest("#phone") || anchor.closest(".window") || anchor).getBoundingClientRect();
   let x = side.right + 6;
   if (x + w > innerWidth - 4) x = side.left - w - 6;
   if (x < 4) x = r.right + 8;

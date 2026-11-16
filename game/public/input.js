@@ -23,6 +23,7 @@ import * as PMenu from "./pmenu.js";
 import * as SX from "./sxwin.js";
 import { openEmotes } from "./win_social.js";
 import * as Keymap from "./keymap.js";
+import * as Phone from "./phone.js";
 
 // ───────────────────────────── input ─────────────────────────────
 
@@ -251,6 +252,7 @@ export function setupInput() {
       case "collect": toggleWin("collect"); break;
       case "dex": toggleWin("dex"); break;   // the 아이템도감 (dex.js)
       case "help": toggleWin("help"); break;
+      case "phone": e.preventDefault(); Phone.toggle(); break;   // the smartphone menu (phone.js)
       case "settings": toggleWin("settings"); break;
       case "map": toggleWin("map"); break;
       case "sound": toggleSound(); break;

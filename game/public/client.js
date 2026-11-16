@@ -62,6 +62,7 @@ import { pathTo, setupInput, toggleAuto, walkToDoor } from "./input.js";
 import * as Track from "./track.js";
 import * as Guide from "./guide.js";
 import * as PMenu from "./pmenu.js";
+import * as Phone from "./phone.js";
 import * as SX from "./sxwin.js";
 import { update } from "./update.js";
 import { render } from "./overlay.js";
@@ -99,6 +100,7 @@ Track.setup();                                   // the 추적 line's [취소] (
 Guide.setup();                                   // 설정 → 게임 → 가이드 메시지 (guide.js)
 PMenu.setup(); SX.setup();                       // the player menu, 따라가기, requests, trade, 가위바위보
 setupWindows({ walkToDoor });
+Phone.setup();                                   // the smartphone menu (phone.js)
 setupItems();
 Charms.setup();
 setupHud();
@@ -141,6 +143,7 @@ function frame() {
     Radar.draw(t);
     Radar.drawWin(t);
     hudTick(t);
+    Phone.tick(t);
   } else Lobby.frame(t, dt);
   requestAnimationFrame(frame);
 }

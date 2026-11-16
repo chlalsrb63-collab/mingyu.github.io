@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="style.css?v=4yhzsh6h" />
     <link rel="stylesheet" href="hud.css?v=4yhzsh6h" />
     <link rel="stylesheet" href="lobby.css?v=4yhzsh6h" />
+    <link rel="stylesheet" href="phone.css?v=4yhzsh6h" />
   </head>
   <body>
     <canvas id="world"></canvas>
@@ -125,6 +126,25 @@
           <button data-win="settings" title="설정 (O)"><span>설정</span><kbd data-key="settings">O</kbd></button>
         </div>
       </aside>
+
+      <!-- ── the smartphone (phone.js): the menu of the desktop HUD. A pocket button at the bottom right pulls it out beside
+           the player; the home screen is a grid of app icons, an app is a window docked into #ph-app (windows.js moves
+           #panel in there), the round home button goes back. Classic mode (설정 → 메뉴 방식) leaves all of this hidden. ── -->
+      <button id="phone-btn" type="button" aria-label="스마트폰"><canvas id="phone-ic"></canvas><i id="phone-dot" hidden></i><kbd data-key="phone">`</kbd></button>
+      <div id="phone" hidden>
+        <div class="ph-body">
+          <div class="ph-top"><i class="ph-spk"></i><i class="ph-cam"></i></div>
+          <div class="ph-screen">
+            <div class="ph-status"><span id="ph-clock"></span><span id="ph-srv"></span></div>
+            <div class="ph-home" id="ph-home"><div id="ph-grid"></div><div id="ph-dock"></div></div>
+            <div class="ph-appbox" id="ph-appbox" hidden>
+              <div class="ph-bar"><button type="button" class="ph-back" id="ph-back" aria-label="뒤로 (홈으로)"></button><b id="ph-title"></b><small id="ph-alias"></small></div>
+              <div id="ph-app"></div>
+            </div>
+          </div>
+          <button type="button" class="ph-hbtn" id="ph-hbtn" aria-label="홈"></button>
+        </div>
+      </div>
 
       <!-- ── the dock: chat on the left, the character in the middle ── -->
       <div id="dock" class="gba">
@@ -406,6 +426,7 @@
           <div id="keys-list" class="set-keys" data-sec="keys"></div>
           <p class="hint set-keys" data-sec="keys">키 이름을 누른 뒤 바꿀 키를 누르세요. 이미 쓰는 키면 두 동작이 서로 바뀌고, Esc 는 취소입니다. 방향키는 항상 이동에도 쓰입니다.</p>
           <div class="set-row" data-sec="view"><span id="hud-a-label">HUD 투명도</span><span id="opt-hud-a" class="seg" role="group" aria-labelledby="hud-a-label"><button type="button" class="btn" data-a="100">불투명</button><button type="button" class="btn" data-a="90">90%</button><button type="button" class="btn" data-a="80">80%</button><button type="button" class="btn" data-a="70">70%</button></span></div>
+          <div class="set-row" data-sec="view"><span id="menu-mode-label">메뉴 방식</span><span id="opt-menu" class="seg" role="group" aria-labelledby="menu-mode-label"><button type="button" class="btn" data-m="phone" title="오른쪽 아래 스마트폰 단추로 꺼내는 메뉴">스마트폰</button><button type="button" class="btn" data-m="panel" title="화면 오른쪽에 늘 보이는 패널과 메뉴 단추">기존 패널</button></span></div>
           <div class="set-row" data-sec="view"><span>창 위치</span><button id="btn-winreset" class="btn">처음 자리로</button></div>
           <div class="set-row" data-sec="game"><span>아이템 필터</span><select id="opt-filter" class="sel" aria-label="아이템 필터"><option value="0">모두</option><option value="1">마법 이상</option><option value="2">희귀 이상</option></select></div>
           <div class="set-row" data-sec="game"><span>자동 HP 물약</span><input type="range" id="opt-ahp" class="vol" min="0" max="90" step="5" value="0" aria-label="자동 HP 물약"><b id="opt-ahp-v" class="pct">끔</b></div>
@@ -414,7 +435,7 @@
           <div class="set-row" data-sec="game"><span>확인 창</span><button id="btn-noask" type="button" class="btn" title="판매·분해 때 '다시 묻지 않기'로 끈 확인 창을 다시 띄웁니다">다시 보기</button></div>
           <div class="set-row" data-sec="game"><span>처음 안내 카드</span><button id="btn-hints" type="button" class="btn" title="협동 알바·마을 일거리·균열 같은 첫 안내 카드를 이 캐릭터에서 다시 띄웁니다">다시 보기</button></div>
           <div class="set-row" data-sec="game"><span>가이드 메시지</span><button id="btn-guide" type="button" class="btn toggle" title="채팅창에 가끔 올라오는 &lt;Guide&gt; 팁을 켜고 끕니다">켜짐</button></div>
-          <p class="hint" data-sec="view">창은 제목 줄을 끌어 옮길 수 있고, 옮긴 자리와 열어 둔 창은 다음 접속 때도 기억됩니다. 제목 줄의 작은 단추(분리 / 붙이기)로 창을 오른쪽 패널에 붙이거나 별도 창으로 띄울 수 있습니다. HUD 투명도는 미니맵을 뺀 모든 패널의 바탕에 적용되고, 떠 있는 창은 마우스를 올리거나 글을 쓰는 동안 또렷해집니다.</p>
+          <p class="hint" data-sec="view">메뉴 방식: 스마트폰은 오른쪽 아래 단추(또는 단축키)로 꺼내는 메뉴이고, 기존 패널은 화면 오른쪽에 늘 보이는 패널입니다. 떠 있는 창은 제목 줄을 끌어 옮길 수 있고 옮긴 자리는 다음 접속 때도 기억됩니다. 기존 패널에서는 제목 줄의 작은 단추(분리 / 붙이기)로 창을 패널에 붙이거나 별도 창으로 띄울 수 있습니다. HUD 투명도는 미니맵을 뺀 모든 패널의 바탕에 적용되고, 떠 있는 창은 마우스를 올리거나 글을 쓰는 동안 또렷해집니다.</p>
         </div>
       </section>
 

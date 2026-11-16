@@ -37,7 +37,8 @@ export const text = $("#text"), tg = text.getContext("2d");
 
 /**
  * The screen layout. On a desktop the world plays in the top-left viewport,
- * framed by the side column (right) and the dock (bottom); a phone upright
+ * framed by the side column (right) and the dock (bottom) — or, with the smartphone menu (phone.js, the default;
+ * `VP.phone`), over the full width with the menu in a popup phone instead of a side column; a phone upright
  * gets the world on top and a control deck below; a phone on its side keeps
  * the world full screen with the controls floating over it. The title and
  * character creation always use the whole window.
@@ -47,16 +48,23 @@ const SIDE = 288, DOCK = 184;
 const sideW = (W) => (W <= 1100 ? 256 : SIDE);
 /** The dock grows a little on tall screens (more chat lines): 184 px up to 920 high, 216 at 1080; 160 on short screens (≤ 640). */
 const dockH = (H) => (H <= 640 ? 160 : Math.round(clamp(H * 0.2, DOCK, 224)));
-export const VP = { w: innerWidth, h: innerHeight, lay: "full" };
+/** 메뉴 방식 (설정 → 화면): the desktop menu is the 스마트폰 (phone.js) unless the player chose the old side panel. */
+export const MENU_KEY = "lumentale:menu";
+export const phoneWanted = () => { try { return localStorage.getItem(MENU_KEY) !== "panel"; } catch { return true; } };
+/** `w`/`h` the world viewport; `zw` the width windows may use (less the minimap column in phone mode); `phone` = the smartphone menu is on. */
+export const VP = { w: innerWidth, h: innerHeight, lay: "full", zw: innerWidth, phone: false };
 function layout() {
   const W = innerWidth, H = innerHeight, b = document.body;
   // a finger-driven screen gets the touch controls from the start, before the first tap
   if (matchMedia("(pointer: coarse)").matches && !matchMedia("(pointer: fine)").matches) b.classList.add("touch");
   const compact = b.classList.contains("touch") || W < 900 || H < 540;
   VP.lay = !compact ? "full" : H > W ? "port" : "land";
+  // the smartphone menu: no side column, the world spans the whole width (the minimap and the quest text float over it)
+  VP.phone = !!G.playing && VP.lay === "full" && phoneWanted();
+  b.classList.toggle("phone-ui", VP.phone);
   const deck = Math.round(clamp(H * 0.4, 290, 360));
   if (!G.playing) { VP.w = W; VP.h = H; }
-  else if (VP.lay === "full") { VP.w = W - sideW(W); VP.h = H - dockH(H); }
+  else if (VP.lay === "full") { VP.w = VP.phone ? W : W - sideW(W); VP.h = H - dockH(H); }
   else if (VP.lay === "port") { VP.w = W; VP.h = H - deck; }
   else { VP.w = W; VP.h = H; }
   b.dataset.lay = VP.lay;
@@ -66,7 +74,8 @@ function layout() {
   r.setProperty("--dock", (VP.lay === "port" ? deck : dockH(H)) + "px");
   if (VP.lay === "full") r.setProperty("--side", sideW(W) + "px"); else r.removeProperty("--side");
   // the safe zone windows live in (client placeWin/keepIn, hud.css caps their size to it)
-  const zw = VP.lay === "land" ? Math.max(320, W - 300) : VP.w, zh = VP.lay === "land" ? H : VP.h;
+  const zw = VP.lay === "land" ? Math.max(320, W - 300) : VP.phone ? W - sideW(W) : VP.w, zh = VP.lay === "land" ? H : VP.h;
+  VP.zw = zw;
   r.setProperty("--zone-w", zw + "px"); r.setProperty("--zone-h", zh + "px");
   if (VP.lay === "full") b.classList.remove("drawer");
   // the potions sit beside the HP/MP bars on a desktop, on the thumb pad on a phone
