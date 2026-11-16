@@ -47,7 +47,7 @@ function skGrow(ch, sk) {
 const resoReady = (p, sk) => skOf(sk, "staff") && (p.reso | 0) >= SKILL.reso.n && pasOn(p, "reso");
 const skJobBonus = (p, sk) => sk.job === p.ch.job ? JOB_SKILL_RANKS[jobSkillRank(p.ch.jp?.lv || 0)] : null;
 /** What a skill costs right now. */
-const skMp = (p, sk) => resoReady(p, sk) ? 0 : Math.ceil(sk.mp * (100 - (skJobBonus(p, sk)?.mp || 0)) / 100);
+const skMp = (p, sk) => resoReady(p, sk) ? 0 : Math.max(0, Math.ceil(pfxNum(p, "mp", sk.mp * (100 - (skJobBonus(p, sk)?.mp || 0)) / 100)));
 const skCooldown = (p, sk) => Math.round(sk.cd * (1 - stats(p).cdr) * (100 - (skJobBonus(p, sk)?.cd || 0)) / 100);
 function skillHpCost(p, sk) {
   if (!sk.hpPct) return 0;
@@ -626,9 +626,9 @@ function castSkill(S, p, id) {
   const hpSpent = skillHpCost(p, sk);
   if (hpSpent) { p.hp -= hpSpent; rt.ev.push(["h", p.eid, hpSpent, 0, 1, 1]); }
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1, 1]); } }
-  // WIS shortens every wait; an echo (legendary) may give it straight back
+  // WIS shortens every wait; a prefix power (메아리의) may give it straight back
   p.cds[id] = now + skCooldown(p, sk);
-  if (st.lg.echo && rnd(S) < 0.2 * st.proc) { p.cds[id] = now + 400; toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`); }
+  pfxSkill(S, rt, p, st, sk, id, cost);
   p.atkAt = now;
   p.swordBeat = null;
   p.dirty = true;

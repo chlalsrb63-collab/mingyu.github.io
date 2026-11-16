@@ -24,7 +24,9 @@ function rollTraits(S, n) {
 }
 /** Put a lingering condition on a player: "burn" and "poison" bite once a second, "slow" drags the feet. */
 function afflict(S, p, kind, atk) {
-  const now = S.now, k = 1 - deriveStats(p).res;     // WIL shortens it and dulls its bite
+  const f = pfxStatus(S, p, kind);                    // a prefix power may shorten it, or refuse it (0)
+  if (!(f > 0)) return;
+  const now = S.now, k = (1 - deriveStats(p).res) * f;     // WIL shortens it and dulls its bite
   if (kind === "slow") p.slowed = Math.max(p.slowed || 0, now + Math.round(SLOW_MS * k));
   else if (kind === "burn") p.burn = { until: now + Math.round(4000 * k), next: (p.burn && p.burn.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.14 * k)) };
   else p.poison = { until: now + Math.round(6000 * k), next: (p.poison && p.poison.next) || now + 1000, dmg: Math.max(1, Math.round(atk * 0.09 * k)) };
@@ -465,7 +467,7 @@ export function tick(S, now) {
       for (const o of mobsWithin(rt, z.x, z.y, z.r)) {
         if (z.slow) o.slow = now + 2500;
         if (z.knock) { const d = dist(z.x, z.y, o.x, o.y) || 1; knock(m, o, (o.x - z.x) / d, (o.y - z.y) / d, z.knock); }
-        hurtMob(S, rt, o, p, z.mult);
+        hurtMob(S, rt, o, p, z.mult, false, z.px ? PX : undefined);   // (a zone a prefix power laid: `px: 1`)
       }
       if (--z.left <= 0) rt.zones.splice(i, 1);
     }
@@ -526,7 +528,7 @@ export function tick(S, now) {
         if (d <= bd) { bd = d; best = i; }
       }
       if (best < 0) continue;
-      p.petAt = now + PET_MS;
+      p.petAt = now + pfxNum(p, "pet", PET_MS);
       const dr = rt.drops[best];
       if (pickUp(S, p, dr)) { rt.drops.splice(best, 1); rt.ev.push(["pk", p.eid, Math.round(dr.x), Math.round(dr.y)]); }
     }
@@ -564,13 +566,14 @@ export function tick(S, now) {
     const calm = now - p.hitAt > 5000;
     // a campfire is a place to catch your breath; sitting by it is better still
     const fire = calm ? fireNear(S.maps[p.map], p) : null;
-    const rest = fire ? (p.sit ? 0.12 : 0.06) : mapOfS(p.S, p.map).safe ? 0.08 : 0.02;
+    const rest = fire ? pfxNum(p, "rest", p.sit ? 0.12 : 0.06) : mapOfS(p.S, p.map).safe ? 0.08 : 0.02;
     // a fire's warmth carries on after you stand up, as long as you keep out of a fight
     const wr = calm ? warmRegen(p, now) : 0;
     if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + st.mhp * (rest + wr) + 1);
     if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr + st.mpReg) + 1);
     if (fire && p.sit) warmTick(S, p, fire, now);
     else p.warmT = 0;
+    pfxTick(S, S.maps[p.map], p, st, now, calm);   // the prefix powers that work once a second (regen, cleanse, resting)
   }
   return S;
 }

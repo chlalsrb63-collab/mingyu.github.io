@@ -117,8 +117,8 @@ function deriveStats(p) {
     // (carrying a parcel: ×0.85..1.15 by 배달 level, 58-life.js parcelSpd; p.stc is dropped when one is picked or lost)
     ls: Math.min(15, b.ls + perk.ls), spd0: BASE_SPD * HERO_SPD_K * (1 + (Math.min(40, b.spd) + tf.move + perk.spd) / 100) * (p.parcel ? parcelSpd(ch) : 1), xp: b.xp + tf.xp, gold: b.gold + tf.gold,
     mf: b.mf + Math.min(SFX.mf[1], SFX.mf[0] * luk) + tf.drop,
-    lg: b.lg, arm, wk, mag: arm.mag ? 1 : 0,
-    acd: Math.round(arm.cd * (1 - attackSpeed) * (b.lg.haste ? 0.85 : 1) * (1 - tf.aspd / 100)),
+    lg: b.lg, lgOff: b.lgOff, pfx: pfxBuild(b.lg), arm, wk, mag: arm.mag ? 1 : 0,
+    acd: Math.round(arm.cd * (1 - attackSpeed) * pfxIv(b.lg) * (1 - tf.aspd / 100)),
     aspd: attackSpeed,
     eva: Math.min(SFX.eva[1], SFX.eva[0] * dex),
     sneak: SFX.sneak * dex,
@@ -130,6 +130,7 @@ function deriveStats(p) {
     poise: Math.min(0.85, Math.min(SFX.poise[1], SFX.poise[0] * wil) + perk.poise / 100),
     res: Math.min(SFX.res[1], SFX.res[0] * wil),
   };
+  for (const f of p.stc.pfx.sheet) f(p, p.stc, b);   // a power that changes the sheet's own numbers (51-prefix.js)
   return p.stc;
 }
 
@@ -237,6 +238,7 @@ function evadeBlow(S, rt, p) {
   const e = deriveStats(p).eva;
   if (!(e > 0) || rnd(S) * 100 >= e) return false;
   rt.ev.push(["h", p.eid, 0, 3, 1]);
+  pfxEvade(S, rt, p, "eva");
   return true;
 }
 /** A charge, a leap, a slam, a fan, or any blow of an elite or a boss shoves `p` back and makes them reel. */
@@ -327,7 +329,11 @@ function shotTick(S, rt, dt) {
       if (s.cap) s.cap.h[o.id] = (s.cap.h[o.id] | 0) + 1;
       p.hitAct = [s.act, s.gain];
       if (s.blow) magicLand(S, rt, p, s, o);
-      else hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
+      else {
+        const zx = o.x, zy = o.y;
+        hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
+        if (s.kind < 2 && deriveStats(p).pfx.blow.length) pfxBlow(S, rt, p, stats(p), o, zx, zy, s.kind === 1);   // a plain or finisher arrow is a basic blow (a skill's volley is not)
+      }
       p.hitAct = null;
       // 길별의 렌즈참: a 관통 화살 that strikes a second target marks it (66-charms.js)
       if (s.cl && s.hit.length === 2) charmLens(S, rt, p, o);

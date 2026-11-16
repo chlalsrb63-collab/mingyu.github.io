@@ -62,12 +62,7 @@ function hammerTick(S, p, now) {
     for (const target of targets) if (move.stun && !target.dead && !MOBS[target.k].boss && !MOBS[target.k].still && target.el !== 2) {
       holdMob(S, target, move.stun * (target.el ? STAGGER.elite : 1));
     }
-    if (!skill && st.lg.chain && rnd(S) < 0.25 * st.proc) {
-      for (const target of mobsWithin(rt, x, y, 70).filter(o => !targets.includes(o)).slice(0, 2)) {
-        rt.ev.push(["z", Math.round(x), Math.round(y - 6), Math.round(target.x), Math.round(target.y - 6), 0]);
-        hurtMob(S, rt, target, p, 0.6);
-      }
-    }
+    if (!skill) pfxBlow(S, rt, p, st, primary, x, y, false, targets);   // a basic hammer blow answers like any basic blow (what it struck is skipped)
   }
   rt.ev.push(["hm", p.eid, Math.round(x), Math.round(y), move.r, +!!primary, +critical, move.fx]);
 }
