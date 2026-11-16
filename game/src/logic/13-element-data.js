@@ -14,12 +14,13 @@ const ELEMENTS = {
 const WEAPON_ELEMENT = { staff: "lightning", book: "dark" };
 const WEAVE_ELEMENT = { f: "fire", i: "cold", l: "lightning" };
 const SKILL_ELEMENT_GROUPS = {
-  physical: ["slash", "rend", "spiral", "pierce", "leapshot", "verdict", "rain", "hammer_stamp", "hammer_fault", "hammer_final", "ironsiege", "cleave", "hook", "snipe", "whirl", "musou", "stomp", "dragonpierce", "rollshot", "shoulder", "parry", "mountain", "sword_weight40"],
-  bleed: ["ambush", "flurry", "bloodburst", "crosscut", "rupture", "bladevortex"],
+  physical: ["slash", "rend", "spiral", "pierce", "leapshot", "verdict", "rain", "hammer_stamp", "hammer_fault", "hammer_final", "ironsiege", "crosscut", "cleave", "hook", "snipe", "whirl", "musou", "stomp", "dragonpierce", "rollshot", "shoulder", "parry", "mountain", "sword_weight40"],
+  bleed: ["ambush", "flurry", "bloodburst", "rupture", "bladevortex"],
   fire: ["comet", "mortar"],
+  cold: ["inkshot"],
   lightning: ["elemfan"],
   poison: ["traps", "snare"],
-  dark: ["shade", "soulbolt", "gravity", "pact", "dive", "sanctuary", "inkshot", "drain"],
+  dark: ["shade", "soulbolt", "gravity", "pact", "dive", "sanctuary", "drain"],
   light: ["oathward", "runecircle"],
 };
 const SKILL_ELEMENTS = Object.fromEntries(Object.entries(SKILL_ELEMENT_GROUPS).flatMap(([type, ids]) => ids.map((id) => [id, type])));
@@ -31,7 +32,8 @@ for (const [id, sk] of Object.entries(SKILL)) {
 /** Skill objects and ids use the same table, including delayed spell hits. */
 function skillDamageType(skill, wk) {
   const sk = typeof skill === "string" ? SKILL[skill] : skill;
-  return sk?.damageType || WEAVE_ELEMENT[sk?.el] || WEAPON_ELEMENT[wk] || "physical";
+  if (!sk) return "physical";
+  return sk.damageType || WEAVE_ELEMENT[sk.el] || WEAPON_ELEMENT[wk] || "physical";
 }
 
 const CORE_AFFIX_KEYS = AFFIX.map(([key]) => key);

@@ -24,7 +24,7 @@ import { invOrder, itemSlot, QS_USE, useSlot, openSocketSmith, isGear, emptyEqui
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
-import { elementInfo } from "./elements.js";
+import { elementInfo, skillArmorPenetration, skillElements } from "./elements.js";
 
 // ── the bag ──
 /** A bag entry's identity without its stack count (a bigger stack of potions is not a new item). */
@@ -288,14 +288,6 @@ function renderElementStats(host, totals) {
   if (table.firstChild) host.append(section("속성 능력치", "burst"), table);
 }
 
-function skillElement(type) {
-  const meta = elementInfo(type);
-  if (!meta) return "";
-  const tag = el("small", "skill-element", meta.name);
-  tag.style.color = meta.color;
-  return tag;
-}
-
 // ── K: 무기 · 스킬 and 전직의 길 (jobtree.js draws the weapon rows and the tree; the skill rows are here, with the quick-slot drag) ──
 export function renderSkills(s) {
   const tab = G.skTab === "tree" || G.skTab === "lo" ? G.skTab : "wpn";
@@ -313,14 +305,14 @@ function skillRows(box, s, k) {
     const basic = el("div", "skill basic");
     const bi = el("img", "ic"); bi.alt = ""; bi.src = G.icons.url[s.eq.weapon.id] || iconUrl("sword");
     const bh = el("div", "hd");
-    const element = G.defs.elements?.basic?.[s.wk];
-    bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), skillElement(element), el("kbd", "", K("attack")), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
+    const basicType = { damageType: G.defs.elements?.basic?.[s.wk] };
+    bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), skillElements(basicType), el("kbd", "", K("attack")), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
     const description = {
       hammer: `해머를 머리 위로 들어 올려 앞쪽 ${wk.center}px 지점을 내려찍습니다. 반경 ${wk.r}px의 적을 최대 세 마리까지 맞힙니다.`,
       sword: "대검을 좌우로 번갈아 휘둘러 두 번 이어 벱니다.",
     }[s.wk] || "가장 가까운 적을 겨냥합니다. 이어 치면 세 번째 타격이 마무리 일격이 됩니다.";
     basic.append(bi, bh, el("p", "", description));
-    hoverTip(basic, (n) => { n.append(el("div", "nm", `기본 공격 · ${wk.name || "공격"}`), skillElement(element), el("div", "", description)); });
+    hoverTip(basic, (n) => { n.append(el("div", "nm", `기본 공격 · ${wk.name || "공격"}`), skillElements(basicType), el("div", "", description)); });
     box.append(basic);
   }
   // the single job of this weapon, and a two-weapon job that carries it once it is yours
@@ -338,7 +330,9 @@ function skillRows(box, s, k) {
     const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(id);
     const hd = el("div", "hd");
     const at = pas ? "" : QS.keysOf(["s", id]);
-    hd.append(el("b", "", sk.name), skillElement(sk.damageType), at ? el("kbd", "", at) : "");
+    const armorPen = skillArmorPenetration(sk);
+    hd.append(el("b", "", sk.name), skillElements(sk), at ? el("kbd", "", at) : "");
+    if (armorPen) hd.append(el("small", "skill-armor-pen", armorPen));
     if (pas) hd.append(el("small", "", "패시브"));
     else hd.append(el("small", "mp", `MP ${w?.[1] ?? sk.mp}${w?.[4] ? ` · HP ${w[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : ""}`), el("small", "", `재사용 ${(w?.[5] ?? sk.cd) / 1000}초`));
     const detail = [rank?.current, why].filter(Boolean).join(" · ");
@@ -348,7 +342,9 @@ function skillRows(box, s, k) {
     row.append(ic, hd, desc);
     if (!pas && w && w[3] === 0) { row.classList.add("off"); hd.append(el("small", "", "스킬 칸에 없음")); }   // learned but not in the loadout (loadout.js)
     hoverTip(row, (n) => {
-      n.append(el("div", "nm", sk.name), skillElement(sk.damageType), el("div", "", sk.desc));
+      n.append(el("div", "nm", sk.name), skillElements(sk));
+      if (armorPen) n.append(el("div", "", `물리 피해를 계산할 때 대상의 물리 방어력 ${sk.armorPenPct}%를 무시합니다.`));
+      n.append(el("div", "", sk.desc));
       if (rank?.current && rank.next) n.append(el("small", "", `다음 · ${rank.next}`));
       if (why) n.append(el("div", "hint", why));
     });

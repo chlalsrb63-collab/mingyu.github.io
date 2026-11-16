@@ -1163,7 +1163,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       // the great blade sweeps and marks; the dagger goes into every one it swept, cashing the marks in
       ev(120, ...ahead(sk.r * 0.5), sk.r);
       const list = mobsWithin(rt, p.x, p.y, sk.r).filter((o) => inArc(p, o, sk.arc));
-      for (const o of list) { hit(o, sk.mult); addMarks(S, o, sk.marks); }
+      for (const o of list) { hit(o, sk.mult, { secondaryType: null }); addMarks(S, o, sk.marks); }
       for (const o of list) {
         if (o.dead) continue;
         const n = marksOf(S, o);
@@ -1174,7 +1174,7 @@ function skStrike(S, p, id, k, cost, tgt) {
       break;
     }
     case "elemfan": {
-      // three blades, fire, ice and lightning: two elements in one monster go off there
+      // Each blade deals lightning and dark damage; its sigil decides the reaction.
       const a0 = Math.atan2(aimY, aimX), els = ["f", "i", "l"], got = new Map();
       ev(124, ...ahead(40), 3);
       els.forEach((e, j) => {

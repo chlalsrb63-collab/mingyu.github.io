@@ -12,6 +12,21 @@ export const elementInfo = (type) => G.defs?.elements?.info?.[type];
 export const damageColor = (index) => elementInfo(G.defs?.elements?.types?.[index])?.color || "#ffffff";
 export const enchantName = (mob) => elementInfo(mob.enchant)?.enchant || "";
 
+export const skillArmorPenetration = (sk) => sk.armorPenPct > 0 ? `물리 방어력 ${sk.armorPenPct}% 관통` : "";
+
+export function skillElements(sk) {
+  const group = el("span", "skill-elements");
+  for (const type of [sk.damageType, sk.secondaryDamageType]) {
+    const meta = elementInfo(type);
+    if (!meta) continue;
+    const label = type === "physical" && sk.armorPenPct > 0 ? "물리 특화" : meta.name;
+    const tag = el("small", "skill-element", label);
+    tag.style.color = meta.color;
+    group.append(tag);
+  }
+  return group.firstChild ? group : "";
+}
+
 /** Use tenths for short control effects, seconds for the rest. */
 export function statusesAt(id, t) {
   const rows = G.ailments.get(id);

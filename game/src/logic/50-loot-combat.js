@@ -364,7 +364,12 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const critd = st.critd + (st.wk === "sword" ? inertOf(p) * SKILL.inertia.critd : 0);
   const defence = d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
   const raw = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) * elementOutgoing(S, p);
-  const parts = elementDamage(S, p, mob, raw, defence, { type: o.elem || skillDamageType(o.sk, st.wk), element: st.element, extraScale: o.px ? 0 : mult * (graze ? SFX.grazeK : 1), pure, crit, typedOnly: o.typedOnly });
+  const parts = elementDamage(S, p, mob, raw, defence, {
+    type: o.elem || skillDamageType(o.sk, st.wk),
+    secondaryType: o.secondaryType === undefined ? o.sk?.secondaryDamageType : o.secondaryType,
+    armorPenPct: o.sk?.armorPenPct,
+    element: st.element, extraScale: o.px ? 0 : mult * (graze ? SFX.grazeK : 1), pure, crit, typedOnly: o.typedOnly,
+  });
   let dmg = damageTotal(parts);
   if (pure) dmg *= RUNE_POWER.blackstar.damage;
   // a dagger in a back that is not watching you

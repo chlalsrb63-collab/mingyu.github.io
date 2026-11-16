@@ -49,20 +49,22 @@ function elementResist(S, target, type, penetration = 0) {
 
 /** Resolve single-hit components before final damage multipliers. Raw damage still includes physical armor. */
 function elementDamage(S, source, target, raw, armor, options = {}) {
-  const { type = "physical", enchant, typedOnly, pure, crit, extraScale = 1 } = options;
+  const { type = "physical", secondaryType, enchant, typedOnly, pure, crit, armorPenPct = 0, extraScale = 1 } = options;
   if (pure) return [[type, Math.max(0, raw)]];
   const profile = elementGear(source, options.element);
   const bonus = profile?.damage;
   const converted = type !== "physical" ? (enchant === type ? 0.36 : 0.25) : 0;
+  const secondary = secondaryType && secondaryType !== type && secondaryType !== "physical" ? (type === "physical" ? 0.25 : 0.15) : 0;
   const enchanted = enchant && enchant !== "physical" && enchant !== type ? 0.12 : 0;
-  const armourRate = (crit ? 0.88 : 1) * (elementActive(S, target, "shatter") ? 0.90 : 1);
+  const armourRate = (1 - clamp(armorPenPct, 0, 100) / 100) * (crit ? 0.88 : 1) * (elementActive(S, target, "shatter") ? 0.90 : 1);
   const parts = [];
   for (const key of DAMAGE_TYPES) {
     let value = typedOnly ? (key === type ? raw : 0) : (bonus?.[key] || 0) * Math.max(0, extraScale);
     if (!typedOnly) {
-      if (key === "physical") value += raw * (1 - converted - enchanted);
+      if (key === "physical") value += raw * (1 - converted - secondary - enchanted);
       else {
         if (key === type) value += raw * converted;
+        if (key === secondaryType) value += raw * secondary;
         if (key === enchant) value += raw * enchanted;
       }
     }

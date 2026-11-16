@@ -1868,7 +1868,9 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr)
 .element-status img { width: 12px; height: 12px; image-rendering: pixelated; }
 .element-sheet { display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; padding: 4px 2px; font-size: var(--t11); }
 .element-sheet span { min-width: 0; }
+.skill-elements { display: inline-flex; flex-wrap: wrap; gap: 2px 4px; }
 .skill-element { padding: 0 3px; border: 1px solid currentColor; white-space: nowrap; }
+.skill-armor-pen { white-space: nowrap; }
 .col-cell .col-elements { text-align: center; white-space: normal; line-height: 1.35; }
 /* potion buttons: amber count when 2 or fewer, red and greyed when none (hud.js hotbar) */
 .act.pot.low .n { color: #ffbe4a; }

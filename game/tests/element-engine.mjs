@@ -37,6 +37,17 @@ near(E.elementDamage(S, p, q, 100, 50)[0][1], 55);
 assert.equal(S.seed, seed, "damage and ailments use their own deterministic random stream");
 E.elementClear(q);
 
+assert.deepEqual(E.elementDamage(S, p, q, 100, 40, { armorPenPct: 25 }), [["physical", 70]]);
+near(E.elementDamage(S, p, q, 100, 40, { armorPenPct: 25, crit: true })[0][1], 100 - 40 * 0.75 * 0.88);
+assert.deepEqual(E.elementDamage(S, p, q, 100, 0, { secondaryType: "bleed" }), [["physical", 75], ["bleed", 25]]);
+assert.deepEqual(E.elementDamage(S, p, q, 100, 0, { type: "cold", secondaryType: "dark" }), [["physical", 60], ["cold", 25], ["dark", 15]]);
+q.stc.element.res = { physical: 20, cold: 50 };
+const mixedOpts = { type: "cold", secondaryType: "dark" };
+const regular = Object.fromEntries(E.elementDamage(S, p, q, 100, 40, mixedOpts));
+const armorPiercing = Object.fromEntries(E.elementDamage(S, p, q, 100, 40, { ...mixedOpts, armorPenPct: 25 }));
+assert.deepEqual(regular, { physical: 16, cold: 12.5, dark: 15 });
+assert.deepEqual(armorPiercing, { ...regular, physical: 24 }, "armor penetration changes only the armor deduction, with resistance still applied");
+
 q.stc.element.res = { fire: 50, poison: 25, cold: -20 };
 assert.equal(E.elementResist(S, q, "fire", 30), 0.8);
 assert.equal(E.elementResist(S, q, "fire", 60), 1);
