@@ -76,193 +76,166 @@ export const HAMMER_COLLECTION_META = [
 // Hammer world canvas: 40×36 (GRIP [5,16], scale 1.25 -> safe bounds s in [-3.1..25], t in [-11.5..11.5]).
 
 export const HAMMER_SILHOUETTES = {
-  // 1) 백은 성기사 대형 망치 — Winged steel guard + huge crimson-banded silver drum with bright gold faces & top spike
+  // 1) 백은 성기사 대형 망치 — Sleek haft + compact winged guard + smooth gold-capped steel drum
   royalpaladin: () => ({
     sh: [
-      R(-3.0, -1.5, -2.0, 2.0, "gold"),
-      R(-1.5, 4, -1.5, 1.5, "crimson"),
-      R(4, 11, -1.5, 1.5, "steel"),
-      // Winged silver collar guard below head (`s=7..10`)
-      P([[6.5, -5.5], [9.5, -3], [9.5, 3], [6.5, 5.5], [8, 0]], "steel"),
-      // Massive crimson-banded cylinder maul + bright gold striking caps (`t = -10.5..-7` & `7..10.5`)
-      R(11.5, 19.5, -8.5, 8.5, "crimson"),
-      R(12.5, 18.5, -4, 4, "steel"),
-      R(11, 20, -10.8, -7.2, "gold"),
-      R(11, 20, 7.2, 10.8, "gold"),
-      // Tip spire finial (`s=19.5..24`) & white center seal
-      P([[19, -2.5], [24, 0], [19, 2.5]], "gold"),
-      C(15.5, 0, 2.3, "glint"), D(15.5, 0, "ruby"),
+      R(-2.8, -1.2, -1.2, 2.0, "gold"),
+      R(-1.2, 4.5, -0.8, 1.8, "crimson"),
+      R(4.5, 11.5, -0.8, 1.8, "steel"),
+      P([[7, -4.0], [9.5, -2.0], [9.5, 3.0], [7, 5.0], [8, 0.5]], "steel"),
+      // Crisp trimmed crimson-white cylinder maul + bright gold striking caps (`t = -8.2..8.8`)
+      R(12, 18.5, -6.5, 7.2, "crimson"),
+      R(12.5, 18, -3.0, 3.8, "steel"),
+      R(11.5, 19, -8.5, -5.8, "gold"),
+      R(11.5, 19, 6.2, 9.0, "gold"),
+      P([[18.5, -1.5], [22.5, 0.4], [18.5, 2.2]], "gold"),
+      C(15.2, 0.4, 1.7, "glint"), D(15.2, 0.4, "ruby"),
     ],
-    head: [11, 22, -10.5, 10.5],
+    head: [11.5, 21, -8.5, 9],
     blade: ["steel", "gold"],
   }),
 
-  // 2) 혈철 마신 대형 망치 — Spiked scarlet blood-iron maul with hollowed dark central eye socket
+  // 2) 혈철 마신 대형 망치 — Slender haft + smooth horned blood-iron maul with dark eye socket
   bloodforge: () => ({
     sh: [
-      R(-3.0, 2.5, -1.8, 1.8, "crimson"),
-      R(2.5, 11.5, -1.3, 1.3, "ironDark"),
-      R(6, 8, -2.2, 2.2, "crimson"),
-      // Heavy spiked blood-iron double cylinder with flaring notched face claws
-      P([[11, -9.5], [14, -11], [18, -11], [20.5, -9], [19, -5.5], [20.5, 0], [19, 5.5],
-         [20.5, 9], [18, 11], [14, 11], [11, 9.5], [12.5, 5], [11, 0], [12.5, -5]], "bloodIron"),
-      R(13, 18.5, -4, 4, "bloodIron"),
-      // Hollow dark socket eye right in middle of hammer face!
-      C(15.5, 0, 1.9, "ironDark"), C(15.5, 0, 0.9, null),
-      L(12, -8, 19, -8, "ember"), L(12, 8, 19, 8, "ember"),
+      R(-2.8, 3.0, -1.0, 2.0, "crimson"),
+      R(3.0, 11.5, -0.7, 1.7, "ironDark"),
+      R(6.5, 8.0, -1.4, 2.2, "crimson"),
+      P([[11.5, -7.8], [13.5, -8.8], [17.5, -8.8], [19.5, -7.5], [18.2, -4.0], [18.2, 4.5],
+         [19.5, 8.0], [17.5, 9.5], [13.5, 9.5], [11.5, 8.2], [12.5, 4.5], [12.5, -4.0]], "bloodIron"),
+      C(15.5, 0.4, 1.6, "ironDark"), C(15.5, 0.4, 0.7, null),
+      L(13, -7, 18, -7, "ember"), L(13, 7.5, 18, 7.5, "ember"),
     ],
-    head: [11, 20.5, -11, 11],
+    head: [11.5, 19.5, -8.8, 9.5],
     blade: ["bloodIron"],
   }),
 
-  // 3) 황금 곡괭이 망치 — Golden shaft with flat hammer drum top & sharp curved piercing pick beak bottom
+  // 3) 황금 곡괭이 망치 — Slender bronze shaft + flat gold drum & sleek sharp curved pick beak
   sumpick: () => ({
     sh: [
-      C(-1.7, 0, 1.4, "gold"),
-      R(-1, 12, -1.4, 1.4, "bronze"),
-      // Braided golden collar fork bracing the head
-      P([[8, -2], [11, -4.5], [13.5, -4.5], [13.5, 4.5], [11, 4.5], [8, 2]], "gold"),
-      R(12, 19.5, -4, 4, "crimson"),
-      // Upper flat golden anvil head (`t = -10.5..-4`)
-      R(11.5, 20, -10.5, -4, "gold"),
-      R(13, 18.5, -10.5, -8.5, "silver"),
-      // Lower curved golden armor-piercing pick spike (`t = +4..+11.8`)
-      P([[12.5, 4], [18.5, 4], [20, 7.5], [17.5, 11.5], [15, 11.8], [15.5, 8.5], [12.5, 5.5]], "gold"),
-      D(15.5, 0, "amberCore"), P([[19.5, -2.5], [23.5, 0], [19.5, 2.5]], "gold"),
+      R(-2.8, -1.2, -1.2, 2.0, "gold"),
+      R(-1.2, 12, -0.7, 1.7, "bronze"),
+      P([[8.5, -1.2], [11, -3.5], [13, -3.5], [13, 4.5], [11, 4.5], [8.5, 2.2]], "gold"),
+      R(12, 18.5, -3.0, 3.8, "crimson"),
+      // Smooth chamfered golden upper anvil (`t = -8.2..-3.0`)
+      R(11.5, 19, -8.2, -3.0, "gold"),
+      L(13, -7.8, 18, -7.8, "silver"),
+      // Crisp sleek armor-piercing pick spike (`t = +3.5..+9.5`)
+      P([[12.5, 3.5], [17.5, 3.5], [18.5, 6.5], [16, 9.5], [14, 9.5], [14.5, 6.5], [12.5, 4.5]], "gold"),
+      D(15.2, 0.4, "amberCore"), P([[18.5, -1.5], [22, 0.4], [18.5, 2.2]], "gold"),
     ],
-    head: [11.5, 22, -10.5, 11.5],
+    head: [11.5, 21, -8.2, 9.5],
     blade: ["gold"],
   }),
 
-  // 4) 쌍룡 도끼 망치 — Dark haft, golden spiral coils, broad beveled steel axe-hammer slab
+  // 4) 쌍룡 도끼 망치 — Sleek dark haft + smooth coiled gold neck + sharp wedge steel axe-maul
   dragoncleave: () => ({
     sh: [
-      R(-3.0, 4.5, -1.7, 1.7, "ironDark"),
-      R(4.5, 11, -1.5, 1.5, "ironDark"),
-      C(7.5, 0, 2.2, "steel"), D(7.5, 0, "glint"),
-      // Coiled golden dragon scroll wings gripping the heavy wedge head
-      P([[9, -5.5], [12.5, -7.5], [14, -3], [14, 3], [12.5, 7.5], [9, 5.5], [11, 0]], "gold"),
-      // Massive asymmetrical chamfered steel axe-hammer slab (`t = -10.5..10`)
-      P([[12.5, -10.5], [21.5, -10.5], [24, -6], [23, 5], [18.5, 10.5], [13.5, 9], [12.5, 3]], "steel"),
-      P([[18, -10], [21.5, -10], [23.5, -5.5], [22.5, 4.5], [18, 9.5], [17, 6], [19.5, 0], [17.5, -6]], "silver"),
-      C(14.5, 0, 1.8, "gold"),
+      R(-2.8, 4.5, -1.0, 2.0, "ironDark"),
+      R(4.5, 11.5, -0.8, 1.8, "ironDark"),
+      C(7.5, 0.4, 1.6, "steel"), D(7.5, 0.4, "glint"),
+      P([[9.5, -4.0], [12.5, -5.5], [13.5, -2], [13.5, 3], [12.5, 6.2], [9.5, 5.0], [11, 0.4]], "gold"),
+      // Smooth wedge-beveled steel cleaver slab (`s = 12..22, t = -8.2..8.5`)
+      P([[12.5, -8.2], [19.5, -8.2], [22, -4.5], [21, 4.5], [17, 8.5], [13, 7.2], [12.5, 2.5]], "steel"),
+      L(18.5, -7.5, 21.2, -4.2, "glint"), L(21.2, -4.2, 20.5, 4.2, "glint"),
+      C(14.5, 0.4, 1.4, "gold"),
     ],
-    head: [12.5, 24, -10.5, 10.5],
-    blade: ["steel", "silver"],
+    head: [12.5, 22, -8.2, 8.5],
+    blade: ["steel"],
   }),
 
-  // 5) 태엽 강철 톱니 망치 — Giant gold-banded dark drum opposite spiked anvil + 4-stud brass hub
+  // 5) 태엽 강철 톱니 망치 — Sleek dark drum with golden bands opposite clean steel anvil
   gearfoundry: () => ({
     sh: [
-      R(-3.0, 3, -1.7, 1.7, "leather"),
-      R(3, 12, -1.4, 1.4, "ironDark"),
-      // Center riveted brass-steel hub (`s=11..18, t=-4..4`)
-      R(11, 18.5, -4, 4, "ironDark"),
-      C(14.5, 0, 1.6, "gold"),
-      // Giant top banded drum (`t = -11..-3`) with twin gold trim rings
-      P([[10, -8.5], [12, -11], [18.5, -11], [21, -8.5], [21, -4.5], [18.5, -3], [11.5, -3], [10, -5]], "ironDark"),
-      R(10.5, 20.5, -8.5, -7, "gold"),
-      R(10.5, 20.5, -5.5, -4.2, "gold"),
-      // Compact bottom anvil cap (`t = 3.5..10`) + tip bolt spike (`s=18.5..22.5`)
-      R(12, 18, 3.5, 9.5, "steel"),
-      R(12.5, 17.5, 6.5, 8.0, "gold"),
-      P([[18.5, -2], [22.5, 0], [18.5, 2]], "steel"),
+      R(-2.8, 3.5, -1.0, 2.0, "leather"),
+      R(3.5, 12, -0.7, 1.7, "ironDark"),
+      R(11.5, 18, -3.0, 3.8, "ironDark"),
+      C(14.5, 0.4, 1.3, "gold"),
+      P([[10.8, -6.8], [12.5, -8.5], [18, -8.5], [19.8, -6.8], [19.8, -4.0], [18, -2.8], [12, -2.8], [10.8, -4.2]], "ironDark"),
+      R(11.2, 19.2, -6.8, -5.8, "gold"), R(11.2, 19.2, -4.6, -3.6, "gold"),
+      R(12.2, 17.5, 3.5, 8.0, "steel"), R(12.5, 17.2, 5.5, 6.8, "gold"),
+      P([[18, -1.2], [21.5, 0.4], [18, 2.0]], "steel"),
     ],
-    head: [10, 22.5, -11, 9.5],
+    head: [10.8, 21.5, -8.5, 8.0],
     blade: ["ironDark", "gold"],
   }),
 
-  // 6) 심홍 성당 십자 망치 — Crimson-gold cross pommel, studded golden tower drum vs crimson spire & cross tip
+  // 6) 심홍 성당 십자 망치 — Slender haft + trim gold tower vs crisp pointed crimson spire
   cathedral: () => ({
     sh: [
-      P([[-3.2, -3.2], [-1, -2], [-1, 2], [-3.2, 3.2]], "gold"),
-      R(-1, 12, -1.3, 1.3, "ironDark"),
-      R(11, 18.5, -4.5, 4.5, "gold"),
-      // Studded upper golden tower head (`t = -11..-4`)
-      R(11, 19, -10.5, -4, "crimson"),
-      R(10.5, 19.5, -10.5, -7.5, "gold"),
-      D(12.5, -11, "gold"), D(15, -11, "gold"), D(17.5, -11, "gold"),
-      // Pointed lower crimson church-spire spike (`t = 4..11.5`)
-      P([[12, 4], [18, 4], [15.5, 11.5], [13.5, 11.5]], "crimson"),
-      R(13, 17, 5, 6.5, "gold"),
-      // Glowing crimson cross crest on hub + tip cross spike (`s=18.5..24`)
-      P([[18.5, -1.5], [23.5, 0], [18.5, 1.5]], "crimson"),
-      D(15, 0, "ruby"),
+      P([[-3.0, -2.2], [-1.0, -1.2], [-1.0, 2.0], [-3.0, 3.0]], "gold"),
+      R(-1.0, 12, -0.7, 1.7, "ironDark"),
+      R(11.5, 18, -3.2, 4.0, "gold"),
+      R(11.5, 18.2, -8.2, -3.2, "crimson"),
+      R(11, 18.8, -8.2, -6.0, "gold"),
+      P([[12.2, 3.8], [17.2, 3.8], [15.2, 9.5], [14.2, 9.5]], "crimson"),
+      R(13, 16.5, 4.5, 5.8, "gold"),
+      P([[18, -1.2], [22, 0.4], [18, 2.0]], "crimson"),
+      D(14.8, 0.4, "ruby"),
     ],
-    head: [10.5, 23.5, -11, 11.5],
+    head: [11, 22, -8.2, 9.5],
     blade: ["gold", "crimson"],
   }),
 
-  // 7) 빙결 쌍보주 망치 — Ornate golden cradle holding TWO huge faceted ice-azure orbs + golden spear spike
+  // 7) 빙결 쌍보주 망치 — Sleek golden spear-haft + twin compact glacier crystal spheres (`r=3.2`)
   glacierorb: () => ({
     sh: [
-      C(-1.7, 0, 1.4, "bronze"),
-      R(-1, 13, -1.4, 1.4, "gold"),
-      // Golden twin-cup collar cradling top & bottom spheres
-      R(11.5, 18.5, -4, 4, "gold"),
-      // Top & bottom giant faceted glacier crystal spheres!
-      C(15.5, -6.5, 4.3, "glacier"),
-      C(15.5, 6.5, 4.3, "glacier"),
-      D(14, -8, "glint"), D(14, 5, "glint"),
-      // Center golden spear spike piercing past both orbs (`s=18..24.5`)
-      P([[15, -2.5], [24.5, 0], [15, 2.5]], "gold"),
-      D(19, 0, "spark"),
+      C(-1.7, 0.5, 1.3, "bronze"),
+      R(-1.0, 13, -0.7, 1.7, "gold"),
+      R(12, 17.5, -2.8, 3.6, "gold"),
+      C(14.8, -5.2, 3.2, "glacier"),
+      C(14.8, 6.0, 3.2, "glacier"),
+      D(13.8, -6.2, "glint"), D(13.8, 5.0, "glint"),
+      P([[15, -1.8], [22.5, 0.4], [15, 2.6]], "gold"),
+      D(18.5, 0.4, "spark"),
     ],
-    head: [11, 24.5, -11, 11],
+    head: [11.5, 22.5, -8.5, 9.2],
     blade: ["glacier"],
   }),
 
-  // 8) 심안 광기 모닝스타 — S-curved twisted oak haft + spiked silver sun-maul cradling burning amber eye
+  // 8) 심안 광기 모닝스타 — Slender smooth S-curved oak haft + neat spiked sun-eye morningstar
   eyeabyss: () => ({
     sh: [
-      // S-curved gnarled wooden haft (`t` bends up then down before head!)
-      P([[-3, 2], [2, 3.5], [6, 0.5], [11, -1.5], [12, 1.5], [6.5, 3.5], [1.5, 6.0], [-2.5, 4.5]], "oak"),
-      // Golden moon halo behind spiked silver skull-sun core
-      C(14.5, -6.5, 3.2, "gold"),
-      // Spiked chaotic silver star-maul (`s=11..23, t=-9..9`)
-      P([[11, -2], [10, -6.5], [14, -5], [16, -10.5], [18, -5.5], [23, -6.5], [20, -1],
-         [24, 1], [20, 3], [22.5, 8], [17.5, 6], [15.5, 10.5], [13.5, 5], [9.5, 7], [11, 2]], "silver"),
-      // Glowing molten amber cat-eye core at dead center!
-      C(16, 0, 2.6, "ironDark"),
-      C(16, 0, 1.8, "amberCore"),
-      D(16, -0.5, "glint"),
+      P([[-3.0, 1.5], [2.0, 2.8], [6.5, 0.2], [11, -1.2], [11.5, 0.8], [6.8, 2.2], [1.8, 4.8], [-2.8, 3.5]], "oak"),
+      C(14, -4.8, 2.4, "gold"),
+      P([[11, -1.5], [10.5, -5.0], [13.5, -3.8], [15.2, -8.0], [16.8, -4.0], [20.5, -5.0], [18.5, -0.5],
+         [22, 0.5], [18.5, 2.2], [20.5, 6.0], [16.8, 4.8], [15.2, 8.5], [13.5, 4.5], [10.5, 5.8], [11, 2.2]], "silver"),
+      C(15.2, 0.4, 2.1, "ironDark"),
+      C(15.2, 0.4, 1.4, "amberCore"),
+      D(15.2, 0.0, "glint"),
     ],
-    head: [10, 24, -10.5, 10.5],
+    head: [10.5, 22, -8.0, 8.5],
     blade: ["silver"],
   }),
 
-  // 9) 전쟁공방 쇠망치 — Sleek steel knight war-haft + chamfered gold sledge head vs sharp silver back-peen spike
+  // 9) 전쟁공방 쇠망치 — Clean sleek knight's Lucerne warhammer with chamfered cap & slender spike
   warforge: () => ({
     sh: [
-      C(-1.7, 0, 1.4, "steel"),
-      R(-1, 13, -1.3, 1.3, "ironDark"),
-      R(3, 5, -1.8, 1.8, "gold"), R(8.5, 10.5, -1.8, 1.8, "steel"),
-      R(12, 18.5, -3.5, 3.5, "steel"),
-      // Top gold-capped square sledge (`t = -10.5..-3.5`)
-      P([[11.5, -3.5], [11.5, -9.5], [13, -10.8], [17.5, -10.8], [19, -9.5], [19, -3.5]], "gold"),
-      R(12.5, 18, -6.5, -3.5, "crimson"),
-      // Bottom sleek triangular armor-piercing cross-peen spike (`t = 3.5..10.5`)
-      P([[13, 3.5], [18, 3.5], [16.5, 10.5], [14.5, 10.5]], "steel"),
-      D(15.5, 0, "amberCore"),
+      C(-1.7, 0.5, 1.3, "steel"),
+      R(-1.0, 13, -0.7, 1.7, "ironDark"),
+      R(3.5, 5.0, -1.2, 2.0, "gold"),
+      R(12, 17.8, -2.5, 3.2, "steel"),
+      P([[11.8, -2.5], [11.8, -7.2], [13, -8.4], [16.8, -8.4], [18, -7.2], [18, -2.5]], "gold"),
+      R(12.5, 17.2, -5.0, -2.5, "crimson"),
+      P([[13, 3.2], [17, 3.2], [15.6, 9.2], [14.4, 9.2]], "steel"),
+      D(14.8, 0.4, "amberCore"),
     ],
-    head: [11.5, 19, -10.8, 10.5],
+    head: [11.8, 18, -8.4, 9.2],
     blade: ["gold", "steel"],
   }),
 
-  // 10) 유성운철 대형 망치 (보너스 10종째) — Cracked dark meteorite octagon maul with blazing molten magma veins
+  // 10) 유성운철 대형 망치 — Sleek chamfered octagon stone maul with glowing magma cracks
   meteor: () => ({
     sh: [
-      R(-3.0, -1.2, -2.0, 2.0, "bronze"),
-      R(-1.2, 11.5, -1.5, 1.5, "oak"),
-      R(10, 12, -2.5, 2.5, "bronze"),
-      // Massive rough octagonal dark meteorite stone head (`s=11.5..22.5, t=-9.5..9.5`)
-      P([[11.5, -5.5], [13.5, -9.5], [20, -9.5], [22.5, -5.5], [22.5, 5.5], [20, 9.5], [13.5, 9.5], [11.5, 5.5]], "meteor"),
-      // Glowing molten lava veins & central magma crack
-      L(14, -7, 17, -2, "ember"), L(17, -2, 20, -5, "ember"),
-      L(14, 7, 17, 2, "ember"),   L(17, 2, 20, 5, "ember"),
-      C(17, 0, 2.1, "amberCore"), D(16.5, -0.5, "spark"),
+      R(-2.8, -1.2, -1.2, 2.0, "bronze"),
+      R(-1.2, 11.5, -0.8, 1.8, "oak"),
+      R(10, 12, -1.8, 2.5, "bronze"),
+      P([[11.5, -4.5], [13.5, -7.8], [18.5, -7.8], [20.5, -4.5], [20.5, 5.2], [18.5, 8.4], [13.5, 8.4], [11.5, 5.2]], "meteor"),
+      L(14, -6, 16, -1.5, "ember"), L(16, -1.5, 18.5, -4.5, "ember"),
+      L(14, 6.5, 16, 2.0, "ember"),  L(16, 2.0, 18.5, 5.0, "ember"),
+      C(16, 0.4, 1.7, "amberCore"), D(15.6, 0, "spark"),
     ],
-    head: [11.5, 22.5, -9.5, 9.5],
+    head: [11.5, 20.5, -7.8, 8.4],
     blade: ["meteor", "amberCore"],
   }),
 };

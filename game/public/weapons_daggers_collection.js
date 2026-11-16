@@ -1,30 +1,11 @@
 /**
  * 단검 무기 외형 컬렉션 (Daggers & Dirk Collection — 10 Designs).
  *
- * Code-drawn Tales Tales `dagger` geometry (`R`/`P`/`C`/`L`/`D`, `W=32, H=32, GRIP=[5, 16]`,
- * compact chunky length `s ∈ [-3.5, 18]`) inspired by classic 10-blade pixel dagger motifs:
- *   1. 은빛 기사단 단검 (`silversteel`)
- *   2. 홍염 태양 단검 (`sunburst`)
- *   3. 빙하 결정 단검 (`frostglaive`)
- *   4. 성은 스틸레토 (`midnightcross`)
- *   5. 해시계 아쿠아 비수 (`solardisk`)
- *   6. 심해 아쿠아 와이드 단검 (`vortexcyan`)
- *   7. 칠흑 깃털 번개 단검 (`shadowfeather`)
- *   8. 용암 혈맥 단검 (`moltenvein`)
- *   9. 비취 가드 홍매 단검 (`jadeblossom`)
- *  10. 적염 가시 지옥 단검 (`infernoclaw`)
+ * Refined sleek Tales Tales `dagger` geometry (`W=32, H=32, GRIP=[5, 16]`):
+ * razor-slim blades (`t ∈ [-1.4, +1.8]` = ~3px sleek profile tapering to `s = 18.5..19`),
+ * light tapered crossguards (`t ∈ [-4.5, 4.5]`), and smooth symmetrical contours.
  *
  * Zero `src/logic.js` / `weapons.js` files modified.
- *
- * Integration Locations:
- *   1. `game/public/weapons.js`
- *      - Merge `DAGGER_COLLECTION_M` into `M` (`DAGGER_COLLECTION_EXTRA` into `EXTRA`).
- *      - Register `DAGGER_SILHOUETTES` under `SIL.dagger`.
- *      - Add `MOTIF_SIL.dagger.<motif>` entries + motifs into `MOTIF`.
- *   2. `game/src/logic/65-cosmetics.js`
- *      - Append `DAGGER_COLLECTION_META` (`ws_dagger_*`, `slot: "wskin"`, `wk: "dagger"`).
- *   3. `game/public/art.js` / `asset/generated/daggers/`
- *      - Normalized 16×16 bag icons (`icon_ws_dagger_*.png`) ready after owner approval.
  */
 
 const GRIP = [5, 16];
@@ -40,192 +21,176 @@ const C = (s, t, r, m, o) => ({ k: "c", s, t, r, m, ...o });
 const L = (s0, t0, s1, t1, m, o) => ({ k: "l", a: [s0, t0], b: [s1, t1], m, top: true, ...o });
 const D = (s, t, m, o) => ({ k: "d", s, t, m, top: true, ...o });
 
-// ───────────────────────────── 1. PALETTE / MATERIALS ─────────────────────────────
 export const DAGGER_COLLECTION_M = {
-  steel:     ["#edf2fa", "#b4c0d4", "#6e7894"],
-  leather:   ["#946044", "#663c2c", "#3e2226"],
-  gold:      ["#fff09e", "#f0b844", "#a06420"],
-  amber:     ["#ffdf8a", "#f28524", "#9e381c"],
-  crimson:   ["#ff8878", "#d63834", "#841c2c"],
-  frost:     ["#f2fcff", "#84c7f2", "#3566b0"],
-  cyan:      ["#b8ffff", "#38d8e6", "#167696"],
-  obsidian:  ["#6a7086", "#35384c", "#1c1d2b"],
-  feather:   ["#adb4cc", "#646a84", "#32354a"],
+  steel:      ["#edf2fa", "#b4c0d4", "#6e7894"],
+  leather:    ["#946044", "#663c2c", "#3e2226"],
+  gold:       ["#fff09e", "#f0b844", "#a06420"],
+  amber:      ["#ffdf8a", "#f28524", "#9e381c"],
+  crimson:    ["#ff8878", "#d63834", "#841c2c"],
+  frost:      ["#f2fcff", "#84c7f2", "#3566b0"],
+  cyan:       ["#b8ffff", "#38d8e6", "#167696"],
+  obsidian:   ["#6a7086", "#35384c", "#1c1d2b"],
+  feather:    ["#adb4cc", "#646a84", "#32354a"],
   darkCrimson:["#b84452", "#681a2c", "#360e1c"],
-  roseBlade: ["#ffd0de", "#e8789c", "#993c62"],
-  mintJade:  ["#c2fce2", "#5ad49e", "#287a5e"],
-  bronze:    ["#ffe0a4", "#c88842", "#7a4424"],
+  roseBlade:  ["#ffd0de", "#e8789c", "#993c62"],
+  mintJade:   ["#c2fce2", "#5ad49e", "#287a5e"],
+  bronze:     ["#ffe0a4", "#c88842", "#7a4424"],
 };
 
 export const DAGGER_COLLECTION_EXTRA = {
-  glint:     "#ffffff",
-  spark:     "#fff4a0",
-  boltCyan:  "#7cf8ff",
-  lava:      "#ffae38",
-  ruby:      "#ff4860",
-  amethyst:  "#d478ff",
-  darkLine:  "#343046",
+  glint:    "#ffffff",
+  spark:    "#fff4a0",
+  boltCyan: "#7cf8ff",
+  lava:     "#ffae38",
+  ruby:     "#ff4860",
+  amethyst: "#d478ff",
+  darkLine: "#343046",
+  scarletE: "#ff5c5c",
 };
 
-// ───────────────────────────── 2. ITEM METADATA ─────────────────────────────
 export const DAGGER_COLLECTION_META = [
-  { id: "ws_dagger_silversteel",   silKey: "silversteel",   wk: "dagger", slot: "wskin", name: "은빛 기사단 단검",   desc: "S자 백은 코등이와 날렵한 양날 단검신이 균형을 이룬 기사 단검." },
-  { id: "ws_dagger_sunburst",      silKey: "sunburst",      wk: "dagger", slot: "wskin", name: "홍염 태양 단검",     desc: "황금빛 햇살 검신 끝으로 붉은 화염 날이 번지는 단검." },
-  { id: "ws_dagger_frostglaive",   silKey: "frostglaive",   wk: "dagger", slot: "wskin", name: "빙하 결정 단검",     desc: "서릿발 곡선 코등이 위에 얼음 결정 날을 깎아 넣은 단검." },
-  { id: "ws_dagger_midnightcross", silKey: "midnightcross", wk: "dagger", slot: "wskin", name: "성은 스틸레토",      desc: "붉은 손잡이와 매끈한 은빛 찌르기 날을 가진 암살자 비수." },
-  { id: "ws_dagger_solardisk",     silKey: "solardisk",     wk: "dagger", slot: "wskin", name: "해시계 아쿠아 비수", desc: "둥근 황금 태양 바퀴 코등이 위로 시안 수정 날이 뻗은 비수." },
-  { id: "ws_dagger_vortexcyan",    silKey: "vortexcyan",    wk: "dagger", slot: "wskin", name: "심해 아쿠아 단검",   desc: "붉은 날개 가드 사이로 영롱한 청록빛 마력 날이 뻗은 단검." },
-  { id: "ws_dagger_shadowfeather", silKey: "shadowfeather", wk: "dagger", slot: "wskin", name: "칠흑 깃털 번개 단검", desc: "칠흑 깃털 뭉치 가드와 푸른 번개가 흐르는 강철 비수." },
-  { id: "ws_dagger_moltenvein",    silKey: "moltenvein",    wk: "dagger", slot: "wskin", name: "용암 혈맥 단검",     desc: "검붉은 화산암 칼날 틈새로 황금 용암 줄기가 번쩍이는 단검." },
-  { id: "ws_dagger_jadeblossom",   silKey: "jadeblossom",   wk: "dagger", slot: "wskin", name: "비취 가드 홍매 단검", desc: "초록빛 덩굴 코등이와 은은한 홍매빛 장미 수정 날의 단검." },
-  { id: "ws_dagger_infernoclaw",   silKey: "infernoclaw",   wk: "dagger", slot: "wskin", name: "적염 가시 지옥 단검", desc: "앞을 향해 치켜뜬 악마 뿔 가드와 작열하는 불꽃 날의 단검." },
+  { id: "ws_dagger_silversteel",   silKey: "silversteel",   wk: "dagger", slot: "wskin", name: "은빛 기사단 단검",   desc: "날씬한 S자 백은 코등이와 예리한 은빛 양날 단검." },
+  { id: "ws_dagger_sunburst",      silKey: "sunburst",      wk: "dagger", slot: "wskin", name: "홍염 태양 단검",     desc: "화염 띠가 선명한 황금빛 날렵한 태양 단검." },
+  { id: "ws_dagger_frostglaive",   silKey: "frostglaive",   wk: "dagger", slot: "wskin", name: "빙하 결정 단검",     desc: "서릿발 곡선 코등이 위로 얼음빛 날이 뻗은 빙결 비수." },
+  { id: "ws_dagger_midnightcross", silKey: "midnightcross", wk: "dagger", slot: "wskin", name: "성은 스틸레토",      desc: "가느다란 흑철 코등이에 바늘처럼 뻗은 암살자 스틸레토." },
+  { id: "ws_dagger_solardisk",     silKey: "solardisk",     wk: "dagger", slot: "wskin", name: "해시계 아쿠아 비수", desc: "단정한 황금 원반 코등이 위로 시안 수정 날이 뻗은 비수." },
+  { id: "ws_dagger_vortexcyan",    silKey: "vortexcyan",    wk: "dagger", slot: "wskin", name: "심해 아쿠아 단검",   desc: "날렵한 붉은 뿔 가드 사이로 청록 마력 날이 뻗은 단검." },
+  { id: "ws_dagger_shadowfeather", silKey: "shadowfeather", wk: "dagger", slot: "wskin", name: "칠흑 깃털 번개 단검", desc: "매끈한 흑깃 날개 코등이와 푸른 번개 문양의 강철 비수." },
+  { id: "ws_dagger_moltenvein",    silKey: "moltenvein",    wk: "dagger", slot: "wskin", name: "용암 혈맥 단검",     desc: "화산암 칼날 틈새로 황금 용암 선이 흐르는 날렵한 단검." },
+  { id: "ws_dagger_jadeblossom",   silKey: "jadeblossom",   wk: "dagger", slot: "wskin", name: "비취 가드 홍매 단검", desc: "우아한 비취 덩굴 가드와 홍매빛 날이 돋보이는 단검." },
+  { id: "ws_dagger_infernoclaw",   silKey: "infernoclaw",   wk: "dagger", slot: "wskin", name: "적염 가시 지옥 단검", desc: "날카로운 쌍뿔 가드 사이로 주홍빛 불꽃 날이 뻗은 단검." },
 ];
 
-// ───────────────────────────── 3. SILHOUETTES (compact dagger space s in [-3.5..18], t in [-7..7]) ─────────────────────────────
 export const DAGGER_SILHOUETTES = {
-  // 1) 은빛 기사단 단검 — Leather grip + S-curled steel guard + broad bright steel blade
+  // 1) 은빛 기사단 단검 — Sleek S-curled steel guard & needle steel blade (`3px` sleek profile)
   silversteel: () => ({
     sh: [
-      C(-2.2, 0, 1.5, "steel"),
-      R(-1.5, 4, -1.3, 1.3, "leather"),
-      // Curled steel S-hooks (`t=-4.5..4.5`)
-      P([[2.5, -3], [4, -5], [6, -4], [5.5, 4], [4, 5], [2.5, 3], [4, 0]], "steel"),
-      // Crisp symmetric dagger blade (`s=5..17.5`)
-      P([[5, -2.2], [14.5, -2.2], [18, 0], [14.5, 2.2], [5, 2.2]], "steel"),
-      L(6, 0, 13, 0, "darkLine"),
+      R(-3.2, -1.5, -1.0, 2.0, "steel"),
+      R(-1.5, 4.5, -0.8, 1.8, "leather"),
+      P([[3.5, -3.8], [5.5, -4.2], [5.8, 0.5], [5.5, 4.8], [3.5, 4.2], [4.5, 0.5]], "steel"),
+      P([[5, -1.3], [15.5, -1.0], [19, 0.4], [15.5, 1.8], [5, 2.0]], "steel"),
+      L(6.5, 0.4, 15, 0.4, "darkLine"),
     ],
-    head: [5, 18, -2.5, 2.5],
+    head: [5, 19, -1.3, 2],
     blade: ["steel"],
   }),
 
-  // 2) 홍염 태양 단검 — Gold crescent guard + crimson-orange glowing sun-flame blade
+  // 2) 홍염 태양 단검 — Slim golden blade with crisp glowing scarlet edge line
   sunburst: () => ({
     sh: [
-      C(-2.2, 0, 1.5, "gold"),
-      R(-1.5, 4, -1.3, 1.3, "amber"),
-      P([[2.5, -4], [5.5, -5.5], [6.5, -2], [6.5, 2], [5.5, 5.5], [2.5, 4], [4, 0]], "gold"),
-      P([[5.5, -2.2], [14, -2.2], [18, 0], [14, 2.2], [5.5, 2.2]], "gold"),
-      P([[6.5, 0], [15, 0], [17.5, 0], [14, 2.0], [6.5, 2.0]], "crimson"),
-      D(9, -0.8, "spark"), D(13, -0.8, "spark"),
+      C(-2.2, 0.5, 1.2, "gold"),
+      R(-1.5, 4.5, -0.8, 1.8, "amber"),
+      P([[3.5, -3.5], [5.5, -4.2], [6, 0.5], [5.5, 4.8], [3.5, 4.0]], "gold"),
+      P([[5.5, -1.3], [15, -1.0], [19, 0.4], [15, 1.8], [5.5, 2.0]], "gold"),
+      L(6.5, 1.0, 15.5, 0.8, "scarletE"),
+      L(7, -0.5, 16, -0.2, "spark"),
     ],
-    head: [5.5, 18, -2.5, 2.5],
-    blade: ["gold", "crimson"],
+    head: [5.5, 19, -1.3, 2],
+    blade: ["gold"],
   }),
 
-  // 3) 빙하 결정 단검 — Frost crescent guard + sapphire pommel + white-ice bevel blade
+  // 3) 빙하 결정 단검 — Frost crescent guard + sapphire jewel + gleaming white-ice bevel blade
   frostglaive: () => ({
     sh: [
-      C(-2.2, 0, 1.6, "frost"), D(-2.4, -0.3, "glint"),
-      R(-1.5, 4, -1.3, 1.3, "leather"),
-      P([[3, -5], [6.5, -4], [6, 0], [6.5, 4], [3, 5], [4, 0]], "frost"),
-      P([[5.5, -2.2], [14.5, -2.2], [18, 0], [14.5, 2.2], [5.5, 2.2]], "frost"),
-      L(6.5, -1.0, 15, -1.0, "glint"),
+      R(-3.2, -1.5, -1.0, 2.0, "frost"),
+      R(-1.5, 4.5, -0.8, 1.8, "leather"),
+      P([[3.5, -4.2], [6.2, -3.2], [6, 0.5], [6.2, 3.8], [3.5, 4.8], [4.5, 0.5]], "frost"),
+      P([[5.5, -1.3], [15.5, -1.1], [19, 0.4], [15.5, 1.8], [5.5, 2.0]], "frost"),
+      L(6.5, -0.5, 16, -0.3, "glint"),
     ],
-    head: [5.5, 18, -2.5, 2.5],
+    head: [5.5, 19, -1.3, 2],
     blade: ["frost"],
   }),
 
-  // 4) 성은 스틸레토 — Crimson grip + sleek narrow iron guard + razor steel needle blade
+  // 4) 성은 스틸레토 — Sleek dark crossguard & slim tapered stiletto blade
   midnightcross: () => ({
     sh: [
-      C(-2.2, 0, 1.4, "obsidian"),
-      R(-1.5, 4, -1.2, 1.2, "crimson"),
-      P([[3, -4.5], [5.5, -4.5], [5.5, 4.5], [3, 4.5], [4, 0]], "obsidian"),
-      P([[5, -1.8], [15, -1.5], [18.5, 0], [15, 1.5], [5, 1.8]], "steel"),
-      L(6, 0, 14, 0, "darkLine"),
+      R(-3.2, -1.5, -1.0, 2.0, "obsidian"),
+      R(-1.5, 4.5, -0.8, 1.8, "crimson"),
+      R(4, 5.2, -4.0, 4.8, "obsidian"),
+      P([[5, -1.0], [16, -0.8], [19.2, 0.4], [16, 1.6], [5, 1.8]], "steel"),
+      L(6, 0.4, 15, 0.4, "darkLine"),
     ],
-    head: [5, 18.5, -2, 2],
+    head: [5, 19.2, -1, 1.8],
     blade: ["steel"],
   }),
 
-  // 5) 해시계 아쿠아 비수 — Iconic circular spiked amber wheel guard + jewel eye + bright cyan blade
+  // 5) 해시계 아쿠아 비수 — Clean octagonal sun-ring wheel guard + bright razor cyan dagger
   solardisk: () => ({
     sh: [
-      R(-3.0, 3.5, -1.3, 1.3, "amber"),
-      // Bold circular wheel-guard (`r = 3.8` around `s=5, t=0`) with top/bottom/front spikes!
-      C(5, 0, 3.8, "bronze"),
-      P([[4, -3.5], [5, -6.2], [6.5, -3.5]], "gold"),
-      P([[4, 3.5], [5, 6.2], [6.5, 3.5]], "gold"),
-      C(5, 0, 1.7, "obsidian"), D(5, 0, "ruby"),
-      // Radiant cyan crystal blade extending out of the sun-wheel!
-      P([[7.5, -2.2], [15.5, -2.2], [18.5, 0], [15.5, 2.2], [7.5, 2.2]], "cyan"),
-      D(10, -0.8, "glint"),
+      R(-3.0, 3.5, -0.8, 1.8, "amber"),
+      C(5, 0.4, 3.0, "bronze"),
+      R(4.3, 5.7, -4.2, 5.0, "gold"),
+      C(5, 0.4, 1.3, "obsidian"), D(5, 0.4, "ruby"),
+      P([[7.5, -1.3], [16, -1.0], [19.2, 0.4], [16, 1.8], [7.5, 2.0]], "cyan"),
+      L(8.5, -0.5, 16, -0.2, "glint"),
     ],
-    head: [7.5, 18.5, -2.5, 2.5],
+    head: [7.5, 19.2, -1.3, 2],
     blade: ["cyan"],
   }),
 
-  // 6) 심해 아쿠아 단검 — Swept winged crimson fang-guard + broad aqua-cyan dagger blade
+  // 6) 심해 아쿠아 단검 — Clean swept crimson fangs & bright aqua blade
   vortexcyan: () => ({
     sh: [
-      C(-2.2, 0, 1.5, "cyan"),
-      R(-1.5, 4, -1.3, 1.3, "crimson"),
-      P([[3, -3], [5, -6], [7.5, -5.5], [6, -1.5], [6, 1.5], [7.5, 5.5], [5, 6], [3, 3]], "crimson"),
-      P([[5.5, -2.4], [14.5, -2.4], [18, 0], [14.5, 2.4], [5.5, 2.4]], "cyan"),
-      D(9, -1.0, "glint"), D(12.5, -0.8, "glint"),
+      C(-2.2, 0.5, 1.2, "cyan"),
+      R(-1.5, 4.5, -0.8, 1.8, "crimson"),
+      P([[3.5, -2.5], [5.5, -5.0], [6.8, -3.5], [6, 0.5], [6.8, 4.0], [5.5, 5.5], [3.5, 3.2]], "crimson"),
+      P([[5.5, -1.4], [15.5, -1.1], [19, 0.4], [15.5, 1.8], [5.5, 2.0]], "cyan"),
+      L(7, -0.4, 15.5, -0.2, "glint"),
     ],
-    head: [5.5, 18, -2.5, 2.5],
+    head: [5.5, 19, -1.4, 2],
     blade: ["cyan"],
   }),
 
-  // 7) 칠흑 깃털 번개 단검 — Spiked feather-plume crossguard + dark blade with electric cyan lightning!
+  // 7) 칠흑 깃털 번개 단검 — Swept smooth feather guard & slim lightning-veined stiletto
   shadowfeather: () => ({
     sh: [
-      R(-3.2, 4, -1.3, 1.3, "obsidian"),
-      // Flared spiked feather plumage fanning above & below hilt (`s=2..7, t=-7..7`)
-      P([[2, -2], [2.2, -6.8], [4.2, -5.0], [5.8, -7.2], [7, -2],
-         [7, 2], [5.8, 7.2], [4.2, 5.0], [2.2, 6.8], [2, 2]], "feather"),
-      C(5, 0, 1.6, "obsidian"), D(5, 0, "amethyst"),
-      // Dark obsidian dagger blade split with jagged lightning bolt!
-      P([[6, -2.2], [15, -2.2], [18.2, 0], [15, 2.2], [6, 2.2]], "obsidian"),
-      L(7, -0.5, 10, 0.8, "boltCyan"), L(10, 0.8, 12.5, -0.8, "boltCyan"), L(12.5, -0.8, 15.5, 0.2, "boltCyan"),
+      R(-3.2, 4.5, -0.8, 1.8, "obsidian"),
+      P([[3.5, -1.5], [3, -5.2], [6.2, -4.2], [6.5, 0.5], [6.2, 4.8], [3, 5.8], [3.5, 2.2]], "feather"),
+      C(5, 0.4, 1.3, "obsidian"), D(5, 0.4, "amethyst"),
+      P([[6, -1.3], [15.5, -1.1], [19, 0.4], [15.5, 1.8], [6, 2.0]], "obsidian"),
+      L(7, 0.4, 16, 0.4, "boltCyan"),
     ],
-    head: [6, 18.2, -2.5, 2.5],
+    head: [6, 19, -1.3, 2],
     blade: ["obsidian"],
   }),
 
-  // 8) 용암 혈맥 단검 — Dark crimson jagged guard + volcano blade laced with molten magma veins
+  // 8) 용암 혈맥 단검 — Clean crimson demon guard & dark volcanic stiletto laced with bright ember line
   moltenvein: () => ({
     sh: [
-      C(-2.2, 0, 1.5, "darkCrimson"),
-      R(-1.5, 4, -1.3, 1.3, "darkCrimson"),
-      P([[2.5, -4.5], [5.5, -5.0], [6, 0], [5.5, 5.0], [2.5, 4.5]], "crimson"),
-      P([[5, -2.2], [14.5, -2.2], [18, 0], [14.5, 2.2], [5, 2.2]], "darkCrimson"),
-      L(6.5, -0.8, 9, 0.8, "lava"), L(9, 0.8, 11.5, -0.8, "lava"), L(11.5, -0.8, 14.5, 0.5, "lava"),
-      D(15.5, 0, "spark"),
+      C(-2.2, 0.5, 1.2, "darkCrimson"),
+      R(-1.5, 4.5, -0.8, 1.8, "darkCrimson"),
+      R(3.8, 5.5, -4.0, 4.8, "crimson"),
+      P([[5, -1.3], [15.5, -1.1], [19, 0.4], [15.5, 1.8], [5, 2.0]], "darkCrimson"),
+      L(6.5, 0.0, 10, 0.6, "lava"), L(10, 0.6, 13.5, -0.2, "lava"), L(13.5, -0.2, 16.5, 0.4, "spark"),
     ],
-    head: [5, 18, -2.5, 2.5],
+    head: [5, 19, -1.3, 2],
     blade: ["darkCrimson"],
   }),
 
-  // 9) 비취 가드 홍매 단검 — Pastel rose-pink blade + flared mint-jade curved leaf guard
+  // 9) 비취 가드 홍매 단검 — Graceful swept jade guard & slender rose-quartz dirk
   jadeblossom: () => ({
     sh: [
-      C(-2.2, 0, 1.5, "roseBlade"), D(-2.4, -0.3, "glint"),
-      R(-1.5, 4, -1.3, 1.3, "mintJade"),
-      // Flared curved mint-jade guard curls
-      P([[3, -3.5], [5, -6.2], [7, -5.0], [6, -1.5], [6, 1.5], [7, 5.0], [5, 6.2], [3, 3.5]], "mintJade"),
-      D(5, 0, "glint"),
-      // Pastel rose-quartz dagger blade
-      P([[5.5, -2.2], [14.5, -2.2], [18, 0], [14.5, 2.2], [5.5, 2.2]], "roseBlade"),
-      L(7, -1.0, 14, -1.0, "glint"),
+      C(-2.2, 0.5, 1.2, "roseBlade"),
+      R(-1.5, 4.5, -0.8, 1.8, "mintJade"),
+      P([[3.5, -2.5], [5.5, -5.0], [6.5, -3.2], [6, 0.5], [6.5, 3.8], [5.5, 5.6], [3.5, 3.2]], "mintJade"),
+      P([[5.5, -1.3], [15.5, -1.1], [19, 0.4], [15.5, 1.8], [5.5, 2.0]], "roseBlade"),
+      L(7, -0.4, 15.5, -0.2, "glint"),
     ],
-    head: [5.5, 18, -2.5, 2.5],
+    head: [5.5, 19, -1.3, 2],
     blade: ["roseBlade"],
   }),
 
-  // 10) 적염 가시 지옥 단검 — Jagged forward-swept demon horn prongs framing burning amber-crimson blade
+  // 10) 적염 가시 지옥 단검 — Swept forward crimson horn guard cradling slim blazing amber blade
   infernoclaw: () => ({
     sh: [
-      C(-2.2, 0, 1.5, "darkCrimson"),
-      R(-1.5, 4, -1.3, 1.3, "crimson"),
-      // Forward-sweeping demonic horn prongs flanking lower blade (`s=4..9.5`)
-      P([[3, -2], [5, -6], [9.5, -5.5], [6.5, -2], [6.5, 2], [9.5, 5.5], [5, 6], [3, 2]], "crimson"),
-      // Fiery amber-crimson ember blade
-      P([[5.5, -2.0], [14.5, -2.0], [18.2, 0], [14.5, 2.0], [5.5, 2.0]], "amber"),
-      L(6.5, -1.0, 14.5, -1.0, "spark"),
+      R(-3.2, -1.5, -1.0, 2.0, "darkCrimson"),
+      R(-1.5, 4.5, -0.8, 1.8, "crimson"),
+      P([[3.5, -1.5], [5.5, -4.5], [9, -4.0], [6.2, -1.2], [6.2, 2.0], [9, 4.8], [5.5, 5.2], [3.5, 2.2]], "crimson"),
+      P([[5.5, -1.2], [15.5, -1.0], [19.2, 0.4], [15.5, 1.8], [5.5, 2.0]], "amber"),
+      L(7, -0.3, 16, 0.1, "spark"),
     ],
-    head: [5.5, 18.2, -2.2, 2.2],
+    head: [5.5, 19.2, -1.2, 2],
     blade: ["amber"],
   }),
 };

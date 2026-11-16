@@ -85,9 +85,9 @@ export const BOW_COLLECTION_META = [
   { id: "ws_bow_cyberpink",     silKey: "cyberpink",     wk: "bow", slot: "wskin", name: "네온 윙 아머 보우",   desc: "발광 코어와 흰 메카 윙 플레이트가 결합된 사이버 에너지 활." },
 ];
 
-// Helper: shared parametric bow generator matching weapons.js bowParts
+// Helper: shared parametric bow generator (sleeker `k = 1.05` on icon, slender graceful limbs)
 function bowParts(b, o, icon) {
-  const p = Math.max(-0.25, Math.min(1, o.pull || 0)), dr = Math.max(0, p), k = icon ? 1.25 : 1;
+  const p = Math.max(-0.25, Math.min(1, o.pull || 0)), dr = Math.max(0, p), k = icon ? 1.08 : 1;
   const T = b.T - 1.2 * dr, tipS = b.tip - 1.4 * dr + 1.2 * Math.max(0, -p), g = b.g, r = RISER;
   const span = Math.max(1, T - g);
   const c = (t) => {
@@ -112,16 +112,16 @@ function bowParts(b, o, icon) {
     const a = nock, h = a + ARROW_LEN;
     sh.push(
       L(a + 1, 0, h - 1, 0, "shaft"),
-      P([[a + 0.6, -1.4], [a + 3.6, -0.4], [a + 3.6, 0.2], [a + 0.6, 0.2]], b.fl || "crimson"),
-      P([[a + 0.6, 0.8], [a + 3.6, 0.8], [a + 3.6, 1.4], [a + 0.6, 2.4]], b.fl || "crimson"),
-      P([[h - 1.2, -1.3], [h + 2.6, 0.5], [h - 1.2, 2.3]], "steel"),
+      P([[a + 0.6, -1.2], [a + 3.2, -0.3], [a + 3.2, 0.2], [a + 0.6, 0.2]], b.fl || "crimson"),
+      P([[a + 0.6, 0.8], [a + 3.2, 0.8], [a + 3.2, 1.3], [a + 0.6, 2.2]], b.fl || "crimson"),
+      P([[h - 1.0, -1.1], [h + 2.2, 0.5], [h - 1.0, 2.1]], "steel"),
     );
   }
   return { sh, post, c, T, tipS };
 }
 
 const bow = (b, extra) => (icon, o = {}) => {
-  const pt = bowParts(b, o, icon), k = icon ? 1.15 : 1;
+  const pt = bowParts(b, o, icon), k = icon ? 1.05 : 1;
   const ex = extra(pt.c, pt.T, pt.tipS, k);
   const arrow = o.arrow ? pt.sh.splice(2) : [];
   return {
@@ -134,155 +134,119 @@ const bow = (b, extra) => (icon, o = {}) => {
   };
 };
 
-// ───────────────────────────── 3. SILHOUETTES (10 Bows) ─────────────────────────────
+// ───────────────────────────── 3. SILHOUETTES (10 Sleek Graceful Bows) ─────────────────────────────
 export const BOW_SILHOUETTES = {
-  // 1) 천사 날개 성궁 — Gleaming silver recurve + twin crisp white angel wings + golden tip flares
-  seraph: bow({ T: 11.8, tip: 4.0, g: 2.5, w0: 2.3, w1: 1.4, rc: 2.6, mat: "silver", str: "core", fl: "cyanDot" }, (c, T, tip, k) => ({
+  // 1) 천사 날개 성궁 — Slender silver recurve with swept sleek wing tips & compact gold collar
+  seraph: bow({ T: 11.4, tip: 4.0, g: 2.5, w0: 1.7, w1: 1.0, rc: 2.4, mat: "silver", str: "core", fl: "cyanDot" }, (c, T, tip, k) => ({
     sh: [
-      R(RISER - 1.4 * k, RISER + 1.5 * k, -2.5, 2.5, "gold"),
-      D(RISER + 0.3, 0, "cyanDot"),
-      // Swept sculpted upper & lower seraph wings branching out along limbs
+      R(RISER - 1.0 * k, RISER + 1.1 * k, -2.0, 2.0, "gold"),
       ...[-1, 1].flatMap((sg) => [
-        P([
-          [c(sg * 3.5), sg * 3.0],
-          [c(sg * 3.5) + 4.8 * k, sg * 2.5],
-          [c(sg * 5.0) + 3.8 * k, sg * 6.5],
-          [c(sg * 6.5), sg * 6.8],
-        ], "silver"),
-        P([[c(sg * T) - 1.0, sg * (T - 1.5)], [c(sg * T) + 1.8 * k, sg * (T + 0.4)], [c(sg * T) - 0.5, sg * (T + 0.6)]], "gold"),
+        P([[c(sg * 3.5), sg * 3.0], [c(sg * 3.5) + 3.4 * k, sg * 3.2], [c(sg * 6.0) + 1.5 * k, sg * 6.2], [c(sg * 6.5), sg * 6.2]], "silver"),
+        P([[c(sg * T) - 0.6, sg * (T - 1.2)], [c(sg * T) + 1.2 * k, sg * (T + 0.3)], [c(sg * T) - 0.4, sg * (T + 0.4)]], "gold"),
       ]),
     ],
   })),
 
-  // 2) 큐피드 하트 윙 보우 — Rose-pink bow + twin ruby-heart gold medallions + mini white wing flaps
-  cupidheart: bow({ T: 11.4, tip: 3.8, g: 2.5, w0: 2.2, w1: 1.4, rc: 2.0, mat: "pink", str: "glint", fl: "gold" }, (c, T, tip, k) => ({
+  // 2) 큐피드 하트 윙 보우 — Slim rose-pink recurve with compact ruby-heart medallions & golden tip curls
+  cupidheart: bow({ T: 11.0, tip: 3.8, g: 2.5, w0: 1.7, w1: 1.0, rc: 1.8, mat: "pink", str: "glint", fl: "gold" }, (c, T, tip, k) => ({
     sh: [
-      R(RISER - 1.3 * k, RISER + 1.4 * k, -2.5, 2.5, "gold"),
+      R(RISER - 1.0 * k, RISER + 1.0 * k, -2.0, 2.0, "gold"),
       ...[-1, 1].flatMap((sg) => [
-        // Gold heart bezel + mini white winglet sticking backward/forward
-        P([[c(sg * 4.2) + 0.5, sg * 3.2], [c(sg * 4.2) + 4.0 * k, sg * 4.0], [c(sg * 4.2) + 2.2 * k, sg * 6.8]], "silver"),
-        C(c(sg * 4.2), sg * 4.5, 2.0 * k, "gold"),
-        C(c(sg * 4.2), sg * 4.5, 1.1 * k, "ruby"),
-        // Curled tip finial pearls
-        C(c(sg * T) + 0.4, sg * (T - 0.2), 1.3 * k, "gold"),
-        D(c(sg * T) + 0.4, sg * (T - 0.2), "glint"),
+        C(c(sg * 4.2), sg * 4.2, 1.5 * k, "gold"),
+        D(c(sg * 4.2), sg * 4.2, "rubyPt"),
+        C(c(sg * T) + 0.3, sg * (T - 0.2), 1.0 * k, "gold"),
       ]),
     ],
   })),
 
-  // 3) 칠흑 까마귀 해골궁 — Bone raven-beak skull at riser + red/orange/bone plume flares
-  ravenbone: bow({ T: 11.8, tip: 3.8, g: 3.0, w0: 2.4, w1: 1.5, rc: 1.8, mat: "oak", str: "gut", fl: "ember" }, (c, T, tip, k) => ({
+  // 3) 칠흑 까마귀 해골궁 — Sleek dark oak bow with sharp raven-beak skull collar & red feather plumes
+  ravenbone: bow({ T: 11.4, tip: 3.8, g: 2.8, w0: 1.7, w1: 1.0, rc: 1.6, mat: "oak", str: "gut", fl: "ember" }, (c, T, tip, k) => ({
     sh: [
-      // Bold ivory raven beak skull projecting right over RISER!
-      P([[RISER - 2.0 * k, -3.2], [RISER + 4.5 * k, 0], [RISER - 2.0 * k, 3.2], [RISER - 2.6 * k, 0]], "bone"),
-      D(RISER, -0.5, "inkEye"),
-      // Stratified shaman crimson + amber + white feather fans on limbs
+      P([[RISER - 1.4 * k, -2.2], [RISER + 3.4 * k, 0], [RISER - 1.4 * k, 2.2]], "bone"),
+      D(RISER - 0.2, -0.3, "inkEye"),
       ...[-1, 1].flatMap((sg) => [
-        P([[c(sg * 4.8) - 1.2, sg * 3.2], [c(sg * 5.2) + 3.2 * k, sg * 4.5], [c(sg * 6.5) + 1.2, sg * 7.2], [c(sg * 6.2) - 1.0, sg * 6.2]], "crimson"),
-        P([[c(sg * 5.6) + 0.5, sg * 5.0], [c(sg * 5.8) + 2.5 * k, sg * 5.8], [c(sg * 6.5) + 0.8, sg * 7.2]], "bone"),
-        C(c(sg * T), sg * (T - 0.2), 1.1 * k, "crimson"),
+        P([[c(sg * 5.0), sg * 4.2], [c(sg * 5.2) + 2.6 * k, sg * 5.0], [c(sg * 6.5) + 0.8, sg * 6.8]], "crimson"),
+        C(c(sg * T), sg * (T - 0.2), 0.9 * k, "crimson"),
       ]),
     ],
   })),
 
-  // 4) 심연 비취 악마궁 — Jet-black spiked demon-horn grip + toxic emerald recurve limbs
-  abyssalmaw: bow({ T: 11.6, tip: 3.6, g: 3.6, w0: 2.5, w1: 1.6, rc: 2.2, mat: "emerald", str: "venom", fl: "emerald" }, (c, T, tip, k) => ({
+  // 4) 심연 비취 악마궁 — Crisp black horned demon grip & sleek toxic emerald limbs
+  abyssalmaw: bow({ T: 11.2, tip: 3.6, g: 3.2, w0: 1.8, w1: 1.0, rc: 2.0, mat: "emerald", str: "venom", fl: "emerald" }, (c, T, tip, k) => ({
     sh: [
-      // Obsidian demon head collar with symmetric forward & rear horns + emerald eye!
-      P([
-        [RISER - 2.0 * k, -4.0], [RISER + 3.5 * k, -2.5], [RISER + 1.8 * k, 0],
-        [RISER + 3.5 * k, 2.5], [RISER - 2.0 * k, 4.0], [RISER - 3.5 * k, 0],
-      ], "obsidian"),
-      P([[RISER + 1, -3], [RISER + 4.8 * k, -5.0], [RISER + 2.5 * k, -1.5]], "obsidian"),
-      P([[RISER + 1, 3], [RISER + 4.8 * k, 5.0], [RISER + 2.5 * k, 1.5]], "obsidian"),
-      C(RISER + 0.3, 0, 1.4 * k, "emerald"),
+      P([[RISER - 1.3 * k, -3.0], [RISER + 2.4 * k, -1.8], [RISER + 1.2 * k, 0], [RISER + 2.4 * k, 1.8], [RISER - 1.3 * k, 3.0]], "obsidian"),
+      P([[RISER + 1, -2.4], [RISER + 3.5 * k, -3.8], [RISER + 1.8 * k, -1.2]], "obsidian"),
+      P([[RISER + 1, 2.4], [RISER + 3.5 * k, 3.8], [RISER + 1.8 * k, 1.2]], "obsidian"),
       D(RISER + 0.3, 0, "spark"),
-      // Dark iron caps at limb tips
-      ...[-1, 1].map((sg) => P([[c(sg * T) - 1.0, sg * (T - 1.5)], [c(sg * T) + 1.2 * k, sg * (T + 0.5)], [c(sg * T) - 0.8, sg * (T + 0.5)]], "obsidian")),
+      ...[-1, 1].map((sg) => P([[c(sg * T) - 0.7, sg * (T - 1.0)], [c(sg * T) + 1.0 * k, sg * (T + 0.4)], [c(sg * T) - 0.6, sg * (T + 0.4)]], "obsidian")),
     ],
   })),
 
-  // 5) 봄꽃 요정 덩굴궁 — Living leafy green vine bow adorned with blooming pink blossom flowers
-  floralfae: bow({ T: 12.0, tip: 4.0, g: 2.4, w0: 2.3, w1: 1.5, rc: 1.8, mat: "vineGreen", str: "gut", fl: "petals" }, (c, T, tip, k) => ({
+  // 5) 봄꽃 요정 덩굴궁 — Delicate slender vine bow with neat blossom petals & tiny leaves
+  floralfae: bow({ T: 11.5, tip: 4.0, g: 2.4, w0: 1.6, w1: 0.9, rc: 1.6, mat: "vineGreen", str: "gut", fl: "petals" }, (c, T, tip, k) => ({
     sh: [
-      R(RISER - 1.3 * k, RISER + 1.3 * k, -2.5, 2.5, "oak"),
+      R(RISER - 1.0 * k, RISER + 1.0 * k, -2.0, 2.0, "oak"),
       ...[-1, 1].flatMap((sg) => [
-        // Sprouting tender green leaves + blooming pink petal flower with gold stamen!
-        P([[c(sg * 7.5), sg * 6.5], [c(sg * 7.5) + 3.2 * k, sg * 8.0], [c(sg * 7.5) + 0.5, sg * 9.0]], "vineGreen"),
-        C(c(sg * 4.5) + 0.8, sg * 4.5, 2.3 * k, "pink"),
-        D(c(sg * 4.5) + 0.8, sg * 4.5, "spark"),
+        C(c(sg * 4.5) + 0.4, sg * 4.5, 1.6 * k, "pink"),
+        D(c(sg * 4.5) + 0.4, sg * 4.5, "spark"),
+        P([[c(sg * 7.5), sg * 6.8], [c(sg * 7.5) + 2.2 * k, sg * 7.8], [c(sg * 7.5) + 0.4, sg * 8.6]], "vineGreen"),
       ]),
     ],
   })),
 
-  // 6) 서리 은가시 수정궁 — Crystalline frost limbs with sharp forward silver thorns & sapphire gems
-  frostthorn: bow({ T: 12.0, tip: 3.8, g: 2.8, w0: 2.4, w1: 1.4, rc: 2.8, mat: "frost", str: "core", fl: "cyanDot" }, (c, T, tip, k) => ({
+  // 6) 서리 은가시 수정궁 — Crisp streamlined frost recurve with razor silver wing fins
+  frostthorn: bow({ T: 11.5, tip: 3.8, g: 2.6, w0: 1.7, w1: 0.9, rc: 2.4, mat: "frost", str: "core", fl: "cyanDot" }, (c, T, tip, k) => ({
     sh: [
-      P([[RISER - 1.4 * k, -3], [RISER + 1.8 * k, -2], [RISER + 1.8 * k, 2], [RISER - 1.4 * k, 3]], "silver"),
+      R(RISER - 1.0 * k, RISER + 1.2 * k, -2.0, 2.0, "silver"),
       ...[-1, 1].flatMap((sg) => [
-        // Swept forward crystalline thorn fins + embedded frost sapphire
-        P([[c(sg * 4.5), sg * 3.0], [c(sg * 4.5) + 4.5 * k, sg * 4.2], [c(sg * 6.5), sg * 6.2]], "silver"),
-        C(c(sg * 4.8) + 0.5, sg * 4.6, 1.3 * k, "frost"),
-        D(c(sg * 4.8) + 0.5, sg * 4.6, "glint"),
+        P([[c(sg * 4.5), sg * 3.4], [c(sg * 4.5) + 3.2 * k, sg * 4.2], [c(sg * 6.5), sg * 5.8]], "silver"),
+        D(c(sg * 4.8) + 0.3, sg * 4.6, "glint"),
       ]),
     ],
   })),
 
-  // 7) 진홍 용익 비늘궁 — Crimson jagged dragon wing limbs + ivory claw talons at grip & tips
-  crimsonwyrm: bow({ T: 11.8, tip: 3.8, g: 2.6, w0: 2.5, w1: 1.5, rc: 2.2, mat: "crimson", str: "rubyPt", fl: "ember" }, (c, T, tip, k) => ({
+  // 7) 진홍 용익 비늘궁 — Crimson dragon scale recurve with crisp swept ivory wing claws
+  crimsonwyrm: bow({ T: 11.4, tip: 3.8, g: 2.5, w0: 1.8, w1: 1.0, rc: 2.0, mat: "crimson", str: "rubyPt", fl: "ember" }, (c, T, tip, k) => ({
     sh: [
-      R(RISER - 1.4 * k, RISER + 1.4 * k, -2.5, 2.5, "obsidian"),
+      R(RISER - 1.0 * k, RISER + 1.0 * k, -2.0, 2.0, "obsidian"),
       ...[-1, 1].flatMap((sg) => [
-        // Dragon wing serrations + white bone talons at tip
-        P([[c(sg * 4.5), sg * 3.5], [c(sg * 4.5) + 4.0 * k, sg * 5.0], [c(sg * 7.2), sg * 7.2]], "crimson"),
-        P([[c(sg * 7.5), sg * 6.8], [c(sg * 7.5) + 2.8 * k, sg * 8.2], [c(sg * 9.5), sg * 9.5]], "crimson"),
-        P([[c(sg * T) - 0.8, sg * (T - 1.2)], [c(sg * T) + 1.4 * k, sg * (T + 0.8)], [c(sg * T) - 0.8, sg * (T + 0.5)]], "bone"),
+        P([[c(sg * 5.0), sg * 4.0], [c(sg * 5.0) + 2.8 * k, sg * 5.0], [c(sg * 7.0), sg * 6.8]], "crimson"),
+        P([[c(sg * T) - 0.6, sg * (T - 1.0)], [c(sg * T) + 1.2 * k, sg * (T + 0.6)], [c(sg * T) - 0.6, sg * (T + 0.4)]], "bone"),
       ]),
     ],
   })),
 
-  // 8) 청옥 혈가시 궁 — Deep abyssal teal-jade gnarled limbs studded with crimson thorns + ruby heart
-  sapphirethorn: bow({ T: 12.0, tip: 3.8, g: 2.6, w0: 2.5, w1: 1.5, rc: 2.2, mat: "tealThorn", str: "emerald", fl: "crimson" }, (c, T, tip, k) => ({
+  // 8) 청옥 혈가시 궁 — Smooth teal arc tipped cleanly with 2 sharp crimson outer thorns per limb
+  sapphirethorn: bow({ T: 11.6, tip: 3.8, g: 2.5, w0: 1.8, w1: 1.0, rc: 2.0, mat: "tealThorn", str: "emerald", fl: "crimson" }, (c, T, tip, k) => ({
     sh: [
-      P([[RISER - 1.5 * k, -3], [RISER + 2.4 * k, 0], [RISER - 1.5 * k, 3]], "crimson"),
-      // Dense razor crimson thorns jutting from outer bow curve (`s > c(t)`)!
+      P([[RISER - 1.1 * k, -2.2], [RISER + 1.6 * k, 0], [RISER - 1.1 * k, 2.2]], "crimson"),
       ...[-1, 1].flatMap((sg) =>
-        [4.2, 6.8, 9.4].map((tv) =>
-          P([[c(sg * tv), sg * (tv - 1.1)], [c(sg * tv) + 3.8 * k, sg * tv], [c(sg * tv), sg * (tv + 1.1)]], "crimson")
+        [4.5, 7.8].map((tv) =>
+          P([[c(sg * tv), sg * (tv - 0.9)], [c(sg * tv) + 2.8 * k, sg * tv], [c(sg * tv), sg * (tv + 0.9)]], "crimson")
         )
       ),
     ],
   })),
 
-  // 9) 황금 쌍룡 패왕궁 — Sculpted twin roaring gold dragon heads bracketing crimson leather riser
-  goldendrake: bow({ T: 12.0, tip: 4.0, g: 2.8, w0: 2.5, w1: 1.6, rc: 2.2, mat: "crimson", str: "gold", fl: "gold" }, (c, T, tip, k) => ({
+  // 9) 황금 쌍룡 패왕궁 — Sculpted sleek gold dragon collars bracketing crisp crimson limbs
+  goldendrake: bow({ T: 11.6, tip: 4.0, g: 2.6, w0: 1.8, w1: 1.0, rc: 2.0, mat: "crimson", str: "gold", fl: "gold" }, (c, T, tip, k) => ({
     sh: [
-      R(RISER - 1.5 * k, RISER + 1.5 * k, -3.0, 3.0, "crimson"),
+      R(RISER - 1.0 * k, RISER + 1.0 * k, -2.2, 2.2, "crimson"),
       ...[-1, 1].flatMap((sg) => [
-        // Sculpted golden dragon head facing forward-outward (`t = ±4`)
-        P([
-          [c(sg * 3.8) - 1.2, sg * 2.5],
-          [c(sg * 3.8) + 4.4 * k, sg * 3.8],
-          [c(sg * 4.5) + 2.0 * k, sg * 6.0],
-          [c(sg * 5.8) - 1.0, sg * 6.5],
-        ], "gold"),
-        D(c(sg * 4.2) + 1.8 * k, sg * 4.2, "emerald"),
-        // Golden flame plume tips
-        P([[c(sg * T) - 1.0, sg * (T - 1.5)], [c(sg * T) + 1.6 * k, sg * (T + 0.5)], [c(sg * T) - 0.8, sg * (T + 0.5)]], "gold"),
+        P([[c(sg * 3.8) - 0.8, sg * 2.5], [c(sg * 3.8) + 3.2 * k, sg * 3.5], [c(sg * 4.5) + 1.5 * k, sg * 5.2], [c(sg * 5.5) - 0.6, sg * 5.5]], "gold"),
+        P([[c(sg * T) - 0.7, sg * (T - 1.2)], [c(sg * T) + 1.2 * k, sg * (T + 0.4)], [c(sg * T) - 0.6, sg * (T + 0.4)]], "gold"),
       ]),
     ],
   })),
 
-  // 10) 네온 윙 아머 보우 — Sci-fi charcoal riser, twin glowing magenta rings, white/pink mechanical wings
-  cyberpink: bow({ T: 11.6, tip: 4.2, g: 3.4, w0: 2.3, w1: 1.6, rc: 2.2, mat: "obsidian", str: "glow", fl: "glow" }, (c, T, tip, k) => ({
+  // 10) 네온 윙 아머 보우 — Crisp mechanical cyber arc with neat pink core hubs & white winglet tips
+  cyberpink: bow({ T: 11.4, tip: 4.0, g: 3.0, w0: 1.7, w1: 1.0, rc: 2.0, mat: "obsidian", str: "glow", fl: "glow" }, (c, T, tip, k) => ({
     sh: [
-      R(RISER - 1.4 * k, RISER + 1.4 * k, -3.5, 3.5, "silver"),
+      R(RISER - 1.0 * k, RISER + 1.0 * k, -2.6, 2.6, "silver"),
       ...[-1, 1].flatMap((sg) => [
-        // Neon pink energy drum hub + silver mecha wing tips
-        C(c(sg * 4.5) + 0.5, sg * 4.5, 2.2 * k, "pink"),
-        D(c(sg * 4.5) + 0.5, sg * 4.5, "glint"),
-        P([[c(sg * 8.0), sg * 7.2], [c(sg * 8.5) + 3.4 * k, sg * 8.8], [c(sg * T) + 1.2 * k, sg * (T + 0.6)], [c(sg * T) - 0.8, sg * (T - 1.2)]], "silver"),
-        L(c(sg * 8.8) + 0.8, sg * 8.2, c(sg * T), sg * (T - 0.4), "pink"),
+        C(c(sg * 4.5) + 0.3, sg * 4.5, 1.6 * k, "pink"),
+        D(c(sg * 4.5) + 0.3, sg * 4.5, "glint"),
+        P([[c(sg * 8.2), sg * 7.4], [c(sg * 8.5) + 2.4 * k, sg * 8.6], [c(sg * T) + 1.0 * k, sg * (T + 0.5)], [c(sg * T) - 0.6, sg * (T - 1.0)]], "silver"),
       ]),
     ],
   })),

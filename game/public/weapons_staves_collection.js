@@ -80,190 +80,167 @@ export const STAFF_COLLECTION_META = [
 // World canvas: 32×32 (GRIP at [5,16] -> safe bounds s in [-3.5..25.5], t in [-12..12]).
 
 export const STAFF_SILHOUETTES = {
-  // 1) 태양륜 작열 지팡이 — Gold spiked sun-ring + crimson outer flares + glowing ember orb
+  // 1) 태양륜 작열 지팡이 — Sleek shaft + crisp golden open solar ring + 4 clean cardinal rays + glowing amber orb
   sunflare: (icon) => ({
     sh: [
-      C(-2.0, 0, 1.6, "crimson"), D(-2.0, -0.3, "spark"),
-      R(-1, 15, -1.2, icon ? 1.8 : 1.3, "obsidian"),
-      R(3, 5, -1.8, 1.8, "amber"), R(9, 11, -1.8, 1.8, "amber"), R(13, 15, -2.5, 2.5, "gold"),
-      // Radiating crimson flare spikes around open crescent ring
-      P([[16, -6], [15, -9], [18, -7]], "crimson"),
-      P([[20, -7], [21, -10], [22, -7]], "crimson"),
-      P([[23, -5], [25.5, -7], [24, -2]], "crimson"),
-      P([[16, 6], [15, 9], [18, 7]], "crimson"),
-      P([[20, 7], [21, 10], [22, 7]], "crimson"),
-      // Chunky open golden solar ring (`C`-crescent facing tip)
-      P([[15, -2], [17, -6], [22, -7], [25, -4], [25, -2], [22, -2], [21, -4], [18, -3],
-         [18, 3], [21, 4], [22, 2], [25, 2], [25, 4], [22, 7], [17, 6], [15, 2]], "gold"),
-      // Central floating solar orb
-      C(21, 0, 2.1, "amber"), D(20.5, -0.5, "spark"),
+      C(-2.0, 0.5, 1.3, "crimson"), D(-2.0, 0.5, "spark"),
+      R(-1, 15, -0.7, icon ? 1.6 : 1.3, "obsidian"),
+      R(3, 4.5, -1.3, 1.8, "amber"), R(13.5, 15, -2.0, 2.5, "gold"),
+      // Clean symmetrical solar halo rays (top, bottom, diagonal outer tips)
+      P([[16, -5], [15, -7.5], [18, -6]], "crimson"),
+      P([[20, -6], [21.5, -8.5], [22.5, -5.5]], "crimson"),
+      P([[16, 5.5], [15, 8], [18, 6.5]], "crimson"),
+      P([[20, 6.5], [21.5, 9], [22.5, 6]], "crimson"),
+      // Smooth clean golden C-ring
+      P([[14.5, -1.5], [16.5, -5.5], [21.5, -6.5], [24.5, -4], [24.5, -2], [22, -2], [20.5, -4], [17.5, -3],
+         [17.5, 3.5], [20.5, 4.5], [22, 2.5], [24.5, 2.5], [24.5, 4.5], [21.5, 7], [16.5, 6], [14.5, 2.2]], "gold"),
+      C(20.8, 0.5, 1.8, "amber"), D(20.4, 0, "spark"),
     ],
-    head: [15, 25, -8, 8],
+    head: [14.5, 24.5, -6.5, 7],
     blade: ["gold", "amber"],
   }),
 
-  // 2) 월식 홍염 지팡이 — Spiked plum-gold lunar crescent cradle + glowing orange eclipse core
+  // 2) 월식 홍염 지팡이 — Graceful sleek shaft + smooth swept plum-gold lunar crescent + floating ember sphere
   eclipse: (icon) => ({
     sh: [
-      C(-2.0, 0, 1.6, "plum"), D(-2.0, -0.5, "glint"),
-      R(-1, 14, -1.2, icon ? 1.8 : 1.3, "plum"),
-      R(4, 5.5, -1.8, 1.8, "gold"), R(9, 10.5, -1.8, 1.8, "gold"), R(13, 15, -2.4, 2.4, "gold"),
-      // Outer spiked crescent horns (`plum` wing + `gold` inner edge)
-      P([[14, -2], [15, -7], [17, -9], [19, -7], [21, -9], [23, -8], [21, -4], [18, -2],
-         [18, 2], [21, 4], [23, 8], [21, 9], [19, 7], [17, 9], [15, 7], [14, 2]], "plum"),
-      P([[16, -2], [18, -5], [20, -6], [21, -5], [19, -2], [19, 2], [21, 5], [20, 6], [18, 5], [16, 2]], "gold"),
-      // Floating eclipse orb inside open horns
-      C(22.5, 0, 2.0, "amber"), D(22, -0.5, "spark"),
+      C(-2.0, 0.5, 1.3, "plum"), D(-2.0, 0.5, "glint"),
+      R(-1, 14.5, -0.7, icon ? 1.6 : 1.3, "plum"),
+      R(5, 6.5, -1.3, 1.8, "gold"), R(13, 14.5, -2.0, 2.5, "gold"),
+      // Smooth sweeping lunar crescent (no bumpy jagged teeth!)
+      P([[14, -1.8], [16, -6.5], [21, -8], [24.5, -6], [21.5, -4], [18.5, -4], [17.5, 0.5],
+         [18.5, 4.5], [21.5, 4.5], [24.5, 6.5], [21, 8.5], [16, 7], [14, 2.2]], "plum"),
+      P([[15, -1.2], [17, -4.5], [20, -5.5], [19, -3], [17, -1], [17, 1.5], [19, 3.5], [20, 6], [17, 5], [15, 1.8]], "gold"),
+      C(22, 0.4, 1.7, "amber"), D(21.6, 0, "spark"),
     ],
-    head: [14, 24, -8, 8],
+    head: [14, 24.5, -8, 8],
     blade: ["plum", "amber"],
   }),
 
-  // 3) 황금 왕홀 — Twin arched royal gold curls enclosing a brilliant sky-sapphire jewel
+  // 3) 황금 왕홀 — Slender royal rod + sleek swept wing crown holding bright sapphire jewel
   sovereign: (icon) => ({
     sh: [
-      C(-2.0, 0, 1.7, "gold"), D(-2.5, -0.5, "glint"),
-      R(-1, 15, -1.2, icon ? 1.8 : 1.3, "obsidian"),
-      R(3, 5, -1.8, 1.8, "gold"), R(8, 10, -1.8, 1.8, "gold"), R(13, 15.5, -2.6, 2.6, "gold"),
-      // Upper & lower curled golden crown wings
-      P([[15, -2], [16, -7], [19, -9], [23, -8], [25, -5], [23, -3], [21, -5], [19, -5], [18, -2]], "gold"),
-      P([[15, 2], [16, 7], [19, 9], [23, 8], [25, 5], [23, 3], [21, 5], [19, 5], [18, 2]], "gold"),
-      P([[15, -3], [19, -5], [20, 0], [19, 5], [15, 3]], "gold"),
-      // Prominent azure sapphire gem at heart of sceptre
-      C(21, 0, 2.8, "sapph"), D(20, -1, "glint"), D(21, -1, "glint"),
+      C(-2.0, 0.5, 1.4, "gold"),
+      R(-1, 15, -0.7, icon ? 1.6 : 1.3, "obsidian"),
+      R(4, 5.5, -1.3, 1.8, "gold"), R(13.5, 15, -2.0, 2.5, "gold"),
+      // Smooth curved twin royal crown arcs (`t = -6.5..7`)
+      P([[15, -1.5], [16.5, -6], [20, -7.2], [24, -5], [23, -3.2], [20, -4.8], [18, -2]], "gold"),
+      P([[15, 2.2], [16.5, 6.8], [20, 7.8], [24, 5.5], [23, 3.8], [20, 5.4], [18, 2.5]], "gold"),
+      C(20.5, 0.4, 2.4, "sapph"), D(19.8, -0.4, "glint"),
     ],
-    head: [15, 25, -8, 8],
+    head: [15, 24, -7.2, 7.8],
     blade: ["sapph", "gold"],
   }),
 
-  // 4) 성전사 십자 지팡이 — Crisp 4-way golden Maltese cross tipped with 4 cyan crystals
+  // 4) 성전사 십자 지팡이 — Slender clean rod + crisp slim golden Maltese cross + 4 cyan gems
   templar: (icon) => ({
     sh: [
-      C(-2.0, 0, 1.6, "cyanGem"), D(-2.4, -0.5, "glint"),
-      R(-1, 14, -1.2, icon ? 1.8 : 1.3, "obsidian"),
-      R(2, 4, -1.8, 1.8, "gold"), R(12.5, 14.5, -2.5, 2.5, "gold"),
-      // Bold symmetrical golden cross arms
-      R(14.5, 23.5, -2.0, 2.0, "gold"),
-      R(17.5, 20.5, -7.0, 7.0, "gold"),
-      // 4 ice-cyan faceted crystals (N, S, W-collar, E-tip) + glowing ember heart
-      P([[23, -2], [25.5, 0], [23, 2]], "cyanGem"),
-      P([[17, -6.5], [19, -9.5], [21, -6.5]], "cyanGem"),
-      P([[17, 6.5], [19, 9.5], [21, 6.5]], "cyanGem"),
-      C(14.5, 0, 1.4, "cyanGem"),
-      D(19, 0, "ember"), D(18.5, -7, "glint"), D(24, -0.5, "glint"),
+      C(-2.0, 0.5, 1.3, "cyanGem"), D(-2.2, 0.2, "glint"),
+      R(-1, 14.5, -0.7, icon ? 1.6 : 1.3, "obsidian"),
+      R(3, 4.5, -1.3, 1.8, "gold"), R(13, 14.5, -2.0, 2.5, "gold"),
+      // Crisp slender 4-way golden cross (`3px` arms -> zero clunkiness!)
+      R(14.5, 23.5, -1.0, 2.0, "gold"),
+      R(17.5, 20.0, -5.8, 6.8, "gold"),
+      // Clean diamond faceted cyan tip jewels
+      P([[23, -1.0], [25.2, 0.5], [23, 2.0]], "cyanGem"),
+      P([[17.5, -5.5], [18.8, -7.8], [20.0, -5.5]], "cyanGem"),
+      P([[17.5, 6.5], [18.8, 8.8], [20.0, 6.5]], "cyanGem"),
+      C(14.5, 0.5, 1.2, "cyanGem"), D(18.8, 0.5, "ember"),
     ],
-    head: [14, 25.5, -9, 9],
+    head: [14.5, 25.2, -7.8, 8.8],
     blade: ["gold", "cyanGem"],
   }),
 
-  // 5) 황금 용두 지팡이 — S-curved golden dragon head crest + silver mane + emerald eye + claw pommel
+  // 5) 황금 용두 지팡이 — Graceful curved golden dragon head with sleek jaw & silver horn
   wyrm: (icon) => ({
     sh: [
-      // Pearl claw pommel & crimson grip
-      C(-2.0, 0.5, 1.6, "ivory"), P([[-3.6, -1.5], [-1.8, -1.5], [-1, 0]], "ivory"),
-      R(-1, 13, -1.3, icon ? 1.8 : 1.3, "crimson"),
-      R(4, 5.5, -1.8, 1.8, "gold"), R(10, 12, -2.2, 2.2, "gold"),
-      // S-curved serpent neck rising to bold dragon head (upper jaw crest -> distinct open mouth notch)
-      P([[11, -1], [15, -3], [17, -7.5], [22, -8], [25, -4], [25, -1.5], [20, -1], [18, -1], [15, 2], [11, 2]], "gold"),
-      // Swept silver dragon horns & open lower jaw fang
-      P([[16, -7], [13, -10.5], [18, -9], [21, -11], [21, -7]], "silver"),
-      P([[18, 1], [23, 2.5], [24.5, 4.5], [18, 4.5], [16, 2]], "gold"),
-      // Emerald glowing eye + ivory nostril/fang glint
-      D(20, -4.5, "emerald"), D(23.5, -2.8, "glint"), D(23, 3.0, "glint"),
+      C(-2.0, 0.5, 1.3, "ivory"),
+      R(-1, 12.5, -0.7, icon ? 1.6 : 1.3, "crimson"),
+      R(4, 5.5, -1.3, 1.8, "gold"), R(10.5, 12.5, -1.8, 2.2, "gold"),
+      // Sleek S-curved serpent neck & crisp contoured dragon snout
+      P([[12, -1], [15.5, -2.5], [17.5, -6.0], [22.5, -6.5], [25, -3.5], [24.5, -1.5], [19.5, -1.0], [16.5, 1.5], [12, 1.8]], "gold"),
+      P([[17, -5.8], [14.5, -8.5], [18.5, -7.5], [21.5, -9.2], [21.5, -6.0]], "silver"),
+      P([[18, 0.8], [23, 1.8], [24.5, 3.2], [18.5, 3.5], [16.5, 1.8]], "gold"),
+      D(20, -4.0, "emerald"), D(23.5, -2.5, "glint"),
     ],
-    head: [13, 25, -10, 5],
+    head: [12, 25, -9, 3.5],
     blade: ["gold"],
   }),
 
-  // 6) 자수정 세발 완드 — Violet-gold ringed rod + spread golden talons cradling floating amethyst prism
+  // 6) 자수정 세발 완드 — Sleek gold-violet banded wand + slender curved prongs cradling amethyst
   amethyst: (icon) => ({
     sh: [
-      C(-2.0, 0, 1.6, "amethyst"), D(-2.4, -0.5, "glint"),
-      R(-1, 14.5, -1.2, icon ? 1.8 : 1.3, "obsidian"),
-      R(2, 4, -1.8, 1.8, "amethyst"), R(6, 7.5, -1.8, 1.8, "gold"),
-      R(10, 11.5, -1.8, 1.8, "amethyst"), R(13, 15, -2.5, 2.5, "gold"),
-      // Wide-spread curved golden pincer prongs leaving breathing room around gem
-      P([[14, -2], [16, -7.5], [21, -9], [24, -6], [22, -4.5], [20, -6.5], [17.5, -4.5], [16.5, -1]], "gold"),
-      P([[14, 2], [16, 7.5], [21, 9], [24, 6], [22, 4.5], [20, 6.5], [17.5, 4.5], [16.5, 1]], "gold"),
-      // Faceted hexagonal amethyst crystal orb floating inside prongs
-      P([[18.5, 0], [20.5, -3.0], [24, -2.5], [25.5, 0], [24, 2.5], [20.5, 3.0]], "amethyst"),
-      D(20.5, -1.2, "glint"), D(22, -0.8, "glint"),
+      C(-2.0, 0.5, 1.3, "amethyst"), D(-2.2, 0.2, "glint"),
+      R(-1, 14.5, -0.7, icon ? 1.6 : 1.3, "obsidian"),
+      R(3, 4.5, -1.3, 1.8, "amethyst"), R(8, 9.5, -1.3, 1.8, "gold"), R(13, 14.5, -2.0, 2.5, "gold"),
+      // Graceful thin golden pincer prongs (`1.5px` arch)
+      P([[14.5, -1.5], [16.5, -6.0], [21, -7.2], [23.8, -4.8], [22.2, -3.5], [20, -5.2], [17.8, -3.5], [16.5, -0.5]], "gold"),
+      P([[14.5, 2.2], [16.5, 6.8], [21, 7.8], [23.8, 5.5], [22.2, 4.2], [20, 5.8], [17.8, 4.2], [16.5, 1.2]], "gold"),
+      P([[18.5, 0.4], [20.5, -2.2], [24, -1.8], [25.2, 0.4], [24, 2.6], [20.5, 3.0]], "amethyst"),
+      D(20.8, -0.8, "glint"),
     ],
-    head: [14, 25.5, -9, 9],
+    head: [14.5, 25.2, -7.2, 7.8],
     blade: ["amethyst", "gold"],
   }),
 
-  // 7) 혈산호 진주 지팡이 — Spiraled scarlet coral vines up dark rod flaring around silver pearl
+  // 7) 혈산호 진주 지팡이 — Smooth scarlet coral vines hugging dark rod cradling luminous silver pearl
   coralvine: (icon) => ({
     sh: [
-      C(-2.0, 0, 1.6, "coral"),
-      R(-1, 14, -1.2, icon ? 1.8 : 1.3, "obsidian"),
-      // Coiling coral vine bands climbing shaft
-      P([[1, -2], [4, -2], [6, 2], [3, 2]], "coral"),
-      P([[8, -2], [11, -2], [13, 2], [10, 2]], "coral"),
-      // Waving asymmetrical coral tendrils cradling silver pearl orb
-      P([[13, -2], [16, -7.5], [19, -8.5], [21, -6], [19, -4], [17, -4.5], [16, 0]], "coral"),
-      P([[13, 2], [16, 6.5], [20, 8.5], [23, 6], [21, 4], [18, 4.5], [16, 1]], "coral"),
-      R(14, 18, -2.5, 2.5, "coral"),
-      // Luminous pearl orb perched at tip
-      C(22, -0.5, 2.8, "silver"), D(21, -1.5, "glint"),
+      C(-2.0, 0.5, 1.3, "coral"),
+      R(-1, 14.5, -0.7, icon ? 1.6 : 1.3, "obsidian"),
+      L(2, -1, 5, 1.5, "coral"), L(8, -1, 11, 1.5, "coral"),
+      R(13, 15, -2.0, 2.5, "coral"),
+      // Smooth flared upper & lower coral arms
+      P([[14, -1.5], [16, -6.0], [19.5, -7.0], [21.5, -5.0], [19.5, -3.8], [17.2, -3.8], [16, -0.5]], "coral"),
+      P([[14, 2.2], [16, 6.5], [19.5, 7.5], [22, 5.5], [20, 4.2], [17.5, 4.2], [16, 1.2]], "coral"),
+      C(21.5, 0.2, 2.4, "silver"), D(20.8, -0.8, "glint"),
     ],
-    head: [13, 25, -8.5, 8.5],
+    head: [14, 24, -7, 7.5],
     blade: ["coral", "silver"],
   }),
 
-  // 8) 심해 해일 보주 지팡이 — Deep trident fork pommel + cobalt wave crescent + giant azure tide orb
+  // 8) 심해 해일 보주 지팡이 — Forked trident tail + smooth cobalt wave crescent + glowing azure sphere
   tideorb: (icon) => ({
     sh: [
-      // Wide forked metal anchor/trident pommel (`s = -3.8..-1`)
-      P([[-3.8, -3.5], [-1, -2], [-1, 2], [-3.8, 3.5], [-2.0, 0]], "cobalt"),
-      R(-1, 14, -1.2, icon ? 1.8 : 1.3, "oak"),
-      R(5, 6.5, -1.8, 1.8, "cobalt"), R(12, 14.5, -2.5, 2.5, "cobalt"),
-      // Sweeping deep cobalt wave-blade arching over the orb
-      P([[14, -2], [16, -7.5], [21, -9], [25, -6], [24, -4], [21, -6], [18, -4], [17, 1],
-         [19, 5], [23, 6], [20, 8], [16, 6], [14, 2]], "cobalt"),
-      // Huge ocean-azure water sphere
-      C(21, 0, 3.2, "azure"), D(19.5, -1.5, "glint"), D(20.5, -1.5, "glint"),
+      P([[-3.5, -2.8], [-1, -1.2], [-1, 2.0], [-3.5, 3.5], [-1.8, 0.4]], "cobalt"),
+      R(-1, 14.5, -0.7, icon ? 1.6 : 1.3, "oak"),
+      R(5, 6.5, -1.3, 1.8, "cobalt"), R(12.5, 14.5, -2.0, 2.5, "cobalt"),
+      P([[14, -1.5], [16.5, -6.5], [21, -7.8], [24.8, -5.0], [23.5, -3.2], [20.5, -5.2], [18, -3.5],
+         [17, 1.5], [19, 4.8], [22.5, 5.5], [20.5, 7.2], [16.5, 6.0], [14, 2.2]], "cobalt"),
+      C(20.8, 0.4, 2.7, "azure"), D(19.8, -0.8, "glint"),
     ],
-    head: [14, 25, -8, 8],
+    head: [14, 24.8, -7.8, 7.2],
     blade: ["azure", "cobalt"],
   }),
 
-  // 9) 고목 덩굴 목장 — Twisted gnarled oak crook + emerald leaf inlay + ivory wrapped handle
+  // 9) 고목 덩굴 목장 — Smooth ivory-bound oak crook with clean emerald inlay & leaf
   sylvan: (icon) => ({
     sh: [
-      // Gold cap + crisp ivory handle wrap + gnarled wooden shaft
-      R(-3.5, -1.5, -2.0, 2.0, "gold"),
-      R(-1.5, 4.5, -1.4, 1.6, "ivory"),
-      R(4.5, 15, -1.3, icon ? 1.9 : 1.5, "oak"),
-      // Sprouting twig & leaf beside emerald inlay (`s=13..18`)
-      P([[10, -2], [13, -5], [16, -4], [14, -1]], "gold"),
-      P([[12, 2], [14, 5], [17, 4], [15, 1]], "emerald"),
-      // Thick curved golden-oak shepherd's crook spiral at tip
-      P([[15, -2], [17, -6], [21, -8], [25, -5], [25, 1], [22, 4], [19, 3], [19, 0],
-         [22, 1], [23, -1], [21, -4], [18, -2], [17, 2], [15, 2]], "gold"),
-      // Glowing forest emerald gem set inside upper crook neck
-      C(15.5, 0, 2.0, "emerald"), D(15, -0.8, "glint"),
+      R(-3.2, -1.5, -1.3, 2.0, "gold"),
+      R(-1.5, 4.5, -0.8, 1.6, "ivory"),
+      R(4.5, 15, -0.8, icon ? 1.6 : 1.4, "oak"),
+      P([[11.5, 1.8], [14, 4.5], [16.5, 3.5], [14.5, 1.0]], "emerald"),
+      // Smooth clean golden wood shepherd crook spiral
+      P([[14.5, -1.5], [16.5, -5.5], [20.5, -7.0], [24.5, -4.5], [24.5, 1.0], [21.5, 3.5], [19, 2.5], [19, 0],
+         [21.8, 0.8], [22.5, -1.2], [20.5, -3.8], [18, -2.0], [17, 1.8], [14.5, 2.0]], "gold"),
+      C(15.2, 0.2, 1.6, "emerald"), D(14.8, -0.4, "glint"),
     ],
-    head: [13, 25, -8, 5],
+    head: [14, 24.5, -7, 4.5],
     blade: ["gold", "emerald"],
   }),
 
-  // 10) 성화 등불 지팡이 — Arched golden shepherd hook suspending glowing teal spirit censer lantern
+  // 10) 성화 등불 지팡이 — Graceful slender shepherd crane suspending compact teal spirit censer
   astral: (icon) => ({
     sh: [
-      C(-2.0, 0, 1.6, "bronze"), D(-2.2, -0.4, "spark"),
-      R(-1, 15, -1.2, icon ? 1.8 : 1.3, "oak"),
-      R(4, 6, -1.8, 1.8, "bronze"), R(13, 15, -2.5, 2.5, "gold"),
-      // Tall shepherd hook arch curving smoothly over tip (`t = -8..-3`)
-      P([[14, -2], [16, -7], [20, -9], [24, -7], [25, -3], [22, -3], [21, -6], [18, -6], [17, 1], [14, 2]], "gold"),
-      // Suspended solid connector & glowing teal lantern cage (`s = 20..25, t = 0..7`)
-      R(22.5, 24.0, -3.5, 1.5, "bronze"),
-      P([[20, 1], [23, -1], [25.5, 1], [25, 6], [23, 8], [20.5, 6]], "bronze"),
-      C(22.8, 3.5, 1.9, "tealLamp"),
-      D(22.5, 3, "glint"),
+      C(-2.0, 0.5, 1.3, "bronze"), D(-2.0, 0.3, "spark"),
+      R(-1, 15, -0.7, icon ? 1.6 : 1.3, "oak"),
+      R(4, 5.5, -1.3, 1.8, "bronze"), R(13, 15, -2.0, 2.5, "gold"),
+      P([[14, -1.5], [16, -6.0], [20, -7.8], [23.8, -6.0], [24.5, -2.2], [22, -2.2], [21, -5.0], [18, -5.0], [17, 1.2], [14, 2.0]], "gold"),
+      R(22.2, 23.8, -2.5, 1.2, "bronze"),
+      P([[20.5, 1.2], [23, -0.5], [25.2, 1.2], [24.8, 5.5], [23, 7.2], [20.8, 5.5]], "bronze"),
+      C(22.8, 3.4, 1.6, "tealLamp"),
+      D(22.5, 3.0, "glint"),
     ],
-    head: [14, 25.5, -9, 8],
+    head: [14, 25.2, -7.8, 7.2],
     blade: ["tealLamp", "gold"],
   }),
 };
