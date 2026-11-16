@@ -128,7 +128,7 @@ const NEAR_SQ = 220 ** 2;
 
 export function jobSkillFx(e, G, S3, entityPos) {
   const impact = e[0] === "hm";
-  if (e[0] !== "a" && !impact) return;
+  if ((e[0] !== "a" && !impact) || document.hidden) return;
   const code = impact ? e[7] : e[2], id = fxSkill(code);
   const accent = accents[id];
   if (!accent || (id === "hammer_final") !== impact || S3.fx.list.length >= MAX_FX_FOR_ACCENT) return;

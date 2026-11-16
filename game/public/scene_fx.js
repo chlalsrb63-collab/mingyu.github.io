@@ -363,6 +363,7 @@ export const fx = {
   wave(wx, wy, r, color = "#ffffff", dur = 340, delay = 0) { this.add({ k: "wave", x: wx * P, y: wy * P, r: r * P, color, dur, delay }); },
   /** A pillar of lightning striking (wx, wy) out of the sky. */
   zap(wx, wy, color = "#bfe8ff", dur = 240, delay = 0) {
+    if (document.hidden) return;
     const [x, y] = iso(wx, wy);
     this.add({ k: "lightning", frames: lightningFrames(x, y - 150, x, y), color, dur, delay });
     this.flash(wx, wy, 16, delay, 0.1);
@@ -395,6 +396,7 @@ export const fx = {
   },
   /** A jagged bolt of lightning from a to b. */
   bolt(ax, ay, bx, by, color = "#9fdcff", dur = 240) {
+    if (document.hidden) return;
     const [x0, y0] = iso(ax, ay), [x1, y1] = iso(bx, by);
     this.add({ k: "lightning", frames: lightningFrames(x0, y0 - 14, x1, y1 - 14), color, dur });
   },
