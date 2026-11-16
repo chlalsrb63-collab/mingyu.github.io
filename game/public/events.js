@@ -27,7 +27,7 @@ import { entityPos } from "./net.js";
 import { addChat, banner, chatLog } from "./windows.js";
 import { fadeIn } from "./win_world.js";
 import { rarityLabel } from "./items.js";
-import { damageColor } from "./elements.js";
+import { damageColor, elementInfo } from "./elements.js";
 
 const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3, banner: 4, binding: 5 }; // h[6], on selected impacts or healing spells
 
@@ -56,6 +56,15 @@ export function onEvent(e, t) {
     const hRad = e[2] === 132 ? 36 : e[2] === 131 ? 31 : e[2] === 130 ? 28 : 24;
     SkillFx.hammerWindup?.(x, y, hRad, wind, src.hammerYaw);
     if (eid === G.you || dist(G.me.x, G.me.y, x, y) < 180) Sound.play("swing_hammer");
+    return;
+  }
+  if (e[0] === "bw" && e[4] === 9 && G.defs.skills.dive.damageType === "lightning") {
+    const [, x, y, radius] = e;
+    const color = elementInfo("lightning").color;
+    S3.fx.zap(x, y, color, 220);
+    S3.fx.wave(x, y, radius, color, 380);
+    S3.fx.crack(x, y, radius * 0.68, color, 420);
+    if (G.me && dist(G.me.x, G.me.y, x, y) < 180) Sound.play("thunder");
     return;
   }
   if (SkillFx.skillEvent(e, { G, S3, Sound, entityPos, heightOf, t })) return;

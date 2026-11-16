@@ -18,9 +18,9 @@ const SKILL_ELEMENT_GROUPS = {
   bleed: ["ambush", "flurry", "bloodburst", "rupture", "bladevortex"],
   fire: ["comet", "mortar"],
   cold: ["inkshot"],
-  lightning: ["elemfan"],
+  lightning: ["elemfan", "dive"],
   poison: ["traps", "snare"],
-  dark: ["shade", "soulbolt", "gravity", "pact", "dive", "sanctuary", "drain"],
+  dark: ["shade", "soulbolt", "gravity", "pact", "sanctuary", "drain"],
   light: ["oathward", "runecircle"],
 };
 const SKILL_ELEMENTS = Object.fromEntries(Object.entries(SKILL_ELEMENT_GROUPS).flatMap(([type, ids]) => ids.map((id) => [id, type])));

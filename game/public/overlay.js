@@ -17,7 +17,7 @@ import * as Sky from "./sky.js";
 import * as NPC from "./npclife.js";
 import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
-import { G, T, dpr, tg, text } from "./state.js";
+import { G, T, dpr, tg, text, $ } from "./state.js";
 import { entityPos } from "./net.js";
 import { mobMax, DUNGEONS, RANK_NAME } from "./events.js";
 import { enchantName, statusesAt } from "./elements.js";
@@ -273,6 +273,8 @@ function renderText(t) {
   }
   // Residents talking together and ambient conversations close enough to hear.
   for (const b of S3.townBubbles(t)) { const [x, y] = at(b.x, b.y, 1.8); bubble(b.b, x, y, t); }
+  const greeting = NPC.adventurerBubble(G.me, t, server, $("#w-talk")?.hidden !== false);
+  if (greeting) { const [x, y] = at(greeting.x, greeting.y, 1.8); bubble(greeting.b, x, y, t); }
   for (const mob of G.mobs.values()) {
     const d = G.defs.mobs[mob.k], max = mobMax(mob);
     const ailments = statusesAt(mob.id, t);

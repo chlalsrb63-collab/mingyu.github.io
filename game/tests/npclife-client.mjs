@@ -97,6 +97,25 @@ const smithLocation = NPC.locations().find((entry) => entry.id === "smith");
 const [placeId, mapId, placeName] = liveDefs.npclife.places.find(([id]) => id === L.npcPlan("smith", evening).place);
 assert.deepEqual([smithLocation.placeId, smithLocation.map, smithLocation.place], [placeId, mapId, placeName]);
 
+const willow = { id: "willow", npcs: [] };
+NPC.load(willow, liveDefs);
+NPC.onLegs(L.lifeLegs(willow.id, evening), evening);
+const daon = NPC.at("adv_daon", evening), line = NPC.lines(daon.id).stroll[0];
+assert.equal(daon.weapon, "dagger");
+assert.ok(daon.moving);
+const far = { x: daon.x, y: daon.y - 120 };
+assert.equal(NPC.adventurerBubble(far, 0, evening), null, "adventurer greets only nearby players");
+assert.equal(NPC.adventurerBubble(daon, 100, evening, false), null, "a dialogue window suppresses the greeting");
+const greeting = NPC.adventurerBubble(daon, 200, evening);
+assert.equal(greeting.b.text, line);
+const next = NPC.at(daon.id, evening + 250);
+const following = NPC.adventurerBubble(daon, 450, evening + 250);
+assert.deepEqual([following.x, following.y], [next.x, next.y]);
+assert.equal(following.b, greeting.b, "an advancing greeting follows its speaker without restarting");
+assert.equal(NPC.adventurerBubble(daon, greeting.b.until + 1, evening), null, "staying nearby does not repeat the greeting");
+NPC.adventurerBubble(far, 3900, evening);
+assert.equal(NPC.adventurerBubble(daon, 4000, evening).b.t0, 4000, "leaving and coming back is a new greeting");
+
 NPC.load(null, null);
 assert.equal(NPC.tracked(), null);
 assert.equal(NPC.needsWhere(now), false);

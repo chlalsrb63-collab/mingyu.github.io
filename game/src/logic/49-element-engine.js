@@ -266,17 +266,19 @@ function elementInflict(S, rt, source, target, type, damage, options = {}) {
 }
 
 function elementApplyHit(S, rt, source, target, parts, options = {}) {
-  if (options.proc === false || !target || MOBS[target.k]?.chest) return;
+  if (!target || MOBS[target.k]?.chest || (options.proc === false && !options.forceAilment)) return;
   const gear = elementGear(source, options.element);
   // Multiple enemies often attack together. Their elemental precision is lower than a player's.
   const precision = elementMob(source) ? (source.el || MOBS[source.k]?.boss ? 0.65 : 0.40) : 1;
   for (const [type, amount] of parts) {
+    const forced = type === options.forceAilment;
+    if (options.proc === false && !forced) continue;
     const damage = amount * (options.scale ?? 1);
     if (!(damage > 0) || (type === "physical" && !options.crit)) continue;
-    if (type === "dark" && source?.hp > 0 && !source.dead) {
+    if (type === "dark" && !options.noDarkLeech && source?.hp > 0 && !source.dead) {
       elementRestore(S, rt, source, Math.min(damage * 0.17, elementMaxHp(source) * 0.04));
     }
-    const chance = (ELEMENT_RULE[type].chance + (gear?.proc?.[type] || 0) / 100) * precision;
+    const chance = forced ? 1 : (ELEMENT_RULE[type].chance + (gear?.proc?.[type] || 0) / 100) * precision;
     elementInflict(S, rt, source, target, type, damage, { chance, crit: options.crit, element: gear });
   }
 }

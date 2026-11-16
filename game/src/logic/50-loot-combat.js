@@ -403,7 +403,13 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const x = mob.x, y = mob.y;
   wmHit(S, p, mob);
   const brand = mob.brand, before = mob.hp, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue, parts);
-  if (!o.px && !pure && before > Math.max(0, mob.hp)) elementApplyHit(S, rt, p, mob, parts, { crit, element: st.element, proc: !graze, scale: (before - Math.max(0, mob.hp)) / Math.max(1, damageTotal(parts)) });
+  const lost = before - Math.max(0, mob.hp);
+  if (!o.px && (!pure || o.forceAilment) && lost > 0) {
+    elementApplyHit(S, rt, p, mob, parts, {
+      crit, element: st.element, proc: !graze && !pure, forceAilment: o.forceAilment,
+      noDarkLeech: o.noDarkLeech, scale: lost / Math.max(1, damageTotal(parts)),
+    });
+  }
   if (pure) runeShock(S, rt, p, x, y, mob);
   pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand);
   if (!o.px) pfxHit(S, rt, p, st, mob, dmg, crit, killed, o);   // the powers that answer a blow landing (chance, status, crit)

@@ -148,6 +148,9 @@ function npcInstall(data) {
     }
     if (desc.lines !== undefined && (!isObj(desc.lines) || Object.values(desc.lines).some((lines) =>
       !Array.isArray(lines) || lines.some((line) => typeof line !== "string" || !line.trim() || line.length > 180)))) npcProblem(id, "대사는 180자 이내의 문장 목록입니다");
+    if (desc.weapon !== undefined && (typeof desc.weapon !== "string" || !Object.hasOwn(WKIND, desc.weapon))) {
+      npcProblem(id, "등록된 무기 종류가 필요합니다"); continue;
+    }
     const actor = { ...desc, id, i: npcCast.size, npc, post, postMap: mapId, name: npc?.name || desc.name, moves: new Map() };
     npcBlocks(actor, desc.plan);
     if (actor.days) {
@@ -419,7 +422,8 @@ export function npcReach(p, id) {
 function npcLifeDefs() {
   return {
     cast: [...npcCast.values()].map((a) => [a.id, a.name, a.npc?.look || a.hero, a.cos || [], a.postMap, a.traits || [],
-      a.npc?.pose || null, a.home || null, a.cover || null, a.away || null, a.kid ? 1 : 0, a.npc?.role || null]),
+      a.npc?.pose || null, a.home || null, a.cover || null, a.away || null, a.kid ? 1 : 0, a.npc?.role || null,
+      ...(a.weapon ? [a.weapon] : [])]),
     places: [...[...npcPlaces.values()].map((p) => [p.id, p.map, p.name]), ...[...npcTransit.keys()].map((id) => ["map:" + id, id, MAP_META[id].name])],
     acts: NPC_ACTS, cycle: NPC_CYCLE,
     rel: npcRels.map((r) => [r.a.i, r.b.i, r.kind]),

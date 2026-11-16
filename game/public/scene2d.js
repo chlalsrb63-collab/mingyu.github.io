@@ -47,7 +47,7 @@ import * as NPC from "./npclife.js";
 import { g, vw, vh, G, iso, tI, K, clamp, cam, FLAT, T, playerLook, sAng, P, sheet, setWorldTransform } from "./scene_view.js";
 import { drawSkirt, drawGround, drawLayer, drawPulseParts, lazyLeft, lazyTall } from "./scene_ground.js";
 import { wpLit, lights, map, ground, theme, artGround, drawWater, pulseCv, pulseParts, falls, smokers, statics, npcs, OUTDOOR, emit, strings, critters, roomL, drawAmbient, camps } from "./scene_map.js";
-import { npcOut, npcService, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, seatOf, drawPerson, drawJam } from "./scene_people.js";
+import { npcOut, npcService, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, makePerson, seatOf, drawPerson, drawJam } from "./scene_people.js";
 import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, drawAimArrow, props, TRAIT_TINT, hooks, glows } from "./scene_fx.js";
 import { drawDepthGround, depthSprite } from "./scene_depth.js";
 import { frame as postFx } from "./postfx.js";
@@ -326,6 +326,12 @@ export function render(focusX, focusY, dt, t, snap) {
       if (st.water && Math.random() < 0.45) parts.push({ x: st.x - 9 + Math.random() * 18, y: st.y - 50, vx: (Math.random() - 0.5) * 34, vy: -24 - Math.random() * 20, life: 0.55, color: "#dff4ff", g: 170, s: 2 });
     } else if (o.sign) {
       g.drawImage(o.sign, Math.round(o.X - o.sign.width / 2), Math.round(o.Y + 2 - o.sign.height));
+    } else if (o.resident?.weapon) {
+      const r = o.resident;
+      const s = state("res:" + r.id, r.id, () => ({ ...makePerson(playerLook(null, r.look, { cos: r.cos, wk: r.weapon })), ph: r.index * 257 }));
+      g.globalAlpha = r.fade;
+      drawPerson(s, { ...r, atkT: -Infinity }, t, dt, o.X, o.Y);
+      g.globalAlpha = 1;
     } else if (o.r || o.resident) {
       // a resident: a hero's figure walking or at their task (iso_interior.js poses)
       const r = o.r || residentFrame(o.resident, t, o.animate), X = Math.round(o.X), Y = Math.round(o.Y), side = r.dir === "left" || r.dir === "right";

@@ -644,6 +644,38 @@
       "spots": [
         [55, 42, "w"]
       ]
+    },
+    "adv_plaza_west": {
+      "map": "town", "name": "분수 서쪽 산책로",
+      "round": [[40, 38], [44, 39], [45, 42], [41, 43]]
+    },
+    "adv_plaza_north": {
+      "map": "town", "name": "회관 앞 광장",
+      "round": [[51, 31], [53, 31], [53, 35], [51, 35]]
+    },
+    "adv_plaza_east": {
+      "map": "town", "name": "모닥불 동쪽 산책로",
+      "round": [[60, 43], [65, 44], [65, 48], [60, 48]]
+    },
+    "adv_plaza_south": {
+      "map": "town", "name": "광장 남쪽 산책로",
+      "round": [[49, 49], [51, 49], [51, 53], [50, 55]]
+    },
+    "adv_willow_flowers": {
+      "map": "willow", "name": "꽃집 앞 산책로",
+      "round": [[10, 21], [11, 21], [11, 28], [12, 28], [12, 24], [10, 24]]
+    },
+    "adv_willow_gate": {
+      "map": "willow", "name": "마을 북쪽 길",
+      "round": [[33, 6], [35, 6], [35, 13], [32, 13]]
+    },
+    "adv_willow_center": {
+      "map": "willow", "name": "마을 중앙 산책로",
+      "round": [[37, 29], [39, 29], [39, 31], [36, 31]]
+    },
+    "adv_willow_west": {
+      "map": "willow", "name": "마을 서쪽 큰길",
+      "round": [[18, 29], [23, 29], [23, 30], [18, 30]]
     }
   },
   "cast": {
@@ -1401,6 +1433,70 @@
         "off": ["허브는 새벽 이슬 맞은 게 향이 좋아요."],
         "work": ["오늘 첫 주전자는 연하게 우렸어요. 천천히 드세요."]
       }
+    },
+    "adv_yeoul": {
+      "name": "모험가 여울",
+      "hero": [0, 2, 5, 2, 1, 0, 2, 3, 5, 1, 0],
+      "weapon": "spear",
+      "home": "adv_plaza_west",
+      "plan": [{ "h": 4, "at": "adv_plaza_west", "act": "stroll", "lag": 8 }],
+      "lines": { "stroll": ["아, 안녕하세요. 산책 중이에요.", "분수 소리 듣고 있으면 배고픈 것도 깜빡해요."] }
+    },
+    "adv_sandeul": {
+      "name": "모험가 산들",
+      "hero": [3, 1, 7, 8, 0, 1, 5, 6, 1, 0, 1],
+      "weapon": "sword",
+      "home": "adv_plaza_north",
+      "plan": [{ "h": 4, "at": "adv_plaza_north", "act": "stroll" }],
+      "lines": { "stroll": ["오늘은 어깨가 한결 가볍네요.", "아까 쥬쥬식당에서 빵 굽는 냄새가 나던데, 이따 들러 보려고요."] }
+    },
+    "adv_fullip": {
+      "name": "모험가 풀잎",
+      "hero": [5, 3, 9, 7, 2, 1, 2, 10, 7, 2, 2],
+      "weapon": "bow",
+      "home": "adv_plaza_east",
+      "plan": [{ "h": 4, "at": "adv_plaza_east", "act": "stroll", "lag": 10 }],
+      "lines": { "stroll": ["모닥불에 밤을 구워 먹고 싶네요.", "지난번엔 너무 오래 구워서 모닥불보다 까매졌어요."] }
+    },
+    "adv_iseul": {
+      "name": "모험가 이슬",
+      "hero": [8, 2, 3, 12, 1, 4, 8, 12, 5, 2, 1],
+      "weapon": "staff",
+      "home": "adv_plaza_south",
+      "plan": [{ "h": 4, "at": "adv_plaza_south", "act": "stroll", "lag": 3 }],
+      "lines": { "stroll": ["돌길이 아직 햇볕을 품고 있네요.", "해 질 때 여길 걸으면 지팡이 끝에 석양이 비쳐요."] }
+    },
+    "adv_maru": {
+      "name": "모험가 마루",
+      "hero": [2, 3, 4, 9, 2, 0, 0, 4, 3, 2, 0],
+      "weapon": "hammer",
+      "home": "adv_willow_flowers",
+      "plan": [{ "h": 4, "at": "adv_willow_flowers", "act": "stroll" }],
+      "lines": { "stroll": ["꽃집에 새 화분이 들어왔더라고요.", "골라 놓고 이름만 못 물어봤어요. 다음에 들르면 꼭 물어봐야지."] }
+    },
+    "adv_daon": {
+      "name": "모험가 다온",
+      "hero": [4, 0, 5, 5, 0, 1, 7, 0, 2, 0, 0],
+      "weapon": "dagger",
+      "home": "adv_willow_gate",
+      "plan": [{ "h": 4, "at": "adv_willow_gate", "act": "stroll", "lag": 4 }],
+      "lines": { "stroll": ["마을까지 오는 길은 괜찮았어요?", "저는 오다가 덜 익은 산딸기를 하나 먹었어요. 아직도 입이 시어요."] }
+    },
+    "adv_cheongsol": {
+      "name": "모험가 청솔",
+      "hero": [7, 5, 7, 3, 4, 1, 6, 6, 2, 3, 1],
+      "weapon": "bow",
+      "home": "adv_willow_center",
+      "plan": [{ "h": 4, "at": "adv_willow_center", "act": "stroll", "lag": 6 }],
+      "lines": { "stroll": ["오늘 저녁엔 수프나 끓이려고요.", "장날에 사 둔 당근이 아직 한 바구니나 남았거든요."] }
+    },
+    "adv_janbyeol": {
+      "name": "모험가 잔별",
+      "hero": [11, 2, 4, 13, 2, 0, 7, 4, 0, 3, 3],
+      "weapon": "book",
+      "home": "adv_willow_west",
+      "plan": [{ "h": 4, "at": "adv_willow_west", "act": "stroll", "lag": 2 }],
+      "lines": { "stroll": ["길가에 앉아서 책 읽기 딱 좋은 날이네요.", "어제는 한 장도 못 읽었어요. 옆에서 고양이가 책 위에 누워 버렸거든요."] }
     }
   },
   "rel": [

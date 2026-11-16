@@ -352,8 +352,16 @@ function propPulse(S, rt, m, p, o, now) {
       for (const mob of mobsWithin(rt, o.x, o.y, o.r)) { mob.slow = Math.max(mob.slow || 0, now + 1200); hit(mob, o.mult); }
       return false;
     case "field": {
-      const list = mobsWithin(rt, o.x, o.y, o.r);
-      if (list.length) healP(rt, p, dealt(p, list, () => { for (const mob of list) hit(mob, o.mult); }) * o.heal);
+      // The Dragoon's field uses its own life-steal rate. Cap the drain at HP actually lost.
+      const fieldHit = { ...opt, elem: o.sk.secondaryDamageType, secondaryType: null, noDarkLeech: true };
+      let damage = 0;
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) {
+        if (mob.dead) continue;
+        const before = mob.hp;
+        hurtMob(S, rt, mob, p, o.mult, false, fieldHit);
+        damage += Math.max(0, before - Math.max(0, mob.hp));
+      }
+      if (damage > 0) healP(rt, p, damage * o.heal);
       return false;
     }
     case "pillar": {
@@ -1141,7 +1149,11 @@ function skStrike(S, p, id, k, cost, tgt) {
       rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
       ev(99, p.x, p.y - 6, sk.r);
       rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 9]);
-      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { const [vx, vy] = aimVec(p, o); knock(m, o, vx, vy, 12); hit(o, sk.mult); }
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        const [vx, vy] = aimVec(p, o);
+        knock(m, o, vx, vy, 12);
+        hit(o, sk.mult, { secondaryType: null, forceAilment: sk.damageType });
+      }
       prop({ kind: "field", wire: 1, x: p.x, y: p.y, r: sk.field, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.drain * k, heal: sk.heal * charmSkh(p, id) });
       break;
     }

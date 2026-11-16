@@ -51,7 +51,7 @@ assert.ok(L.validateAction(S, pid, walk).ok);
 L.applyAction(S, pid, walk);
 assert.deepEqual([p.x, p.y], [x, y], "the server refuses positional change while frozen");
 
-function jobHits(id, front, ticks = 0, targetKind = "twinhare") {
+function jobArena(id, front, targetKind) {
   const world = L.setup(), job = D.skills[id].job, [wk, wk2] = D.jobs[job].wk;
   world.now = 1_000_000;
   L.addPlayer(world, pid, L.hero("전직속성시험", { wk, wk2, lvl: 157, job, wm: { [wk]: 30, [wk2]: 30 } }));
@@ -62,9 +62,18 @@ function jobHits(id, front, ticks = 0, targetKind = "twinhare") {
   const target = X.newMob(world, targetKind, null, null);
   Object.assign(target, { x: hero.x + front, y: hero.y, hp: 50_000, stun: world.now + 10_000 });
   map.mobs.push(target);
+  return { world, hero, map, target };
+}
+
+function castJobSkill(world, id) {
   const cmd = { t: "sk", id, a: 0 }, valid = L.validateAction(world, pid, cmd);
   assert.ok(valid.ok, `${id}: ${valid.error}`);
   L.applyAction(world, pid, cmd);
+}
+
+function jobHits(id, front, ticks = 0, targetKind = "twinhare") {
+  const { world, map, target } = jobArena(id, front, targetKind);
+  castJobSkill(world, id);
   for (let i = 0; i < ticks; i++) L.tick(world, world.now + 100);
   const hits = map.ev.filter(([kind, eid, damage]) => kind === "h" && eid === target.id && damage > 0);
   assert.ok(hits.length, `${id}: real skill cast hits the target`);
@@ -81,7 +90,7 @@ for (const [id, pct] of [["rain", 25], ["hammer_final", 35], ["crosscut", 25], [
   assert.equal(D.skills[id].armorPenPct, pct, `${id}: armor penetration visible to the client`);
 }
 
-for (const [id, primary, secondary] of [["verdict", "physical", "fire"], ["crosscut", "physical", "bleed"], ["inkshot", "cold", "dark"], ["elemfan", "lightning", "dark"]]) {
+for (const [id, primary, secondary] of [["verdict", "physical", "fire"], ["crosscut", "physical", "bleed"], ["inkshot", "cold", "dark"], ["elemfan", "lightning", "dark"], ["dive", "lightning", "dark"]]) {
   const skill = D.skills[id];
   assert.deepEqual([skill.damageType, skill.secondaryDamageType], [primary, secondary], `${id}: both types visible to the client`);
 }
@@ -103,4 +112,31 @@ try {
   rain.armorPenPct = rainPen;
 }
 
-console.log("elemental combat: damage wire, elite attacks, ailments, dual-type jobs and armor penetration metadata");
+{
+  const { world, hero, map, target } = jobArena("dive", 24, "twinhare");
+  const start = world.now;
+  hero.hp = Math.floor(X.stats(hero).mhp / 2);
+  const hits = () => map.ev.filter(([kind, eid, damage]) => kind === "h" && eid === target.id && damage > 0);
+  const heals = () => map.ev.filter(([kind, eid, damage]) => kind === "h" && eid === hero.eid && damage < 0).map((e) => -e[2]);
+  const types = (e) => e[7].map(([type]) => D.elements.types[type]);
+  castJobSkill(world, "dive");
+  assert.equal(hits().length, 1, "landing hits once");
+  assert.ok(types(hits()[0]).includes("lightning") && !types(hits()[0]).includes("dark"), "landing carries lightning");
+  const ailments = L.viewFor(world, pid).ail.find(([id]) => id === target.id)[1];
+  assert.ok(ailments.some(([i, left]) => D.elements.status[i].id === "shock" && left > 0), "landing applies shock");
+  for (let elapsed = 100; elapsed < 500; elapsed += 100) L.tick(world, start + elapsed);
+  assert.equal(hits().length, 1, "field waits for its first 500 ms pulse");
+  assert.deepEqual(heals(), [], "landing does not steal life");
+  const before = target.hp;
+  L.tick(world, start + 500);
+  assert.equal(hits().length, 2);
+  assert.ok(types(hits()[1]).includes("dark") && !types(hits()[1]).includes("lightning"), "field carries dark damage");
+  assert.deepEqual(heals(), [Math.round((before - target.hp) * 0.3)], "field heals 30% of damage exactly once");
+
+  target.hp = 9;
+  for (let elapsed = 600; elapsed <= 1000; elapsed += 100) L.tick(world, start + elapsed);
+  assert.ok(target.dead && hits()[2][2] > 9, "second field pulse overkills the target");
+  assert.equal(heals().at(-1), 3, "field life-steal is capped at the HP lost before death");
+}
+
+console.log("elemental combat: damage wire, elite attacks, ailments, dual-type jobs, armor penetration and Dragoon phases");

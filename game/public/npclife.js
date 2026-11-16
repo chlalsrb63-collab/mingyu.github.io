@@ -5,6 +5,7 @@ const DAY_MS = 48 * 60_000;
 const FADE_MS = 300;
 const ROUND_TPS = 3;
 const WHERE_MS = 20_000;
+const GREET_NEAR = 56, GREET_AWAY = 80, GREET_MS = 3500;
 const ACT_POSE = { eat: "sip", drink: "sip", sleep: "doze", chat: "wave", shop: "carry", fish: "fish", train: "hammer", read: "read", perform: "wave" };
 const ACT_NAME = {
   work: "일하는 중", walk: "이동 중", eat: "식사 중", drink: "한잔하는 중",
@@ -18,11 +19,15 @@ let defs, map, actors = [], places = [], acts = [], rels = [], dialogue = {};
 let dayMs = DAY_MS, selected = null, whereAsked = -Infinity;
 let where = [], nextChange = -Infinity;
 const castById = new Map(), posts = new Map(), legs = new Map();
+let adventurers = [], greeting = null;
+const greeted = new Set();
 
 export function load(nextMap, nextDefs) {
   map = nextMap;
   posts.clear();
   legs.clear();
+  greeted.clear();
+  greeting = null;
   if (!map) nextDefs = null;
   if (nextDefs !== defs) {
     defs = nextDefs;
@@ -36,11 +41,12 @@ export function load(nextMap, nextDefs) {
     nextChange = -Infinity;
     whereAsked = -Infinity;
     castById.clear();
-    actors = (life?.cast || []).map(([id, name, look, cos, postMap, traits, pose, home, cover, away, kid, role], index) => {
-      const actor = { id, index, name, look, cos, postMap, traits, pose, home, cover, away, kid: !!kid, role, resident: !postMap };
+    actors = (life?.cast || []).map(([id, name, look, cos, postMap, traits, pose, home, cover, away, kid, role, weapon], index) => {
+      const actor = { id, index, name, look, cos, postMap, traits, pose, home, cover, away, kid: !!kid, role, weapon, resident: !postMap };
       castById.set(id, actor);
       return actor;
     });
+    adventurers = actors.filter((actor) => actor.weapon);
     const chat = new Map((life?.chat || []).map(([a, b, lines]) => [`${a}:${b}`, lines]));
     rels = (life?.rel || []).map(([a, b, kind]) => ({ a: actors[a].id, b: actors[b].id, kind, chat: chat.get(`${a}:${b}`) || [] }));
   }
@@ -122,6 +128,28 @@ export function list(now = serverNow()) {
     if (body) bodies.push(body);
   }
   return bodies;
+}
+
+/** Hold one greeting over its moving speaker and rearm it once the player leaves. */
+export function adventurerBubble(player, t, now = serverNow(), canSpeak = true) {
+  let active = null, closest = null, near = GREET_NEAR;
+  for (const actor of adventurers) {
+    const body = at(actor.id, now);
+    const distance = body?.fade >= 0.5 ? Math.hypot(body.x - player.x, body.y - player.y) : Infinity;
+    if (distance > GREET_AWAY) greeted.delete(actor.id);
+    else if (greeting?.id === actor.id && t < greeting.b.until) active = body;
+    if (distance >= near || greeted.has(actor.id) || !lines(actor.id)?.[body.act]?.[0]) continue;
+    closest = body;
+    near = distance;
+  }
+  if (!canSpeak) { greeting = null; return null; }
+  if (!active) {
+    if (!closest) { greeting = null; return null; }
+    greeted.add(closest.id);
+    greeting = { id: closest.id, b: { text: lines(closest.id)[closest.act][0], t0: t, until: t + GREET_MS } };
+    active = closest;
+  }
+  return { x: active.x, y: active.y, b: greeting.b };
 }
 
 function location(index, actor) {
