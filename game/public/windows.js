@@ -3,9 +3,11 @@
  * `openWin closeWin toggleWin closeAll closeTop isOpen`, placement in the safe zone (`zone homeOf
  * placeWin keepIn front`, fold to tabs `fold unfold layTabs`, saved spots), the phone drawer,
  * toasts and banners, the chat log (`addChat`), and tooltips (`showTip hideTip hoverTip`).
- * The side panel (`PANEL dockPanel panelWin`): on a desktop the bag, the character, skills, quests, party,
- * guild, life and the other list windows open one at a time in the side column under the minimap (the quest
- * tracker when none is open), the rest float over the world; on a phone they all float as before.
+ * The side panel (`PANEL dockPanel panelWin setDock`): on a desktop the small-info windows (bag, character, quests,
+ * party, guild, daily, week) open one at a time in the side column under the minimap (the quest tracker when none
+ * is open); the ones that need room (skills, life, dex, collection, achievements, ranking, settings, help …) float
+ * over the world by default. Each has a 분리 / 붙이기 button in its title bar that switches it (remembered per
+ * window in `lumentale:dock:<id>`); on a phone they all float as before.
  */
 
 import { Sound } from "./audio.js";
@@ -51,7 +53,19 @@ const compact = () => VP.lay !== "full";
  * the stations and the house chest put the bag in the panel when they open (selling needs it)
  * and take it away again when they close, if they were what brought it.
  */
-export const PANEL = ["inv", "char", "skill", "quest", "party", "guild", "life", "daily", "week", "achieve", "collect", "dex", "rank", "settings", "help", "charm", "trophy", "alba"];
+/** Every window that may sit in the side panel; which of them do right now is `PANEL` (below). */
+const DOCKABLE = ["inv", "char", "skill", "quest", "party", "guild", "life", "daily", "week", "achieve", "collect", "dex", "rank", "settings", "help", "charm", "trophy", "alba"];
+/** Float over the world by default (they need room); the rest of DOCKABLE opens in the panel. The player's choice wins (`lumentale:dock:<id>`: "1" panel, "0" float). */
+const FLOATS = ["skill", "life", "alba", "charm", "trophy", "rank", "achieve", "collect", "dex", "settings", "help"];
+const DOCK_KEY = (id) => `lumentale:dock:${id}`;
+const dockWant = (id) => {
+  if (id === "inv") return true;   // the bag is the panel's own window (shops put it there)
+  let v = null; try { v = localStorage.getItem(DOCK_KEY(id)); } catch { /* private mode */ }
+  return v === "1" || (v !== "0" && !FLOATS.includes(id));
+};
+/** The windows in the side panel right now: none on a phone, else DOCKABLE as the defaults and the title-bar buttons say. Refilled in place. */
+export const PANEL = new Set();
+const syncPanel = () => { PANEL.clear(); if (VP.lay === "full") for (const id of DOCKABLE) if (dockWant(id)) PANEL.add(id); };
 const BAG_WITH = ["shop", "smith", "craft", "hstore"];
 const panelBox = $("#panel"), winBox = $("#windows");
 let panelId = null, autoBag = false, wasDocked = null;
@@ -60,31 +74,72 @@ const paned = (id) => winEl(id).classList.contains("docked");
 /** The window shown in the side panel, or null (the quest tracker). */
 export const panelWin = () => panelId;
 function setPanel(id) { panelId = id; panelBox.classList.toggle("on", !!id); }
+/** The title bar's 분리 / 붙이기 button shows what a press does. */
+function popBtn(id) {
+  const b = winEl(id).querySelector(".pop");
+  if (!b) return;
+  b.dataset.dock = paned(id) ? "1" : "0";
+  b.title = paned(id) ? "별도 창으로 띄우기" : "패널에 붙이기";
+  b.setAttribute("aria-label", b.title);
+}
+/** Put one window where PANEL says: into the side panel (taking the panel's place) or out over the world, open or not; the node is moved, not rebuilt, so its state stays. */
+function seat(id) {
+  const w = winEl(id), want = PANEL.has(id);
+  if (want === paned(id)) return;
+  const bd = w.querySelector(".body"), top = bd.scrollTop;
+  if (want) {
+    if (!w.hidden) { if (panelId && panelId !== id) closeWin(panelId); autoBag = false; setPanel(id); }
+    w.classList.remove("mini", "top"); w.title = ""; w.style.zIndex = "";
+    panelBox.append(w); w.classList.add("docked");
+    layTabs();
+  } else {
+    if (panelId === id) setPanel(null);
+    w.classList.remove("docked"); winBox.append(w);
+    if (!w.hidden) { placeWin(id); front(id); }
+  }
+  bd.scrollTop = top;
+  popBtn(id);
+  syncMenu();
+}
+/** The title-bar button: this window into the panel (on) or out over the world (off), remembered. */
+function setDock(id, on) {
+  try { localStorage.setItem(DOCK_KEY(id), on ? "1" : "0"); } catch { /* private mode */ }
+  syncPanel();
+  seat(id);
+}
 function dockPanel() {
   const full = VP.lay === "full";
   if (full === wasDocked) return;
   wasDocked = full;
+  syncPanel();
   const inv = winEl("inv");
   if (full) {
-    // the top floating panel window (if any) keeps its place in the panel, the others close
-    const open = PANEL.filter((id) => id !== "inv" && !winEl(id).hidden)
+    // the top open window that belongs in the panel keeps its place there, the other panel ones close; the floating ones stay over the world
+    const open = [...PANEL].filter((id) => id !== "inv" && !winEl(id).hidden)
       .sort((a, b) => (+winEl(b).style.zIndex || 0) - (+winEl(a).style.zIndex || 0));
-    for (const id of PANEL) {
+    for (const id of DOCKABLE) {
       if (id === "inv") continue;
       const w = winEl(id);
-      w.classList.remove("mini", "top"); w.title = ""; w.style.zIndex = "";
-      panelBox.append(w); w.classList.add("docked");
-      if (open.indexOf(id) > 0) w.hidden = true;
+      if (PANEL.has(id)) {
+        w.classList.remove("mini", "top"); w.title = ""; w.style.zIndex = "";
+        panelBox.append(w); w.classList.add("docked");
+        if (open.indexOf(id) > 0) w.hidden = true;
+      } else {
+        w.classList.remove("docked");
+        if (w.parentNode !== winBox) winBox.append(w);
+      }
+      popBtn(id);
     }
     inv.hidden = true;   // the bag opens with I (or a shop) on a desktop
     setPanel(open[0] || null);
     layTabs();
   } else {
     const keep = panelId && panelId !== "inv" ? panelId : null;
-    for (const id of PANEL) {
+    for (const id of DOCKABLE) {
       if (id === "inv") continue;
       const w = winEl(id);
       w.classList.remove("docked"); winBox.append(w);
+      popBtn(id);
     }
     inv.hidden = false;
     setPanel(null);
@@ -133,7 +188,7 @@ function homeOf(id, w, h) {
   switch (id) {
     case "char": case "shop": case "smith": case "train": case "job": case "bank": case "house": case "hstore": case "juana": return [right, top];
     case "deco": return [x0 + 4, top + 32];
-    case "skill": case "party": case "guild": case "rank": case "daily": case "week": case "achieve": case "collect": case "dex": case "life": return [x0 + 4, top + 32];
+    case "skill": case "party": case "guild": case "daily": case "week": return [x0 + 4, top + 32];
     case "talk": return [mid, y1 - h - 52];
     default: return [mid, Math.max(top, (y0 + y1 - h) / 2 - 30)];
   }
@@ -321,7 +376,7 @@ export function closeTop() {
  * at the first snapshot, bottom-most first, where they stood (folded ones fold again). Only the player's own
  * windows: an NPC's (a shop, the smith, a talk, the warehouse…) needs the NPC beside you.
  */
-const KEEP = [...PANEL, "map"];
+const KEEP = [...DOCKABLE, "map"];
 const OPEN_KEY = (name) => `lumentale:open:${name}`;
 let restoredFor = null;
 export function saveOpen(leaving) {
@@ -607,10 +662,19 @@ export function setupWindows({ walkToDoor }) {
     const w = winEl(id), head = w.querySelector("header");
     if (winSize) winSize.observe(w);
     w.addEventListener("pointerdown", () => front(id), true);
-    w.querySelector(".x").addEventListener("click", () => { closeWin(id); Sound.play("close"); });
+    const x = w.querySelector(".x");
+    x.addEventListener("click", () => { closeWin(id); Sound.play("close"); });
+    if (DOCKABLE.includes(id) && id !== "inv") {
+      // 분리 / 붙이기: this window in the side panel or floating over the world (a desktop only; hud.css hides it on a phone)
+      const pop = el("button", "pop");
+      pop.type = "button";
+      pop.addEventListener("click", () => { setDock(id, !paned(id)); Sound.play("ui"); });
+      x.before(pop);
+      popBtn(id);
+    }
     // dragged by the title bar, kept in the safe zone, remembered; a folded window's tab unfolds on a press
     head.addEventListener("pointerdown", (e) => {
-      if (e.target.closest(".x") || e.button !== 0 || paned(id)) return;
+      if (e.target.closest(".x, .pop") || e.button !== 0 || paned(id)) return;
       e.preventDefault();
       if (folded(id)) { Sound.play("open"); unfold(id); syncMenu(); return; }
       const r = w.getBoundingClientRect(), ox = e.clientX - r.left, oy = e.clientY - r.top;

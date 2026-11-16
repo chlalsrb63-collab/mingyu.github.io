@@ -528,6 +528,16 @@ body.touch kbd { display: none; }
 .window > header .x { width: 20px; height: 20px; border: 2px solid var(--ink); border-radius: 0; background: var(--sf4, #3a3146); box-shadow: inset 2px 2px 0 var(--sf5, #5b4d6c), inset -2px -2px 0 var(--sf2, #1f1a28); }
 .window > header .x::before, .window > header .x::after { left: 3px; right: 3px; top: 7px; height: 2px; background: var(--cream); }
 .window > header .x:hover { background: #8a2e34; box-shadow: inset 2px 2px 0 #b8505a, inset -2px -2px 0 #4a1418; }
+/* 분리 / 붙이기 (windows.js setDock): docked = two overlapping squares (pop out), floating = a frame with a bar on its right (dock); a desktop only */
+.window > header .pop { margin-left: auto; flex: none; position: relative; box-sizing: border-box; width: 20px; height: 20px; padding: 0; cursor: pointer; border: 2px solid var(--ink); border-radius: 0; background: var(--sf4, #3a3146); box-shadow: inset 2px 2px 0 var(--sf5, #5b4d6c), inset -2px -2px 0 var(--sf2, #1f1a28); }
+.window > header .pop + .x { margin-left: 0; }
+.window > header .pop::before, .window > header .pop::after { content: ""; position: absolute; box-sizing: border-box; }
+.window > header .pop[data-dock="1"]::before { left: 7px; top: 3px; width: 8px; height: 8px; border: 2px solid var(--cream); }
+.window > header .pop[data-dock="1"]::after { left: 3px; top: 7px; width: 8px; height: 8px; border: 2px solid var(--cream); background: var(--sf4, #3a3146); }
+.window > header .pop[data-dock="0"]::before { left: 3px; top: 4px; width: 10px; height: 8px; border: 2px solid var(--cream); }
+.window > header .pop[data-dock="0"]::after { left: 9px; top: 4px; width: 4px; height: 8px; background: var(--cream); }
+.window > header .pop:hover { background: var(--b-lo, #7c5326); box-shadow: inset 2px 2px 0 var(--b-mid, #cf9f55), inset -2px -2px 0 var(--b-lo, #4a3014); }
+body:not([data-lay="full"]) .window > header .pop, body.playing .window.mini > header .pop { display: none; }
 .window .body { padding: 8px 2px 2px; }
 .window *, #tip, #tip * { border-radius: 0 !important; }
 /* the pixel font only reads cleanly at the sizes it was drawn for: 12px, and 10px for the small cut */
@@ -1877,7 +1887,7 @@ body[data-hud="contrast"] .tcard { background: rgba(0, 0, 0, .97); }
 .tcard .tc-d.dn { color: #ff9f8f; }
 /* ── 아이템도감 (dex.js): a note, the filters, one card per 접두사. #dex-body is a size container: a wide (floating) window puts the
    filters in a left column, the docked side panel (and a phone) stacks them over the list. Colours come from the theme variables. ── */
-#w-dex { width: 540px; --win-max: 540px; }   /* floating (phone): wide enough for the left filter column */
+#w-dex { width: 540px; --win-max: 540px; }   /* floating on a phone: wide enough for the left filter column (a desktop: 600 px, end of this file) */
 #dex-body { container-type: inline-size; font: var(--t12)/1.4 var(--pix); }
 .dx-note { margin: 0 0 5px; padding: 2px 6px; background: var(--sf1, #1c1726); border: 2px solid var(--sf3, #2c2537); }
 #dex-body .dx-note p { margin: 1px 0; font: var(--t10)/1.4 var(--pix9); color: var(--tx2, #c8b896); }
@@ -1927,3 +1937,15 @@ body[data-hud="contrast"] .tcard { background: rgba(0, 0, 0, .97); }
   .dx-tabs { flex-direction: column; }
   .dx-tabs button { text-align: left; }
 }
+
+/* ── desktop: the windows that float by default (windows.js FLOATS), or that the player popped out of the side panel, get their own width
+   (--fw) and stop at ~70% of the viewport height, the body scrolling; the safe zone keeps them off the dock (hotbar, chat) and the side column.
+   The 아이템도감 is one fixed roomy size, so its filters never make it jump. A phone and the docked panel keep their old sizes. ── */
+body[data-lay="full"].playing :is(#w-skill, #w-life, #w-alba, #w-charm, #w-trophy, #w-rank, #w-achieve, #w-collect, #w-dex, #w-settings, #w-help, #w-char, #w-quest, #w-party, #w-guild, #w-daily, #w-week):not(.docked) {
+  --win-h: min(max(70vh, 360px), calc(var(--zone-h) - 8px - var(--tabs-h)));
+  --win-max: var(--fw, 420px); width: min(var(--fw, 420px), calc(var(--zone-w) - 8px)); max-height: var(--win-h);
+}
+#w-skill { --fw: 460px; } #w-life { --fw: 400px; } #w-alba { --fw: 380px; } #w-charm { --fw: 320px; } #w-trophy { --fw: 400px; } #w-rank { --fw: 340px; }
+#w-achieve { --fw: 480px; } #w-collect { --fw: 520px; } #w-dex { --fw: 600px; } #w-settings { --fw: 420px; } #w-help { --fw: 520px; }
+#w-char { --fw: 360px; } #w-quest { --fw: 580px; } #w-party { --fw: 310px; } #w-guild { --fw: 310px; } #w-daily { --fw: 360px; } #w-week { --fw: 380px; }
+body[data-lay="full"].playing #w-dex:not(.docked) { height: var(--win-h); }
