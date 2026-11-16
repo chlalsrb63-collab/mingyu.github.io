@@ -210,7 +210,7 @@ function sideTarget(s, id) {
   const g = q.goal;
   if (g.type === "talk") return npc(g.npc, q.target);
   if (g.type === "deliver") return npc(q.giver, q.giverName);                       // the parcel went missing: its giver hands out another
-  if (g.type === "make") return q.station === "fire" ? { k: "fire" } : npc(q.station || q.giver);   // the recipe's station
+  if (g.type === "make") return q.station === "fire" ? { k: "fire" } : npc(q.station || q.giver, q.station ? q.stationName : q.giverName);   // the recipe's station
   if (g.type === "elite" && g.mob && (!g.map || G.map?.id === g.map)) return { k: "mob", id: g.mob };
   if (q.targetMap) return { k: "map", id: q.targetMap };
   if (g.type === "kill") return { k: "mob", id: g.mob };
