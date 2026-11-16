@@ -7,7 +7,15 @@ import { readFileSync } from "node:fs";
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
   "\nexport const __t = { ALBA, ALBA_RULES, ALBA_T, ALBA_ORDER, JB_PAY, albaGood, albaBad, albaMult, albaGrade, albaClean };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
-const X = L.__t, D = L.defs();
+const X = L.__t;
+// the real games refuse an empty input, so the engine is tested with three stand-ins registered like any game (66-alba.js)
+const stand = { npc: "dongdong", place: "시험장", skill: "gather", par: 60, mul: 1, outfit: [], tool: "box", hint: "시험" };
+for (const k of ["t_a", "t_b", "t_c"]) {
+  X.ALBA[k] = { ...stand, name: "시험 " + k };
+  X.ALBA_RULES[k] = { init(S, p, ab) { ab.g = { n: 0 }; }, adv() {}, act(S, p, ab, a, now) { ab.g.n++; X.albaGood(ab, now, 10); return null; }, view(ab) { return [ab.g.n]; } };
+  X.ALBA_ORDER.push(k);
+}
+const D = L.defs();
 
 assert.deepEqual(D.alba.order, X.ALBA_ORDER.filter((k) => X.ALBA[k]), "defs lists the registered games in order");
 for (const k of D.alba.order) {
@@ -24,7 +32,7 @@ const p = S.players.p1, ch = p.ch;
 const act = (a) => { S.now = now; const v = L.validateAction(S, "p1", a); if (v.ok) L.applyAction(S, "p1", a); return v; };
 const tick = (ms) => { now += ms; S.now = now; L.tick(S, now); L.endTick(S); };
 const view = () => { S.now = now; const v = L.viewFor(S, "p1"); L.endTick(S); return v; };
-const K = D.alba.order[0], K2 = D.alba.order[1], K3 = D.alba.order[2];
+const K = "t_a", K2 = "t_b", K3 = "t_c";
 
 // scoring helpers
 {
