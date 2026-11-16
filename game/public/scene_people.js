@@ -9,6 +9,7 @@ import * as SP from "./sprites.js";
 import * as Sw from "./swing.js";
 import * as DC from "./decor.js";
 import * as Sky from "./sky.js";
+import { lowSpec } from "./postfx.js";
 import * as Camp from "./camp.js";
 import * as Carry from "./carry.js";
 import { sAng, DXW, DYW, g, DEG, clamp, P, sheet, G, iso } from "./scene_view.js";
@@ -151,7 +152,8 @@ export function drawPerson(s, e, t, dt, x, y) {
   }
   if (!s.weapon || e.dead || (fl & 2)) return body();    // (the greatsword is off stuck in the ground)
   const bob = (frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0) - hop;
-  const glow = RARITY[s.gear.wq | 0] || (s.gear.we >= 7 ? "#ffffff" : null);
+  // a canvas shadow per weapon per frame is the slowest thing a crowd draws: 그래픽 끔 goes without
+  const glow = lowSpec() ? null : RARITY[s.gear.wq | 0] || (s.gear.we >= 7 ? "#ffffff" : null);
   if (hold.style === "float") {
     // The book arcs across the reader on the charge and turns toward the target on release.
     const out = P ? P.out * hold.push : 0;

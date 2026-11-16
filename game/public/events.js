@@ -24,7 +24,6 @@ import * as Coop from "./coop.js";
 import * as Charms from "./charms.js";
 import { G, dist, T, now, $, el } from "./state.js";
 import { entityPos } from "./net.js";
-import { elementInfo } from "./elements.js";
 import { addChat, banner, chatLog } from "./windows.js";
 import { fadeIn } from "./win_world.js";
 import { rarityLabel } from "./items.js";
@@ -368,8 +367,11 @@ function floatDamage(total, parts, tgt, h, crit) {
   }
 }
 
+/** The most floating texts alive at once: each is a stroked, resizing label every frame (overlay.js), the costliest thing a big fight draws. */
+const TEXT_MAX = 70;
 export function floatText(str, x, y, h, col, big, dmg = false, layout) {
   // a damage number bounces off to one side (dmg: true), the rest rise straight up
+  if (document.hidden || G.texts.length >= TEXT_MAX) return;   // nobody is looking, or the screen is already full of numbers
   const vx = dmg ? layout?.move ?? (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8) : 0;
   G.texts.push({ str, x, y, h, col, big: !!big, t0: now(), dmg, vx, dx: layout?.dx || 0, dy: layout?.dy || 0 });
 }

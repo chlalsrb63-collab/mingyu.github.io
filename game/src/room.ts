@@ -500,8 +500,13 @@ export class Room extends DurableObject<Env> {
         this.ctx.waitUntil(this.callVault("first", { room: this.roomName, k, name }).then((res) => { if (res.ok && res.first) logic.firstNotice(world, name, k); }));
       }
       for (const [ws, pid] of live) {
-        const view = logic.viewFor(world, pid);
-        if (view) this.send(ws, view);
+        // one hero's snapshot failing must not cost the others theirs, nor skip endTick (events and chat would pile up)
+        try {
+          const view = logic.viewFor(world, pid);
+          if (view) this.send(ws, view);
+        } catch (err) {
+          console.error("viewFor failed", pid, err);
+        }
       }
       logic.endTick(world);
 

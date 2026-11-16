@@ -43,6 +43,8 @@ let onChange = () => {};
 function pick(v) { const n = Math.round(+v); return n >= 0 && n <= 2 ? n : 1; }
 
 export const getLevel = () => level;
+/** The game at 그래픽 끔 (chosen, or dropped to by the slow-frame watch): the per-sprite canvas glows are skipped too. Never on a preview page. */
+export const lowSpec = () => level === 0 && !preview;
 /** The player's choice (the settings window): kept, and the slow-frame watch starts over. */
 export function setLevel(n) { level = pick(n); slow = 0; ema = 16; localStorage.setItem(KEY, String(level)); onChange(); }
 /** Wire the 끔/보통/높음 buttons (index.html #opt-gfx, `data-gfx`); `click` plays the UI sound. */

@@ -257,7 +257,8 @@ export function bowSnap(x, y, ang, fin, glow) {
 export const fx = {
   list: [],
   clear() { this.list.length = 0; parts.length = 0; arrows.clear(); },
-  add(o) { o.t0 = fxNow() + (o.delay || 0); this.list.push(o); },
+  // a hidden tab draws nothing (no frames): only the effects something waits on (`done`) are kept, the rest would pile up and burst on return
+  add(o) { if (document.hidden && !o.done) return; o.t0 = fxNow() + (o.delay || 0); this.list.push(o); },
   ring(wx, wy, r, color, dur = 300, filled = false, delay = 0) { this.add({ k: "ring", x: wx * P, y: wy * P, r: r * P, color, dur, filled, delay }); },
   tele(wx, wy, r, ms) { this.add({ k: "tele", x: wx * P, y: wy * P, r: r * P, dur: ms }); },
   proj(ax, ay, ah, bx, by, bh, color, size, speed, done) {

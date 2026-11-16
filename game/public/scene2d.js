@@ -182,10 +182,13 @@ export function impactMs(wk, beat) {
 }
 
 let lastRender = 0;
+/** The most sparks alive at once (the oldest go first): a screen-wide fight with elemental hits used to grow this without bound. */
+const PARTS_MAX = 1400;
 export function render(focusX, focusY, dt, t, snap) {
   if (!map || !ground || !G) return;
   // back from a hidden tab: the sparks every hit pushed meanwhile (none lives 3 s) would all burst at once
   if (t - lastRender > 5000) parts.length = 0;
+  else if (parts.length > PARTS_MAX) parts.splice(0, parts.length - PARTS_MAX);
   lastRender = t;
   const [fX, fY] = iso(focusX, focusY);
   const minX = -map.h * 16 * K, maxX = map.w * 16 * K, maxY = (map.w + map.h) * 8 * K;
@@ -448,7 +451,7 @@ export function render(focusX, focusY, dt, t, snap) {
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i];
     p.life -= dt;
-    if (p.life <= 0) { parts.splice(i, 1); continue; }
+    if (p.life <= 0) { parts[i] = parts[parts.length - 1]; parts.pop(); continue; }   // swap-pop: sparks have no order to keep, and splice from the front is O(n) each
     p.x += p.vx * dt; p.y += p.vy * dt; p.vy += p.g * dt;
     const sz = p.s || 3;
     // a sleeper's "z", drifting up
