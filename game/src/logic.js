@@ -19096,13 +19096,95 @@ function airshipKill(S, rt, mob) {
 function airshipReturn(st) {
   return st.won ? AIRSHIP_DECK : st.from;
 }
-// 일일 아르바이트 · 파리잡기 (STUB: the real game replaces this file; contract in 66-alba.js)
-Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 1800, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌은 건드리지 마세요!" } });
+// 일일 아르바이트 · 파리잡기 (docs/design/daily-alba-minigames-2026-11-16.md §3.2): whack-a-mole with flies on a 3×3 grid of trash cans. Contract: 66-alba.js.
+// The whole 240 s spawn schedule is rolled at `init` from `ab.box` (a seed always gives the same flies); play only moves it when a can is hit
+// (that can shuts for 1 s and its later flies slide back). `ab.g` = { F: flies by id, Q: per can its fly ids in time order, H: per can the first
+// unresolved index, cd: per can the run-time (ms) its lid stays shut until, sent: how far ahead the client's last view announced }.
+// A fly = { id, c: can 0..8, t0: ms from the run start, life, k: 0 plain 1 golden 2 bee 3 poison, hp, dn: hit }. A can never holds two flies at once.
+// view = [[[id, can, ms to spawn (< 0: already out), life, kind (4 = wounded poison)]… alive or spawning within FLY.ahead ms], [[can, ms the lid stays shut]…]];
+// the view is re-sent (rev) on every hit and whenever the announced window is about to run dry, so an idle player still sees what comes.
+// The only input is {hit: fly id}: it must name a fly that is out (± FLY.grace for latency) and not hit yet; a swing at nothing is refused without a penalty.
+const FLY = { ahead: 3500, refresh: 1200, grace: 250, early: 100, close: 1000, gap: 400, pts: [10, 40, 0, 25], beePen: 30, bombs: [120000, 218000], rate: [1.2, 2.0], life: [[900, 520], [520, 380], [950, 700], [1500, 1000]] };
+Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 11200, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌은 건드리지 마세요!" } });
+
+/** Roll the whole schedule: a spawn clock whose pace and lifetimes ramp with the time, and two 쓰레기 폭탄 (every can opens at once). */
+function flyBuild(box) {
+  const T = ALBA_T.runMs, F = [], free = new Array(9).fill(0);
+  const put = (c, t0, k) => {
+    const [a, b] = FLY.life[k], u = t0 / T, l = Math.round((a + (b - a) * u) * (0.9 + 0.2 * rnd(box)) * (t0 >= T - ALBA_T.rushMs ? 0.9 : 1));
+    F.push({ id: 0, c, t0, life: l, k, hp: k === 3 ? 2 : 1, dn: 0 });
+    free[c] = t0 + l + FLY.gap;
+  };
+  const bag = [];   // kinds come out of a shuffled bag, so every shift holds nearly the same mix
+  const kind = (t) => {
+    if (t < 12000) return 0;
+    if (!bag.length) {
+      (t < 60000 ? [12, 1, 1, 2] : [11, 1, 3, 3]).forEach((n, k) => { for (let i = 0; i < n; i++) bag.push(k); });
+      for (let i = bag.length - 1; i > 0; i--) { const j = ri(box, 0, i), x = bag[i]; bag[i] = bag[j]; bag[j] = x; }
+    }
+    return bag.pop();
+  };
+  let t = 800, nb = 0;
+  while (t < T) {
+    if (nb < FLY.bombs.length && t >= FLY.bombs[nb]) {
+      const kinds = [0, 0, 0, 0, 0, 0, 1, 2, 3];
+      for (let i = 8; i > 0; i--) { const j = ri(box, 0, i), x = kinds[i]; kinds[i] = kinds[j]; kinds[j] = x; }
+      const tb = Math.max(t, ...free);   // wait for the cans still busy: the bomb opens all nine within half a second
+      for (let c = 0; c < 9; c++) put(c, tb + ri(box, 0, 450), kinds[c]);
+      t = tb + 2600; nb++;
+      continue;
+    }
+    const open = [];
+    for (let c = 0; c < 9; c++) if (free[c] <= t) open.push(c);
+    if (open.length) put(open[ri(box, 0, open.length - 1)], t, kind(t));
+    const rate = (FLY.rate[0] + (FLY.rate[1] - FLY.rate[0]) * (t / T)) * (t >= T - ALBA_T.rushMs ? 1.4 : 1);
+    t += Math.round((1000 / rate) * (0.5 + rnd(box)));
+  }
+  F.sort((a, b) => a.t0 - b.t0);
+  const Q = [[], [], [], [], [], [], [], [], []];
+  F.forEach((f, i) => { f.id = i; Q[f.c].push(i); });
+  return { F, Q, H: new Array(9).fill(0), cd: new Array(9).fill(0), sent: 0 };
+}
+
 ALBA_RULES.fly = {
-  init(S, p, ab) { ab.g = { n: 0 }; },
-  adv() {},
-  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
-  view(ab) { return [ab.g.n]; },
+  init(S, p, ab) { ab.g = flyBuild(ab.box); },
+  adv(S, p, ab, now) {
+    const g = ab.g, rt = now - ab.runAt;
+    for (let c = 0; c < 9; c++) {
+      const q = g.Q[c];
+      while (g.H[c] < q.length) { const f = g.F[q[g.H[c]]]; if (!f.dn && f.t0 + f.life + FLY.grace > rt) break; g.H[c]++; }
+    }
+    if (rt + FLY.refresh >= g.sent) albaTouch(ab);
+  },
+  act(S, p, ab, a, now) {
+    const g = ab.g, id = a.hit, rt = now - ab.runAt;
+    if (!Number.isInteger(id) || id < 0 || id >= g.F.length) return "없는 파리입니다";
+    const f = g.F[id];
+    if (f.dn || rt < f.t0 - FLY.early || rt > f.t0 + f.life + FLY.grace) return "이미 사라졌어요";
+    if (f.k === 3 && f.hp > 1) { f.hp--; albaTouch(ab); return null; }   // a poison fly takes two swats
+    f.dn = 1;
+    if (f.k === 2) albaBad(ab, FLY.beePen); else albaGood(ab, now, FLY.pts[f.k]);
+    // the lid drops for a second: the next flies of this can wait for it
+    const end = rt + FLY.close, q = g.Q[f.c];
+    g.cd[f.c] = end;
+    let d = -1;
+    for (let i = g.H[f.c]; i < q.length; i++) { const x = g.F[q[i]]; if (x.dn || x.t0 <= rt) continue; if (d < 0) d = Math.max(0, end - x.t0); x.t0 += d; }
+    return null;
+  },
+  view(ab, now) {
+    const g = ab.g, rt = now - ab.runAt, to = Math.max(rt, 0) + FLY.ahead, fl = [], cl = [];
+    g.sent = to;
+    for (let c = 0; c < 9; c++) {
+      const q = g.Q[c];
+      for (let i = g.H[c]; i < q.length; i++) {
+        const f = g.F[q[i]];
+        if (f.t0 >= to) break;
+        if (!f.dn && f.t0 + f.life > rt) fl.push([f.id, c, f.t0 - rt, f.life, f.k === 3 && f.hp < 2 ? 4 : f.k]);
+      }
+      if (g.cd[c] > rt) cl.push([c, g.cd[c] - rt]);
+    }
+    return [fl, cl];
+  },
 };
 // 일일 아르바이트 · 세탁소 (STUB: the real game replaces this file; contract in 66-alba.js)
 Object.assign(ALBA, { laundry: { name: "세탁소", npc: "costume", place: "의상실 세탁실", skill: "craft", par: 2000, mul: 1.1, outfit: ["top_apron_moka"], tool: "basket", hint: "같은 색 빨래 4개를 이어 세탁하세요." } });
@@ -19136,13 +19218,115 @@ ALBA_RULES.store = {
   act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
   view(ab) { return [ab.g.n]; },
 };
-// 일일 아르바이트 · 붕어빵 노점 (STUB: the real game replaces this file; contract in 66-alba.js)
-Object.assign(ALBA, { taiyaki: { name: "붕어빵 노점", npc: "cafe_moka", place: "광장 먹거리 골목", skill: "cook", par: 1700, mul: 1, outfit: ["top_apron_juju"], tool: "spatula", hint: "알맞게 구워졌을 때 뒤집고 꺼내세요." } });
+// 일일 아르바이트 · 붕어빵 노점 (docs/design/daily-alba-minigames-2026-11-16.md §3.6): timing cooking. Contract: 66-alba.js. All times in `ab.g` are ms from the RUN start.
+// A mould of 6 slots (8 after TAI.more); each slot walks 0 empty → 1 batter → 2 filling → 3 baking side 1 → 4 baking side 2 → (take out into the tray) or 5 burnt (clear it).
+// Baking is a gauge 0..100 % over the slot's `d` ms, computed from absolute times (nothing ticks): side 1 may be flipped in the green window [z0, z1] (later than z1 only
+// costs the "perfect"), side 2 is taken out from 50 %, perfect (×2) inside the yellow window [z2, z3] after a green flip; reaching 100 % burns it (−10, combo broken).
+// Customers queue with an order (need per filling 팥/슈크림/치즈) and a patience bar; tapping one serves every matching piece of the tray; leaving costs 20 (a group order 40).
+// Input: {slot, step, f?} — `step` is the stage the player saw (a stale tap is refused, so a double tap can't skip a step), `f` the filling at stage 1 —
+//        or {c: customer id} to serve. Everything is validated; a refusal costs nothing.
+// view = [open slots, [[stage, filling, quality, ms since the stage began (≤ 0), side ms, z0, z1, z2, z3]…8], [[id, n0, n1, n2, ms patience left, patience ms, group]…], [[filling, quality]…tray], ms to the 8th slot]
+const TAI = { more: 120000, group: 170000, queue: 5, tray: 6, burn: 10, leave: 20, leaveGroup: 40, pts: [30, 60], bonus: 12, cook: [12000, 7000], flip: [26, 14], gold: [12, 5] };
+Object.assign(ALBA, { taiyaki: { name: "붕어빵 노점", npc: "cafe_moka", place: "광장 먹거리 골목", skill: "cook", par: 13800, mul: 1, outfit: ["top_apron_juju"], tool: "spatula", hint: "알맞게 구워졌을 때 뒤집고 꺼내세요." } });
+
+const taiLerp = (r, rt) => r[0] + (r[1] - r[0]) * clamp(rt / ALBA_T.runMs, 0, 1);
+function taiCustomer(g, ab, bt, grp) {
+  const need = [0, 0, 0], u = bt / ALBA_T.runMs;
+  let tot = 1;
+  if (grp) { need[0] = 4; need[1] = 3; need[2] = 3; tot = 10; }
+  else {
+    if (!g.bag.length) {   // the order sizes come from a shuffled bag: every shift asks for nearly the same
+      g.bag = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2];
+      for (let i = 9; i > 0; i--) { const j = ri(ab.box, 0, i), x = g.bag[i]; g.bag[i] = g.bag[j]; g.bag[j] = x; }
+    }
+    tot = g.bag.pop(); need[ri(ab.box, 0, 2)]++;
+    if (tot === 2) need[ri(ab.box, 0, 2)]++;
+  }
+  const wait = Math.round(grp ? 68000 : (40000 - 24000 * u) * (tot === 2 ? 1.35 : 1) * (0.9 + 0.2 * rnd(ab.box)));
+  g.cu.push({ id: g.nid++, need, tot, at: bt, until: bt + wait, wait, grp: grp ? 1 : 0 });
+}
+/** The earliest thing that happens by itself: [time, kind, index] — 0 the 8th slot opens · 1 the group order comes · 2 a customer arrives · 3 a slot burns · 4 a customer leaves. */
+function taiNext(g) {
+  let bt = Infinity, bk = -1, bi = 0;
+  if (g.n < 8 && TAI.more < bt) { bt = TAI.more; bk = 0; }
+  if (!g.grp && TAI.group < bt) { bt = TAI.group; bk = 1; }
+  if (g.na < bt) { bt = g.na; bk = 2; }
+  for (let i = 0; i < g.n; i++) { const x = g.sl[i]; if ((x.s === 3 || x.s === 4) && x.a + x.d < bt) { bt = x.a + x.d; bk = 3; bi = i; } }
+  for (const c of g.cu) if (c.until < bt) { bt = c.until; bk = 4; bi = c.id; }
+  return [bt, bk, bi];
+}
+
 ALBA_RULES.taiyaki = {
-  init(S, p, ab) { ab.g = { n: 0 }; },
-  adv() {},
-  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
-  view(ab) { return [ab.g.n]; },
+  init(S, p, ab) {
+    ab.g = { n: 6, sl: Array.from({ length: 8 }, () => ({ s: 0, f: 0, q: 2, a: 0, d: 0, z: [0, 0, 0, 0] })), tray: [], cu: [], na: 0, nid: 1, grp: 0, bag: [] };
+  },
+  adv(S, p, ab, now) {
+    const g = ab.g, rt = now - ab.runAt;
+    for (let guard = 0; guard < 64; guard++) {
+      const [bt, bk, bi] = taiNext(g);
+      if (bt > rt) break;
+      if (bk === 0) g.n = 8;
+      else if (bk === 1) { g.grp = 1; taiCustomer(g, ab, bt, true); }
+      else if (bk === 2) {
+        if (g.cu.reduce((n, c) => n + (c.grp ? 0 : 1), 0) < TAI.queue) taiCustomer(g, ab, bt, false);
+        g.na = bt + Math.round(taiLerp([6000, 1700], bt) * (0.7 + 0.6 * rnd(ab.box)));
+      } else if (bk === 3) { g.sl[bi].s = 5; albaBad(ab, TAI.burn); }
+      else { const i = g.cu.findIndex((c) => c.id === bi); albaBad(ab, g.cu[i].grp ? TAI.leaveGroup : TAI.leave); g.cu.splice(i, 1); }
+      albaTouch(ab);
+    }
+  },
+  act(S, p, ab, a, now) {
+    const g = ab.g, rt = now - ab.runAt;
+    if (Number.isInteger(a.slot)) {
+      if (a.slot < 0 || a.slot >= g.n) return "없는 칸입니다";
+      const x = g.sl[a.slot];
+      if (a.step !== x.s) return "이미 바뀐 칸입니다";
+      const gauge = x.s === 3 || x.s === 4 ? ((rt - x.a) / x.d) * 100 : 0;
+      if (x.s === 0) x.s = 1;
+      else if (x.s === 1) { if (!Number.isInteger(a.f) || a.f < 0 || a.f > 2) return "맛을 고르세요"; x.f = a.f; x.s = 2; }
+      else if (x.s === 2) {   // the lid goes on: side 1 starts baking, the windows are fixed for this piece
+        const gl = 38, yl = 72;
+        x.s = 3; x.a = rt; x.q = 2; x.d = Math.round(taiLerp(TAI.cook, rt) * (rt >= ALBA_T.runMs - ALBA_T.rushMs ? 0.9 : 1));
+        x.z = [gl, Math.round(gl + taiLerp(TAI.flip, rt)), yl, Math.round(yl + taiLerp(TAI.gold, rt))];
+      } else if (x.s === 3) {
+        if (gauge < x.z[0]) return "아직이에요";
+        if (gauge > x.z[1]) x.q = 1;
+        x.s = 4; x.a = rt;
+      } else if (x.s === 4) {
+        if (gauge < 50) return "아직 덜 익었어요";
+        if (g.tray.length >= TAI.tray) return "진열대가 꽉 찼어요";
+        g.tray.push([x.f, x.q === 2 && gauge >= x.z[2] && gauge <= x.z[3] ? 2 : 1]);
+        x.s = 0;
+      } else x.s = 0;   // 5: the burnt one goes in the bin
+      albaTouch(ab);
+      return null;
+    }
+    if (Number.isInteger(a.c)) {
+      const c = g.cu.find((x) => x.id === a.c);
+      if (!c) return "손님이 없어요";
+      let served = 0;
+      for (let f = 0; f < 3; f++) {
+        while (c.need[f] > 0) {
+          let best = -1;
+          g.tray.forEach((t, i) => { if (t[0] === f && (best < 0 || t[1] > g.tray[best][1])) best = i; });
+          if (best < 0) break;
+          const q = g.tray.splice(best, 1)[0][1];
+          c.need[f]--; c.tot--; served++;
+          albaGood(ab, now, TAI.pts[q - 1]);
+        }
+      }
+      if (!served) return "원하는 맛이 없어요";
+      if (c.tot <= 0) { albaGood(ab, now, Math.round(TAI.bonus * (c.grp ? 10 : 1) * clamp((c.until - rt) / c.wait, 0, 1))); g.cu.splice(g.cu.indexOf(c), 1); }
+      albaTouch(ab);
+      return null;
+    }
+    return "알 수 없는 입력입니다";
+  },
+  view(ab, now) {
+    const g = ab.g, rt = now - ab.runAt;
+    return [g.n, g.sl.map((x, i) => (i >= g.n || x.s < 3 || x.s === 5 ? [x.s, x.f] : [x.s, x.f, x.q, x.a - rt, x.d, ...x.z])),
+      g.cu.map((c) => [c.id, c.need[0], c.need[1], c.need[2], c.until - rt, c.wait, c.grp]), g.tray, g.n < 8 ? Math.max(0, TAI.more - rt) : 0];
+  },
 };
 // ───────────────────────────── 보스전리품 (boss trophies) and the solo story fight ─────────────────────────────
 // docs/design/boss-trophies.md. Every hunting ground's field boss (FIELD_BOSS) stands at its spot (fbHome) and is back
