@@ -13,7 +13,7 @@ import { act } from "./net.js";
 import { countItem } from "./actions.js";
 import { hoverTip } from "./windows.js";
 import * as Info from "./infocard.js";
-import { itemDesc, itemTip, itemName, SLOT_NAME } from "./items.js";
+import { itemDesc, itemTip, itemName, SLOT_NAME, socketCap } from "./items.js";
 import { refreshUi } from "./hud.js";
 import * as Track from "./track.js";
 
@@ -62,21 +62,30 @@ export function renderShop(s) {
   }
 }
 export function renderSmith(s) {
-  const it = G.defs.items, list = $("#smith-list");
+  const list = $("#smith-list");
   list.textContent = "";
   const stones = countItem("stone"), scrolls = countItem("uncurse");
+  const drillItem = G.defs.sockItem, drillName = G.defs.items[drillItem]?.name;
+  const drillStones = drillItem ? countItem(drillItem) : 0;
+  const stock = $("#smith-socket-stock");
+  stock.hidden = !drillName;
+  if (drillName) stock.textContent = `${drillName} ${drillStones.toLocaleString()}개 보유`;
   let any = false;
   for (const k of G.defs.slots) {
     const g = s.eq[k];
-    if (!g || !s.enh[k]) continue;
+    if (!g) continue;
+    const c = s.enh[k], cap = socketCap(g), drilled = g.sk || 0;
+    if (!c && !cap) continue;
     any = true;
     const row = el("div", "it");
     const img = el("img"); img.src = G.icons.url[g.id]; img.alt = "";
     const tx = el("div", "tx", itemName(g));
     tx.style.color = Art.RARITY_COL[g.q || 0];
-    row.append(img, tx);
-    if (g.enh >= 10) tx.append(el("small", "", "최대 강화 단계입니다"));
-    else if (g.cu === 1) {
+    tx.append(el("small", "", SLOT_NAME[k]));
+    const actions = el("div", "smith-actions");
+    row.append(img, tx, actions);
+    if (c && g.enh >= 10) tx.append(el("small", "", "최대 강화 단계"));
+    else if (c && g.cu === 1) {
       // a failed try cursed it (rules 75 "enh"): only a 저주 해제 주문서 opens it again
       const fee = (G.defs.uncurseFee || 400) * ((G.defs.items[g.id] || {}).tier || 1);
       const cl = el("small", "", `저주받음 · 저주 해제 주문서 1장 + 수수료 ${fee.toLocaleString()}G로 풀 수 있습니다 (주문서 보유 ${scrolls})`);
@@ -84,22 +93,32 @@ export function renderSmith(s) {
       const b = el("button", "", "저주 해제");
       b.disabled = scrolls < 1 || s.gold < fee;
       b.addEventListener("click", () => act({ t: "uncurse", k }));
-      row.append(b);
-    } else {
-      const c = s.enh[k];
-      tx.append(el("small", "", `${SLOT_NAME[k]} · 성공률 ${Math.min(100, G.defs.enh[g.enh] + (g.cu === 2 ? G.defs.enhUc || 10 : 0))}%${g.cu === 2 ? " (저주 해제 보너스)" : ""} · ${c.gold.toLocaleString()}G · 강화석 ${c.stone}개 (보유 ${stones})`));
+      actions.append(b);
+    } else if (c) {
+      tx.append(el("small", "", `성공률 ${Math.min(100, G.defs.enh[g.enh] + (g.cu === 2 ? G.defs.enhUc || 10 : 0))}%${g.cu === 2 ? " (저주 해제 보너스)" : ""} · ${c.gold.toLocaleString()}G · 강화석 ${c.stone}개 (보유 ${stones})`));
       const pv = pityLine(s, g);
       if (pv) tx.append(pv);
       const b = el("button", "", "강화");
       b.disabled = s.gold < c.gold || stones < c.stone;
       b.addEventListener("click", () => act({ t: "enh", k }));
-      row.append(b);
+      actions.append(b);
+    }
+    if (cap && drillName) {
+      const cost = G.defs.sockCost[drilled];
+      const full = drilled >= cap;
+      const blocked = full ? "소켓 최대" : s.dead ? "쓰러진 상태" : !drillStones ? `${drillName} 부족` : s.gold < cost ? "골드 부족" : "";
+      tx.append(el("small", "smith-socket", `소켓 ${drilled}/${cap}${full ? " · 최대" : ` · ${drillName} 1개 + ${cost.toLocaleString()}G`}`));
+      if (blocked && !full) tx.append(el("small", "smith-socket", blocked));
+      const b = el("button", "", "소켓 +1");
+      b.disabled = !!blocked;
+      b.title = blocked || "소켓을 1개 엽니다";
+      b.addEventListener("click", () => act({ t: "socket", k }));
+      actions.append(b);
     }
     hoverTip(img, (h) => itemTip(g, h, { worn: true }));
     list.append(row);
   }
-  if (!any) list.append(el("div", "ds", "강화할 수 있는 장비를 착용하고 있지 않습니다."));
-  void it;
+  if (!any) list.append(el("div", "ds", "장비를 착용하면 강화하거나 소켓을 열 수 있습니다."));
 }
 /**
  * The pity gauge of the step this piece is on (63-social-weekly.js PITY): from +5 each failure adds the

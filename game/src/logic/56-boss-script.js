@@ -258,7 +258,7 @@ function bsTick(S, m, rt, mob, folk, alive) {
   }
   // its feeding adds still alive after `feed` fly into it and heal it
   for (const a of rt.mobs) if (a.add === mob.id && a.feedAt && now >= a.feedAt && !a.dead) {
-    a.dead = true; a.hp = 0; mob.hp = Math.min(mobMax(mob), mob.hp + Math.round(a.heal * mobMax(mob)));
+    a.dead = true; a.hp = 0; mob.hp = Math.min(mobMax(mob), mob.hp + Math.round(a.heal * mobMax(mob) * elementHealFactor(S, mob)));
     rt.ev.push(["bc", mob.id, 6]);
   }
   // the soft enrage: past `enrage` of a fight its blows grow every `enrageStep`

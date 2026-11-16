@@ -1,12 +1,12 @@
 // ── gear: seven kinds of piece, six tiers each (tier 6, 운철 meteor iron, from Lv.181: balance-2026-11-15 §8)
 const WEAPON_NAMES = {
-  sword: ["녹슨 대검", "강철 양손검", "기사단 클레이모어", "고주파 대검", "차원 절단기", "운철 참마도"],
-  dagger: ["낡은 단검", "암살자의 비수", "쌍독니", "카본 나이프", "균열의 송곳니", "운철 비수"],
-  spear: ["대나무 창", "강철 장창", "기사단 할버드", "플라즈마 랜스", "차원 관통창", "운철 천공창"],
-  staff: ["견습 지팡이", "룬 지팡이", "현자의 지팡이", "플라즈마 로드", "공허의 홀", "성운의 홀"],
-  book: ["낡은 주문서", "룬 마도서", "현자의 법전", "홀로그램 코덱스", "공허의 서", "성운의 서"],
-  bow: ["나무 짧은활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위", "유성 장궁"],
-  hammer: ["말뚝박이 망치", "강철 노두 망치", "성문지기의 중추", "충격 코일 해머", "균열봉합 추", "운철 대망치"],
+  sword: ["철제 대검", "강철 양손검", "기사단 클레이모어", "고주파 대검", "차원 절단기", "운철 참마도"],
+  dagger: ["철제 단검", "암살자의 비수", "쌍독니", "카본 나이프", "균열의 송곳니", "운철 비수"],
+  spear: ["철제 창", "강철 장창", "기사단 할버드", "플라즈마 랜스", "차원 관통창", "운철 천공창"],
+  staff: ["푸른 수정 지팡이", "룬 지팡이", "현자의 지팡이", "플라즈마 로드", "공허의 홀", "성운의 홀"],
+  book: ["입문 마도서", "룬 마도서", "현자의 법전", "홀로그램 코덱스", "공허의 서", "성운의 서"],
+  bow: ["물푸레나무 활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위", "유성 장궁"],
+  hammer: ["철제 양손해머", "강철 노두 망치", "성문지기의 중추", "충격 코일 해머", "균열봉합 추", "운철 대망치"],
 };
 /** The word each weapon kind uses in its item ids (persisted: the old class names stay). Anyone may wield anything. */
 const WK_ID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow", hammer: "h" };
@@ -121,7 +121,7 @@ for (const wk of Object.keys(WEAPON_NAMES)) {
 // bosses-2 §7: the two field bosses' own finds — a material each (for crafting to come) and a top-tier weapon (drops legendary)
 Object.assign(ITEMS, {
   mat_bloodtear: { name: "피눈물 결정", type: "mat", price: 400, desc: "혈루 왕도마뱀이 흘린 붉은 결정. 캉캉대장간에서 강화석 두 개와 함께 축복 강화석으로 굳힐 수 있다." },
-  mat_clubclaw: { name: "망치 갯가재 집게", type: "mat", price: 380, desc: "물을 끓게 하던 갯가재의 집게. 캉캉대장간에서 강철 광석과 함께 홈 송곳으로 벼릴 수 있다." },
+  mat_clubclaw: { name: "망치 갯가재 집게", type: "mat", price: 380, desc: "물을 끓게 하던 망치 갯가재의 단단한 집게. 상인에게 팔 수 있다." },
   w_bloodcrown: { ...ITEMS.w_lancer_5, name: "혈루 왕관 창", uniq: 1 },
   w_cavhammer: { ...ITEMS.w_h_5, name: "공동 망치", uniq: 1 },
 });
@@ -142,33 +142,15 @@ for (const type of Object.keys(GEAR)) {
   }
 }
 Object.assign(ITEMS, {
-  veil_h: { ...ITEMS.h_4, name: "박쥐 가면", set: "nightveil" },
-  veil_a: { ...ITEMS.a_4, name: "장막 망토", set: "nightveil" },
-  veil_r: { ...ITEMS.r_4, name: "송곳니 반지", set: "nightveil" },
-  veil_n: { ...ITEMS.n_4, name: "흉곽 부적", set: "nightveil" },
-  bloom_h: { ...ITEMS.h_5, name: "고래뼈 투구", set: "bloomgrave" },
-  bloom_a: { ...ITEMS.a_5, name: "갈비 흉갑", set: "bloomgrave" },
-  bloom_r: { ...ITEMS.r_5, name: "혼꽃 반지", set: "bloomgrave" },
-  bloom_n: { ...ITEMS.n_5, name: "결정 심장", set: "bloomgrave" },
+  veil_h: { ...ITEMS.h_4, name: "박쥐 가면" },
+  veil_a: { ...ITEMS.a_4, name: "장막 망토" },
+  veil_r: { ...ITEMS.r_4, name: "송곳니 반지" },
+  veil_n: { ...ITEMS.n_4, name: "흉곽 부적" },
+  bloom_h: { ...ITEMS.h_5, name: "고래뼈 투구" },
+  bloom_a: { ...ITEMS.a_5, name: "갈비 흉갑" },
+  bloom_r: { ...ITEMS.r_5, name: "혼꽃 반지" },
+  bloom_n: { ...ITEMS.n_5, name: "결정 심장" },
 });
-
-/** Runes: one stat each. Socket them into equipped gear; the right sequence forms a runeword. */
-const RUNES = {
-  ign: ["이그", "atkp", 5], aeg: ["에기", "def", 4], vit: ["비타", "hp", 35], men: ["멘", "mp", 25], cel: ["셀", "spd", 4],
-  acu: ["아쿠", "crit", 3], san: ["산", "ls", 2], lum: ["룸", "xp", 6], fos: ["포스", "mf", 10],
-};
-for (const k of Object.keys(RUNES)) {
-  ITEMS[`ru_${k}`] = { name: `${RUNES[k][0]} 룬`, type: "rune", rune: k, price: 500, desc: "장착한 장비의 홈에 끼울 수 있다. 가방에서 선택해 사용." };
-}
-const RUNE_KEYS = Object.keys(RUNES);
-const RUNEWORDS = [
-  { name: "섬광", seq: ["ign", "acu"], add: [["atkp", 10], ["critd", 25]] },
-  { name: "철벽", seq: ["vit", "aeg"], add: [["hp", 90], ["def", 8]] },
-  { name: "탐구자", seq: ["lum", "fos"], add: [["xp", 10], ["mf", 20]] },
-  { name: "질풍", seq: ["cel", "acu"], add: [["spd", 6], ["crit", 6]] },
-  { name: "피의 맹세", seq: ["san", "ign", "acu"], add: [["ls", 4], ["atkp", 15], ["crit", 5]] },
-  { name: "불멸", seq: ["vit", "aeg", "men"], add: [["hp", 180], ["def", 12], ["mp", 60]] },
-];
 
 /** Affixes a dropped item can roll: [key, label, prefix word, min, max, per-item-level growth]. */
 const AFFIX = [
@@ -177,21 +159,22 @@ const AFFIX = [
   ["critd", "치명타 피해 %", "잔혹한", 8, 20, 0], ["ls", "흡혈 %", "흡혈의", 1, 3, 0], ["spd", "이동속도 %", "신속의", 3, 7, 0],
   ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
 ];
-const RARITY = ["일반", "마법", "희귀", "전설", "세트", "유니크"];
+// Gear reserved index 4 in its saved format. The green rarity belongs to runes.
+const RARITY = ["일반", "마법", "희귀", "전설", null, "유니크"];
 /**
  * How many ordinary affix lines each rarity rolls: [min, max] (owner 2026-11-16: 마법 exactly 2, 희귀 3, 전설 4, 유니크 4).
  * Rarities are told apart by the NUMBER of lines only; just an item with a separate strong effect (`lg`, see LEGEND) gets a name prefix.
  */
-const RARITY_AFFIX = [[0, 0], [2, 2], [3, 3], [4, 4], [2, 3], [4, 4]];
+const RARITY_AFFIX = [[0, 0], [2, 2], [3, 3], [4, 4], null, [4, 4]];
 /**
- * What an ordinary line is multiplied by, by rarity: 마법 weak (x0.85), 희귀 as rolled, 전설 and 세트 x1.3.
+ * What an ordinary line is multiplied by, by rarity: 마법 weak (x0.85), 희귀 as rolled, 전설 x1.3.
  * 유니크 (rarity 5, beige) = a 전설's power (`lg`, named by its LEGEND word, works the same in combat) plus stronger lines: x1.45,
  * which makes its 4 lines about 11 % over a 전설's 4 (owner: 10-15 %).
  */
-const AFFIX_MUL = [1, 0.85, 1, 1.3, 1.3, 1.45];
+const AFFIX_MUL = [1, 0.85, 1, 1.3, null, 1.45];
 /** The first 유니크 sheets (earlier on 2026-11-16) were `un: [prefix, suffix]` with no power; the prefix index picks the power they load with (migrate). `un` is dropped now. */
 const UNIQ_OLD_LG = ["nova", "giant", "thorn", "feast", "echo", "chain", "haste", "feast", "greed", "echo"];
-/** The chance a gear roll is a 유니크, by rank (0 ordinary monster, 1 elite or chest, 2 boss): about 1/12 to 1/20 of the 전설/세트 chance at each rank, x (1 + MF/100). */
+/** Unique gear chance for ordinary monsters, elites or chests, and bosses, scaled by magic find. */
 const UNIQ_P = [0.001, 0.004, 0.01];
 /**
  * Item level (`il`, the shown 1–200 scale): a drop gets the shown level of the monster that left it plus IL_RANK[rank]
@@ -242,16 +225,6 @@ const LEGEND = {
   echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 재사용 대기시간이 사라진다"), "WRG", "O", "L", "skill"],
   giant: ["거인 사냥꾼의", pfxText("giant", "정예와 우두머리에게 주는 피해 +{k:+%}%"), "WRG", "O", "L", "pass"],
 };
-/** Set pieces grow stronger the more of the same set is worn: [pieces, [[stat, value]…]]. */
-const SETS = {
-  pioneer: { name: "개척자", tiers: [1, 2], types: ["helm", "armor", "gloves", "boots"], bonus: [[2, [["hp", 60]]], [4, [["spd", 10], ["xp", 12]]]] },
-  runner: { name: "네온 러너", tiers: [3, 4], types: ["gloves", "boots", "ring", "amulet"], bonus: [[2, [["crit", 6]]], [4, [["atkp", 15], ["spd", 8]]]] },
-  rift: { name: "균열 추적자", tiers: [4, 5, 6], types: ["weapon", "helm", "armor", "ring", "amulet"], bonus: [[2, [["mf", 25]]], [3, [["atkp", 12]]], [5, [["ls", 4], ["critd", 40]]]] },
-  // the weekly raids' sets (bosses-2 §7): no tiers, so no ordinary piece rolls into them — only their own rows (ITEMS `set`)
-  nightveil: { name: "밤장막", tiers: [], types: ["helm", "armor", "ring", "amulet"], bonus: [[2, [["ls", 3]]], [4, [["atkp", 12], ["crit", 5]]]] },
-  bloomgrave: { name: "꽃무덤", tiers: [], types: ["helm", "armor", "ring", "amulet"], bonus: [[2, [["hp", 150]]], [4, [["atkp", 15], ["critd", 35]]]] },
-};
-
 /** A warehouse (창고) holds this many slots per character, besides gold. */
 const WH = 60;
 /** The loot filter: the least rarity of gear a label is shown for and a pet fetches. */

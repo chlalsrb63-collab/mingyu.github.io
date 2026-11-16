@@ -523,7 +523,8 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   standBy("kangkang");
   wipe("m_w1");
   assert.equal(act({ t: "craft_open", r: "stone" }).error, "재료가 부족합니다");
-  assert.equal(act({ t: "craft_open", r: "punch" }).error, "제작 레벨이 부족합니다 (Lv.30 필요)");
+  assert.equal(act({ t: "craft_open", r: "punch" }).error, "그런 제작법은 없습니다");
+  assert.equal(act({ t: "craft_open", r: "punch_cc" }).error, "그런 제작법은 없습니다");
   const gold0 = ch.gold;
   ch.gold = 10;
   give("m_w1", 1);
@@ -642,17 +643,19 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   let plainDrop = false;
   for (let k = 0; k < 200 && !plainDrop; k++) { w.enh = 7; give("stone", 3); act({ t: "enh", k: "weapon" }); plainDrop = w.enh === 6; }
   assert.ok(plainDrop, "without the blessing +7 can still drop");
-  // the punch: one more socket up to the slot's cap (3; gloves and boots 1; jewellery none)
-  w.sk = 2;
+  // The existing tool shares the smith's caps (weapon 2, gloves and ring 1).
+  w.sk = 1;
   give("punch", 3);
   assert.ok(act({ t: "use", id: "punch", k: "weapon" }).ok);
-  assert.equal(w.sk, 3);
+  assert.equal(w.sk, 2);
   assert.equal(act({ t: "use", id: "punch", k: "weapon" }).error, "더 이상 홈을 뚫을 수 없습니다");
   assert.equal(act({ t: "use", id: "punch", k: "helm" }).error, "장착한 장비를 골라 주세요");
   ch.eq.gloves = X.rollGear(S, "g_3", 1, 20); ch.eq.gloves.sk = 1;
   assert.equal(act({ t: "use", id: "punch", k: "gloves" }).error, "더 이상 홈을 뚫을 수 없습니다");
-  ch.eq.ring1 = X.rollGear(S, "r_3", 1, 20);
-  assert.equal(act({ t: "use", id: "punch", k: "ring1" }).error, "장신구에는 홈을 뚫을 수 없습니다");
+  ch.eq.ring1 = X.rollGear(S, "r_3", 1, 20); ch.eq.ring1.sk = 0;
+  assert.ok(act({ t: "use", id: "punch", k: "ring1" }).ok);
+  assert.equal(ch.eq.ring1.sk, 1);
+  assert.equal(act({ t: "use", id: "punch", k: "ring1" }).error, "더 이상 홈을 뚫을 수 없습니다");
   delete ch.eq.gloves; delete ch.eq.ring1;
   wipe("punch");
   // the whetstone: the weakest affix rolls again, the rest stay, no key twice
@@ -972,7 +975,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   const nc = L.newChar("새싹", []);
   assert.deepEqual([nc.cnt.gat, nc.cnt.craft, nc.cnt.deliver], [0, 0, 0]);
   assert.ok(D.life.jb.jb_dl_cafe.toName && D.life.rep.tier.length === 3 && D.life.pouch.ids.includes("staple") && D.life.nodes.kinds.join("") === "howc");
-  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 135 && D.life.recipes.some((r) => r.id === "gr_w_h_6"));
+  assert.ok(D.life.recipes.length === Object.keys(X.RECIPES).length && D.life.recipes.length === 133 && D.life.recipes.some((r) => r.id === "gr_w_h_6"));
   // the town's hosts: 캉캉 crafts, 보글 brews, 쥬쥬's stove cooks, 포포 runs the board, 쥬쥬 and 보글's shelf sell the staples
   const role = (nid) => X.mapOf(X.NPC_MAP[nid]).npcs.find((n) => n.id === nid);
   assert.deepEqual(["kangkang", "bogle", "juju_stove", "popo"].map((nid) => role(nid).role), ["craft", "alch", "cook", "jobs"]);

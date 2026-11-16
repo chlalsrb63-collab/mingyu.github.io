@@ -1,5 +1,5 @@
 {
-  "_readme": "External images and sounds the client uses instead of the code drawing (public/assetlib.js). Empty = everything code-drawn. Written by scripts/import-art.mjs --install (approved files from the repo's asset/ folder; sources recorded in asset/CREDITS.md). Keys: weapon.<kind>.t<tier> | .lg.<power> | .set.<set> | .skin.<motif>, icon.weapon.<kind>..., icon.item.<item id>; free-form for others (mob.twinhare, sfx.coin). Paths are relative to public/.",
+  "_readme": "External images and sounds the client uses instead of the code drawing (public/assetlib.js). Empty = everything code-drawn. Written by scripts/import-art.mjs --install (approved files from the repo's asset/ folder; sources recorded in asset/CREDITS.md). Keys: weapon.<kind>.t<tier> | .lg.<power> | .skin.<motif>, icon.weapon.<kind>..., icon.item.<item id>; free-form for others (mob.twinhare, sfx.coin). Paths are relative to public/.",
   "images": {
     "icon.item.bloom_a": { "src": "assets/gear/armor/bloom_a.png?v=86ce4baa", "w": 16, "h": 16 },
     "icon.item.bloom_h": { "src": "assets/gear/helm/bloom_h.png?v=fd0c8b05", "w": 16, "h": 16 },

@@ -20,10 +20,11 @@ import * as Gather from "./gather.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
 import { isOpen, touch, hideTip, closeDrawer, openWin, hoverTip, ask, chatLink } from "./windows.js";
-import { invOrder, itemSlot, QS_USE, useSlot, isGear, emptyEquipSlot, reqLv, sellPrice, itemTip, itemName, SLOT_NAME, SLOT_GLYPH, setWorn, statText } from "./items.js";
+import { invOrder, itemSlot, QS_USE, useSlot, openSocketSmith, isGear, emptyEquipSlot, reqLv, sellPrice, itemTip, itemName, itemRarity, SLOT_NAME, SLOT_GLYPH, runeSetStatus, runeSetMax } from "./items.js";
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
+import { elementInfo, skillArmorPenetration, skillElements } from "./elements.js";
 
 // ── the bag ──
 /** A bag entry's identity without its stack count (a bigger stack of potions is not a new item). */
@@ -64,7 +65,7 @@ export function renderInv(s) {
   if (charmTab) Charms.renderBagList(s, $("#inv-charms"));
   if (G.sel >= s.inv.length) G.sel = -1;
   const order = invOrder(s.inv);
-  for (let n = 0; n < cap; n++) {
+  for (let n = 0; n < Math.max(cap, order.length); n++) {
     const i = order[n];
     if (i === undefined) { grid.append(itemSlot(null)); continue; }
     const entry = s.inv[i], item = it[entry.id];
@@ -111,7 +112,7 @@ export function renderInv(s) {
   const d = it[entry.id];
   // on a touch screen there is no hovering, so the pane says everything the tooltip would
   if (touch()) itemTip(entry, det);
-  else { const nm = el("div", "nm", itemName(entry)); nm.style.color = Art.RARITY_COL[entry.q || 0]; det.append(nm); }
+  else { const nm = el("div", "nm", itemName(entry)); nm.style.color = Art.RARITY_COL[itemRarity(entry)]; det.append(nm); }
   const btns = el("div", "btns");
   const add = (label, fn, off, gold) => { const b = el("button", gold ? "btn gold small" : "btn small", label); b.disabled = !!off; b.addEventListener("click", () => { hideTip(); fn(); }); btns.append(b); };
   if (d.type === "pot") add("사용", () => act({ t: "use", id: entry.id }), false, true);
@@ -119,6 +120,10 @@ export function renderInv(s) {
   if (d.type === "pet") add(s.pet === entry.id ? "돌려보내기" : "데리고 다니기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "food") add("먹기", () => act({ t: "use", id: entry.id }), false, true);
   if (d.type === "camp") add("모닥불 피우기", () => { act({ t: "use", id: entry.id }); closeDrawer(); }, false, true);
+  if (entry.id === G.defs.sockItem) {
+    if (G.near?.role === "smith") add("소켓 천공", openSocketSmith, false, true);
+    else if (!touch()) det.append(el("div", "ds", "대장장이 볼칸에게 가져가면 장착 장비에 소켓을 열 수 있습니다."));
+  }
   if (QS_USE.includes(d.type)) add("단축칸", () => QS.pick(["i", entry.id]));
   if (d.type === "fish") {
     add("굽기", () => { const id = entry.id; closeDrawer(); Mini.cooking(G.defs.items[d.cook].name, (score) => act({ t: "cook", id, s: score })); }, !fireNear(), true);
@@ -140,16 +145,26 @@ export function renderInv(s) {
     });
   }
   if (d.type === "rune") {
-    let any = false;
+    const targets = [];
     for (const k of G.defs.slots) {
       const g = s.eq[k];
       for (let i = 0; g && i < g.sk; i++) {
-        any = true;
         const cur = g.ru && g.ru[i];
-        add(`${SLOT_NAME[k]} 홈 ${i + 1}${cur ? ` (${G.defs.runes[cur][0]} 교체)` : ""}`, () => { act({ t: "rune", s: G.sel, k, i }); });
+        targets.push({ k, i, cur });
       }
     }
-    if (!any) btns.append(el("span", "ds", "홈이 있는 장비를 장착해야 끼울 수 있습니다."));
+    targets.sort((a, b) => Number(!!a.cur) - Number(!!b.cur));
+    det.append(el("div", "ds", targets.length ? "룬을 끼울 소켓을 고르세요." : "소켓이 열린 장비를 장착하면 룬을 끼울 수 있습니다."));
+    for (const { k, i, cur } of targets) {
+      const target = `${SLOT_NAME[k]} ${i + 1}번`;
+      add(`${target} · ${cur ? "교체" : "빈 소켓"}`, () => {
+        const s = G.sel;
+        if (!cur) { act({ t: "rune", s, k, i }); return; }
+        ask(`${target}의 「${G.defs.runes[cur].name}」이 사라집니다.\n「${itemName(entry)}」으로 교체할까요?`, "교체", () => {
+          if (G.self?.inv[s]?.id === entry.id && G.self?.eq[k]?.ru?.[i] === cur) act({ t: "rune", s, k, i, r: 1 });
+        });
+      }, false, !cur);
+    }
   }
   if (isOpen("shop")) {
     const each = sellPrice(entry);
@@ -229,7 +244,7 @@ export function renderDoll(s) {
   resetDoll();
   drawPortrait(now());
 }
-/** The 장비 / 상세 tab's sheet: stat groups, legendary powers, sets. */
+/** The equipment sheet shows legendary powers and the server's current rune set status. */
 function renderSheet(s) {
   const st = $("#char-stats");
   st.textContent = "";
@@ -239,16 +254,38 @@ function renderSheet(s) {
     for (const [key, val] of rows) grp.append(Info.statChip(key, val(s)));
     st.append(grp);
   }
-  const pw = $("#char-sets");
+  const pw = $("#char-powers");
   pw.textContent = "";
-  const sets = Object.keys(G.defs.sets).filter((id) => setWorn(id));
-  if (s.lg.length || sets.length) pw.append(section("고유 능력 · 세트", "gem"));
+  renderElementStats(pw, s.element);
+  const sets = Object.keys(s.runeCounts || {});
+  if (s.lg.length) pw.append(section("장비 고유 효과", "gem"));
   for (const k of s.lg) pw.append(el("div", "lg", `◆ ${G.defs.legend[k][0].replace(/의$/, "")} — ${G.defs.legend[k][1]}`));
-  for (const id of sets) {
-    const worn = setWorn(id), set = G.defs.sets[id];
-    pw.append(el("div", "st", `${set.name} 세트 ${worn}개`));
-    for (const [n, list] of set.bonus) pw.append(el("div", worn >= n ? "st on" : "st off", `${n}세트: ${list.map(([a, v]) => statText(a, v)).join(", ")}`));
+  if (sets.length) {
+    pw.append(section(`세트 룬 · 활성 ${s.runeSets?.length || 0}/${runeSetMax()}`, "gem"));
+    for (const id of sets) {
+      const set = runeSetStatus(s, id);
+      pw.append(el("div", set.active ? "st on" : "st", `${set.name} · ${set.count}/${set.need} · ${set.status}`));
+      pw.append(el("div", "ds", set.desc));
+    }
   }
+}
+
+function renderElementStats(host, totals) {
+  if (!totals) return;
+  const types = G.defs.elements.types;
+  const table = el("div", "element-sheet");
+  const columns = [["damage", "피해", ""], ["pen", "관통", "%"], ["res", "저항", "%"], ["proc", "발동 확률", "%"], ["dur", "지속시간", "%"]];
+  for (const type of types) {
+    const entries = columns.filter(([key]) => totals[key]?.[type]).map(([key, label, unit]) => {
+      const n = totals[key][type];
+      return `${label} ${n < 0 ? "−" : "+"}${Math.abs(n)}${unit}`;
+    });
+    if (!entries.length) continue;
+    const meta = elementInfo(type), name = el("b", "", meta.name);
+    name.style.color = meta.color;
+    table.append(name, el("span", "", entries.join(" · ")));
+  }
+  if (table.firstChild) host.append(section("속성 능력치", "burst"), table);
 }
 
 // ── K: 무기 · 스킬 and 전직의 길 (jobtree.js draws the weapon rows and the tree; the skill rows are here, with the quick-slot drag) ──
@@ -268,13 +305,14 @@ function skillRows(box, s, k) {
     const basic = el("div", "skill basic");
     const bi = el("img", "ic"); bi.alt = ""; bi.src = G.icons.url[s.eq.weapon.id] || iconUrl("sword");
     const bh = el("div", "hd");
-    bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), el("kbd", "", K("attack")), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
+    const basicType = { damageType: G.defs.elements?.basic?.[s.wk] };
+    bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), skillElements(basicType), el("kbd", "", K("attack")), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
     const description = {
       hammer: `해머를 머리 위로 들어 올려 앞쪽 ${wk.center}px 지점을 내려찍습니다. 반경 ${wk.r}px의 적을 최대 세 마리까지 맞힙니다.`,
       sword: "대검을 좌우로 번갈아 휘둘러 두 번 이어 벱니다.",
     }[s.wk] || "가장 가까운 적을 겨냥합니다. 이어 치면 세 번째 타격이 마무리 일격이 됩니다.";
     basic.append(bi, bh, el("p", "", description));
-    hoverTip(basic, (n) => { n.append(el("div", "nm", `기본 공격 · ${wk.name || "공격"}`), el("div", "", description)); });
+    hoverTip(basic, (n) => { n.append(el("div", "nm", `기본 공격 · ${wk.name || "공격"}`), skillElements(basicType), el("div", "", description)); });
     box.append(basic);
   }
   // the single job of this weapon, and a two-weapon job that carries it once it is yours
@@ -292,7 +330,9 @@ function skillRows(box, s, k) {
     const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(id);
     const hd = el("div", "hd");
     const at = pas ? "" : QS.keysOf(["s", id]);
-    hd.append(el("b", "", sk.name), at ? el("kbd", "", at) : "");
+    const armorPen = skillArmorPenetration(sk);
+    hd.append(el("b", "", sk.name), skillElements(sk), at ? el("kbd", "", at) : "");
+    if (armorPen) hd.append(el("small", "skill-armor-pen", armorPen));
     if (pas) hd.append(el("small", "", "패시브"));
     else hd.append(el("small", "mp", `MP ${w?.[1] ?? sk.mp}${w?.[4] ? ` · HP ${w[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : ""}`), el("small", "", `재사용 ${(w?.[5] ?? sk.cd) / 1000}초`));
     const detail = [rank?.current, why].filter(Boolean).join(" · ");
@@ -302,7 +342,9 @@ function skillRows(box, s, k) {
     row.append(ic, hd, desc);
     if (!pas && w && w[3] === 0) { row.classList.add("off"); hd.append(el("small", "", "스킬 칸에 없음")); }   // learned but not in the loadout (loadout.js)
     hoverTip(row, (n) => {
-      n.append(el("div", "nm", sk.name), el("div", "", sk.desc));
+      n.append(el("div", "nm", sk.name), skillElements(sk));
+      if (armorPen) n.append(el("div", "", `물리 피해를 계산할 때 대상의 물리 방어력 ${sk.armorPenPct}%를 무시합니다.`));
+      n.append(el("div", "", sk.desc));
       if (rank?.current && rank.next) n.append(el("small", "", `다음 · ${rank.next}`));
       if (why) n.append(el("div", "hint", why));
     });

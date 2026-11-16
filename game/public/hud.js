@@ -41,6 +41,7 @@ import { openTree, openStats, renderInv, renderChar, renderSkills, trackNew } fr
 import { renderWarp, renderDaily, renderWeek, renderAchieve, renderCollect, tutCard, eventWidget, castBar, tickDaily } from "./win_world.js";
 import { renderShop, renderSmith, renderQuest } from "./win_shop.js";
 import { K } from "./keymap.js";
+import { elementInfo, enchantName, matchups, monsterElementText, statusHud, statusesAt } from "./elements.js";
 
 // ── the unit frame and the bars ──
 export const look = () => G.who.get(G.you);
@@ -282,13 +283,13 @@ export function refreshUi() {
   // the C window: 장비 or 능력치 (points can be bought by a campfire or at 수련관 카이)
   draw("char", () => G.charTab === "cos" ? ["cos", s.xp, s.nx] : G.charTab === "stat"
     ? ["stat", s.st, s.lvl, s.xp, s.xpt, s.nx, s.rs, s.dv, s.atk, s.mhp, s.mmp, s.def, s.crit, s.critd, s.mf, s.job, s.wk, s.eq.weapon && s.eq.weapon.id, s.dead, fireNear(), near, StatWin.key()]
-    : ["gear", s.xp, s.nx, s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.lvl, s.name, s.guild], renderChar);
+    : ["gear", s.xp, s.nx, s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.runeSets, s.runeCounts, s.element, s.lvl, s.name, s.guild], renderChar);
   // K: 무기 · 스킬 or 전직의 길
   draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.jp?.join(), s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey(), G.skTab === "lo" && [Loadout.key(), G.near && G.near.role]], renderSkills);
   draw("trophy", Trophies.key, Trophies.render);   // 보스 전리품 (trophies.js)
   draw("dex", Dex.key, Dex.render);               // 아이템도감: the prefixes (dex.js)
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near, s.rep], renderShop);
-  draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone"), s.pity], renderSmith);
+    draw("smith", () => [s.eq, s.enh, s.gold, s.dead, countItem("stone"), countItem("uncurse"), countItem(G.defs.sockItem), s.pity], renderSmith);
   draw("train", () => [s.xp, s.xpt, s.nx, s.rs, s.sw, s.lvl, s.gold, s.respecCost, s.inv.length,
     s.inv.some((item) => item.id === G.defs.jf.respecItem), near, StatWin.trainerKey()],
   (s) => StatWin.renderTrainer($("#train-body"), s, { atTrainer: near === "train" }));
@@ -369,6 +370,7 @@ export function hudTick(t) {
   QS.tick(t);
   dashTick(t);
   targetFrame(t);
+  statusHud($("#st-elements"), G.you, t);
   if (tip.from && (!tip.from.isConnected || tip.from.closest("[hidden]"))) hideTip();
   Info.tick();
   if (isOpen("char")) drawPortrait(t);
@@ -391,7 +393,10 @@ export function hudTick(t) {
   const names = ["공격력 증가", "이동속도 증가", `모닥불의 온기: 경험치 +${s.warm}%`, s.food ? G.defs.items[s.food].name : "음식", "둔화: 이동속도 감소", "화상: 지속 피해", "중독: 지속 피해", "공격의 주문서: 공격력 +10%", "방어의 주문서: 받는 피해 -12%", "경험의 주문서: 경험치 +20%", "질주의 바람: 이동속도 +30%", `안락한 휴식: 경험치 +${G.defs.house ? G.defs.house.rest.xp : 8}%`];
   const bad = (i) => i >= 4 && i < 7;
   const left = (ms) => (ms > 90000 ? `${Math.ceil(ms / 60000)}분` : `${Math.ceil(ms / 1000)}`);
-  const shownB = G.buffEnd.map((e, i) => (e > t ? [i, left(e - t)] : null)).filter(Boolean);
+  const elemental = statusesAt(G.you, t);
+  const active = (id) => elemental.some((s) => G.defs.elements.status[s.index].id === id);
+  const legacy = (i) => i === 4 ? !active("chill") : i === 5 ? !active("burn") : i === 6 ? !active("poison") : true;
+  const shownB = G.buffEnd.map((e, i) => (e > t && legacy(i) ? [i, left(e - t)] : null)).filter(Boolean);
   const want = shownB.map(([i, l]) => `${i}:${l}`).join("|");
   if (buffs.dataset.v !== want) {
     buffs.dataset.v = want;
@@ -414,12 +419,13 @@ function targetFrame(t) {
   if (box.hidden === live) box.hidden = !live;
   if (!live) return;
   const d = G.defs.mobs[m.k], max = mobMax(m), tr = m.tr || [], traits = G.defs.traits || {};
-  const key = `${G.tgt}|${m.el}|${tr.join()}`;
+  const key = `${G.tgt}|${m.el}|${m.enchant || ""}|${tr.join()}`;
   if (box.dataset.k !== key) {
     box.dataset.k = key;
     const rank = m.el === 2 && DUNGEONS.has(G.map.id) ? "수문장 " : RANK_NAME[m.el | 0];
     const nm = box.querySelector(".tn");
-    nm.textContent = `Lv.${d.lv} ${rank}${d.name}`;
+    const enchant = enchantName(m);
+    nm.textContent = `Lv.${d.lv} ${rank}${enchant ? `${enchant} ` : ""}${d.name}`;
     nm.style.color = d.boss ? "#ff9ae0" : m.el === 2 ? "#ff8a4a" : m.el ? "#ffbe3c" : "";
     const tt = box.querySelector(".tt");
     tt.textContent = "";
@@ -432,7 +438,13 @@ function targetFrame(t) {
       tt.append(chip);
     }
     tt.hidden = !tt.children.length;
+    const elem = box.querySelector(".te"), attack = elementInfo(d.element);
+    const weakness = matchups(d).reduce((worst, row) => row.v < (worst?.v ?? 0) ? row : worst, null);
+    elem.textContent = attack && !d.chest ? `주 공격 ${attack.name}${m.enchant ? ` · ${elementInfo(m.enchant)?.name || ""} 강화` : ""}${weakness ? ` · 약점 ${elementInfo(weakness.type).name}` : ""}` : "";
+    if (attack) elem.style.color = attack.color;
+    elem.title = monsterElementText(d);
   }
+  statusHud(box.querySelector(".ta"), G.tgt, t);
   const pct = clamp(m.hp / max, 0, 1);
   box.querySelector(".tb i").style.width = `${(pct * 100).toFixed(1)}%`;
   const txt = `${Math.ceil(pct * 100)}%`, b = box.querySelector(".tb b");

@@ -40,7 +40,7 @@ export const canStand = (x, y) => !(solid(x - 4, y - 5) || solid(x + 4, y - 5) |
 /** Cast weapon skill `id` (a quick slot, auto-hunt): refused here with the server's own words when it cannot be. */
 export function castSkill(id) {
   const s = G.self;
-  if (!s || G.me.dead) return false;
+  if (!s || G.me.dead || G.elementSpeed === 0) return false;
   const sk = G.defs.skills[id];
   if (!sk || sk.kind === "p") return false;
   const t = now();
@@ -89,6 +89,7 @@ function carryNo() {
 }
 export function attack() {
   const t = now();
+  if (G.elementSpeed === 0) return;
   if (carryNo()) return;
   if (t - G.lastAtk < G.self.acd) return;
   // Predict the next beat using the same weapon and window as the server.
@@ -111,7 +112,7 @@ export function attack() {
  */
 export function dash() {
   const me = G.me, t = now();
-  if (me.dead || !G.self || t < (G.dashEnd || 0)) return;
+  if (me.dead || !G.self || G.elementSpeed === 0 || t < (G.dashEnd || 0)) return;
   G.dashEnd = t + ((G.defs.dash && G.defs.dash[2]) || 4000); G.dashSent = t;
   G.path = null;
   act({ t: "dash", a: me.aimI });

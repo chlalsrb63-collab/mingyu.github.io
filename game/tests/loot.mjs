@@ -55,13 +55,7 @@ assert.equal(me.wk, "spear");
 assert.equal(act({ t: "eq", s: me.inv.findIndex((s) => s.id === "a_5") }).ok, true, "level 40 can wear tier 5");
 assert.ok(act({ t: "uneq", k: "ring2" }).ok);
 
-// ── set bonuses and legendary powers
-ch.eq.gloves = gear("g_3", { q: 4, set: "runner" }); ch.eq.boots = gear("b_3", { q: 4, set: "runner" });
-S.players[PID].stc = null;
-const crit1 = self().crit;
-ch.eq.boots = gear("b_3");
-S.players[PID].stc = null;
-assert.equal(crit1 - self().crit, 6, "two pieces of 네온 러너 give +6 crit");
+// ── legendary powers
 const acd0 = self().acd;
 ch.eq.helm = gear("h_3", { q: 3, lg: "haste" }); ch.eq.armor = gear("a_3", { q: 3, lg: "greed" });
 S.players[PID].stc = null;
@@ -192,7 +186,6 @@ for (const d of rt.drops) if (d.g) types.add(D.items[d.g.id].type);
 for (const s of ch.inv) if (D.items[s.id].type !== "pot" && s.q !== undefined) types.add(D.items[s.id].type);
 assert.ok(types.size >= 6, "every kind of piece drops, saw " + [...types]);
 assert.ok(rt.drops.concat(ch.inv).some((d) => (d.g || d).lg), "legendaries drop from elites");
-assert.ok(rt.drops.concat(ch.inv).some((d) => (d.g || d).set) || true);
 
 // ── every weapon's actives and its single job's signature can be cast without a hitch
 L.removePlayer(S, PID);

@@ -32,7 +32,7 @@ import { refreshUi } from "./hud.js";
 import { tutTry } from "./win_world.js";
 import { K } from "./keymap.js";
 import { resetHints } from "./hints.js";
-import { itemName, itemTip } from "./items.js";
+import { itemName, itemTip, itemRarity } from "./items.js";
 import { RARITY_COL } from "./art.js";
 import * as Info from "./infocard.js";
 import { renderParty, renderGuild } from "./win_social.js";
@@ -565,7 +565,7 @@ export function addChat(m, cls, name, its) {
     for (const e of its || []) {
       if (!e || !G.defs.items[e.id]) continue;
       const a = el("span", "ilink", `[${itemName(e)}]`), at = rest.indexOf(a.textContent);
-      a.style.color = RARITY_COL[e.q || 0] || "";
+      a.style.color = RARITY_COL[itemRarity(e)] || "";
       // its tooltip above the link, so the rest of the line stays readable
       a.addEventListener("mouseenter", () => {
         if (touch()) return;

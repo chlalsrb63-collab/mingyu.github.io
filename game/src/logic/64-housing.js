@@ -429,7 +429,7 @@ function homeApply(S, p, a) {
     case "h_sort": H.storage = sortSlots(H.storage); break;
     case "h_rest": {
       const st = stats(p), host = S.players[here.owner], f = restOf(host.ch.house, a);
-      p.hp = Math.min(st.mhp, p.hp + Math.round(st.mhp * HOUSE_REST.hp));
+      p.hp = Math.min(st.mhp, p.hp + Math.round(st.mhp * HOUSE_REST.hp * elementHealFactor(S, p)));
       p.mp = Math.min(st.mmp, p.mp + Math.round(st.mmp * HOUSE_REST.mp));
       H.cozy = now + HOUSE_REST.ms;
       H.rest = now + HOUSE_REST.cd;

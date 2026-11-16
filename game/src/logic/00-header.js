@@ -4,8 +4,8 @@
  * A party-hunting RPG set where worlds overlap: a fantasy meadow, a neon city
  * and a crystal rift all hang off one hub. Three ideas drive the rules:
  *   - loot is rolled, not listed: eight slots of gear, each piece with a rarity,
- *     random affixes and sockets; legendaries carry a unique power, set pieces
- *     grow stronger together, and runes in the right order form runewords;
+ *     random affixes and sockets; legendaries carry a unique power, and matching
+ *     set runes socketed across the loadout unlock another power;
  *   - a hunting ground is worth another lap: kill streaks, per-monster mastery,
  *     bounties that renew themselves, and a field boss the kills call out;
  *   - experience never stops mattering: it levels you up, and it can also be

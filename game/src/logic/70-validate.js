@@ -19,6 +19,18 @@ const bad = (error) => ({ ok: false, error });
 /** The bag slot a client names, or undefined: only a whole index ("length" or "__proto__" is no slot). */
 const invAt = (ch, s) => (Number.isInteger(s) ? ch.inv[s] : undefined);
 const OK = { ok: true };
+
+function socketValidate(p, slot) {
+  const ch = p.ch;
+  const g = SLOTS.includes(slot) ? ch.eq[slot] : null;
+  if (!g) return bad("장착한 장비를 골라 주세요");
+  if (p.dead) return bad("쓰러진 상태입니다");
+  if (!npcNear(p, "smith")) return bad("대장장이 볼칸에게 가까이 가야 합니다");
+  if (g.sk >= sockCap(g)) return bad("더 이상 홈을 뚫을 수 없습니다");
+  if (countItem(ch, SOCK_ITEM) < 1) return bad("룬 천공석이 1개 필요합니다");
+  if (ch.gold < SOCK_COST[g.sk]) return bad(`골드가 부족합니다 (${gStr(SOCK_COST[g.sk])}G 필요)`);
+  return OK;
+}
 function enhCost(g) {
   const tier = ITEMS[g.id].tier;
   return { gold: 60 * tier * (g.enh + 1), stone: g.enh < 3 ? 1 : g.enh < 6 ? 2 : 3 };
@@ -214,11 +226,12 @@ export function validateAction(S, pid, a) {
       if (carryOf(p)) return bad(CARRY_NO);
       if (p.dance) return bad("무영난무 중입니다");
       if (p.hammer) return bad("해머를 내려찍는 중입니다");
-      if (now < (p.stag || 0)) return bad("stag");
+      if (now < (p.stag || 0) || elementFrozen(S, p)) return bad("stag");
       if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
       return OK;
     case "skr":
       // the key of a held skill came up (57-weapon-skills.js holdGo)
+      if (elementFrozen(S, p)) return bad("stag");
       return p.hold ? OK : bad("skr");
     case "dash": {
       // Space (59-dash.js): refused in silence while it cools, while reeling, when down
@@ -256,14 +269,15 @@ export function validateAction(S, pid, a) {
       if (p.charge) return bad("기술을 모으는 중입니다");
       // a held charge (E1): only the same skill again, which lets it go
       if (p.hold) return a.id === p.hold.id ? OK : bad("기술을 모으는 중입니다");
-      if (now < (p.stag || 0)) return bad("stag");
+      if (now < (p.stag || 0) || elementFrozen(S, p)) return bad("stag");
       if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
       if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");
       if (sk.hpPct && p.hp <= skillHpCost(p, sk)) return bad("HP가 부족합니다");
       return OK;
     }
     case "use": {
-      // elixirs, the punch and the whetstone (life skills, 58-life.js)
+      if (a.id === SOCK_ITEM) return socketValidate(p, a.k);
+      // Elixirs and the whetstone (life skills, 58-life.js).
       if (lifeUse(a.id)) return lifeUseValidate(S, p, a);
       const it = ITEMS[a.id];
       if (!it || !["pot", "food", "camp", "scroll", "buff", "pet"].includes(it.type)) return bad("사용할 수 없는 아이템");
@@ -308,11 +322,15 @@ export function validateAction(S, pid, a) {
     case "rune": {
       const s = invAt(ch, a.s);
       if (!s || ITEMS[s.id].type !== "rune") return bad("룬이 아닙니다");
+      if (p.dead) return bad("쓰러진 상태입니다");
       const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
       if (!g) return bad("장착한 장비가 없습니다");
-      if (!Number.isInteger(a.i) || a.i < 0 || a.i >= g.sk) return bad("빈 홈이 없습니다");
+      if (!Number.isInteger(a.i) || a.i < 0 || a.i >= Math.min(g.sk, sockCap(g))) return bad("뚫린 홈이 없습니다");
+      if (g.ru[a.i] === s.id) return bad("이미 같은 룬이 끼워져 있습니다");
+      if (g.ru[a.i] && a.r !== 1) return bad("끼워진 룬을 교체하면 사라집니다. 교체를 확인하세요");
       return OK;
     }
+    case "socket": return socketValidate(p, a.k);
     case "train": {
       // stat points bought with experience, at a campfire or at 수련관 카이: a = [str, wil, dex, int, wis, luk]
       if (!Array.isArray(a.a) || a.a.length !== ST_ORDER.length || !a.a.every((v) => Number.isInteger(v) && v >= 0 && v <= 50)) return bad("잘못된 능력치");

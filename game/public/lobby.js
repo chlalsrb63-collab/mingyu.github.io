@@ -95,44 +95,34 @@ export function init(ctx) {
   $("#sv-re").addEventListener("click", () => { Sound.play("ui"); refreshServers(); });
   setInterval(() => { if (view === "servers" && !pending && !document.hidden) refreshServers(); }, 20000);
   wireSettings();
-  show("title");
   playStudioIntro(intro);
 }
 
-function playStudioIntro(overlay) {
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  const video = $("#studio-intro-video"), skip = $("#studio-intro-skip"), sound = $("#studio-intro-sound");
-  const title = $("#title");
+function playStudioIntro(video) {
   const listeners = new AbortController();
   const { signal } = listeners;
+  let timeout;
   const finish = () => {
-    if (overlay.hidden) return;
-    const focusWasInside = overlay.contains(document.activeElement);
-    overlay.hidden = true;
-    title.inert = false;
+    if (video.hidden) return;
+    video.hidden = true;
     listeners.abort();
     clearTimeout(timeout);
     video.pause();
-    if (focusWasInside) $("#t-press").focus({ preventScroll: true });
+    show("title");
   };
-  // Limit time on the overlay even when a stalled or unavailable video never fires `ended`.
-  const timeout = setTimeout(finish, 6500);
+  const limit = (ms) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(finish, ms);
+  };
+  video.addEventListener("playing", () => {
+    const remaining = (video.duration - video.currentTime) * 1000;
+    limit(Number.isFinite(remaining) ? Math.max(0, remaining) + 4000 : 6500);
+  }, { signal });
   video.addEventListener("ended", finish, { signal });
   video.addEventListener("error", finish, { signal });
-  skip.addEventListener("click", finish, { signal });
-  sound.addEventListener("click", () => {
-    video.muted = !video.muted;
-    sound.setAttribute("aria-pressed", String(!video.muted));
-    sound.textContent = video.muted ? "소리 켜기" : "소리 끄기";
-  }, { signal });
-  addEventListener("keydown", (e) => {
-    if (e.key === "Escape") { e.preventDefault(); finish(); }
-  }, { signal });
-  title.inert = true;
-  overlay.hidden = false;
-  skip.focus({ preventScroll: true });
+  video.hidden = false;
   video.muted = true;
-  video.src = "./assets/intro/studio-goguma.mp4";
+  limit(6500);
   video.play().catch(finish);
 }
 
@@ -615,11 +605,11 @@ function markWeapon() {
   const row = starters.find((r) => r[0] === draft.wk), w = WORDS[draft.wk], line = $("#c-wk-feel");
   if (!line || !row) return;
   line.textContent = "";
-  line.append(el("b", "", row[1]));
+  line.append(el("b", "", row[2] || row[1]));
   if (row[4]) line.append(el("span", "tag", row[4] >= FAR_RANGE ? "원거리" : "근접"));
   if (w) line.append(el("span", "tag d" + w.diff, "난이도 " + DIFF_NAME[w.diff]));
   if (row[3]) line.append(el("span", "tag sk", "첫 스킬 " + row[3]));
-  line.append(el("span", "fl", w ? w.feel : row[2] ? `[${row[2]}] 한 자루로 시작합니다` : ""));
+  if (w?.feel) line.append(el("span", "fl", w.feel));
 }
 /** The preview swings the weapon in hand a few times, whatever mode it is in. */
 function swingNow() {

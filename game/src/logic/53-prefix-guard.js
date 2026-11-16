@@ -140,6 +140,7 @@ Object.assign(PFX_FN, {
       pc.v.cure = 0;
       pc.t.cure = now + PFX.cure.imm;
       p.burn = null; p.poison = null; p.slowed = 0; p.dirty = true;
+      elementClear(p, "poison", "burn", "chill", "freeze");
       toast(p, "몸이 맑아졌습니다. 독·화상·둔화가 씻겨 나갔습니다.");
     },
   },
@@ -230,7 +231,7 @@ Object.assign(PFX_FN, {
       const c = PFX.emerg;
       if (p.hp <= 0 || p.hp > st.mhp * c.hp || !pgReady(S, p, "emerg")) return;
       pfxIcd(S, p, "emerg", c.icd);
-      const n = Math.min(st.mhp - p.hp, st.mhp * c.k);
+      const n = Math.min(st.mhp - p.hp, st.mhp * c.k * elementHealFactor(S, p));
       p.hp += n;
       rt.ev.push(["h", p.eid, -Math.round(n), 0, 1]);
       toast(p, "비상! 체력이 크게 회복되었습니다.");

@@ -1,3 +1,14 @@
+function socketApply(S, p, slot) {
+  const ch = p.ch, g = ch.eq[slot];
+  takeItem(ch, SOCK_ITEM, 1);
+  ch.gold -= SOCK_COST[g.sk];
+  g.sk++;
+  toast(p, `[${gearName(g)}]에 홈을 뚫었습니다 (${g.sk}/${sockCap(g)}).`);
+  S.maps[p.map].ev.push(["e", p.eid, 1]);
+  p.dirty = true;
+  saveSoon(p);
+}
+
 export function applyAction(S, pid, a) {
   const p = S.players[pid];
   const ch = p.ch;
@@ -6,13 +17,13 @@ export function applyAction(S, pid, a) {
   switch (a.t) {
     case "nw": p.npcWhereAt = now + 5000; p.npcWhere = true; break;
     case "mv": {
-      if (p.dance) { p.fix = true; break; }
+      if (p.dance || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; break; }
       const dt = clamp(now - p.mvAt, 0, 600);
       p.mvAt = now;
       const max = (stats(p).spd * dt) / 1000 * 1.6 + 8;
       const d = dist(p.x, p.y, a.x, a.y);
       if (d > max || !canStand(m, a.x, a.y)) { p.fix = true; break; }
-      if (d > 1.5) rouse(S, p);
+      if (d > 1.5) { rouse(S, p); p.elementRunAt = now; }
       p.x = a.x; p.y = a.y;
       if (a.d >= 0 && a.d <= 3) p.dir = a.d | 0;
       if (validAim(a.a)) p.aim = a.a;
@@ -35,6 +46,7 @@ export function applyAction(S, pid, a) {
     case "skr": holdGo(S, p); break;
     case "dash": dashGo(S, p, m, a.a); break;
     case "use": {
+      if (a.id === SOCK_ITEM) { socketApply(S, p, a.k); break; }
       if (lifeUse(a.id)) { lifeUseApply(S, p, a); break; }
       const it = ITEMS[a.id];
       const st = stats(p);
@@ -80,12 +92,16 @@ export function applyAction(S, pid, a) {
       }
       p.potAt = now + 900;
       if (it.heal) {
-        const amt = Math.min(Math.round(pfxPot(S, p, st, it.heal + st.mhp * (it.pct || 0))), Math.max(1, Math.round(st.mhp - p.hp)));
+        const amt = Math.min(Math.round(pfxPot(S, p, st, it.heal + st.mhp * (it.pct || 0)) * elementHealFactor(S, p)), Math.max(1, Math.round(st.mhp - p.hp)));
         p.hp = Math.min(st.mhp, p.hp + amt);
         S.maps[p.map].ev.push(["h", p.eid, -amt, 0, 1]);
       }
       if (it.mana) p.mp = Math.min(st.mmp, p.mp + it.mana);
-      if (it.cure) { p.burn = null; p.poison = null; p.slowed = 0; toast(p, "몸이 개운해졌습니다. 독·화상·둔화가 씻겨 나갔습니다."); }
+      if (it.cure) {
+        p.burn = null; p.poison = null; p.slowed = 0;
+        elementClear(p, "poison", "burn", "chill", "freeze");
+        toast(p, "몸이 개운해졌습니다. 중독·화상·오한·빙결이 씻겨 나갔습니다.");
+      }
       S.maps[p.map].ev.push(["u", p.eid, it.heal ? 0 : 1]);
       p.dirty = true;
       break;
@@ -117,17 +133,17 @@ export function applyAction(S, pid, a) {
     }
     case "rune": {
       const g = ch.eq[a.k];
-      const key = ITEMS[ch.inv[a.s].id].rune;
-      takeItem(ch, `ru_${key}`, 1);
+      const slot = ch.inv[a.s];
+      if (--slot.n === 0) ch.inv.splice(a.s, 1);
       while (g.ru.length < g.sk) g.ru.push(null);
-      g.ru[a.i] = key;
-      const rw = runeword(g);
-      toast(p, rw ? `룬어 [${rw.name}] 완성!` : `${RUNES[key][0]} 룬을 끼웠습니다.`);
-      if (rw) { sys(S, `${ch.name}님이 룬어 [${rw.name}]${pp(rw.name, "을를")} 완성했습니다!`); ch.cnt.rw++; checkAch(S, p); }
+      g.ru[a.i] = slot.id;
+      const name = RUNES[slot.id].name;
+      toast(p, `[${name}]${pp(name, "을를")} 끼웠습니다.`);
       S.maps[p.map].ev.push(["e", p.eid, 1]);
       afterGear(S, p);
       break;
     }
+    case "socket": socketApply(S, p, a.k); break;
     case "train": {
       // one point = one level: the stats rise, a full heal as of old, the news at every fifty
       const cost = batchCost(ch, a.a), from = ch.lvl;
@@ -213,7 +229,7 @@ export function applyAction(S, pid, a) {
       const n = a.n | 0;
       ch.gold -= buyCost(p, a.id, id, n);
       addItem(ch, id, n);
-      p.gain.push(["item", id, n, 0]);
+      foundItem(S, p, id, n);
       if (ITEMS[id].type === "pot") tutStep(S, p, "buy");
       p.dirty = true;
       break;
@@ -358,10 +374,7 @@ export function applyAction(S, pid, a) {
         ch.bn++;
         // every third report earns a stone, every tenth a rune
         if (ch.bn % 3 === 0 && addItem(ch, "stone", 1)) p.gain.push(["item", "stone", 1, 0]);
-        if (ch.bn % 10 === 0) {
-          const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`;
-          if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]);
-        }
+        if (ch.bn % 10 === 0) gainRune(S, p);
         toast(p, `반복 의뢰 완료 (${ch.bn}회째) — 같은 의뢰가 다시 시작됩니다.`);
         dailyProg(S, p, "bounty");
         const xp = Math.round(d.xp * ch.bq.need * 0.5);
@@ -381,7 +394,7 @@ export function applyAction(S, pid, a) {
       } else {
         ch.gold += quest.gold;
         p.gain.push(["gold", quest.gold]);
-        for (const [id, n] of quest.items) { addItem(ch, id, n); p.gain.push(["item", id, n, 0]); }
+        for (const [id, n] of quest.items) if (addItem(ch, id, n)) foundItem(S, p, id, n);
         ch.q = { i: ch.q.i + 1, n: 0, st: 0 };
         toast(p, `의뢰 완료: ${quest.title}`);
         if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "의뢰 보상");
@@ -694,6 +707,10 @@ function handChanged(p) {
 function afterGear(S, p) {
   p.stc = null;
   const st = stats(p);
+  if (!p.ch.cnt.rune_bond && deriveStats(p).runeSets.length) {
+    p.ch.cnt.rune_bond = 1;
+    checkAch(S, p);
+  }
   p.hp = Math.min(p.hp, st.mhp);
   p.mp = Math.min(p.mp, st.mmp);
   p.dirty = true;

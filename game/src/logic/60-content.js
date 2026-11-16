@@ -121,7 +121,7 @@ function rewardGear(S, p, ilvl, minQ) {
   let id;
   if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
   else id = `${GEAR[type].pre}_${tier}`;
-  const g = rollGear(S, id, Math.max(minQ, Math.min(4, rollRarity(S, 1, 0))), ilvl);   // (never a 유니크: those are monster drops)
+  const g = rollGear(S, id, Math.max(minQ, Math.min(3, rollRarity(S, 1, 0))), ilvl);   // uniques come from monster drops
   p.ch.inv.push(g);
   p.gain.push(["item", g.id, 1, g.q]);
 }
@@ -129,7 +129,7 @@ function payout(S, p, r) {
   const ch = p.ch;
   if (r.gold) { ch.gold += r.gold; p.gain.push(["gold", r.gold]); }
   if (r.stone && addItem(ch, "stone", r.stone)) p.gain.push(["item", "stone", r.stone, 0]);
-  if (r.rune) { const id = `ru_${RUNE_KEYS[ri(S, 0, RUNE_KEYS.length - 1)]}`; if (addItem(ch, id, 1)) p.gain.push(["item", id, 1, 0]); }
+  if (r.rune) gainRune(S, p, r.gearQ >= 3 ? 2 : 1);
   if (r.gear) rewardGear(S, p, Math.floor(toTier(ch.lvl)), r.gearQ || 2);
   if (r.xp) gainXp(S, p, r.xp);
   p.dirty = true;
@@ -194,10 +194,10 @@ const ACH = [
   ...Object.keys(REP_PERK).map((id) => [`rep_${id}`, "함께", REP_PERK[id].title, `${REP_PERK[id].who}의 신뢰 ${REP_TIER[2]} (${REP_NAME[2]})`, 10, (c) => !!c.rep && (c.rep[id] | 0) >= REP_TIER[2], REP_PERK[id].title]),
   ["repwillow", "함께", "버드나무 이웃", `버드나무 마을 이웃 셋과 ${REP_NAME[1]} (신뢰 ${REP_TIER[1]})`, 10, (c) => !!c.rep && Object.keys(c.rep).filter((id) => id.startsWith("willow_") && c.rep[id] >= REP_TIER[1]).length >= 3],
   ["leg", "장비", "첫 전설", "전설 장비 획득", 10, (c) => c.cnt.leg >= 1],
-  ["set", "장비", "세트 수집가", "세트 장비 획득", 10, (c) => c.cnt.set >= 1],
+  ["rune_find", "장비", "룬 수집가", "세트 룬 획득", 10, (c) => c.cnt.rune_find >= 1],
   ["enh7", "장비", "강화의 손길", "장비 +7 강화 성공", 10, (c) => c.cnt.enh >= 7],
   ["enh10", "장비", "명장", "장비 +10 강화 성공", 30, (c) => c.cnt.enh >= 10, "명장", [["def", 4]]],
-  ["rw", "장비", "룬어 완성", "룬어 완성", 10, (c) => c.cnt.rw >= 1],
+  ["rune_bond", "장비", "새겨진 맹세", "세트 룬 효과 처음 발동", 10, (c) => c.cnt.rune_bond >= 1],
   ["party100", "함께", "함께하는 사냥", "파티로 몬스터 100마리 처치", 10, (c) => c.cnt.party >= 100, "동료"],
   ["guild", "함께", "길드원", "길드 가입", 5, (c) => !!c.guild],
   ["gfound", "함께", "길드장", "길드 창설", 10, (c) => c.cnt.gfound >= 1, "길드장"],

@@ -23,7 +23,7 @@ const OUT = join(ASSET, "_export");
 
 const L = await import(pathToFileURL(join(GAME, "src", "logic.js")).href);
 const defs = L.defs();
-const data = { items: defs.items, mobs: defs.mobs, cos: defs.cos, legend: Object.keys(defs.legend), sets: Object.keys(defs.sets), only: only ? [...only] : null };
+const data = { items: defs.items, runes: defs.runes, mobs: defs.mobs, cos: defs.cos, legend: Object.keys(defs.legend), only: only ? [...only] : null };
 
 // The inventory icon module graph initializes the shared rendering canvases on import.
 const PAGE = `<!doctype html><meta charset="utf-8"><title>export</title><link rel="icon" href="data:,"><body><canvas id="world"></canvas><canvas id="text"></canvas></body>`;
@@ -58,9 +58,9 @@ try {
           put(`${dir}${k}_sil_${name}.png`, WP.weaponSprite(k, gear), name);
           put(`${dir}icon_${k}_sil_${name}.png`, WP.weaponIcon(k, 3, gear), name);
         }
-        // Legendary powers, sets and skins are shown on tier 3.
+        // Legendary powers and skins are shown on tier 3.
         for (const m of WP.MOTIFS) {
-          const what = D.legend.includes(m) ? "lg" : D.sets.includes(m) ? "set" : "skin";
+          const what = D.legend.includes(m) ? "lg" : "skin";
           const o = what === "skin" ? { ws: m } : { wl: m };
           put(`${dir}${k}_${what}_${m}.png`, WP.weaponSprite(k, { wt: 3, ...o }), WP.motifName(m));
           put(`${dir}icon_${k}_${what}_${m}.png`, WP.weaponIcon(k, 3, o), WP.motifName(m));
@@ -75,7 +75,7 @@ try {
     if (want("gear") || want("items")) {
       const Art = await import("/art.js");
       const Growth = await import("/growth.js");
-      const set = Growth.icons(Art.buildIcons(D.items));
+      const set = Growth.icons(Art.buildIcons(D.items, D.runes));
       const GEAR = ["helm", "armor", "gloves", "boots", "ring", "amulet"];
       const ITEM_DIR = { pot: "potion", food: "food", fish: "food", scroll: "scroll", buff: "scroll", mat: "material", rune: "material" };
       for (const id of Object.keys(set.cv)) {

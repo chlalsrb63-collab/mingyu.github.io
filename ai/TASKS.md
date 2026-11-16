@@ -13,6 +13,10 @@
 
 | 누가 | 일 | 브랜치 · 폴더 | 시작 |
 | --- | --- | --- | --- |
+| Codex | Lv.1 기본 무기 7종 도트와 이름 개선 | `codex/starter-weapons` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
+| Codex | 스튜디오 고구마 오프닝 재생과 타이틀 전환 | `codex/studio-opening` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
+| Codex | 8대 피해 속성 · 전직별 복합 속성 · 용기사 착지와 장판 · 마을 모험가 NPC | `codex/elemental-combat` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
+| Codex | 장비 세트 제거 · 룬 소켓과 세트 룬 | `codex/rune-sockets` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
 | Claude (통합 세션 2) | **협동 알바 전체** — 동동아파트 청소 개편, 쥬쥬식당 큰 홀, 대장간 v3, 새 알바 올빼미 도서관. `game/src/logic/68-coop.js`, `game/public/coop.js`, `12-life-tables.js`의 협동(COOP) 블록은 **Codex 손대지 말 것** (보상 1일 1회·재도전 가능 정책은 Codex 1998f06 그대로) | main | 2026-11-15 22:00 |
 | Claude (통합 세션 1·2) | 스킬 이펙트·아이콘(`skillfx.js`, `skillfx_combo.js`, `skillicons.js`, `jobpal.js`, `swing.js`) — Codex 손대지 말 것 | main | 2026-11-15 |
 | Claude (통합 세션 2) | **HD-2D 후처리** — 새 모듈 `game/public/postfx.js`(빛 번짐, 틸트시프트 초점 흐림, 시간대·지역 색감, 빛줄기, 설정 끔/보통/높음). `scene2d.js`에는 호출 1~2줄만. Codex의 `scene_depth.js`·`scene2d.js` 본체·`scene_map.js`는 Codex 담당 그대로 | main | 2026-11-15 |

@@ -26,6 +26,8 @@ import { G, dist, T, now, $, el } from "./state.js";
 import { entityPos } from "./net.js";
 import { addChat, banner, chatLog } from "./windows.js";
 import { fadeIn } from "./win_world.js";
+import { rarityLabel } from "./items.js";
+import { damageColor, elementInfo } from "./elements.js";
 
 const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3, banner: 4, binding: 5 }; // h[6], on selected impacts or healing spells
 
@@ -54,6 +56,15 @@ export function onEvent(e, t) {
     const hRad = e[2] === 132 ? 36 : e[2] === 131 ? 31 : e[2] === 130 ? 28 : 24;
     SkillFx.hammerWindup?.(x, y, hRad, wind, src.hammerYaw);
     if (eid === G.you || dist(G.me.x, G.me.y, x, y) < 180) Sound.play("swing_hammer");
+    return;
+  }
+  if (e[0] === "bw" && e[4] === 9 && G.defs.skills.dive.damageType === "lightning") {
+    const [, x, y, radius] = e;
+    const color = elementInfo("lightning").color;
+    S3.fx.zap(x, y, color, 220);
+    S3.fx.wave(x, y, radius, color, 380);
+    S3.fx.crack(x, y, radius * 0.68, color, 420);
+    if (G.me && dist(G.me.x, G.me.y, x, y) < 180) Sound.play("thunder");
     return;
   }
   if (SkillFx.skillEvent(e, { G, S3, Sound, entityPos, heightOf, t })) return;
@@ -99,7 +110,7 @@ export function onEvent(e, t) {
       break;
     }
     case "h": {
-      const [, id, dmg, crit, isPlayer, cost, cue] = e;
+      const [, id, dmg, crit, isPlayer, cost, cue, parts] = e;
       const tgt = entityPos(id);
       if (!tgt) break;
       const h = heightOf(tgt);
@@ -118,7 +129,7 @@ export function onEvent(e, t) {
       } else {
         const hammer = cue === HIT_CUE.hammer; // the accompanying hm event plays the one landing cue
         const critical = crit === 1, grazing = crit === 2;
-        floatText(critical ? `${dmg}!` : String(dmg), tgt.x + (Math.random() * 8 - 4), tgt.y, h + 0.25, isPlayer ? "#ff7a7a" : critical ? "#ffd84a" : "#ffffff", critical, true);
+        floatDamage(dmg, parts, tgt, h, critical);
         tgt.hurtT = t; tgt.hsMs = 0;
         let wk, fin = false; // my own weapon kind, when it is my blow: the impact sound follows the weapon
         // recoil away from whoever struck last
@@ -290,7 +301,7 @@ export function onEvent(e, t) {
 
 /** The loot feed at the play view's lower right: one line per kind, repeats add up (`들꽃잎 ×3`), each fades after 4 s. */
 const feed = new Map();
-/** Rarity as a shape too, not colour alone: 마법 ◇ · 희귀 ◆ · 전설 ★ · 세트 ◈ · 유니크 ▣. */
+/** Rarity as a shape too: 마법 ◇ · 희귀 ◆ · 전설 ★ · 세트 룬 ◈ · 유니크 ▣. */
 const RARITY_MARK = ["", "◇ ", "◆ ", "★ ", "◈ ", "▣ "];
 function lootLine(key, text, col, n) {
   const box = $("#loot");
@@ -324,11 +335,12 @@ export function onGain([kind, a, b, q]) {
     // a material for the 재료 주머니 rises over the head too (gathering's reward, gather.js)
     const d = G.defs.items[a];
     if (d && (d.type === "lmat" || a === "staple" || a === "flask")) floatText(`+${d.name}${b > 1 ? ` ×${b}` : ""}`, me.x, me.y, h + 0.55, "#b8f07a");
-    const p = addChat(`획득: ${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${b > 1 ? ` ×${b}` : ""}`, "loot");
+    const rarity = q ? `[${rarityLabel(a, q)}] ` : "";
+    const p = addChat(`획득: ${rarity}${d.name}${b > 1 ? ` ×${b}` : ""}`, "loot");
     if (q) p.style.color = Art.RARITY_COL[q];
-    lootLine(`i:${a}:${q | 0}`, (n) => `${RARITY_MARK[q | 0]}${q ? `[${G.defs.rarity[q]}] ` : ""}${G.defs.items[a].name}${n > 1 ? ` ×${n}` : ""}`, q ? Art.RARITY_COL[q] : "#f0e6d0", b || 1);
+    lootLine(`i:${a}:${q | 0}`, (n) => `${RARITY_MARK[q | 0]}${rarity}${d.name}${n > 1 ? ` ×${n}` : ""}`, q ? Art.RARITY_COL[q] : "#f0e6d0", b || 1);
     Sound.play("loot", q | 0);
-    if (q >= 3) banner(q === 4 ? "세트 획득!" : "전설 획득!", true);
+    if (q >= 3) banner(`${d.q ? d.name : `${rarityLabel(a, q)}${d.type === "rune" ? " 룬" : ""}`} 획득!`, true);
   } else if (kind === "cos") { const d = G.defs.cos[a]; const p = addChat(`외형 획득: ${d ? d.name : a}`, "loot"); if (d) p.style.color = Art.RARITY_COL[d.q]; lootLine(`c:${a}`, () => `외형 · ${d ? d.name : a}`, d ? Art.RARITY_COL[d.q] : "#f0e6d0", 1); Sound.play("loot", d ? d.q : 1);
   } else if (kind === "lvl") { banner("LEVEL UP!"); floatText(`Lv.${a}`, me.x, me.y, h + 0.9, "#ffd84a", true); Sound.play("level"); addChat(`레벨 ${a} 달성!`, "sys"); }
 }
@@ -336,9 +348,27 @@ export function onGain([kind, a, b, q]) {
 // ───────────────────────────── effects ─────────────────────────────
 // Effects live in the 3D scene; floating text is drawn over it and follows its point in the world.
 
-export function floatText(str, x, y, h, col, big, dmg = false) {
+function floatDamage(total, parts, tgt, h, crit) {
+  const x = tgt.x + (Math.random() * 8 - 4);
+  if (!parts?.length) {
+    floatText(crit ? `${total}!` : String(total), x, tgt.y, h + 0.25, damageColor(0), crit, true);
+    return;
+  }
+  const entries = parts;
+  const move = (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8);
+  const stride = Math.max(30, 11 * (String(Math.max(...entries.map(([, n]) => n))).length + (crit ? 1 : 0)));
+  for (let i = 0; i < entries.length; i++) {
+    const [type, n] = entries[i];
+    const group = Math.floor(i / 3), columns = Math.min(3, entries.length - group * 3);
+    const dx = (i % 3 - (columns - 1) / 2) * stride, dy = -group * (crit ? 23 : 17);
+    floatText(crit ? `${n}!` : String(n), x, tgt.y, h + 0.25, damageColor(type), crit, true, { dx, dy, move });
+  }
+}
+
+export function floatText(str, x, y, h, col, big, dmg = false, layout) {
   // a damage number bounces off to one side (dmg: true), the rest rise straight up
-  G.texts.push({ str, x, y, h, col, big: !!big, t0: now(), dmg, vx: dmg ? (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8) : 0 });
+  const vx = dmg ? layout?.move ?? (Math.random() < 0.5 ? -1 : 1) * (6 + Math.random() * 8) : 0;
+  G.texts.push({ str, x, y, h, col, big: !!big, t0: now(), dmg, vx, dx: layout?.dx || 0, dy: layout?.dy || 0 });
 }
 /** A spark of magic gathering at the staff's or the book's tip, a few px from `src` toward (tx, ty). */
 function castFlash(f, src, tx, ty, col, fin) {

@@ -37,9 +37,10 @@ function sortSlots(list) {
   }
   return out;
 }
-/** The bag's size on a sheet being migrated (v10): 40 to 100 in steps of 5, never less than what it holds. */
+/** The bag's saved size. Loose runes recovered from old sockets may temporarily exceed the cap. */
 function bagClean(ch) {
-  const want = Math.max(INV_BASE, ch.bagCap | 0, Array.isArray(ch.inv) ? ch.inv.length : 0);
+  const carried = (ch.v | 0) < 27 && Array.isArray(ch.inv) ? ch.inv.length : 0;
+  const want = Math.max(INV_BASE, ch.bagCap | 0, carried);
   ch.bagCap = Math.min(INV_MAX, INV_BASE + Math.ceil((want - INV_BASE) / BAG_STEP) * BAG_STEP);
 }
 

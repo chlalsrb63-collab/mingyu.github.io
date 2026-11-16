@@ -6,11 +6,15 @@ import { readData } from "../scripts/build-logic.mjs";
 
 const defs = L.defs(), H = defs.sky.dayMs / 24, DAY = H * 24;
 const at = (h, day = 0) => day * DAY + h * H;
+const adventurers = {
+  adv_yeoul: ["town", "spear"], adv_sandeul: ["town", "sword"], adv_fullip: ["town", "bow"], adv_iseul: ["town", "staff"],
+  adv_maru: ["willow", "hammer"], adv_daon: ["willow", "dagger"], adv_cheongsol: ["willow", "bow"], adv_janbyeol: ["willow", "book"],
+};
 const cast = [
   "smith", "bank", "juju", "forge_tong", "r_peng", "story", "town_charm_juana",
   "elder", "hall_bori", "daily", "warp", "shop", "costume", "train", "town_job_arsen", "dimkeeper", "collector",
   "r_dotori", "r_kongal", "r_bodeul", "r_neogul", "r_gaegul", "r_saessak", "r_daenamu", "r_meongdae",
-  "r_kkamang", "r_yeoreum", "r_jjik", "r_ggul", "r_riri", "r_noeul", "r_bawi2", "popo", "cafe_moka",
+  "r_kkamang", "r_yeoreum", "r_jjik", "r_ggul", "r_riri", "r_noeul", "r_bawi2", "popo", "cafe_moka", ...Object.keys(adventurers),
 ];
 assert.deepEqual(L.lifeCheck(), []);
 assert.deepEqual(defs.npclife.cast.map((row) => row[0]), cast);
@@ -94,6 +98,24 @@ const T = 16;
 const { maps } = L.atlas(false, ["town", "kangkang_forge", "juju_diner", "owl_library", "dongdong_apt", "town_hall", "tales_cafe"]);
 const put = (map, x, y) => { player.map = map; player.x = x; player.y = y; };
 const talk = (npc) => L.validateAction(world, "A", { t: "sq", a: "talk", npc }).ok;
+for (const [id, [map, weapon]] of Object.entries(adventurers)) {
+  const row = defs.npclife.cast.find(([key]) => key === id);
+  assert.match(row[1], /^모험가 /);
+  assert.equal(row[12], weapon, `${id} sends its held weapon with the cast`);
+  assert.ok(defs.npclife.lines[id].stroll.length >= 2);
+  for (const h of [5, 12, 20, 26]) {
+    const now = at(h), body = L.npcAt(id, now), later = L.npcAt(id, now + 500);
+    assert.deepEqual([body.map, body.act, body.moving], [map, "stroll", true]);
+    assert.notDeepEqual([body.x, body.y], [later.x, later.y], `${id} moves through the map`);
+    assert.ok(L.lifeLegs(map, now).some(([i, mode]) => cast[i] === id && mode === 1), `${id} sends a walk path`);
+  }
+  world.now = at(10);
+  const body = L.npcAt(id, world.now);
+  put(map, body.x, body.y);
+  assert.ok(talk(id), `${id} can be greeted in reach`);
+  put(map, body.x + 160, body.y);
+  assert.equal(talk(id), false, `${id} can only be greeted from nearby`);
+}
 for (const h of [5, 8, 12, 16, 20, 23, 26]) {
   world.now = at(h);
   const n = maps.town.npcs.find(n => n.id === "smith");

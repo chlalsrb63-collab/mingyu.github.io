@@ -17,9 +17,10 @@ import * as Sky from "./sky.js";
 import * as NPC from "./npclife.js";
 import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
-import { G, T, dpr, tg, text } from "./state.js";
+import { G, T, dpr, tg, text, $ } from "./state.js";
 import { entityPos } from "./net.js";
 import { mobMax, DUNGEONS, RANK_NAME } from "./events.js";
+import { enchantName, statusesAt } from "./elements.js";
 /** Quest marks over NPCs (owner): the main chain in yellow, side quests in blue; "!" to take, "?" to hand in (a lighter tint). */
 const MAIN_MARK = "#ffd84a", MAIN_DONE = "#fff0a0", SIDE_MARK = "#5aaaff", SIDE_DONE = "#a8d8ff", JOB_MARK = "#5ee07a", JOB_DONE = "#b4f5c0";   // 알바 in green
 const COOP_MARK = "#c77dff";   // 협동 알바 still open today, over its owner in its building (purple)
@@ -188,6 +189,31 @@ function bar(sx, sy, w, k, col) {
   tg.fillRect(x, y, Math.max(dpr, w * dpr * k), 4 * dpr);
 }
 
+function ailmentRow(rows, x, y) {
+  if (!rows.length) return;
+  const d = dpr, h = 15 * d, g = 3 * d;
+  tg.font = `700 ${Math.round(10 * d)}px Pretendard, "Noto Sans KR", "Malgun Gothic", sans-serif`;
+  tg.imageSmoothingEnabled = false;
+  for (let start = 0; start < rows.length; start += 3) {
+    const page = rows.slice(start, start + 3).map((s) => {
+      const value = `${s.sec}초${s.stacks > 1 ? ` ×${s.stacks}` : ""}`;
+      return { s, value, w: 16 * d + tg.measureText(value).width };
+    });
+    let px = Math.round(x * d - (page.reduce((sum, s) => sum + s.w, 0) + g * (page.length - 1)) / 2);
+    const py = Math.round(y * d + (start / 3) * (h + d));
+    for (const { s, value, w } of page) {
+      tg.fillStyle = "rgba(13,11,22,.96)";
+      tg.fillRect(px, py, w, h);
+      tg.fillStyle = s.color;
+      tg.fillRect(px, py + h - d, w, d);
+      tg.drawImage(icon(s.icon, s.color), px + d, py + d, 12 * d, 12 * d);
+      tg.fillStyle = "#f9f4e9";
+      tg.fillText(value, px + 14 * d + (w - 16 * d) / 2, py + 11 * d);
+      px += w + g;
+    }
+  }
+}
+
 function renderText(t) {
   tg.clearRect(0, 0, text.width, text.height);
   tg.textAlign = "center";
@@ -247,9 +273,12 @@ function renderText(t) {
   }
   // Residents talking together and ambient conversations close enough to hear.
   for (const b of S3.townBubbles(t)) { const [x, y] = at(b.x, b.y, 1.8); bubble(b.b, x, y, t); }
+  const greeting = NPC.adventurerBubble(G.me, t, server, $("#w-talk")?.hidden !== false);
+  if (greeting) { const [x, y] = at(greeting.x, greeting.y, 1.8); bubble(greeting.b, x, y, t); }
   for (const mob of G.mobs.values()) {
     const d = G.defs.mobs[mob.k], max = mobMax(mob);
-    if (!(d.boss || mob.el || mob.hp < max)) continue;
+    const ailments = statusesAt(mob.id, t);
+    if (!(d.boss || mob.el || mob.hp < max || ailments.length)) continue;
     const [x, y] = at(mob.x, mob.y, (mob.h3 || 1) + 0.28);
     if (off(x, y)) continue;
     // in a dungeon the rank-2 monster is its guardian; out in the open it is the field boss
@@ -260,12 +289,15 @@ function renderText(t) {
       tg.imageSmoothingEnabled = false;
       tr.forEach((k, i) => { const tk = TRAIT[k]; if (tk) tg.drawImage(icon(tk[0], tk[1]), Math.round(x - tr.length * 9 + i * 18 + 1), Math.round(y - 29), 16, 16); });
     }
-    label(`Lv.${d.lv} ${mob.el === 2 && DUNGEONS.has(G.map.id) ? "수문장 " : RANK_NAME[mob.el | 0]}${tn}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#ece0e0");
-    if (mob.hp < max) bar(x, y + 4, d.boss ? 90 : mob.el === 2 ? 70 : 42, mob.hp / max, mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#d8404c");
+    const enchant = enchantName(mob);
+    label(`Lv.${d.lv} ${mob.el === 2 && DUNGEONS.has(G.map.id) ? "수문장 " : RANK_NAME[mob.el | 0]}${enchant ? `${enchant} ` : tn}${d.name}`, x, y, d.boss ? "#ff9ae0" : mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#ece0e0");
+    if (mob.hp < max || ailments.length) bar(x, y + 4, d.boss ? 90 : mob.el === 2 ? 70 : 42, mob.hp / max, mob.el === 2 ? "#ff8a4a" : mob.el ? "#ffbe3c" : "#d8404c");
     // bosses and elites: the HP in numbers, a rift's party/level toughness included (hk, 64-dim.js — damage is divided by it)
     if (d.boss || mob.el) { const k = mob.hk || 1; label(`${Math.ceil(mob.hp * k).toLocaleString()} / ${Math.round(max * k).toLocaleString()}`, x, y + 14, "#f0e0e0", 10); }
     // a scripted boss's marked cast: the stagger gauge the party must break before it lands (net.js stg)
-    if (mob.bst === 1 && mob.stg) { bar(x, y + 22, 90, mob.stg / 100, "#7ad4ff"); label(`무력화 ${mob.stg}%`, x, y + 32, "#bfeaff", 10); }
+    const casting = mob.bst === 1 && mob.stg;
+    if (casting) { bar(x, y + 22, 90, mob.stg / 100, "#7ad4ff"); label(`무력화 ${mob.stg}%`, x, y + 32, "#bfeaff", 10); }
+    ailmentRow(ailments, x, y + (casting ? 35 : d.boss || mob.el ? 18 : 11));
   }
   for (const d of G.drops.values()) {
     // the loot filter decides whose names are shown: everything, magic and up, or rare and up
@@ -283,10 +315,21 @@ function renderText(t) {
     nameLabel(w, x, y, p.dead ? "#9a9aa8" : w.party && w.party === myParty ? "#8cff8c" : "#dce6f2");
     if (w.guild) label(`‹${w.guild}›`, x, y - 13, mine && w.guild === mine.guild ? "#9af0ae" : "#c8b8e8", 11);
     if (w.title) label(`「${w.title}」`, x, y - (w.guild ? 26 : 13), "#ffcf6a", 11);
-    if (p.hp < p.mhp && !p.dead) bar(x, y + 4, 40, p.hp / p.mhp, "#58c070");
+    if (!p.dead) {
+      const ailments = statusesAt(eid, t);
+      if (p.hp < p.mhp || ailments.length) bar(x, y + 4, 40, p.hp / p.mhp, "#58c070");
+      ailmentRow(ailments, x, y + 11);
+    }
   }
   // your own name lifts while the aim arrow points up over your head
-  if (mine) { const [x, y] = at(me.x, me.y, (me.h3 || 1.32) + 0.22 + (G.aimArrow === false ? 0 : 0.3 * (G.aimUpK || 0))); nameLabel(mine, x, y, "#f4e4b0"); if (mine.guild) label(`‹${mine.guild}›`, x, y - 13, "#9af0ae", 11); if (mine.title) label(`「${mine.title}」`, x, y - (mine.guild ? 26 : 13), "#ffcf6a", 11); }
+  if (mine) {
+    const [x, y] = at(me.x, me.y, (me.h3 || 1.32) + 0.22 + (G.aimArrow === false ? 0 : 0.3 * (G.aimUpK || 0)));
+    nameLabel(mine, x, y, "#f4e4b0");
+    if (mine.guild) label(`‹${mine.guild}›`, x, y - 13, "#9af0ae", 11);
+    if (mine.title) label(`「${mine.title}」`, x, y - (mine.guild ? 26 : 13), "#ffcf6a", 11);
+    const ailments = statusesAt(G.you, t);
+    if (!me.dead && ailments.length) { bar(x, y + 4, 40, me.hp / (G.self?.mhp || 1), "#58c070"); ailmentRow(ailments, x, y + 11); }
+  }
   for (const b of G.bobs.values()) if (b.bite) { const [x, y] = at(b.x, b.y, 0.9); label("!", x, y + Math.sin(t / 60) * 2, "#ffe04a", 20); }
   for (const [eid, b] of G.bubbles) {
     if (t > b.until) { G.bubbles.delete(eid); continue; }
@@ -308,7 +351,7 @@ function renderText(t) {
       const s0 = f.big ? 2.3 : 1.7, scale = s0 + (1 - s0) * el;
       const [x, y] = at(f.x, f.y, f.h + 0.1);
       const hop = k < 0.45 ? -Math.sin((k / 0.45) * Math.PI) * (f.big ? 22 : 15) : k < 0.62 ? -Math.sin(((k - 0.45) / 0.17) * Math.PI) * (f.big ? 6 : 4) : 0;
-      label(f.str, x + f.vx * Math.min(1, k / 0.6), y + hop - k * 10, f.col, (f.big ? 19 : 13) * scale);
+      label(f.str, x + f.vx * Math.min(1, k / 0.6) + f.dx, y + hop - k * 10 + f.dy, f.col, (f.big ? 19 : 13) * scale);
       continue;
     }
     const [x, y] = at(f.x, f.y, f.h + k * 0.55);

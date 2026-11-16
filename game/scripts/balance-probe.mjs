@@ -117,7 +117,7 @@ export function probe(L, who, tier, secs = PROBE.secs, o = {}) {
     spot = [ARENA.x, ARENA.y, ARENA.r];
     restore = flatArena(mp, ARENA);
     rt.fires = [];
-    S.seed = ARENA.seed;                         // the rolls start where they did on the 152×102 meadow, however many monsters it now makes
+    S.seed = o.seed ?? ARENA.seed;               // independent of the number of monsters generated with the map
   } else {
     // the old rules: the first open square of the meadow, exactly as BASE was measured
     const clear = (x, y) => mp.o[y] && mp.o[y][x] === " " && !"wW".includes(mp.g[y][x]);

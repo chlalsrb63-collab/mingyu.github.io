@@ -25,6 +25,7 @@ import { skillIconUrl } from "./skillicons.js";
 import { scaleText, gradeOf } from "./statwin.js";
 import { K } from "./keymap.js";
 import { countItem } from "./actions.js";
+import { skillArmorPenetration, skillElements } from "./elements.js";
 
 let C = null;
 /** deps: { G, act, el, section, Sound, hoverTip, redraw, openTree } */
@@ -130,7 +131,10 @@ function jobCard(s, j, atJob) {
     const hp = wire?.[4] ? ` · HP ${wire[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : "";
     const cost = `MP ${wire?.[1] ?? sk.mp}${hp} · 재사용 ${(wire?.[5] ?? sk.cd) / 1000}초`;
     const unlock = sk.jobNeed ? `직업 Lv.${sk.jobNeed}` : "전직 시 습득";
-    tx.append(el("b", "", sk.name), el("small", "", ` ${rank ? cost : `${unlock} · ${cost}`}`), el("p", "", sk.desc));
+    const armorPen = skillArmorPenetration(sk);
+    tx.append(el("b", "", sk.name), " ", skillElements(sk));
+    if (armorPen) tx.append(" ", el("small", "skill-armor-pen", armorPen), " ·");
+    tx.append(el("small", "", ` ${rank ? cost : `${unlock} · ${cost}`}`), el("p", "", sk.desc));
     if (rank) {
       const text = [rank.current, rank.next && `${rank.current ? "다음 · " : ""}${rank.next}`].filter(Boolean).join(" / ");
       const progress = el("p", "", text);

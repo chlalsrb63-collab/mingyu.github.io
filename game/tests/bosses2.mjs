@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { MOBS, ITEMS, FIELD_BOSS, TROPHIES, ELITE, mobMax, dealMob, killMob, bsHit, SETS, DIM_CHAL, CHAL_KEYS, DIM_TOWN, T, SKILL, SKILL_ORDER, stats, atkRange, aimIdx, tierFor, rollGear, GEAR, WK_ID, checkAch, dmgBoard };\n";
+  "\nexport const __t = { MOBS, ITEMS, FIELD_BOSS, TROPHIES, ELITE, mobMax, dealMob, killMob, bsHit, DIM_CHAL, CHAL_KEYS, DIM_TOWN, T, SKILL, SKILL_ORDER, stats, atkRange, aimIdx, tierFor, rollGear, GEAR, WK_ID, checkAch, dmgBoard };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t;
 // gear tier 6 (운철, req. Lv.181) drops from tier-46+ monsters (Lv.181+), bosses included; a tier-45 elite may roll one up
@@ -174,7 +174,7 @@ function scripted(k, t) {
   assert.ok(Math.abs(vul - 1300) <= 2 && Math.abs(plain - 1000) <= 2, `${k}: vuln ${vul} / ${plain}`);
   return { W, ps, dim, rt, mob, max, B, tick, turns, allPats, hit, breakCast, ev: () => ev, clear: () => { ev = []; } };
 }
-function rewards(F, k, set, weapons) {
+function rewards(F, k, piece, weapons) {
   const { W, ps, dim, rt, mob } = F, keep = X.MOBS[k].drops;
   X.MOBS[k].drops = keep.map(([id]) => [id, 1]);   // every find at once, to see each is what it says
   mob.by = Object.fromEntries(ps.map((o) => [o.pid, 1000]));
@@ -182,7 +182,7 @@ function rewards(F, k, set, weapons) {
   X.killMob(W, rt, mob);
   X.MOBS[k].drops = keep;
   const mine = rt.drops.filter((d) => d.own === "r0" && d.g);
-  assert.equal(mine.filter((d) => d.g.set === set && d.g.q === 4).length, 4, k + ": its four set pieces, each of the set");
+  for (const suffix of ["h", "a", "r", "n"]) assert.ok(mine.some((d) => d.g.id === `${piece}_${suffix}` && d.g.q === 3 && !d.g.set), k + ": its named legendary gear");
   for (const id of weapons) assert.ok(mine.some((d) => d.g.id === id && d.g.q === 3), k + ": " + id + " legendary");
   for (let i = 0; i < 5; i++) F.tick();
   const big = X.DIM_CHAL.bosses[k].big, bit = 1 << X.CHAL_KEYS.indexOf(k);
@@ -222,7 +222,7 @@ function rewards(F, k, set, weapons) {
   // the hard enrage at 7:00
   F.dim.chal.engAt = W.now - B.hard; F.clear(); F.tick();
   assert.ok(F.dim.chal.hard > 0 && F.turns().includes(7), "영원한 밤");
-  rewards(F, "cloakbat", "nightveil", ["w_ribbook"]);
+  rewards(F, "cloakbat", "veil", ["w_ribbook"]);
 }
 {
   // 꽃무덤 고래
@@ -253,7 +253,7 @@ function rewards(F, k, set, weapons) {
   while (!F.turns().includes(9)) F.tick();
   assert.ok(mob.cast, "the song at 10 %");
   mob.cast = null;
-  rewards(F, "bloomwhale", "bloomgrave", ["w_whalebow", "w_bloomstaff"]);
+  rewards(F, "bloomwhale", "bloom", ["w_whalebow", "w_bloomstaff"]);
 }
 
 /** A bot party fights it out: dodges rings and shaped telegraphs, drinks, hits adds first, else the boss. */

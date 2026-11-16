@@ -156,6 +156,7 @@ for a hidden room with a knock spot. A cast entry uses an existing NPC ID, or a 
 name, a full player look (`hero`) and home. `plan` blocks use `h` (04:00–27:59), `at` and `act`.
 Optional `days` overrides pick 0–3 in the global four-day cycle. `with`, `rain`, `pose` and `lag`
 specify companions, shelter, custom poses and patrol spacing. Fixtures stay in `npcs.json` or their map file.
+An optional `weapon` kind (for example `"bow"`) equips a resident's sprite. Armed residents greet nearby players using the first line for their current activity.
 
 `data:check` validates seat capacity, references, reachable spots and travel through map doors.
 The routines add no character sheet fields.

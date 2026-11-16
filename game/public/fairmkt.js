@@ -15,7 +15,7 @@ import { entryIconUrl } from "./weapons.js";
 import { G, $, el } from "./state.js";
 import { act } from "./net.js";
 import { openWin, closeWin, isOpen, hoverTip } from "./windows.js";
-import { itemTip, itemName, itemDesc, reqLv } from "./items.js";
+import { itemTip, itemName, itemDesc, itemRarity, reqLv } from "./items.js";
 import { refreshUi } from "./hud.js";
 
 const st = { v: "", name: "", fm: null, rev: 0 };
@@ -64,9 +64,10 @@ export function render(s) {
     } else {
       const entry = kind === 0 ? a : { id: a, n }, d = G.defs.items[entry.id];
       icon = el("img"); icon.src = entryIconUrl(entry, d) || G.icons.url[entry.id]; icon.alt = "";
-      if (kind === 0) icon.style.borderColor = Art.RARITY_COL[entry.q];
+      const quality = itemRarity(entry);
+      if (quality) icon.style.borderColor = Art.RARITY_COL[quality];
       name = el("span", "nm", kind === 0 ? itemName(entry) : `${itemName(entry)} ×${n}`);
-      if (kind === 0) name.style.color = Art.RARITY_COL[entry.q];
+      if (quality) name.style.color = Art.RARITY_COL[quality];
       tx.append(name, el("small", "", kind === 0 ? `아이템 레벨 ${entry.il} · 착용 Lv.${reqLv(entry)}` : itemDesc(entry)));
       const lg = kind === 0 && G.defs.legend && G.defs.legend[entry.lg];
       if (lg) tx.append(el("small", "fm-lg", `◆ ${lg[1]}`));

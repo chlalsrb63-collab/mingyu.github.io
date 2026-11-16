@@ -36,7 +36,7 @@ function dashEnd(p, m, ux, uy) {
 /** Why a dash is refused now, or "" — quiet codes, never a toast (the client keeps its own clock). */
 function dashWhy(S, p) {
   if (p.dead || p.dance) return "dash";
-  if (S.now < (p.stag || 0)) return "stag";
+  if (S.now < (p.stag || 0) || elementFrozen(S, p)) return "stag";
   return S.now < (p.dashAt || 0) + dashCd(p) - 60 ? "dash" : "";
 }
 /** The dash itself: stands you up, drops the line, the gathering and a recall, and moves you. */
@@ -48,6 +48,7 @@ function dashGo(S, p, m, a) {
   const [ux, uy] = AIM_V[p.aim | 0], x0 = p.x, y0 = p.y;
   const [x, y] = dashEnd(p, m, ux, uy);
   p.x = x; p.y = y; p.mvAt = now; p.fix = true;
+  if (x !== x0 || y !== y0) p.elementRunAt = now;
   p.dashAt = now;
   p.dodge = now + DASH.ms + DASH.inv;
   rt.ev.push(["ds", p.eid, Math.round(x0), Math.round(y0), Math.round(x), Math.round(y)]);
