@@ -384,8 +384,9 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
     return { ms, maxBytes, snaps, bytes, sent };
   };
   run(false);   // warm up
-  const base = run(false), full = run(true);
-  const perMin = (full.ms - base.ms) / 4;
+  const best = (w) => { const a = run(w), b = run(w); return a.ms < b.ms ? a : b; };   // the quieter of two runs
+  const base = best(false), full = best(true);
+  const perMin = Math.max(0, full.ms - base.ms) / 4;
   console.log(`pipe: the shift costs ${(full.ms - base.ms).toFixed(1)} ms per 240 s = ${perMin.toFixed(2)} ms per simulated minute (the world alone ${base.ms.toFixed(1)} ms); ${full.sent} moves; wire: ${full.snaps} state sends, max ${full.maxBytes} bytes, avg ${(full.bytes / full.snaps).toFixed(0)}`);
   assert.ok(perMin < 20, "the shift costs far less than 100 ms per simulated minute");
   assert.ok(full.maxBytes < 700, "the game state on the wire stays small");
