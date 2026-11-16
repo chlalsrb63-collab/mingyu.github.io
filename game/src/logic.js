@@ -9142,6 +9142,19 @@ function bagApply(S, p, a) {
   p.dirty = true;
   saveSoon(p);
 }
+
+/**
+ * 잡템 일괄 판매: the bag's slots holding gear nobody keeps — rarity up to `q` (0 일반, 1 마법), never enhanced, cursed-or-not,
+ * with no rune in a socket. Indexes, highest first (so they can be spliced in order).
+ */
+function junkSlots(ch, q) {
+  const out = [];
+  for (let i = ch.inv.length - 1; i >= 0; i--) {
+    const g = ch.inv[i];
+    if (isGear(g.id) && g.id !== "charm" && (g.q | 0) <= q && !(g.enh > 0) && !g.lg && !(g.ru || []).some(Boolean)) out.push(i);
+  }
+  return out;
+}
 // ───────────────────────────── 직업 자유: job reset, level reset, skill loadout ─────────────────────────────
 // docs/design/job-freedom.md (owner decisions). Every job's progress stays on the sheet (ch.jobs; ch.jp is the
 // current job's record, the same object), the 전직 교관 resets the job (back to 모험가) or the level (stats back
@@ -20987,6 +21000,12 @@ export function validateAction(S, pid, a) {
         if (n < 1 || n > pouchHas(ch, a.pid)) return bad("잘못된 수량");
         return npcNear(p, "shop") ? OK : bad("상인이 너무 멉니다");
       }
+      // every piece of plain gear at once: { junk: 0 | 1 } (46-bag.js junkSlots)
+      if (a.junk !== undefined) {
+        if (a.junk !== 0 && a.junk !== 1) return bad("잘못된 요청");
+        if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
+        return junkSlots(ch, a.junk).length ? OK : bad("팔 만한 장비가 없습니다");
+      }
       const s = invAt(ch, a.s);
       if (!s) return bad("아이템이 없습니다");
       if (isQuestItem(s.id)) return bad("퀘스트 아이템은 팔 수 없습니다");
@@ -21374,6 +21393,16 @@ export function applyAction(S, pid, a) {
         pouchTake(ch, a.pid, n);
         ch.gold += each * n;
         p.gain.push(["gold", each * n]);
+        p.dirty = true;
+        break;
+      }
+      if (a.junk !== undefined) {
+        let gold = 0, cnt = 0;
+        for (const i of junkSlots(ch, a.junk)) { gold += sellPrice(ch.inv[i]); ch.inv.splice(i, 1); cnt++; }
+        ch.gold += gold;
+        p.gain.push(["gold", gold]);
+        toast(p, `장비 ${cnt}개를 ${gStr(gold)}G에 팔았습니다.`);
+        petCheck(S, p);
         p.dirty = true;
         break;
       }

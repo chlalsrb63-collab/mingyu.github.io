@@ -245,6 +245,16 @@ export function applyAction(S, pid, a) {
         p.dirty = true;
         break;
       }
+      if (a.junk !== undefined) {
+        let gold = 0, cnt = 0;
+        for (const i of junkSlots(ch, a.junk)) { gold += sellPrice(ch.inv[i]); ch.inv.splice(i, 1); cnt++; }
+        ch.gold += gold;
+        p.gain.push(["gold", gold]);
+        toast(p, `장비 ${cnt}개를 ${gStr(gold)}G에 팔았습니다.`);
+        petCheck(S, p);
+        p.dirty = true;
+        break;
+      }
       const s = ch.inv[a.s];
       const each = sellPrice(s);
       ch.gold += each * n;

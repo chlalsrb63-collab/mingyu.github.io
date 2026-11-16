@@ -62,3 +62,16 @@ function bagApply(S, p, a) {
   p.dirty = true;
   saveSoon(p);
 }
+
+/**
+ * 잡템 일괄 판매: the bag's slots holding gear nobody keeps — rarity up to `q` (0 일반, 1 마법), never enhanced, cursed-or-not,
+ * with no rune in a socket. Indexes, highest first (so they can be spliced in order).
+ */
+function junkSlots(ch, q) {
+  const out = [];
+  for (let i = ch.inv.length - 1; i >= 0; i--) {
+    const g = ch.inv[i];
+    if (isGear(g.id) && g.id !== "charm" && (g.q | 0) <= q && !(g.enh > 0) && !g.lg && !(g.ru || []).some(Boolean)) out.push(i);
+  }
+  return out;
+}

@@ -222,3 +222,20 @@ for (const wk of Object.keys(JOB)) {
   JSON.stringify(out);
 }
 console.log("loot ok — kills", killed, "piece types", [...types].join(","));
+
+// 잡템 일괄 판매 (46-bag.js junkSlots): plain pieces go at once, anything worked on stays
+{
+  const L2 = await import("../src/logic.js");
+  const S2 = L2.setup(); S2.now = 1e6;
+  L2.addPlayer(S2, "junk", L2.hero("잡템", { wk: "sword", lvl: 10, migrate: true }));
+  const q = S2.players.junk, c = q.ch, mk = (o) => ({ id: "h_1", q: 0, enh: 0, af: [], sk: 0, ru: [], ...o });
+  c.inv = [mk({}), mk({ q: 1 }), mk({ enh: 2 }), mk({ q: 2 }), mk({ sk: 1, ru: ["ru_ign"] }), { id: "hp_s", n: 3 }];
+  const gold0 = c.gold;
+  L2.applyAction(S2, "junk", { t: "sell", junk: 0 });
+  assert.equal(c.inv.length, 5, "only the one plain, untouched piece is sold at 일반");
+  L2.applyAction(S2, "junk", { t: "sell", junk: 1 });
+  assert.equal(c.inv.length, 4, "then the 마법 one; the enhanced, the 희귀, the socketed and the potions stay");
+  assert.ok(c.gold > gold0, "and gold came in");
+  assert.equal(L2.validateAction(S2, "junk", { t: "sell", junk: 1 }).ok, false, "nothing left (or no merchant near) is refused");
+  assert.equal(L2.validateAction(S2, "junk", { t: "sell", junk: 2 }).ok, false, "희귀 and up are never sold in bulk");
+}

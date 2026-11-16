@@ -2025,3 +2025,7 @@ body[data-lay="full"].playing #w-dex:not(.docked) { height: var(--win-h); }
   .hp-main { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 8px; align-items: start; }
   .hp-nav { position: sticky; top: 0; flex-direction: column; margin: 0; }
 }
+
+/* 잡템 일괄 판매 (win_shop.js) */
+#shop-junk { display: flex; gap: 6px; margin-top: 6px; }
+#shop-junk .btn { flex: 1 1 0; }

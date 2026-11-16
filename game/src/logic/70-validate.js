@@ -389,6 +389,12 @@ export function validateAction(S, pid, a) {
         if (n < 1 || n > pouchHas(ch, a.pid)) return bad("잘못된 수량");
         return npcNear(p, "shop") ? OK : bad("상인이 너무 멉니다");
       }
+      // every piece of plain gear at once: { junk: 0 | 1 } (46-bag.js junkSlots)
+      if (a.junk !== undefined) {
+        if (a.junk !== 0 && a.junk !== 1) return bad("잘못된 요청");
+        if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
+        return junkSlots(ch, a.junk).length ? OK : bad("팔 만한 장비가 없습니다");
+      }
       const s = invAt(ch, a.s);
       if (!s) return bad("아이템이 없습니다");
       if (isQuestItem(s.id)) return bad("퀘스트 아이템은 팔 수 없습니다");
