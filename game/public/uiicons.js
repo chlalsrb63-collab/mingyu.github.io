@@ -45,6 +45,8 @@ const G = {
   cal: ["#.##....##.#", "############", "#oooooooooo#", "############", "#..#..#..#.#", "#..#..#..#.#", "############", "#..#..#oo#.#", "#..#..#oo#.#", "############", "............", "............"],
   trophy: ["############", "#.########.#", "#.########.#", ".#.######.#.", "..########..", "...######...", "....####....", ".....##.....", ".....##.....", "...######...", "..########..", "............"],
   paw: ["...##..##...", "..###..###..", "..###..###..", "#...#..#...#", "##........##", "##..####..##", "...######...", "..########..", "..########..", "...##..##...", "............", "............"],
+  // the 아이템도감 (dex.js): a closed codex, a gem on its cover, a page edge below
+  codex: [".##########.", ".###oooooo#.", ".###oooooo#.", ".###oo##oo#.", ".###o####o#.", ".###o####o#.", ".###oo##oo#.", ".###oooooo#.", ".###oooooo#.", ".##########.", "..#o#o#o#o#.", "...########."],
   stone: ["....####....", "...######...", "..###oo###..", "..##o##o##..", "..##o##o##..", "..###oo###..", "..########..", "..###oo###..", "..########..", ".##########.", "############", "............"],
   swords: ["##........##", "###......###", ".###....###.", "..###..###..", "...######...", "....####....", "....####....", "...######...", ".o###..###o.", "..o#....#o..", ".o.o....o.o.", "o..........o"],
   shieldp: ["............", ".##########.", ".#oooooooo#.", ".#ooo##ooo#.", ".#ooo##ooo#.", ".#o######o#.", ".#o######o#.", "..#oo##oo#..", "..#oo##oo#..", "...#oooo#...", "....#oo#....", ".....##....."],
@@ -89,7 +91,7 @@ const G = {
 G.eq_off = G.sword.map((r) => [...r].reverse().join(""));
 
 /** What each stat, menu button, buff and elite trait is drawn with. */
-export const MENU_ICON = { charm: "gem", inv: "bag", char: "person", skill: "book", quest: "scroll", party: "party", guild: "banner", rank: "crown", help: "help", settings: "gear", sit: "fire", emo: "smile", sound: "note", auto: "auto", daily: "cal", week: "clock", achieve: "trophy", collect: "paw", life: "life", alba: "crate", trophy: "skull", warp: "stone", event: "rift", bank: "bag", map: "map" };
+export const MENU_ICON = { charm: "gem", inv: "bag", char: "person", skill: "book", quest: "scroll", party: "party", guild: "banner", rank: "crown", help: "help", settings: "gear", sit: "fire", emo: "smile", sound: "note", auto: "auto", daily: "cal", week: "clock", achieve: "trophy", collect: "paw", dex: "codex", life: "life", alba: "crate", trophy: "skull", warp: "stone", event: "rift", bank: "bag", map: "map" };
 /** Each class is marked by its weapon. */
 export const CLASS_ICON = { warrior: "sword", rogue: "dagger", lancer: "spear", mage: "staff" };
 /** In the order of `self.buffs`: attack up, speed up, warmth, food, slowed, burning, poisoned — then the scrolls of attack, defence, experience — then a wind shrine's push, then 안락한 휴식 (a rest at home). */

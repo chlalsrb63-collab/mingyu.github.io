@@ -249,6 +249,7 @@ export function setupInput() {
       case "week": toggleWin("week"); break;   // the 주간 수첩
       case "achieve": toggleWin("achieve"); break;
       case "collect": toggleWin("collect"); break;
+      case "dex": toggleWin("dex"); break;   // the 아이템도감 (dex.js)
       case "help": toggleWin("help"); break;
       case "settings": toggleWin("settings"); break;
       case "map": toggleWin("map"); break;

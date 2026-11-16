@@ -17,7 +17,7 @@ const A = [
   ["swap", "무기 바꾸기 (Ⅰ/Ⅱ)", "Tab", "전투"], ["interact", "말 걸기 · 상호작용", "KeyF", "전투"],
   ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => ["slot" + n, `단축칸 ${n}`, "Digit" + n, "단축칸"]),
   ["inv", "가방", "KeyI", "창"], ["char", "캐릭터", "KeyC", "창"], ["skill", "스킬", "KeyK", "창"], ["quest", "의뢰", "KeyL", "창"],
-  ["daily", "일일 의뢰", "KeyU", "창"], ["achieve", "업적 · 칭호", "KeyY", "창"], ["collect", "몬스터 도감", "KeyJ", "창"],
+  ["daily", "일일 의뢰", "KeyU", "창"], ["achieve", "업적 · 칭호", "KeyY", "창"], ["collect", "몬스터 도감", "KeyJ", "창"], ["dex", "아이템도감 (접두사)", "Shift+KeyI", "창"],
   ["life", "생활 기술", "Shift+KeyL", "창"], ["alba", "아르바이트", "Shift+KeyJ", "창"], ["week", "주간 수첩", "Shift+KeyU", "창"], ["charm", "참 보드", "Shift+KeyC", "창"], ["trophy", "보스 전리품", "Shift+KeyT", "창"], ["party", "파티", "KeyP", "창"], ["guild", "길드", "KeyG", "창"], ["rank", "랭킹", "KeyN", "창"],
   ["map", "지도", "KeyM", "창"], ["settings", "설정", "KeyO", "창"], ["help", "도움말", "KeyH", "창"],
   ["sit", "앉기 · 일어서기 (사냥터: 모닥불)", "KeyZ", "기타"], ["emote", "감정표현", "KeyT", "기타"], ["jamB", "연주 (앉은 채)", "KeyB", "기타"], ["jamZ", "건배 (앉은 채)", "Shift+KeyB", "기타"],

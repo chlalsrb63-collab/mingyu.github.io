@@ -300,5 +300,7 @@ export function defs() {
     // 전설 and is named like one (`<legend[lg][0]> <item name>`); rarities differ only by the number of lines (마법 2, 희귀 3, 전설 4 + lg, 세트 2–3,
     // 유니크 4 + lg, stronger) and only an item with an `lg` has a name prefix word.
     ilGap: IL_GAP,
+    // the 아이템도감 (public/dex.js): the keys of `legend` that are live (can drop); the other rows are listed there as 준비 중
+    pfxOn: Object.keys(LEGEND).filter((k) => PFX[k] && PFX[k].on && !PFX[k].off),
   };
 }

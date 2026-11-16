@@ -75,6 +75,7 @@ function checkTables() {
 checkTables();
 for (const [k, d] of Object.entries(OLD_DESC)) assert.equal(X.LEGEND[k][1], d, `${k}: the old tooltip, byte for byte`);
 for (const k of Object.keys(OLD_DESC)) assert.equal(X.PFX[k].on, 1, `${k} is live`);
+assert.deepEqual(D.pfxOn, Object.keys(X.LEGEND).filter((k) => X.PFX[k].on && !X.PFX[k].off), "defs.pfxOn = exactly the live prefix keys (the 아이템도감 lights those)");
 assert.deepEqual(X.PFX_W, { S: 1, M: 2, L: 1 }); assert.equal(X.SLOT_L.ring1, "R"); assert.equal(X.SLOT_L.ring2, "R"); assert.equal(X.SLOT_L.ring, "R");
 
 // ── 2. rolling: a pool by item type, weights S 1 · M 2 · L 1, nothing for the other rarities

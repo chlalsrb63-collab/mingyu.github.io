@@ -30,6 +30,7 @@ import * as Chores from "./chores.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
 import * as Trophies from "./trophies.js";
+import * as Dex from "./dex.js";
 import * as Track from "./track.js";
 import * as Info from "./infocard.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
@@ -283,6 +284,7 @@ export function refreshUi() {
   // K: 무기 · 스킬 or 전직의 길
   draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.jp?.join(), s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey(), G.skTab === "lo" && [Loadout.key(), G.near && G.near.role]], renderSkills);
   draw("trophy", Trophies.key, Trophies.render);   // 보스 전리품 (trophies.js)
+  draw("dex", Dex.key, Dex.render);               // 아이템도감: the prefixes (dex.js)
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near, s.rep], renderShop);
   draw("smith", () => [s.eq, s.enh, s.gold, countItem("stone"), s.pity], renderSmith);
   draw("train", () => [s.xp, s.xpt, s.nx, s.rs, s.sw, s.lvl, s.gold, s.respecCost, s.inv.length,
