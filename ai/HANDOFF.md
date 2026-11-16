@@ -320,3 +320,4 @@ helm utility + phase-2 hooks = `54-prefix-util.js`; extension recipe, hook signa
 `54-prefix-util.js` (8 helm + 8 phase-2, all `on`). Shared edits: `80-simulation.js mobHit` sets `p.hitHow`; `51-prefix.js pfxMiti` reads `p.pc.aura`.
 Known: 추적(trace) +25 % xp is cut to +15 % by the prefix xp cap (tooltip overpromises); 후광(halo) works solo; zone events shake the screen every 0.5 s; new weapons' `lg` have no weapon look
 (only the first 8 powers do, `tests/wardrobe.mjs LOOKS`). Codex W3-A/W2 will touch `itemlevel.mjs`/`wardrobe.mjs` the same way — keep the permissive wardrobe check.
+**W2 ownership (owner 2026-11-16):** the enchant system (scrolls + icons, 지선, window, fee, 추출의 마법망치) is **Codex's** task (a short Claude agent was started and stopped; nothing was built). Spec §3.3/§3.4.
