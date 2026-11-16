@@ -84,3 +84,8 @@ for (const id of ["jungle", "coast", "dunesea", "cloudtemple", "mesa", "inklake"
 console.log("hunt routes: safe arrivals, adjacent bands, starter and late progression, capped arena");
 // the packed dungeons' campfires are quiet ground: no pack is laid on a place to sit (33-maps-zones.js FIRE_QUIET)
 for (const id of ["crypt", "sewer", "abyss"]) for (const [x, y] of fires[id]) assert.equal(maps[id].zone[y * maps[id].w + x], 0, `${id}: the campfire at ${x},${y} is safe ground`);
+// the wide grounds have one more campfire, on safe ground far from the others (FIRE_EXTRA)
+for (const [id, n] of [["dunesea", 4], ["city", 3], ["maple", 3], ["inklake", 3]]) {
+  assert.equal(fires[id].length, n, `${id}: ${n} campfires`);
+  assert.ok(fires[id].some(([x, y]) => maps[id].zone[y * maps[id].w + x] === 0 && maps[id].reach[y * maps[id].w + x] === 1), `${id}: a fire on quiet, reachable ground`);
+}

@@ -160,7 +160,7 @@ JSON.stringify(L.removePlayer(S, PID));
   for (const id of Object.keys(maps)) if (id !== "dunesea") assert.ok(maps[id].w * maps[id].h < W * m.h / 2, `dunesea is far bigger than ${id}`);
   assert.equal(m.stones.length, 5, "five waypoint stones");
   assert.deepEqual(D.waypoints.find((w) => w.id === "dunesea").names, ["입구", "중턱", "안쪽", "오아시스 마을", "흰 모래 해변"]);
-  assert.equal(fires.dunesea.length, 3, "the caravan's camp, the village fire and the plaza's");
+  assert.equal(fires.dunesea.length, 4, "the caravan's camp, the village fire, the plaza's and the far one (33-maps-zones.js FIRE_EXTRA)");
   assert.ok(m.village && fires.dunesea.some(([x, y]) => x >= m.village.x && x < m.village.x + m.village.w && y >= m.village.y && y < m.village.y + m.village.h), "a fire burns in the oasis village");
   assert.ok(m.stones.some((s) => Math.hypot(s.x - m.village.x, s.y - m.village.y) < 24), "a stone stands by the village");
   for (const k of new Set(m.spawns.map((sp) => sp.k))) assert.ok(D.mobs[k].chest || (D.mobs[k].lv >= meta.band[0] && D.mobs[k].lv <= meta.band[1]), `dunesea: ${k} fits the band`);
