@@ -121,6 +121,8 @@ export function update(dt, t) {
       const wp = (G.map.marks || []).find((k) => k.kind === "waypoint"), door = G.map.portals[0];
       const goal = wp ? [wp.x * T + 8, (wp.y + 2) * T + 8] : door ? [door.x * T + 8, door.y * T + 8] : null;
       const route = goal && dist(me.x, me.y, goal[0], goal[1]) > 64 ? pathTo(goal[0], goal[1]) : null;
+      // stop beside a door, never on it: a rift's first door goes home, and a retreat must not walk the hunter out
+      if (route && !wp) route.pop();
       if (route && route.length > 1) { G.path = route; autoSt.homing = true; }
       else { mx = (me.x - threat.x) / (td || 1); my = (me.y - threat.y) / (td || 1); }
       if (t - (autoSt.fleeT || 0) > 10000) { autoSt.fleeT = t; toast(`${G.defs.mobs[threat.k].name} — 너무 강한 상대입니다. 자동사냥이 물러납니다.`); }
