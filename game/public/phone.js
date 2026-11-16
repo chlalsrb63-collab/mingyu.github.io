@@ -279,7 +279,8 @@ export function setup() {
   btn.addEventListener("click", toggle);
   hoverTip(btn, (h) => { h.classList.add("mn-tip"); h.append(el("div", "nm", `스마트폰 (${K("phone")})`)); h.append(el("div", "hint", "메뉴 — 가방 · 스킬 · 퀘스트 같은 앱이 들어 있습니다")); }, true);
   $("#ph-back").addEventListener("click", home);
-  $("#ph-hbtn").addEventListener("click", home);
+  // the round button: out of an app to the home screen; on the home screen already, it puts the phone away (as Esc does)
+  $("#ph-hbtn").addEventListener("click", () => { if (panelWin()) home(); else { close(); Sound.play("close"); } });
   hoverTip($("#ph-hbtn"), (h) => { h.classList.add("mn-tip"); h.append(el("div", "nm", "홈")); h.append(el("div", "hint", "앱을 닫고 앱 목록으로")); }, true);
   Object.assign(phoneHook, { open, close, out: () => out, app: showApp, edge: () => edge });
   // 설정 → 화면 → 메뉴 방식: 스마트폰 / 기존 패널, remembered; the layout pass moves every window (windows.js dockPanel)
