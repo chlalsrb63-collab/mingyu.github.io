@@ -22,6 +22,7 @@ Read only the doc for your task, and in it only your phase's sections (`grep -n 
 | [`balance-2026-11-15.md`](balance-2026-11-15.md) | **applied** — level bands measured (min/level, kills/min, survival, kill times, gear), job spread at T13/T25/T40; applied: tier-47–50 XP onto the curve, 칼날 소용돌이 cuts the 3 nearest; open: target time to 200, late threat (`ATK_EASE`), gear tier 6, ranged kinds | tuning XP, monster numbers, a job or a skill |
 | [`arcs.md`](arcs.md) | **as built** — side-quest story arcs on the P1 engine: A1/A2 피난민 thread (steps, branches, retired quests, NPC lore) | writing or changing an arc; checking quest rewards against audit §3 |
 | [`maps-batch2.md`](maps-batch2.md) | **design only** — six maps from the owner's second set of references: 바람개비 능선 `ridge`, 물결 항구 `harbor` (second town + dock ward), 수련 삼각주 `delta`, 운해 사원 `cloudtemple`, 붉은바위 황금궁 `mesa`, 먹빛 호수 `inklake`; provisional bands, build order in three pairs | building one of those six maps: layout recipe, monster placement per region, new species + tinted fallbacks, art list, doors |
+| [`daily-alba-minigames-2026-11-16.md`](daily-alba-minigames-2026-11-16.md) | **design only** — 6 solo 일일 아르바이트 mini-games (배관 12×12, 파리잡기, 편의점, 택배, 세탁소, 붕어빵), grades C–S, the old 알바 board retired | reworking 알바 / 협동 배관, the 알바 window, life-content tie-ins |
 
 When a phase lands, its implementer adds a short "<phase> as built" section (deviations and contracts only)
 and updates the status column here.
