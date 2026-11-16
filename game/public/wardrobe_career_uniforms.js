@@ -193,8 +193,9 @@ export const CAREER_HAT = {
         b.cr(T - 1.0, W + 4, 1.0, p.fireRedSh);
         b.cr(T,       W + 4, 1.0, p.fireRed);
         // Dark Nomex neck protector drape down nape
-        b.cr(T + 1.0, W + 1, 1.5, p.flapDark);
-        b.cr(T + 2.5, W - 1, 0.5, p.flapSh);
+        // (kept above the nose row so short heads never get it over the muzzle)
+        if (T + 1.0 < A.ny) b.cr(T + 1.0, W + 1, Math.min(1.5, A.ny - T - 1.0), p.flapDark);
+        if (T + 3.0 < A.ny) b.cr(T + 2.5, W - 1, 0.5, p.flapSh);
         // Hi-vis reflective helmet sticker stripes on back
         b.r(A.cx - 2.5, T - 2.0, 1.0, 1.0, p.hiVis);
         b.r(A.cx + 1.5, T - 2.0, 1.0, 1.0, p.hiVis);

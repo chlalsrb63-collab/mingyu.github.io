@@ -30,7 +30,7 @@ for (const id of ids) {
   const table = { hat: HAT, top: TOP, back: BACK, face: FACE }[slot];
   assert.ok(table && table[design], `${id}: no ${slot} design "${design}"`);
   if (slot === "hat") assert.ok(["through", "behind", undefined].includes(HAT[design].ears), `${id}: ears is "through" or "behind"`);
-  if (slot === "top") for (const v of VIEWS) {
+  if (slot === "top" && typeof TOP[design] !== "function") for (const v of VIEWS) {
     const rows = TOP[design][v];
     assert.ok(Array.isArray(rows) && rows.length >= 3 && rows.length <= 4, `${id}: a ${v} template of 3 or 4 rows`);
     for (const r of rows) assert.equal(r.length, 8, `${id}: ${v} rows are 8 wide`);
@@ -147,7 +147,14 @@ for (const [name, lk] of looks) {
 
 const ms = Date.now() - t0;
 if (fails.size) {
-  const lines = [...fails].map(([k, v]) => `  ${k}: ${v.length} (e.g. ${v.slice(0, process.env.WHY ? 12 : 3).join("; ")})`);
+  const lines = [...fails].map(([k, v]) => `  ${k}: ${v.length} (e.g. ${v.slice(0, process.env.WHY ? 400 : 3).join("; ")})`);
   assert.fail(`cosmetic art problems:\n${lines.join("\n")}`);
 }
 console.log(`cosmetics: ${ids.length} items × ${looks.length} looks × 3 views × 6 frames = ${frames} frames clean (${(ms / 1000).toFixed(1)} s)`);
+
+// Hanbok and career-uniform sets: eight shop pieces each, new wire codes, art present.
+for (const set of ["hanbok", "career"]) {
+  const pieces = Object.entries(D.cos).filter(([, c]) => c.set === set);
+  assert.equal(pieces.length, 8, `${set}: eight pieces`);
+  assert.ok(pieces.every(([id, c]) => c.n > 182 && c.src === "shop" && WR.ART[id]?.[0] === c.slot && D.cosN[c.n] === id), `${set}: codes, shop and assets`);
+}

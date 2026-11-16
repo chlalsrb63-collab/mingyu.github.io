@@ -31,6 +31,9 @@
  *     twice — the motif never flickers. Capes and wings move with the walk.
  */
 
+import { HANBOK_HAT, HANBOK_TOP, HANBOK_ART } from "./wardrobe_hanbok_sets.js";
+import { CAREER_HAT, CAREER_TOP, CAREER_ART } from "./wardrobe_career_uniforms.js";
+
 /** species.js, when sprites.js hands it over (`useSpecies`): it knows where each head is. */
 let SPC = null;
 export function useSpecies(mod) { SPC = mod; }
@@ -1066,6 +1069,7 @@ const APPRENTICE = {
 const topPal = (t, p) => ({ c: p.c, s: sh(p.c), d: sh(p.c, 0.45), l: li(p.c, 0.3), b: p.b || p.c, B: sh(p.b || p.c), w: WHITE, y: GOLD, r: "#e04a4a", k: INK, ...(t.pal ? t.pal(p) : {}) });
 /** Draw a top template on the body of this frame. */
 function wearTop(t) {
+  if (typeof t === "function") return t; // set modules draw their own top
   return (b, A, p) => {
     const rows = t[A.view] || t.front, pal = topPal(t, p);
     const n = A.foot - A.bt, [T, M, B, F] = rows;
@@ -2040,6 +2044,10 @@ export const ART = {
   ws_whalebone: ["wskin", "whalebone", {}],
   ws_star_candy: ["wskin", "starCandy", {}],
 };
+// Set modules (hanbok, career uniforms) merge into the same tables.
+Object.assign(HAT, HANBOK_HAT, CAREER_HAT);
+Object.assign(TOP, HANBOK_TOP, CAREER_TOP);
+Object.assign(ART, HANBOK_ART, CAREER_ART);
 /** The cosmetic slots, in the order the wire sends them. */
 export const SLOTS = ["hat", "top", "back", "face", "wskin"];
 /** A weapon skin id's motif for weapons.js, or "". */
@@ -2086,7 +2094,7 @@ export function dress(base, o, view, f, highBase = null) {
   if (bkFn && !A.back) coat(bk, bkFn, { sep: false });
   g.drawImage(artBase, 0, 0);
   // 2. the top, inked only where it sticks out
-  if (tp && TOP[tp[1]]) { const tl = topPal(TOP[tp[1]], tp[2]); coat(tp, wearTop(TOP[tp[1]]), { ink: "out", sepOnly: [tl.c, tl.l] }); }
+  if (tp && TOP[tp[1]]) { const fnTop = typeof TOP[tp[1]] === "function", tl = fnTop ? {} : topPal(TOP[tp[1]], tp[2]); coat(tp, wearTop(TOP[tp[1]]), { ink: "out", sepOnly: fnTop ? null : [tl.c, tl.l] }); }
   // 3. from behind, the back piece covers the body but stays under the head
   if (bkFn && A.back) coat(bk, bkFn, { keep: (x, y) => y >= A.bt * scale || !bd[pixel(x, y) + 3] });
   // 4. a cape's clasp, a pack's straps in front of the body
