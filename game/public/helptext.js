@@ -12,6 +12,7 @@ import { SOFT, CAP } from "./statwin.js";
 const pct = (x) => Math.round(x * 100);
 const won = (n) => n.toLocaleString("ko-KR");
 const min = (ms) => Math.round(ms / 60000);
+const fairDays = (f) => f.days.map((n) => "일월화수목금토"[n] + "요일").join("·");
 
 export function topics(d) {
   const jobs = Object.values(d.jobs).filter((j) => j.kind !== "none");
@@ -189,7 +190,8 @@ export function topics(d) {
     ] },
     { id: "fair", name: "장날과 계절", secs: [
       { h: "버드나무 장날", l: [
-        `매주 **일요일 ${fair.open}~${fair.close}시**(한국 시간)에 ${mapName(fair.map)}에서 장날이 서요.`,
+        `매주 **${fairDays(fair)} 저녁 ${fair.open}~${fair.close}시**(한국 시간, 딱 ${fair.close - fair.open}시간)에 ${mapName(fair.map)}에서 장날이 서요. 열리기 10분 전에 알림이 와요.`,
+        `장날에는 광장에 **떠돌이 상인**들이 모여요: 전설 장비 · 인챈트 스크롤 · 룬 · 의상 · 요리 · 염료. 한정 상품이라 비싸고, **상품마다 한 사람당 한 번만** 살 수 있어요. 시간이 끝나면 상인들은 떠나요.`,
         `알바 게시판에 장날 일감이 열리고, 마을에서 요리 미니게임 점수가 ${fair.pan.map((p) => p[0]).join("점 · ")}점을 넘기면 대회 보상이 나와요. 보상은 골드 대신 **장날 토큰**이고, 하루 최대 ${fair.cap}개예요.`,
         "**장꾼 다래**의 좌판에서 토큰으로 계절 외형(모자 · 상의 · 등 · 무기 외형)을 살 수 있어요.",
         `계절은 ${fair.season.join(" · ")} 순으로 서버 시계에 맞춰 바뀌고, 좌판에는 지금 계절의 외형만 나와요.`] },
