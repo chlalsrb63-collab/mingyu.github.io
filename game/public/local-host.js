@@ -8,4 +8,4 @@ export function localHost(host) {
 }
 
 /** Paths served by the local recording route, in URL-encoded form. */
-export const LOCAL_BGM_PATH = /^\/__local-bgm\/((?:(?:inside|arbeit)\/)?[a-z0-9][a-z0-9_.-]*\.mp3|17\.%20aircraft\.mp3)$/i;
+export const LOCAL_BGM_PATH = /^\/__local-bgm\/((?:(?:inside|arbeit)\/)?[a-z0-9][a-z0-9_.-]*\.mp3|17\.%20aircraft\.mp3|18\.dawn%20sea\.mp3)$/i;

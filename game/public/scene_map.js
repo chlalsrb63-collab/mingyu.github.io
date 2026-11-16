@@ -27,6 +27,9 @@ export let map = null, ground = null, statics = [], npcs = [];
 export function setMap(m) { map = m; }
 
 export let theme = "meadow", waterTiles = [], smokers = [];
+const WATER_CELL = 128;
+const waterBins = new Map();
+const waterKey = (x, y) => y * 65536 + x;
 /** The fires that always burn on this map, on screen, with their stumps (camp.js art; sky.js fireflies). */
 export let camps = [];
 /** Level art from decor.js: falling water, a layer that breathes, little emitters, lantern strings, critters, signs. */
@@ -190,7 +193,7 @@ export function loadMap(m) {
   lt.push(performance.now());
   const S = scenery(), D = DC.sprites(), lazyWalls = IT.ready && !!ground.chunked;
   lt.push(performance.now());
-  statics = []; waterTiles = []; smokers = []; signs = []; lights = [];
+  statics = []; waterTiles = []; waterBins.clear(); smokers = []; signs = []; lights = [];
   // landmarks that stand on one solid tile (the spirit tree, the rift obelisk): nothing else is drawn there
   const spiritAt = new Set(m.big.filter((b) => b.t === "spirit" || b.t === "obelisk").map((b) => b.x + "," + b.y));
   roomL = { glows: [], wins: [], motes: [] };
@@ -224,7 +227,11 @@ export function loadMap(m) {
     if (m.g[y][x] === "w") {
       const sh = (dx, dy) => { const r = m.g[y + dy], ch = r && r[x + dx]; return ch !== undefined && ch !== "w" && ch !== "b" ? 1 : 0; };
       const [X, Y] = tI(x, y);
-      waterTiles.push({ X, Y, x: x * T, y: y * T, h: hash(x, y, 5), n: sh(0, -1), s: sh(0, 1), w: sh(-1, 0), e: sh(1, 0) });
+      const tile = { X, Y, x: x * T, y: y * T, h: hash(x, y, 5), n: sh(0, -1), s: sh(0, 1), w: sh(-1, 0), e: sh(1, 0) };
+      waterTiles.push(tile);
+      const key = waterKey(Math.floor(X / WATER_CELL), Math.floor(Y / WATER_CELL));
+      const bin = waterBins.get(key);
+      if (bin) bin.push(tile); else waterBins.set(key, [tile]);
     }
     const ch = m.o[y][x], key = x + "," + y;
     // a landmark stands where it stands: nothing else is drawn on the tiles it covers
@@ -373,7 +380,8 @@ export function loadMap(m) {
     if (m.safe) {
       const [BX, BY] = iso(c.x + 23, c.y + 29);
       statics.push({ sp: Camp.bedroll(), dx: Math.round(BX - 13), dy: Math.round(BY - 8), x: BX, y: BY, d: BY - 4, glow: null, glint: -1 });
-      statics.push({ sp: Camp.tripod(0), sp1: Camp.tripod(1), dx: Math.round(X - 17), dy: Math.round(Y - 31), x: X, y: Y, d: Y + 0.5, glow: null, glint: -1, pot: true });
+      const [PX, PY] = m.id === "sunset_beach" ? iso(c.x + 12, c.y - 23) : [X, Y];
+      statics.push({ sp: Camp.tripod(0), sp1: Camp.tripod(1), dx: Math.round(PX - 17), dy: Math.round(PY - 31), x: PX, y: PY, d: PY + 0.5, glow: null, glint: -1, pot: true });
     }
     return { x: X, y: Y, wx: c.x, wy: c.y, seats: c.seats, pot: !!m.safe };
   });
@@ -480,11 +488,21 @@ export function drawAmbient(dt, t, ox, oy) {
   g.globalAlpha = 1;
 }
 /** Water never sits still: glints slide across it and foam breathes along the shore. (Iso pixels.) */
+function* visibleWater(ox, oy) {
+  const left = ox - 20, right = ox + vw + 20, top = oy - 20, bottom = oy + vh;
+  for (let y = Math.floor(top / WATER_CELL); y <= Math.floor(bottom / WATER_CELL); y++) {
+    for (let x = Math.floor(left / WATER_CELL); x <= Math.floor(right / WATER_CELL); x++) {
+      const bin = waterBins.get(waterKey(x, y));
+      if (!bin) continue;
+      for (const tile of bin) if (tile.X >= left && tile.X <= right && tile.Y >= top && tile.Y <= bottom) yield tile;
+    }
+  }
+}
+
 export function drawWater(t, ox, oy) {
   const beat = Math.floor(t / 520);
   const wet = UG[theme] ? UG[theme].wet : null;
-  for (const w of waterTiles) {
-    if (w.X < ox - 20 || w.X > ox + vw + 20 || w.Y < oy - 20 || w.Y > oy + vh) continue;
+  for (const w of visibleWater(ox, oy)) {
     const ph = (beat + Math.floor(w.h * 8)) % 4, cx = w.X, cy = w.Y + 8;
     g.fillStyle = wet ? wet[2] : "#8accf6";
     g.fillRect(cx - 9 + ph * 3 + Math.floor(w.h * 4), cy - 3, 4, 1);
@@ -500,6 +518,58 @@ export function drawWater(t, ox, oy) {
       if (w.e) dash(cx + 13, w.Y + 9, -1, 1);
       if (w.s) dash(cx - 2, w.Y + 15, -1, -1);
     }
+  }
+}
+
+const SUN_WATER = ["#b97960", "#e9aa74", "#ffe8b1"];
+let sailboat = null;
+function skiff() {
+  if (sailboat) return sailboat;
+  const [cv, cc] = sheet(66, 56);
+  const poly = (color, points) => {
+    cc.fillStyle = color;
+    cc.beginPath();
+    cc.moveTo(points[0], points[1]);
+    for (let i = 2; i < points.length; i += 2) cc.lineTo(points[i], points[i + 1]);
+    cc.closePath(); cc.fill();
+  };
+  poly("#395068", [3,45, 15,42, 57,45, 64,49, 48,52, 12,50]);
+  poly("#3e2b35", [7,38, 58,38, 50,47, 20,49, 13,45]);
+  poly("#ad684e", [13,39, 52,40, 47,44, 22,46, 16,43]);
+  poly("#f5c48a", [10,37, 56,38, 54,40, 13,40]);
+  cc.fillStyle = "#654143";
+  cc.fillRect(34, 4, 2, 35);
+  poly("#423b56", [34,4, 33,36, 10,36, 18,27]);
+  poly("#e9bc9a", [32,8, 31,34, 14,34, 20,26]);
+  poly("#ffddab", [31,11, 28,32, 15,33, 22,23]);
+  poly("#59475a", [37,11, 55,35, 37,36]);
+  poly("#d39688", [38,16, 52,34, 38,34]);
+  cc.fillStyle = "#a94f52";
+  cc.fillRect(36, 5, 9, 2);
+  sailboat = cv;
+  return cv;
+}
+
+/** Warm ripple strokes are clipped to visible ocean tiles, with a moored sailboat in the inlet. */
+export function drawSunsetSea(t, ox, oy) {
+  const camp = camps[0], anchor = camp?.x || 0, y0 = camp?.y || 0;
+  const frame = Math.floor(t / 240);
+  for (const w of visibleWater(ox, oy)) {
+    const distance = Math.abs(w.X - anchor + (w.Y - y0) * 0.21);
+    const width = 35 + Math.min(170, Math.abs(w.Y - y0) * 0.36);
+    if (distance > width || w.h < 0.29) continue;
+    const step = (frame + Math.floor(w.h * 15)) % 5;
+    const shade = distance < width * 0.4 && step > 1 ? 2 : step > 1 ? 1 : 0;
+    g.fillStyle = SUN_WATER[shade];
+    g.globalAlpha = (0.25 + w.h * 0.35) * (1 - distance / width);
+    const length = 4 + Math.floor(w.h * 11);
+    g.fillRect(Math.round(w.X - length / 2 + step - 2), w.Y + 7 + step % 3, length, 1);
+    if (shade === 2) g.fillRect(w.X + 3, w.Y + 10, 3, 1);
+  }
+  g.globalAlpha = 1;
+  const [bx, by] = tI(89.5, 79.5);
+  if (bx >= ox - 48 && bx <= ox + vw + 48 && by >= oy && by <= oy + vh + 56) {
+    g.drawImage(skiff(), Math.round(bx - 32), Math.round(by - 47 + Math.sin(t / 850)));
   }
 }
 

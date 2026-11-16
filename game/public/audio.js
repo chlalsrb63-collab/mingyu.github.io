@@ -550,10 +550,12 @@ export const Sound = {
   ambience(now) {
     const c = this.ctx, sc = this.sc;
     if (!c || !sc) return;
+    const shore = this.mapScore === "sunset_beach";
+    this.loop("surf", shore ? 0.30 : 0, 1200, "lowpass", 0.6);
     const rain = sc.out && (sc.wx === 2) ? 1 : 0, wind = sc.out && sc.wx === 4 ? 1 : sc.out && sc.wx === 3 ? 0.3 : 0;
     this.loop("rain", rain * 0.16, 1400, "lowpass", 0.6);
     this.loop("wind", wind * 0.1, 420, "lowpass", 2);
-    if (!sc.out || this.vol.mute) return;
+    if (shore || !sc.out || this.vol.mute) return;
     if (!this.ambAt) this.ambAt = { bird: 0, cricket: 0, owl: 0 };
     const A = this.ambAt, R = Math.random, wet = sc.wx === 2 || sc.wx === 5;
     // birdsong: a short trill, often at dawn and in the morning, now and then by day
@@ -576,7 +578,7 @@ export const Sound = {
       A.owl = now + 14 + R() * 16;
     }
   },
-  /** A looping filtered noise bed (`rain`, `wind`) faded to `level`. */
+  /** A looping filtered noise bed faded to `level`. */
   loop(name, level, fc, type, q) {
     const c = this.ctx;
     if (!this.loops) this.loops = {};
@@ -589,8 +591,8 @@ export const Sound = {
       L = this.loops[name] = { g, f };
     }
     const t = c.currentTime, lv = this.vol.mute ? 0 : level;
-    // the wind rises and falls
-    const k = name === "wind" ? 0.6 + 0.4 * Math.sin(t / 2.3) : 1;
+    const k = name === "surf" ? 0.24 + 0.76 * Math.max(0, Math.sin(t / 0.92)) ** 2
+      : name === "wind" ? 0.6 + 0.4 * Math.sin(t / 2.3) : 1;
     L.g.gain.setTargetAtTime(lv * k, t, 0.8);
   },
   /** How close a campfire is: 0 none … 1 sitting by it. */
@@ -732,7 +734,7 @@ const SFX = {
       this.tone("triangle", 220 * p, 92 * p, 0.1, 0.064, 0.11);
     } else { // The ordinary hammer has a single short knock.
       if (hit) this.punch(p, crit ? 315 : 245, 105, crit ? 1500 : 1020, strength);
-      this.noise(0.065, 0.065, 710 * p, "bandpass");
+      this.noise(hit ? 0.039 : 0.065, hit ? 0.10 : 0.065, 850 * p, "bandpass", 0, 440 * p);
       if (!hit) this.tone("sine", 86 * p, 64 * p, 0.065, 0.074);
     }
   },
@@ -750,9 +752,19 @@ const SFX = {
     this.noise(fin ? 0.2 : 0.13, fin ? 0.24 : 0.17, 1300 * p, "bandpass", 0.012, 4400 * p);
   },
   release(fin) { SFX.bow_shot.call(this, fin); },
-  arrow_hit() { const p = this.vary(); this.tone("sine", 160 * p, 70 * p, 0.08, 0.2); this.noise(0.035, 0.15, 1200 * p, "lowpass"); this.tone(0.5, 620 * p, 300 * p, 0.03, 0.04); },
+  arrow_hit() {
+    const p = this.vary();
+    this.noise(0.022, 0.20, 2750 * p, "bandpass", 0, 1260 * p);
+    this.tone("triangle", 850 * p, 410 * p, 0.031, 0.09);
+    this.tone("sine", 166 * p, 78 * p, 0.077, 0.16, 0.004);
+  },
   // a staff's missile or a book's orb bursting: a bright glassy ping falling away over a soft fizz (`big`: the orb, a finisher)
-  magic_hit(big) { const p = this.vary(); this.tone("triangle", 1180 * p, 520 * p, 0.1, 0.1); this.tone("sine", 660 * p, (big ? 180 : 300) * p, big ? 0.22 : 0.12, 0.12, 0.01); this.noise(big ? 0.12 : 0.07, 0.08, 2600 * p, "bandpass", 0, 900); },
+  magic_hit(big) {
+    const p = this.vary();
+    this.tone("triangle", 1490 * p, 580 * p, big ? 0.09 : 0.065, 0.11);
+    this.noise(big ? 0.085 : 0.04, big ? 0.14 : 0.10, 3380 * p, "bandpass", 0, 1150 * p);
+    this.tone("sine", (big ? 260 : 430) * p, (big ? 82 : 210) * p, big ? 0.19 : 0.10, 0.17, 0.008);
+  },
   arrow_wall() { const p = this.vary(); this.tone("square", 330 * p, 260 * p, 0.035, 0.06); this.noise(0.05, 0.12, 2400 * p, "bandpass"); this.tone("triangle", 190 * p, 182 * p, 0.14, 0.05, 0.02); this.tone("triangle", 196 * p, 188 * p, 0.1, 0.03, 0.06); },
   magic() { this.tone("sine", 500, 1300, 0.16, 0.14); this.tone("triangle", 750, 1700, 0.14, 0.07, 0.03); },
   boom() { this.noise(0.34, 0.36, 1600, "lowpass", 0, 120); this.tone("square", 150, 40, 0.3, 0.16); },
@@ -770,10 +782,20 @@ const SFX = {
   // 창: the drill of the spiral thrust; the comet's charge (hundred); the thunder dragon and its last stroke
   spiral() { const p = this.vary(); this.noise(0.2, 0.22, 900 * p, "bandpass", 0, 5200 * p); this.tone("square", 220 * p, 880 * p, 0.14, 0.04); this.tone("triangle", 440 * p, 1320 * p, 0.12, 0.04, 0.04); },
   dragon() { this.noise(0.3, 0.26, 3000, "highpass"); this.tone("sawtooth", 110, 220, 0.4, 0.1); this.arp(0.25, [392, 523, 659], 0.06, 0.18, 0.06); },
-  dragon_final() { this.noise(0.4, 0.36, 2400, "lowpass", 0, 90); this.tone("square", 1400, 160, 0.2, 0.1); this.tone("sine", 80, 35, 0.4, 0.3); },
+  dragon_final() {
+    const p = this.vary();
+    this.noise(0.092, 0.28, 5100 * p, "bandpass", 0, 850 * p);
+    this.tone("triangle", 1250 * p, 310 * p, 0.103, 0.12);
+    this.tone("sine", 119 * p, 40 * p, 0.285, 0.27, 0.017);
+  },
   // 스태프: fire (ember, boom), ice (frost), the meteors; resonance filled
   meteor_cast() { this.tone("sawtooth", 70, 140, 0.8, 0.1); this.noise(0.8, 0.14, 300, "bandpass", 0, 1800); this.arp("triangle", [196, 233, 294], 0.1, 0.3, 0.06); },
-  meteor_hit() { const p = this.vary(); this.noise(0.4, 0.34, 1400 * p, "lowpass", 0, 80); this.tone("square", 140 * p, 40 * p, 0.3, 0.14); },
+  meteor_hit() {
+    const p = this.vary();
+    this.noise(0.044, 0.25, 2680 * p, "bandpass", 0, 850 * p);
+    this.tone("sine", 162 * p, 43 * p, 0.23, 0.26, 0.008);
+    this.noise(0.17, 0.14, 920 * p, "lowpass", 0.035, 145 * p);
+  },
   reso_ready() { this.arp("sine", [784, 988, 1175, 1568], 0.04, 0.14, 0.07); this.tone("triangle", 392, 392, 0.3, 0.04); },
   // 마도서: the soul bolt, the vortex and its beats, the phantom beast's bite and its curse, the brand
   soulbolt() { this.tone("sine", 300, 900, 0.22, 0.08); this.tone("triangle", 150, 450, 0.22, 0.05, 0.03); this.noise(0.2, 0.06, 1600, "bandpass", 0, 400); },
@@ -886,10 +908,9 @@ const SFX = {
   hit(wk) {
     const p = this.vary();
     if (wk === "dagger") {
-      this.noise(0.028, 0.21, 2900 * p, "bandpass", 0, 5900 * p);
-      this.tone(0.5, 590 * p, 215 * p, 0.032, 0.11);
-      this.tone("sine", 138 * p, 77 * p, 0.073, 0.17);
-      this.tone("sine", 3420 * p, 3060 * p, 0.042, 0.07, 0.003);
+      this.noise(0.020, 0.22, 4880 * p, "bandpass", 0, 2100 * p);
+      this.tone("triangle", 760 * p, 300 * p, 0.028, 0.11);
+      this.tone("sine", 157 * p, 85 * p, 0.062, 0.17, 0.004);
     } else if (wk === "spear") {
       this.noise(0.031, 0.17, 2850 * p, "highpass");
       this.tone("triangle", 325 * p, 112 * p, 0.052, 0.13);
@@ -898,8 +919,8 @@ const SFX = {
     } else {
       const [d, th, m, cr] = IMPACT[wk] || IMPACT0;
       this.punch(p, d, th, m, 1);
-      this.tone("sine", 64 * p, 40 * p, 0.13, 0.2);
-      this.noise(0.045, 0.15, cr * p, "bandpass");
+      this.tone("sine", 96 * p, 45 * p, 0.088, 0.18, 0.008);
+      this.noise(0.037, 0.16, cr * p, "bandpass", 0, 760 * p);
     }
   },
   graze() {
@@ -908,12 +929,18 @@ const SFX = {
     this.tone("triangle", 520 * p, 290 * p, 0.052, 0.052);
   },
   // a crit: higher, harder and louder — a deeper boom, a sharp snap on top, the glint
-  crit(wk) { const p = this.vary(), [d, th, m, cr] = IMPACT[wk] || IMPACT0; this.punch(p, d * 1.9, th * 1.2, m ? m * 1.15 : 2900, 1.3); this.tone("sine", 58 * p, 32 * p, 0.2, 0.3); this.noise(0.018, 0.32, 6500 * p, "highpass"); this.noise(0.1, 0.22, cr * 0.8 * p, "bandpass"); this.tone("sine", 1400 * p, 1100 * p, 0.08, 0.06, 0.02); },
+  crit(wk) {
+    const p = this.vary(), [drop, thud, metal, crack] = IMPACT[wk] || IMPACT0;
+    this.punch(p, drop * 1.37, thud * 1.07, metal ? metal * 1.14 : 2600, 1.23);
+    this.noise(0.028, 0.21, Math.max(3200, crack * 1.4) * p, "bandpass", 0, 1620 * p);
+    this.tone("sine", 84 * p, 38 * p, 0.13, 0.23, 0.012);
+  },
   finisher(wk) {
     const p = this.vary(), [drop, thud, metal, crack] = IMPACT[wk] || IMPACT0;
     this.punch(p, drop * 0.88, thud * 0.85, metal * 0.74, 1.15);
-    this.noise(0.2, 0.22, crack * 1.3 * p, "lowpass", 0, 200);
-    this.tone("sine", thud * 0.75 * p, 40 * p, 0.25, 0.2);
+    const quick = wk === "dagger" || wk === "bow";
+    this.noise(quick ? 0.046 : 0.11, 0.19, crack * 1.12 * p, "bandpass", 0.006, 380 * p);
+    this.tone("sine", thud * 0.86 * p, (quick ? 62 : 38) * p, quick ? 0.09 : 0.16, 0.18, 0.018);
   },
   hurt() { this.tone("sawtooth", 190, 70, 0.16, 0.17); this.noise(0.08, 0.1, 900, "bandpass"); },
   // ── monsters ──

@@ -75,6 +75,8 @@ const slotOf = (k, id) => P(k).ch.inv.findIndex((s) => s.id === id);
   a.gold = 1000; b.gold = 200;
   a.inv.push(X.plain("w_warrior_2"));
   a.inv.push({ id: "stone", n: 7 });
+  a.inv.push({ id: "ru_cutamber", n: 3, il: 80 });
+  b.inv.push({ id: "ru_cutamber", n: 1, il: 1 });
   const sword = a.inv.find((s) => s.id === "w_warrior_2");
   sword.enh = 4;
   openTrade();
@@ -91,6 +93,7 @@ const slotOf = (k, id) => P(k).ch.inv.findIndex((s) => s.id === id);
   ok("a", { t: "sx", a: "put", s: slotOf("a", "w_warrior_2"), n: 1 });
   assert.match(err("a", { t: "sx", a: "put", s: slotOf("a", "w_warrior_2"), n: 1 }), /이미 올린/);
   ok("a", { t: "sx", a: "put", s: slotOf("a", "stone"), n: 3 });
+  ok("a", { t: "sx", a: "put", s: slotOf("a", "ru_cutamber"), n: 2 });
   ok("a", { t: "sx", a: "gold", n: 500 });
   ok("b", { t: "sx", a: "put", s: slotOf("b", "hp_s"), n: 2 });
   // b sees a's offer (the slot itself, for its tooltip) but a's bag positions only go to a
@@ -98,8 +101,9 @@ const slotOf = (k, id) => P(k).ch.inv.findIndex((s) => s.id === id);
   assert.equal(vb.t.n, "가람");
   assert.equal(vb.t.o[0][0].id, "w_warrior_2"); assert.equal(vb.t.o[0][0].enh, 4);
   assert.deepEqual(vb.t.o[1], [{ id: "stone", n: 7 }, 3]);
+  assert.deepEqual(vb.t.o[2], [{ id: "ru_cutamber", n: 3, il: 80 }, 2]);
   assert.equal(vb.t.og, 500);
-  assert.deepEqual(va.t.m, [[slotOf("a", "w_warrior_2"), 1], [slotOf("a", "stone"), 3]]);
+  assert.deepEqual(va.t.m, [[slotOf("a", "w_warrior_2"), 1], [slotOf("a", "stone"), 3], [slotOf("a", "ru_cutamber"), 2]]);
   // sent only when it changes
   assert.equal(view("a").sx, undefined);
   // 교환 needs both locks; a change unlocks both
@@ -117,6 +121,8 @@ const slotOf = (k, id) => P(k).ch.inv.findIndex((s) => s.id === id);
   assert.ok(b.inv.includes(sword), "the very sword (its enhancement too) changed hands");
   assert.ok(!a.inv.includes(sword));
   assert.equal(X.countItem(a, "stone"), 4); assert.equal(X.countItem(b, "stone"), 3);
+  assert.deepEqual(a.inv[slotOf("a", "ru_cutamber")], { id: "ru_cutamber", n: 1, il: 80 });
+  assert.deepEqual(b.inv.filter((s) => s.id === "ru_cutamber"), [{ id: "ru_cutamber", n: 1, il: 1 }, { id: "ru_cutamber", n: 2, il: 80 }]);
   assert.equal(X.countItem(a, "hp_s"), 7); assert.equal(X.countItem(b, "hp_s"), 3);
   assert.ok(P("a").save && P("b").save, "both saved soon");
   tick();

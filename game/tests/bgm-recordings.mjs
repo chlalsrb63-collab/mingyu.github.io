@@ -99,6 +99,8 @@ try {
   Sound.bgm("airship", "oasis", "mist");
   const airship = await check("17. aircraft.mp3", "airship");
   assert.equal(airship.source.loopEnd, 200, "the airship plays the full decoded recording");
+  Sound.bgm("sunset_beach", "coast", "coast");
+  await check("18.dawn sea.mp3", "sunset_beach");
   Sound.localScores = {};
   Sound.bgm("without_recordings", "without_recordings");
   for (let i = 0; i < 12 && live(); i++) await nextTurn();

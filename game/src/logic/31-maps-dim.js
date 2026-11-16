@@ -46,7 +46,7 @@ const DIM = {
   reviveMs: 25000,
   // the final boss's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then (what the old
   // ladder's tier 3 paid); a failed run's consolation is `failGold` × lv a floor reached
-  reward: { gold: 67, xp: 0.054, gearQ: 3, stone: 2, rune: 0.64 }, dailyFull: 3, failGold: 30, lootGold: 0.5,
+  reward: { gold: 67, xp: 0.054, gearQ: 3, stone: 2, rune: 0.25 }, dailyFull: 3, failGold: 30, lootGold: 0.5,
   // loot tables read a tier (LOOT_X): the old ladder's tier 15 keeps the economy review's supply of skill stones and uncurse scrolls
   lootTier: 15,
   // the week's first full clear (Monday 06:00 KST): `gold` × lv, `stone`, `unc` 저주 해제 주문서 and a job reset scroll

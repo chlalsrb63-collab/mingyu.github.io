@@ -136,7 +136,7 @@ export function applyAction(S, pid, a) {
       const slot = ch.inv[a.s];
       if (--slot.n === 0) ch.inv.splice(a.s, 1);
       while (g.ru.length < g.sk) g.ru.push(null);
-      g.ru[a.i] = slot.id;
+      g.ru[a.i] = [slot.id, runeIl(slot.il)];
       const name = RUNES[slot.id].name;
       toast(p, `[${name}]${pp(name, "을를")} 끼웠습니다.`);
       S.maps[p.map].ev.push(["e", p.eid, 1]);
@@ -178,7 +178,7 @@ export function applyAction(S, pid, a) {
         if (isGear(sl.id)) { ch.inv.splice(a.s, 1); wh.items.push(sl); }
         else {
           const n = a.n | 0;
-          stackInto(wh.items, sl.id, n);
+          stackInto(wh.items, sl.id, n, sl.il);
           sl.n -= n;
           if (sl.n <= 0) ch.inv.splice(a.s, 1);
         }
@@ -188,7 +188,7 @@ export function applyAction(S, pid, a) {
         if (isGear(sl.id)) { wh.items.splice(a.s, 1); ch.inv.push(sl); }
         else {
           const n = a.n | 0;
-          addItem(ch, sl.id, n);
+          addItem(ch, sl.id, n, sl.il);
           sl.n -= n;
           if (sl.n <= 0) wh.items.splice(a.s, 1);
         }

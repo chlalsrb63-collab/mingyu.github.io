@@ -329,17 +329,19 @@ const skyHud = { at: 0, key: "" };
 function skyTick(t) {
   if (t - skyHud.at < 500 || !G.map) return;
   skyHud.at = t;
-  const out = Sky.weather() >= 0 && !G.map.indoor, box = $("#sky");
+  const beach = G.map.id === Sky.SUNSET_BEACH;
+  const out = beach || (Sky.weather() >= 0 && !G.map.indoor), box = $("#sky");
   if (box.hidden === out) box.hidden = !out;
   // the stumps' songs: shown while you sit
   const jam = $("#jam");
   if (jam.hidden === !!G.me.sit) jam.hidden = !G.me.sit;
   if (!out) return;
-  const h = Sky.hour(), text = [Sky.clockText(h), Sky.weatherName(), Sky.seasonName(), Sky.fairOn() ? "장날" : ""].filter(Boolean).join(" · ");
+  const h = beach ? Sky.SUNSET_HOUR : Sky.hour(), wx = beach ? 0 : Sky.weather();
+  const text = [beach ? "노을" : Sky.clockText(h), Sky.weatherName(wx), Sky.seasonName(), Sky.fairOn() ? "장날" : ""].filter(Boolean).join(" · ");
   if (text === skyHud.key) return;
   skyHud.key = text;
   $("#sky-t").textContent = text;
-  Sky.drawIcon($("#sky-ic"), h);
+  Sky.drawIcon($("#sky-ic"), h, wx);
 }
 /** The dash slot (Space): its cooldown swept and counted down like a skill's (me[11] → G.dashEnd, net.js). */
 function dashTick(t) {

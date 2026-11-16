@@ -80,6 +80,9 @@ const KEYS = [
 ].map(([h, m, a, k]) => [h, rgb(m), rgb(a), k]);
 /** What each weather does to the light: a colour mixed into the grade, and how much. */
 const WX_TINT = [null, ["#a8aebc", 0.22], ["#7e8698", 0.34], ["#c4cad8", 0.3], null, ["#d6e0f0", 0.12]];
+const CLEAR_WEATHER = [1, 0, 0, 0, 0, 0];
+export const SUNSET_BEACH = "sunset_beach";
+export const SUNSET_HOUR = 17.92;
 
 /** The light right now: { mul, haze, hazeA, night }, eased between weathers by `wk` (per-weather weights). */
 export function light(h, wk) {
@@ -145,17 +148,18 @@ function easeWeather(dt, outdoor) {
  * pool, then screen a thin haze (dawn, sunset) and bloom the brightest sources.
  * `lights`: [{ x, y, r, col, k, flat }] in screen pixels. Returns the light used.
  */
-export function grade(g, vw, vh, dt, t, lights, clouds) {
-  const h = hour(), L = light(h, wk), n = L.night;
+export function grade(g, vw, vh, dt, t, lights, clouds, fixedHour) {
+  const weights = fixedHour === undefined ? wk : CLEAR_WEATHER;
+  const L = light(fixedHour ?? hour(), weights), n = L.night;
   if (!lm) { lm = document.createElement("canvas"); lx = lm.getContext("2d"); }
   if (lm.width !== vw || lm.height !== vh) { lm.width = vw; lm.height = vh; }
   lx.globalCompositeOperation = "source-over"; lx.globalAlpha = 1;
   lx.fillStyle = css(L.mul); lx.fillRect(0, 0, vw, vh);
   // cloud shadows drift across the ground as darker patches of light
   if (clouds) clouds(lx, L);
-  if (n > 0.02 || wk[2] > 0.3) {
+  if (n > 0.02 || weights[2] > 0.3) {
     lx.globalCompositeOperation = "lighter";
-    const lit = Math.max(n, wk[2] * 0.35);
+    const lit = Math.max(n, weights[2] * 0.35);
     for (const s of lights) {
       if (s.x < -s.r || s.y < -s.r || s.x > vw + s.r || s.y > vh + s.r) continue;
       const sp = pool(s.col, s.r, s.flat || 2);

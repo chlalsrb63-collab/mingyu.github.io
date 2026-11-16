@@ -344,7 +344,7 @@ function recipeWhy(ch, r) {
 const runeCount = (ch) => ch.inv.reduce((n, s) => n + (RUNES[s.id] ? s.n : 0), 0);
 /** How many of an input the character has (bag + pouch; "rune*" = every rune). */
 const haveOf = (ch, id) => (id === "rune*" ? runeCount(ch) : countItem(ch, id));
-/** Take `n` runes, the most plentiful kind first; returns the ids taken. */
+/** Take `n` runes, the most plentiful kind first; keep levels for refunds and rerolls. */
 function takeRunes(ch, n) {
   const out = [];
   for (let i = 0; i < n; i++) {
@@ -353,8 +353,9 @@ function takeRunes(ch, n) {
     for (const s of ch.inv) if (RUNES[s.id]) stacks[s.id] = (stacks[s.id] || 0) + s.n;
     for (const id of RUNE_KEYS) { const c = stacks[id] || 0; if (c > bn) { bn = c; best = id; } }
     if (!best) break;
-    takeItem(ch, best, 1);
-    out.push(best);
+    const i = ch.inv.findLastIndex((s) => s.id === best), slot = ch.inv[i];
+    out.push([best, runeIl(slot.il)]);
+    if (--slot.n === 0) ch.inv.splice(i, 1);
   }
   return out;
 }
@@ -393,7 +394,7 @@ function craftOnce(S, p, r, s) {
     r.in.forEach(([id, n], i) => {
       const back = Math.floor(n / 2);
       if (!back) return;
-      if (id === "rune*") for (const ru of taken[i].slice(0, back)) addItem(ch, ru, 1);
+      if (id === "rune*") for (const [ru, il] of taken[i].slice(0, back)) addItem(ch, ru, 1, il);
       else addItem(ch, id, back);
     });
     gainLife(S, p, r.sk, Math.max(1, Math.round(xp * CRAFT.failXp)));
@@ -410,8 +411,10 @@ function craftOnce(S, p, r, s) {
     p.gain.push(["item", g.id, 1, g.q]);
   } else {
     const n = r.out[1] * (roll.great ? 2 : 1);
-    if (r.out[0] === "rune*") for (let i = 0; i < n; i++) gainRune(S, p, roll.great ? 1 : 0);
-    else if (addItem(ch, r.out[0], n)) p.gain.push(["item", r.out[0], n, 0]);
+    if (r.out[0] === "rune*") {
+      const il = Math.max(1, ...taken[r.in.findIndex(([id]) => id === "rune*")].map(([, level]) => level));
+      for (let i = 0; i < n; i++) gainRune(S, p, roll.great ? 1 : 0, il);
+    } else if (addItem(ch, r.out[0], n)) p.gain.push(["item", r.out[0], n, 0]);
   }
   gainLife(S, p, r.sk, xp);
   sqMade(S, p, r.out[0], r.gear || r.out[0] === "rune*" ? 1 : r.out[1] * (roll.great ? 2 : 1));

@@ -20,7 +20,7 @@ import * as Gather from "./gather.js";
 import { act } from "./net.js";
 import { fireNear } from "./actions.js";
 import { isOpen, touch, hideTip, closeDrawer, openWin, hoverTip, ask, chatLink } from "./windows.js";
-import { invOrder, itemSlot, QS_USE, useSlot, openSocketSmith, isGear, emptyEquipSlot, reqLv, sellPrice, itemTip, itemName, itemRarity, SLOT_NAME, SLOT_GLYPH, runeSetStatus, runeSetMax } from "./items.js";
+import { invOrder, itemSlot, QS_USE, useSlot, openSocketSmith, isGear, emptyEquipSlot, reqLv, sellPrice, itemTip, itemName, itemRarity, SLOT_NAME, SLOT_GLYPH, runeSetStatus, runeSetMax, runeSocketId, runeSocketLevel } from "./items.js";
 import { refreshUi, section, resetDoll, drawPortrait } from "./hud.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
@@ -146,7 +146,8 @@ export function renderInv(s) {
   }
   if (d.type === "rune") {
     const targets = [];
-    for (const k of G.defs.slots) {
+    const need = reqLv(entry), allowed = s.lvl >= need;
+    for (const k of allowed ? G.defs.slots : []) {
       const g = s.eq[k];
       for (let i = 0; g && i < g.sk; i++) {
         const cur = g.ru && g.ru[i];
@@ -154,14 +155,17 @@ export function renderInv(s) {
       }
     }
     targets.sort((a, b) => Number(!!a.cur) - Number(!!b.cur));
-    det.append(el("div", "ds", targets.length ? "룬을 끼울 소켓을 고르세요." : "소켓이 열린 장비를 장착하면 룬을 끼울 수 있습니다."));
+    const hint = targets.length ? "룬을 끼울 소켓을 고르세요." : "소켓이 열린 장비를 장착하면 룬을 끼울 수 있습니다.";
+    det.append(el("div", "ds", allowed ? hint : `레벨 ${need}부터 이 룬을 사용할 수 있습니다.`));
     for (const { k, i, cur } of targets) {
       const target = `${SLOT_NAME[k]} ${i + 1}번`;
       add(`${target} · ${cur ? "교체" : "빈 소켓"}`, () => {
         const s = G.sel;
         if (!cur) { act({ t: "rune", s, k, i }); return; }
-        ask(`${target}의 「${G.defs.runes[cur].name}」이 사라집니다.\n「${itemName(entry)}」으로 교체할까요?`, "교체", () => {
-          if (G.self?.inv[s]?.id === entry.id && G.self?.eq[k]?.ru?.[i] === cur) act({ t: "rune", s, k, i, r: 1 });
+        ask(`${target}의 「${G.defs.runes[runeSocketId(cur)].name}」이 사라집니다.\n「${itemName(entry)}」으로 교체할까요?`, "교체", () => {
+          const next = G.self?.inv[s], current = G.self?.eq[k]?.ru?.[i];
+          if (next?.id === entry.id && next.il === entry.il && runeSocketId(current) === runeSocketId(cur) &&
+              runeSocketLevel(current) === runeSocketLevel(cur)) act({ t: "rune", s, k, i, r: 1 });
         });
       }, false, !cur);
     }

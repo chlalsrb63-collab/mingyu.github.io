@@ -218,12 +218,12 @@ export function mapStats() {
 
 // Fixed positions for the main world map at 1×. Editor maps fall back to layout by route.
 const WORLD_MAP_POS = {
-  willow: [170, 233], town: [327, 205], meadow: [348, 93], forest: [548, 124], crypt: [723, 133],
+  willow: [170, 233], sunset_beach: [248, 302], town: [327, 205], meadow: [348, 93], forest: [548, 124], crypt: [723, 133],
   city: [367, 334], sewer: [552, 320], cave: [710, 302], abyss: [928, 335], maple: [824, 229],
   jungle: [203, 417], coast: [370, 528], oasis: [622, 470], dunesea: [838, 516], frostkeep: [915, 91],
   airship: [622, 389], mesa: [764, 386], inklake: [850, 300],
 };
-const WORLD_MAP_ART = { willow: "willow", frostkeep: "frostkeep", dunesea: "dunesea", airship: "airship" };
+const WORLD_MAP_ART = { willow: "willow", sunset_beach: "coast", frostkeep: "frostkeep", dunesea: "dunesea", airship: "airship" };
 
 function worldMapDefs() {
   // Only custom labels need coordinates to disambiguate the destination. Keep generated terrain lazy.
@@ -289,7 +289,7 @@ export function defs() {
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
-    affix, runes: RUNES, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
+    affix, runes: RUNES, runeScale: RUNE_SCALE, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
     elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
     elementPrefixes: ELEMENT_PREFIX_AFFIX,
     rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,

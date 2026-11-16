@@ -233,7 +233,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.equal(ch.wh.items[0].q, 5); assert.equal(ch.wh.items[0].il, 88); assert.equal(ch.wh.items[0].lg, uq.lg, "the warehouse keeps a unique");
   assert.equal(ch.wh.items[1].set, undefined); assert.equal(ch.wh.items[1].il, 111);
   assert.equal(ch.wh.items[1].q, 3); assert.ok(X.LEGEND[ch.wh.items[1].lg]);
-  assert.equal(ch.v, 27, "the set-rune migration upgraded the sheet");
+  assert.equal(ch.v, 28, "the rune migration upgraded the sheet");
   // a second pass changes nothing
   assert.equal(JSON.stringify(X.migrate(JSON.parse(JSON.stringify(ch)))), JSON.stringify(ch));
   // and it plays: the old sheet joins, wears and sorts
@@ -287,7 +287,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
     ch.inv = [{ id: "ru_ign", n: 1 }, { id: "whet", n: 30 }, { id: "stone", n: 99 }];
     const rr = act("a@s1", { t: "rune", s: 0, k: "weapon", i: 0 });
     assert.ok(rr.ok, rr.error);
-    assert.equal(g.ru[0], "ru_ign", "a rune sits in a unique's socket");
+    assert.deepEqual(g.ru[0], ["ru_ign", 1], "a rune keeps its item level in a unique's socket");
     const lg0 = g.lg, lines0 = JSON.stringify(g.af);
     for (let i = 0; i < 25; i++) {
       const r = act("a@s1", { t: "use", id: "whet", k: "weapon" });

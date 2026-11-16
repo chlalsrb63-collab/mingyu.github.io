@@ -59,7 +59,8 @@ assert.equal(drill("weapon").ok, false, "the smith must be in reach");
 assert.equal(act({ t: "use", id: D.sockItem, k: "weapon" }).ok, false, "the inventory route requires the smith too");
 assert.equal(ch.gold, before);
 assert.equal(stones(), 4);
-const smith = L.viewFor(S, pid).map.npcs.find((n) => n.role === "smith");
+const townNpcs = L.viewFor(S, pid).map.npcs;
+const smith = townNpcs.find((n) => n.role === "smith");
 p.x = smith.x * T + 8; p.y = smith.y * T + 20;
 assert.equal(drill("__proto__").ok, false);
 p.dead = true;
@@ -92,26 +93,41 @@ assert.equal(drill("ring2").ok, false, "gold alone is insufficient");
 assert.equal(ch.eq.ring2.sk, 0);
 assert.equal(ch.gold, before);
 
+assert.equal(ch.lvl, 1);
+const amber = "ru_cutamber";
+const emptyAttack = gearBonus(ch).atk;
+ch.inv = [1, 11, 12].map((il) => ({ id: amber, n: 1, il }));
+assert.equal(act({ t: "rune", s: 2, k: "weapon", i: 0 }).ok, false, "Lv.1 cannot insert an item-level 12 rune");
+assert.equal(ch.inv[2].n, 1, "rejection preserves the rune");
+assert.equal(act({ t: "rune", s: 0, k: "weapon", i: 0 }).ok, true);
+assert.equal(gearBonus(ch).atk - emptyAttack, 2, "the item-level 1 amber rune grants +2 attack");
+assert.equal(act({ t: "rune", s: 0, k: "weapon", i: 0, r: 1 }).ok, true, "Lv.1 can insert a different level of the same rune at item level 11");
+assert.deepEqual(ch.eq.weapon.ru[0], [amber, 11]);
+assert.ok(gearBonus(ch).atk - emptyAttack > 2, "the higher rune grants more attack");
+ch.eq.weapon.ru[0] = [amber, 12];
+assert.equal(gearBonus(ch).atk, emptyAttack, "a rune already socketed by another character still has a level gate");
+ch.eq.weapon.ru[0] = null;
+
 const twos = Object.keys(D.runeSets).filter((id) => D.runeSets[id].need === 2);
 const four = Object.keys(D.runeSets).find((id) => D.runeSets[id].need === 4);
 const wear = (k, ...runes) => { ch.eq[k] = { ...plain(bases[k]), sk: runes.length, ru: runes.map(runeId) }; };
 const stack = (id) => ch.inv.findIndex((s) => s.id === id);
 const insert = (id, k, i, r) => act({ t: "rune", s: stack(id), k, i, r });
-ch.inv = [{ id: runeId(twos[0]), n: 2 }, { id: runeId(twos[1]), n: 1 }];
+ch.inv = [{ id: runeId(twos[0]), n: 1, il: 1 }, { id: runeId(twos[0]), n: 1, il: 11 }, { id: runeId(twos[1]), n: 1, il: 1 }];
 const beforeRune = gearBonus(ch);
 assert.equal(insert(runeId(twos[0]), "ring1", 1).ok, false, "locked hole");
 assert.equal(insert(runeId(twos[0]), "ring1", 0).ok, true);
 const [stat, value] = D.runes[runeId(twos[0])].af[0];
-assert.equal(gearBonus(ch)[stat], beforeRune[stat] + value);
+assert.equal(gearBonus(ch)[stat], beforeRune[stat] + Math.max(1, Math.round(value * 0.18)));
 assert.deepEqual(gearBonus(ch).runeSets, []);
 assert.equal(insert(runeId(twos[0]), "weapon", 0).ok, true);
 const readSelf = () => { p.dirty = true; return L.viewFor(S, pid).self; };
 assert.deepEqual(readSelf().runeSets, [twos[0]]);
-assert.equal(readSelf().runeCounts[twos[0]], 2);
+assert.equal(readSelf().runeCounts[twos[0]], 2, "two qualifying runes of different levels activate one set");
 assert.equal(insert(runeId(twos[1]), "weapon", 0).ok, false, "occupied socket requires confirmation");
 assert.equal(ch.inv[stack(runeId(twos[1]))].n, 1);
 assert.equal(insert(runeId(twos[1]), "weapon", 0, 1).ok, true);
-assert.equal(ch.eq.weapon.ru[0], runeId(twos[1]));
+assert.deepEqual(ch.eq.weapon.ru[0], [runeId(twos[1]), 1]);
 assert.deepEqual(readSelf().runeSets, [], "breaking the pair removes the power immediately");
 
 wear("weapon", four, four); wear("armor", four, four);
@@ -133,8 +149,9 @@ assert.equal(migrated.eq.armor.id, "veil_a");
 assert.equal(migrated.eq.armor.q, 3);
 assert.equal(migrated.eq.armor.set, undefined);
 assert.deepEqual([migrated.eq.armor.il, migrated.eq.armor.enh, migrated.eq.armor.sk], [104, 6, 2]);
-assert.deepEqual(migrated.eq.armor.ru, ["ru_ign", "ru_acu"]);
-assert.equal(migrated.inv.find((entry) => entry.id === "ru_ign").n, 4, "the third rune returns to the bag");
+assert.deepEqual(migrated.eq.armor.ru, [["ru_ign", 1], ["ru_acu", 1]]);
+assert.deepEqual(migrated.inv.find((entry) => entry.id === "ru_ign"), { id: "ru_ign", n: 4, il: 1 }, "legacy stacks and recovered runes take level 1");
+assert.equal(migrated.v, 28);
 assert.deepEqual(migrate(structuredClone(migrated)), migrated, "loading the upgraded sheet twice is idempotent");
 const fairLegacy = L.newChar("장날기록", []);
 fairLegacy.v = 27; // the fair market and the rune migration both used v27
@@ -148,43 +165,59 @@ full.eq.armor = { ...plain("a_1"), sk: 3, ru: [null, null, "ign"] };
 full.inv = Array.from({ length: full.bagCap }, () => plain("h_1"));
 full.wh.items = Array.from({ length: D.whSlots }, () => plain("g_1"));
 const recovered = migrate(full);
-assert.deepEqual(recovered.inv.at(-1), { id: "ru_ign", n: 1 }, "even full storage preserves the recovered rune");
+assert.deepEqual(recovered.inv.at(-1), { id: "ru_ign", n: 1, il: 1 }, "even full storage preserves the recovered rune");
 assert.equal(recovered.inv.length, recovered.bagCap + 1);
 assert.deepEqual(migrate(structuredClone(recovered)), recovered, "the overflow recovery neither duplicates the rune nor buys a bag upgrade");
 
 const rt = S.maps[p.map];
 const rarities = new Set();
 const foundSets = new Set();
-const enemy = newMob(S, "boss", null, null);
-for (let i = 0; i < 1000; i++) {
-  rt.drops.length = 0;
-  lootFor(S, rt, enemy, p);
-  for (const d of rt.drops) {
-    const r = D.runes[d.it];
-    if (!r) continue;
-    rarities.add(r.q);
-    if (r.set) foundSets.add(r.set);
-  }
-}
-assert.deepEqual([...rarities].sort(), [1, 2, 3, 4]);
-assert.equal(foundSets.size, 15, "all rune sets occur in real drops");
 
 assert.deepEqual(SOCK_DROP, [0.0001, 0.0008, 0.004]);
 assert.ok(!D.shop.includes(D.sockItem));
 assert.ok(!D.life.recipes.some((recipe) => recipe.id === D.sockItem || recipe.id === `${D.sockItem}_cc`));
 let stoneDrop = null;
+let rabbitRune = null;
 for (const [rank, tries] of [[0, 100_000], [1, 40_000], [2, 20_000]]) {
   const mob = newMob(S, rank === 2 ? "boss" : "twinhare", null, null);
   mob.el = rank;
-  let drops = 0;
+  let drops = 0, runeDrops = 0;
+  const il = Math.min(200, MOBS[mob.k].lv * 4 - 3 + [0, 4, 8][rank]);
   for (let i = 0; i < tries; i++) {
     rt.drops.length = 0;
     lootFor(S, rt, mob, p);
-    for (const dr of rt.drops) if (dr.it === D.sockItem) { drops++; stoneDrop = dr; }
+    for (const dr of rt.drops) {
+      if (dr.it === D.sockItem) { drops++; stoneDrop = dr; }
+      const rune = D.runes[dr.it];
+      if (!rune) continue;
+      runeDrops++;
+      assert.equal(dr.il, il, "rune level follows the monster's displayed level and rank");
+      if (!rank) rabbitRune = dr;
+      rarities.add(rune.q);
+      if (rune.set) foundSets.add(rune.set);
+    }
   }
   const expected = tries * SOCK_DROP[rank];
   assert.ok(drops > 0 && Math.abs(drops - expected) < 5 * Math.sqrt(expected), `rank ${rank} drops: ${drops}/${tries}`);
+  const expectedRunes = tries * [0.0015, 0.03, 0.20][rank];
+  assert.ok(Math.abs(runeDrops - expectedRunes) < 5 * Math.sqrt(expectedRunes), `rank ${rank} rune drops: ${runeDrops}/${tries}`);
+  console.log(`rank ${rank} rune drops: ${runeDrops}/${tries} (${(runeDrops / tries * 100).toFixed(3)}%)`);
 }
+assert.deepEqual([...rarities].sort(), [1, 2, 3, 4]);
+assert.equal(foundSets.size, 15, "all rune sets occur in real drops");
+assert.ok(pickUp(S, p, rabbitRune));
+assert.deepEqual(ch.inv.find((stack) => stack.id === rabbitRune.it), { id: rabbitRune.it, n: 1, il: 1 });
+
+const bank = townNpcs.find((n) => n.role === "bank");
+p.x = bank.x * T + 8; p.y = bank.y * T + 20;
+ch.inv = [{ id: amber, n: 1, il: 1 }, { id: amber, n: 2, il: 11 }, { id: amber, n: 1, il: 11 }];
+assert.equal(act({ t: "sort" }).ok, true);
+assert.deepEqual(ch.inv, [{ id: amber, n: 3, il: 11 }, { id: amber, n: 1, il: 1 }]);
+assert.equal(act({ t: "wh", a: "put", s: 0, n: 2 }).ok, true);
+assert.equal(act({ t: "wh", a: "put", s: 1, n: 1 }).ok, true);
+assert.deepEqual(ch.wh.items, [{ id: amber, n: 2, il: 11 }, { id: amber, n: 1, il: 1 }]);
+assert.equal(act({ t: "wh", a: "take", s: 0, n: 2 }).ok, true);
+assert.deepEqual(ch.inv, [{ id: amber, n: 3, il: 11 }]);
 const chest = newMob(S, Object.keys(MOBS).find((id) => MOBS[id].chest), null, null);
 for (let i = 0; i < 5000; i++) {
   rt.drops.length = 0;

@@ -96,16 +96,15 @@ assert.ok(self.xp < 5000);
 
 // ── runes: socket two and apply their individual stats
 pa.dirty = true;
-const critd0 = L.viewFor(S, A).self.critd;
+const crit0 = L.viewFor(S, A).self.crit;
 pa.ch.eq.weapon.sk = 2;
 pa.ch.inv.push({ id: "ru_ign", n: 1 }, { id: "ru_acu", n: 1 });
 const slot = (id) => pa.ch.inv.findIndex((s) => s.id === id);
 assert.equal(act(A, { t: "rune", s: slot("ru_ign"), k: "weapon", i: 5 }).ok, false, "no such socket");
 assert.ok(act(A, { t: "rune", s: slot("ru_ign"), k: "weapon", i: 0 }).ok);
 assert.ok(act(A, { t: "rune", s: slot("ru_acu"), k: "weapon", i: 1 }).ok);
-assert.deepEqual(pa.ch.eq.weapon.ru, ["ru_ign", "ru_acu"]);
-const bonus = ["ru_ign", "ru_acu"].flatMap((id) => L.defs().runes[id].af).filter(([s]) => s === "critd").reduce((n, [, v]) => n + v, 0);
-assert.equal(L.viewFor(S, A).self.critd, critd0 + bonus);
+assert.deepEqual(pa.ch.eq.weapon.ru, [["ru_ign", 1], ["ru_acu", 1]]);
+assert.ok(Math.abs(L.viewFor(S, A).self.crit - crit0 - 1) < 0.001, "the level-1 아쿠 rune adds one point of critical chance");
 
 // ── a reload: back within a minute, the party is whole again; later than that, it stays gone
 let chB = L.removePlayer(S, B);

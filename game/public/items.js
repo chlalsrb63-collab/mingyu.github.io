@@ -30,12 +30,15 @@ export function emptyEquipSlot(it, s, entry) {
   return slotsFor(it.type).find(k => !s.eq[k]) || null;
 }
 /** The level a piece needs: a rolled piece's item level − 10 (min 1), else its base item's `req`. */
-export const reqLv = (entry) => (entry.il > 0 ? Math.max(1, entry.il - 10) : G.defs.items[entry.id].req);
+export const reqLv = (entry) => entry.il > 0 ? Math.max(1, entry.il - 10) : G.defs.items[entry.id].req || 1;
 /** The rarity's name; 유니크 (q5) comes from the rules table once it lists it. */
 const rarName = (q) => G.defs.rarity[q || 0] || (q === 5 ? "유니크" : "일반");
 /** A legendary or 유니크 power: [name word, what it does], or null while `defs.legend` lacks it. */
 const legendOf = (k) => (k && G.defs.legend && G.defs.legend[k]) || null;
 const runeOf = (id) => G.defs.runes?.[id];
+export const runeSocketId = (socket) => Array.isArray(socket) ? socket[0] : socket;
+export const runeSocketLevel = (socket) => (Array.isArray(socket) ? socket[1] : 1) || 1;
+const runeLines = (rune, il) => rune.af.map(([k, n]) => [k, Math.max(1, Math.round(n * (G.defs.runeScale?.[(il || 1) - 1] ?? 100) / 100))]);
 const elementPowerLines = (entry) => G.defs.elementPrefixes?.[entry.lg] || [];
 export const itemRarity = (entry) => runeOf(entry.id)?.q || entry.q || G.defs.items[entry.id]?.q || 0;
 export const rarityLabel = (id, q) => runeOf(id) ? G.defs.runeRarity[q] : rarName(q);
@@ -71,7 +74,7 @@ export function itemDesc(entry) {
     base.push(`Lv.${it.req}`);
     return base.join(" · ");
   }
-  if (it.type === "rune") return runeOf(entry.id).af.map(([k, v]) => statText(k, v)).join(" · ");
+  if (it.type === "rune") return [`아이템 레벨 ${entry.il || 1}`, ...runeLines(runeOf(entry.id), entry.il).map(([k, v]) => statText(k, v))].join(" · ");
   if (it.type === "quest") return `[퀘스트 아이템] ${it.desc || ""} — 팔거나 맡길 수 없습니다.`;
   return it.desc || "";
 }
@@ -106,19 +109,18 @@ function card(entry, o = {}) {
   if (o.eq) { const b = el("div", "tc-eq", "[장착 중]"); b.append(el("small", "", SLOT_NAME[o.eq])); c.prepend(b); }
   const head = sec("head");
   head.append(el("div", "tc-nm", itemName(entry)));
-  if (gear) {
+  if (gear || rune) {
     const r = el("div", "tc-sub");
-    r.append(el("span", "", `${rarName(q)} ${TYPE_NAME[it.type]}`));
-    if (entry.il > 0) r.append(el("span", "tc-il", `아이템 레벨 ${entry.il}`));
+    r.append(el("span", "", rune ? `${rarityLabel(entry.id, q)} 룬` : `${rarName(q)} ${TYPE_NAME[it.type]}`));
+    if (entry.il > 0 || rune) r.append(el("span", "tc-il", `아이템 레벨 ${entry.il || 1}`));
     head.append(r);
-  } else if (rune) head.append(el("div", "tc-sub", `${rarityLabel(entry.id, q)} 룬`));
-  else if (it.q) head.append(el("div", "tc-sub", `${rarityLabel(entry.id, q)} 소모품`));
+  } else if (it.q) head.append(el("div", "tc-sub", `${rarityLabel(entry.id, q)} 소모품`));
   if (it.base) {
     const base = sec();
     for (const [k, v] of baseStats(entry)) base.append(statRow(k, v, "base"));
     if (it.cls) base.append(el("div", "tc-note", `${G.defs.wkinds[it.wk].name} · ${G.defs.classes[it.cls].name} 전용`));
   } else if (!rune) head.append(el("div", "tc-ds", itemDesc(entry)));
-  const lines = rune?.af || [...(entry.af || []), ...(it.elementAf || [])];
+  const lines = rune ? runeLines(rune, entry.il) : [...(entry.af || []), ...(it.elementAf || [])];
   if (lines?.length) {
     const af = sec();
     for (const [k, v] of lines) af.append(statRow(k, v, "af"));
@@ -138,14 +140,19 @@ function card(entry, o = {}) {
     const sockets = sec("tc-sockets");
     sockets.append(el("div", "tc-so", `룬 소켓 ${entry.sk || 0}/${cap}`));
     for (let i = 0; i < cap; i++) {
-      const runeId = entry.ru?.[i], fitted = runeOf(runeId), opened = i < entry.sk;
+      const socket = entry.ru?.[i], runeId = runeSocketId(socket), il = runeSocketLevel(socket);
+      const fitted = runeOf(runeId), opened = i < entry.sk;
       const row = el("div", opened ? "tc-socket" : "tc-socket locked");
       row.append(el("span", "tc-socket-mark", fitted ? "◆" : opened ? "◇" : "×"));
       const label = el("div", "tc-socket-label");
-      const name = el("b", "", fitted ? `${fitted.name} · ${rarityLabel(runeId, fitted.q)}` : opened ? "빈 소켓" : "미개방");
+      const name = el("b", "", fitted ? `${fitted.name} · ${rarityLabel(runeId, fitted.q)} · 아이템 레벨 ${il}` : opened ? "빈 소켓" : "미개방");
       if (fitted) name.style.color = Art.RARITY_COL[fitted.q];
       label.append(name);
-      if (fitted) for (const [k, v] of fitted.af) label.append(statRow(k, v, "af"));
+      if (fitted) {
+        for (const [k, v] of runeLines(fitted, il)) label.append(statRow(k, v, "af"));
+        const need = reqLv({ id: runeId, il });
+        if (s && s.lvl < need) label.append(el("div", "tc-req bad", `레벨 ${need}부터 룬 효과 적용`));
+      }
       row.append(label);
       sockets.append(row);
     }
@@ -158,7 +165,7 @@ function card(entry, o = {}) {
     power.append(el("div", "tc-note", `세트 효과는 최대 ${runeSetMax()}종까지 적용됩니다.`));
   }
   const foot = sec();
-  if (gear) foot.append(el("div", s && s.lvl < reqLv(entry) ? "tc-req bad" : "tc-req", `착용 레벨 ${reqLv(entry)}`));
+  if (gear || rune) foot.append(el("div", s && s.lvl < reqLv(entry) ? "tc-req bad" : "tc-req", `${rune ? "사용" : "착용"} 레벨 ${reqLv(entry)}`));
   if (gear && !o.worn && !o.eq && it.cls && s && it.cls !== s.cls) foot.append(el("div", "tc-err", `${G.defs.classes[it.cls].name}만 쓸 수 있습니다`));
   if (o.price) foot.append(el("div", "tc-gold", o.price));
   if (o.hint) foot.append(el("div", "tc-hint", o.hint));
@@ -210,7 +217,12 @@ function statsOf(entry, o) {
   for (const [k, v] of entry.af || []) add(k, v);
   for (const [k, v] of G.defs.items[entry.id].elementAf || []) add(k, v);
   if (!lgDead(entry, o)) for (const [k, v] of elementPowerLines(entry)) add(k, v);
-  for (const r of entry.ru || []) for (const [k, v] of runeOf(r)?.af || []) add(k, v);
+  for (const socket of entry.ru || []) {
+    const id = runeSocketId(socket), rune = runeOf(id), il = runeSocketLevel(socket);
+    if (rune && (!G.self || G.self.lvl >= reqLv({ id, il }))) {
+      for (const [k, v] of runeLines(rune, il)) add(k, v);
+    }
+  }
   return out;
 }
 export function itemSlot(entry, o = {}) {
@@ -229,7 +241,7 @@ export function itemSlot(entry, o = {}) {
   if (entry.sk) {
     const pips = el("span", "sk");
     for (let i = 0; i < entry.sk; i++) {
-      const rune = runeOf(entry.ru?.[i]), pip = el("i", rune ? "on" : "");
+      const rune = runeOf(runeSocketId(entry.ru?.[i])), pip = el("i", rune ? "on" : "");
       if (rune) pip.style.background = Art.RARITY_COL[rune.q];
       pips.append(pip);
     }
@@ -267,7 +279,12 @@ export function useSlot(i) {
     if (d.cls && d.cls !== s.cls) { toast(`${G.defs.classes[d.cls].name} 전용 장비입니다`); Sound.play("no"); return; }
     if (s.lvl < reqLv(entry)) { toast(`레벨 ${reqLv(entry)}부터 장착할 수 있습니다`); Sound.play("no"); return; }
     act({ t: "eq", s: i }); G.sel = -1;
-  } else if (d.type === "rune") { G.sel = i; toast("가방 아래에서 룬을 끼울 소켓을 고르세요"); refreshUi(); return; }
+  } else if (d.type === "rune") {
+    G.sel = i;
+    toast(s.lvl < reqLv(entry) ? `레벨 ${reqLv(entry)}부터 이 룬을 사용할 수 있습니다` : "가방 아래에서 룬을 끼울 소켓을 고르세요");
+    refreshUi();
+    return;
+  }
   else return;
   Sound.play("ui");
 }

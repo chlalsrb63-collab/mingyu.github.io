@@ -168,7 +168,7 @@ function chainTo(W, pick) {
   const old = L.newChar("옛농부", "warrior", []);
   old.v = 22; delete old.keep; old.sq = { on: { sq_gamja_rice: 2 }, done: {} };
   const W2 = world("옛농부", old);
-  assert.equal(W2.ch.v, 27);
+  assert.equal(W2.ch.v, 28);
   assert.deepEqual(W2.ch.keep, {});
   assert.deepEqual(W2.ch.sq, { on: { sq_gamja_rice: 2 }, done: {}, flags: {}, t: {} });
   assert.equal(D.side.find((o) => o.id === "sq_gamja_rice").station, "fire", "추적 walks to a campfire");

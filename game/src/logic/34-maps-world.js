@@ -271,6 +271,86 @@ function buildTown() {
   return m;
 }
 
+// ───────────────────────────── 노을해변 ─────────────────────────────
+
+const SUNSET_BEACH = "sunset_beach";
+
+/** Headlands, coves and palm belts grow from fixed waves and a seeded tile scatter. */
+function buildSunsetBeach() {
+  const m = blank(SUNSET_BEACH, "노을해변", 168, 108, "S");
+  m.theme = m.bgm = "coast";
+  m.safe = true;
+  m.entry = [5, 64];
+  const { g, o, w, h } = m;
+  const seed = 17281;
+  const shore = (x) => Math.round(67 + 9 * Math.sin(x * 0.053 + 1.4) + 5 * Math.sin(x * 0.111 - 1.2) + 3 * Math.sin(x * 0.024));
+  const yards = [
+    [5, 57, 25, 69], [31, 49, 54, 65], [51, 31, 70, 46],
+    [74, 60, 91, 70], [93, 60, 103, 89], [126, 55, 149, 70],
+  ];
+  const inYard = (x, y) => yards.some(([x0, y0, x1, y1]) => x >= x0 && x <= x1 && y >= y0 && y <= y1);
+  for (let x = 0; x < w; x++) {
+    const coast = shore(x);
+    for (let y = 0; y < h; y++) {
+      const fromSea = coast - y;
+      const r = h2(x, y, seed);
+      const grove = Math.sin(x / 11 + Math.sin(y / 13)) + Math.cos(y / 9 - x / 25);
+      if (fromSea < 0) {
+        g[y][x] = fromSea >= -2 ? "~" : "w";
+        if (fromSea > -7 && r < 0.045 && (x < 57 || x > 125)) o[y][x] = "Φ";
+        continue;
+      }
+      g[y][x] = fromSea === 0 ? "-" : fromSea < 7 ? "S" : grove > 0.30 || fromSea > 31 ? (r < 0.2 ? "," : ".") : "z";
+      if (!x || x === w - 1 || y < 2) { o[y][x] = "Ψ"; continue; }
+      if (inYard(x, y) || fromSea < 2) continue;
+      if (fromSea > 8 && r < (grove > 0.3 ? 0.091 : 0.025)) o[y][x] = "Ψ";
+      else if (fromSea > 13 && r > 0.92) o[y][x] = r > 0.98 ? "R" : "B";
+      else if (fromSea < 7 && r > 0.981) o[y][x] = r < 0.988 ? "l" : "Ω";
+    }
+  }
+
+  // The planked promenade follows the coast; two piers project into fishing water.
+  for (let x = 7; x <= 153; x++) {
+    const y = shore(x) - 10;
+    rect(g, x, y - 1, x, y + 2, "b");
+    rect(o, x, y - 2, x, y + 3, " ");
+  }
+  road(m, 3, 64, 12, 64, "p");
+  road(m, 48, 52, 55, 37, "p");
+  road(m, 55, 37, 66, 42, "p");
+  road(m, 66, 42, 71, 53, "p");
+  road(m, 81, 61, 85, 67, "S");
+  const pier = (x0, y0, x1, y1) => {
+    rect(g, x0, y0, x1, y1, "b");
+    rect(o, x0, y0, x1, y1, " ");
+  };
+  pier(32, 60, 35, 85);
+  pier(30, 81, 37, 85);
+  pier(96, 63, 100, 90);
+  pier(94, 85, 103, 90);
+  pier(136, 65, 138, 81);
+
+  // Huts and lanterns along the street, rock and driftwood pockets out on the sand.
+  for (const [x, y] of [[13, 57], [19, 55], [27, 58], [41, 48], [69, 49], [75, 55], [108, 58], [116, 57], [125, 60], [145, 56]]) o[y][x] = "Δ";
+  for (const [x, y] of [[10, 60], [28, 65], [54, 44], [72, 57], [80, 63], [89, 62], [94, 68], [101, 85], [114, 63], [130, 65], [144, 65]]) o[y][x] = "L";
+  for (const [x, y] of [[23, 69], [27, 68], [52, 56], [56, 48], [109, 68], [134, 72], [143, 68], [146, 66]]) o[y][x] = "k";
+  for (const [x, y] of [[43, 60], [45, 61], [44, 63], [56, 56], [58, 58], [150, 64], [151, 66], [154, 63]]) o[y][x] = "Ω";
+  for (const [x, y] of [[11, 73], [40, 64], [61, 57], [121, 73], [150, 62]]) o[y][x] = "l";
+  for (const [x, y] of [[9, 69], [21, 64], [25, 71], [61, 47], [68, 51], [76, 58], [92, 60], [106, 64], [119, 68], [127, 70], [141, 68], [149, 57]]) o[y][x] = "Ψ";
+
+  m.marks = [];
+  for (const [x, y, label, to] of [
+    [6, 61, "← 버드나무마을", "willow"], [17, 62, "조개길 · 해변 산책로 →"],
+    [29, 71, "작은 선착장 · 낚시"], [58, 47, "야자숲 산책로"],
+    [79, 62, "큰 모닥불 · 쉼터"], [103, 68, "노을 선착장 · 낚시"], [147, 63, "노을 전망대"],
+  ]) {
+    o[y][x] = "G";
+    m.marks.push({ x, y, kind: "sign", label, ...(to ? { to } : {}) });
+  }
+  FIRES[SUNSET_BEACH] = [[84, 65]];
+  return m;
+}
+
 // ───────────────────────────── the generated world, map by map ─────────────────────────────
 // Nothing here is built when the rules load: each hunting ground is generated the first time
 // someone needs it (mapOf in 36-custom-maps.js) and kept. GEN holds what each one is made

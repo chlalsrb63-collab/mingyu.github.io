@@ -11,14 +11,14 @@ function countItem(ch, id) {
   for (const s of ch.inv) if (s.id === id) n += s.n || 1;
   return n;
 }
-function canAdd(ch, id, n) {
+function canAdd(ch, id, n, il) {
   if (isGear(id)) return ch.inv.length + n <= bagCap(ch);
   let room = Math.max(0, bagCap(ch) - ch.inv.length) * STACK + pouchRoom(ch, id);
-  for (const s of ch.inv) if (s.id === id) room += STACK - s.n;
+  for (const s of ch.inv) if (stackMatches(s, id, il)) room += STACK - s.n;
   return room >= n;
 }
-function addItem(ch, id, n) {
-  if (!canAdd(ch, id, n)) return false;
+function addItem(ch, id, n, il) {
+  if (!canAdd(ch, id, n, il)) return false;
   if (isGear(id)) {
     for (let i = 0; i < n; i++) ch.inv.push(plain(id));
     return true;
@@ -26,33 +26,24 @@ function addItem(ch, id, n) {
   // materials, staples and flasks go into the 재료 주머니 first (up to POUCH_MAX each), the rest into the bag
   const pr = pouchRoom(ch, id);
   if (pr > 0) { const put = Math.min(n, pr); ch.pouch[id] = pouchHas(ch, id) + put; n -= put; if (n <= 0) return true; }
-  for (const s of ch.inv) {
-    if (s.id !== id || n <= 0) continue;
-    const put = Math.min(n, STACK - s.n);
-    s.n += put; n -= put;
-  }
-  while (n > 0) {
-    const put = Math.min(n, STACK);
-    ch.inv.push({ id, n: put });
-    n -= put;
-  }
+  stackInto(ch.inv, id, n, il);
   return true;
 }
 /** Room in the warehouse for `n` of `id`. */
-function whRoom(wh, id, n) {
+function whRoom(wh, id, n, il) {
   if (isGear(id)) return wh.items.length + 1 <= WH;
   let room = (WH - wh.items.length) * STACK;
-  for (const s of wh.items) if (s.id === id) room += STACK - s.n;
+  for (const s of wh.items) if (stackMatches(s, id, il)) room += STACK - s.n;
   return room >= n;
 }
 /** Stack `n` of `id` into a list of slots, filling what is there first. */
-function stackInto(list, id, n) {
+function stackInto(list, id, n, il) {
   for (const s of list) {
-    if (s.id !== id || n <= 0) continue;
+    if (!stackMatches(s, id, il) || n <= 0) continue;
     const put = Math.min(n, STACK - s.n);
     s.n += put; n -= put;
   }
-  while (n > 0) { const put = Math.min(n, STACK); list.push({ id, n: put }); n -= put; }
+  while (n > 0) { const put = Math.min(n, STACK); list.push(stackItem(id, put, il)); n -= put; }
 }
 /** A pet whose item is no longer in the bag goes home. */
 function petCheck(S, p) {
@@ -66,7 +57,7 @@ function wanted(ch, dr) {
 function fits(ch, dr) {
   if (dr.it === "gold") return true;
   if (dr.c) return ch.inv.length < bagCap(ch);
-  return dr.g ? ch.inv.length < bagCap(ch) : canAdd(ch, dr.it, dr.n);
+  return dr.g ? ch.inv.length < bagCap(ch) : canAdd(ch, dr.it, dr.n, dr.il);
 }
 function bagFull(S, p) {
   if (S.now > p.fullAt) { p.fullAt = S.now + 3000; toast(p, "가방이 가득 찼습니다."); }
@@ -86,7 +77,7 @@ function pickUp(S, p, dr) {
     if (dr.q >= 3) checkAch(S, p);
     if (dr.q >= 3) sys(S, `${p.ch.name}님이 ${RARITY[dr.q]} 장비 [${gearName(dr.g)}]${pp(gearName(dr.g), "을를")} 획득했습니다!`);
   } else {
-    addItem(p.ch, dr.it, dr.n);
+    addItem(p.ch, dr.it, dr.n, dr.il);
     foundItem(S, p, dr.it, dr.n);
     sqPicked(p, dr.it);
   }
@@ -208,7 +199,7 @@ function lootFor(S, rt, mob, p) {
     if (isJewel(id) && q === 0) q = 1;
     out.push({ g: rollGear(S, id, q, d.lv, rank) });
   }
-  if (rnd(S) < (rank === 2 ? 1 : rank === 1 ? 0.25 : (0.02 + d.lv * 0.001) * GEAR_CUT)) out.push({ it: rollRuneId(S, rank), n: 1 });
+  if (rnd(S) < runeDropChance(shownLv(d.lv), rank)) out.push({ it: rollRuneId(S, rank), n: 1 });
   const stoneRoll = rnd(S);
   if (stoneRoll < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
   if (fx.stone) out.push({ it: "stone", n: 1 });   // (a power's extra stone: at most one a kill)
@@ -222,6 +213,7 @@ function lootFor(S, rt, mob, p) {
     const atCorpse = o.it === SOCK_ITEM;
     rt.drops.push({
       id: S.nextId++, it: o.g ? o.g.id : o.it, g: o.g || null, n: o.n || 1, q: o.g ? o.g.q : stackQuality(o.it),
+      ...(RUNES[o.it] ? { il: runeIl(shownLv(d.lv) + IL_RANK[rank]) } : {}),
       x: mob.x + (atCorpse ? 0 : ri(S, -14, 14)), y: mob.y + (atCorpse ? 0 : ri(S, -8, 10)),
       own: p.pid, freeAt: S.now + 20000, dieAt: S.now + 60000,
     });

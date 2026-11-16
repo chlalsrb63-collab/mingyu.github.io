@@ -326,10 +326,13 @@ export function validateAction(S, pid, a) {
       const s = invAt(ch, a.s);
       if (!s || ITEMS[s.id].type !== "rune") return bad("룬이 아닙니다");
       if (p.dead) return bad("쓰러진 상태입니다");
+      const need = runeReq(s.il);
+      if (ch.lvl < need) return bad(`레벨 ${need}부터 이 룬을 사용할 수 있습니다`);
       const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
       if (!g) return bad("장착한 장비가 없습니다");
       if (!Number.isInteger(a.i) || a.i < 0 || a.i >= Math.min(g.sk, sockCap(g))) return bad("뚫린 홈이 없습니다");
-      if (g.ru[a.i] === s.id) return bad("이미 같은 룬이 끼워져 있습니다");
+      const current = g.ru[a.i];
+      if (runeSocketId(current) === s.id && runeSocketLevel(current) === runeIl(s.il)) return bad("이미 같은 룬이 끼워져 있습니다");
       if (g.ru[a.i] && a.r !== 1) return bad("끼워진 룬을 교체하면 사라집니다. 교체를 확인하세요");
       return OK;
     }
@@ -368,8 +371,8 @@ export function validateAction(S, pid, a) {
       if (a.a === "put" && isQuestItem(sl.id)) return bad("퀘스트 아이템은 창고에 맡길 수 없습니다");
       const n = isGear(sl.id) ? 1 : a.n | 0;
       if (n < 1 || n > (sl.n || 1)) return bad("잘못된 수량");
-      if (a.a === "put") return whRoom(wh, sl.id, n) ? OK : bad("창고가 가득 찼습니다");
-      return (isGear(sl.id) ? ch.inv.length < bagCap(ch) : canAdd(ch, sl.id, n)) ? OK : bad("가방이 가득 찼습니다");
+      if (a.a === "put") return whRoom(wh, sl.id, n, sl.il) ? OK : bad("창고가 가득 찼습니다");
+      return (isGear(sl.id) ? ch.inv.length < bagCap(ch) : canAdd(ch, sl.id, n, sl.il)) ? OK : bad("가방이 가득 찼습니다");
     }
     case "sellall":
       if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");

@@ -33,6 +33,44 @@ const flood = (m, sx, sy) => {
   }
   return d;
 };
+{
+  const m = maps.sunset_beach, west = maps.willow;
+  const toBeach = west.portals.find((p) => p.to === m.id);
+  const toWillow = m.portals.find((p) => p.to === west.id);
+  assert.equal(m.safe, true);
+  assert.equal(m.theme, "coast");
+  assert.ok(m.w >= 160 && m.h >= 100);
+  assert.equal(m.spawns.length, 0);
+  assert.ok(west.reach[toBeach.y * west.w + toBeach.x]);
+  assert.ok(m.reach[toWillow.y * m.w + toWillow.x]);
+  assert.ok(m.g.filter((row) => row.includes("-")).length > 12, "a curving, rather than straight, tide line");
+  assert.deepEqual(fires[m.id], [[84, 65]]);
+
+  const S = L.setup(), pid = "beach-place";
+  const ch = L.newChar("해변휴양");
+  ch.map = west.id;
+  [ch.x, ch.y] = [toBeach.x * 16 + 8, toBeach.y * 16 + 8];
+  L.addPlayer(S, pid, ch);
+  const p = S.players[pid];
+  S.now = 10000;
+  const enter = { t: "mv", x: p.x, y: p.y + 1, d: 0 };
+  assert.ok(L.validateAction(S, pid, enter).ok);
+  L.applyAction(S, pid, enter);
+  assert.equal(p.map, m.id, "the beach can be entered at level one");
+  for (const [x, y] of [[31, 83], [99, 90], [136, 81]]) {
+    assert.ok(m.reach[y * m.w + x]);
+    [p.x, p.y] = [x * 16 + 8, y * 16 + 8];
+    assert.ok(L.validateAction(S, pid, { t: "fish" }).ok, `fishing works at pier tile ${x},${y}`);
+  }
+  const [fire] = L.viewFor(S, pid).map.camps;
+  assert.equal(fire.seats.length, 4);
+  [p.x, p.y] = fire.seats[0];
+  ch.inv.push({ id: "fish_s", n: 1 });
+  assert.ok(L.validateAction(S, pid, { t: "cook", id: "fish_s" }).ok, "the permanent fire can cook a catch");
+
+  const fresh = L.atlas(true, [m.id]).maps[m.id];
+  assert.deepEqual([fresh.g, fresh.o], [m.g, m.o], "the beach seed gives the same coast on each generation");
+}
 const report = [];
 for (const id of HUNT) {
   const m = maps[id];

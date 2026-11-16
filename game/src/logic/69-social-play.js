@@ -56,7 +56,7 @@ const sxKind = (k) => (k === "trade" ? "거래" : MINIGAMES[k] ? MINIGAMES[k].na
 /** What may be offered in a trade: what the warehouse takes (no quest items, no charms or their frame nails). */
 const sxTradable = (s) => !!s && Object.hasOwn(ITEMS, s.id) && !isQuestItem(s.id) && !isCharm(s) && s.id !== "charm_nail";
 /** A slot that moves as it is (gear, or anything carrying more than an id and a count). */
-const sxWhole = (s) => isGear(s.id) || Object.keys(s).some((k) => k !== "id" && k !== "n");
+const sxWhole = (s) => isGear(s.id) || Object.keys(s).some((k) => k !== "id" && k !== "n" && (k !== "il" || !RUNES[s.id]));
 const sxOther = (S, p, box) => S.players[box.a === p.pid ? box.b : box.a];
 
 function sxValidate(S, p, a) {
@@ -225,7 +225,7 @@ function sxMove(a, b, oa, ob, ra, rb) {
     const got = [];
     for (const { i, n } of rows) {
       const s = ch.inv[i], whole = sxWhole(s) || n >= (s.n || 1);
-      if (whole) { ch.inv.splice(i, 1); got.push({ s, whole: true }); } else { s.n -= n; got.push({ s: { id: s.id, n }, whole: false }); }
+      if (whole) { ch.inv.splice(i, 1); got.push({ s, whole: true }); } else { s.n -= n; got.push({ s: stackItem(s.id, n, s.il), whole: false }); }
     }
     ch.gold -= o.g;
     return got;
@@ -235,7 +235,7 @@ function sxMove(a, b, oa, ob, ra, rb) {
       if (whole && sxWhole(s)) {
         if (ch.inv.length >= bagCap(ch)) return `${ch.name}님의 가방이 가득 찼습니다`;
         ch.inv.push(s);
-      } else if (!addItem(ch, s.id, s.n || 1)) return `${ch.name}님의 가방이 가득 찼습니다`;
+      } else if (!addItem(ch, s.id, s.n || 1, s.il)) return `${ch.name}님의 가방이 가득 찼습니다`;
     }
     ch.gold += g;
     return "";

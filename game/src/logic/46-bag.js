@@ -13,10 +13,10 @@ function bagCap(ch) {
   return c >= INV_BASE ? Math.min(c, INV_MAX) : INV_BASE;
 }
 /** Room for `n` of `id` in a list of slots holding at most `cap` slots (stacks fill first). */
-function roomIn(list, cap, id, n) {
+function roomIn(list, cap, id, n, il) {
   if (isGear(id)) return list.length + 1 <= cap;
   let room = Math.max(0, cap - list.length) * STACK;
-  for (const s of list) if (s.id === id) room += STACK - s.n;
+  for (const s of list) if (stackMatches(s, id, il)) room += STACK - s.n;
   return room >= n;
 }
 /**
@@ -25,14 +25,15 @@ function roomIn(list, cap, id, n) {
  */
 function sortSlots(list) {
   const rank = (e) => { const r = SORT_KIND.indexOf(ITEMS[e.id].type); return r < 0 ? 99 : r; };
-  const order = list.map((e, i) => [e, i]).sort(([a1, i1], [b1, i2]) => rank(a1) - rank(b1) || (b1.q || 0) - (a1.q || 0) || (isGear(b1.id) ? gearIl(b1) : 0) - (isGear(a1.id) ? gearIl(a1) : 0) || (a1.id < b1.id ? -1 : a1.id > b1.id ? 1 : 0) || i1 - i2).map(([e]) => e);
+  const level = (slot) => isGear(slot.id) ? gearIl(slot) : RUNES[slot.id] ? runeIl(slot.il) : 0;
+  const order = list.map((e, i) => [e, i]).sort(([a1, i1], [b1, i2]) => rank(a1) - rank(b1) || (b1.q || 0) - (a1.q || 0) || level(b1) - level(a1) || (a1.id < b1.id ? -1 : a1.id > b1.id ? 1 : 0) || i1 - i2).map(([e]) => e);
   const out = [];
   for (const e of order) {
     const top = out[out.length - 1];
-    if (!isGear(e.id) && e.id !== "charm" && top && top.id === e.id && top.n < STACK) {
+    if (!isGear(e.id) && e.id !== "charm" && top && stackMatches(top, e.id, e.il) && top.n < STACK) {
       const put = Math.min(e.n || 1, STACK - top.n);
       top.n += put;
-      if ((e.n || 1) > put) out.push({ id: e.id, n: (e.n || 1) - put });
+      if ((e.n || 1) > put) out.push({ ...e, n: (e.n || 1) - put });
     } else out.push(e);
   }
   return out;

@@ -63,11 +63,11 @@ ch.eq.armor = { ...plain("a_6"), q: 3, il: 150, lg: "chain", af: [["res_all", 3]
 ch.eq.weapon2 = { ...plain("w_bow_6"), af: [["dmg_light", 20]], sk: 1, ru: ["ru_e_light_3"] };
 const loaded = migrate(ch);
 const { element } = gearBonus(loaded);
-assert.deepEqual(element.damage, { fire: 17, bleed: 12, light: 16 });
-assert.deepEqual(element.pen, { fire: 6, lightning: 8, light: 8 });
+assert.deepEqual(element.damage, { fire: 9, bleed: 12, light: 3 });
+assert.deepEqual(element.pen, { fire: 1, lightning: 8, light: 1 });
 assert.deepEqual(element.proc, { bleed: 5 });
 assert.deepEqual(element.dur, { lightning: 8 });
-for (const k of DAMAGE_TYPES) assert.equal(element.res[k], k === "cold" ? 11 : k === "light" ? 16 : 3);
+for (const k of DAMAGE_TYPES) assert.equal(element.res[k], k === "cold" ? 11 : k === "light" ? 5 : 3);
 assert.deepEqual(gearBonus(migrate(structuredClone(loaded))).element, element, "typed equipment survives a second save load");
 
 console.log("element-data ok — monster profiles, skill types, slot affixes, 116 runes and legacy gear loadout");

@@ -235,12 +235,12 @@ function appraised(W, src, want) {
   const within = (got, n, p, tag) => { const sd = Math.sqrt(n * p * (1 - p)); assert.ok(Math.abs(got - n * p) <= 4 * sd + 1, `${tag}: ${got} of ${n} (expected ${(n * p).toFixed(1)} ± ${(4 * sd).toFixed(1)})`); };
   const N0 = 120000, N1 = 30000, N2 = 8000;
   const a = hunt(N0, fit), b = hunt(N1, fit, { el: 1 }), c = hunt(N2, fit, { el: 2, temp: 1 });
-  within(a.charm, N0, 0.006, "field"); within(a.nail, N0, 0.0005, "field nail");
-  within(b.charm, N1, 0.024, "elite"); within(b.nail, N1, 0.002, "elite nail");
-  within(c.charm, N2, 0.12, "boss"); within(c.nail, N2, 0.01, "boss nail");
-  log(`field   ${N0} kills: charm ${(a.charm / N0 * 100).toFixed(3)}% (0.60)  nail ${(a.nail / N0 * 100).toFixed(4)}% (0.05)  grades ${a.g.slice(1)}`);
-  log(`elite   ${N1} kills: charm ${(b.charm / N1 * 100).toFixed(3)}% (2.40)  nail ${(b.nail / N1 * 100).toFixed(4)}% (0.20)  grades ${b.g.slice(1)}`);
-  log(`boss    ${N2} kills: charm ${(c.charm / N2 * 100).toFixed(3)}% (12.0)  nail ${(c.nail / N2 * 100).toFixed(4)}% (1.00)  grades ${c.g.slice(1)}`);
+  within(a.charm, N0, 0.001, "field"); within(a.nail, N0, 0.0005, "field nail");
+  within(b.charm, N1, 0.01, "elite"); within(b.nail, N1, 0.002, "elite nail");
+  within(c.charm, N2, 0.06, "boss"); within(c.nail, N2, 0.01, "boss nail");
+  log(`field   ${N0} kills: charm ${(a.charm / N0 * 100).toFixed(3)}% (0.10)  nail ${(a.nail / N0 * 100).toFixed(4)}% (0.05)  grades ${a.g.slice(1)}`);
+  log(`elite   ${N1} kills: charm ${(b.charm / N1 * 100).toFixed(3)}% (1.00)  nail ${(b.nail / N1 * 100).toFixed(4)}% (0.20)  grades ${b.g.slice(1)}`);
+  log(`boss    ${N2} kills: charm ${(c.charm / N2 * 100).toFixed(3)}% (6.00)  nail ${(c.nail / N2 * 100).toFixed(4)}% (1.00)  grades ${c.g.slice(1)}`);
   // exclusions: more than four tiers below, a rift's monster, an invasion's, a chest
   for (const [k, more, tag] of [[low, {}, "low"], [fit, { dim: 1 }, "rift"], [fit, { evt: 1 }, "invasion"]]) {
     const r = hunt(3000, k, { el: 2, temp: 1, ...more });
@@ -546,8 +546,8 @@ function appraised(W, src, want) {
     X.charmChest(W.S, dim, W.p);
     n += W.ch.inv.filter((x) => x.id === "charm").length; nails += W.ch.inv.filter((x) => x.id === "charm_nail").length;
   }
-  log(`rift    ${N} chests: charm ${(n / N * 100).toFixed(2)}% (40.0)  nail ${(nails / N * 100).toFixed(2)}% (8.00)`);
-  assert.ok(Math.abs(n / N - 0.4) < 0.015 && Math.abs(nails / N - 0.08) < 0.008, `${n} charms, ${nails} nails in ${N} chests`);
+  log(`rift    ${N} chests: charm ${(n / N * 100).toFixed(2)}% (18.0)  nail ${(nails / N * 100).toFixed(2)}% (8.00)`);
+  assert.ok(Math.abs(n / N - 0.18) < 0.015 && Math.abs(nails / N - 0.08) < 0.008, `${n} charms, ${nails} nails in ${N} chests`);
   W.p.gain.length = 0; W.p.toast.length = 0;
   // not unlocked: a chest holds no charm
   const V = world({ lvl: 60 });
@@ -595,7 +595,7 @@ function appraised(W, src, want) {
   const old = L.hero("옛모험가", { lvl: 45, wk: "staff" });
   delete old.charms; old.v = 12;
   const W = world({ ch: clone(old) });
-  assert.equal(W.ch.v, 27); assert.deepEqual(W.cs, X.charmsEmpty());
+  assert.equal(W.ch.v, 28); assert.deepEqual(W.cs, X.charmsEmpty());
   assert.equal(W.self().charms.un, 0);
   // rubbish in the field
   for (const junk of [null, 7, "x", [], { placed: "no", pending: 5, rec: {}, openN: 99, unlocked: 1, nextUid: -4, fu: "x" }]) {

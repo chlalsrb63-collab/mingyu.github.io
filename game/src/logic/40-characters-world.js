@@ -1,7 +1,7 @@
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
-const SHEET_VERSION = 27;
+const SHEET_VERSION = 28;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -117,10 +117,13 @@ function migrate(ch) {
     const id = OLD_ID[g.id] || g.id.replace("w_ranger_", "w_lancer_");
     if (!ITEMS[id]) return null;
     if (id === "charm") return charmFix(g);
-    if (!isGear(id)) return { id, n: g.n | 0 || 1 };
+    if (!isGear(id)) return stackItem(id, g.n | 0 || 1, g.il);
     const oldQ = clamp(g.q | 0, 0, 5), oldSk = clamp(g.sk | 0, 0, 3);
     const sk = Math.min(oldSk, SOCK_CAPS[ITEMS[id].type]);
-    const ru = Array.from({ length: oldSk }, (_, i) => runeId(g.ru?.[i]));
+    const ru = Array.from({ length: oldSk }, (_, i) => {
+      const socket = g.ru?.[i], id = runeId(runeSocketId(socket));
+      return id ? [id, runeSocketLevel(socket)] : null;
+    });
     recovered.push(...ru.slice(sk).filter(Boolean));
     const out = { id, q: oldQ === 4 ? 3 : oldQ, enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk, ru: ru.slice(0, sk) };
     // item level (no sheet version bump: a missing `il` is derived, so an old piece asks what it always did — gearIl)
@@ -262,10 +265,10 @@ function migrate(ch) {
   // quest items (v23): a delivery under way has its parcel, nothing else carries one (62-side-quests.js; after the bag is cleaned)
   sqItemsFix(ch);
   // Over-limit sockets return their runes. If both stores are full, the bag displays extra occupied slots until they are cleared.
-  for (const id of recovered) {
-    if (roomIn(ch.inv, bagCap(ch), id, 1)) stackInto(ch.inv, id, 1);
-    else if (whRoom(ch.wh, id, 1)) stackInto(ch.wh.items, id, 1);
-    else stackInto(ch.inv, id, 1);
+  for (const [id, il] of recovered) {
+    if (roomIn(ch.inv, bagCap(ch), id, 1, il)) stackInto(ch.inv, id, 1, il);
+    else if (whRoom(ch.wh, id, 1, il)) stackInto(ch.wh.items, id, 1, il);
+    else stackInto(ch.inv, id, 1, il);
   }
   // 버드나무 장날 (v26): the token purse and today's counters, clamped; an older sheet starts empty (63-festival.js)
   ch.fair = fairClean(ch.fair);
@@ -350,9 +353,9 @@ function gearBonus(ch) {
     if (!g) continue;
     // Rune effects come from the whole loadout, including the equipped backup weapon.
     for (let i = 0; i < Math.min(g.sk, sockCap(g)); i++) {
-      const rune = RUNES[g.ru?.[i]];
-      if (!rune) continue;
-      for (const [stat, n] of rune.af) add(stat, n);
+      const socket = g.ru?.[i], rune = RUNES[runeSocketId(socket)], il = runeSocketLevel(socket);
+      if (!rune || ch.lvl < runeReq(il)) continue;
+      for (const [stat, n] of rune.af) add(stat, runeStat(n, il));
       if (rune.set) runeCounts[rune.set] = (runeCounts[rune.set] || 0) + 1;
     }
     if (k === "weapon2") continue;

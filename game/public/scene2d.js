@@ -46,7 +46,7 @@ import * as TF from "./townfolk.js";
 import * as NPC from "./npclife.js";
 import { g, vw, vh, G, iso, tI, K, clamp, cam, FLAT, T, playerLook, sAng, P, sheet, setWorldTransform } from "./scene_view.js";
 import { drawSkirt, drawGround, drawLayer, drawPulseParts, lazyLeft, lazyTall } from "./scene_ground.js";
-import { wpLit, lights, map, ground, theme, artGround, drawWater, pulseCv, pulseParts, falls, smokers, statics, npcs, OUTDOOR, emit, strings, critters, roomL, drawAmbient, camps } from "./scene_map.js";
+import { wpLit, lights, map, ground, theme, artGround, drawWater, drawSunsetSea, pulseCv, pulseParts, falls, smokers, statics, npcs, OUTDOOR, emit, strings, critters, roomL, drawAmbient, camps } from "./scene_map.js";
 import { npcOut, npcService, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, makePerson, seatOf, drawPerson, drawJam } from "./scene_people.js";
 import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, drawAimArrow, props, TRAIT_TINT, hooks, glows } from "./scene_fx.js";
 import { drawDepthGround, depthSprite } from "./scene_depth.js";
@@ -72,6 +72,11 @@ function drawRune(st, dx, dy, t) {
  * What gives light after dark, on screen: pools on the ground under lamps, in front of lit
  * windows, around runes, landmarks, gates and the spirit tree, and the warm round of every fire.
  */
+function fireScale(fire) {
+  const main = camps[0];
+  return map.id === Sky.SUNSET_BEACH && main?.wx === fire.x && main.wy === fire.y ? 2 : 1;
+}
+
 function skyLights(t, ox, oy) {
   const out = [];
   for (const st of lights) {
@@ -99,7 +104,9 @@ function skyLights(t, ox, oy) {
   }
   for (const f of G.fires ? G.fires.values() : []) {
     const [X, Y] = iso(f.x, f.y), k = 0.9 + 0.1 * Math.sin(t / 70 + f.id) * Math.sin(t / 130);
-    out.push({ x: X - ox, y: Y - oy, r: 108, col: "#e85a10", k }, { x: X - ox, y: Y - oy - 2, r: 56, col: "#ff9a40", k: k * 0.9, bloom: 26, by: Y - oy - 14 });
+    const scale = fireScale(f);
+    out.push({ x: X - ox, y: Y - oy, r: 108 * scale, col: "#e85a10", k },
+      { x: X - ox, y: Y - oy - 2, r: 56 * scale, col: "#ff9a40", k: k * 0.9, bloom: 26 * scale, by: Y - oy - 14 * scale });
   }
   for (const p of map.portals) { const [px, py] = tI(p.x + 0.5, p.y + 0.5); out.push({ x: px - ox, y: py - oy, r: 48, col: "#c8a0ff", k: 0.7 }); }
   // your own feet keep a faint halo, so you never lose yourself in the dark
@@ -204,7 +211,10 @@ export function render(focusX, focusY, dt, t, snap) {
   const ox = Math.round(cam.x + (Math.random() - 0.5) * shakeAmt + kick.x * kq), oy = Math.round(cam.y + (Math.random() - 0.5) * shakeAmt + kick.y * kq);
   setFxClock(t);
   const now = t;
-  const outdoor = OUTDOOR.has(theme) && !map.indoor && Sky.weather() !== -1, night = outdoor ? Sky.nightK() : 0;
+  const sunset = map.id === Sky.SUNSET_BEACH;
+  const hour = sunset ? Sky.SUNSET_HOUR : Sky.hour();
+  const outdoor = sunset || (OUTDOOR.has(theme) && !map.indoor && Sky.weather() !== -1);
+  const night = outdoor ? Sky.nightK(hour) : 0;
   const depth = depthEffects && !map.indoor && theme !== "interior";
   const lightSources = outdoor || depth ? skyLights(t, ox, oy) : null;
 
@@ -227,6 +237,7 @@ export function render(focusX, focusY, dt, t, snap) {
   drawSkirt();
   drawGround(artGround ? Math.floor(t / 650) % 2 : 0, ox, oy);
   if (!artGround) drawWater(t, ox, oy);
+  if (sunset) drawSunsetSea(t, ox, oy);
   if (pulseCv || pulseParts) {
     const beat = theme === "abyss" ? Math.max(0, Math.sin(t / 260)) ** 3 * 0.6 + Math.max(0, Math.sin(t / 260 - 0.9)) ** 3 * 0.3 : 0.5 + 0.5 * Math.sin(t / 1100);
     g.globalAlpha = 0.25 + beat * 0.6;
@@ -236,7 +247,7 @@ export function render(focusX, focusY, dt, t, snap) {
   if (depth) {
     setWorldTransform();
     drawDepthGround(g, {
-      width: vw, height: vh, ox, oy, focusY: fY, theme, hour: Sky.hour(), night: outdoor ? night : DARK[theme] ? 0.8 : 0,
+      width: vw, height: vh, ox, oy, focusY: fY, theme, hour, night: outdoor ? night : DARK[theme] ? 0.8 : 0,
       bounds: [tI(0, 0), tI(map.w, 0), tI(map.w, map.h), tI(0, map.h)], statics: list, sources: lightSources,
     });
   }
@@ -361,10 +372,11 @@ export function render(focusX, focusY, dt, t, snap) {
       // indoors the fire burns in the fireplace (iso_interior.js), not on the floor
     } else if (o.f) {
       // a campfire: warm light on the ground, a flickering flame, sparks drifting up
-      const x = o.X, y = o.Y, fr = SP.campfire()[Math.floor(t / 140 + o.f.id) % 3];
-      g.fillStyle = "rgba(255,170,60,.13)"; g.beginPath(); g.ellipse(x, y - 2, 30, 15, 0, 0, 7); g.fill();
-      g.drawImage(fr, Math.round(x - SP.FOOT[0]), Math.round(y - SP.FOOT[1] + 2));
-      if (Math.random() < 0.12) parts.push({ x: x - 3 + Math.random() * 6, y: y - 16, vx: (Math.random() - 0.5) * 10, vy: -18 - Math.random() * 14, life: 0.7, color: Math.random() < 0.5 ? "#ffd070" : "#ff9040", g: -10, s: 1 });
+      const x = o.X, y = o.Y, frame = Math.floor(t / 140 + o.f.id) % 3, scale = fireScale(o.f);
+      g.fillStyle = "rgba(255,170,60,.15)"; g.beginPath(); g.ellipse(x, y - 2, 30 * scale, 15 * scale, 0, 0, 7); g.fill();
+      if (scale > 1) g.drawImage(Camp.bonfire()[frame], Math.round(x - 30), Math.round(y - 60));
+      else g.drawImage(SP.campfire()[frame], Math.round(x - SP.FOOT[0]), Math.round(y - SP.FOOT[1] + 2));
+      if (Math.random() < 0.12 * scale) parts.push({ x: x + (Math.random() - 0.5) * 6 * scale, y: y - 16 * scale, vx: (Math.random() - 0.5) * 10 * scale, vy: -18 - Math.random() * 14, life: 0.7, color: Math.random() < 0.5 ? "#ffd070" : "#ff9040", g: -10, s: 1 });
     } else if (o.b) {
       // a fishing float riding the water, its line running back to the angler
       const bx = Math.round(o.X), by = Math.round(o.Y + Math.sin(t / 260) * 1.2 + (o.b.bite ? Math.sin(t / 40) * 2 : 0));
@@ -489,10 +501,10 @@ export function render(focusX, focusY, dt, t, snap) {
   if (theme === "interior") { IN.roomLight(g, roomL, t, dt, ox, oy, vw, vh, Sky.nightK()); postFx(g, vw, vh, t, dt, fY - oy, ox, theme, Sky.nightK(), false); cam.ox = ox; cam.oy = oy; return; }
   // outdoors the day turns: the whole view graded by the hour and the weather (one even multiply,
   // never darker at the edges), with lamps, windows, runes and fires cut into the night as pools
-  const L = outdoor ? Sky.grade(g, vw, vh, dt, t, lightSources, Sky.cloudPainter(ox, oy, t)) : null;
+  const L = outdoor ? Sky.grade(g, vw, vh, dt, t, lightSources, sunset ? null : Sky.cloudPainter(ox, oy, t), sunset ? hour : undefined) : null;
   if (L && L.night > 0.05) glowAfterDark(L.night, t, ox, oy);
   drawAmbient(dt, t, ox, oy);
-  Sky.drawWeather(g, vw, vh, dt, t, ox, oy, outdoor, theme, outdoor ? camps.map((c) => ({ x: c.x - ox, y: c.y - oy })) : [], L);
+  if (!sunset) Sky.drawWeather(g, vw, vh, dt, t, ox, oy, outdoor, theme, outdoor ? camps.map((c) => ({ x: c.x - ox, y: c.y - oy })) : [], L);
   postFx(g, vw, vh, t, dt, fY - oy, ox, theme, outdoor ? night : DARK[theme] ? 0.8 : 0, outdoor, lightSources); // HD-2D depth of field, bloom, shafts, grade (postfx.js)
   cam.ox = ox; cam.oy = oy;
 }

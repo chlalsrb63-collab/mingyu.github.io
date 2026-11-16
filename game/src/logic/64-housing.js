@@ -313,8 +313,8 @@ function homeValidate(S, p, a) {
       if (!sl) return bad("아이템이 없습니다");
       const n = isGear(sl.id) ? 1 : a.n | 0;
       if (n < 1 || n > (sl.n || 1)) return bad("잘못된 수량");
-      if (a.t === "h_dep") return roomIn(H.storage, storeCap(H), sl.id, n) ? OK : bad("집 보관함이 가득 찼습니다");
-      return roomIn(ch.inv, bagCap(ch), sl.id, n) ? OK : bad("가방이 가득 찼습니다");
+      if (a.t === "h_dep") return roomIn(H.storage, storeCap(H), sl.id, n, sl.il) ? OK : bad("집 보관함이 가득 찼습니다");
+      return roomIn(ch.inv, bagCap(ch), sl.id, n, sl.il) ? OK : bad("가방이 가득 찼습니다");
     }
     case "h_sort": {
       const no = mine(); if (no) return no;
@@ -406,7 +406,7 @@ function homeApply(S, p, a) {
       if (isGear(sl.id)) { ch.inv.splice(a.s, 1); H.storage.push(sl); }
       else {
         const n = a.n | 0;
-        stackInto(H.storage, sl.id, n);
+        stackInto(H.storage, sl.id, n, sl.il);
         sl.n -= n;
         if (sl.n <= 0) ch.inv.splice(a.s, 1);
       }
@@ -419,7 +419,7 @@ function homeApply(S, p, a) {
       if (isGear(sl.id)) { H.storage.splice(a.s, 1); ch.inv.push(sl); }
       else {
         const n = a.n | 0;
-        addItem(ch, sl.id, n);
+        addItem(ch, sl.id, n, sl.il);
         sl.n -= n;
         if (sl.n <= 0) H.storage.splice(a.s, 1);
       }

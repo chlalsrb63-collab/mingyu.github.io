@@ -22,6 +22,8 @@ for (const [set, def] of Object.entries(RUNE_SETS)) {
 
 /** Normal packs mainly drop magic runes; elites and boss/chest rewards improve the rarity. */
 const RUNE_ODDS = [[73, 20, 2], [59, 25, 6], [45, 30, 12]];
+// Per hunter: a normal enemy starts at 0.15% and rises to 0.5% at item level 200.
+const runeDropChance = (lv, rank) => rank === 2 ? 0.20 : rank === 1 ? 0.03 : 0.0015 + (runeIl(lv) - 1) * 0.0035 / 199;
 function rollRuneId(S, rank = 0) {
   const [magic, rare, legendary] = RUNE_ODDS[rank];
   const roll = rnd(S) * 100;
@@ -43,9 +45,9 @@ function foundItem(S, p, id, n) {
   }
 }
 
-function gainRune(S, p, rank = 0) {
+function gainRune(S, p, rank = 0, il = p.ch.lvl) {
   const id = rollRuneId(S, rank);
-  if (!addItem(p.ch, id, 1)) return false;
+  if (!addItem(p.ch, id, 1, il)) return false;
   foundItem(S, p, id, 1);
   return true;
 }

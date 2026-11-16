@@ -67,6 +67,7 @@ Codex 보고서 `ai/reports/codex-world-combat-life.md`(그 브랜치에 있음)
 - [x] 직업 스킬 33개 연출·효과음 연결 검수, 해머와 복합 직업 기술의 연출·소리 및 아이콘 보강. [스킬 인계](reports/codex-job-skill-feel.md)
 - [x] 전직 대표기 19종 연출, 출혈·빙결·보호막 등 전투 연계, 벽 경계 이동 보정. [검수](reports/codex-job-skill-polish.md)
 - [x] 8개 속성 타격, 연계기 6종과 곡사 폭약 화살, 전직 대표기 6종 적중 연출. [검수](reports/codex-skill-effects-followup.md)
+- [x] 룬 아이템 레벨과 룬·참 드랍 조정, 노을해변과 전용 음원, 스킬 적중음 보강. [검수](reports/codex-rune-beach-sfx.md)
 - [x] 지역 몬스터 6종과 월요일 06:00에 교대하는 주간 보스 6종 적용. [몬스터·보스 인계](reports/codex-region-beasts-refresh.md)
 - [x] 제미나이 실외·실내 BGM과 균열 테마별 재생 연결. [BGM 인계](reports/codex-recorded-map-bgm.md)
 - [x] 양손해머의 머리 위 내려찍기, 월드 스프라이트 크기 및 원형 타격 범위 확대.

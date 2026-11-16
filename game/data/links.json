@@ -270,6 +270,24 @@
       "tx": 12,
       "ty": 64,
       "label": "모래바람 오아시스 Lv.109–133 하선"
+    },
+    {
+      "map": "willow",
+      "x": 68,
+      "y": 41,
+      "to": "sunset_beach",
+      "tx": 5,
+      "ty": 64,
+      "label": "노을해변"
+    },
+    {
+      "map": "sunset_beach",
+      "x": 3,
+      "y": 64,
+      "to": "willow",
+      "tx": 66,
+      "ty": 41,
+      "label": "버드나무 마을"
     }
   ]
 }

@@ -85,16 +85,19 @@ if (!L.hero) {
   }
   for (const j of Object.keys(D.jobs).filter((id) => D.jobs[id].kind === "hybrid" && (!only.length || only.includes(id)))) for (const t of PROBE.hybTiers) {
     const [a, b] = D.jobs[j].wk;
-    const run = (wk, offset) => probe(L, wk, t, PROBE.secs, { job: j, seed: ARENA.seed + offset });
+    const run = (wk, offset, secs = PROBE.secs) => probe(L, wk, t, secs, { job: j, seed: ARENA.seed + offset });
     const base = (baseOf(a, t) + baseOf(b, t)) / 2, hi = (HI(a) + HI(b)) / 2;
     const ra = run(a, 0), rb = run(b, 0);
     let ak = ra.kpm, bk = rb.kpm;
     const pairRate = () => (ak + bk) / 2 / base;
     const handLow = (wk, kpm) => kpm / baseOf(wk, t) < HAND_MIN;
     if (modern && (pairRate() < 0.75 || pairRate() > hi || handLow(a, ak) || handLow(b, bk))) {
-      // Use the same three seeds as the modern control for a single run at the boundary.
-      ak = (ak + run(a, 1).kpm + run(a, 2).kpm) / 3;
-      bk = (bk + run(b, 1).kpm + run(b, 2).kpm) / 3;
+      // Recheck borderline hands over twice the hunt time. One kill in a short fixed window
+      // can move the result past the floor when changing only the loot stream.
+      const longer = PROBE.secs * 2;
+      const mean = (wk) => [0, 1, 2].reduce((n, offset) => n + run(wk, offset, longer).kpm, 0) / 3;
+      ak = mean(a);
+      bk = mean(b);
     }
     const x = pairRate();
     if (x < 0.75 || x > hi) bad.push(`${j} T${t}: ${((ak + bk) / 2).toFixed(2)} kills/min is ×${x.toFixed(2)} of the pair's ${base.toFixed(1)} (allowed ×0.75–×${hi.toFixed(3)})`);

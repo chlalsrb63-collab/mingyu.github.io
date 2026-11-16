@@ -176,9 +176,10 @@ export function onEvent(e, t) {
         }
         if (isPlayer) S3.fx.burst(tgt.x, tgt.y, h * 0.55, "#ff7a7a", critical ? 14 : 8, critical ? 2.6 : 2);
         else if (!hammer && dmg > 0) drawDamageImpact(tgt, t, h, dmg, parts, critical, heavy, grazing);
-        if (id === G.you) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
+        if (id === G.you && dmg > 0) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
         // Play one damage cue; hammer, healing and swing cues have their own events.
-        else if (!isPlayer && !hammer) Sound.play(critical ? "crit" : grazing ? "graze" : fin ? "finisher" : "hit", wk);
+        else if (!isPlayer && !hammer && dmg > 0 && G.me && dist(G.me.x, G.me.y, tgt.x, tgt.y) < 230)
+          Sound.play(critical ? "crit" : grazing ? "graze" : fin ? "finisher" : "hit", wk);
       }
       break;
     }

@@ -13,6 +13,14 @@ const RUNE_PRICE = { 1: 500, 2: 900, 3: 1650, 4: 850 };
 const RUNES = {};
 const RUNE_KEYS = [];
 const RUNE_POOLS = { 1: [], 2: [], 3: [], 4: { 2: [], 3: [], 4: [] } };
+const RUNE_SCALE = Array.from({ length: 200 }, (_, i) => 18 + Math.floor(i * 82 / 199));
+const runeIl = (il) => Number.isInteger(il) ? clamp(il, 1, RUNE_SCALE.length) : 1;
+const runeReq = (il) => Math.max(1, runeIl(il) - IL_GAP);
+const runeSocketId = (socket) => Array.isArray(socket) ? socket[0] : socket;
+const runeSocketLevel = (socket) => runeIl(Array.isArray(socket) ? socket[1] : undefined);
+const runeStat = (n, il) => Math.max(1, Math.round(n * RUNE_SCALE[il - 1] / 100));
+const stackMatches = (slot, id, il) => slot.id === id && (!RUNES[id] || runeIl(slot.il) === runeIl(il));
+const stackItem = (id, n, il) => RUNES[id] ? { id, n, il: runeIl(il) } : { id, n };
 
 function addRune(id, q, name, af, set) {
   RUNES[id] = set ? { name, q, af, set } : { name, q, af };

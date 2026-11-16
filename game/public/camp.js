@@ -33,6 +33,36 @@ function outline(c, x, col = INK) {
 const cache = {};
 const once = (k, f) => cache[k] || (cache[k] = f());
 
+/** The beach bonfire, with a broad bed of coals and three poses. Foot at (30, 60). */
+export const bonfire = () => once("bonfire", () => [-3, 0, 3].map((lean) => {
+  const [c, x] = sheet(60, 68), { r, oval } = tools(x);
+  const shape = (color, coordinates) => {
+    x.fillStyle = color;
+    x.beginPath();
+    x.moveTo(coordinates[0], coordinates[1]);
+    for (let i = 2; i < coordinates.length; i += 2) x.lineTo(coordinates[i], coordinates[i + 1]);
+    x.closePath();
+    x.fill();
+  };
+  oval(30, 61, 28, 6, "#764b4c");
+  oval(30, 58, 23, 6, "#412f39");
+  for (const [a, b] of [[9,57],[16,62],[24,64],[34,64],[43,62],[50,57]]) {
+    oval(a, b, 5, 3, "#68555b");
+    r(a - 3, b - 2, 4, 1, "#bb8976");
+  }
+  shape("#6c3c30", [10,52, 16,48, 49,56, 48,61, 44,62, 12,56]);
+  shape("#9d5332", [12,56, 42,48, 49,51, 47,56, 16,61]);
+  oval(31, 55, 17, 4, "#e35c35");
+  shape("#d84b36", [16,53, 12,44, 16,35, 17,40, 21,32, 21,23, 25,28, 29+lean,7, 34+lean,17, 33,29, 39,22, 44,31, 43,37, 48,33, 47,45, 43,53, 36,58, 23,58]);
+  shape("#ff8a3e", [19,51, 17,45, 21,38, 24,42, 26,33, 25,29, 30+lean,16, 33,28, 32,37, 38,32, 39,41, 43,38, 44,46, 38,54, 30,57, 22,55]);
+  shape("#ffc559", [22,51, 23,43, 27,46, 31,34, 33,42, 36,39, 37,46, 39,49, 35,54, 26,55]);
+  shape("#ffe59b", [26,52, 29,46, 30,49, 33,44, 34,51, 31,54]);
+  r(8, 43 + lean, 2, 2, "#ed905a");
+  r(46, 24 - lean, 2, 3, "#ffc66c");
+  r(22, 16 + lean, 2, 2, "#ffb366");
+  return c;
+}));
+
 /** A log stump, cut flat: rings on top, bark down the sides. Foot at (9, 12). */
 export const stump = () => once("stump", () => {
   const [c, x] = sheet(18, 14), { r, oval } = tools(x);

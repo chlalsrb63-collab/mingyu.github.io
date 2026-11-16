@@ -676,6 +676,30 @@
     "adv_willow_west": {
       "map": "willow", "name": "마을 서쪽 큰길",
       "round": [[18, 29], [23, 29], [23, 30], [18, 30]]
+    },
+    "beach_lane": {
+      "map": "sunset_beach", "name": "조개길",
+      "round": [[8, 62], [15, 60], [22, 63], [19, 67], [11, 67]]
+    },
+    "beach_small_pier": {
+      "map": "sunset_beach", "name": "작은 선착장",
+      "round": [[31, 65], [35, 70], [34, 81], [31, 83], [32, 70]]
+    },
+    "beach_dune_trail": {
+      "map": "sunset_beach", "name": "야자숲 산책로",
+      "round": [[53, 34], [64, 36], [67, 45], [58, 45], [52, 40]]
+    },
+    "beach_hearth_walk": {
+      "map": "sunset_beach", "name": "큰 모닥불 앞",
+      "round": [[76, 61], [81, 62], [86, 62], [90, 65], [88, 68], [83, 68], [77, 64]]
+    },
+    "beach_dock": {
+      "map": "sunset_beach", "name": "노을 선착장",
+      "round": [[95, 64], [99, 70], [99, 76], [99, 86], [97, 87], [97, 70], [94, 66]]
+    },
+    "beach_lookout": {
+      "map": "sunset_beach", "name": "노을 전망대",
+      "round": [[129, 59], [138, 62], [147, 60], [149, 64], [145, 68], [135, 66]]
     }
   },
   "cast": {
@@ -1497,6 +1521,78 @@
       "home": "adv_willow_west",
       "plan": [{ "h": 4, "at": "adv_willow_west", "act": "stroll", "lag": 2 }],
       "lines": { "stroll": ["길가에 앉아서 책 읽기 딱 좋은 날이네요.", "어제는 한 장도 못 읽었어요. 옆에서 고양이가 책 위에 누워 버렸거든요."] }
+    },
+    "beach_guide_naru": {
+      "name": "길잡이 나루", "hero": [0, 2, 5, 2, 1, 0, 2, 3, 5, 1, 0],
+      "home": "beach_lane",
+      "plan": [{ "h": 4, "at": "beach_lane", "act": "stroll" }],
+      "lines": { "stroll": ["해변에 처음 왔어요? 나무 데크를 따라가면 큰 모닥불이 나와요.", "돌아갈 땐 조개길 끝의 이정표를 찾으세요. 버드나무마을로 이어져요."] }
+    },
+    "beach_shell_dana": {
+      "name": "조개 줍는 다나", "hero": [4, 8, 5, 11, 3, 1, 7, 0, 2, 0, 0],
+      "home": "beach_lane",
+      "plan": [{ "h": 4, "at": "beach_lane", "act": "stroll", "lag": 13 }],
+      "lines": { "stroll": ["줄무늬가 세 개 난 조개를 찾고 있어요. 동생한테 주려고요.", "방금 예쁜 돌을 주웠는데 바닷물이 닿으니까 색이 더 진해졌어요."] }
+    },
+    "beach_fisher_sori": {
+      "name": "낚시꾼 소리", "hero": [8, 2, 3, 12, 1, 4, 8, 12, 5, 2, 1],
+      "home": "beach_small_pier",
+      "plan": [{ "h": 4, "at": "beach_small_pier", "act": "stroll", "lag": 2 }],
+      "lines": { "stroll": ["선착장 끝에서 낚싯줄을 던져 보세요. 찌가 흔들릴 때 감으면 돼요.", "빈 바구니로 돌아가도 좋아요. 여긴 바다 보는 재미가 있잖아요."] }
+    },
+    "beach_boat_yul": {
+      "name": "뱃사공 율", "hero": [3, 1, 7, 8, 0, 1, 5, 6, 1, 0, 1],
+      "home": "beach_small_pier",
+      "plan": [{ "h": 4, "at": "beach_small_pier", "act": "stroll", "lag": 18 }],
+      "lines": { "stroll": ["부두 나무가 오래돼서 한 칸 건널 때마다 소리가 달라요.", "어릴 적엔 저 바위까지 헤엄쳐 갔는데, 이제는 여기서 발만 담가도 시원해요."] }
+    },
+    "beach_gardener_onn": {
+      "name": "야자지기 온", "hero": [7, 5, 7, 3, 4, 1, 6, 6, 2, 3, 1],
+      "home": "beach_dune_trail",
+      "plan": [{ "h": 4, "at": "beach_dune_trail", "act": "stroll", "lag": 5 }],
+      "lines": { "stroll": ["저 기울어진 야자는 자를까 했는데, 덕분에 그늘이 생겨서 그냥 놔뒀어요.", "야자숲은 낮 바람이 부드러워요. 모래밭이 뜨거우면 여기서 쉬어요."] }
+    },
+    "beach_sketch_haru": {
+      "name": "화가 하루", "hero": [11, 2, 4, 13, 2, 0, 7, 4, 0, 3, 3],
+      "home": "beach_dune_trail",
+      "plan": [{ "h": 4, "at": "beach_dune_trail", "act": "stroll", "lag": 20 }],
+      "lines": { "stroll": ["어제 섞은 색으론 오늘 바다가 안 그려지네요. 물감을 더 가져올걸.", "저기 두 그루 사이로 그리면 배경이 잘 들어와요."] }
+    },
+    "beach_hearth_bori": {
+      "name": "불지기 보리", "hero": [2, 3, 4, 9, 2, 0, 0, 4, 3, 2, 0],
+      "home": "beach_hearth_walk",
+      "plan": [{ "h": 4, "at": "beach_hearth_walk", "act": "stroll" }],
+      "lines": { "stroll": ["불 가까이에 자리가 있어요. 방금 잡은 물고기가 있다면 여기서 구워도 돼요.", "장작 터지는 소리 들려요? 이쪽에 앉으면 파도 소리랑 같이 들려요."] }
+    },
+    "beach_traveler_arin": {
+      "name": "여행자 아린", "hero": [5, 3, 9, 7, 2, 1, 2, 10, 7, 2, 2],
+      "home": "beach_hearth_walk",
+      "plan": [{ "h": 4, "at": "beach_hearth_walk", "act": "stroll", "lag": 14 }],
+      "lines": { "stroll": ["오랜만에 모래 냄새 나는 편지를 쓰고 싶어서 종이를 가져왔어요.", "저녁엔 아버지가 생선을 구웠어요. 이상하게도 여기 올 때마다 그 냄새가 나요."] }
+    },
+    "beach_dock_bada": {
+      "name": "선착장지기 바다", "hero": [12, 2, 11, 10, 2, 7, 1, 14, 8, 2, 0],
+      "home": "beach_dock",
+      "plan": [{ "h": 4, "at": "beach_dock", "act": "stroll", "lag": 3 }],
+      "lines": { "stroll": ["낚시는 안쪽보다 널찍한 끝에서 하기 편해요. 자리도 넉넉하답니다.", "노을이 물 위로 내려앉으면 저 멀리서도 우리 선착장이 보여요."] }
+    },
+    "beach_peddler_milu": {
+      "name": "바구니 장수 미루", "hero": [1, 2, 1, 0, 0, 0, 4, 3, 5, 0, 6],
+      "home": "beach_dock",
+      "plan": [{ "h": 4, "at": "beach_dock", "act": "stroll", "lag": 21 }],
+      "lines": { "stroll": ["빈 바구니 들고 왔더니 옆에서 다들 한 마리씩 주네요. 오늘은 제가 굽겠습니다.", "바구니 끈은 짠 바람 맞으면 빳빳해져서, 집에 가면 물에 한번 헹궈요."] }
+    },
+    "beach_elder_haemi": {
+      "name": "해미 할머니", "hero": [6, 7, 5, 12, 0, 4, 7, 11, 4, 2, 1],
+      "home": "beach_lookout",
+      "plan": [{ "h": 4, "at": "beach_lookout", "act": "stroll", "lag": 4 }],
+      "lines": { "stroll": ["옛날엔 이 돌 위에 앉아 배 돌아오는 걸 봤어. 지금도 저녁이면 절로 이 길을 걷지.", "서서 보면 저 멀리가 보이고, 앉아서 보면 물결이 더 잘 보여. 둘 다 좋아."] }
+    },
+    "beach_child_sae": {
+      "name": "꼬마 새미", "hero": [2, 3, 7, 9, 2, 0, 0, 4, 2, 2, 0],
+      "home": "beach_lookout", "kid": true,
+      "plan": [{ "h": 4, "at": "beach_lookout", "act": "stroll", "lag": 18 }],
+      "lines": { "stroll": ["할머니가 제일 밝은 쪽을 보라 했어요. 근데 그쪽엔 자꾸 보이는 게 달라요.", "발자국 줄 세우는 중이에요. 아직 다섯 개밖에 못 만들었어요!"] }
     }
   },
   "rel": [
