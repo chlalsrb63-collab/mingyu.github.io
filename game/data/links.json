@@ -288,6 +288,42 @@
       "tx": 66,
       "ty": 41,
       "label": "버드나무 마을"
+    },
+    {
+      "map": "willow",
+      "x": 23,
+      "y": 1,
+      "to": "blossom_trail",
+      "tx": 35,
+      "ty": 52,
+      "label": "벚꽃나무산책로"
+    },
+    {
+      "map": "willow",
+      "x": 24,
+      "y": 1,
+      "to": "blossom_trail",
+      "tx": 36,
+      "ty": 52,
+      "label": "벚꽃나무산책로"
+    },
+    {
+      "map": "blossom_trail",
+      "x": 35,
+      "y": 54,
+      "to": "willow",
+      "tx": 23,
+      "ty": 3,
+      "label": "버드나무 마을"
+    },
+    {
+      "map": "blossom_trail",
+      "x": 36,
+      "y": 54,
+      "to": "willow",
+      "tx": 24,
+      "ty": 3,
+      "label": "버드나무 마을"
     }
   ]
 }

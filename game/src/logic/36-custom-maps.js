@@ -19,7 +19,7 @@ const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "d
   "cook", "craft", "alch", "jobs",
   // 주아나 the charm appraiser (66-charms.js); 장꾼 다래's 장날 stall (63-festival.js); the 장날 merchants (64-fair-market.js)
   "charm", "fair", "fairmkt"];
-const BUILTIN_MAPS = ["town", SUNSET_BEACH, ...GEN_IDS];
+const BUILTIN_MAPS = ["town", SUNSET_BEACH, BLOSSOM_TRAIL, ...GEN_IDS];
 const txt = (v, max) => (typeof v === "string" ? v.slice(0, max) : "");
 const xyOk = (m, x, y) => Number.isInteger(x) && Number.isInteger(y) && inMap(m, x, y);
 const openTile = (m, x, y) => inMap(m, x, y) && m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]);
@@ -163,6 +163,7 @@ function baseMap(id) {
   }
   if (id === "town") { FIRES.town = []; const m = buildTown(); gateDoors(m); return m; }
   if (id === SUNSET_BEACH) return buildSunsetBeach();
+  if (id === BLOSSOM_TRAIL) return buildBlossomTrail();
   return genMap(id);
 }
 /** The editor's doors, links and NPCs laid over a map, then the map finalized (rows joined, solid, reach). */
@@ -242,7 +243,7 @@ const MAP_META = {};
 const EAGER = {};
 for (const id of [...BUILTIN_MAPS, ...Object.keys(FILES).filter((id) => !BUILTIN_MAPS.includes(id))]) {
   const minLv = id === AIRSHIP_MAP ? AIRSHIP_MIN_LV : GEN[id]?.minLv || 0;
-  if (id === "town" || id === SUNSET_BEACH || FILES[id]) {
+  if (id === "town" || id === SUNSET_BEACH || id === BLOSSOM_TRAIL || FILES[id]) {
     const m = (EAGER[id] = baseMap(id));
     MAP_META[id] = { id, name: m.name, theme: m.theme || null, band: m.band || null, safe: !!m.safe, w: m.w, h: m.h, wp: !!WP[id], wpn: m.stones ? m.stones.length : WP[id] ? 1 : 0, minLv, kinds: metaKinds(m), eager: true };
   } else {

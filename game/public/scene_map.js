@@ -30,6 +30,7 @@ export let theme = "meadow", waterTiles = [], smokers = [];
 const WATER_CELL = 128;
 const waterBins = new Map();
 const waterKey = (x, y) => y * 65536 + x;
+const BLOSSOM_MAP = "blossom_trail";
 /** The fires that always burn on this map, on screen, with their stumps (camp.js art; sky.js fireflies). */
 export let camps = [];
 /** Level art from decor.js: falling water, a layer that breathes, little emitters, lantern strings, critters, signs. */
@@ -224,6 +225,10 @@ export function loadMap(m) {
   const isRock = (x, y) => { const r = m.g[y]; return !!r && r[x] === "W" && m.o[y][x] === " "; };
   const blockKind = (x, y) => { const r = m.o[y]; if (!r || x < 0 || x >= m.w) return null; const ch = r[x]; return ch === " " ? (isRock(x, y) ? "W" : null) : WALL[ch] || ch === "Z" ? ch : null; };
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+    if (m.g[y][x] === "❋" && m.o[y][x] === " " && hash(x, y, 40) < 0.50) {
+      const variant = Math.floor(hash(x, y, 41) * S.rapeseed.length);
+      statics.push(stand({ sp: S.rapeseed[variant], glow: null, glint: -1 }, x, y, Math.round((hash(x, y, 42) - 0.5) * 10)));
+    }
     if (m.g[y][x] === "w") {
       const sh = (dx, dy) => { const r = m.g[y + dy], ch = r && r[x + dx]; return ch !== undefined && ch !== "w" && ch !== "b" ? 1 : 0; };
       const [X, Y] = tI(x, y);
@@ -302,7 +307,7 @@ export function loadMap(m) {
     else if (Array.isArray(sp)) sp = sp[Math.floor(h * sp.length)];
     statics.push(stand({
       sp, glow: ch === "L" ? "#ffe690" : ch === "K" ? "#72e6f4" : ch === "3" || ch === "9" ? "#ffd070" : ch === "0" || ch === "X" ? "#ff6a7a" : ch === "Y" && theme === "cave" ? "#5ae4d0" : ch === "/" ? "#9affc8" : null, glint: ch === "K" ? hash(x, y, 9) * 6 : -1,
-      depthFoliage: ch === "T" || ch === "P" || ch === "B",
+      depthFoliage: ch === "T" || ch === "P" || ch === "B" || ch === "桜",
     }, x, y, ch === "T" || ch === "P" ? Math.round((hash(x, y, 8) - 0.5) * 6) : 0));
   }
   for (const st of halls.statics) statics.push(st);
@@ -454,7 +459,7 @@ const amb = [];
 const AMB_N = { town: 16, meadow: 24, forest: 26, city: 80, cave: 26, crypt: 18, sewer: 22, abyss: 36, autumn: 40, desert: 30, jungle: 22, mesa: 24, mist: 26 };
 function respawn(p, ox, oy, fresh) {
   // (maps-v2 M3 art) sand blowing low across the desert; fireflies and falling leaves in the jungle as in the wood
-  const k = theme === "desert" || theme === "mesa" ? "sand" : theme === "forest" || theme === "jungle" ? (Math.random() < 0.45 ? "fly" : "leaf") : theme === "autumn" || theme === "mist" ? (Math.random() < 0.12 ? "spore" : "leaf") : theme === "city" ? "rain" : theme === "cave" || UG[theme] ? "dust" : "pollen";
+  const k = map.id === BLOSSOM_MAP ? "petal" : theme === "desert" || theme === "mesa" ? "sand" : theme === "forest" || theme === "jungle" ? (Math.random() < 0.45 ? "fly" : "leaf") : theme === "autumn" || theme === "mist" ? (Math.random() < 0.12 ? "spore" : "leaf") : theme === "city" ? "rain" : theme === "cave" || UG[theme] ? "dust" : "pollen";
   p.k = k;
   p.x = ox - 20 + Math.random() * (vw + 40);
   p.y = k === "rain" && !fresh ? oy - 10 : oy - 10 + Math.random() * (vh + 20);
@@ -466,9 +471,10 @@ function respawn(p, ox, oy, fresh) {
   p.c = k === "leaf" ? (theme === "autumn" ? HUE[Math.random() < 0.9 ? Math.floor(Math.random() * 3) : 3].fall[Math.floor(Math.random() * 3)] : Math.random() < 0.5 ? "#d89a48" : "#7abf52") : null;
   if (k === "spore") { p.vx = (Math.random() - 0.5) * 5; p.vy = -4 - Math.random() * 4; }
   if (k === "sand") { p.vx = 70 + Math.random() * 60; p.vy = 14 + Math.random() * 10; p.max = 1.2 + Math.random() * 1.6; p.life = fresh ? Math.random() * p.max : p.max; }
+  if (k === "petal") { p.vx = 9 + Math.random() * 10; p.vy = 6 + Math.random() * 7; }
 }
 export function drawAmbient(dt, t, ox, oy) {
-  const want = AMB_N[theme] || 20;
+  const want = map.id === BLOSSOM_MAP ? 30 : AMB_N[theme] || 20;
   while (amb.length < want) { const p = {}; respawn(p, ox, oy, true); amb.push(p); }
   for (const p of amb) {
     p.life -= dt;
@@ -480,6 +486,12 @@ export function drawAmbient(dt, t, ox, oy) {
     if (p.k === "rain") { g.globalAlpha = 0.3; g.fillStyle = "#a8c4ff"; g.fillRect(sx, sy, 1, 6); }
     else if (p.k === "fly") { const a = (0.45 + 0.55 * Math.sin(t / 260 + p.ph * 3)) * fade; g.globalAlpha = a * 0.28; g.fillStyle = "#e8ff8a"; g.fillRect(sx - 1, sy - 2, 3, 5); g.fillRect(sx - 2, sy - 1, 5, 3); g.globalAlpha = a; g.fillRect(sx - 1, sy, 3, 1); g.fillRect(sx, sy - 1, 1, 3); g.fillStyle = "#ffffff"; g.fillRect(sx, sy, 1, 1); }
     else if (p.k === "leaf") { g.globalAlpha = fade * 0.9; g.fillStyle = p.c; g.fillRect(sx, sy, 2, 1); g.fillRect(sx + (Math.sin(t / 300 + p.ph) > 0 ? 1 : 0), sy + 1, 1, 1); }
+    else if (p.k === "petal") {
+      const sway = Math.round(Math.sin(t / 420 + p.ph) * 5);
+      g.globalAlpha = fade * 0.86; g.fillStyle = p.ph < 3 ? "#ffd9df" : "#fff0e7";
+      g.fillRect(sx + sway, sy, 2, 2);
+      g.fillRect(sx + sway + 2, sy - 1, 1, 1);
+    }
     else if (p.k === "sand") { g.globalAlpha = Math.min(1, fade * 3) * 0.7; g.fillStyle = p.ph > 3 ? "#fff0c8" : "#f4d9a0"; g.fillRect(sx, sy + Math.round(Math.sin(t / 180 + p.ph) * 1.5), p.ph > 4.5 ? 3 : 2, 1); }
     else if (p.k === "spore") { const a = (0.5 + 0.5 * Math.sin(t / 400 + p.ph * 3)) * fade; g.globalAlpha = a * 0.35; g.fillStyle = "#b06ad8"; g.fillRect(sx - 1, sy - 1, 3, 3); g.globalAlpha = a; g.fillStyle = "#e0b8ff"; g.fillRect(sx, sy, 1, 1); }
     else if (p.k === "dust") { g.globalAlpha = fade * (theme === "abyss" ? 0.8 : 0.55); g.fillStyle = UG[theme] ? UG[theme].mote : "#bfe8ff"; g.fillRect(sx, sy, 1, theme === "sewer" ? 2 : 1); }

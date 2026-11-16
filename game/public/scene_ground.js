@@ -16,6 +16,8 @@ import { ground, toIso, pulseParts, map, theme, statics, loadCost } from "./scen
 
 const GROUND = { t: "#6cbf5e", r: "#aeb0a0", ".": "#6cbf5e", ",": "#6cbf5e", '"': "#6cbf5e", ":": "#3f8a5c", ";": "#3f8a5c", p: "#d9ab6c", o: "#b4b9c6", s: "#ecd9a2", w: "#4aa2e2", b: "#b98a50", c: "#486a8a", d: "#486a8a", n: "#486a8a", i: "#486a8a", W: "#131a32", a: "#474b5a", m: "#474b5a", k: "#9aa0ae", j: "#6a6444", v: "#bdb39a", g: "#486a8a", "%": "#b4622e", "=": "#a69c88", "&": "#3e2c46" };
 const GROUP = { t: 0, r: 3, ".": 0, ",": 0, '"': 0, ":": 1, ";": 1, p: 2, o: 3, s: 4, w: 5, b: 6, c: 7, d: 7, g: 7, n: 7, i: 7, W: 8, a: 9, m: 9, k: 10, j: 11, v: 12, "%": 2, "=": 3, "&": 11 };
+GROUND["❋"] = "#a6ac50";
+GROUP["❋"] = 0;
 /** The outline where a patch of ground ends: [dark edge line, soft inner rim]. */
 const EDGE = { 2: ["#8f6238", "#bd8c54"], 3: ["#6e7486", "#969cac"], 4: ["#b89a5e", "#d8c088"], 5: ["#2f78c0", "#86c8f4"], 6: ["#6a4426", "#96683a"], 7: ["#2a4262", "#3a5878"], 10: ["#5e6474", "#c4c8d2"], 11: ["#4a4430", "#7e7652"], 12: ["#7e7562", "#d6cdb4"] };
 const FLOWER = ["#fffbe8", "#ffd84a", "#ff9ac0", "#9ac8ff", "#f06a7a"];
@@ -158,6 +160,8 @@ export function paintGround(m, theme) {
           const a = X + 3 + (i % 3) * 10 + Math.floor(h(20 + i) * 3), q = Y + 2 + Math.floor(i / 3) * 15 + Math.floor(h(30 + i) * 3), bh = 7 + Math.floor(h(40 + i) * 4);
           b.r(a, q + 11 - bh, 2, bh, l); b.r(a + 3, q + 13 - bh, 2, bh - 2, lt(col, 1.32)); b.r(a - 2, q + 15 - bh, 1, bh - 4, d); b.r(a - 2, q + 11, 7, 1, d);
         }
+      } else if (ch === "❋") {
+        for (let i = 0; i < 5; i++) flower(X + 4 + Math.floor(h(30 + i) * 24), Y + 4 + Math.floor(h(40 + i) * 24), i % 2 ? "#ffe783" : "#f0cb52");
       } else if (ch === '"') {
         for (let i = 0; i < 3; i++) flower(X + 5 + Math.floor(h(30 + i) * 22), Y + 5 + Math.floor(h(40 + i) * 22), FLOWER[Math.floor(h(50 + i) * (g0 ? 3 : 5))]);
       } else if (free(tx, ty)) {

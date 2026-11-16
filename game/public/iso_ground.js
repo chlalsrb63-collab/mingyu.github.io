@@ -300,8 +300,15 @@ export function materials(theme) {
     ford.tex = organic(ford, SHP.pebble, SHP.water, 215, 0.38, 0.3, 6, 4);
     cave = { ";": moss, ":": mossE, v: steps, s: ford, _shelf: shelf };
   }
+  const rapeseed = mk(MID.grass, 0, "#a6ac50", {
+    pal: ["#a6ac50", "#7c984f", "#bac36c", "#d9a736", "#f0cb52", "#ffe783"],
+    line: "#7a8c42",
+  });
+  const flowering = [".55./5445/.44./..1.", ".53./4455/.33./.1..", ".44./4553", "..5./.453/..1.", ".55/44./.1."].map(shape);
+  rapeseed.tex = organic(rapeseed, flowering, SHP.grass2, 305, 0.94, 0.65, 4, 4);
   T = {
     ".": grass, ",": grass, '"': grass, t: grass, ":": grass, ";": grass,
+    "❋": rapeseed,
     p: path, s: sand, o: plaza, r: ruin, j: mud, v: steps, w: water, b: water,
     a: asph, m: asph, k: pave, c: floor, d: floor, g: floor, n: floor, i: floor, W: rock,
     "%": leaves, "=": royal, "&": blight,

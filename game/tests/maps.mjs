@@ -71,6 +71,44 @@ const flood = (m, sx, sy) => {
   const fresh = L.atlas(true, [m.id]).maps[m.id];
   assert.deepEqual([fresh.g, fresh.o], [m.g, m.o], "the beach seed gives the same coast on each generation");
 }
+{
+  const trail = maps.blossom_trail, willow = maps.willow;
+  const toTrail = willow.portals.filter((p) => p.to === trail.id), fromTrail = trail.portals.filter((p) => p.to === willow.id);
+  const pins = Object.fromEntries(D.maps.map((m) => [m.id, m]));
+  assert.deepEqual([trail.w, trail.h], [willow.w, willow.h], "the stroll map is the size of Willow");
+  assert.equal(trail.safe, true);
+  assert.equal(trail.spawns.length, 0);
+  assert.ok(pins.blossom_trail.pos[1] < pins.willow.pos[1], "the atlas puts the trail to the north");
+  assert.equal(pins.blossom_trail.art, "blossom_trail");
+  assert.equal(toTrail.length, 2);
+  assert.equal(fromTrail.length, 2);
+  assert.ok([...toTrail, ...willow.portals.filter((p) => p.to === "town")].every((p) => willow.reach[p.y * willow.w + p.x]));
+  assert.ok(fromTrail.every((p) => trail.reach[p.y * trail.w + p.x]));
+  assert.ok(trail.o.join("").split("桜").length > 450, "woods surround the path");
+  for (const [x0, x1] of [[9, 30], [41, 64]]) {
+    const flowers = trail.g.slice(20, 42).reduce((n, row) => n + [...row.slice(x0, x1)].filter((ch) => ch === "❋").length, 0);
+    assert.ok(flowers >= 120, "both trail loops wind around a broad flower field");
+  }
+  const d = flood(trail, ...trail.entry);
+  assert.ok([[21, 34], [31, 34], [54, 31], [37, 12]].every(([x, y]) => d[y * trail.w + x] >= 0));
+
+  const S = L.setup(), pid = "blossom-place", ch = L.newChar("봄날산책");
+  const enter = (door) => {
+    const p = S.players[pid], step = { t: "mv", x: door.x * 16 + 8, y: door.y * 16 + 9, d: 0 };
+    [p.x, p.y] = [step.x, step.y - 1];
+    S.now += 10000;
+    assert.ok(L.validateAction(S, pid, step).ok);
+    L.applyAction(S, pid, step);
+    return p.map;
+  };
+  ch.map = willow.id;
+  [ch.x, ch.y] = [toTrail[0].x * 16 + 8, toTrail[0].y * 16 + 8];
+  L.addPlayer(S, pid, ch);
+  assert.equal(enter(toTrail[0]), trail.id, "no level gate");
+  assert.equal(enter(fromTrail[0]), willow.id, "the trail returns to the northern path");
+  const fresh = L.atlas(true, [trail.id]).maps[trail.id];
+  assert.deepEqual([fresh.g, fresh.o], [trail.g, trail.o], "trail curves and groves come from fixed seeds");
+}
 const report = [];
 for (const id of HUNT) {
   const m = maps[id];

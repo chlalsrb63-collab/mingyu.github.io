@@ -28,6 +28,52 @@ export function scenery() {
     for (const [x, y] of [[8, 17], [21, 6], [17, 20]]) b.r(x, y, 2, 1, hl);
     if (fruit) for (const [x, y] of [[13, 23], [26, 17], [32, 29], [20, 33], [37, 20], [8, 30]]) { b.r(x, y, 3, 3, fruit); b.r(x, y, 1, 1, lt(fruit, 1.5)); }
   });
+  // The blossom branches spread outward from a forked trunk, leaving small openings under the crown.
+  const cherry = (v) => prop(78, 78, (b) => {
+    const bend = v === 0 ? -4 : v === 1 ? 3 : 0;
+    const [d, m, l, cream] = [
+      ["#b56f91", "#de9ab3", "#f4bdcb", "#ffe7dd"],
+      ["#a56986", "#d790aa", "#f0b4c5", "#ffe1da"],
+      ["#be8498", "#e8acbc", "#f9cbd0", "#fff0e6"],
+    ][v];
+    b.tri([[26,76], [33,71], [35,47], [34+bend,36], [40+bend,35], [43,62], [44,71], [52,76]], "#76564f");
+    b.tri([[34,73], [38,59], [37+bend,41], [41+bend,38], [45,72], [49,75], [42,76]], "#59414a");
+    b.tri([[37,59], [31,50], [18,42], [12,31], [16,34], [24,41], [39,49]], "#76564f");
+    b.tri([[40,56], [44,45], [54,39], [62,25], [62,34], [57,42], [46,54]], "#62474d");
+    b.r(34, 67, 2, 5, "#a9816c"); b.r(37, 57, 2, 9, "#a17a68"); b.r(42, 64, 1, 6, "#906358");
+    const spread = v === 1 ? 0.85 : 1;
+    const crowns = [
+      [12,31,11,8], [20,23,14,11], [32,15,13,12], [45,16,14,12],
+      [58,20,13,10], [66,32,11,9], [53,37,14,11], [37,34,15,12], [22,39,14,8],
+    ].map(([x, y, w, h], i) => [39 + (x - 39) * spread + bend, y + (v === 2 && i < 6 ? 4 : 0),
+      w * spread, h + (v === 1 && i < 6 ? 2 : 0)]);
+    for (const [x, y, w, h] of crowns) b.oval(x, y + 2, w, h, d);
+    for (const [x, y, w, h] of crowns) {
+      b.oval(x - 1, y, w - 1, h - 2, m);
+      b.oval(x - 3, y - 3, w * 0.72, h * 0.58, l);
+    }
+    b.tri([[35,54], [31,47], [23,42], [25,41], [33,44], [38,50]], "#76564f");
+    b.tri([[40,51], [48,44], [54,42], [50,46], [42,54]], "#76564f");
+    for (let i = 0; i < 75; i++) {
+      const [cx, cy, w, h] = crowns[i % crowns.length];
+      const x = Math.round(cx + (hash(i, v, 171) - 0.5) * w * 1.25);
+      const y = Math.round(cy + (hash(v, i, 169) - 0.6) * h * 1.22);
+      b.r(x, y, i % 4 ? 2 : 3, 1, y < cy ? cream : l);
+      if (i % 3 === 0) b.r(x + 1, y - 1, 1, 3, y < cy ? cream : m);
+    }
+  });
+  const rapeseed = (v) => prop(31, 26, (b) => {
+    for (let i = 0; i < 7; i++) {
+      const x = 3 + i * 4, y = 15 + ((i + v) % 3) * 3, height = 7 + Math.floor(hash(i, v, 47) * 8);
+      const tip = y - height, tilt = i % 2 ? 1 : -1;
+      b.r(x, tip + 3, 1, height - 2, "#608340");
+      b.r(x + tilt, y - 5, 3, 2, "#719848");
+      b.r(x - tilt, y - 8, 2, 1, "#a0af57");
+      b.r(x - 2, tip + 1, 5, 2, "#e4aa2d");
+      b.r(x - 1, tip - 1, 3, 3, "#f6ca3b");
+      b.r(x - 1, tip, 2, 1, "#fff0a0");
+    }
+  });
   const pine = (tall) => prop(40, 68, (b) => {
     b.r(17, 54, 6, 12, "#7a5030"); b.r(21, 54, 2, 12, "#5e3c22"); b.r(15, 65, 10, 2, "#7a5030");
     const tiers = tall ? [[36, 19, 20], [22, 15, 19], [8, 11, 18], [0, 6, 11]] : [[38, 18, 18], [25, 14, 17], [12, 9, 16]];
@@ -240,6 +286,8 @@ export function scenery() {
     if (v === 2) for (const [fx, fy] of [[17, 12], [31, 19], [10, 28], [40, 30], [24, 30]]) { b.r(fx, fy, 3, 3, "#e8484e"); b.r(fx + 1, fy + 1, 1, 1, "#ffd24a"); }
   });
   SC = {
+    "桜": [cherry(0), cherry(1), cherry(2)],
+    rapeseed: [rapeseed(0), rapeseed(1), rapeseed(2)],
     "Ψ": [palm(0, 0), palm(1, 1), palm(-1, 0), palm(0.5, 1)],
     "Φ": [reef(0), reef(1), prop(26, 18, (b, x) => {
       // a low one, barely out of the water

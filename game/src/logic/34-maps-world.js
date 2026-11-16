@@ -351,6 +351,81 @@ function buildSunsetBeach() {
   return m;
 }
 
+// ───────────────────────────── 벚꽃나무산책로 ─────────────────────────────
+
+const BLOSSOM_TRAIL = "blossom_trail";
+
+/** A continuous trail from a few anchors, with a slightly changing verge at each bend. */
+function paintBlossomPath(g, points, seed) {
+  const sample = (a, b, c, d, t) => b + 0.5 * t * (c - a + t * (2 * a - 5 * b + 4 * c - d + t * (3 * b - a - 3 * c + d)));
+  for (let i = 0; i < points.length - 1; i++) {
+    const a = points[Math.max(0, i - 1)], b = points[i], c = points[i + 1], d = points[Math.min(points.length - 1, i + 2)];
+    const steps = 4 * Math.ceil(Math.hypot(c[0] - b[0], c[1] - b[1]));
+    for (let j = 0; j <= steps; j++) {
+      const t = j / steps, x = sample(a[0], b[0], c[0], d[0], t), y = sample(a[1], b[1], c[1], d[1], t);
+      const radius = 1.55 + 0.42 * Math.sin(i * 1.6 + t * 1.6 + seed);
+      for (let yy = Math.floor(y - radius - 1); yy <= Math.ceil(y + radius + 1); yy++) {
+        if (!g[yy]) continue;
+        for (let xx = Math.floor(x - radius - 1); xx <= Math.ceil(x + radius + 1); xx++) {
+          if (xx <= 0 || xx >= g[yy].length - 1) continue;
+          const edge = radius + h2(xx, yy, seed) * 0.54;
+          if ((xx - x) ** 2 + (yy - y) ** 2 <= edge ** 2) g[yy][xx] = "p";
+        }
+      }
+    }
+  }
+}
+
+function buildBlossomTrail() {
+  const m = blank(BLOSSOM_TRAIL, "벚꽃나무산책로", 70, 56, ".");
+  m.theme = "meadow";
+  m.bgm = "willow";
+  m.safe = true;
+  m.entry = [35, 52];
+  const { g, o, w, h } = m;
+  const seed = 68123;
+
+  // The two fields bulge between the loop trails, with scalloped, grassy edges.
+  const pockets = [[20, 31, 10.5, 10], [52, 32, 12, 10], [34, 11, 6, 4]];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const grain = h2(x, y, seed);
+    const flowers = pockets.some(([cx, cy, rx, ry]) =>
+      ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 < 0.88 + 0.19 * Math.sin((x + y) * 0.7) + 0.34 * grain);
+    g[y][x] = flowers && grain > 0.07 ? "❋" : grain < 0.23 ? "," : ".";
+  }
+
+  const trunk = [[35, 54], [35, 48], [31, 41], [31, 34], [35, 27], [35, 23], [40, 17], [38, 12], [35, 8]];
+  const west = [[31, 41], [24, 43], [16, 37], [14, 30], [19, 23], [26, 20], [35, 23]];
+  const east = [[31, 34], [38, 34], [45, 38], [53, 43], [61, 38], [59, 29], [52, 22], [45, 21], [40, 17]];
+  const westField = [[16, 37], [21, 34], [25, 33], [31, 34]];
+  const eastField = [[45, 38], [49, 34], [54, 31], [59, 29]];
+  [trunk, west, east, westField, eastField].forEach((trail, i) => paintBlossomPath(g, trail, seed + i));
+  rect(g, 34, 51, 37, 54, "p");
+
+  // The crowns crowd the trail from the sides, with an open view across each flower field.
+  for (let y = 1; y < h - 1; y++) for (let x = 1; x < w - 1; x++) {
+    if ("p❋".includes(g[y][x])) continue;
+    const r = h2(x, y, seed + 19);
+    const verge = g[y]?.[x - 1] === "p" || g[y]?.[x + 1] === "p" || g[y - 1]?.[x] === "p" || g[y + 1]?.[x] === "p";
+    const nearTree = o[y][x - 1] === "桜" || o[y - 1][x] === "桜" || o[y - 1][x - 1] === "桜";
+    if (!nearTree && r < (verge ? 0.67 : 0.29)) o[y][x] = "桜";
+    else if (!verge && r > 0.982) o[y][x] = "B";
+  }
+  rect(o, 0, 0, w - 1, 0, "桜");
+  rect(o, 0, h - 1, w - 1, h - 1, "桜");
+  rect(o, 0, 1, 0, h - 2, "桜");
+  rect(o, w - 1, 1, w - 1, h - 2, "桜");
+
+  m.marks = [];
+  for (const [x, y, label, to] of [[33, 50, "↓ 버드나무 마을", "willow"], [34, 37, "벚꽃 그늘길"],
+    [20, 35, "물결 유채밭"], [52, 35, "햇살 유채밭"], [37, 9, "오래된 벚나무 쉼터"]]) {
+    o[y][x] = "G";
+    m.marks.push({ x, y, kind: "sign", label, ...(to ? { to } : {}) });
+  }
+  for (const [x, y] of [[36, 47], [16, 39], [26, 32], [43, 39], [55, 41], [38, 22], [35, 12]]) o[y][x] = "k";
+  return m;
+}
+
 // ───────────────────────────── the generated world, map by map ─────────────────────────────
 // Nothing here is built when the rules load: each hunting ground is generated the first time
 // someone needs it (mapOf in 36-custom-maps.js) and kept. GEN holds what each one is made

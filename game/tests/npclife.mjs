@@ -15,20 +15,26 @@ const beach = [
   "beach_gardener_onn", "beach_sketch_haru", "beach_hearth_bori", "beach_traveler_arin",
   "beach_dock_bada", "beach_peddler_milu", "beach_elder_haemi", "beach_child_sae",
 ];
+const blossom = [
+  "blossom_guard_yeon", "blossom_basket_bina", "blossom_bee_honey", "blossom_sketch_dodam", "blossom_walk_garam", "blossom_petals_nabi",
+  "blossom_tea_maram", "blossom_courier_woon", "blossom_elder_chae", "blossom_musician_ara",
+];
 const cast = [
   "smith", "bank", "juju", "forge_tong", "r_peng", "story", "town_charm_juana",
   "elder", "hall_bori", "daily", "warp", "shop", "costume", "train", "town_job_arsen", "dimkeeper", "collector",
   "r_dotori", "r_kongal", "r_bodeul", "r_neogul", "r_gaegul", "r_saessak", "r_daenamu", "r_meongdae",
-  "r_kkamang", "r_yeoreum", "r_jjik", "r_ggul", "r_riri", "r_noeul", "r_bawi2", "popo", "cafe_moka", ...Object.keys(adventurers), ...beach,
+  "r_kkamang", "r_yeoreum", "r_jjik", "r_ggul", "r_riri", "r_noeul", "r_bawi2", "popo", "cafe_moka", ...Object.keys(adventurers), ...beach, ...blossom,
 ];
 assert.deepEqual(L.lifeCheck(), []);
 assert.deepEqual(defs.npclife.cast.map((row) => row[0]), cast);
-assert.ok(Buffer.byteLength(JSON.stringify(defs.npclife)) < 28_000);
-for (const id of beach) {
-  const a = L.npcAt(id, at(17)), b = L.npcAt(id, at(17) + 1000);
-  assert.deepEqual([a.map, a.act, a.moving], ["sunset_beach", "stroll", true]);
-  assert.notDeepEqual([a.x, a.y], [b.x, b.y], `${id} walks around the beach`);
-  assert.ok(defs.npclife.lines[id].stroll.length);
+assert.ok(Buffer.byteLength(JSON.stringify(defs.npclife)) < 32_000);
+for (const [map, residents] of [["sunset_beach", beach], ["blossom_trail", blossom]]) {
+  for (const id of residents) {
+    const a = L.npcAt(id, at(17)), b = L.npcAt(id, at(17) + 1000);
+    assert.deepEqual([a.map, a.act, a.moving], [map, "stroll", true]);
+    assert.notDeepEqual([a.x, a.y], [b.x, b.y], `${id} walks around ${map}`);
+    assert.ok(defs.npclife.lines[id].stroll.length);
+  }
 }
 for (const resident of RESIDENTS) {
   const row = defs.npclife.cast.find(([id]) => id === resident.id);

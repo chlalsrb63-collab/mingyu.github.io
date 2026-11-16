@@ -165,6 +165,23 @@ function town(g, willow) {
   rect(g, 25, 12, 6, 1, "#a9ba73");
 }
 
+function blossomTrail(g) {
+  ground(g, ["#a5a964", "#73824e", "#4b5d40"]);
+  poly(g, [[6,26], [15,23], [31,25], [32,29], [44,29], [41,33], [28,36], [24,33], [27,29], [14,28]], "#d8b78c");
+  for (const [x, y, tint] of [[17,25,"#f1c5cd"], [34,22,"#ffe1dc"], [48,27,"#edb4c6"]]) {
+    rect(g, x - 2, y - 7, 4, 9, "#715151");
+    poly(g, [[x-10,y-7], [x-9,y-12], [x-5,y-15], [x,y-14], [x+5,y-15], [x+9,y-11], [x+10,y-6], [x+5,y-4], [x-4,y-4]], "#71546a");
+    poly(g, [[x-9,y-8], [x-7,y-12], [x-3,y-14], [x+1,y-12], [x+5,y-14], [x+8,y-10], [x+8,y-7], [x+3,y-5], [x-4,y-6]], "#ce8ca8");
+    poly(g, [[x-8,y-9], [x-6,y-12], [x-3,y-13], [x+1,y-11], [x+5,y-13], [x+7,y-9], [x+2,y-8], [x-2,y-9], [x-6,y-8]], tint);
+    rect(g, x - 5, y - 11, 3, 1, "#fff0e6");
+    rect(g, x + 3, y - 7, 2, 1, "#ffe0d7");
+  }
+  for (const [x, y] of [[8,27],[11,29],[14,30],[18,31],[21,32],[36,31],[38,29],[47,30],[51,28]]) {
+    rect(g, x, y, 2, 1, "#f2ce4e");
+    rect(g, x + 1, y - 1, 1, 1, "#ffe991");
+  }
+}
+
 function city(g) {
   ground(g, ["#919281", "#68687a", "#575163"]);
   poly(g, [[13, 30], [27, 24], [44, 24], [50, 28], [33, 35], [26, 35]], "#62647a");
@@ -326,7 +343,7 @@ function airship(g) {
 
 const terrains = new Map([
   ["frostkeep", frostkeep], ["dunesea", dunesea], ["airship", airship],
-  ["town", town], ["willow", g => town(g, true)], ["city", city],
+  ["town", town], ["willow", g => town(g, true)], ["blossom_trail", blossomTrail], ["city", city],
   ["meadow", meadow], ["forest", forest], ["jungle", jungle], ["coast", coast],
   ["desert", oasis], ["oasis", oasis], ["autumn", autumn], ["maple", autumn],
   ["crypt", catacomb], ["sewer", g => catacomb(g, true)], ["cave", cave],
