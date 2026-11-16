@@ -19182,13 +19182,136 @@ ALBA_RULES.fly = {
     return [fl, cl];
   },
 };
-// 일일 아르바이트 · 화환 엮기 (STUB: the real game replaces this file; contract in 66-alba.js)
-Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 1600, mul: 0.95, outfit: ["hat_wreath_pink","top_willow_apron"], tool: "shears", hint: "꽃줄을 이끌어 꽃을 모아 화환을 완성하세요." } });
+// 일일 아르바이트 · 화환 엮기 (docs/design/daily-alba-minigames-2026-11-16.md §9.6): Snake in a flower garden, 16×16. Contract: 66-alba.js.
+// A fixed-step simulation inside `adv`: the flower-chain moves one cell every `garInt` ms on its own (start ~7 steps/s, faster with every garland, slower
+// in a fever) and the player only turns. `g.simAt` is the absolute time of the next step; `adv` applies every step whose time has passed, in order,
+// with its own timestamp (at most GAR.catchup per call; a longer stall skips the backlog). Flowers +10, a golden flower +50 (6 s), a thorn vine /
+// a wall / the chain itself cuts the chain to a 3-link stub (−40, combo broken, 1.5 s pause — never game over), 12 links = a finished garland (+100,
+// the chain restarts, a notch faster). Thorns grow over time and never touch each other (the garden stays connected).
+// Flowers, thorns and the golden flower each roll from their own seeded stream (rf / rt / rg), so the clock of the garden does not depend on the play.
+// ab.g = { c: chain cells (y * 16 + x), head last, dir 0 up · 1 right · 2 down · 3 left (the last step's heading), q: turns waiting for the next steps (≤ 2),
+//          simAt, done: garlands, f: flower cells, gold: {c, until} | null, th: thorn cells, thAt, goldAt, n: steps, hits, seq, ev: [seq, flags, cell] (1 flower · 2 gold · 4 garland · 8 crash) }.
+// The one input is {d: 0..3}: a turn, queued for the next step; the same heading and the reverse of the last queued heading are ignored.
+// view = [chain cells, dir, ms to the next step, step ms, flower cells, [gold cell, ms left] | 0, thorn cells, garlands done, queued turns, ev]
+const GAR = {
+  W: 16, base: 143, min: 110, ramp: 0.96, stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
+  thornFirst: 20000, thornEvery: 9000, thornMax: 14, goldFirst: [14000, 22000], goldGap: [14000, 24000], goldLife: 6000,
+  slow: 1.35, pts: [10, 50, 100], pen: 40, catchup: 40, queue: 2,
+};
+const GAR_DX = [0, 1, 0, -1], GAR_DY = [-1, 0, 1, 0];
+Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 9600, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊겨요. 12송이면 화환 완성!" } });
+
+/** Ms between steps: faster with every garland, ×1.35 slower in a fever ("봄바람"). */
+const garInt = (g, ab, T) => Math.round(Math.max(GAR.min, GAR.base * GAR.ramp ** g.done) * (T < ab.feverUntil ? GAR.slow : 1));
+const garHead = (g) => g.c[g.c.length - 1];
+
+/** A free cell for a flower (not on top of the head) or, with `thorn`, for a thorn vine: away from the head and its line, never touching another thorn or a flower. -1: no room. */
+function garSpawn(g, box, thorn) {
+  const W = GAR.W, o = new Array(W * W).fill(0), h = garHead(g), hx = h % W, hy = (h / W) | 0, ok = [];
+  for (const c of g.c) o[c] = 1;
+  for (const c of g.th) o[c] = 2;
+  for (const c of g.f) o[c] = 3;
+  if (g.gold) o[g.gold.c] = 3;
+  for (let c = 0; c < W * W; c++) {
+    if (o[c]) continue;
+    const x = c % W, y = (c / W) | 0;
+    if (!thorn) { if (Math.abs(x - hx) + Math.abs(y - hy) >= GAR.near) ok.push(c); continue; }
+    if (Math.max(Math.abs(x - hx), Math.abs(y - hy)) < 4) continue;
+    if ((x === hx && (y - hy) * GAR_DY[g.dir] > 0) || (y === hy && (x - hx) * GAR_DX[g.dir] > 0)) continue;   // straight ahead of the head
+    let bad = false;
+    for (let dy = -1; dy <= 1 && !bad; dy++) for (let dx = -1; dx <= 1; dx++) {
+      const nx = x + dx, ny = y + dy;
+      if (nx < 0 || ny < 0 || nx >= W || ny >= W) continue;
+      const v = o[ny * W + nx];
+      if (v === 2 || (v === 3 && !(dx && dy))) { bad = true; break; }
+    }
+    if (!bad) ok.push(c);
+  }
+  return ok.length ? ok[ri(box, 0, ok.length - 1)] : -1;
+}
+/** After a cut the stub keeps its head and picks a heading: straight on when 3+ cells are free ahead, else the free direction with the longest run (never back onto the neck). */
+function garAim(g) {
+  const W = GAR.W, h = garHead(g), hx = h % W, hy = (h / W) | 0;
+  const run = (d) => {
+    let x = hx, y = hy, n = 0;
+    for (; n < 8; n++) { x += GAR_DX[d]; y += GAR_DY[d]; if (x < 0 || y < 0 || x >= W || y >= W || g.th.includes(y * W + x) || g.c.includes(y * W + x)) break; }
+    return n;
+  };
+  if (run(g.dir) >= 3) return;
+  let best = 0;
+  for (let d = 0; d < 4; d++) { const r = run(d); if (r > best) { best = r; g.dir = d; } }
+  if (best) return;
+  // boxed in (the head between thorns, walls and its own neck): put the stub down somewhere free
+  const start = ri(g.rt, 0, W * W - 1);
+  for (let i = 0; i < W * W; i++) {
+    const c0 = (start + i) % (W * W), x = c0 % W, y = (c0 / W) | 0;
+    const row = [0, 1, 2, 3].map((k) => (x + k < W ? c0 + k : -1));
+    if (row.every((c) => c >= 0 && !g.th.includes(c) && !g.f.includes(c) && !(g.gold && g.gold.c === c))) { g.c = row.slice(0, GAR.stub); g.dir = 1; return; }
+  }
+}
+/** The head met a wall / a thorn / its own chain: it stays where it is, shortened to a stub; a pause, then it goes on. */
+function garCrash(ab, T, h) {
+  const g = ab.g;
+  albaBad(ab, GAR.pen);
+  g.hits++;
+  g.c = g.c.slice(-GAR.stub); g.q.length = 0;
+  garAim(g);
+  g.ev = [++g.seq, 8, h];
+  g.simAt = T + GAR.pause;
+}
+/** One step of the chain at time T: the garden's clock, the queued turn, the move, what it ran into. */
+function garStep(ab, T) {
+  const g = ab.g, W = GAR.W;
+  g.n++;
+  if (g.gold && T >= g.gold.until) g.gold = null;
+  if (!g.gold && T >= g.goldAt) {
+    const c = garSpawn(g, g.rg, 0);
+    if (c >= 0) { g.gold = { c, until: T + GAR.goldLife }; g.goldAt = T + GAR.goldLife + ri(g.rg, GAR.goldGap[0], GAR.goldGap[1]); } else g.goldAt = T + 2000;
+  }
+  if (T >= g.thAt && g.th.length < GAR.thornMax) {
+    const c = garSpawn(g, g.rt, 1);
+    if (c >= 0) { g.th.push(c); g.thAt = T + GAR.thornEvery + ri(g.rt, -1500, 1500); } else g.thAt = T + 2000;
+  }
+  if (g.q.length) g.dir = g.q.shift();
+  const h = garHead(g), nx = (h % W) + GAR_DX[g.dir], ny = ((h / W) | 0) + GAR_DY[g.dir], nc = ny * W + nx, inb = nx >= 0 && ny >= 0 && nx < W && ny < W;
+  const fl = inb ? g.f.indexOf(nc) : -1, gold = inb && !!g.gold && g.gold.c === nc, eat = fl >= 0 || gold;
+  if (!inb || g.th.includes(nc) || (g.c.includes(nc) && !(nc === g.c[0] && !eat))) { garCrash(ab, T, h); return; }   // the tail's cell is free again when the chain does not grow
+  g.c.push(nc);
+  if (!eat) g.c.shift();
+  let flags = 0;
+  if (fl >= 0) { g.f.splice(fl, 1); albaGood(ab, T, GAR.pts[0]); flags |= 1; const c = garSpawn(g, g.rf, 0); if (c >= 0) g.f.push(c); }
+  if (gold) { g.gold = null; albaGood(ab, T, GAR.pts[1]); flags |= 2; }
+  if (g.c.length >= GAR.full) { albaGood(ab, T, GAR.pts[2]); g.done++; flags |= 4; g.c = g.c.slice(-GAR.stub); g.q.length = 0; garAim(g); }
+  if (flags) g.ev = [++g.seq, flags, nc];
+  g.simAt = T + garInt(g, ab, T);
+}
+
 ALBA_RULES.garland = {
-  init(S, p, ab) { ab.g = { n: 0 }; },
-  adv() {},
-  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
-  view(ab) { return [ab.g.n]; },
+  init(S, p, ab) {
+    const W = GAR.W, sub = (x) => ({ seed: (ab.box.seed ^ x) | 0 });
+    const g = ab.g = { c: [8 * W + 6, 8 * W + 7, 8 * W + 8], dir: 1, q: [], simAt: ab.runAt + GAR.lead, done: 0, f: [], gold: null, th: [], thAt: ab.runAt + GAR.thornFirst, goldAt: 0,
+      rf: sub(0x1f1f1f), rt: sub(0x2e2e2e), rg: sub(0x3d3d3d), n: 0, hits: 0, seq: 0, ev: [0, 0, 0] };
+    g.goldAt = ab.runAt + ri(g.rg, GAR.goldFirst[0], GAR.goldFirst[1]);
+    for (let i = 0; i < GAR.flowers; i++) g.f.push(garSpawn(g, g.rf, 0));
+  },
+  adv(S, p, ab, now) {
+    const g = ab.g;
+    let i = 0;
+    for (; i < GAR.catchup && g.simAt <= now; i++) { garStep(ab, g.simAt); albaTouch(ab); }
+    if (g.simAt <= now) g.simAt = now;   // a long stall: skip the backlog
+  },
+  act(S, p, ab, a, now) {
+    const g = ab.g, d = a.d;
+    if (!Number.isInteger(d) || d < 0 || d > 3) return "bad";
+    const last = g.q.length ? g.q[g.q.length - 1] : g.dir;
+    if (d === last || d === (last ^ 2) || g.q.length >= GAR.queue) return null;   // nothing to turn, no instant reversal, the queue is full
+    g.q.push(d);
+    return null;
+  },
+  view(ab, now) {
+    const g = ab.g;
+    return [g.c.slice(), g.dir, Math.max(0, g.simAt - now), garInt(g, ab, now), g.f.slice(), g.gold && g.gold.until > now ? [g.gold.c, g.gold.until - now] : 0, g.th.slice(), g.done, g.q.slice(), g.ev.slice()];
+  },
 };
 // 일일 아르바이트 · 가로등 점등 (STUB: the real game replaces this file; contract in 66-alba.js)
 Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 1900, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "골목의 가로등을 모두 켜세요. 그림자를 조심하세요!" } });
@@ -19709,13 +19832,148 @@ ALBA_RULES.pipe = {
       Math.max(0, g.goAt - now), Math.max(0, g.te - now), g.tr, g.lr];
   },
 };
-// 일일 아르바이트 · 여관 공연 (STUB: the real game replaces this file; contract in 66-alba.js)
-Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 2100, mul: 1.05, outfit: ["hat_beret","top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 연주하세요." } });
+// 일일 아르바이트 · 여관 공연 (docs/design/daily-alba-minigames-2026-11-16.md §9.5): a 4-lane falling-note rhythm game. Contract: 66-alba.js.
+// The whole song is a seeded PATTERN SCHEDULE rolled at `init` (what the player presses never changes it): notes in time order, each
+// { t: ms from the run start, l: lane 0..3, h: hold ms (0 = a tap), s: 0 waiting · 1 hit · 2 missed · 3 held (head hit, the tail is pending) }.
+// A press is judged against the note's ABSOLUTE time: press time = server receipt − RHY.lat (a fixed latency allowance). Perfect ±45 ms (20 points),
+// Good ±100 ms (10), ×1.5 wider while the fever "앙코르" lasts. A note whose Good window passed unhit is a Miss (albaBad 10), applied by `adv` in time order.
+// A press that hits nothing is a stray: ignored, no penalty; 5 strays within 2 s are "mashing" and every press is ignored for 1.5 s.
+// A hold note: hit its head, keep the key down, let go at its end (±RHY.tailOk early is fine; later is fine too — a press still down when the tail
+// is over counts as held). Letting go early breaks the hold (a Miss). ab.g = { N, Q: per lane its note ids in time order, P: per lane the first
+// id still waiting, H: first id still waiting overall, hold: per lane the held note id | -1, lock, stray: times of the last strays, sent: how far
+// ahead the last view announced (ms from the run start), last: the final note's end, seq, ev: [[seq, lane, kind]…], cnt: [perfect, good, miss] }.
+// Inputs: {l: 0..3} or {m: 1..15 (lane bits)} presses; with up: 1 the same releases (a hold's tail). One message may carry a chord (m).
+// view = [notes flat [id, lane, ms from now (t − now), hold ms, held 0|1 …], judgements flat [seq, lane, kind …] (kind 0 miss · 1 good · 2 perfect ·
+//         3 hold done · 4 hold broken, the last RHY.ring), bpm, [perfect, good, miss]]; the notes are the waiting / held ones within RHY.ahead ms.
+const RHY = {
+  ahead: 4000, refresh: 2500, lat: 40, perf: 45, good: 100, wide: 1.5, tailOk: 120, tailEnd: 150, lead: 2000, tail: 1500, sameLane: 240,
+  perSec: 7, strayN: 5, strayMs: 2000, lockMs: 1500, missPen: 10, pts: [10, 20], holdPts: 10, ring: 8, bpm: [100, 140],
+  quarterTo: 40000, holdFrom: 50000, chordFrom: 60000, tripleFrom: 180000,
+};
+Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 21500, mul: 1.05, outfit: ["hat_beret", "top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 D F J K (← ↓ ↑ →) 또는 터치로 연주하세요. 긴 음표는 끝까지 누르세요!" } });
+
+const rhyBpm = (t) => RHY.bpm[0] + (RHY.bpm[1] - RHY.bpm[0]) * clamp(t / ALBA_T.runMs, 0, 1);
+/** Fever widens every window ×1.5. */
+const rhyW = (ab, T) => (T < ab.feverUntil ? RHY.wide : 1);
+
+/** Pick `k` distinct lanes among `ok`: no same lane twice running, the hands (lanes 0-1 / 2-3) take turns. */
+function rhyLanes(box, ok, prev, k) {
+  const out = [];
+  while (out.length < k && ok.length) {
+    const w = ok.map((l) => (l === prev ? 0.25 : 1) * (prev >= 0 && (l >> 1) !== (prev >> 1) ? 1.6 : 1) * (out.length && (l >> 1) === (out[0] >> 1) ? 0.4 : 1));
+    let r = rnd(box) * w.reduce((a, b) => a + b, 0), i = 0;
+    while (i < ok.length - 1 && r >= w[i]) r -= w[i++];
+    out.push(ok[i]); ok.splice(i, 1);
+  }
+  return out;
+}
+/** Roll the whole song: quarter notes first, then eighths on a half-filled grid; chords from 60 s, a few holds from 50 s, triples only in the last minute. */
+function rhyBuild(box) {
+  const T = ALBA_T.runMs, notes = [], free = [0, 0, 0, 0], hEnd = [0, 0, 0, 0];
+  let t = RHY.lead, prev = -1;
+  while (t < T - RHY.tail) {
+    const u = t / T, beat = 60000 / rhyBpm(t), act = hEnd.filter((e) => e > t).length, cap = (t >= RHY.tripleFrom ? 3 : 2) - act;
+    let busy = 0;
+    for (let i = notes.length - 1; i >= 0 && notes[i].t > t - 1000; i--) busy++;   // keys already asked in the last second
+    if (cap > 0 && busy < RHY.perSec && rnd(box) >= (t < RHY.quarterTo ? 0.22 : 0.58 - 0.2 * u)) {
+      let k = 1;
+      if (t >= RHY.chordFrom && cap >= 2 && rnd(box) < 0.06 + 0.14 * u) k = Math.min(t >= RHY.tripleFrom && cap >= 3 && rnd(box) < 0.2 ? 3 : 2, RHY.perSec - busy);
+      const lanes = rhyLanes(box, [0, 1, 2, 3].filter((l) => free[l] <= t), prev, k);
+      let hold = 0;
+      if (lanes.length === 1 && t >= RHY.holdFrom && !act && rnd(box) < 0.06 + 0.08 * u) {
+        hold = Math.round(beat * [1, 1.5, 2][ri(box, 0, 2)]);
+        if (t + hold > T - RHY.tail - 400) hold = 0;
+      }
+      for (const l of lanes) {
+        notes.push({ t: Math.round(t), l, h: hold, s: 0 });
+        free[l] = t + (hold ? hold + 300 : RHY.sameLane);
+        if (hold) hEnd[l] = t + hold;
+      }
+      prev = lanes.length ? lanes[0] : prev;
+    }
+    t += t < RHY.quarterTo ? beat : beat / 2;
+  }
+  notes.forEach((n, i) => { n.id = i; });
+  const Q = [[], [], [], []];
+  for (const n of notes) Q[n.l].push(n.id);
+  return { N: notes, Q, P: [0, 0, 0, 0], H: 0, hold: [-1, -1, -1, -1], lock: 0, stray: [], sent: 0, last: notes.length ? notes[notes.length - 1].t + notes[notes.length - 1].h : 0, seq: 0, ev: [], cnt: [0, 0, 0] };
+}
+const rhyEv = (g, l, kind) => { g.ev.push([++g.seq, l, kind]); if (g.ev.length > RHY.ring) g.ev.shift(); };
+
+/** A key goes down on lane `l` at `tt` (ms from the run start, latency allowance already taken off). */
+function rhyPress(ab, l, tt, now) {
+  const g = ab.g, k = rhyW(ab, now), q = g.Q[l], wg = RHY.good * k, wp = RHY.perf * k;
+  if (now < g.lock) return;
+  while (g.P[l] < q.length && g.N[q[g.P[l]]].s) g.P[l]++;
+  for (let i = g.P[l]; i < q.length; i++) {
+    const n = g.N[q[i]];
+    if (n.s) continue;
+    const dt = tt - n.t;
+    if (dt > wg) continue;   // its window is over: `adv` calls it a Miss
+    if (dt < -wg) break;     // too early for this one (and so for the later ones)
+    const perfect = Math.abs(dt) <= wp;
+    n.s = n.h ? 3 : 1;
+    if (n.h) g.hold[l] = n.id;
+    albaGood(ab, now, RHY.pts[perfect ? 1 : 0]);
+    g.cnt[perfect ? 0 : 1]++;
+    rhyEv(g, l, perfect ? 2 : 1);
+    return;
+  }
+  g.stray.push(now);
+  if (g.stray.length > RHY.strayN) g.stray.shift();
+  if (g.stray.length === RHY.strayN && now - g.stray[0] <= RHY.strayMs) { g.lock = now + RHY.lockMs; g.stray.length = 0; }
+}
+/** A key comes up on lane `l`: the tail of the note held there (nothing held: nothing happens). */
+function rhyRelease(ab, l, tt, now) {
+  const g = ab.g, id = g.hold[l];
+  if (id < 0) return;
+  const n = g.N[id];
+  g.hold[l] = -1;
+  if (tt >= n.t + n.h - RHY.tailOk) { n.s = 1; albaGood(ab, now, RHY.holdPts); rhyEv(g, l, 3); }
+  else { n.s = 2; albaBad(ab, RHY.missPen); g.cnt[2]++; rhyEv(g, l, 4); }
+}
+
 ALBA_RULES.rhythm = {
-  init(S, p, ab) { ab.g = { n: 0 }; },
-  adv() {},
-  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
-  view(ab) { return [ab.g.n]; },
+  init(S, p, ab) { ab.g = rhyBuild(ab.box); },
+  adv(S, p, ab, now) {
+    const g = ab.g, J = now - RHY.lat - ab.runAt, n = g.N;   // J: the judged clock, ms from the run start
+    for (;;) {   // the next thing that falls due: the oldest waiting note's Good window, or a held tail nobody let go of
+      while (g.H < n.length && n[g.H].s !== 0) g.H++;
+      let due = Infinity, id = -1, tail = false;
+      if (g.H < n.length) { due = n[g.H].t + RHY.good * rhyW(ab, ab.runAt + n[g.H].t); id = g.H; }
+      for (let l = 0; l < 4; l++) if (g.hold[l] >= 0) { const h = n[g.hold[l]], d = h.t + h.h + RHY.tailEnd; if (d < due) { due = d; id = h.id; tail = true; } }
+      if (due >= J) break;
+      const m = n[id];
+      if (tail) { m.s = 1; g.hold[m.l] = -1; albaGood(ab, ab.runAt + due + RHY.lat, RHY.holdPts); rhyEv(g, m.l, 3); }
+      else { m.s = 2; albaBad(ab, RHY.missPen); g.cnt[2]++; rhyEv(g, m.l, 0); }
+    }
+    if (g.sent < g.last && g.sent - (now - ab.runAt) <= RHY.refresh) albaTouch(ab);   // the announced window is running dry: send the next stretch
+  },
+  act(S, p, ab, a, now) {
+    let m;
+    if (a.m !== undefined) {
+      if (a.l !== undefined || !Number.isInteger(a.m) || a.m < 1 || a.m > 15) return "bad";
+      m = a.m;
+    } else {
+      if (!Number.isInteger(a.l) || a.l < 0 || a.l > 3) return "bad";
+      m = 1 << a.l;
+    }
+    if (a.up !== undefined && a.up !== 1) return "bad";
+    const tt = now - RHY.lat - ab.runAt;
+    for (let l = 0; l < 4; l++) if (m & (1 << l)) (a.up === 1 ? rhyRelease : rhyPress)(ab, l, tt, now);
+    return null;
+  },
+  view(ab, now) {
+    const g = ab.g, rt = now - ab.runAt, to = rt + RHY.ahead, notes = [];
+    g.sent = to;
+    for (let l = 0; l < 4; l++) { const id = g.hold[l]; if (id >= 0 && id < g.H) { const n = g.N[id]; notes.push(id, l, n.t - rt, n.h, 1); } }
+    for (let i = g.H; i < g.N.length; i++) {
+      const n = g.N[i];
+      if (n.t >= to) break;
+      if (n.s === 0 || n.s === 3) notes.push(i, n.l, n.t - rt, n.h, n.s === 3 ? 1 : 0);
+    }
+    return [notes, g.ev.flat(), Math.round(rhyBpm(rt)), g.cnt.slice()];
+  },
 };
 // 일일 아르바이트 · 편의점 아르바이트: a cash register, solo (contract in 66-alba.js; plan docs/design/daily-alba-minigames-2026-11-16.md §3.3).
 // Three customer lanes (a fourth opens for the last 30 s rush). A customer arrives with 1-5 items on the counter, scans nothing herself, and has a
