@@ -1359,7 +1359,7 @@ const books = (c, t) => c.ents.filter((e) => e.t === t);
   const all = LB.titles.flat();
   assert.ok(LB.titles.every((g) => g.length === 10) && new Set(all).size === 80, "ten different titles a genre");
   const d = L.defs().coop;
-  assert.equal(d.kinds.indexOf("lib"), 5, "appended to the kinds (the wire's job index)");
+  assert.equal(d.kinds.indexOf("lib"), d.kinds.length - 1, "appended to the kinds (the wire job index; 배관 left the list for the solo 알바)");
   assert.deepEqual([d.lib.genres.length, d.lib.titles[3][0], d.lib.deskCap, d.lib.carry, d.jobs.lib[4], d.jobs.lib[5]], [8, LB.titles[3][0], 8, 3, "lib_borum", "owl_library"]);
 }
 
@@ -1412,7 +1412,7 @@ const books = (c, t) => c.ents.filter((e) => e.t === t);
   // the wire: rows for returners, desk books, wrong books; the sorter's books in its team row
   qb.hold = [{ g: 6, ti: 2, cred: {} }]; c.ver++; step(w, 200);
   const cj = lastOf("c1", "cj"), C = lastOf("c1", "C") || [];
-  assert.equal(cj[0], 5); assert.deepEqual(cj[10].find((r) => r[0] === b.eid)[4], [6 * 16 + 2], "held books: genre·16 + title");
+  assert.equal(cj[0], L.defs().coop.kinds.indexOf("lib")); assert.deepEqual(cj[10].find((r) => r[0] === b.eid)[4], [6 * 16 + 2], "held books: genre·16 + title");
   assert.ok(C.some((r) => r[1] === 14 && r.length === 6) && C.some((r) => r[1] === 13 && r.length === 8), "desk books and returners on the wire");
   // patience: nobody greets them, they leave angry
   for (const e of books(c, 14)) c.ents.splice(c.ents.indexOf(e), 1);

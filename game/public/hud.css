@@ -2038,12 +2038,12 @@ body[data-lay="full"].playing #w-dex:not(.docked) { height: var(--win-h); }
 #alba-play .ap-head { display: flex; align-items: baseline; gap: 10px; font: 700 var(--t12)/1.2 var(--pix); color: #f3ead2; }
 #alba-play .ap-title { flex: 1 1 auto; color: var(--ap-acc); }
 #alba-play .ap-time { min-width: 3.5em; text-align: right; } #alba-play .ap-combo { color: #ffb04a; min-width: 6em; }
-#alba-play .ap-stage { width: 100%; height: auto; aspect-ratio: 4 / 1; image-rendering: pixelated; border: 2px solid #000; background: #222; }
+#alba-play .ap-stage { width: auto; max-width: 100%; height: auto; max-height: 17vh; align-self: center; aspect-ratio: 4 / 1; image-rendering: pixelated; border: 2px solid #000; background: #222; }
 #alba-play .ap-bar { position: relative; height: 12px; background: #2c2838; border: 2px solid #000; margin: 4px 0 8px; }
 #alba-play .ap-fill { display: block; height: 100%; width: 0; background: var(--ap-acc); transition: width .12s linear; }
 #alba-play .ap-mark { position: absolute; top: 12px; transform: translateX(-50%); font: 700 10px/1 var(--pix); color: #bfb8a6; }
 #alba-play .ap-hint { font: 400 var(--t11)/1.3 var(--pix); color: #bfb8a6; min-height: 1.3em; }
-#alba-play .ap-board { position: relative; flex: 1 1 auto; min-height: 280px; overflow: hidden; display: flex; justify-content: center; align-items: flex-start; background: #14121b; border: 2px solid #000; touch-action: none; user-select: none; }
+#alba-play .ap-board { position: relative; flex: 1 1 auto; min-height: 200px; overflow: auto; display: flex; justify-content: center; align-items: flex-start; background: #14121b; border: 2px solid #000; touch-action: none; user-select: none; }
 #alba-play .ap-host { width: 100%; display: flex; justify-content: center; }
 #alba-play .ap-host canvas { max-width: 100%; image-rendering: pixelated; touch-action: none; }
 #alba-play .ap-res { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(380px, 90vw); padding: 14px; text-align: center; background: #1d1a26; border: 3px solid var(--ap-acc); color: #f3ead2; z-index: 2; }

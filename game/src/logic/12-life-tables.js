@@ -486,7 +486,7 @@ const LIFE_MASTER = ["명인 낚시꾼", "명인 요리사", "명인 채집꾼",
 
 // ── fields the later phases fill (the sheet carries them from L1 on, so they never bump it again)
 /** The co-op part-time jobs (C1–C3), by the building they run in. */
-const COOP_KINDS = ["apt", "diner", "forge", "alch", "pipe", "lib"];
+const COOP_KINDS = ["apt", "diner", "forge", "alch", "lib"];   // (배관 moved to the solo 일일 아르바이트, 66-alba.js)
 /** The 재료 주머니 holds materials (ingots too), staples and flasks, up to this many of each. */
 const POUCH_MAX = 999;
 
@@ -636,21 +636,6 @@ const COOP = {
     },
   },
 };
-const PIPE_ROOM = { w: 22, h: 18 };
-COOP.pipe = {
-  name: "마을회관 배관이 터졌어요!", npc: "popo", lobby: "town_hall", mins: 5, tools: ["pipein", "pipeout"],
-  par: 135, gradeSec: [0, 45, 90, 135], skill: "craft",
-  hint: "급수구와 배수구를 양쪽에서 이어 주세요. 배관의 방향은 고정이고, 망치로 바위를 한 칸 깰 수 있어요.",
-  st: {}, start: [[8, 10], [13, 10], [8, 12], [13, 12]],
-  tpl: {
-    name: "버드나무광장 회관 · 수리 구역", theme: "interior", style: "hall", bgm: "hall", safe: true,
-    ...PIPE_ROOM, entry: [10, 12],
-    ground: Array.from({ length: PIPE_ROOM.h }, (_, y) => y >= 6 && y < 13 ? "l".repeat(5) + "y".repeat(12) + "l".repeat(5) : "l".repeat(PIPE_ROOM.w)),
-    objects: Array.from({ length: PIPE_ROOM.h }, (_, y) => y === 0 ? "=".repeat(PIPE_ROOM.w)
-      : y === PIPE_ROOM.h - 1 ? "_".repeat(PIPE_ROOM.w) : "=" + " ".repeat(PIPE_ROOM.w - 2) + "_"),
-  },
-};
-
 /**
  * 보글's big kiln hall (alch v2; owner, 2026-11-15: every co-op shift runs in its own big hall, "the same building" but roomier):
  * 64×44 (5.9× the forge's 30×16 room; owner: "훨씬 크게"). The kiln `<` in the middle with four 풀무 tiles round its north

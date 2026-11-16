@@ -6,9 +6,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { SEASON, FAIR, FAIR_JOBS, FAIR_SHOP, seasonOf, fairOpen, fairGain, fairPan, fairClean, kstDay, JB, JB_PAY, dayOf, mapOf, jbOffersOf, jbRoll, jbNeed };\n";
+  "\nexport const __t = { JB_RETIRED, SEASON, FAIR, FAIR_JOBS, FAIR_SHOP, seasonOf, fairOpen, fairGain, fairPan, fairClean, kstDay, JB, JB_PAY, dayOf, mapOf, jbOffersOf, jbRoll, jbNeed };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, H = 3600000;
+X.JB_RETIRED.clear();   // the legacy board engine stays under test (its rows are retired in the real game, 58-life.js)
 /** A moment in KST: kst("2026-11-15T10:00") */
 const kst = (s) => Date.parse(s + ":00+09:00");
 

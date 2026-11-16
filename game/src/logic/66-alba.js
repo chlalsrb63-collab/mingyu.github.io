@@ -23,7 +23,7 @@ const ALBA_ORDER = ["pipe", "fly", "store", "parcel", "laundry", "taiyaki",
 const ALBA_T = {
   briefMs: 6000, runMs: 240000, resultMs: 90000, rushMs: 30000, actMs: 35,
   feverMs: 15000, feverMax: 2, feverEvery: 10,   // a fever at combo 10 and 20 (at most two per shift)
-  cuts: [0.40, 0.65, 0.85, 1.0],                  // share of the game's par for C B A S
+  cuts: [0.30, 0.65, 0.85, 1.0],                  // share of the game's par for C B A S
   gradeK: [0.7, 1.0, 1.3, 1.7],                   // pay multiplier per grade
   rep: [1, 2, 2, 3], stone: [0, 0, 1, 2], life: 0.5,
 };

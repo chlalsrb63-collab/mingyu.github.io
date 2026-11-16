@@ -45,7 +45,7 @@ const K = "t_a", K2 = "t_b", K3 = "t_c";
   assert.equal(ab.score - before, 100 * 2 * 2, "fever doubles, the combo is at its 2.0 cap");
   X.albaBad(ab, 50); assert.equal(ab.combo, 0, "a slip breaks the combo"); assert.equal(ab.score, before + 400 - 50);
   X.albaBad(ab, 1e9); assert.equal(ab.score, 0, "never below 0");
-  assert.equal(X.albaGrade(K, 0), 0); assert.equal(X.albaGrade(K, X.ALBA[K].par), 4); assert.equal(X.albaGrade(K, Math.round(X.ALBA[K].par * 0.4)), 1);
+  assert.equal(X.albaGrade(K, 0), 0); assert.equal(X.albaGrade(K, X.ALBA[K].par), 4); assert.equal(X.albaGrade(K, Math.round(X.ALBA[K].par * 0.3)), 1);
 }
 
 // start rules

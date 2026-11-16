@@ -22,8 +22,6 @@
  *   from `defs.coop.door` to their seat and back out; pieces on show are t 10.
  */
 import * as Keymap from "./keymap.js";
-import * as Pipes from "./coop-pipes.js";
-import { closeWin } from "./windows.js";
 
 const T = 16;
 const now = () => performance.now();
@@ -33,11 +31,9 @@ const DIRS = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3 }, DIR_ACT 
 
 export function init(api) {
   A = api; window.__coop = st;   // st exposed for automation (like window.__game)
-  Pipes.init(api);
   // the work key: Space / F inside a shift (before input.js turns them into an attack or a talk); on the forge's rhythm
   // lane the movement keys are the flip arrows instead (input.js stands still while `lane()`)
   addEventListener("keydown", (e) => {
-    if (Pipes.active()) { Pipes.key(e); return; }
     if (!inside() || /^(INPUT|TEXTAREA)$/.test((e.target && e.target.tagName) || "")) return;
     const d = st.lane ? (e.code in DIRS ? DIRS[e.code] : DIR_ACT[Keymap.actionOf(e)]) : undefined;
     if (d !== undefined) { e.preventDefault(); e.stopImmediatePropagation(); if (!e.repeat) work(d); return; }
@@ -47,8 +43,8 @@ export function init(api) {
   }, true);
 }
 /** On the forge's rhythm lane (an anvil's pattern playing, you free to play it): movement stops, the arrows flip. */
-export const lane = () => !!st.lane || Pipes.active();
-export const boardActive = Pipes.active;
+export const lane = () => !!st.lane;
+export const boardActive = () => false;
 const G = () => A.G;
 const D = () => (G().defs && G().defs.coop) || { jobs: {}, kinds: ["apt"], tools: {}, binCap: 10, near: 56 };
 const inside = () => !!st.cj;
@@ -70,11 +66,7 @@ export function onSnap(s) {
   }
   if ("cd" in s && st.cj) onDirt(s.cd);
   if (!st.cj) dropDirt();
-  if ("cp" in s) Pipes.onSnap(s.cp);
-  const pipe = jobOf() === "pipe";
-  if (pipe && !Pipes.active()) closeWin("board");
-  Pipes.update(pipe ? st.cj : null, st.at);
-  if (ents) setEnts(pipe ? [] : ents);
+  if (ents) setEnts(ents);
   if (s.cr) showReport(s.cr);
 }
 const jobOf = () => (st.cj ? D().kinds[st.cj[0]] : null);
@@ -136,7 +128,6 @@ function setEnts(rows) {
   for (const k of st.keys) A.S3.props.delete(k);
   st.keys = [];
   st.ents = rows; st.entsAt = now();
-  if (jobOf() === "pipe") return;
   for (const row of rows) {
     const [id, t, x, y, hp] = row, key = "cp" + id;
     if (t === 8 && row.length < 10) continue;   // the alch's orders: on the HUD only (the forge's customers walk in)
@@ -604,7 +595,7 @@ function box(id, cls) {
 }
 function renderHud() {
   const b = st.hud || (st.hud = box("coop-hud", "frame"));
-  if (!st.cj || jobOf() === "pipe") { b.hidden = true; return; }
+  if (!st.cj) { b.hidden = true; return; }
   if (!b.firstChild) {
     b.innerHTML = `<div class="ch-l"></div><div class="ch-g"><i></i></div><div class="ch-b"><button class="btn gold ch-work">일하기 (Space)</button><button class="btn ch-quit">그만두기</button></div>`;
     b.querySelector(".ch-work").addEventListener("pointerdown", (ev) => { ev.preventDefault(); ev.stopPropagation(); work(); });
@@ -660,7 +651,6 @@ function renderCard() {
   const m = G().map, me = G().me, b = st.card || (st.card = box("coop-card", "frame"));
   let k = null, n = null;
   if (m && me && !inside()) for (const kk of Object.keys(D().jobs)) {
-    if (kk === "pipe") continue;
     const j = D().jobs[kk], o = j[5] === m.id && m.npcs.find((q) => q.id === j[4]);
     if (o && Math.hypot(me.x - (o.x * T + 8), me.y - (o.y * T + 12)) < D().near - 4) { k = kk; n = o; }
   }
@@ -685,15 +675,13 @@ function showReport(cr) {
   const [grade, score, best, rows, cuts, reward] = cr;
   const b = st.res || (st.res = box("coop-res", "frame"));
   const tools = ((D().jobs[jobOf()] || [])[2] || ["broom", "bin"]).map((t) => D().tools[t] || t);
-  const pipe = jobOf() === "pipe";
-  const finish = pipe ? (grade ? `배관 연결 완료 · ${mmss(score)} 남김` : "배관 연결 미완료") : grade ? "근무 완료!" : "근무 평가 미달";
+  const finish = grade ? "근무 완료!" : "근무 평가 미달";
   const pay = reward === 1 ? `내 보수 ${Math.round((D().gradeK || [1, 1.05, 1.1, 1.2])[grade - 1] * 100)}% 지급 완료` : "이번 근무 보수 없음";
   b.innerHTML = `<div class="cr-g g${grade}">${GRADE[grade]}</div><b>${finish}</b>` +
-    (pipe ? `<p>이 채널 최고 ${mmss(best)} 남김</p><p class="cr-cut">C 연결 · B ${cuts[1]}초 · A ${cuts[2]}초 · S ${cuts[3]}초</p>` :
-      jobOf() === "apt" ? `<p>청소율 ${pct(score)} · 이 채널 최고 ${pct(best)}</p><p class="cr-cut">C ${pct(cuts[0])} · B ${pct(cuts[1])} · A ${pct(cuts[2])} · S ${pct(cuts[3])}</p>` :
+    (jobOf() === "apt" ? `<p>청소율 ${pct(score)} · 이 채널 최고 ${pct(best)}</p><p class="cr-cut">C ${pct(cuts[0])} · B ${pct(cuts[1])} · A ${pct(cuts[2])} · S ${pct(cuts[3])}</p>` :
       `<p>점수 ${score} · 이 채널 최고 ${best}</p><p class="cr-cut">C ${cuts[0]} · B ${cuts[1]} · A ${cuts[2]} · S ${cuts[3]}</p>`) +
     (reward === undefined ? "" : `<p class="cr-cut">${reward === 2 ? "오늘 보수 수령 완료 · " : ""}${pay}</p>`) +
-    `<table>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${tools[r[2]] || ""}</td><td>${r[1]}${pipe ? "칸" : "점"}</td><td>${r[3] ? "" : "참여 조건 미충족"}</td></tr>`).join("")}</table>` +
+    `<table>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${tools[r[2]] || ""}</td><td>${r[1]}점</td><td>${r[3] ? "" : "참여 조건 미충족"}</td></tr>`).join("")}</table>` +
     `<p class="cr-note">잠시 뒤 로비로 돌아갑니다.</p><button class="btn">확인</button>`;
   b.querySelector("button").addEventListener("click", () => { b.hidden = true; });
   b.hidden = false;
@@ -753,7 +741,6 @@ export function tick() {
   renderCard();
   st.lane = null;
   if (inside()) {
-    if (jobOf() === "pipe") { Pipes.update(st.cj, st.at); return; }
     for (const [eid] of st.team) { const pr = A.S3.props.get("ct" + eid), e = A.entityPos(eid); if (pr && e) { pr.x = e.x; pr.y = e.y + 1; } }
     for (const row of st.ents) if (row[1] === 8 && row.length >= 10) { const pr = A.S3.props.get("cp" + row[0]); if (pr) [pr.x, pr.y] = custPos(row); }
     if (jobOf() === "lib") libWalk();

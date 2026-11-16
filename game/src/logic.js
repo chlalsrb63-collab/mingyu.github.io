@@ -1979,7 +1979,7 @@ const LIFE_MASTER = ["명인 낚시꾼", "명인 요리사", "명인 채집꾼",
 
 // ── fields the later phases fill (the sheet carries them from L1 on, so they never bump it again)
 /** The co-op part-time jobs (C1–C3), by the building they run in. */
-const COOP_KINDS = ["apt", "diner", "forge", "alch", "pipe", "lib"];
+const COOP_KINDS = ["apt", "diner", "forge", "alch", "lib"];   // (배관 moved to the solo 일일 아르바이트, 66-alba.js)
 /** The 재료 주머니 holds materials (ingots too), staples and flasks, up to this many of each. */
 const POUCH_MAX = 999;
 
@@ -2129,21 +2129,6 @@ const COOP = {
     },
   },
 };
-const PIPE_ROOM = { w: 22, h: 18 };
-COOP.pipe = {
-  name: "마을회관 배관이 터졌어요!", npc: "popo", lobby: "town_hall", mins: 5, tools: ["pipein", "pipeout"],
-  par: 135, gradeSec: [0, 45, 90, 135], skill: "craft",
-  hint: "급수구와 배수구를 양쪽에서 이어 주세요. 배관의 방향은 고정이고, 망치로 바위를 한 칸 깰 수 있어요.",
-  st: {}, start: [[8, 10], [13, 10], [8, 12], [13, 12]],
-  tpl: {
-    name: "버드나무광장 회관 · 수리 구역", theme: "interior", style: "hall", bgm: "hall", safe: true,
-    ...PIPE_ROOM, entry: [10, 12],
-    ground: Array.from({ length: PIPE_ROOM.h }, (_, y) => y >= 6 && y < 13 ? "l".repeat(5) + "y".repeat(12) + "l".repeat(5) : "l".repeat(PIPE_ROOM.w)),
-    objects: Array.from({ length: PIPE_ROOM.h }, (_, y) => y === 0 ? "=".repeat(PIPE_ROOM.w)
-      : y === PIPE_ROOM.h - 1 ? "_".repeat(PIPE_ROOM.w) : "=" + " ".repeat(PIPE_ROOM.w - 2) + "_"),
-  },
-};
-
 /**
  * 보글's big kiln hall (alch v2; owner, 2026-11-15: every co-op shift runs in its own big hall, "the same building" but roomier):
  * 64×44 (5.9× the forge's 30×16 room; owner: "훨씬 크게"). The kiln `<` in the middle with four 풀무 tiles round its north
@@ -18230,7 +18215,7 @@ const ALBA_ORDER = ["pipe", "fly", "store", "parcel", "laundry", "taiyaki",
 const ALBA_T = {
   briefMs: 6000, runMs: 240000, resultMs: 90000, rushMs: 30000, actMs: 35,
   feverMs: 15000, feverMax: 2, feverEvery: 10,   // a fever at combo 10 and 20 (at most two per shift)
-  cuts: [0.40, 0.65, 0.85, 1.0],                  // share of the game's par for C B A S
+  cuts: [0.30, 0.65, 0.85, 1.0],                  // share of the game's par for C B A S
   gradeK: [0.7, 1.0, 1.3, 1.7],                   // pay multiplier per grade
   rep: [1, 2, 2, 3], stone: [0, 0, 1, 2], life: 0.5,
 };
@@ -20136,10 +20121,10 @@ function coopNpc(S, p, k) {
   const n = mapOfS(S, p.map).npcs.find((o) => o.id === J.npc);
   return n && dist(p.x, p.y, n.x * T + 8, n.y * T + 12) < COOP_T.near ? n : null;
 }
-const coopCut = (c, g) => c.k === "pipe" ? COOP.pipe.gradeSec[g] : Math.round(COOP[c.k].par * (COOP[c.k].parN || COOP_T.parN)[c.n] * COOP_T.cuts[g]);
+const coopCut = (c, g) => Math.round(COOP[c.k].par * (COOP[c.k].parN || COOP_T.parN)[c.n] * COOP_T.cuts[g]);
 /** 0 below C, 1 C · 2 B · 3 A · 4 S. */
-function coopGrade(c) { if (c.k === "pipe") return pipeGrade(c); let g = 0; while (g < 4 && c.score >= coopCut(c, g)) g++; return g; }
-const coopMult = (c) => c.k === "pipe" ? 1 : (1 + 0.1 * Math.min(c.combo, 10)) * (c.state === "fever" ? 1.5 : 1);
+function coopGrade(c) { let g = 0; while (g < 4 && c.score >= coopCut(c, g)) g++; return g; }
+const coopMult = (c) => (1 + 0.1 * Math.min(c.combo, 10)) * (c.state === "fever" ? 1.5 : 1);
 const coopEv = (S, dim, code, x, y, a = 0) => dim.rt.ev.push(["cj", code, Math.round(x), Math.round(y), a]);
 const coopToastAll = (S, dim, m) => { for (const o of dimInside(S, dim.id)) toast(o, m); };
 
@@ -20178,7 +20163,7 @@ function coopStart(S, p, k) {
     c.pl[o.pid] = { name: o.ch.name, tool: J.tools[i % 2], hold: [], pts: 0, idleAt: t0, x, y, actAt: 0, hintAt: 0, ok: false };
     changeMap(S, o, id, x, y);
     o.spdBuff = Math.max(o.spdBuff || 0, endAt);
-    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint}${k === "pipe" ? "" : " (Space / F)"}`);
+    toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint} (Space / F)`);
     o.dirty = true;
   });
   COOP_JOB[k].init(S, dim, c);
@@ -20206,7 +20191,7 @@ function coopFinish(S, dim, inside) {
   const rows = [];
   for (const pid of Object.keys(c.pl)) {
     const q = c.pl[pid], o = S.players[pid];
-    q.ok = !!(o && o.map === dim.id && (c.k === "pipe" ? pipeEligible(c, pid) : S.now - q.idleAt < COOP_T.idleMs && q.pts >= COOP_T.lazy * avg));
+    q.ok = !!(o && o.map === dim.id && (S.now - q.idleAt < COOP_T.idleMs && q.pts >= COOP_T.lazy * avg));
     rows.push([q.name, Math.round(q.pts), COOP[c.k].tools.indexOf(q.tool), q.ok ? 1 : 0]);
   }
   S.coopBest = S.coopBest || {};
@@ -20215,7 +20200,6 @@ function coopFinish(S, dim, inside) {
     const q = c.pl[o.pid];
     let reward = 0;
     if (q?.ok || coopSelf(o).includes(c.k)) reward = coopPay(S, o, c, q?.ok ? g : 0);
-    else if (c.k === "pipe") toast(o, g ? "완성된 배관에 참여해야 보수를 받을 수 있어요." : "시간이 끝났어요. 급수구에서 배수구까지 다시 이어 보세요.");
     else toast(o, "근무 태도 불량 — 보상 없음");
     o.coopRes = [g, Math.round(c.score), S.coopBest[c.k], rows, [0, 1, 2, 3].map((i) => coopCut(c, i)), reward];
   }
@@ -20229,7 +20213,7 @@ function coopPay(S, p, c, g) {
     return 2;
   }
   if (!g) {
-    toast(p, c.k === "pipe" ? "시간이 끝났어요. 배관 연결을 다시 도전할 수 있어요." : "C등급에 도달하면 보수를 받을 수 있어요. 오늘 다시 도전할 수 있어요.");
+    toast(p, "C등급에 도달하면 보수를 받을 수 있어요. 오늘 다시 도전할 수 있어요.");
     return 0;
   }
   if (ch.coopDay !== today) { ch.coopDay = today; ch.coopDone = []; }
@@ -20270,8 +20254,7 @@ function coopTick(S, now) {
     if (c.state === "brief" && now >= c.runAt) { c.state = "run"; c.comboAt = -1e9; coopToastAll(S, dim, "근무 시작!"); }
     if (c.state === "run" && now >= c.endAt - COOP_T.feverMs) {
       c.state = "fever";
-      if (c.k === "pipe") coopToastAll(S, dim, "물이 차오릅니다! 배관을 이을 시간이 1분 남았어요.");
-      else { coopEv(S, dim, 14, 0, 0); coopToastAll(S, dim, "피버 타임! 남은 1분, 점수 ×1.5"); }
+      coopEv(S, dim, 14, 0, 0); coopToastAll(S, dim, "피버 타임! 남은 1분, 점수 ×1.5");
     }
     if (c.state === "run" || c.state === "fever") {
       if (now >= c.endAt) coopFinish(S, dim, inside);
@@ -21190,7 +21173,6 @@ COOP_JOB.lib = {
 
 // ── actions (validated in 70-validate.js, applied in 75-apply.js)
 
-COOP_JOB.pipe = { init: pipeInit, sum: () => [0, 0] };
 
 function coopValidate(S, p, a) {
   const c = coopOf(S, p);
@@ -21213,7 +21195,6 @@ function coopValidate(S, p, a) {
       if (a.d !== undefined && !(Number.isInteger(a.d) && a.d >= 0 && a.d <= 3)) return bad("알 수 없는 행동");
       if (c.state === "brief") return bad("곧 근무가 시작됩니다!");
       if (c.state === "end") return bad("근무가 끝났습니다");
-      if (c.k === "pipe") return pipeValidate(S, p, c, a);
       return OK;
     case "coop_leave":
       return c ? OK : bad("근무 중이 아닙니다");
@@ -21223,14 +21204,7 @@ function coopValidate(S, p, a) {
 function coopApply(S, p, a) {
   if (a.t === "coop_start") { coopStart(S, p, a.k); return; }
   const c = coopOf(S, p);
-  if (a.t === "coop_leave") {
-    const dim = dimAt(S, p.map), z = c.k === "pipe" && c.state !== "end" && c.pipe ? c.pipe.seats[p.pid]?.zone : undefined;
-    toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다"); coopHome(S, p, c);
-    // 배관: the side they worked is empty now, so the ones who stayed are told they may lay both (69-coop-pipes.js pipeVacant)
-    if (z !== undefined && dim && pipeVacant(S, c.pipe, z)) coopToastAll(S, dim, `${z ? "배수" : "급수"} 구역 담당이 자리를 비웠습니다. 남은 인원이 양쪽 구역을 모두 작업할 수 있습니다.`);
-    return;
-  }
-  if (c.k === "pipe") { pipeApply(S, dimAt(S, p.map), c, p, a); return; }
+  if (a.t === "coop_leave") { toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다"); coopHome(S, p, c); return; }
   const q = c.pl[p.pid], job = COOP_JOB[c.k];
   // a rhythm lane's notes come faster than the work key's 250 ms
   if (S.now - q.actAt < (job.lane && job.lane(S, c, p, q) ? COOP_FORGE.laneMs : COOP_T.actMs)) return;
@@ -21255,7 +21229,6 @@ function coopApply(S, p, a) {
  */
 function coopView(S, p, out) {
   const dim = inDim(p) ? dimAt(S, p.map) : null, c = dim && dim.coop;
-  pipeView(S, p, out, c?.k === "pipe" ? c : null);
   if (c) {
     const now = S.now, g = coopGrade(c), J = COOP[c.k];
     const secs = Math.max(0, Math.ceil(((c.state === "brief" ? c.runAt : c.state === "end" ? c.doneAt : c.endAt) - now) / 1000));
@@ -21308,219 +21281,6 @@ function coopDefs() {
     metals: COOP_FORGE.metals.map((o) => [o.name, o.col, o.heat, o.tempo, o.win, o.price]),
     brew: { orders: COOP_BREW.orders.map((o, i) => [COOP.alch.skin.orders[i], o.lo, o.hi, o.hold, o.herbs, o.pts]), chart: COOP_BREW.chart, loop: COOP_BREW.loop, amb: COOP_BREW.amb, herbs: BREW_HERBS, foam: COOP_BREW.foam },
     lib: { genres: COOP_LIB.genres, cols: COOP_LIB.cols, titles: COOP_LIB.titles, deskCap: COOP_LIB.deskCap, carry: COOP_LIB.carry, shelves: LIBH.shelves, door: tilePx(LIBH.door) } };
-}
-// ───────────────────────────── town hall pipe repair ─────────────────────────────
-
-const PIPE_N = 32, PIPE_CELLS = PIPE_N * PIPE_N;
-const PIPE_ROCK = 1, PIPE_FIRST = 2, PIPE_LAST = 5, PIPE_IN = 6, PIPE_OUT = 7, PIPE_HAMMER = 8;
-const PIPE_PORTS = [0, 0, 5, 10, 12, 3, 2, 8];   // masks: N=1, E=2, S=4, W=8
-const PIPE_CHANGES = 64;
-const pipeZone = (index) => index % PIPE_N < PIPE_N / 2 ? 0 : 1;
-const pipeIndex = (x, y) => y * PIPE_N + x;
-
-/** Shuffle the candidate positions and pieces deterministically with a shift's seed box. */
-function pipeShuffle(a, box) {
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = ri(box, 0, i);
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-/** East and south only; each descent starts after entering from the west and ends by exiting east. */
-function pipeSolution(box) {
-  const startRow = ri(box, 2, 15), fall = ri(box, 5, Math.min(13, 29 - startRow));
-  const columns = pipeShuffle(Array.from({ length: PIPE_N - 2 }, (_, i) => i + 1), box)
-    .slice(0, ri(box, 2, Math.min(5, fall))).sort((a, b) => a - b);
-  const drops = new Array(columns.length);
-  let left = fall, row = startRow;
-  for (let i = 0; i < columns.length; i++) {
-    drops[i] = i === columns.length - 1 ? left : ri(box, 1, left - (columns.length - i - 1));
-    left -= drops[i];
-  }
-  const route = [pipeIndex(0, row)];
-  let at = 0;
-  for (let x = 1; x < PIPE_N; x++) {
-    route.push(pipeIndex(x, row));
-    if (x === columns[at]) {
-      for (let k = 0; k < drops[at]; k++) route.push(pipeIndex(x, ++row));
-      at++;
-    }
-  }
-  return route;
-}
-
-/** Read a route's required four pipe types from its two neighbors. */
-function pipeNeed(path, i) {
-  const prev = path[i] - path[i - 1], next = path[i + 1] - path[i];
-  if (prev === 1 && next === 1) return 3;
-  if (prev === PIPE_N && next === PIPE_N) return 2;
-  return prev === 1 ? 4 : 5;
-}
-
-function pipeLandscape(box, solution) {
-  const board = new Uint8Array(PIPE_CELLS), path = new Set(solution);
-  const src = solution[0], dst = solution[solution.length - 1];
-  board[src] = PIPE_IN;
-  board[dst] = PIPE_OUT;
-  const rocks = [0, 0], half = Math.round(PIPE_CELLS * 0.55) / 2;
-  const limit = [Math.ceil(half), Math.floor(half)];
-  const place = (x, y) => {
-    if (x < 0 || y < 0 || x >= PIPE_N || y >= PIPE_N) return;
-    const i = pipeIndex(x, y), z = pipeZone(i);
-    if (board[i] || path.has(i) || rocks[z] >= limit[z]) return;
-    board[i] = PIPE_ROCK; rocks[z]++;
-  };
-  for (let k = 0; k < 30; k++) {
-    const x = ri(box, 0, PIPE_N - 1), y = ri(box, 0, PIPE_N - 1), r = ri(box, 1, 2);
-    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-      if (Math.abs(dx) + Math.abs(dy) <= r + 1) place(x + dx, y + dy);
-    }
-  }
-  const rest = [];
-  for (let i = 0; i < PIPE_CELLS; i++) if (!board[i] && !path.has(i)) rest.push(i);
-  for (const i of pipeShuffle(rest, box)) place(i % PIPE_N, Math.floor(i / PIPE_N));
-  return { board, rocks, src, dst };
-}
-
-/** Draw from the common zone packet. A hammer interrupts the draw without changing its cursor. */
-function pipeHand(c, seat, canHammer) {
-  const state = c.pipe, z = seat.zone;
-  if (canHammer && state.rocks[z] > 0 && rnd(c.box) < 0.05) seat.tool = PIPE_HAMMER;
-  else {
-    const pack = state.packs[z];
-    // A side that consumes its planned packet can keep trying, while it still has empty cells.
-    seat.tool = state.cursor[z] < pack.length ? pack[state.cursor[z]++] : ri(c.box, PIPE_FIRST, PIPE_LAST);
-  }
-  seat.handRev++;
-}
-
-function pipeInit(S, dim, c) {
-  const solution = pipeSolution(c.box), map = pipeLandscape(c.box, solution);
-  const packs = [[], []], spare = [PIPE_CELLS / 2 - map.rocks[0], PIPE_CELLS / 2 - map.rocks[1]];
-  spare[pipeZone(map.src)]--; spare[pipeZone(map.dst)]--;
-  for (let i = 1; i < solution.length - 1; i++) packs[pipeZone(solution[i])].push(pipeNeed(solution, i));
-  for (const z of [0, 1]) {
-    const extra = Math.min(spare[z] - packs[z].length, ri(c.box, 4, 8));
-    for (let i = 0; i < extra; i++) packs[z].push(ri(c.box, PIPE_FIRST, PIPE_LAST));
-    pipeShuffle(packs[z], c.box);
-  }
-  c.pipe = {
-    ...map, id: dim.id, solution, packs, cursor: [0, 0], seats: {},
-    owners: new Array(PIPE_CELLS), broken: new Array(PIPE_CELLS), changes: [],
-    rev: 1, wonAt: null, finished: null,
-  };
-  Object.keys(c.pl).forEach((pid, i) => {
-    const seat = c.pipe.seats[pid] = { zone: i % 2, eid: S.players[pid].eid, tool: 0, handRev: 0, acted: false };
-    pipeHand(c, seat, false);
-  });
-}
-
-/** Follow reciprocal ports, skipping the arrival port. A player's drawing order doesn't matter. */
-function pipeTrace(state) {
-  const { board, src, dst } = state, seen = new Set([src]), path = [src];
-  let cell = src, from = 0;
-  while (cell !== dst) {
-    const mask = PIPE_PORTS[board[cell]] & ~from;
-    let next = -1, into = 0;
-    if (mask === 1 && cell >= PIPE_N) { next = cell - PIPE_N; into = 4; }
-    if (mask === 2 && cell % PIPE_N < PIPE_N - 1) { next = cell + 1; into = 8; }
-    if (mask === 4 && cell < PIPE_CELLS - PIPE_N) { next = cell + PIPE_N; into = 1; }
-    if (mask === 8 && cell % PIPE_N > 0) { next = cell - 1; into = 2; }
-    if (next < 0 || seen.has(next) || !(PIPE_PORTS[board[next]] & into)) return null;
-    path.push(next); seen.add(next); cell = next; from = into;
-  }
-  return path;
-}
-
-/** A side nobody is left to work (its workers quit or dropped): the ones who stayed may lay both sides, and a path of theirs alone wins. */
-function pipeVacant(S, state, z) {
-  return !Object.keys(state.seats).some((pid) => state.seats[pid].zone === z && S.players[pid] && S.players[pid].map === state.id);
-}
-function pipeValidate(S, p, c, a) {
-  const state = c && c.pipe, seat = state && state.seats[p.pid], member = c && c.pl[p.pid];
-  if (!seat || !member || p.map !== state.id || p.dead) return bad("배관 근무 좌석에 참여하고 있지 않습니다");
-  if (c.state === "brief" || S.now < c.runAt) return bad("곧 배관 근무가 시작됩니다!");
-  if ((c.state !== "run" && c.state !== "fever") || S.now >= c.endAt || state.wonAt !== null) return bad("배관 근무가 끝났습니다");
-  if (a.t !== "coop_act" || Object.keys(a).some((k) => k !== "t" && k !== "i" && k !== "handRev")) return bad("손에 든 도구를 칸에 사용해 주세요");
-  if (!Number.isInteger(a.i) || a.i < 0 || a.i >= PIPE_CELLS) return bad("배관 칸을 골라 주세요");
-  if (pipeZone(a.i) !== seat.zone && !pipeVacant(S, state, pipeZone(a.i))) return bad("담당 구역에서만 작업할 수 있습니다");
-  if (a.handRev !== seat.handRev) return bad("손에 든 도구가 바뀌었습니다");
-  const cell = state.board[a.i];
-  if (seat.tool === PIPE_HAMMER && cell !== PIPE_ROCK) return bad("망치로는 바위만 깰 수 있습니다");
-  if (seat.tool !== PIPE_HAMMER && cell !== 0) return bad("빈 칸에만 배관을 놓을 수 있습니다");
-  return S.now - member.actAt < COOP_T.actMs ? bad("조금 천천히 작업해 주세요") : OK;
-}
-
-function pipeApply(S, dim, c, p, a) {
-  if (!pipeValidate(S, p, c, a).ok) return false;
-  const state = c.pipe, seat = state.seats[p.pid], i = a.i, z = pipeZone(i);   // the side worked on (a vacant side may be someone else's)
-  const hammer = seat.tool === PIPE_HAMMER;
-  state.board[i] = hammer ? 0 : seat.tool;
-  if (hammer) {
-    state.broken[i] = p.pid;
-    state.rocks[z]--;
-  } else state.owners[i] = p.pid;
-  seat.acted = true;
-  const member = c.pl[p.pid];
-  member.actAt = member.idleAt = S.now;
-  pipeHand(c, seat, !hammer);
-  if (hammer && !state.rocks[z]) for (const q of Object.values(state.seats)) {
-    if ((q.zone === z || q === seat) && q.tool === PIPE_HAMMER) pipeHand(c, q, false);
-  }
-  state.changes.push([++state.rev, i, state.board[i]]);
-  if (state.changes.length > PIPE_CHANGES) state.changes.shift();
-  const path = !hammer && pipeTrace(state);
-  if (!path) return true;
-
-  const left = new Set(), right = new Set();
-  for (const cell of path) {
-    const owner = state.owners[cell], side = pipeZone(cell);
-    if (state.seats[owner]?.zone === side) (side ? right : left).add(owner);
-  }
-  if (![...left].some((a) => [...right].some((b) => a !== b)) && !pipeVacant(S, state, 0) && !pipeVacant(S, state, 1)) return true;
-
-  state.finished = path;
-  state.wonAt = S.now;
-  c.score = Math.floor((c.endAt - S.now) / 1000);
-  for (const cell of path) for (const pid of [state.owners[cell], state.broken[cell]]) {
-    if (c.pl[pid]) c.pl[pid].pts++;
-  }
-  coopFinish(S, dim, dimInside(S, dim.id));
-  return true;
-}
-
-function pipeGrade(c) {
-  if (c.pipe?.wonAt == null || c.pipe.wonAt >= c.endAt) return 0;
-  const left = c.endAt - c.pipe.wonAt;
-  return COOP.pipe.gradeSec.filter((s) => left >= s * 1000).length;
-}
-
-/** Only a finished path is regular-pay credit; an active worker can earn the normal failure tip. */
-function pipeEligible(c, pid) {
-  if (c.pipe?.wonAt != null) return (c.pl[pid]?.pts || 0) > 0;
-  return !!c.pipe?.seats[pid]?.acted;
-}
-
-/** cp: [revision, full|delta, board string|changed cells, inlet, outlet, visible seat rows]. */
-function pipeView(S, p, out, c) {
-  const state = c && c.pipe, seen = p.pipeSeen;
-  if (!state || !state.seats[p.pid] || p.map !== state.id) {
-    if (seen) { delete p.pipeSeen; out.cp = 0; }
-    return;
-  }
-  const seats = Object.entries(state.seats).flatMap(([pid, q]) => {
-    const o = S.players[pid];
-    return o && o.map === state.id ? [[o.eid, q.zone, q.tool, q.handRev]] : [];
-  });
-  const seatsKey = seats.join(";");
-  if (seen?.id === state.id && seen.rev === state.rev && seen.seatsKey === seatsKey) return;
-  const first = state.changes[0]?.[0] ?? state.rev + 1;
-  const full = !seen || seen.id !== state.id || seen.rev > state.rev || seen.rev < first - 1;
-  const delta = new Map();
-  if (!full) for (const [rev, index, value] of state.changes) if (rev > seen.rev) delta.set(index, value);
-  out.cp = [state.rev, full ? 0 : 1, full ? state.board.join("") : [...delta], state.src, state.dst, seats];
-  p.pipeSeen = { id: state.id, rev: state.rev, seatsKey };
 }
 // ───────────────────────────── player to player: requests, trade, mini-games ─────────────────────────────
 // The click menu on another player (public/pmenu.js) asks for these; party invites, friends and whispers use
