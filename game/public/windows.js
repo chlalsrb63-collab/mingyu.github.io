@@ -571,15 +571,23 @@ export function chatAction(m) {
 // ── the tooltip ──
 export const tipBox = $("#tip");
 export const tip = { from: null };
-export function showTip(anchor, fill) {
+export function showTip(anchor, fill, above) {
   tipBox.textContent = "";
-  tipBox.classList.remove("wm-tip");
+  tipBox.classList.remove("wm-tip", "mn-tip");
   fill(tipBox);
+  // an item's cards (items.js itemTip) carry their own frames: the box turns into a bare row of cards
+  tipBox.classList.toggle("cards", !!tipBox.querySelector(".tcards"));
   tipBox.hidden = false;
   tip.from = anchor;
+  const r = anchor.getBoundingClientRect(), w = tipBox.offsetWidth, h = tipBox.offsetHeight;
+  if (above) {
+    // over the button (the menu sits at the screen's bottom edge), under it when there is no room above
+    tipBox.style.left = `${Math.round(clamp(r.left + r.width / 2 - w / 2, 4, innerWidth - w - 4))}px`;
+    tipBox.style.top = `${Math.round(clamp(r.top - h - 6 < 4 ? r.bottom + 6 : r.top - h - 6, 4, innerHeight - h - 4))}px`;
+    return;
+  }
   // beside the window the item sits in, so it never covers the grid it describes
-  const r = anchor.getBoundingClientRect(), side = (anchor.closest(".window") || anchor).getBoundingClientRect();
-  const w = tipBox.offsetWidth, h = tipBox.offsetHeight;
+  const side = (anchor.closest(".window") || anchor).getBoundingClientRect();
   let x = side.right + 6;
   if (x + w > innerWidth - 4) x = side.left - w - 6;
   if (x < 4) x = r.right + 8;
@@ -588,8 +596,8 @@ export function showTip(anchor, fill) {
 }
 export function hideTip() { tipBox.hidden = true; tip.from = null; }
 /** Hovering shows the tooltip; on a touch screen the window shows the same thing in its own pane instead. */
-export function hoverTip(node, fill) {
-  node.addEventListener("mouseenter", () => { if (!touch()) showTip(node, fill); });
+export function hoverTip(node, fill, above) {
+  node.addEventListener("mouseenter", () => { if (!touch()) showTip(node, fill, above); });
   node.addEventListener("mouseleave", () => { if (tip.from === node) hideTip(); });
 }
 

@@ -569,8 +569,9 @@ body.touch kbd { display: none; }
 .slot.q2 { box-shadow: inset 0 0 0 2px #d8b84a; }
 .slot.q3 { box-shadow: inset 0 0 0 2px #e8803a; }
 .slot.q4 { box-shadow: inset 0 0 0 2px #5fd47a; }
+.slot.q5 { box-shadow: inset 0 0 0 2px #d2b48c; }
 .slot.sel { box-shadow: inset 0 0 0 2px var(--b-hi); border-color: var(--b-hi); }
-.slot.q1.sel, .slot.q2.sel, .slot.q3.sel, .slot.q4.sel { outline: 0; border-color: var(--b-hi); }
+.slot.q1.sel, .slot.q2.sel, .slot.q3.sel, .slot.q4.sel, .slot.q5.sel { outline: 0; border-color: var(--b-hi); }
 .slot .sk i { border-radius: 0; }
 
 /* the tooltip: a dark screen with a brass rim */
@@ -771,9 +772,6 @@ body.playing .window.mini:hover { box-shadow: inset 0 0 0 2px var(--b-mid); }
 /* ── ≤ 1100 wide: a narrower side column, glyph-only menu, a compact unit frame and hotbar ── */
 @media (max-width: 1100px) {
   body[data-lay="full"] #dock { gap: 6px; }
-  body[data-lay="full"] #menu button { height: 30px; }
-  body[data-lay="full"] #menu button span { display: none; }
-  body[data-lay="full"] #menu button img.gi { width: 24px; height: 24px; }
   body[data-lay="full"] #inv-grid { --slot: 36px; }
   body[data-lay="full"] #inv-grid .slot img { left: 0; top: 0; }
   body[data-lay="full"] #mini .sunk { height: clamp(88px, 17vh, 150px); }
@@ -1480,11 +1478,14 @@ img.ji { width: 16px; height: 16px; flex: none; image-rendering: pixelated; vert
 /* phones: the card is as wide as the screen allows and the glyphs are finger-sized targets */
 body.touch #info { width: min(300px, calc(100vw - 16px)); font-size: 13px; }
 body.touch .window .stats .grp span.chip, body.touch .sw-dv span.chip { min-height: 24px; }
-/* the desktop menu and the attack buttons: the glyph alone (the name and the key are the tooltip) */
-body[data-lay="full"] #menu button span, body[data-lay="full"] #actions .act .nm { display: none; }
-body[data-lay="full"] #menu button img.gi { width: 24px; height: 24px; }
-body[data-lay="full"] #menu button { height: 32px; }
+/* the attack buttons: the glyph alone (the name and the key are the tooltip) */
+body[data-lay="full"] #actions .act .nm { display: none; }
+/* the desktop menu: the 12 px glyph (1:1, no blur) over its word in Galmuri 9 at the size it was drawn for;
+   the full name and the key are the hover tooltip (hud.js setupHud) */
+body[data-lay="full"] #menu button { height: 32px; gap: 3px; }
+body[data-lay="full"] #menu button span { font: 9px/1 var(--pix9); letter-spacing: 0; }
 #menu button { min-width: 0; overflow: hidden; }
+#tip.mn-tip { width: max-content; max-width: 240px; padding: 5px 8px 6px; }
 @media (max-width: 1100px) { body[data-lay="full"] #menu { grid-template-columns: repeat(6, 1fr); } }
 
 /* friends and blocks in the party window (win_social.js friendBox), the weekly book (win_world.js renderWeek) */
@@ -1802,12 +1803,6 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr)
 #ask-qty input::-webkit-inner-spin-button, #ask-qty input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 #ask-qty .note { margin-left: auto; font: var(--t12) var(--pix); color: var(--tx-gold, #ffe08a); white-space: nowrap; }
 #ask .btn kbd, #inv-detail .btns kbd { margin-left: 5px; font: var(--t10) var(--pix9); opacity: .7; }
-/* the gear tooltip's comparison with the worn piece (items.js itemTip) */
-#tip .cmp { margin-top: 5px; padding-top: 4px; color: var(--tx2, #c8b896); }
-#tip .cmp b { font-weight: 400; }
-#tip .dl { font: var(--t10)/1.4 var(--pix9); color: var(--tx3, #8a8296); }
-#tip .dl.up { color: var(--tx-ok, #9af0ae); }
-#tip .dl.dn { color: var(--tx-bad, #ffb4a0); }
 /* the target frame under the party frames (hud.js targetFrame): name, an HP bar with its %, the traits by name */
 #tgt { padding: 4px 8px 5px; font: var(--t12)/1.35 var(--pix); color: var(--cream); pointer-events: auto; }
 #tgt[hidden] { display: none; }
@@ -1832,3 +1827,51 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr)
 #loot p { margin: 0; max-width: min(260px, calc(var(--vpw) * .4)); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: var(--t12)/1.35 var(--pix); text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; animation: loot 4s steps(20) forwards; }
 @keyframes loot { 0% { opacity: 0; transform: translateX(10px); } 6% { opacity: 1; transform: none; } 80% { opacity: 1; } 100% { opacity: 0; } }
 body[data-lay="port"] #loot, body[data-lay="land"] #loot { top: 60px; height: 84px; }   /* under the menu button, clear of the touch quick slots */
+
+/* ─────────── item tooltip (items.js itemTip): Diablo-style cards, dark whatever the HUD theme ───────────
+   One card per piece: a frame and a title in the rarity colour (--rc), sections split by divider lines, the
+   stats in a name/value column. A gear piece's card is followed by the worn piece's own card under a
+   [장착 중] banner (a ring: both rings); the row wraps into a column when the screen is narrow. */
+#tip.cards { width: max-content; max-width: calc(100vw - 8px); max-height: calc(100vh - 8px); padding: 2px; overflow-y: auto; scrollbar-width: none; background: none; border: 0; box-shadow: none; }
+.tcards { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 6px; }
+.tcard {
+  --tb: calc(var(--t12) + 1px); --tn: calc(var(--t12) + 2px);
+  box-sizing: border-box; flex: none; width: 244px; max-width: 100%; padding: 8px 10px 9px;
+  font: var(--tb)/1.5 var(--pix); letter-spacing: 0; text-align: left; color: #f0e6d0;
+  background: rgba(13, 10, 19, .93); border: 2px solid var(--rc, #6b5a3c); outline: 2px solid #07050a;
+  word-break: keep-all; overflow-wrap: anywhere;
+}
+body[data-hud="contrast"] .tcard { background: rgba(0, 0, 0, .97); }
+#inv-detail .tcard { flex: 1 1 100%; width: auto; }   /* the phone pane: the card fills the pane, a worn piece's card stacks under it */
+.tcard .tc-sec + .tc-sec { margin-top: 6px; padding-top: 6px; border-top: 2px solid color-mix(in srgb, var(--rc, #6b5a3c) 45%, #000); }
+.tcard .tc-eq { margin: -8px -10px 7px; padding: 2px 10px; display: flex; justify-content: space-between; align-items: baseline; font: 700 var(--tb)/1.4 var(--pix); color: #2a1806; background: var(--b-mid, #cf9f55); }
+.tcard .tc-eq small { color: #4a3414; }
+.tcard .tc-nm { font: 700 var(--tn)/1.35 var(--pix); color: var(--rc, #d8d4c8); }
+.tcard .tc-sub { display: flex; justify-content: space-between; gap: 8px; margin-top: 1px; font: var(--t11)/1.4 var(--pix); color: #a99c86; }
+.tcard .tc-sub > :first-child { color: var(--rc, #a99c86); }
+.tcard .tc-il { color: #d8ccb4; }
+.tcard .tc-row { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.tcard .tc-row b { flex: none; font-weight: 700; text-align: right; }
+.tcard .tc-row.base { color: #e8dcc0; }
+.tcard .tc-row.base b { color: #fff; font-size: var(--tn); }
+.tcard .tc-row.af { color: #8fb8ff; }
+.tcard .tc-row.un { margin: 0 -4px; padding: 0 4px 0 6px; color: #f6dca8; background: rgba(210, 180, 140, .16); box-shadow: inset 2px 0 0 #d2b48c; }
+.tcard .tc-tag { margin-left: 5px; padding: 1px 3px; font: 700 var(--t10)/1 var(--pix9); font-style: normal; vertical-align: 1px; color: #2a1d0c; background: #d2b48c; }
+.tcard .tc-note { margin-top: 2px; font: var(--t11)/1.4 var(--pix); color: #a99c86; }
+.tcard .tc-ds { margin-top: 3px; color: #cfc4ac; }
+.tcard .tc-lg { color: #ffa45c; }
+.tcard .tc-st { color: #8fe8a8; }
+.tcard .tc-st.on { color: #b4f8c4; }
+.tcard .tc-st.off { color: #78887e; }
+.tcard .tc-so { color: #b9ae98; }
+.tcard .tc-rw { color: #ffd24a; }
+.tcard .tc-req { color: #bfb39b; }
+.tcard .tc-req.bad { color: #ff6f5e; font-weight: 700; }
+.tcard .tc-err { font-size: var(--t11); color: #ff9a8a; }
+.tcard .tc-gold { color: #ffd84a; }
+.tcard .tc-hint { margin-top: 2px; font: var(--t10)/1.4 var(--pix9); color: #9a8f7c; }
+.tcard .tc-cmp { margin-bottom: 1px; font: 700 var(--t11)/1.4 var(--pix); color: #cdbf9f; }
+.tcard .tc-dls { display: flex; flex-wrap: wrap; gap: 0 10px; }
+.tcard .tc-d { font: var(--t11)/1.45 var(--pix); color: #a99c86; }
+.tcard .tc-d.up { color: #8ff0a6; }
+.tcard .tc-d.dn { color: #ff9f8f; }

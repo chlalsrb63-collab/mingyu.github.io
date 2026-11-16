@@ -34,8 +34,8 @@ export function makePerson(look) {
 export function personState(id, look) {
   return state(id, JSON.stringify(look), () => makePerson(look));
 }
-/** Glow by rarity: none, magic, rare, legendary, set. */
-export const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30", "#5fd47a"];
+/** Glow by rarity: none, magic, rare, legendary, set, unique. */
+export const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30", "#5fd47a", "#d2b48c"];
 
 /**
  * Draw a person and the weapon in their hand. Attacks are not frames: the

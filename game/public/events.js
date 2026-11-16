@@ -290,8 +290,8 @@ export function onEvent(e, t) {
 
 /** The loot feed at the play view's lower right: one line per kind, repeats add up (`들꽃잎 ×3`), each fades after 4 s. */
 const feed = new Map();
-/** Rarity as a shape too, not colour alone: 마법 ◇ · 희귀 ◆ · 전설 ★ · 세트 ◈. */
-const RARITY_MARK = ["", "◇ ", "◆ ", "★ ", "◈ "];
+/** Rarity as a shape too, not colour alone: 마법 ◇ · 희귀 ◆ · 전설 ★ · 세트 ◈ · 유니크 ▣. */
+const RARITY_MARK = ["", "◇ ", "◆ ", "★ ", "◈ ", "▣ "];
 function lootLine(key, text, col, n) {
   const box = $("#loot");
   if (!box) return;
