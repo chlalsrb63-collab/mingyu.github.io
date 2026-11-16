@@ -219,7 +219,7 @@ function tracker(s) {
       qt.append(t);
     }
     if (s.bq) {
-      const t = el("div", "qt"); t.dataset.sec = "bq"; t.append(Info.questMark("repeat"), `${mobs[s.bq.k].name} 토벌`); tb(t, "bq", "반복 의뢰");
+      const t = el("div", "qt"); t.dataset.sec = "bq"; t.append(Info.questMark("repeat"), `${mobs[s.bq.k].name} 토벌`); tb(t, "bq", "반복 토벌");
       qt.append(t, goal(mobs[s.bq.k].name, s.bq.n, s.bq.need, "완료! 엘더윈에게 보고하세요"));
     }
     if (dl && dl.length) {

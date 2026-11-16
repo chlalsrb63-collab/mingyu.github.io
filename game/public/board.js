@@ -44,7 +44,7 @@ const HOME = {
   // 버드나무 장날 (P12): 장꾼 다래 by the market stalls
   willow_fair: "willow",
 };
-const KIND = { bring: ["가져오기", "#9be05a"], make: ["만들기", "#c8c8d8"], fish: ["낚시", "#8ad8ff"], deliver: ["배달", "#e2c486"], hunt: ["사냥", "#ff8a7a"], scout: ["정찰", "#b9a2ff"], chore: ["마을 알바", "#7ad8a0"] };
+const KIND = { bring: ["가져오기", "#9be05a"], make: ["만들기", "#c8c8d8"], fish: ["낚시", "#8ad8ff"], deliver: ["배달", "#e2c486"], hunt: ["토벌", "#ff8a7a"], scout: ["정찰", "#b9a2ff"], chore: ["마을 알바", "#7ad8a0"] };
 /** Board v2 grade tags: 쉬움 · 보통 · 어려움 (names from defs.life.jbGrade). */
 const GRADE_BG = ["#9be05a", "#ffd36a", "#ff8a6a"];
 const WHEN = { night: "밤 한정", rain: "비 오는 날" };

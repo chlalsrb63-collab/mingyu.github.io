@@ -963,7 +963,7 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
 {
   fresh();
   assert.ok(["gat", "craft", "deliver"].every((k) => X.CNT_KEYS.includes(k)));
-  assert.ok(["gather", "craft"].every((k) => X.DAILY_OTHER.includes(k)));
+  assert.ok(["gather", "craft", "fish", "campcook"].every((k) => !X.DAILY_OTHER.includes(k) && D.daily && true), "일일 토벌 rolls hunting only; life work is 아르바이트 (owner 2026-11-16)");
   for (const k of D.life.keys) assert.ok(X.ACH.some((a) => a.id === `life50_${k}` && X.LIFE_MASTER.includes(a.title)), k);
   ch.life.alch = { lv: 9, xp: 1039 };
   X.gainLife(S, p, "alch", 5);

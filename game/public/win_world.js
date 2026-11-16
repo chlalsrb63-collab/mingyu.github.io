@@ -98,7 +98,7 @@ export function renderDaily(s) {
   ft.append(b);
   chest.append(hd, ft);
   box.append(chest);
-  box.append(el("p", "hint", "과제는 어디서든 받을 수 있습니다. 광장의 일일 의뢰 게시판 담당자에게서도 열 수 있습니다."));
+  box.append(el("p", "hint", "과제는 어디서든 받을 수 있습니다. 광장의 일일 토벌 게시판 담당자에게서도 열 수 있습니다."));
   tickDaily(now());
 }
 export function tickDaily(t) {
@@ -118,8 +118,8 @@ export function renderWeek(s) {
   top.append(iconImg("clock", "#e2c486"), el("span", "", `이번 주 ${wk.done} / ${def.boxes.length}칸 · ${def.need}칸이면 완성`), el("b", "", `초기화까지 ${days(wk.reset)}`));
   box.append(top);
   // the weekly boss challenge starts at the town's obelisk: its keeper, with a [추적] (track.js)
-  const ob = el("div", "trk-row"), go = Track.button("week", "주간 보스 도전");
-  ob.append(el("small", "", "주간 보스 도전 · 버드나무광장 오벨리스크의 균열 지기"));
+  const ob = el("div", "trk-row"), go = Track.button("week", "주간 토벌");
+  ob.append(el("small", "", "주간 토벌 · 버드나무광장 오벨리스크의 균열 지기"));
   if (go) { ob.append(go); box.append(ob); }
   const grid = el("div", "week-boxes");
   def.boxes.forEach(([, text, need], i) => {
@@ -148,8 +148,8 @@ export function renderWeek(s) {
   const rest = clamp(wk.rest | 0, 0, def.restMax);
   box.append(section("쉬고 온 보너스", "fire"));
   box.append(el("p", rest ? "hint gold" : "hint", rest
-    ? `오늘의 일일 의뢰 골드 · 경험치 +${rest * def.restPct}% (쉰 날 ${rest}일)`
-    : `과제를 하나도 받지 않은 날마다 다음 날 일일 의뢰 보상이 +${def.restPct}%씩 늘어납니다 (최대 ${def.restMax}일).`));
+    ? `오늘의 일일 토벌 골드 · 경험치 +${rest * def.restPct}% (쉰 날 ${rest}일)`
+    : `과제를 하나도 받지 않은 날마다 다음 날 일일 토벌 보상이 +${def.restPct}%씩 늘어납니다 (최대 ${def.restMax}일).`));
   box.append(el("p", "hint", "매주 월요일 아침 6시에 새 수첩이 열립니다. 12칸 가운데 아무거나 7칸만 채우면 됩니다."));
 }
 

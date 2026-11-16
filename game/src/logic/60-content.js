@@ -54,11 +54,13 @@ function strHash(s) {
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 16777619);
   return h >>> 0;
 }
-const DAILY_TEXT = { kill: "{mob} {need}마리 처치", elite: "정예 몬스터 {need}마리 처치", fish: "물고기 {need}마리 낚기", cook: "요리 {need}번 성공하기", chest: "보물 상자 {need}개 열기", bounty: "반복 의뢰 {need}번 보고하기",
+const DAILY_TEXT = { kill: "{mob} {need}마리 처치", elite: "정예 몬스터 {need}마리 처치", fish: "물고기 {need}마리 낚기", cook: "요리 {need}번 성공하기", chest: "보물 상자 {need}개 열기", bounty: "반복 토벌 {need}번 보고하기",
   gather: "채집 {need}번 하기", craft: "제작·연금·요리 {need}번 성공하기",
   campcook: "모닥불 요리 {need}회 성공하기", party: "파티로 몬스터 {need}마리 처치" };
 // (gather and craft: life skills L2, counted in 58-life.js gatDone/craftOnce)
-const DAILY_OTHER = ["elite", "fish", "campcook", "chest", "bounty", "gather", "craft"];
+// 일일 토벌 (owner 2026-11-16): the day's three are all hunting; fishing, cooking, gathering and crafting are 아르바이트 (the board, 58-life.js).
+// The life kinds stay in DAILY_TEXT so a day rolled before the change still reads and pays.
+const DAILY_OTHER = ["elite", "chest", "bounty"];
 const DAILY_PARTY_KILLS = 10;
 function rollDaily(ch, day) {
   const box = { seed: strHash(`${ch.name}:${day}`) | 0 };
@@ -85,7 +87,7 @@ function ensureDaily(S, p) {
   // days gone by with nothing claimed come back as a bonus on today's rewards (63: restCarry)
   ch.daily.rest = restCarry(prev, day);
   p.dirty = true;
-  if (prev) toast(p, ch.daily.rest ? `일일 과제가 새로 갱신되었습니다. 쉬고 온 보너스: 오늘 과제 보상 +${ch.daily.rest * WEEK.restPct}%` : "일일 과제가 새로 갱신되었습니다.");
+  if (prev) toast(p, ch.daily.rest ? `일일 토벌이 새로 갱신되었습니다. 쉬고 온 보너스: 오늘 과제 보상 +${ch.daily.rest * WEEK.restPct}%` : "일일 토벌이 새로 갱신되었습니다.");
 }
 const dailyText = (t) => DAILY_TEXT[t.kind].replace("{mob}", t.k ? MOBS[t.k].name : "").replace("{need}", t.need);
 /** Rewards are paid on the world's scale: the tier a level maps to (the same as before levels went to 200). */
@@ -109,7 +111,7 @@ function dailyProg(S, p, kind, k) {
     if (!matches || (kind === "kill" && t.k !== k) || t.n >= t.need) continue;
     t.n++;
     p.dirty = true;
-    if (t.n >= t.need) toast(p, `일일 과제 완료: ${dailyText(t)} — 보상을 받으세요.`);
+    if (t.n >= t.need) toast(p, `일일 토벌 완료: ${dailyText(t)} — 보상을 받으세요.`);
   }
 }
 /** A piece of gear for the looter's class, of at least rarity `minQ`. */
@@ -152,9 +154,9 @@ const ACH = [
   // bosses-2 (docs/design/bosses-2.md): first kills earn a title
   ["clubshrimp", "사냥", "파도를 꺾은 자", "망치 갯가재 처치", 30, (c) => (c.mk.clubshrimp || 0) >= 1, "파도를 꺾은 자", [["hp", 3]]],
   ["bloodhorn", "사냥", "피눈물을 닦은 자", "혈루 왕도마뱀 처치", 40, (c) => (c.mk.bloodhorn || 0) >= 1, "피눈물을 닦은 자", [["atkp", 3]]],
-  ["cloakbat", "사냥", "장막을 걷은 자", "밤장막 박쥐군주 처치 (주간 도전)", 40, (c) => (c.mk.cloakbat || 0) >= 1, "장막을 걷은 자", [["crit", 2]]],
+  ["cloakbat", "사냥", "장막을 걷은 자", "밤장막 박쥐군주 처치 (주간 토벌)", 40, (c) => (c.mk.cloakbat || 0) >= 1, "장막을 걷은 자", [["crit", 2]]],
   ["mvp10", "사냥", "선봉장", "보스·수문장 피해 기여도 1위 10번", 30, (c) => c.cnt.mvp >= 10, "선봉장"],
-  ["bloomwhale", "사냥", "고래의 장송곡", "꽃무덤 고래 처치 (주간 도전)", 60, (c) => (c.mk.bloomwhale || 0) >= 1, "고래의 장송곡", [["atkp", 4], ["hp", 4]]],
+  ["bloomwhale", "사냥", "고래의 장송곡", "꽃무덤 고래 처치 (주간 토벌)", 60, (c) => (c.mk.bloomwhale || 0) >= 1, "고래의 장송곡", [["atkp", 4], ["hp", 4]]],
   ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, (c) => c.cnt.evt >= 1],
   ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.cnt.evt >= 10, "균열 수호자", [["def", 3]]],
   ["dim1", "사냥", "차원의 틈", "레이드던전 정화", 10, (c) => dimCnt(c).dim >= 1],
@@ -208,8 +210,8 @@ const ACH = [
   ["lv50", "성장", "전설의 모험가", "레벨 200 달성", 40, (c) => c.lvl >= 200, "전설의 모험가", [["hp", 80]]],
   ["job1", "성장", "첫 전직", "전직관 아르센에게서 전직하기", 10, (c) => c.job !== "adventurer"],
   ["job2", "성장", "두 갈래 길", "두 무기의 길(혼합 직업)로 전직하기", 20, (c) => !!JOBS[c.job] && JOBS[c.job].kind === "hybrid"],
-  ["daily1", "성장", "성실한 하루", "일일 과제 보상 상자 받기", 5, (c) => c.cnt.daily >= 1],
-  ["daily30", "성장", "성실한 모험가", "일일 과제 보상 상자 30번 받기", 20, (c) => c.cnt.daily >= 30, "성실한 모험가", [["gold", 10]]],
+  ["daily1", "성장", "성실한 하루", "일일 토벌 보상 상자 받기", 5, (c) => c.cnt.daily >= 1],
+  ["daily30", "성장", "성실한 모험가", "일일 토벌 보상 상자 30번 받기", 20, (c) => c.cnt.daily >= 30, "성실한 모험가", [["gold", 10]]],
 ].map(([id, cat, name, desc, pts, test, title, bonus]) => ({ id, cat, name, desc, pts, test, title: title || null, bonus: bonus || null }));
 const ACH_BY = Object.fromEntries(ACH.map((a) => [a.id, a]));
 /** Every mastery star a character has earned. */

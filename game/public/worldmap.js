@@ -105,8 +105,8 @@ export function questMaps(defs, self, nodes, anchor = id => id) {
   }
   const bounty = self?.bq;
   if (bounty?.k) {
-    if (bounty.n >= bounty.need) add(defs.questTurnIn?.map, "반복 의뢰");
-    else hunt(bounty.k, "반복 의뢰");
+    if (bounty.n >= bounty.need) add(defs.questTurnIn?.map, "반복 토벌");
+    else hunt(bounty.k, "반복 토벌");
   }
   const sides = new Map((defs.side || []).map(s => [s.id, s]));
   for (const [id, state] of self?.sq || []) {

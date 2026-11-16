@@ -401,9 +401,9 @@ function dimChest(S, dim, p) {
     payout(S, p, r);
     for (let i = 1; i < runes; i++) payout(S, p, { rune: true });
     for (let i = 1; i < gears; i++) payout(S, p, { gear: 1, gearQ: R.gearQ });
-    if (big) { charmChest(S, dim, p); if (!rotating) jfScroll(p, "lvl"); if (cosRoll(S, p, "weekly") < COS_WEEKLY) cosFrom(S, p, "weekly", "주간 보스 도전"); }
+    if (big) { charmChest(S, dim, p); if (!rotating) jfScroll(p, "lvl"); if (cosRoll(S, p, "weekly") < COS_WEEKLY) cosFrom(S, p, "weekly", "주간 토벌"); }
     giveX(S, p, big && !rotating ? "big" : carried ? "" : "small");
-    msg = big ? "주간 보스 도전 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다."
+    msg = big ? "주간 토벌 보상을 받았습니다! (이번 주 큰 보상 완료)" : carried ? "기여가 부족해 작은 보상만 받았습니다."
       : expired ? "지난주 도전의 반복 보상을 받았습니다. 이번 주 보상은 새 보스에게서 받을 수 있습니다."
       : "보스 도전 반복 보상을 받았습니다. 큰 보상은 월요일 06:00에 다시 열립니다.";
   } else {
@@ -559,7 +559,7 @@ function dimReviveWait(S, p) {
   return Math.max(0, Math.ceil(((p.dimDeadAt || S.now) + (chal ? DIM_CHAL.reviveMs : DIM.reviveMs) - S.now) / 1000));
 }
 
-// ── 주간 보스 도전: the boss's script (docs/design/scale-and-rift.md H.6)
+// ── 주간 토벌: the boss's script (docs/design/scale-and-rift.md H.6)
 
 /** The boss of a challenge, in the middle of its arena, asleep until someone comes near or strikes it. */
 function chalSpawn(S, dim, k, n) {

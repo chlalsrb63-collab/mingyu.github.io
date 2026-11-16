@@ -183,7 +183,7 @@ function questBody(s) {
   SideQ.listEntries(s, entry, null, true);
   for (let i = cur - 1; i >= 0; i--) entry(`main:${i}`, `${i + 1}. ${qs[i].title}`, "완료", "past");
   SideQ.listEntries(s, entry, (t) => list.append(el("div", "grp", t)));
-  list.append(el("div", "grp", "반복 의뢰"));
+  list.append(el("div", "grp", "반복 토벌"));
   if (s.bq) entry("bq", `${mobs[s.bq.k].name} 토벌`, s.bq.n >= s.bq.need ? "완료!" : `${Math.min(s.bq.n, s.bq.need)}/${s.bq.need}`, s.bq.n >= s.bq.need ? "done" : "");
   for (const k of picks) entry(`bq:${k}`, `${mobs[k].name}`, `Lv.${mobs[k].lv}`, "offer");
   list.append(el("div", "grp", "토벌 숙련"));
@@ -228,7 +228,7 @@ function questBody(s) {
     SideQ.detail(det, arg, s);
   } else if (kind === "bq" && !arg) {
     const d = mobs[s.bq.k];
-    det.append(el("div", "q-title", `반복 의뢰 — ${d.name} 토벌`));
+    det.append(el("div", "q-title", `반복 토벌 — ${d.name} 토벌`));
     det.append(el("p", "say", `같은 몬스터 ${G.defs.bounty}마리를 잡을 때마다 보상을 받고, 곧바로 다시 시작됩니다. 지금까지 ${s.bn}회 완료 — 3회마다 강화석, 10회마다 룬이 붙습니다.`));
     det.append(goal(`Lv.${d.lv} ${d.name}`, s.bq.n, s.bq.need));
     det.append(el("div", "q-reward", `보상: EXP ${Math.round(d.xp * s.bq.need * 0.5).toLocaleString()} + 골드`));
@@ -236,7 +236,7 @@ function questBody(s) {
   } else if (kind === "bq") {
     const d = mobs[arg];
     det.append(el("div", "q-title", `Lv.${d.lv} ${d.name} 토벌`));
-    det.append(el("p", "say", `${d.name} ${G.defs.bounty}마리를 잡아 오면 보상을 주지. 다 잡으면 곧바로 같은 의뢰가 다시 시작된다네.${s.bq ? " (지금 받은 반복 의뢰와 바뀝니다)" : ""}`));
+    det.append(el("p", "say", `${d.name} ${G.defs.bounty}마리를 잡아 오면 보상을 주지. 다 잡으면 곧바로 같은 의뢰가 다시 시작된다네.${s.bq ? " (지금 받은 반복 토벌와 바뀝니다)" : ""}`));
     det.append(el("div", "q-reward", `보상: EXP ${Math.round(d.xp * G.defs.bounty * 0.5).toLocaleString()} + 골드`));
     button(s.bq ? "이 의뢰로 바꾸기" : "의뢰 수락", () => act({ t: "bq", a: "take", k: arg }), true);
   } else {

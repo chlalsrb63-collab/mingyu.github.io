@@ -525,13 +525,13 @@ function dimBuild(cfg, seed) {
   return m;
 }
 
-// ───────────────────────────── 3단 레이드 floors and 주간 보스 도전 (docs/design/scale-and-rift.md H.6) ─────────────────────────────
+// ───────────────────────────── 3단 레이드 floors and 주간 토벌 (docs/design/scale-and-rift.md H.6) ─────────────────────────────
 
 /** What floor `n` (1..DIM.floors) does to a rift: `{ hp, atk, elites, traits, boss }` (DIM.floor; a boss challenge reads floor 1's). */
 const dimFloorK = (n) => DIM.floor[clamp(n | 0, 1, DIM.floors) - 1];
 
 /**
- * 주간 보스 도전: a four-player arena for the two big bosses. Each has three telegraphed patterns made of the old
+ * 주간 토벌: a four-player arena for the two big bosses. Each has three telegraphed patterns made of the old
  * moves (`pats`: [name, kind]), a marked cast every `every`-th turn that the party breaks by dealing `stag` of the
  * boss's health while it lasts (`castMs`; broken: stunned `stunMs`; not broken: a blast of `blast` × attack and one
  * more `fury`), and a soft enrage (`enrage` ms into a fight, then + `enrageK` damage every `enrageStep`).

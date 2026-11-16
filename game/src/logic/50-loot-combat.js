@@ -498,7 +498,7 @@ function killMob(S, rt, mob) {
     const bq = ch.bq;
     if (bq && bq.k === mob.k && bq.n < bq.need) {
       bq.n++;
-      if (bq.n >= bq.need) toast(p, `반복 의뢰 [${d.name} ${bq.need}마리] 달성! 관리자에게 보고하세요.`);
+      if (bq.n >= bq.need) toast(p, `반복 토벌 [${d.name} ${bq.need}마리] 달성! 관리자에게 보고하세요.`);
     }
     sqProgress(S, p, "kill", (g) => g.mob === mob.k);
     sqFind(S, p, mob.k);

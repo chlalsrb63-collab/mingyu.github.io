@@ -375,7 +375,7 @@ export function applyAction(S, pid, a) {
     case "bq": {
       if (a.a === "take") {
         ch.bq = { k: a.k, n: 0, need: BOUNTY_N };
-        toast(p, `반복 의뢰 수락: ${MOBS[a.k].name} ${BOUNTY_N}마리`);
+        toast(p, `반복 토벌 수락: ${MOBS[a.k].name} ${BOUNTY_N}마리`);
       } else {
         const d = MOBS[ch.bq.k];
         const gold = Math.round(((d.gold[0] + d.gold[1]) / 2) * ch.bq.need * 0.8);
@@ -385,7 +385,7 @@ export function applyAction(S, pid, a) {
         // every third report earns a stone, every tenth a rune
         if (ch.bn % 3 === 0 && addItem(ch, "stone", 1)) p.gain.push(["item", "stone", 1, 0]);
         if (ch.bn % 10 === 0) gainRune(S, p);
-        toast(p, `반복 의뢰 완료 (${ch.bn}회째) — 같은 의뢰가 다시 시작됩니다.`);
+        toast(p, `반복 토벌 완료 (${ch.bn}회째) — 같은 의뢰가 다시 시작됩니다.`);
         dailyProg(S, p, "bounty");
         const xp = Math.round(d.xp * ch.bq.need * 0.5);
         ch.bq = { k: ch.bq.k, n: 0, need: BOUNTY_N };
@@ -582,9 +582,9 @@ export function applyAction(S, pid, a) {
       if (a.i === "bonus") {
         dl.bonus = true;
         ch.cnt.daily++;
-        toast(p, "일일 과제 보상 상자를 열었습니다!");
+        toast(p, "일일 토벌 보상 상자를 열었습니다!");
         payout(S, p, dailyBonus(ch));
-        cosFrom(S, p, "daily", "일일 과제 보상 상자");
+        cosFrom(S, p, "daily", "일일 토벌 보상 상자");
       } else {
         dl.claimed[a.i] = true;
         payout(S, p, dailyReward(ch, dl.tasks[a.i]));

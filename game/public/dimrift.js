@@ -259,7 +259,7 @@ function renderKeeper() {
   // dimr[6]: best step + 1 per boss; dimr[7]: this week's rotating boss. Row: [k, name, need, cast, pats, steps, reward bit, rotating]
   const challenges = ch.bosses.map(([k, name, need, cast, , steps, bit, rotating], i) => {
     if (rotating && i !== r[7]) return "";
-    const label = rotating ? "이번 주 순환 보스" : "주간 보스 도전";
+    const label = rotating ? "이번 주 순환 보스" : "주간 토벌";
     const claimed = r[5] & (bit ?? (1 << i));
     return `<div class="dim-chal"><span>${label} · <b>${esc(name)}</b> <em>${claimed ? "이번 주 큰 보상 받음" : "큰 보상 남음"}${r[6] && r[6][i] ? ` · 최고 ${esc((ch.stepNames || [])[r[6][i] - 1] || "")}` : ""}</em></span>` +
       // one button a difficulty step: its level, what it adds; greyed under the step's level (the server checks every member)
