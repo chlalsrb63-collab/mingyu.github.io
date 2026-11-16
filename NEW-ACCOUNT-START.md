@@ -9,7 +9,7 @@
 ```
 너는 테일즈테일즈(Tales Tales, 브라우저 파티 MMORPG) 프로젝트의 통합 담당 Claude다. 오너에게는 한국어로 답한다.
 먼저 순서대로 읽어라: (1) NEW-ACCOUNT-START.md (이 인계서) (2) ai/HANDOFF.md (73줄 "여기서 시작") (3) AGENTS.md (규칙) (4) ai/TASKS.md 의 CODEX 섹션과 "진행 중" 표.
-그다음 ai/HANDOFF.md §4 "진행 중 · 다음"의 순서대로 이어서 개발해라. 토큰을 아껴라: 에이전트는 한 번에 1~2개, model sonnet, 짧은 브리프, 전체 테스트는 병합마다 1번.
+그다음 ai/HANDOFF.md §4 "진행 중 · 다음"의 순서대로 이어서 개발해라. 토큰을 아껴라: 에이전트는 한 번에 1~2개, model sonnet, 짧은 브리프, 전체 테스트는 병합마다 1번. 코드를 찾을 때는 codebase-memory MCP(프로젝트 C-Users-mankyu-Desktop-Tales-Tales: search_graph → trace_path → get_code_snippet)를 먼저 써라(오너 요청).
 절대 push/배포하지 마라(push = 배포). 오너의 플레이 서버(8830)는 허락 없이 재시작하지 마라. 시작하기 전에 `git status`와 `git log -5`로 현재 상태를 확인하고 3줄로 보고해라.
 ```
 
@@ -47,7 +47,7 @@
 ## 5. MCP / 도구 (정리됨)
 
 - 이 PC·계정에서 **끈 것(2026-11-16)**: 사용자 서버 `summer-engine` `pixellab` `blender` 제거, 플러그인 서버 `github` `fullstory` `claude-mem` 비활성, 계정 커넥터 `Notion` `Higgsfield` `Claude Docs` 끔. 백업: `C:\Users\mankyu\.claude-backups\claude.json.2026-11-16.bak`, `settings.json.2026-11-16.bak`.
-- **유지:** `codebase-memory-mcp`(코드 그래프, AGENTS.md 토큰 규칙 0번), Claude Code 기본 도구, 앱 내장 브라우저(`mcp__Claude_Browser__*`), 시각화 도구.
+- **유지:** `codebase-memory-mcp`(코드 그래프, AGENTS.md 토큰 규칙 0번 — **오너가 적극 사용하길 원함**, 지금까지는 대화 기록 228개 중 3곳에서만 쓰임), Claude Code 기본 도구, 앱 내장 브라우저(`mcp__Claude_Browser__*`), 시각화 도구.
 - 되돌리려면(필요할 때만): `claude mcp add …`로 다시 등록하거나 백업 파일에서 해당 항목을 복사, `claude plugin enable github@claude-plugins-official` 등.
 - **새 계정에서는** 위 정리가 적용되지 않을 수 있습니다(계정 커넥터는 계정별). 새 계정의 설정 > 커넥터에서 Notion·Higgsfield 등을 끄세요 — 매 턴 읽는 도구 목록이 줄어 토큰이 절약됩니다(약 5%).
 - 전역 지침 `C:\Users\mankyu\.claude\CLAUDE.md`(gstack, graphify)는 같은 PC면 그대로 적용됩니다. 프로젝트 지침은 저장소의 `CLAUDE.md`/`AGENTS.md`.

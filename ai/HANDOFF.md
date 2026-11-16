@@ -11,7 +11,8 @@
 - 작업 폴더·브랜치는 정리됨(병합된 에이전트 브랜치 164개 삭제). 남은 오래된 에이전트 폴더 2개(`agent-a2033284…` 미커밋 수정, `agent-a72d64ca…` 미병합)는 내용을 모르므로 보존.
 
 ## 2. 일하는 방법 (오너 명령: 토큰 절약)
-1. 이 파일 → 필요한 설계 문서 일부만(`grep -n "^#"`). 코드는 코드 그래프/`docs/FILEMAP.md`로 찾기.
+1. 이 파일 → 필요한 설계 문서 일부만(`grep -n "^#"`). **코드는 코드 그래프(`codebase-memory` MCP)로 먼저 찾기 — 오너가 쓰길 원함.** 프로젝트 이름 `C-Users-mankyu-Desktop-Tales-Tales`(색인 최신·자동 감시): `search_graph`(함수·상수 찾기) → `trace_path`(누가 부르나) → `get_code_snippet`(그 함수만 읽기) → `get_file_outline`(큰 파일 구조); 문자열·설정·JSON은 grep. 생성물 `src/logic.js`는 검색 대상 아님. 파일 지도는 `docs/FILEMAP.md`.
+   **에이전트 브리프에도 한 줄 넣기:** "코드는 codebase-memory(프로젝트 C-Users-mankyu-Desktop-Tales-Tales)로 먼저 찾고, 그 파일의 해당 부분만 읽어라(워크트리의 새 파일은 grep)".
 2. 에이전트: 한 번에 **1~2개, `model: "sonnet"`**, 짧은 브리프(목표·파일·"끝" 기준·보고 ≤ 15줄). 같은 파일을 건드리는 일은 순서대로.
 3. 병합 → `npm run build:logic` → `node scripts/test-all.mjs`(**병합마다 1번**, `maps`는 부하에서 흔들리면 단독 재실행) → `npm run data:check`.
 4. 스크린샷은 요청받은 것만, `node scripts/shot.mjs`(워크트리에서도 동작, 메인의 playwright 자동 사용).
