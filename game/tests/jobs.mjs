@@ -126,7 +126,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(D.wmNeed.length, 50); assert.equal(D.wmNeed[0], 22); assert.equal(D.wmNeed[9], 2200); assert.equal(D.wmNeed[48], 52822);
   // the bow: a real weapon kind, five tiers, sold at tier 1, legendary and set looks roll on it
   assert.equal(D.wkinds.bow.range, 150); assert.equal(D.wkinds.bow.cd, 760); assert.equal(D.wkinds.bow.fx, 6); assert.deepEqual(D.wkinds.bow.shot, { spd: 420, r: 6 });
-  assert.deepEqual([1, 2, 3, 4, 5].map((t) => D.items[`w_bow_${t}`].name), ["나무 짧은활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위"]);
+  assert.deepEqual([1, 2, 3, 4, 5].map((t) => D.items[`w_bow_${t}`].name), ["물푸레나무 활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위"]);
   for (const id of ["w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1"]) assert.ok(D.shop.includes(id), "the shop sells " + id);
   assert.ok(!D.shop.includes("W1"));
   assert.ok(Object.values(D.items).every((it) => !("cls" in it)), "no item is locked to a class");

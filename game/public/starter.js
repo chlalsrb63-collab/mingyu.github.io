@@ -20,13 +20,13 @@ export const DIFF_NAME = ["", "쉬움", "보통", "어려움"];
 export const FAR_RANGE = 80;
 /** [kind, name, tier-1 weapon name, first skill name, basic-attack range] — the shape of logic `starters()`. */
 export const FALLBACK = [
-  ["sword", "대검", "녹슨 대검", "파워 슬래쉬", 34],
-  ["dagger", "단검", "낡은 단검", "암습", 26],
-  ["spear", "창", "대나무 창", "나선 찌르기", 54],
-  ["staff", "스태프", "견습 지팡이", "파이어볼", 100],
-  ["book", "마도서", "낡은 주문서", "영혼 화살", 84],
-  ["bow", "활", "나무 짧은활", "관통 화살", 150],
-  ["hammer", "양손해머", "말뚝박이 망치", "쐐기찍기", 49],
+  ["sword", "대검", "철제 대검", "파워 슬래쉬", 34],
+  ["dagger", "단검", "철제 단검", "암습", 26],
+  ["spear", "창", "철제 창", "나선 찌르기", 54],
+  ["staff", "스태프", "푸른 수정 지팡이", "파이어볼", 100],
+  ["book", "마도서", "입문 마도서", "영혼 화살", 84],
+  ["bow", "활", "물푸레나무 활", "관통 화살", 150],
+  ["hammer", "양손해머", "철제 양손해머", "쐐기찍기", 49],
 ];
 /** A list as the server sent it, kept only if it is well-formed (else the fallback). */
 export function cleanStarters(list) {

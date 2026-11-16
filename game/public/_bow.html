@@ -8,7 +8,7 @@
 //   arrows  the arrow sprite in 64 directions, then arrows in flight (plain, tiers 4/5, a piercing streak, a hit, a wall)
 import * as WP from "./weapons.js";
 const q = new URLSearchParams(location.search), mode = q.get("m") || "art";
-const NAMES = ["나무 짧은활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위"];
+const NAMES = ["물푸레나무 활", "사냥꾼의 장궁", "기사단 전투활", "카본 컴파운드 보우", "균열의 시위"];
 const cv = document.getElementById("c"), g = cv.getContext("2d");
 const txt = (s, x, y, col = "#ddd") => { g.fillStyle = col; g.font = "12px sans-serif"; g.fillText(s, x, y); };
 

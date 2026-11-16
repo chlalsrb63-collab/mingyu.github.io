@@ -13,6 +13,7 @@
 
 | 누가 | 일 | 브랜치 · 폴더 | 시작 |
 | --- | --- | --- | --- |
+| Codex | Lv.1 기본 무기 7종 도트와 이름 개선 | `codex/starter-weapons` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
 | Codex | 스튜디오 고구마 오프닝 재생과 타이틀 전환 | `codex/studio-opening` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
 | Codex | 8대 피해 속성 · 전직별 복합 속성 · 용기사 착지와 장판 · 마을 모험가 NPC | `codex/elemental-combat` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |
 | Codex | 장비 세트 제거 · 룬 소켓과 세트 룬 | `codex/rune-sockets` · `~/.codex/worktrees/item-content-plan` | 2026-11-16 |

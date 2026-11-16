@@ -605,11 +605,11 @@ function markWeapon() {
   const row = starters.find((r) => r[0] === draft.wk), w = WORDS[draft.wk], line = $("#c-wk-feel");
   if (!line || !row) return;
   line.textContent = "";
-  line.append(el("b", "", row[1]));
+  line.append(el("b", "", row[2] || row[1]));
   if (row[4]) line.append(el("span", "tag", row[4] >= FAR_RANGE ? "원거리" : "근접"));
   if (w) line.append(el("span", "tag d" + w.diff, "난이도 " + DIFF_NAME[w.diff]));
   if (row[3]) line.append(el("span", "tag sk", "첫 스킬 " + row[3]));
-  line.append(el("span", "fl", w ? w.feel : row[2] ? `[${row[2]}] 한 자루로 시작합니다` : ""));
+  if (w?.feel) line.append(el("span", "fl", w.feel));
 }
 /** The preview swings the weapon in hand a few times, whatever mode it is in. */
 function swingNow() {

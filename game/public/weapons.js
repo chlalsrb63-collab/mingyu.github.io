@@ -37,7 +37,6 @@ const ICON_INK = "#111118";
 const M = {
   steel: ["#e2e8f0", "#b4bcc9", "#7a7f98"],
   bright: ["#f0f6ff", "#c4d0e0", "#8690b0"],
-  rust: ["#c4a894", "#94786a", "#64484c"],
   dull: ["#cfd0d4", "#a4a4ac", "#6e6a80"],
   iron: ["#9a9eaa", "#6c707e", "#464658"],
   dark: ["#6a6e7c", "#454856", "#2c2c3c"],
@@ -48,6 +47,9 @@ const M = {
   birch: ["#f4ead2", "#d8c8a4", "#a6927c"],
   bamboo: ["#d0e48a", "#94b44c", "#5e7a3a"],
   leather: ["#9a6a48", "#74482e", "#4e2e2e"],
+  oxblood: ["#ae717b", "#804958", "#512e43"],
+  ash: ["#e3bb82", "#ba8353", "#7c4e3e"],
+  brass: ["#f1d596", "#be944f", "#795142"],
   black: ["#5a5260", "#3a3440", "#24202c"],
   gold: ["#fff0a0", "#e8bc4c", "#a8742e"],
   bone: ["#fff8e4", "#e6d8ba", "#b0a08e"],
@@ -65,7 +67,7 @@ const M = {
   // tier 6 운철 (meteor iron): night-blue metal, starlight-gold fittings, star flecks
   meteor: ["#b8c6f0", "#5a6aa8", "#2c3260"], starfire: ["#fff8d8", "#ffd27a", "#c8844a"],
   // flat accents
-  wrap: "#3a2630", gild: "#f0cc60", spot: "#b0603a", fuller: "#8e96ae", glow: "#7af4ff", core: "#e8ffff",
+  wrap: "#3a2630", gild: "#f0cc60", fuller: "#8e96ae", glow: "#7af4ff", core: "#e8ffff",
   energy: "#e8a8ff", spark: "#fff4a0", venom: "#8ae84a", ruby: "#ff5a6a", sapph: "#5ab8ff", emer: "#5ae0a0",
   amethyst: "#c87aff", white: "#ffffff", ink: "#3a3044", line: "#b8a890", rune: "#5ab8ff", orange: "#ff9a3a",
   // bows: a gut string, an arrow's shaft, a longbow's pale belly, a compound's cable
@@ -87,15 +89,15 @@ const D = (s, t, m, o) => ({ k: "d", s, t, m, top: true, ...o });
 // decorate it), blade: the material names that are "the blade" (motifs recolour them) }.
 
 const SWORD = [
-  // 1 녹슨 대검 — a rusted, notched slab with a plain iron cross and a leather grip
+  // 1 철제 대검 — a wide, clean blade with a bevel and a wine-red wrapped grip
   () => ({
     sh: [
-      R(-4, -2, -1, 2, "iron"), R(-2, 3, -1, 2, "leather"), R(-1, 0, -1, 2, "wrap"), R(1, 2, -1, 2, "wrap"),
-      R(3, 5, -3, 4, "iron"),
-      P([[5, -2], [18, -2], [20, 0], [20, 1], [18, 3], [5, 3]], "rust"),
-      P([[11, -2.2], [13.5, -2.2], [12.3, -0.6]], null), P([[16, 3.2], [17.6, 3.2], [16.8, 2]], null),
-      R(8, 10, 1, 2, "spot"), R(14, 16, -1, 0, "spot"),
-    ], head: [5, 20, -2, 3], blade: ["rust"],
+      P([[-4, -1], [-2, -2], [-1, -1], [-1, 2], [-2, 3], [-4, 2]], "steel"),
+      R(-2, 4, -1, 2, "oxblood"), R(0, 1, -1, 2, "wrap"), R(2, 3, -1, 2, "wrap"),
+      P([[3, -4], [5, -3], [6, -2], [6, 3], [5, 4], [3, 5]], "iron"),
+      P([[5, -2.8], [20, -2.8], [23, -0.7], [23, 1.4], [20, 3.8], [5, 3.8]], "steel"),
+      P([[6, -2.8], [20, -2.8], [23, -0.7], [21, 0.2], [6, 0.2]], "bright"),
+    ], head: [5, 23, -2.8, 3.8], blade: ["steel", "bright"],
   }),
   // 2 강철 양손검 — clean steel, a ricasso, a fuller, a long wrapped grip
   () => ({
@@ -155,13 +157,14 @@ const SWORD = [
 ];
 
 const DAGGER = [
-  // 1 낡은 단검 — a dull, short knife on a wrapped grip
+  // 1 철제 단검 — a compact leaf blade above a short leather grip
   () => ({
     sh: [
-      R(-3, -2, -1, 2, "wood"), R(-2, 2, -1, 2, "leather"), R(0, 1, -1, 2, "wrap"),
-      R(2, 3, -2, 3, "iron"),
-      P([[3, -1], [9, -1], [11, 0], [11, 1], [9, 2], [3, 2]], "dull"),
-    ], head: [3, 11, -1, 2], blade: ["dull"],
+      R(-4, -2, -1.5, 2.5, "steel"), R(-2, 2, -1, 2, "leather"), L(-1, 0, 1, 0, "wrap"),
+      R(2, 3.5, -2.5, 3.5, "iron"),
+      P([[3, -1.6], [6, -2.3], [9, -1.6], [13.5, 0.5], [9, 2.6], [6, 3.3], [3, 2.6]], "steel"),
+      P([[4, -1.8], [6, -2.3], [9, -1.6], [13, 0.4], [4, 0.4]], "bright"),
+    ], head: [3, 13.5, -2.3, 3.3], blade: ["steel", "bright"],
   }),
   // 2 암살자의 비수 — a long black stiletto with a blood-red tassel
   () => ({
@@ -214,13 +217,14 @@ const DAGGER = [
 ];
 
 const SPEAR = [
-  // 1 대나무 창 — a bamboo pole, its node rings, a fire-hardened point bound with cord
+  // 1 철제 창 — a straight ash shaft, a ferrule and a polished spear point
   (icon) => ({
     sh: [
-      R(-5, 30, -1, 1, "bamboo"), ...[3, 11, 19].map((s) => R(s, s + 1, -1, 1, "dwood")),
-      R(26, 30, -1, 1, "leather"), L(27, -1, 27, 0, "wrap"), L(29, -1, 29, 0, "wrap"),
-      P([[30, -2], [33, -1], [38, 0], [38, 1], [33, 2], [30, 2]], "birch"),
-    ], head: [30, 38, -2, 2], blade: ["birch"],
+      R(-4, 29, -1, icon ? 1.7 : 1, "ash"), R(-4, -2, -1.4, 1.8, "iron"),
+      R(-1, 4, -1.3, 1.7, "leather"), R(25, 29, -1.6, 2.1, "iron"),
+      P([[28, -1.5], [30.5, -3.5], [34, -2.5], [40, 0.5], [34, 3.5], [30.5, 4.5], [28, 2.5]], "steel"),
+      P([[29, -1.7], [30.5, -3.5], [34, -2.5], [39, 0.25], [29, 0.25]], "bright"),
+    ], head: [28, 40, -3.5, 4.5], blade: ["steel", "bright"],
   }),
   // 2 강철 장창 — a long ash shaft, a leaf-bladed steel head, a red tassel
   (icon) => ({
@@ -277,13 +281,16 @@ const SPEAR = [
 ];
 
 const STAFF = [
-  // 1 견습 지팡이 — a plain crooked stick with a pebble of green glass
+  // 1 푸른 수정 지팡이 — a faceted blue crystal seated in a simple brass ferrule
   (icon) => ({
     sh: [
-      R(-4, 17, 0, icon ? 2 : 1, "wood"), R(-4, -2, -1, 2, "dwood"),
-      R(16, 19, -1, 2, "wood"), P([[18, -1], [20, -4], [21, -3], [20, -1]], "wood"),
-      C(20.5, 0.5, 1.6, "green"), D(20, 0, "white"),
-    ], head: [16, 22, -4, 2], blade: ["green"],
+      R(-4, 18, -1, icon ? 2 : 1.4, "ash"), R(-4, -2, -1.4, 1.8, "brass"),
+      R(-1, 3, -1.4, 1.8, "leather"),
+      P([[16, -1], [19, -3.5], [21, -2.5], [21, 3.5], [19, 4.5], [16, 2]], "brass"),
+      P([[18, 0.5], [20, -3.2], [24, -2.1], [26, 0.5], [24, 3.3], [20, 4.2]], "blue"),
+      P([[20, -3.2], [24, -2.1], [26, 0.5], [21, 0.5], [19, 0.1]], "sapph"),
+      D(22, -1.4, "core"),
+    ], head: [18, 26, -3.2, 4.2], blade: ["blue", "sapph"],
   }),
   // 2 룬 지팡이 — carved runes up the shaft, a blue gem in a wooden claw
   (icon) => ({
@@ -333,15 +340,15 @@ const STAFF = [
 
 // books are drawn front-on around the sheet's centre (s → x, t → y)
 const BOOK = [
-  // 1 낡은 주문서 — a worn leather cover, yellowed pages, a torn corner, a ribbon
+  // 1 입문 마도서 — a neat bound volume with pale leaves and a small brass clasp
   () => ({
     sh: [
-      R(-8, 8, -3, 6, "leather"),
-      R(-7, -1, -4, 5, "oldpage"), R(1, 7, -4, 5, "oldpage"), R(-1, 1, -4, 6, "dwood"),
-      P([[5, -4.2], [7.2, -4.2], [7.2, -2]], null),
-      L(-6, -2, -3, -2, "line"), L(-6, 0, -2, 0, "line"), L(-6, 2, -3, 2, "line"), L(2, -1, 5, -1, "line"), L(2, 1, 4, 1, "line"),
-      R(0, 1, 6, 9, "red"),
-    ], head: [-8, 8, -3, 6], blade: ["leather"],
+      P([[-8, -5], [-3, -5], [0, -4], [3, -5], [8, -5], [8, 5], [1, 7], [-1, 7], [-8, 5]], "oxblood"),
+      P([[-7, -4.5], [-3, -4.5], [-0.5, -3], [-0.5, 5.4], [-3, 4.4], [-7, 4]], "page"),
+      P([[0.5, -3], [3, -4.5], [7, -4.5], [7, 4], [3, 4.4], [0.5, 5.4]], "page"),
+      L(-5, -1, -2, 0, "line"), L(-5, 1, -2, 2, "line"), L(2, 1, 5, 0, "line"),
+      R(7, 8, 1, 3, "brass"), R(1.5, 3, 4.6, 7.8, "red"),
+    ], head: [-8, 8, -5, 7], blade: ["oxblood"],
   }),
   // 2 룬 마도서 — a blue cover, a rune glowing on the open page
   () => ({
@@ -449,9 +456,15 @@ const bow = (b, extra) => (icon, o = {}) => {
   };
 };
 const BOW = [
-  // 1 나무 짧은활 — a plain self-bow cut from one stave, a cord-wrapped grip, a hemp string
-  bow({ T: 9, tip: 3.4, g: 2, w0: 2.4, w1: 1.5, mat: "wood", str: "gut" }, (c, T, tip, k) => ({
-    sh: [R(RISER - 1.4 * k, RISER + 1.4 * k, -2.5, 2.5, "wood"), L(RISER - 1, -1, RISER + 1, -1, "wrap"), L(RISER - 1, 1, RISER + 1, 1, "wrap")],
+  // 1 물푸레나무 활 — smooth laminated limbs, pale nocks and a fitted leather grip
+  bow({ T: 10.2, tip: 3.4, g: 2.4, w0: 3, w1: 1.6, mat: "ash", str: "gut" }, (c, T, tip, k) => ({
+    sh: [
+      R(RISER - 1.6 * k, RISER + 1.6 * k, -2.4, 2.4, "leather"),
+      ...[-1, 1].flatMap((sign) => [
+        L(c(3.4) - 0.65, sign * 3.4, c(T - 2.2) - 0.45, sign * (T - 2.2), "belly"),
+        C(c(T), sign * T, 0.95 * k, "birch"),
+      ]),
+    ],
   })),
   // 2 사냥꾼의 장궁 — a tall yew longbow: pale belly, dark back, a leather grip, horn nocks
   bow({ T: 13, tip: 4.4, g: 2.5, w0: 2.6, w1: 1.4, mat: "dwood", str: "gut" }, (c, T, tip, k) => ({
@@ -510,12 +523,13 @@ function hammerHead(head, blade, shapes, handle = "dwood", fittings = "iron") {
 }
 
 const HAMMER = [
-  // A battered pile driver with a squared face and a protruding wooden wedge.
-  hammerHead([11, 19, -5, 6], ["iron"], [
-    P([[11,-6],[17,-6],[19,-4],[19,5],[17,6],[11,6],[10,4],[10,-4]], "iron"),
-    R(16,19,-5,5,"rust"), R(17,18,-4,4,"dull"),
-    R(11,13,-7,-4,"wood"), R(13,15,4,6,"spot"),
-  ]),
+  // 1 철제 양손해머 — squared steel faces, a bevel and a bound wooden handle
+  hammerHead([10, 21, -7, 8], ["steel", "bright"], [
+    P([[11,-6],[13,-7],[19,-7],[21,-5],[21,6],[19,8],[13,8],[10,6],[10,-4]], "steel"),
+    P([[11,-6],[13,-7],[19,-7],[21,-5],[20,-3],[12,-3]], "bright"),
+    P([[11,4],[20,4],[21,6],[19,8],[13,8],[10,6]], "iron"),
+    R(12, 14, -4, 5, "iron"),
+  ], "ash"),
   // A double-sided forged sledge with a pinched waist and two wide steel caps.
   hammerHead([11, 19, -6, 7], ["steel"], [
     P([[11,-8],[17,-8],[20,-6],[18,-3],[18,3],[20,5],[20,7],[17,8],[11,8],[10,6],[12,3],[12,-3],[10,-5]], "steel"),

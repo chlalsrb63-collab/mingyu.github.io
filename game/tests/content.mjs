@@ -461,7 +461,7 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   assert.equal(W.act({ t: "starter", wk: "gun" }).ok, false);
   assert.ok(W.act({ t: "starter", wk: "sword" }).ok, "one free weapon");
   assert.equal(W.act({ t: "starter", wk: "bow" }).error, "이미 무기를 받았습니다", "only one");
-  assert.ok(W.p.toast.some((s) => s.includes("[녹슨 대검]을 받아 손에 들었습니다")));
+  assert.ok(W.p.toast.some((s) => s.includes("[철제 대검]을 받아 손에 들었습니다")));
   me = W.self();
   // the picked weapon is in hand at once; quick slot 1 swaps the dagger's 암습 for the sword's first skill
   assert.equal(me.eq.weapon.id, "w_warrior_1", "the starter is equipped");
