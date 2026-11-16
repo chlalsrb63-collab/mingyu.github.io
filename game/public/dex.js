@@ -12,13 +12,13 @@ import { Sound } from "./audio.js";
 import { refreshUi } from "./hud.js";
 
 const CAT = { O: "공격형", D: "방어형", U: "유틸" };
-const CAT_TABS = [["", "전체"], ["O", "공격형"], ["D", "방어형"], ["U", "유틸(투구)"]];
+const CAT_TABS = [["", "전체"], ["O", "공격형"], ["D", "방어형"], ["U", "유틸"]];
 /** slot letter (the `slots` of a legend row) → [Korean name, item type]. */
 const SLOT = { W: ["무기", "weapon"], R: ["반지", "ring"], G: ["장갑", "gloves"], A: ["상의(갑옷)", "armor"], B: ["하의(신발)", "boots"], N: ["목걸이", "amulet"], H: ["투구", "helm"] };
 const RATE = { S: "작은 효과", M: "표준 효과", L: "강력한 효과" };
 const ORDER = "ODU";
-const LS_NOTE = "lumentale:dexnote";   // "1" = the 3-line note is folded (the docked panel is short)
-const F = { cat: "", slot: "", rate: "", q: "", hide: localStorage.getItem(LS_NOTE) === "1" };
+const LS_NOTE = "lumentale:dexnote", LS_FILT = "lumentale:dexfilt";   // "show" = the 3-line note is open (folded by default: the docked panel is short); "1" = slot/rating chips open
+const F = { cat: "", slot: "", rate: "", q: "", hide: localStorage.getItem(LS_NOTE) !== "show", more: localStorage.getItem(LS_FILT) === "1" };
 let ui = null;   // the built skeleton: { note, help, tabs, slots, rates, q, count, reset, list }
 
 const norm = (t) => t.toLowerCase().replace(/\s+/g, "");
@@ -91,19 +91,22 @@ function build(box) {
   const q = el("input", "dx-q");
   q.type = "text"; q.placeholder = "이름 · 효과 · 부위 검색"; q.maxLength = 20; q.autocomplete = "off"; q.spellcheck = false;
   q.addEventListener("input", () => { F.q = norm(q.value); refreshUi(); });
-  rates.append(el("span", "dx-lb", "위력"), ...rateBtns, q);
+  rates.append(el("span", "dx-lb", "위력"), ...rateBtns);
   const count = el("span", "dx-n"), reset = el("button", "dx-chip", "초기화");
   reset.type = "button";
   reset.addEventListener("click", () => { Object.assign(F, { cat: "", slot: "", rate: "", q: "" }); q.value = ""; Sound.play("tab"); refreshUi(); });
   const bar = el("div", "dx-bar");
-  const help = chip("설명", "", () => { F.hide = !F.hide; localStorage.setItem(LS_NOTE, F.hide ? "1" : ""); Sound.play("tab"); refreshUi(); });
-  bar.append(count, help, reset);
+  const help = chip("설명", "", () => { F.hide = !F.hide; localStorage.setItem(LS_NOTE, F.hide ? "" : "show"); Sound.play("tab"); refreshUi(); });
+  const filt = chip("필터", "", () => { F.more = !F.more; localStorage.setItem(LS_FILT, F.more ? "1" : ""); Sound.play("tab"); refreshUi(); });
+  const more = el("div", "dx-more");
+  more.append(slots, rates);
+  bar.append(count, filt, help, reset);
   const side = el("div", "dx-side");
-  side.append(tabs, slots, rates, bar);
+  side.append(tabs, q, more, bar);
   const list = el("div", "dx-list"), main = el("div", "dx-main");
   main.append(side, list);
   box.append(note, main);
-  ui = { note, help, tabs: tabBtns, slots: slotBtns, rates: rateBtns, q, count, reset, list };
+  ui = { note, help, filt, more, tabs: tabBtns, slots: slotBtns, rates: rateBtns, q, count, reset, list };
 }
 
 export function render(s) {
@@ -121,6 +124,8 @@ export function render(s) {
   ui.reset.hidden = !(F.cat || F.slot || F.rate || F.q);
   ui.note.hidden = F.hide;
   ui.help.classList.toggle("on", !F.hide);
+  ui.more.hidden = !F.more;
+  ui.filt.classList.toggle("on", F.more || !!(F.slot || F.rate));
   ui.list.textContent = "";
   if (!hit.length) ui.list.append(el("p", "dx-none", "조건에 맞는 접두사가 없습니다"));
   let sep = false;
