@@ -403,7 +403,7 @@ export function applyAction(S, pid, a) {
         toast(p, "부활 깃털로 그 자리에서 일어났습니다. (경험치 손실 없음)");
         break;
       }
-      // inside a 차원 균열: up again in its start room, at no cost (64-dim.js)
+      // inside a 레이드던전: up again in its start room, at no cost (64-dim.js)
       if (dimRespawn(S, p)) break;
       const lost = deathLoss(ch);
       ch.xp -= lost;
@@ -597,7 +597,7 @@ export function applyAction(S, pid, a) {
       leaveParty(S, p);
       toast(p, "파티를 떠났습니다.");
       break;
-    // ── 차원 균열 (64-dim.js)
+    // ── 레이드던전 (64-dim.js)
     case "dim_open": case "dim_ready": case "dim_cancel": case "dim_leave": case "dim_join": dimApply(S, p, a); break;
     // ── the bag's size and housing (46-bag.js, 64-housing.js)
     case "bag_expand": bagApply(S, p, a); break;

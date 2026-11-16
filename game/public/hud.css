@@ -616,7 +616,7 @@ body.touch kbd { display: none; }
 #jam button:hover { background: #5a4030; }
 #jam kbd { font-size: var(--t9); color: #c8b088; margin-left: 3px; }
 
-/* ─────────────────────────── 차원 균열 (dimrift.js) ─────────────────────────── */
+/* ─────────────────────────── 레이드던전 (dimrift.js) ─────────────────────────── */
 #dim-hud { left: calc(var(--vpw) - 292px); top: 8px; width: 280px; z-index: 6 !important; padding: 5px 8px 6px; color: var(--tx, #e8dcff); }
 #dim-hud .dim-hd { display: flex; justify-content: space-between; gap: 8px; font: 700 var(--t12)/1.3 var(--pix); }
 #dim-hud .dim-hd b { color: var(--tx-pink, #d8b8ff); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

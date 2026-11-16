@@ -62,7 +62,7 @@ export function newChar(name, look, wk) {
     bq: null, bn: 0, mk: {}, guild: "", gm: 0, fish: 0,
     // waypoint stones woken, per map a bitmask of its stones (bit 0 = its first stone)
     wp: { town: 1 }, seen: ["town"], ach: [], title: "", cnt: Object.fromEntries(CNT_KEYS.map((k) => [k, 0])), daily: null, tut: { i: 0, n: 0 },
-    // 차원 균열 clears today (Phase 2: the daily count), by the day number they were made on
+    // 레이드던전 clears today (Phase 2: the daily count), by the day number they were made on
     dim: dimClean(null),
     wh:{ items: [], gold: 0 }, pet: "", scr: { atk: 0, def: 0, xp: 0 }, opt: { filter: 0, ahp: 0, amp: 0 },
     // the first skill of the weapon in hand is on the bar from the start (filled below)
@@ -190,7 +190,7 @@ function migrate(ch) {
   ch.sq = sqClean(ch.sq);
   // keepsakes (v23): 기념품 from quests, kept forever
   ch.keep = keepClean(ch.keep);
-  // the 차원 균열 daily count (v9)
+  // the 레이드던전 daily count (v9)
   // (v14: the unlocked 균열 단수, the best tier and its time, the week's brackets and boss flags — 64-dim.js dimClean)
   ch.dim = dimClean(ch.dim);
   // (v22: the 3-floor raid replaced the tier ladder — an older sheet's best tier, its time and weekly brackets meant tiers)
@@ -264,7 +264,7 @@ function qsFollow(ch) {
 /** The actives a character can use with the weapon in hand (and its job's signature), in order: for a fresh bar. */
 const qsStarter = (ch) => skillsFor(ch).filter((id) => SKILL[id].kind !== "p" && !skWhy(ch, SKILL[id]));
 
-/** Counters kept for achievements (`ch.cnt`; `dim` = 차원 균열 clears). */
+/** Counters kept for achievements (`ch.cnt`; `dim` = 레이드던전 clears). */
 const CNT_KEYS = ["elite", "fb", "guard", "evb", "party", "carp", "cook", "rest", "leg", "set", "enh", "rw", "gfound", "evt", "daily", "dim",
   // life skills L2: gathered, crafted (any station), delivered
   "gat", "craft", "deliver",

@@ -546,7 +546,7 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
 }
 
 // ── a v8 sheet comes up to v9: its waypoint list becomes stone masks (each map's stone 0), and it gains
-// the 차원 균열 daily count; a v9 sheet's masks are cleaned, not trusted
+// the 레이드던전 daily count; a v9 sheet's masks are cleaned, not trusted
 {
   const W = world("구판");
   const old = oldSheet("구판", "rogue");

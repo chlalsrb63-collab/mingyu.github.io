@@ -467,7 +467,7 @@ function killMob(S, rt, mob) {
     rt.tele.push({ x: mob.x, y: mob.y, r, at: S.now + 900, dmg: d.atk * ELITE[el].atk * 1.3 });
     rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), r, 900]);
   }
-  // inside a 차원 균열: the gauge, orbs and shrines, the master (64-dim.js)
+  // inside a 레이드던전: the gauge, orbs and shrines, the master (64-dim.js)
   if (mob.dim) dimKill(S, rt, mob, looters);
 }
 /**

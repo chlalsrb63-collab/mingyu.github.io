@@ -17,7 +17,7 @@
  * doors (defs.maps[].to), plus a resident directory from the server's NPC schedules.
  *
  * The client lends what it owns through init(): G, act, openWin/toggleWin/isOpen, wpWoke, npcOut,
- * miniDots (차원 균열 marks), canWarp, channel info.
+ * miniDots (레이드던전 marks), canWarp, channel info.
  */
 import * as Art from "./art.js";
 import * as NPC from "./npclife.js";
@@ -594,7 +594,7 @@ function drawHere(g, W, H, t) {
   for (const c of m.camps || []) { const [x, y] = P(c.x, c.y); blit(g, spr("fire", COL.fire), x, y); hit(x, y, 8, "모닥불 — 앉아서(Z) 쉬면 온기를 얻습니다"); }
   for (const f of G.fires.values()) { const [x, y] = P(f.x, f.y); blit(g, spr("fire", "#ffb050"), x, y); }
   for (const [sx, sy] of M.shrines) { const [x, y] = Pt(sx, sy); blit(g, spr("wind", COL.wind), x, y - 2); hit(x, y, 8, "질주의 바람 — 바람 신단"); }
-  if (M.obelisk) { const [x, y] = Pt(...M.obelisk); blit(g, spr("rift", COL.obelisk), x, y - 3); tag("차원의 오벨리스크", x, y - 15, "#e0c8ff", 10, 4); hit(x, y, 9, "차원의 오벨리스크 — 균열 지기에게 말을 걸어 차원 균열을 엽니다"); }
+  if (M.obelisk) { const [x, y] = Pt(...M.obelisk); blit(g, spr("rift", COL.obelisk), x, y - 3); tag("차원의 오벨리스크", x, y - 15, "#e0c8ff", 10, 4); hit(x, y, 9, "차원의 오벨리스크 — 균열 지기에게 말을 걸어 레이드던전을 엽니다"); }
   for (const n of m.npcs || []) {
     if (n.thing || (NPC.cast(n.id) ? !servicePost(n) : !D.npcOut(n))) continue;
     const [x, y] = Pt(n.x, n.y), [gl, col, what] = roleOf(n);

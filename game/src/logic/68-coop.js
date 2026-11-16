@@ -1082,7 +1082,7 @@ function coopValidate(S, p, a) {
       const party = S.parties[p.party];
       if (party && party.m[0] !== p.pid) return bad("파티장만 근무를 시작할 수 있습니다");
       if (party && party.coop && dimAt(S, party.coop)) return bad("파티가 이미 근무 중입니다");
-      if (party && party.rc) return bad("차원 균열 입장 준비 중입니다");
+      if (party && party.rc) return bad("레이드던전 입장 준비 중입니다");
       // the owner's rule: a co-op job is the one you do with a party of 2–4, unlike the solo 알바 board
       if (coopCrew(S, p).length < 2) return bad(party ? "협동 알바는 2명 이상 파티로만 할 수 있어요. 파티원과 함께 이 방에 와 주세요." : "협동 알바는 2명 이상 파티로만 할 수 있어요. 파티원과 함께 와 주세요.");
       if (coopLive(S) >= COOP_T.max) return bad(`지금은 일손이 꽉 찼습니다 (${COOP_T.max}/${COOP_T.max})`);

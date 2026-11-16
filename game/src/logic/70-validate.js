@@ -454,7 +454,7 @@ export function validateAction(S, pid, a) {
       }
       return bad("잘못된 요청입니다");
     }
-    // ── 차원 균열 (64-dim.js): open, answer the ready check, cancel it, leave, join again
+    // ── 레이드던전 (64-dim.js): open, answer the ready check, cancel it, leave, join again
     case "dim_open": case "dim_ready": case "dim_cancel": case "dim_leave": case "dim_join": return dimValidate(S, p, a);
     // ── the bag's size and housing (46-bag.js, 64-housing.js)
     case "bag_expand": return bagValidate(S, p, a);

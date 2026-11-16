@@ -294,7 +294,7 @@ function onSnap(s) {
   const gi = s.ginv ? s.ginv.join("|") : null;
   if ((s.pinv || null) !== G.pinv || gi !== G.ginv) { G.pinv = s.pinv || null; G.ginv = gi; renderInvite(); }
   Gather.onSnap(s);                            // `ng`: the nodes you have spent here (gather.js)
-  Dim.onSnap(s);                               // 차원 균열: HUD, ready check, shrines and orbs (dimrift.js)
+  Dim.onSnap(s);                               // 레이드던전: HUD, ready check, shrines and orbs (dimrift.js)
   Housing.onSnap(s);                           // a house of one's own: its bar, the ghost, the windows (housing.js)
   Coop.onSnap(s);                              // 협동 아르바이트: cj C cr (coop.js)
   SX.onSnap(s);                                // sx: a request for me, the trade window, 가위바위보 (sxwin.js)

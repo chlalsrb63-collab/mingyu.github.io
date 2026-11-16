@@ -933,7 +933,7 @@ const SFX = {
   rift_warn() { for (let i = 0; i < 3; i++) { this.tone("sawtooth", 520, 380, 0.25, 0.08, i * 0.32); } },
   rift_start() { this.noise(0.8, 0.3, 3000, "lowpass", 0, 100); this.tone("sawtooth", 80, 40, 0.9, 0.18); this.arp(0.25, [370, 440, 554, 740], 0.08, 0.18, 0.08, 0.3); },
   rift_boss() { this.tone("sawtooth", 60, 30, 1.2, 0.2); this.noise(1, 0.28, 1200, "lowpass", 0, 60); this.arp("square", [185, 175, 165], 0.2, 0.3, 0.07, 0.2); },
-  // ── 차원 균열 (dimrift.js) ──
+  // ── 레이드던전 (dimrift.js) ──
   /** A party member is asked to go in: two bright pings over a low hum, hard to miss. */
   rc_ping() { this.tone("sine", 1319, 1319, 0.12, 0.1); this.tone("sine", 1760, 1760, 0.16, 0.09, 0.14); this.tone("triangle", 220, 233, 0.6, 0.06); },
   /** Stepping through into a rift: a downward rush and a hollow chord. */

@@ -1,4 +1,4 @@
-// ───────────────────────────── 차원 균열: the party instance's map ─────────────────────────────
+// ───────────────────────────── 레이드던전: the party instance's map ─────────────────────────────
 // docs/design/scale-and-rift.md D, H.7. A party's own dungeon floor, made on the spot from a seed. A run is three of them
 // in a row (3단 레이드), each a fresh map from the run's seed and each its own concept (DIM_FLOORS: corridor halls, crystal
 // caverns, an open blood field). Every floor lies on a 6 × 5 grid of cells (106 × 74 tiles): main rooms over a connected
@@ -158,7 +158,7 @@ function dimBuild(cfg, seed) {
   const box = { seed };
   const W = DIM.w, H = DIM.h, lv = cfg.lv | 0 || 10, floor = clamp(cfg.floor | 0 || 1, 1, DIM_FLOORS.length), cc = DIM_FLOORS[floor - 1], style = cc.style;
   const theme = DIM_THEMES[cfg.theme] ? cfg.theme : cc.themes[0], look = DIM_THEMES[theme];
-  const m = blank(cfg.id || "dim:0", `차원 균열 ${floor}단 · ${cc.name}`, W, H, "W");
+  const m = blank(cfg.id || "dim:0", `레이드던전 ${floor}단 · ${cc.name}`, W, H, "W");
   m.theme = theme; m.bgm = "dim"; m.band = null; m.marks = [];
   const pick = (a) => a[ri(box, 0, a.length - 1)];
   // ── the grid; main rooms grow over a connected set of its cells

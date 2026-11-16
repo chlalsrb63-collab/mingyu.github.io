@@ -121,7 +121,7 @@ export function renderBagList(s, host) {
   host.textContent = "";
   const list = s.inv.map((c, i) => [c, i]).filter(([c]) => isCharm(c));
   if (!list.length) {
-    host.append(el("p", "hint", s.charms && s.charms.un ? "가방에 참이 없습니다. 내 수준의 사냥터와 차원 균열 상자에서 미감정 참이 나옵니다."
+    host.append(el("p", "hint", s.charms && s.charms.un ? "가방에 참이 없습니다. 내 수준의 사냥터와 레이드던전 상자에서 미감정 참이 나옵니다."
       : `참은 Lv.${D().lv}부터 버드나무광장의 참감정사 주아나에게 의뢰를 받아 시작합니다.`));
     return;
   }
@@ -519,7 +519,7 @@ export function renderJuana(s) {
     box.append(el("div", "section", "맡아 둔 참"));
     const row = el("div", "cm-row"), img = el("img"); img.src = Art.charmIconUrl("sealed"); img.alt = "";
     const tx = el("div", "tx");
-    tx.append(el("b", "", `참 ${kept}개`), el("small", "", [cs.pending ? "차원 균열 상자 보류 1개" : "", cs.rec && cs.rec.length ? `복구 대기 ${cs.rec.length}개` : ""].filter(Boolean).join(" · ")));
+    tx.append(el("b", "", `참 ${kept}개`), el("small", "", [cs.pending ? "레이드던전 상자 보류 1개" : "", cs.rec && cs.rec.length ? `복구 대기 ${cs.rec.length}개` : ""].filter(Boolean).join(" · ")));
     row.append(img, tx);
     const cap = s.bagCap || G.defs.inv;
     button(row, "받기", () => { act({ t: "charm_claim" }); Sound.play("ui"); }, far || (s.inv.length >= cap ? "가방이 가득 찼습니다" : ""));

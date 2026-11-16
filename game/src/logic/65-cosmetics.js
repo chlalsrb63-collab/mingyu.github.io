@@ -150,7 +150,7 @@ const COSMETICS = Object.fromEntries([
   ["face_coral_pearl", 116, "face", "물빛 진주 귀장식", 0, "shop", 800, "청록 고리에 매달려 파도빛을 머금은 조개 진주.", "coraltrade"],
   ["hat_brass_survey", 117, "hat", "황동 탐사 비행모", 1, "shop", 2200, "정찰 비공정의 탐사대가 쓰는 귀덮개 모자. 앞에 황동 계기가 달려 있다.", "brasssurvey"],
   ["top_brass_survey", 118, "top", "황동 탐사 외투", 1, "shop", 3000, "갑판 바람을 막는 남색 외투와 이중 황동 잠금쇠.", "brasssurvey"],
-  ["back_brass_tanks", 119, "back", "쌍식 황동 압력통", 2, "ach", "dim1", "차원 균열 첫 정화를 마친 탐사대원에게 지급하는 쌍통형 장비.", "brasssurvey"],
+  ["back_brass_tanks", 119, "back", "쌍식 황동 압력통", 2, "ach", "dim1", "레이드던전 첫 정화를 마친 탐사대원에게 지급하는 쌍통형 장비.", "brasssurvey"],
   ["face_brass_filter", 120, "face", "황동 방진 호흡기", 0, "shop", 1100, "포자와 분진을 막는 작은 여과통 두 개와 가죽 끈.", "brasssurvey"],
   ["hat_moon_archive", 121, "hat", "달빛 기록원 각모", 1, "token", 14, "쪽빛 각모 위로 책갈피처럼 짧은 깃촉이 솟았다.", "moonarchive"],
   ["top_moon_archive", 122, "top", "달빛 기록원 서고복", 1, "token", 18, "서고를 지나는 기록원의 겹옷. 앞깃을 은실로 여몄다.", "moonarchive"],

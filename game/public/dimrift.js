@@ -1,5 +1,5 @@
 /**
- * 차원 균열 in the browser (docs/design/scale-and-rift.md D.8–D.9): the keeper's window by the
+ * 레이드던전 in the browser (docs/design/scale-and-rift.md D.8–D.9): the keeper's window by the
  * obelisk (open / join / cancel), the ready-check window every party member in town is shown,
  * the rift HUD over the viewport (gauge, clock, party, the master's health), shrines, orbs, the
  * way home and the chest in the world (scene2d props), their sounds, and the minimap marks.
@@ -70,7 +70,7 @@ export function onSnap(s) {
     const wait = st.dim[13] | 0;
     // (99: a boss challenge's fight is on — the party gets up together when it ends or everyone is down)
     $("#dead-loss").textContent = wait >= 99 ? "보스 도전 중에는 일어날 수 없습니다. 전멸하면 모두 함께 다시 일어납니다. (경험치 손실 없음)"
-      : `차원 균열의 시작 지점에서 다시 일어납니다. (경험치 손실 없음)${wait ? ` — ${wait}초 뒤` : ""}`;
+      : `레이드던전의 시작 지점에서 다시 일어납니다. (경험치 손실 없음)${wait ? ` — ${wait}초 뒤` : ""}`;
     $("#b-respawn").textContent = wait >= 99 ? "전투 중" : wait ? `시작 지점에서 부활 (${wait})` : "시작 지점에서 부활";
     $("#b-respawn").disabled = wait > 0;
   } else if ($("#b-respawn").textContent !== "마을에서 부활") { $("#b-respawn").textContent = "마을에서 부활"; $("#b-respawn").disabled = false; }
@@ -141,13 +141,13 @@ function renderHud() {
   if (box.classList.contains("story")) box.classList.remove("story");
   const secs = Math.max(0, d[1] - Math.floor((now() - st.at) / 1000));
   const pct = Math.min(100, d[0] / 10);
-  const name = D().themes[d[10]] || "차원 균열";
+  const name = D().themes[d[10]] || "레이드던전";
   const label = ["", d[8] ? "최종 보스 출현! 균열의 문으로 보스의 방 앞까지" : "최종 보스 출현! 가장 먼 방으로", "정화 완료 — 귀환의 문까지", "균열이 닫힙니다…", "하강의 문 — 다음 단으로"][d[2]];
   // the floor's own concept (defs().dim.raid.names: 1단 무너진 지하 회랑 …), else the look's name
   const fname = (D().raid && D().raid.names && D().raid.names[d[14] - 1]) || name;
   // (the wire carries the rift's world tier; players see levels as 4·tier − 3, like monsters and doors)
   const chal = d[15], bossName = chal && chalDef(chal[0]) ? `${chalDef(chal[0])[1]} · ${stepWord(chal[0], chal[7])}` : "";
-  put($("#dim-title"), chal ? `보스 도전 · ${bossName}` : `차원 균열 Lv.${4 * d[4] - 3} · ${d[14]}단 · ${fname} (${d[14]}/${floors()})`);
+  put($("#dim-title"), chal ? `보스 도전 · ${bossName}` : `레이드던전 Lv.${4 * d[4] - 3} · ${d[14]}단 · ${fname} (${d[14]}/${floors()})`);
   put($("#dim-time"), clock(d[2], secs));
   $("#dim-time").classList.toggle("low", (d[2] <= 1 && secs <= 180) || d[2] === 4);
   $("#dim-fill").style.width = `${pct}%`;
@@ -210,7 +210,7 @@ function renderRc() {
   const me = rc[2].find((r) => r[0] === A.G.you);
   const WORD = ["대기 중", "수락", "거절", "마을 밖"];
   $("#rc-lv").textContent = rc[6] ? `보스 도전 · ${(chalDef(rc[6] - 1) || [])[1] || "?"} · ${stepWord(rc[6] - 1, rc[7])} · 최대 ${D().party}명`
-    : `차원 균열 Lv.${4 * rc[3] - 3} · ${floors()}단 레이드 · 최대 ${D().party}명`;
+    : `레이드던전 Lv.${4 * rc[3] - 3} · ${floors()}단 레이드 · 최대 ${D().party}명`;
   $("#rc-time").textContent = `${left}초`;
   $("#rc-fill").style.width = `${(100 * left) / Math.max(1, D().rcMs / 1000)}%`;
   const rows = rc[2].map(([eid, name, s]) => `<li class="rc-${s}"><span class="rc-mark"></span><b>${esc(name)}</b><em>${WORD[s]}</em></li>`).join("");
@@ -234,7 +234,7 @@ export function bindUi() {
   });
   $("#dim-join").addEventListener("click", () => { A.act({ t: "dim_join" }); A.Sound.play("ui"); });
   $("#dim-leave").addEventListener("click", () => {
-    const ask = st.sty && !st.dim ? "도전을 그만두고 원래 자리로 돌아갈까요? (그 자리로 다시 다가가면 재도전할 수 있습니다)" : "차원 균열을 떠나 마을로 돌아갈까요? (나중에 오벨리스크에서 다시 합류할 수 있습니다)";
+    const ask = st.sty && !st.dim ? "도전을 그만두고 원래 자리로 돌아갈까요? (그 자리로 다시 다가가면 재도전할 수 있습니다)" : "레이드던전을 떠나 마을로 돌아갈까요? (나중에 오벨리스크에서 다시 합류할 수 있습니다)";
     A.ask(ask, "떠나기", () => A.act({ t: "dim_leave" }));
   });
 }

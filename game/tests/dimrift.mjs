@@ -1,4 +1,4 @@
-// Headless test of the party instance 차원 균열 (docs/design/scale-and-rift.md D): the generator
+// Headless test of the party instance 레이드던전 (docs/design/scale-and-rift.md D): the generator
 // (deterministic, capped, every room reachable), the ready check and its edge cases, the gauge,
 // orbs and shrines, the way down at 100% on floors 1–2, the final boss in its hall on floor 3, the chest
 // and the way home, death and failure, cleanup, the wire, and a bot party clearing the 3-floor raid in

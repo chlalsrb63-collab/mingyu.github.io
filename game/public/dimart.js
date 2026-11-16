@@ -1,5 +1,5 @@
 /**
- * 차원 균열 art, drawn in code: the town's obelisk (차원의 오벨리스크), the shrines an elite leaves
+ * 레이드던전 art, drawn in code: the town's obelisk (차원의 오벨리스크), the shrines an elite leaves
  * behind (pylons: 분노 · 질풍 · 수호 · 정령), the progress orb, the way home and the master's chest.
  * Quarter view, light from the upper left, one dark outline, one shadow tone per material
  * (shifted toward violet), no soft edges. Static parts are baked once; what moves (a bob, a

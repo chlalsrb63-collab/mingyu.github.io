@@ -1,4 +1,4 @@
-// ───────────────────────────── 차원 균열: the instance manager ─────────────────────────────
+// ───────────────────────────── 레이드던전: the instance manager ─────────────────────────────
 // docs/design/scale-and-rift.md D. A party's leader opens a rift at the town's obelisk; everyone of
 // the party in town is asked (a ready check, 20 s); those who accept go in together. A run is a
 // 3단 레이드 (owner, 2026-11-15): on each floor a gauge fills with kills (elites, and the orbs they
@@ -50,7 +50,7 @@ function dimBar(o, ask) {
   return o.ch.lvl < need ? `보스 도전${ask.step ? ` [${DIM_CHAL.stepNames[ask.step]}]` : ""}은 Lv.${need}부터 참가할 수 있습니다.` : "";
 }
 /** What is being opened, in words. */
-const dimWhat = (ask) => (ask.boss ? `보스 도전 [${MOBS[ask.boss].name} · ${DIM_CHAL.stepNames[ask.step | 0]}]` : "차원 균열");
+const dimWhat = (ask) => (ask.boss ? `보스 도전 [${MOBS[ask.boss].name} · ${DIM_CHAL.stepNames[ask.step | 0]}]` : "레이드던전");
 const chalOpen = (k, now) => !DIM_CHAL.bosses[k].rotation || k === chalOfWeek(now);
 const CHAL_ROTATED = "이번 주 보스가 바뀌었습니다. 균열지기에게서 다시 선택하세요.";
 
@@ -106,13 +106,13 @@ function rcCheck(S, party) {
   if (rc.boss && !chalOpen(rc.boss, S.now)) { rcEnd(S, party, CHAL_ROTATED); return; }
   for (const pid of Object.keys(rc.resp)) if (!party.m.includes(pid) || !S.players[pid]) delete rc.resp[pid];
   // the leader gone, or no longer leading: nothing happens
-  if (party.m[0] !== rc.leader || !S.players[rc.leader]) { rcEnd(S, party, "파티장이 자리를 비워 차원 균열 준비가 취소되었습니다."); return; }
+  if (party.m[0] !== rc.leader || !S.players[rc.leader]) { rcEnd(S, party, "파티장이 자리를 비워 레이드던전 준비가 취소되었습니다."); return; }
   const timeUp = S.now >= rc.until;
   for (const pid of Object.keys(rc.resp)) {
     const o = S.players[pid];
     if (rc.resp[pid] === 0 && o.map !== START.map) rc.resp[pid] = 3;
     if (rc.resp[pid] === 1 && o.map !== START.map) rc.resp[pid] = 3;
-    if (rc.resp[pid] === 0 && timeUp) { rc.resp[pid] = 2; toast(o, "차원 균열 입장 준비 시간이 지났습니다. 나중에 오벨리스크에서 합류할 수 있습니다."); }
+    if (rc.resp[pid] === 0 && timeUp) { rc.resp[pid] = 2; toast(o, "레이드던전 입장 준비 시간이 지났습니다. 나중에 오벨리스크에서 합류할 수 있습니다."); }
   }
   if (Object.values(rc.resp).includes(0)) return;
   const go = Object.keys(rc.resp).filter((pid) => rc.resp[pid] === 1).map((pid) => S.players[pid]);
@@ -122,7 +122,7 @@ function rcCheck(S, party) {
   if (!dim) return;
   for (const pid of party.m) {
     const o = S.players[pid];
-    if (o && !go.includes(o)) toast(o, "일행이 차원 균열에 들어갔습니다. 오벨리스크에서 [합류]할 수 있습니다.");
+    if (o && !go.includes(o)) toast(o, "일행이 레이드던전에 들어갔습니다. 오벨리스크에서 [합류]할 수 있습니다.");
   }
 }
 
@@ -131,7 +131,7 @@ function rcCheck(S, party) {
 /** Make an instance for `ps` (all in town) and take them in. Null when every slot of the room is taken. */
 function dimStart(S, ps, partyId, ask) {
   const open = Object.keys(S.dims).length;
-  if (open >= DIM.max) { for (const o of ps) toast(o, `차원 균열이 모두 사용 중입니다 (${open}/${DIM.max}).`); return null; }
+  if (open >= DIM.max) { for (const o of ps) toast(o, `레이드던전이 모두 사용 중입니다 (${open}/${DIM.max}).`); return null; }
   // a boss challenge (floor 0), or a rift from its first floor
   const boss = ask && ask.boss && Object.hasOwn(DIM_CHAL.bosses, ask.boss) ? ask.boss : "";
   if (boss && !chalOpen(boss, S.now)) { for (const o of ps) toast(o, CHAL_ROTATED); return null; }
@@ -156,7 +156,7 @@ function dimStart(S, ps, partyId, ask) {
     changeMap(S, o, id, x, y);
     dim.members[o.pid] = S.now;
     toast(o, boss ? `[보스 도전 · ${DIM_CHAL.stepNames[step]} Lv.${chalSteps(boss)[step][1]}] ${MOBS[boss].name} — ${DIM_CHAL.limit / 60000}분 안에 쓰러뜨리세요. 전멸해도 다시 도전할 수 있습니다.`
-      : `[1단 · ${DIM_FLOORS[0].name}] 차원 균열 Lv.${shownLv(lv)} 1/${DIM.floors}단에 들어왔습니다. ${DIM.limit / 60000}분 안에 ${DIM.floors}단 끝의 최종 보스를 쓰러뜨리세요!`);
+      : `[1단 · ${DIM_FLOORS[0].name}] 레이드던전 Lv.${shownLv(lv)} 1/${DIM.floors}단에 들어왔습니다. ${DIM.limit / 60000}분 안에 ${DIM.floors}단 끝의 최종 보스를 쓰러뜨리세요!`);
     o.dirty = true;
   });
   dim.rt.ev.push(["dm", "open", ...tilePx(map.dim.start)]);
@@ -308,7 +308,7 @@ function dimClear(S, dim, mob) {
   dim.rt.ev.push(["dp", dim.portal.x, dim.portal.y]);
   const ms = now - dim.opened;
   for (const o of dimInside(S, dim.id)) {
-    toast(o, dim.chal ? `${MOBS[mob.k].name}${pp(MOBS[mob.k].name, "을를")} 쓰러뜨렸습니다! 보상 상자를 열고 귀환의 문으로 돌아가세요.` : "차원 균열을 정화했습니다! 보상 상자를 열고 귀환의 문으로 돌아가세요.");
+    toast(o, dim.chal ? `${MOBS[mob.k].name}${pp(MOBS[mob.k].name, "을를")} 쓰러뜨렸습니다! 보상 상자를 열고 귀환의 문으로 돌아가세요.` : "레이드던전을 정화했습니다! 보상 상자를 열고 귀환의 문으로 돌아가세요.");
     if (!dim.hit[o.pid]) continue;
     if (!dim.chal) dimCnt(o.ch).dim = (dimCnt(o.ch).dim | 0) + 1;
     // a real clear records the run's time — never for someone carried through it
@@ -441,7 +441,7 @@ function dimHome(S, p) {
 }
 function dimEnd(S, dim) {
   for (const o of dimInside(S, dim.id)) {
-    if (dim.state === "fail") { const g = dim.lv * DIM.failGold * Math.max(1, dim.floor | 0); o.ch.gold += g; o.gain.push(["gold", g]); toast(o, `차원 균열에서 밀려났습니다. (위로금 ${g}G)`); }
+    if (dim.state === "fail") { const g = dim.lv * DIM.failGold * Math.max(1, dim.floor | 0); o.ch.gold += g; o.gain.push(["gold", g]); toast(o, `레이드던전에서 밀려났습니다. (위로금 ${g}G)`); }
     dimHome(S, o);
   }
   closeDim(S, dim.id);
@@ -482,8 +482,8 @@ function dimTick(S, now) {
       if (now - dim.emptyAt >= DIM.emptyMs) { closeDim(S, id); continue; }
     } else dim.emptyAt = 0;
     if (dim.state === "run" || dim.state === "boss" || dim.state === "down") {
-      if (now >= dim.expire) dimFail(S, dim, "시간이 다 되어 차원 균열이 닫힙니다…");
-      else if (!dim.warned && dim.expire - now <= DIM.warn) { dim.warned = true; for (const o of inside) toast(o, "차원 균열이 닫히기까지 3분 남았습니다!"); }
+      if (now >= dim.expire) dimFail(S, dim, "시간이 다 되어 레이드던전이 닫힙니다…");
+      else if (!dim.warned && dim.expire - now <= DIM.warn) { dim.warned = true; for (const o of inside) toast(o, "레이드던전이 닫히기까지 3분 남았습니다!"); }
     }
     if ((dim.state === "fail" || dim.state === "clear") && now >= dim.endAt) { dimEnd(S, dim); continue; }
     const alive = inside.filter((o) => !o.dead);
@@ -545,7 +545,7 @@ function dimRespawn(S, p) {
   p.ghost = S.now + 2500;
   dim.rt.ev.push(["u", p.eid, 2]);
   p.dirty = true;
-  toast(p, `${ck ? "최종 보스의 방 앞에서" : at ? "동료 곁에서" : "시작 지점에서"} 다시 일어났습니다. (차원 균열 안에서는 경험치를 잃지 않습니다)`);
+  toast(p, `${ck ? "최종 보스의 방 앞에서" : at ? "동료 곁에서" : "시작 지점에서"} 다시 일어났습니다. (레이드던전 안에서는 경험치를 잃지 않습니다)`);
   return true;
 }
 /** Seconds `p` must still wait to get up in an instance (0: may). */
@@ -643,9 +643,9 @@ function dimValidate(S, p, a) {
       if (party && party.m[0] !== p.pid) return bad("파티장만 균열을 열 수 있습니다.");
       if (party && party.rc) return bad("이미 준비 확인 중입니다.");
       if (p.dead) return bad("쓰러진 채로는 열 수 없습니다");
-      if (dimJoinable(S, p)) return bad("이미 열린 차원 균열이 있습니다. [합류]하세요.");
+      if (dimJoinable(S, p)) return bad("이미 열린 레이드던전이 있습니다. [합류]하세요.");
       const open = Object.keys(S.dims).length;
-      if (open >= DIM.max) return bad(`차원 균열이 모두 사용 중입니다 (${open}/${DIM.max}).`);
+      if (open >= DIM.max) return bad(`레이드던전이 모두 사용 중입니다 (${open}/${DIM.max}).`);
       // a boss challenge (the leader's own level); a rift always starts at floor 1 (a `tier` from an old client is ignored)
       if (a.boss !== undefined) {
         if (typeof a.boss !== "string" || !Object.hasOwn(DIM_CHAL.bosses, a.boss)) return bad("알 수 없는 보스 도전입니다");
@@ -670,13 +670,13 @@ function dimValidate(S, p, a) {
       if (party.rc.leader !== p.pid) return bad("파티장만 취소할 수 있습니다.");
       return OK;
     case "dim_leave":
-      return inDim(p) && dimAt(S, p.map) ? OK : bad("차원 균열 안에 있지 않습니다");
+      return inDim(p) && dimAt(S, p.map) ? OK : bad("레이드던전 안에 있지 않습니다");
     case "dim_join": {
       if (!obeliskNear(p)) return bad("차원의 오벨리스크 곁에서만 합류할 수 있습니다");
       if (p.dead) return bad("쓰러진 채로는 합류할 수 없습니다");
       const dim = dimJoinable(S, p);
-      if (!dim) return bad("합류할 수 있는 차원 균열이 없습니다");
-      if (dimInside(S, dim.id).length >= DIM.party) return bad(`차원 균열 안이 가득 찼습니다 (${DIM.party}명).`);
+      if (!dim) return bad("합류할 수 있는 레이드던전이 없습니다");
+      if (dimInside(S, dim.id).length >= DIM.party) return bad(`레이드던전 안이 가득 찼습니다 (${DIM.party}명).`);
       const bar = dimBar(p, { tier: 0, boss: dim.chal ? dim.chal.k : "", step: dim.chal ? dim.chal.s | 0 : 0 });
       if (bar) return bad(bar);
       return OK;
@@ -691,24 +691,24 @@ function dimApply(S, p, a) {
     case "dim_ready":
       party.rc.resp[p.pid] = a.ok ? 1 : 2;
       for (const pid of party.m) { const o = S.players[pid]; if (o && o !== p && party.rc.resp[pid] !== 3) toast(o, `${p.ch.name}님이 입장을 ${a.ok ? "수락" : "거절"}했습니다.`); }
-      if (!a.ok) toast(p, "차원 균열 입장을 거절했습니다. 나중에 오벨리스크에서 합류할 수 있습니다.");
+      if (!a.ok) toast(p, "레이드던전 입장을 거절했습니다. 나중에 오벨리스크에서 합류할 수 있습니다.");
       rcCheck(S, party);
       break;
-    case "dim_cancel": rcEnd(S, party, "파티장이 차원 균열 입장을 취소했습니다."); break;
+    case "dim_cancel": rcEnd(S, party, "파티장이 레이드던전 입장을 취소했습니다."); break;
     case "dim_leave":
       if (dimAt(S, p.map).story) {
         const story = dimAt(S, p.map).story;
         storyHome(S, p, story.airship && story.won ? "안전해진 바람등호의 갑판으로 돌아왔습니다." : "도전을 그만두고 돌아왔습니다. 다시 그 자리로 다가가면 재도전할 수 있습니다.");
         break;
       }
-      toast(p, "차원 균열을 떠나 버드나무광장으로 돌아왔습니다."); dimHome(S, p); break;
+      toast(p, "레이드던전을 떠나 버드나무광장으로 돌아왔습니다."); dimHome(S, p); break;
     case "dim_join": {
       const dim = dimJoinable(S, p);
       const [x, y] = dimSpot(dim.map, dimInside(S, dim.id).length);
       dim.members[p.pid] = S.now;
       changeMap(S, p, dim.id, x, y);
       dim.top = Math.max(dim.top || 0, toTier(p.ch.lvl));
-      toast(p, dim.chal ? "보스 도전에 합류했습니다." : `차원 균열 Lv.${shownLv(dim.lv)} ${dim.floor}/${DIM.floors}단에 합류했습니다.`);
+      toast(p, dim.chal ? "보스 도전에 합류했습니다." : `레이드던전 Lv.${shownLv(dim.lv)} ${dim.floor}/${DIM.floors}단에 합류했습니다.`);
       for (const o of dimInside(S, dim.id)) if (o !== p) toast(o, `${p.ch.name}님이 균열에 합류했습니다.`);
       p.dirty = true;
       break;

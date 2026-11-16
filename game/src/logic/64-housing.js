@@ -8,7 +8,7 @@
 // object (a rug a floor char), turned by `fd`. The map is rebuilt whenever the owner changes
 // anything and sent again to everyone inside.
 //
-// Runtime instances like the 차원 균열 (Phase 0: mapOfS / runtime / exportChar), in their own
+// Runtime instances like the 레이드던전 (Phase 0: mapOfS / runtime / exportChar), in their own
 // registry `S.homes` so the rift's cap and timers never see them. Who may be inside: the owner,
 // and members of the owner's party while the owner is inside (they come in through the door when
 // they have no house of their own, or with house_visit at the agent). When the owner leaves, the

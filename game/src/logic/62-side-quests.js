@@ -148,7 +148,7 @@ function sqProgress(S, p, type, match, n = 1) {
 }
 /**
  * Quest-only finds: a collect goal of a quest item may name where it comes from — `mob` (a kill of that kind drops
- * one now and then, straight into the bag) or `rift` (each cleared 차원 균열's chest gives one). `from` = the kind
+ * one now and then, straight into the bag) or `rift` (each cleared 레이드던전's chest gives one). `from` = the kind
  * killed, or "rift". Only while the quest is under way and short of its count.
  */
 const SQ_FIND = 0.35;

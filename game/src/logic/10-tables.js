@@ -86,7 +86,7 @@ const ITEMS = {
   q_record: { name: "썩어 가는 왕실 기록", type: "quest", price: 0, desc: "보랏빛 곰팡이가 핀 양피지. 단풍 왕도의 옛 사관이 남긴 글씨가 반쯤 남아 있다." },
   q_ink: { name: "기록 보존액", type: "quest", price: 0, desc: "보름이 알려 준 대로 끓인 맑은 약. 바르면 썩어 가던 종이가 단풍잎처럼 단단해진다." },
   q_lastrec: { name: "왕도의 마지막 기록", type: "quest", price: 0, desc: "갈피가 끈으로 묶어 건넨 기록 한 다발. 맨 끝 장은 반쯤 타 있다." },
-  q_shard: { name: "균열 조각", type: "quest", price: 0, desc: "닫힌 차원 균열 가장자리에서 떨어져 나온 검은 유리. 안쪽에 글자 같은 금이 나 있다." },
+  q_shard: { name: "균열 조각", type: "quest", price: 0, desc: "닫힌 레이드던전 가장자리에서 떨어져 나온 검은 유리. 안쪽에 글자 같은 금이 나 있다." },
   // 「거꾸로 흐르는 물」 (Q2, content-audit-2026-11-16 §3): 토룩 and 울로, sewer to cave
   q_upwater: { name: "거꾸로 담긴 물", type: "quest", price: 0, desc: "하수도 배수관에서 받은 물 한 병. 병을 뒤집어도 물이 마개 쪽에 붙어 있다." },
   q_silt: { name: "수정 앙금", type: "quest", price: 0, desc: "거꾸로 오른 물이 남긴 반짝이는 앙금. 귀에 대면 아주 작게 노래한다." },
