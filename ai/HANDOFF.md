@@ -261,3 +261,11 @@ context that sat at ~380 k per turn. From now on:
 6. Prune merged agent worktrees after each round (`git worktree remove` only if clean and merged into `main`).
 7. The owner can also cut ~5 % of every turn by disabling unused MCP connectors (pixellab, summer-engine, blender, notion,
    ads tool, unity) in the app's settings — an app setting, not ours to change.
+
+## 0.8 Late-game QA merged (2026-11-16) — main green 60/60, sheet v26
+Fixed: tracker label for quest stations, board hint text, finished quests as one line (weekly shows "월요일 6시"), auto-hunt
+no longer walks out of a rift. Q6 weekly boss quests are in. **Open (owner/balance, not fixed):** rift 15 min is tight for
+2 players (gauges ≈ 12.5 min, boss by hand); auto-hunt ignores elites (elite quests need manual chasing); Lv.161 먹빛 호수
+mobs kill a Lv.196 tier-6 char; tracker never uses waypoint stones/귀환; NPC idle lines don't change after arcs end;
+재봉사 실비 opens a window titled 루루 and a sewn piece isn't auto-worn; docked quest window 228 px wide at 1100×680.
+Pending owner picks: Q3 (late main kill counts), Q4 (party-only side goals), Q7 (post-Lv.200 goals).
