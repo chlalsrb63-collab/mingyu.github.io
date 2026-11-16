@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ, UNIQ_P, UNIQ_MUL, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollRarity, lootFor, gearIl, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, SETS, gearBonus, countItem };\n";
+  "\nexport const __t = { ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ, UNIQ_P, UNIQ_MUL, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollRarity, lootFor, gearIl, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, SETS, gearBonus, countItem, stats, chainBlow, newMob };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs();
 const VERBOSE = process.argv.includes("-v");
@@ -16,18 +16,21 @@ const rel = ([k, v], ilvl) => { const a = X.AFFIX.find((x) => x[0] === k); retur
 const IDS = ["w_warrior_3", "w_bow_4", "h_2", "a_4", "g_2", "b_3", "r_3", "n_4", "w_mage_5", "a_6"];
 const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, ilvl);
 
-// ── the contract the client reads: names, the gap, the unique's words
+// ── the contract the client reads: names, the gap, the unique's suffix words; the prefix IS the power's LEGEND word
 {
   assert.deepEqual(D.rarity, ["일반", "마법", "희귀", "전설", "세트", "유니크"]);
   assert.equal(D.ilGap, 10);
-  assert.equal(D.uniq.pre.length, 10); assert.equal(D.uniq.suf.length, 10);
-  assert.ok([...D.uniq.pre, ...D.uniq.suf].every((w) => typeof w === "string" && w.length >= 3));
-  assert.equal(new Set([...D.uniq.pre, ...D.uniq.suf]).size, 20, "twenty different words");
+  assert.equal(D.uniq.pre, undefined, "no free prefix words any more");
+  assert.equal(D.uniq.suf.length, 10);
+  assert.ok(D.uniq.suf.every((w) => typeof w === "string" && w.length >= 3));
+  assert.equal(new Set(D.uniq.suf).size, 10, "ten different suffixes");
+  assert.deepEqual(Object.keys(D.legend), Object.keys(X.LEGEND), "the power words come from defs.legend");
   const keys = X.AFFIX.map((a) => a[0]);
-  for (const [, k] of [...X.UNIQ.pre, ...X.UNIQ.suf]) assert.ok(keys.includes(k), `${k} is an affix key`);
-  for (const [, pk] of X.UNIQ.pre) assert.ok(new Set(X.UNIQ.suf.map((s) => s[1])).size >= 2 && X.UNIQ.suf.some((s) => s[1] !== pk), "a suffix off the prefix's key exists");
-  assert.ok(X.UNIQ.pre.some((p) => p[1] === "atkp") && X.UNIQ.suf.some((s) => s[1] === "critd"), "the owner's examples: 폭풍을 삼킨 → atkp, …의 낙인 → critd");
-  assert.equal(X.UNIQ.pre[0][0], "폭풍을 삼킨"); assert.match(X.UNIQ.suf[0][0], /의 낙인$/);
+  for (const [, k] of X.UNIQ.suf) assert.ok(keys.includes(k), `${k} is an affix key`);
+  assert.deepEqual(Object.keys(X.UNIQ.fx), Object.keys(X.LEGEND), "every power has its own affix key");
+  for (const k of Object.values(X.UNIQ.fx)) { assert.ok(keys.includes(k), `${k} is an affix key`); assert.ok(X.UNIQ.suf.some((s) => s[1] !== k), "a suffix off the power's key exists"); }
+  assert.ok(Object.keys(X.UNIQ.fx).length === 8 && X.UNIQ.fx.chain === "critd" && X.UNIQ.fx.nova === "atkp" && X.UNIQ.fx.greed === "gold", "the owner's examples");
+  assert.match(X.UNIQ.suf[0][0], /의 낙인$/); assert.equal(X.UNIQ.suf[0][1], "critd");
 }
 
 // ── affix lines by rarity: exactly 2 / 3 / 4 (유니크: its own 2 + 2), the strength of each
@@ -38,7 +41,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.ok(by[1].every((g) => g.q === 1 && g.af.length === 2), "마법: exactly 2");
   assert.ok(by[2].every((g) => g.q === 2 && g.af.length === 3), "희귀: exactly 3");
   assert.ok(by[3].every((g) => g.q === 3 && g.af.length === 4 && X.LEGEND[g.lg]), "전설: exactly 4 and its power");
-  assert.ok(by[5].every((g) => g.q === 5 && g.af.length === 4 && !g.lg && !g.set), "유니크: 4 lines, no power");
+  assert.ok(by[5].every((g) => g.q === 5 && g.af.length === 4 && X.LEGEND[g.lg] && !g.set), "유니크: 4 lines and a legendary's power, every time");
   // 세트 is unchanged (2–3 lines, a set piece; a base with no set falls back to 전설)
   assert.deepEqual([...new Set(by[4].filter((g) => g.q === 4).map((g) => g.af.length))].sort(), [2, 3]);
   assert.ok(by[4].some((g) => g.q === 4 && g.set), "some set pieces");
@@ -52,30 +55,29 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   near(mean(lines(2)), 1.0, 0.05, "희귀 as rolled");
   near(mean(lines(3)), 1.3, 0.06, "전설 ×1.3");
   near(mean(lines(5, 2)), 1.3, 0.06, "a 유니크's two ordinary lines are ×1.3 as well");
-  // the unique's own two: tied to its words, rolled strong (×1.4 on the upper half of the range)
+  // the unique's own two: the power's line first, the suffix's second, rolled strong (×1.4 on the upper half of the range)
   for (const g of by[5]) {
-    assert.ok(Array.isArray(g.un) && g.un[0] >= 0 && g.un[0] < 10 && g.un[1] >= 0 && g.un[1] < 10);
-    assert.equal(g.af[0][0], X.UNIQ.pre[g.un[0]][1], "af[0] is the prefix's line");
-    assert.equal(g.af[1][0], X.UNIQ.suf[g.un[1]][1], "af[1] is the suffix's line");
+    assert.ok(Array.isArray(g.un) && g.un.length === 1 && g.un[0] >= 0 && g.un[0] < 10);
+    assert.equal(g.af[0][0], X.UNIQ.fx[g.lg], "af[0] is the power's line");
+    assert.equal(g.af[1][0], X.UNIQ.suf[g.un[0]][1], "af[1] is the suffix's line");
     assert.notEqual(g.af[0][0], g.af[1][0]);
   }
   const own = by[5].flatMap((g) => g.af.slice(0, 2).map((a) => rel(a, 30)));
   assert.ok(mean(own) > 1.5 && mean(own) < 1.75, `own lines strong: ${mean(own)}`);
-  // stronger than a legendary of the same level, before the legendary's power is even counted
+  // owner 2026-11-16: a unique = a legendary's power + ~10–15 % stronger lines than a legendary of the same level
   const tot = (q) => mean(by[q].map((g) => g.af.reduce((s, a) => s + rel(a, 30), 0)));
-  // owner 2026-11-16: a unique is only ~10–15 % stronger than a legendary of the same level (before the legendary power)
-  assert.ok(tot(5) > tot(3) * 1.08 && tot(5) < tot(3) * 1.17, `unique ${tot(5).toFixed(2)} vs legendary ${tot(3).toFixed(2)}`);
+  assert.ok(tot(5) > tot(3) * 1.10 && tot(5) < tot(3) * 1.15, `unique ${tot(5).toFixed(3)} vs legendary ${tot(3).toFixed(3)} = ${(tot(5) / tot(3)).toFixed(3)}`);
   assert.ok(tot(3) > tot(2) && tot(2) > tot(1));
-  // every word is drawn, and the sockets follow the rarity as for the others (≥ 1 for a piece that can have any)
-  assert.equal(new Set(by[5].map((g) => g.un[0])).size, 10); assert.equal(new Set(by[5].map((g) => g.un[1])).size, 10);
+  // every suffix and every power is drawn, and the sockets follow the rarity as for the others (never fewer than a legendary's)
+  assert.equal(new Set(by[5].map((g) => g.un[0])).size, 10); assert.equal(new Set(by[5].map((g) => g.lg)).size, 8);
   assert.ok(by[5].filter((g) => !["r_3", "n_4"].includes(g.id)).every((g) => g.sk >= 1));
-  if (VERBOSE) console.log("line strength", [1, 2, 3, 5].map((q) => [q, tot(q).toFixed(2)]));
+  if (VERBOSE) console.log("line strength", [1, 2, 3, 5].map((q) => [q, tot(q).toFixed(3)]), "unique / legendary", (tot(5) / tot(3)).toFixed(3));
 }
 
-// ── names: `[pre] item [suf]`, the rarity first and the level last in the long form
+// ── names: `[the power's LEGEND word] item [suf]`, the rarity first and the level last in the long form
 {
   const g = X.rollGear({ seed: 9 }, "w_warrior_3", 5, 30);
-  const [pre, suf] = [X.UNIQ.pre[g.un[0]][0], X.UNIQ.suf[g.un[1]][0]], base = X.ITEMS.w_warrior_3.name;
+  const [pre, suf] = [X.LEGEND[g.lg][0], X.UNIQ.suf[g.un[0]][0]], base = X.ITEMS.w_warrior_3.name;
   assert.equal(X.gearName(g), `${pre} ${base} ${suf}`);
   g.enh = 2;
   assert.equal(X.gearName(g), `+2 ${pre} ${base} ${suf}`);
@@ -206,7 +208,12 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   const uq = X.rollGear({ seed: 77 }, "h_3", 5, 30);
   old.eq.helm = uq;
   old.inv = [raw("g_3", { q: 3, lg: "chain", af: [["atk", 5], ["crit", 4], ["ls", 2], ["spd", 5]] }), raw("b_1"),
-    raw("r_2", { q: 5, un: [99, 0], af: [["atk", 9]] }), raw("n_2", { q: 9, af: [["hp", 9]] }), raw("h_2", { q: 2, il: 500 }), raw("h_4", { il: -3 }), { id: "hp_s", n: 3 }];
+    raw("r_2", { q: 5, un: [99, 0], af: [["atk", 9]] }), raw("n_2", { q: 9, af: [["hp", 9]] }), raw("h_2", { q: 2, il: 500 }), raw("h_4", { il: -3 }), { id: "hp_s", n: 3 },
+    // the first 유니크 sheets: un = [prefix, suffix], no power (prefix 1 = 불꽃을 두른 → atk; suffix 4 = 불사의 맹약 → hp)
+    raw("a_3", { q: 5, il: 80, un: [1, 4], af: [["atk", 21], ["hp", 70], ["crit", 4], ["def", 9]] }),
+    raw("a_3", { q: 5, un: [3], af: [["hp", 9]] }),                                         // [8]: a new-shape un but no power: not a unique
+    raw("a_3", { q: 5, un: [3], lg: "haste", af: [["hp", 9]] }),                           // [9]: the new shape, kept whole
+    raw("a_3", { q: 5, un: [20], lg: "haste" }), raw("a_3", { q: 5, un: [0], lg: "nope" })];   // [10], [11]: a bad suffix, a bad power
   old.wh = { items: [{ ...uq, il: 88 }, raw("w_bow_4", { q: 4, set: "rift" })], gold: 0 };
   const eqBefore = JSON.stringify(old.eq.weapon.af), tail = JSON.stringify(old.eq.armor.af);
   const ch = X.migrate(JSON.parse(JSON.stringify(old)));
@@ -218,6 +225,19 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.equal(ch.eq.helm.q, 5); assert.deepEqual(ch.eq.helm.un, uq.un); assert.equal(ch.eq.helm.il, uq.il);
   assert.equal(JSON.stringify(ch.eq.helm.af), JSON.stringify(uq.af), "a unique's lines come back as they were");
   assert.equal(ch.inv[2].q, 2, "a q5 with no valid words is no unique"); assert.equal(ch.inv[2].un, undefined);
+  // the first-shape unique loads valid: the prefix index picks a power, un keeps the suffix, the lines and the level are as they were
+  assert.equal(ch.inv[7].q, 5); assert.equal(ch.inv[7].lg, "giant"); assert.deepEqual(ch.inv[7].un, [4]); assert.equal(ch.inv[7].il, 80);
+  assert.equal(JSON.stringify(ch.inv[7].af), JSON.stringify([["atk", 21], ["hp", 70], ["crit", 4], ["def", 9]]), "its lines are not touched");
+  assert.equal(X.gearName(ch.inv[7]), `${X.LEGEND.giant[0]} ${X.ITEMS.a_3.name} ${X.UNIQ.suf[4][0]}`, "and it carries the new name");
+  assert.equal(ch.inv[7].lg === "giant" && X.gearBonus({ ...ch, eq: { armor: ch.inv[7] } }).lg.giant, 1, "the power it was given works");
+  for (let i = 0; i < 10; i++) {   // every old prefix index lands on a real power
+    const m = X.migrate({ ...JSON.parse(JSON.stringify(old)), eq: {}, inv: [raw("a_3", { q: 5, un: [i, 0], af: [["atk", 9]] })] });
+    assert.ok(m.inv[0].q === 5 && X.LEGEND[m.inv[0].lg] && m.inv[0].un.length === 1, `old prefix ${i}`);
+  }
+  assert.equal(ch.inv[8].q, 2, "a new-shape un with no power is no unique"); assert.equal(ch.inv[8].lg, undefined); assert.equal(ch.inv[8].un, undefined);
+  assert.equal(ch.inv[9].q, 5); assert.equal(ch.inv[9].lg, "haste"); assert.deepEqual(ch.inv[9].un, [3], "the new shape is kept");
+  assert.equal(ch.inv[10].q, 2); assert.equal(ch.inv[10].lg, undefined, "a bad suffix demotes it, and the power goes with it");
+  assert.equal(ch.inv[11].q, 2); assert.equal(ch.inv[11].lg, undefined, "a bad power demotes it");
   assert.equal(ch.inv[3].q, 2, "q 9 is cut to the top (5) and, with no words, is no unique");
   assert.equal(ch.inv[4].il, 200, "an il is clamped");
   assert.equal(ch.inv[5].il, 111, "a negative il is derived (tier 4 → 101 + 10)");
@@ -291,7 +311,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
     p.toast.length = 0;
     assert.ok(act("a@s1", { t: "enh", k: "weapon" }).ok);
     assert.equal(g.enh, 1, "+1 never fails");
-    assert.ok(p.toast.at(-1).includes(`유니크 ${X.UNIQ.pre[g.un[0]][0]} ${X.ITEMS.w_warrior_3.name} ${X.UNIQ.suf[g.un[1]][0]} +1`), p.toast.at(-1));
+    assert.ok(p.toast.at(-1).includes(`유니크 ${X.LEGEND[g.lg][0]} ${X.ITEMS.w_warrior_3.name} ${X.UNIQ.suf[g.un[0]][0]} +1`), p.toast.at(-1));
   }
   // its stats count: the four lines add into the gear total
   {
@@ -302,9 +322,35 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
     const b0 = X.gearBonus(ch);
     ch.eq = prev;
     for (const k of Object.keys(b0)) if (k !== "lg") assert.equal(Math.round((b1[k] - b0[k]) * 1e6) / 1e6, g.af.filter((a) => a[0] === k).reduce((s, a) => s + a[1], 0), `${k}: the four lines add`);
-    assert.deepEqual(b1.lg, {}, "no legendary power");
+    assert.deepEqual(b1.lg, { [g.lg]: 1 }, "and its legendary power comes with them");
+    if (g.lg === "greed") assert.equal(b1.gold - b0.gold, g.af.filter((a) => a[0] === "gold").reduce((s, a) => s + a[1], 0) + 60);
   }
-  // the wire: the entry carries q, il and un, whole
+  // its power works like a legendary's: every power reaches the stats the combat code reads (`stats(p).lg`), the same as a q 3 piece with it
+  {
+    const prev = ch.eq;
+    for (const key of Object.keys(X.LEGEND)) {
+      const g = X.rollGear({ seed: 100 + key.length }, "a_3", 5, 30); g.lg = key;
+      ch.eq = { ...prev, weapon: null, armor: g, helm: null };
+      p.stc = null;
+      const u = X.stats(p).lg;
+      ch.eq.armor = { ...X.plain("a_3"), q: 3, lg: key };
+      p.stc = null;
+      assert.deepEqual(u, X.stats(p).lg, `${key}: the same power as a legendary's`);
+      assert.equal(u[key], 1);
+    }
+    // 뇌명의 in a fight: the chain leaps to the monsters near a struck one, exactly through the legendary's code path
+    ch.eq = { ...prev, weapon: null, armor: Object.assign(X.rollGear({ seed: 5 }, "a_3", 5, 30), { lg: "chain" }), helm: null }; p.stc = null;
+    const rt = L.runtime(S, p.map);
+    const [m0, m1, m2] = [0, 1, 2].map((i) => Object.assign(X.newMob(S, "twinhare", [0, 0, 0, 0]), { x: 100 + i * 20, y: 100, hp: 1e6 }));
+    rt.mobs.push(m0, m1, m2);
+    const hp0 = [m1.hp, m2.hp];
+    let leaps = 0;
+    for (let i = 0; i < 200; i++) { const n = rt.ev.length; X.chainBlow(S, rt, p, X.stats(p), m0, m0.x, m0.y); leaps += rt.ev.slice(n).filter((e) => e[0] === "z").length; }
+    assert.ok(leaps > 20 && m1.hp < hp0[0] && m2.hp < hp0[1], `chain lightning struck from a unique: ${leaps} leaps`);
+    rt.mobs.splice(rt.mobs.indexOf(m0), 3);
+    ch.eq = prev; p.stc = null;
+  }
+  // the wire: the entry carries q, il, lg and un, whole
   {
     const g = uniq("w_warrior_3", 11);
     ch.eq.weapon = g; p.dirty = true; p.stc = null;
@@ -312,7 +358,9 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
     const v = JSON.parse(JSON.stringify(L.viewFor(S, "a@s1")));
     L.endTick(S);
     const w = v.self.eq.weapon;
-    assert.equal(w.q, 5); assert.equal(w.il, g.il); assert.deepEqual(w.un, g.un); assert.deepEqual(w.af, g.af);
+    assert.equal(w.q, 5); assert.equal(w.il, g.il); assert.deepEqual(w.un, g.un); assert.deepEqual(w.af, g.af); assert.equal(w.lg, g.lg);
+    assert.ok(v.self.lg.includes(g.lg), "the power is in the self view's list, like a legendary's");
+    assert.ok(D.legend[w.lg][0] && D.legend[w.lg][1], "defs.legend names it");
     assert.equal(D.items[w.id].req, X.ITEMS.w_warrior_3.req, "defs still carry each base's req");
   }
   // the warehouse and the bag move the very piece

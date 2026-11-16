@@ -108,15 +108,16 @@ function migrate(ch) {
     const out = { id, q: clamp(g.q | 0, 0, 5), enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk: g.sk | 0, ru: Array.isArray(g.ru) ? g.ru : [] };
     // item level (no sheet version bump: a missing `il` is derived, so an old piece asks what it always did — gearIl)
     out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, 200) : gearIl(out);
-    // a 유니크 keeps its [prefix, suffix] words; one without valid words is no unique (it stays a 희귀 with its lines)
+    if (LEGEND[g.lg]) out.lg = g.lg;
+    // a 유니크 keeps its power (`lg`) and suffix word `un: [s]`; the first sheets had `un: [prefix, suffix]` and no power: the prefix picks one (UNIQ_OLD_LG).
+    // One without a valid power or suffix is no unique (it stays a 희귀 with its lines, no power).
     if (out.q === 5) {
-      const u = g.un;
-      if (Array.isArray(u) && Number.isInteger(u[0]) && Number.isInteger(u[1]) && u[0] >= 0 && u[0] < UNIQ.pre.length && u[1] >= 0 && u[1] < UNIQ.suf.length) out.un = [u[0], u[1]];
-      else out.q = 2;
+      const u = Array.isArray(g.un) ? g.un : [], old = u.length > 1, s = u[old ? 1 : 0], lg = out.lg || (old ? UNIQ_OLD_LG[u[0]] : "");
+      if (Number.isInteger(s) && s >= 0 && s < UNIQ.suf.length && lg) { out.lg = lg; out.un = [s]; }
+      else { out.q = 2; delete out.lg; }
     }
     // cu: 1 cursed by a failed enhancement (no more tries until lifted), 2 lifted (the next try +ENH_UNCURSE %p) — v19
     if ((g.cu | 0) > 0) out.cu = clamp(g.cu | 0, 1, 2);
-    if (LEGEND[g.lg]) out.lg = g.lg;
     if (SETS[g.set]) out.set = g.set;
     return out;
   };

@@ -183,17 +183,19 @@ const RARITY_AFFIX = [[0, 0], [2, 2], [3, 3], [4, 4], [2, 3], [2, 2]];
 /** What an ordinary line is multiplied by, by rarity: 마법 weak (x0.85), 희귀 as rolled, 전설 and above x1.3. */
 const AFFIX_MUL = [1, 0.85, 1, 1.3, 1.3, 1.3];
 /**
- * 유니크 (rarity 5, beige). A piece named `[pre] item [suf]`; each word is tied to ONE affix key and that line rolls strong:
- * UNIQ_MUL x the normal range, in the range's upper half (owner 2026-11-16). The entry carries `un: [pre index, suf index]` and
- * its FIRST TWO `af` lines are the prefix's and the suffix's (the client marks them 고유 옵션); two ordinary lines follow, no LEGEND power.
- * The suffix is never drawn on the prefix's key.
+ * 유니크 (rarity 5, beige): a legendary's power PLUS very strong supporting lines (owner 2026-11-16 redesign), never weaker than a 전설
+ * in any respect. A piece named `[the power's LEGEND word] item [suffix]`. The entry carries `lg` (one of the LEGEND powers, exactly as a
+ * 전설 does, so every power works the same in combat) and `un: [suffix index]`. Its FIRST TWO `af` lines are its own (the client marks
+ * them 고유 옵션), each rolled strong (UNIQ_MUL x the normal range, in the upper half): the power's line (`fx`: each power is tied to
+ * one affix key) first, then the suffix's. Two ordinary lines follow. The suffix is never drawn on the power's key.
  */
 const UNIQ = {
-  pre: [["폭풍을 삼킨", "atkp"], ["불꽃을 두른", "atk"], ["성벽을 닮은", "def"], ["끝없이 샘솟는", "hp"], ["달빛을 머금은", "mp"],
-    ["번개 같은", "crit"], ["바람을 탄", "spd"], ["피에 굶주린", "ls"], ["행운을 쥔", "mf"], ["깨달음을 얻은", "xp"]],
+  fx: { chain: "critd", nova: "atkp", greed: "gold", haste: "spd", thorn: "def", feast: "hp", echo: "mp", giant: "atk" },
   suf: [["파멸의 낙인", "critd"], ["황금왕의 탐욕", "gold"], ["학살의 서약", "atk"], ["철옹성의 맹세", "def"], ["불사의 맹약", "hp"],
     ["맹금의 눈", "crit"], ["파괴의 의지", "atkp"], ["갈증의 입맞춤", "ls"], ["별무리의 속삭임", "mp"], ["질풍의 발걸음", "spd"]],
 };
+/** The first 유니크 sheets (earlier on 2026-11-16) were `un: [prefix, suffix]` with no power; the prefix index picks the power it loads with (migrate). */
+const UNIQ_OLD_LG = ["nova", "giant", "thorn", "feast", "echo", "chain", "haste", "feast", "greed", "echo"];
 const UNIQ_MUL = 1.4;
 /** The chance a gear roll is a 유니크, by rank (0 ordinary monster, 1 elite or chest, 2 boss): about 1/12 to 1/20 of the 전설/세트 chance at each rank, x (1 + MF/100). */
 const UNIQ_P = [0.001, 0.004, 0.01];

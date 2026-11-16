@@ -117,15 +117,14 @@ function gearIl(g) {
 }
 /** The player level a piece can be worn from: its item level minus IL_GAP (at least 1). */
 const gearReq = (g) => Math.max(1, gearIl(g) - IL_GAP);
-/** A piece's name word: a unique's prefix, a legendary's power, a set's name, or its first affix (as the client shows it). */
+/** A piece's name word: a legendary's or unique's power, a set's name, or its first affix (as the client shows it). */
 function gearWord(g) {
-  if (g.q === 5 && g.un) return `${UNIQ.pre[g.un[0]][0]} `;
   const af = Array.isArray(g.af) && g.af.length ? AFFIX.find((x) => x[0] === g.af[0][0]) : null;
   return g.lg ? `${LEGEND[g.lg][0]} ` : g.set ? `${SETS[g.set].name} ` : af ? `${af[2]} ` : "";
 }
 /** What follows the item's name: a unique's suffix. */
-const gearTail = (g) => (g.q === 5 && g.un ? ` ${UNIQ.suf[g.un[1]][0]}` : "");
-/** "+3 뇌명의 강철 양손검" (a unique: "폭풍을 삼킨 강철 양손검 파멸의 낙인") */
+const gearTail = (g) => (g.q === 5 && g.un ? ` ${UNIQ.suf[g.un[0]][0]}` : "");
+/** "+3 뇌명의 강철 양손검" (a unique: "뇌명의 강철 양손검 파멸의 낙인") */
 function gearName(g) {
   return (g.enh > 0 ? `+${g.enh} ` : "") + gearWord(g) + ITEMS[g.id].name + gearTail(g);
 }
@@ -156,7 +155,7 @@ function rollLine(S, key, ilvl, mul, hi) {
 }
 /**
  * Roll one piece of gear: rarity decides how many affixes, `ilvl` (a monster's tier, 1–50) how big and, shown, its item
- * level `il` (+ IL_RANK[rank] for an elite or boss). A 유니크 (q 5) starts with its prefix's and suffix's lines (`un`), then two ordinary ones.
+ * level `il` (+ IL_RANK[rank] for an elite or boss). A 유니크 (q 5) rolls a power (`lg`) and a suffix (`un`), starts with their two strong lines, then two ordinary ones.
  */
 function rollGear(S, id, q, ilvl, rank = 0) {
   const it = ITEMS[id];
@@ -166,9 +165,11 @@ function rollGear(S, id, q, ilvl, rank = 0) {
   g.il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(it.tier | 0) - 1] || 1), 1, 200);
   const pool = AFFIX.slice();
   if (q === 5) {
-    const pi = ri(S, 0, UNIQ.pre.length - 1), pk = UNIQ.pre[pi][1];
+    const keys = Object.keys(LEGEND);
+    g.lg = keys[ri(S, 0, keys.length - 1)];
+    const pk = UNIQ.fx[g.lg];
     const ok = UNIQ.suf.map((_, i) => i).filter((i) => UNIQ.suf[i][1] !== pk), si = ok[ri(S, 0, ok.length - 1)];
-    g.un = [pi, si];
+    g.un = [si];
     for (const key of [pk, UNIQ.suf[si][1]]) {
       pool.splice(pool.findIndex((x) => x[0] === key), 1);
       g.af.push(rollLine(S, key, ilvl, UNIQ_MUL, true));
