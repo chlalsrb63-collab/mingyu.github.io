@@ -13,6 +13,7 @@
 
 | 누가 | 일 | 브랜치 · 폴더 | 시작 |
 | --- | --- | --- | --- |
+| Codex | 장비 개편 W5 · 추가 콘텐츠 기획 | `codex/item-content-plan` · `item-content-plan` | 2026-11-16 |
 | Claude (통합 세션 2) | **협동 알바 전체** — 동동아파트 청소 개편, 쥬쥬식당 큰 홀, 대장간 v3, 새 알바 올빼미 도서관. `game/src/logic/68-coop.js`, `game/public/coop.js`, `12-life-tables.js`의 협동(COOP) 블록은 **Codex 손대지 말 것** (보상 1일 1회·재도전 가능 정책은 Codex 1998f06 그대로) | main | 2026-11-15 22:00 |
 | Claude (통합 세션 1·2) | 스킬 이펙트·아이콘(`skillfx.js`, `skillfx_combo.js`, `skillicons.js`, `jobpal.js`, `swing.js`) — Codex 손대지 말 것 | main | 2026-11-15 |
 | Claude (통합 세션 2) | **HD-2D 후처리** — 새 모듈 `game/public/postfx.js`(빛 번짐, 틸트시프트 초점 흐림, 시간대·지역 색감, 빛줄기, 설정 끔/보통/높음). `scene2d.js`에는 호출 1~2줄만. Codex의 `scene_depth.js`·`scene2d.js` 본체·`scene_map.js`는 Codex 담당 그대로 | main | 2026-11-15 |
