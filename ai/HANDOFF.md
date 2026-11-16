@@ -313,3 +313,5 @@ Design: `docs/design/prefix-effects.md` (95 powers). Built: the registry, the ho
 - Phase 2 needs no new hook: ZN = `rt.zones.push({ …, px: 1 })` (the zone loop honours `px`); ABS = a shield kept in `pfxPc(p).v` and offered through `miti`'s `r.abs` (the dispatcher caps it at 20 % mhp; reduce your shield by what you offered);
   AURA = the `tick` hook walking `members(S, p)`; DOT2 = a `mob.pd` your `hit` hook sets and your own `tick` hook (1 s) pays out with `hurtMob(…, PX)` (the dagger's `mob.dot` is untouched).
 Known: a basic arrow now calls `blow` (so 뇌명의 works on a bow; before it silently did not); `deathLoss(ch, p)`, `skMp`, `dashCd(p)`, recall, pet interval, campfire rest read `pfxNum`.
+**P1a merged 4d02d68 (2026-11-16).** Codex: W1/W2/W3-A may start. Effect part files: Codex offense = `52-prefix-*.js`, Claude defense = `53-prefix-guard.js`,
+helm utility + phase-2 hooks = `54-prefix-util.js`; extension recipe, hook signatures and helpers are in §0.11 above. Suite 62/62.

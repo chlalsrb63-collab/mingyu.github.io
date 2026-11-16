@@ -20,8 +20,7 @@
 | Codex | 초반 캐릭터 Lv.30 ↔ 무기 숙련도 Lv.20 도달 구간 검증 및 조정 | `codex/early-mastery` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Codex | 레벨대별 사냥 동선과 Lv.200 전용 사냥터 | `codex/hunt-routes` · `~/.codex/worktrees/willow-plaza-release` | 2026-11-15 |
 | Claude | 맵 그림 1단계 (수정굴·벽돌 회랑·폭포 고원 타일, `docs/design/maps-v2.md` 표 C) | `claude/maps-art-1` · 에이전트 워크트리 | 2026-11-15 |
-| Claude (통합 세션 2) | **접두사 기반 공사 W0** (`docs/design/item-system-spec-2026-11-16.md` §4) — `LEGEND/PFX/PFX_FN`, `51-prefix.js`, 디스패처, 중복 방지. 끝나기 전엔 `10-tables.js` LEGEND·AFFIX, `50-loot-combat.js` rollGear·lootFor·hurtMob·hurtPlayer, `gearBonus`, `80-simulation.js`를 건드리지 말 것 | 에이전트 워크트리 | 2026-11-16 |
-| Claude (통합 세션 2) | **접두사 효과 W3-B** — 방어형 39 + 투구 8 + 2단계 훅 8종 (W0 병합 뒤 시작; 새 파트 파일 ≥ 52) | 에이전트 워크트리 | 2026-11-16 |
+| Claude (통합 세션 2) | **접두사 효과 W3-B** — 방어형 39(`53-prefix-guard.js`) + 투구 유틸 8·2단계 훅 8종(`54-prefix-util.js`). Codex의 공격형은 `52-prefix-*.js` 파트 파일로 (W0 병합 완료) | 에이전트 워크트리 | 2026-11-16 |
 
 ## 이식 — `codex/combat-effects`(`c62b345`, 옛 v11 규칙 위)에서 지금 `main`(v12)으로 옮길 것
 
