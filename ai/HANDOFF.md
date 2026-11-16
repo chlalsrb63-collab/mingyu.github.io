@@ -275,3 +275,11 @@ Players see "레이드던전" (owner's name; 균열 지기 / 차원의 오벨리
 for fast mob killing, boss ≤ 3 min; the 15 min `limit` is only a cap against pushing the step to farm, not a time attack.
 Retune: `gK` 2.5→4.2, `hpBase` 4.9→4, `bossHp` 0.65→0.6 (31-maps-dim.js); tests/dimrift.mjs has pace bands for duo/trio.
 Bots ≈ 4–5 min, real play expected 6–8 (QA duo took 12.5 before). If still slow: `gK` 4.5. Solo/low-tier trios still wipe on some bot draws.
+
+## 0.10 Diablo-style item system + tooltips (2026-11-16) — main green 61/61
+Owner's spec: item level 1–200 (`il` on every gear entry; worn from `il − 10`, legacy pieces derive `il = req + 10` so nothing moves;
+crafts keep their old levels, tier 6 still Lv.181), affix lines 마법 2 / 희귀 3 / 전설 4 (+ the legend power), new **유니크** (q5, beige
+#D2B48C, `[접두사] 이름 [접미사]`, 4 lines: 2 from `un` prefix/suffix = `af[0..1]` (×`UNIQ_MUL` 2.2) + 2 ordinary; drop 0.1/0.4/1 % by rank × MF).
+Client: items.js `itemTip` Diablo card + side-by-side `[장착 중]` compare, `public/_tip.html` (`shot.mjs --page tip`) preview,
+HUD menu icons now show a label under the glyph (desktop glyph 24→12 px) + hover tooltip name (key). Sheet stays v26 (`il` additive).
+Unverified: unique drop rate and strength in real play; server wear gate vs client `reqLv` agree in tests only.
