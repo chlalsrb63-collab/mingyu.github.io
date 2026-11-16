@@ -76,7 +76,7 @@ export const PORCELAIN_WEAPONS = [
     slot: "wskin",
     name: "청화 달항아리 향로봉",
     desc: "청동 틀 안에 백자 달항아리 향로를 얹은 도공 학자의 지팡이.",
-    acquire: "일일 토벌 보상 상자 / 가마 장인 교환 (버드나무 토큰 110개)",
+    acquire: "토벌 의뢰 보상 상자 / 가마 장인 교환 (버드나무 토큰 110개)",
   },
   {
     id: "ws_porcelain_book",

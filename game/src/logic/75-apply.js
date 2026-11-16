@@ -582,9 +582,9 @@ export function applyAction(S, pid, a) {
       if (a.i === "bonus") {
         dl.bonus = true;
         ch.cnt.daily++;
-        toast(p, "일일 토벌 보상 상자를 열었습니다!");
+        toast(p, "토벌 의뢰 보상 상자를 열었습니다!");
         payout(S, p, dailyBonus(ch));
-        cosFrom(S, p, "daily", "일일 토벌 보상 상자");
+        cosFrom(S, p, "daily", "토벌 의뢰 보상 상자");
       } else {
         dl.claimed[a.i] = true;
         payout(S, p, dailyReward(ch, dl.tasks[a.i]));

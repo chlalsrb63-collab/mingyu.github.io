@@ -30,7 +30,7 @@ const COSMETICS = Object.fromEntries([
   ["hat_crown", 8, "hat", "황금 왕관", 3, "ach", "boss", "균열의 군주를 쓰러뜨린 자의 왕관."],
   ["hat_crown_silver", 9, "hat", "은빛 왕관", 2, "rift", 0, "균열 침공을 막아 낸 보답."],
   ["hat_wreath_pink", 10, "hat", "벚꽃 화관", 1, "shop", 2000, "분홍 꽃을 엮은 화관."],
-  ["hat_wreath_sun", 11, "hat", "해바라기 화관", 1, "daily", 0, "일일 토벌 보상 상자에서 나온 화관."],
+  ["hat_wreath_sun", 11, "hat", "해바라기 화관", 1, "daily", 0, "토벌 의뢰 보상 상자에서 나온 화관."],
   ["hat_bow_red", 12, "hat", "빨간 리본", 0, "shop", 1000, "머리 위의 커다란 리본."],
   ["hat_bow_pink", 13, "hat", "분홍 리본", 0, "shop", 1000, "머리 위의 커다란 분홍 리본."],
   ["hat_cap_blue", 14, "hat", "파란 야구모자", 0, "shop", 900, "챙이 바라보는 쪽을 따라간다."],

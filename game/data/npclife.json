@@ -992,7 +992,7 @@
     },
     "daily": {
       "traits": ["부지런", "명랑", "아침형"],
-      "away": "일일 토벌 게시판",
+      "away": "토벌 의뢰 게시판",
       "plan": [
         { "h": 4, "at": "post", "act": "work" },
         { "h": 12, "at": "terrace", "act": "eat", "rain": "diner_t5" },

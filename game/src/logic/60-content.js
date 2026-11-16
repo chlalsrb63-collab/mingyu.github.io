@@ -58,9 +58,10 @@ const DAILY_TEXT = { kill: "{mob} {need}마리 처치", elite: "정예 몬스터
   gather: "채집 {need}번 하기", craft: "제작·연금·요리 {need}번 성공하기",
   campcook: "모닥불 요리 {need}회 성공하기", party: "파티로 몬스터 {need}마리 처치" };
 // (gather and craft: life skills L2, counted in 58-life.js gatDone/craftOnce)
-// 일일 토벌 (owner 2026-11-16): the day's three are all hunting; fishing, cooking, gathering and crafting are 아르바이트 (the board, 58-life.js).
+// 토벌 의뢰 (owner 2026-11-16): the day's three are all hunting; fishing, cooking, gathering and crafting are 아르바이트 (the board, 58-life.js).
 // The life kinds stay in DAILY_TEXT so a day rolled before the change still reads and pays.
 const DAILY_OTHER = ["elite", "chest", "bounty"];
+const DAILY_HUNT = ["kill", "party", "elite", "chest", "bounty"];
 const DAILY_PARTY_KILLS = 10;
 function rollDaily(ch, day) {
   const box = { seed: strHash(`${ch.name}:${day}`) | 0 };
@@ -81,13 +82,22 @@ function ensureDaily(S, p) {
   const ch = p.ch, day = dayOf(S.now);
   // the weekly book rides the same once-a-second check (63-social-weekly.js)
   weekTick(S, p);
-  if (ch.daily && ch.daily.day === day) return;
+  if (ch.daily && ch.daily.day === day) {
+    // a day rolled before 일일 = 토벌 (2026-11-16): its unclaimed life tasks become hunting ones at once
+    const life = ch.daily.tasks.filter((t, i) => !DAILY_HUNT.includes(t.kind) && !ch.daily.claimed[i]);
+    if (life.length) {
+      const free = DAILY_OTHER.filter((k) => !ch.daily.tasks.some((t) => t.kind === k));
+      for (const t of life) { const kind = free.shift() || "elite"; Object.assign(t, { kind, k: null, n: 0, need: kind === "elite" ? 3 : kind === "chest" ? 2 : 1 }); }
+      p.dirty = true;
+    }
+    return;
+  }
   const prev = ch.daily;
   ch.daily = rollDaily(ch, day);
   // days gone by with nothing claimed come back as a bonus on today's rewards (63: restCarry)
   ch.daily.rest = restCarry(prev, day);
   p.dirty = true;
-  if (prev) toast(p, ch.daily.rest ? `일일 토벌이 새로 갱신되었습니다. 쉬고 온 보너스: 오늘 과제 보상 +${ch.daily.rest * WEEK.restPct}%` : "일일 토벌이 새로 갱신되었습니다.");
+  if (prev) toast(p, ch.daily.rest ? `토벌 의뢰가 새로 갱신되었습니다. 쉬고 온 보너스: 오늘 토벌 보상 +${ch.daily.rest * WEEK.restPct}%` : "토벌 의뢰가 새로 갱신되었습니다.");
 }
 const dailyText = (t) => DAILY_TEXT[t.kind].replace("{mob}", t.k ? MOBS[t.k].name : "").replace("{need}", t.need);
 /** Rewards are paid on the world's scale: the tier a level maps to (the same as before levels went to 200). */
@@ -111,7 +121,7 @@ function dailyProg(S, p, kind, k) {
     if (!matches || (kind === "kill" && t.k !== k) || t.n >= t.need) continue;
     t.n++;
     p.dirty = true;
-    if (t.n >= t.need) toast(p, `일일 토벌 완료: ${dailyText(t)} — 보상을 받으세요.`);
+    if (t.n >= t.need) toast(p, `토벌 의뢰 완료: ${dailyText(t)} — 보상을 받으세요.`);
   }
 }
 /** A piece of gear for the looter's class, of at least rarity `minQ`. */
@@ -210,8 +220,8 @@ const ACH = [
   ["lv50", "성장", "전설의 모험가", "레벨 200 달성", 40, (c) => c.lvl >= 200, "전설의 모험가", [["hp", 80]]],
   ["job1", "성장", "첫 전직", "전직관 아르센에게서 전직하기", 10, (c) => c.job !== "adventurer"],
   ["job2", "성장", "두 갈래 길", "두 무기의 길(혼합 직업)로 전직하기", 20, (c) => !!JOBS[c.job] && JOBS[c.job].kind === "hybrid"],
-  ["daily1", "성장", "성실한 하루", "일일 토벌 보상 상자 받기", 5, (c) => c.cnt.daily >= 1],
-  ["daily30", "성장", "성실한 모험가", "일일 토벌 보상 상자 30번 받기", 20, (c) => c.cnt.daily >= 30, "성실한 모험가", [["gold", 10]]],
+  ["daily1", "성장", "성실한 하루", "토벌 의뢰 보상 상자 받기", 5, (c) => c.cnt.daily >= 1],
+  ["daily30", "성장", "성실한 모험가", "토벌 의뢰 보상 상자 30번 받기", 20, (c) => c.cnt.daily >= 30, "성실한 모험가", [["gold", 10]]],
 ].map(([id, cat, name, desc, pts, test, title, bonus]) => ({ id, cat, name, desc, pts, test, title: title || null, bonus: bonus || null }));
 const ACH_BY = Object.fromEntries(ACH.map((a) => [a.id, a]));
 /** Every mastery star a character has earned. */

@@ -189,7 +189,7 @@ function fishRun(map, lv, score) {
   assert.equal(count("burnt"), burnt0 + 1);
   const s0 = count("food_s");
   const r50 = cook(45, "fish_s", 30);
-  assert.equal(dailyPan.n, 1, "a successful campfire recipe completes the daily task");
+  assert.ok(["elite", "chest", "bounty"].includes(dailyPan.kind) && dailyPan.n === 0, "a life task left in a day rolled earlier turns into a 토벌 goal (life work is 아르바이트 now)");
   assert.ok(count("food_s") > s0 && r50.done === 1, "a master (45: burns below 17) saves it");
   assert.ok(r50.xp === 2 || r50.xp === 3, "stale work: 8 (12 on a 대성공) × 0.25, got " + r50.xp);
   // the new fish cook too: 은빛 메기 → 구이, grade-3 experience at any level

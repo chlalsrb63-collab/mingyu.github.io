@@ -17,6 +17,7 @@ import { refreshUi, setOnce, section } from "./hud.js";
 import { K } from "./keymap.js";
 import * as Track from "./track.js";
 import * as SideQ from "./sidequests.js";
+import * as Board from "./board.js";
 import { monsterElementText } from "./elements.js";
 
 // ── waypoints ──
@@ -60,7 +61,7 @@ export function renderDaily(s) {
   const d = s.daily;
   if (!d) { box.append(el("p", "hint", "불러오는 중…")); return; }
   const top = el("div", "daily-top");
-  top.append(iconImg("cal", "#e2c486"), el("span", "", "매일 아침 6시에 새 과제"), el("b", "", ""));
+  top.append(iconImg("cal", "#e2c486"), el("span", "", "매일 아침 6시에 새 토벌 목표"), el("b", "", ""));
   top.lastChild.id = "daily-clock";
   box.append(top);
   d.tasks.forEach((tk, i) => {
@@ -98,7 +99,11 @@ export function renderDaily(s) {
   ft.append(b);
   chest.append(hd, ft);
   box.append(chest);
-  box.append(el("p", "hint", "과제는 어디서든 받을 수 있습니다. 광장의 일일 토벌 게시판 담당자에게서도 열 수 있습니다."));
+  box.append(el("p", "hint", "토벌 목표는 어디서든 받을 수 있습니다. 광장의 토벌 의뢰 게시판 담당자에게서도 열 수 있습니다."));
+  // the town's own hunting jobs (the 알바 board's `hunt` rows): listed here, not among the 아르바이트
+  box.append(el("div", "section", "마을 토벌 의뢰"));
+  Board.render(s, box);
+  box.append(el("p", "hint", "마을 토벌 의뢰는 알바 중개인 포포에게서 수락하고, 의뢰한 주민에게 보고합니다."));
   tickDaily(now());
 }
 export function tickDaily(t) {
@@ -148,8 +153,8 @@ export function renderWeek(s) {
   const rest = clamp(wk.rest | 0, 0, def.restMax);
   box.append(section("쉬고 온 보너스", "fire"));
   box.append(el("p", rest ? "hint gold" : "hint", rest
-    ? `오늘의 일일 토벌 골드 · 경험치 +${rest * def.restPct}% (쉰 날 ${rest}일)`
-    : `과제를 하나도 받지 않은 날마다 다음 날 일일 토벌 보상이 +${def.restPct}%씩 늘어납니다 (최대 ${def.restMax}일).`));
+    ? `오늘의 토벌 의뢰 골드 · 경험치 +${rest * def.restPct}% (쉰 날 ${rest}일)`
+    : `과제를 하나도 받지 않은 날마다 다음 날 토벌 의뢰 보상이 +${def.restPct}%씩 늘어납니다 (최대 ${def.restMax}일).`));
   box.append(el("p", "hint", "매주 월요일 아침 6시에 새 수첩이 열립니다. 12칸 가운데 아무거나 7칸만 채우면 됩니다."));
 }
 

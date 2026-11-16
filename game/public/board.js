@@ -154,16 +154,18 @@ export function key() {
   const s = G.self, a = active(s);
   return [s.fair, Sky.fairOn(), Sky.seasonName(), nearFair(), s.cos && s.cos.own.length, s.jb && [s.jb[0], s.jb[1], s.jb[2], s.jb[3] && [...s.jb[3].slice(0, 3), Math.sign(s.jb[3][4] || 0), s.jb[3][5], s.jb[3][7]]], s.rep, nearPopo(), a && a.t.item ? have(s, a.t.item) : 0, G.map && G.map.id, hallCrew(), partyLead(), s.coop];
 }
-export function render(s) {
-  const box = $("#board-body");
-  box.textContent = "";
+/** The 알바 board (#board-body): life work only. With `into`, the day's hunting jobs instead, as cards in that box (the 토벌 의뢰 window). */
+export function render(s, into) {
+  const hunt = !!into, box = into || $("#board-body");
+  if (!hunt) box.textContent = "";
+  if (hunt && (!s.jb || !D())) return;
   if (!s.jb || !D()) { box.append(el("p", "hint", "불러오는 중…")); return; }
   const [, offers, done] = s.jb, per = D().jbPay.perDay, a = active(s), near = nearPopo(), nDone = doneN(done);
   const top = el("div", "daily-top");
   top.append(iconImg("note", "#e2c486"), el("span", "", `오늘의 알바 ${nDone}/${per}`), Info.coin(s.gold, "purse"));
-  box.append(top);
-  if (G.defs.fair && (Sky.fairOn() || G.map?.id === G.defs.fair.map)) fairCard(box, s);
-  const pipe = G.defs.coop?.jobs?.pipe, atPipe = pipe && near && pipe[5] === G.map?.id;
+  if (!hunt) box.append(top);
+  if (!hunt && G.defs.fair && (Sky.fairOn() || G.map?.id === G.defs.fair.map)) fairCard(box, s);
+  const pipe = G.defs.coop?.jobs?.pipe, atPipe = !hunt && pipe && near && pipe[5] === G.map?.id;
   if (atPipe) {
     const card = el("div", "dcard jb-card cp-offer"), buttons = el("div", "btns");
     const paid = s.coop?.includes("pipe");
@@ -177,12 +179,14 @@ export function render(s) {
       : "오늘 보수 수령 가능 · 배관 연결에 기여하면 보수를 받아요."));
     buttons.append(start); card.append(buttons); box.append(card);
   }
-  if (a) box.append(jobCard(s, a, true));
-  box.append(el("div", "section", "오늘의 의뢰"));
-  if (!offers.length) box.append(el("p", "hint", "오늘은 맡을 수 있는 알바가 없습니다. 생활 기술을 키우면 일이 늘어납니다."));
+  if (a && hunt === (J(a.id)?.kind === "hunt")) box.append(jobCard(s, a, true));
+  if (!hunt) box.append(el("div", "section", "오늘의 의뢰"));
+  if (!hunt && !offers.length) box.append(el("p", "hint", "오늘은 맡을 수 있는 알바가 없습니다. 생활 기술을 키우면 일이 늘어납니다."));
   const inWillow = ([id]) => HOME[J(id)?.npc] === "willow";
   const listed = G.map?.id === "willow" ? [...offers].sort((x, y) => Number(inWillow(y)) - Number(inWillow(x))) : offers;
-  for (const o of listed) {
+  const rows = listed.filter((o) => hunt === (o[1] === "hunt"));   // hunting is 토벌 의뢰's, the rest is the board's
+  if (hunt && !rows.length) box.append(el("p", "hint", "오늘은 마을에서 들어온 토벌 의뢰가 없습니다."));
+  for (const o of rows) {
     const [id, kind, who, text, gold, si, g = 0, need = 0, rush = 0] = o, t = J(id), fin = done.includes(id), mine = a && a.id === id;
     const card = el("div", "dcard jb-card" + (fin ? " done" : mine ? " on" : ""));
     const hd = el("div", "dh");
@@ -211,8 +215,8 @@ export function render(s) {
     const lvl = t ? el("small", "", `${lvName} Lv.${t.lv}+ · ${kind === "deliver" ? `${placeOf(t.npc)} → ${placeOf(t.to)}` : placeOf(t.npc)}`) : el("small", "");
     ft.append(pay, lvl);
     card.append(ft);
-    if (fin) card.append(el("small", "ok", "오늘 끝낸 알바입니다"));
-    else if (mine) card.append(el("small", "ok", "맡은 알바입니다"));
+    if (fin) card.append(el("small", "ok", hunt ? "오늘 끝낸 토벌입니다" : "오늘 끝낸 알바입니다"));
+    else if (mine) card.append(el("small", "ok", hunt ? "맡은 토벌입니다" : "맡은 알바입니다"));
     else {
       const why = a ? "이미 맡은 알바가 있습니다" : !(t && t.fair) && nDone >= per ? `알바는 하루에 ${per}개까지입니다` : !near ? "버드나무 마을 알바 게시판 곁에서 맡을 수 있습니다" : "";
       const btns = el("div", "btns"), b = el("button", "btn gold", "수락");
@@ -228,6 +232,7 @@ export function render(s) {
     }
     box.append(card);
   }
+  if (hunt) return;
   // the co-op shifts: each owner's lobby, with a [추적] to it (coop.js runs the shift itself)
   const coop = Object.entries((G.defs.coop && G.defs.coop.jobs) || {});
   if (coop.length) {

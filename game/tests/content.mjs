@@ -224,7 +224,7 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   assert.equal(W.act({ t: "daily", i: "bonus" }).error, "세 과제의 보상을 모두 받아야 합니다");
   kt.n = kt.need - 1;
   W.kill(kt.k);
-  assert.ok(W.p.toast.some((s) => s.includes("일일 토벌 완료")) || kt.n === kt.need, "finishing is called out");
+  assert.ok(W.p.toast.some((s) => s.includes("토벌 의뢰 완료")) || kt.n === kt.need, "finishing is called out");
   let g0 = W.p.ch.gold;
   assert.ok(W.act({ t: "daily", i: 0 }).ok);
   assert.ok(W.p.ch.gold > g0, "a task pays gold");

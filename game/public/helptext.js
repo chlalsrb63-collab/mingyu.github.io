@@ -27,7 +27,7 @@ export function topics(d) {
   const mapName = (m) => (d.maps.find((x) => x.id === m) || { name: m }).name;
   const mins = Object.values(coop.jobs).map((j) => j[1]), shift = Math.min(...mins) === Math.max(...mins) ? `${mins[0]}분` : `${Math.min(...mins)}~${Math.max(...mins)}분`;
   const ST = d.stats.map(([, name, what]) => `**${name}** ${what}`);
-  const WIN = [["inv", "가방"], ["char", "캐릭터"], ["skill", "스킬"], ["quest", "의뢰"], ["daily", "일일 토벌"], ["week", "주간 수첩"], ["alba", "아르바이트"], ["life", "생활 기술"],
+  const WIN = [["inv", "가방"], ["char", "캐릭터"], ["skill", "스킬"], ["quest", "의뢰"], ["daily", "토벌 의뢰"], ["week", "주간 수첩"], ["alba", "아르바이트"], ["life", "생활 기술"],
     ["party", "파티"], ["guild", "길드"], ["achieve", "업적·칭호"], ["collect", "몬스터 도감"], ["dex", "아이템도감"], ["charm", "참 보드"], ["trophy", "보스 전리품"], ["rank", "랭킹"],
     ["map", "지도"], ["settings", "설정"], ["help", "도움말"], ["phone", "스마트폰"], ["sound", "소리 켜기/끄기"]].map(([k, n]) => `{${k}} ${n}`);
   return [
@@ -101,7 +101,7 @@ export function topics(d) {
         "[추적] 단추를 누르면 목표가 있는 곳까지 **자동으로 걸어가요**. 다른 지도라면 문까지 알아서 길을 찾아요. 움직이거나 공격하면 멈춰요. {track} 으로도 시작 · 취소해요.",
         `반복 토벌은 관리자 엘더윈에게서 받아요 — 같은 몬스터 ${d.bounty}마리를 잡아 보고해요.`] },
       { h: "매일 · 매주", l: [
-        `일일 토벌({daily}): 매일 오전 ${d.daily.resetKST}시에 세 개가 새로 주어지고, 모두 끝내면 보너스 상자를 받아요.`,
+        `토벌 의뢰({daily}): 매일 오전 ${d.daily.resetKST}시에 세 개가 새로 주어지고, 모두 끝내면 보너스 상자를 받아요.`,
         `주간 수첩({week}): ${soc.week.boxes.length}칸 중 ${soc.week.need}칸을 채우면 한 주가 완료돼요. ${soc.week.tiers.join(" · ")}칸을 채울 때마다 보상을 받아요.`] },
     ] },
     { id: "alba", name: "아르바이트", secs: [

@@ -38,7 +38,7 @@ const APPS = [
   { id: "quest", name: "퀘스트", game: "의뢰", glyph: "scroll", hue: "#d6a82c", win: "quest", key: "quest", note: "받은 의뢰와 진행 상황" },
   { id: "party", name: "파티", game: "파티", glyph: "party", hue: "#4aa860", win: "party", key: "party", note: "함께 사냥할 파티 만들기 · 초대" },
   { id: "guild", name: "길드", game: "길드", glyph: "banner", hue: "#d0505a", win: "guild", key: "guild", note: "길드 만들기 · 가입 · 멤버" },
-  { id: "daily", name: "일일\n토벌", game: "일일 토벌", glyph: "cal", hue: "#2aa8a0", win: "daily", key: "daily", note: "오늘의 토벌 목표" },
+  { id: "daily", name: "토벌\n의뢰", game: "토벌 의뢰", glyph: "cal", hue: "#2aa8a0", win: "daily", key: "daily", note: "오늘의 토벌 목표" },
   { id: "week", name: "주간\n수첩", game: "주간 수첩", glyph: "clock", hue: "#3a90c8", win: "week", key: "week", note: "이번 주 목표와 보상" },
   { id: "achieve", name: "업적", game: "업적 · 칭호", glyph: "trophy", hue: "#e09a30", win: "achieve", key: "achieve", note: "업적과 얻은 칭호" },
   { id: "collect", name: "몬스터\n도감", game: "몬스터 도감", glyph: "paw", hue: "#8aa83a", win: "collect", key: "collect", note: "만난 몬스터 기록" },

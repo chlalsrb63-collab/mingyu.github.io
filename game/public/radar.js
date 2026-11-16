@@ -47,7 +47,7 @@ export const perf = { last: 0, avg: 0, n: 0 };
 /** NPC role → glyph and colour (the radar and the map window). */
 const ROLE = {
   shop: ["coin", "#ffd84a", "상점"], smith: ["anvil", "#cfd6e2", "대장간"], train: ["sword", "#ff9a7a", "수련관"], bank: ["bag", "#e0b070", "창고"],
-  warp: ["stone", "#8ad8ff", "이동술사"], elder: ["excl", "#ffe060", "의뢰"], quest: ["excl", "#ffe060", "의뢰"], daily: ["cal", "#b0e070", "일일 토벌"],
+  warp: ["stone", "#8ad8ff", "이동술사"], elder: ["excl", "#ffe060", "의뢰"], quest: ["excl", "#ffe060", "의뢰"], daily: ["cal", "#b0e070", "토벌 의뢰"],
   achieve: ["trophy", "#f0c050", "업적"], collector: ["paw", "#e8b888", "도감"], costume: ["shirt", "#ff9ad0", "의상실"], dim: ["rift", "#c890ff", "균열 지기"],
   talk: ["talk", "#e8e0c8", "주민"],
 };
@@ -414,7 +414,7 @@ function setHide() {
   $("#mini-fb").title = hide.size ? `미니맵에 보일 것 고르기 (${hide.size}개 숨김)` : "미니맵에 보일 것 고르기";
   $("#mini-fb").classList.toggle("some", hide.size > 0);
 }
-/** Quest givers' marks (의뢰 · 일일 토벌 · the side-quest givers) are the 의뢰 filter's; every other NPC the NPC filter's. */
+/** Quest givers' marks (의뢰 · 토벌 의뢰 · the side-quest givers) are the 의뢰 filter's; every other NPC the NPC filter's. */
 const questNpc = (n) => n.role === "elder" || n.role === "quest" || n.role === "daily" || !!D.G.defs.side?.some((q) => q.giver === n.id);
 function setZoom(i) {
   zi = Math.max(0, Math.min(ZOOMS.length - 1, i));
