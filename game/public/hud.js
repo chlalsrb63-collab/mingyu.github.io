@@ -33,7 +33,7 @@ import * as Trophies from "./trophies.js";
 import * as Track from "./track.js";
 import * as Info from "./infocard.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
-import { tip, showTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn, addChat, toast } from "./windows.js";
+import { tip, showTip, hoverTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn, addChat, toast } from "./windows.js";
 import { openTree, openStats, renderInv, renderChar, renderSkills, trackNew } from "./win_char.js";
 import { renderWarp, renderDaily, renderWeek, renderAchieve, renderCollect, tutCard, eventWidget, castBar, tickDaily } from "./win_world.js";
 import { renderShop, renderSmith, renderQuest } from "./win_shop.js";
@@ -452,6 +452,14 @@ export function setupHud() {
   // a click (a tap) opens 전직의 길: every weapon's mastery and where it leads
   $("#wm").addEventListener("click", () => { if (!G.self) return; hideTip(); openTree(); });
   $("#wm").title = `눌러서 전직의 길 보기 (${K("skill")})`;
+  // the menu: hover names the window and its key (read when shown, so a rebound key is right); the word under each glyph stays
+  for (const b of document.querySelectorAll("#menu button")) {
+    const id = b.querySelector("[data-key]").dataset.key, [name, note] = b.title.replace(/\s*\((?:Shift\+)?[A-Z0-9]\)/g, "").split(" — ");
+    b.removeAttribute("title");
+    b.setAttribute("aria-label", name);
+    b.addEventListener("click", hideTip);
+    hoverTip(b, (h) => { h.classList.add("mn-tip"); h.append(el("div", "nm", `${name} (${K(id)})`)); if (note) h.append(el("div", "hint", note)); }, true);
+  }
   // the EXP bar: a click opens the 능력치 tab
   $("#exp").addEventListener("click", () => { if (G.self) openStats(); });
   $("#exp").title = "눌러서 능력치 열기 — 모닥불 곁이나 수련관 앞에서 레벨을 올립니다";

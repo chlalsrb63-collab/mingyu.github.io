@@ -1,6 +1,6 @@
 /**
  * Items as the windows show them (split from client.js): names and descriptions (`itemName itemDesc
- * describe statText runewordOf`), tooltips `itemTip`, the slot widget `itemSlot` and `useSlot`,
+ * statText runewordOf reqLv`), tooltips `itemTip` (the item card + the worn piece beside it), the slot widget `itemSlot` and `useSlot`,
  * `sellPrice`, the bag's order and `QS_USE`.
  */
 
@@ -25,9 +25,19 @@ export const SLOT_GLYPH = { weapon: "sword", helm: "eq_helm", armor: "eq_armor",
 export const isGear = (id) => GEAR.includes(G.defs.items[id].type);
 const slotsFor = (type) => (type === "ring" ? ["ring1", "ring2"] : [type]);
 /** An empty slot filled by the item's default equip action. */
-export function emptyEquipSlot(it, s) {
-  if (!GEAR.includes(it.type) || s.lvl < it.req || (it.cls && it.cls !== s.cls)) return null;
+export function emptyEquipSlot(it, s, entry) {
+  if (!GEAR.includes(it.type) || s.lvl < (entry ? reqLv(entry) : it.req) || (it.cls && it.cls !== s.cls)) return null;
   return slotsFor(it.type).find(k => !s.eq[k]) || null;
+}
+/** The level a piece needs: a rolled piece's item level − 10 (min 1), else its base item's `req`. */
+export const reqLv = (entry) => (entry.il > 0 ? Math.max(1, entry.il - 10) : G.defs.items[entry.id].req);
+/** The rarity's name; 유니크 (q5) comes from the rules table once it lists it. */
+const rarName = (q) => G.defs.rarity[q || 0] || (q === 5 ? "유니크" : "일반");
+/** A 유니크's prefix and suffix words (`un` = [prefix index, suffix index] into `defs.uniq`); "" while the rules do not send them. */
+function uniqWords(entry) {
+  const u = G.defs.uniq, un = entry.q === 5 && entry.un;
+  const w = (list, i) => { const x = list && list[i]; return (Array.isArray(x) ? x[0] : x) || ""; };
+  return u && un ? [w(u.pre, un[0]), w(u.suf, un[1])] : ["", ""];
 }
 function runewordOf(g) {
   if (!g.sk || !g.ru || g.ru.length !== g.sk) return null;
@@ -38,18 +48,22 @@ export function statText(k, v) {
   const label = G.defs.affix[k][0];
   return `${label.replace(" %", "")} +${v}${label.includes("%") ? "%" : ""}`;
 }
-/** "+3 뇌명의 강철 양손검" — a legendary's power, a set's name, or the first affix lends the prefix. */
+/** "+3 뇌명의 강철 양손검" — a legendary's power, a set's name, or the first affix lends the prefix; a 유니크 is "[접두사] 이름 [접미사]". */
 export function itemName(entry) {
   if (Charms.isCharm(entry)) return Charms.charmName(entry);       // a charm's name comes from its wire, not ITEMS (charms.js)
-  const it = G.defs.items[entry.id];
-  const word = entry.lg ? G.defs.legend[entry.lg][0] : entry.set ? G.defs.sets[entry.set].name : entry.af && entry.af.length ? G.defs.affix[entry.af[0][0]][1] : "";
-  return (entry.cu === 1 ? "저주받은 " : "") + (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name;
+  const it = G.defs.items[entry.id], [pre, suf] = uniqWords(entry);
+  const word = pre || (entry.lg ? G.defs.legend[entry.lg][0] : entry.set ? G.defs.sets[entry.set].name : entry.af && entry.af.length ? G.defs.affix[entry.af[0][0]][1] : "");
+  return (entry.cu === 1 ? "저주받은 " : "") + (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name + (suf ? ` ${suf}` : "");
+}
+/** The piece's own stats, enhancement included: [[key, value]…] (speed and crit do not scale). */
+function baseStats(entry) {
+  const it = G.defs.items[entry.id], e = entry.enh || 0;
+  return Object.keys(it.base || {}).map((k) => [k, k === "spd" || k === "crit" ? it.base[k] : Math.round(it.base[k] * (1 + (G.defs.enhPct ? G.defs.enhPct[e] : 10 * e) / 100))]);
 }
 export function itemDesc(entry) {
   const it = G.defs.items[entry.id];
-  const e = entry.enh || 0;
   if (it.base) {
-    const base = Object.keys(it.base).map((k) => statText(k, k === "spd" || k === "crit" ? it.base[k] : Math.round(it.base[k] * (1 + (G.defs.enhPct ? G.defs.enhPct[e] : 10 * e) / 100))));
+    const base = baseStats(entry).map(([k, v]) => statText(k, v));
     if (it.cls) base.push(`${G.defs.wkinds[it.wk].name} · ${G.defs.classes[it.cls].name} 전용`);
     base.push(`Lv.${it.req}`);
     return base.join(" · ");
@@ -64,79 +78,109 @@ export function setWorn(id) {
   if (G.self) for (const k of G.defs.slots) if (G.self.eq[k] && G.self.eq[k].set === id) n++;
   return n;
 }
-/** The full description: base line, rolled affixes, legendary power, set bonuses, sockets, runeword. */
-function describe(entry, host) {
-  if (Charms.isCharm(entry)) { Charms.describe(entry, host); return; }
-  const it = G.defs.items[entry.id];
-  const nm = el("div", "nm", itemName(entry));
-  nm.style.color = Art.RARITY_COL[entry.q || 0];
-  host.append(nm);
-  if (isGear(entry.id)) host.append(el("div", "rar", `${G.defs.rarity[entry.q || 0]} ${TYPE_NAME[it.type]}`));
-  host.append(el("div", "ds", itemDesc(entry)));
-  for (const [k, v] of entry.af || []) host.append(el("div", "af", statText(k, v)));
-  if (entry.lg) host.append(el("div", "lg", `◆ ${G.defs.legend[entry.lg][1]}`));
+/** One stat as a row of a tooltip card: the name on the left, the value on the right; `tag` is a small badge after the name. */
+function statRow(k, v, cls, tag) {
+  const label = G.defs.affix[k][0], d = el("div", `tc-row ${cls}`), l = el("span", "", label.replace(" %", ""));
+  if (tag) l.append(el("i", "tc-tag", tag));
+  d.append(l, el("b", "", `+${v}${label.includes("%") ? "%" : ""}`));
+  return d;
+}
+/**
+ * One tooltip card (hud.css "item tooltip"): a rarity-coloured frame, then sections split by divider lines —
+ * name · rarity and item level, the base stats, the affixes (a 유니크's first two are its own, tagged 고유),
+ * the legendary power / set / sockets / runeword, and last the level it needs. `o.eq` marks the piece being
+ * worn in that slot (the [장착 중] banner).
+ */
+function card(entry, o = {}) {
+  const it = G.defs.items[entry.id], s = G.self, q = entry.q || 0, gear = isGear(entry.id), un = q === 5;
+  const c = el("div", `tcard q${q}`);
+  c.style.setProperty("--rc", Art.RARITY_COL[q] || Art.RARITY_COL[0]);
+  const sec = (cls) => c.appendChild(el("div", `tc-sec ${cls || ""}`));
+  if (o.eq) { const b = el("div", "tc-eq", "[장착 중]"); b.append(el("small", "", SLOT_NAME[o.eq])); c.prepend(b); }
+  const head = sec("head");
+  head.append(el("div", "tc-nm", itemName(entry)));
+  if (gear) {
+    const r = el("div", "tc-sub");
+    r.append(el("span", "", `${rarName(q)} ${TYPE_NAME[it.type]}`));
+    if (entry.il > 0) r.append(el("span", "tc-il", `아이템 레벨 ${entry.il}`));
+    head.append(r);
+  }
+  if (it.base) {
+    const base = sec();
+    for (const [k, v] of baseStats(entry)) base.append(statRow(k, v, "base"));
+    if (it.cls) base.append(el("div", "tc-note", `${G.defs.wkinds[it.wk].name} · ${G.defs.classes[it.cls].name} 전용`));
+  } else head.append(el("div", "tc-ds", itemDesc(entry)));
+  if (entry.af && entry.af.length) {
+    const af = sec();
+    entry.af.forEach(([k, v], i) => af.append(statRow(k, v, un && i < 2 ? "af un" : "af", un && i < 2 ? "고유" : "")));
+  }
+  const pw = [];
+  if (entry.lg) pw.push(el("div", "tc-lg", `◆ ${G.defs.legend[entry.lg][1]}`));
   if (entry.set) {
     const set = G.defs.sets[entry.set], worn = setWorn(entry.set);
-    host.append(el("div", "st", `${set.name} 세트 (${worn}개 착용)`));
-    for (const [n, list] of set.bonus) host.append(el("div", worn >= n ? "st on" : "st off", `${n}세트: ${list.map(([k, v]) => statText(k, v)).join(", ")}`));
+    pw.push(el("div", "tc-st", `${set.name} 세트 (${worn}개 착용)`));
+    for (const [n, list] of set.bonus) pw.push(el("div", worn >= n ? "tc-st on" : "tc-st off", `${n}세트: ${list.map(([k, v]) => statText(k, v)).join(", ")}`));
   }
   if (entry.sk) {
     const names = [];
     for (let i = 0; i < entry.sk; i++) { const r = entry.ru && entry.ru[i]; names.push(r ? G.defs.runes[r][0] : "빈 홈"); }
-    host.append(el("div", "so", `홈 ${entry.sk}개 [ ${names.join(" · ")} ]`));
-    for (const r of entry.ru || []) if (r) host.append(el("div", "af", statText(G.defs.runes[r][1], G.defs.runes[r][2])));
+    pw.push(el("div", "tc-so", `홈 ${entry.sk}개 [ ${names.join(" · ")} ]`));
+    for (const r of entry.ru || []) if (r) pw.push(statRow(G.defs.runes[r][1], G.defs.runes[r][2], "af"));
     const rw = runewordOf(entry);
-    if (rw) host.append(el("div", "rw", `룬어 「${rw.name}」 ${rw.add.map(([k, v]) => statText(k, v)).join(", ")}`));
+    if (rw) pw.push(el("div", "tc-rw", `룬어 「${rw.name}」 ${rw.add.map(([k, v]) => statText(k, v)).join(", ")}`));
   }
+  if (pw.length) sec().append(...pw);
+  const foot = sec();
+  if (gear) foot.append(el("div", s && s.lvl < reqLv(entry) ? "tc-req bad" : "tc-req", `착용 레벨 ${reqLv(entry)}`));
+  if (gear && !o.worn && !o.eq && it.cls && it.cls !== s.cls) foot.append(el("div", "tc-err", `${G.defs.classes[it.cls].name}만 쓸 수 있습니다`));
+  if (o.price) foot.append(el("div", "tc-gold", o.price));
+  if (o.hint) foot.append(el("div", "tc-hint", o.hint));
+  if (!foot.firstChild) foot.remove();
+  return c;
 }
 export function sellPrice(entry) {
   const it = G.defs.items[entry.id];
   if (!isGear(entry.id)) return Math.floor(it.price * 0.4);
   return Math.floor(it.price * 0.05 * (1 + 0.8 * (entry.q || 0)) * (1 + 0.3 * (entry.enh || 0)));
 }
-/** A tooltip's content: the item, a line on what clicking does, then whatever it would replace. */
+/**
+ * A tooltip's content: the item's card, and for a gear piece the card of whatever it would replace beside it
+ * (a ring: both rings) under a [장착 중] banner; the new card ends with the ▲ gained / ▼ lost summary
+ * (shape and sign, not colour alone). A worn piece shows no comparison.
+ */
 export function itemTip(entry, host, o = {}) {
   // a charm has no gear fields, no price and nothing to compare with (charms.js)
   if (Charms.isCharm(entry)) { Charms.describe(entry, host, { hint: o.hint }); return; }
-  describe(entry, host);
-  const s = G.self, d = G.defs.items[entry.id];
-  if (!o.worn && isGear(entry.id)) {
-    if (d.cls && d.cls !== s.cls) host.append(el("div", "err-line", `${G.defs.classes[d.cls].name}만 쓸 수 있습니다`));
-    else if (s.lvl < d.req) host.append(el("div", "err-line", `레벨 ${d.req}부터 쓸 수 있습니다`));
-  }
-  if (o.price) host.append(el("div", "gold-line", o.price));
-  if (o.hint) host.append(el("div", "hint", o.hint));
-  if (!o.worn && isGear(entry.id)) {
-    // against what it would replace: the change in every number, ▲ gained / ▼ lost (shape and sign, not colour alone)
-    const mine = statsOf(entry);
-    for (const k of slotsFor(d.type)) {
-      const w = s.eq[k];
-      if (!w) continue;
-      const head = el("div", "cmp", `착용 중(${SLOT_NAME[k]})과 비교 · `);
-      const wn = el("b", "", itemName(w));
-      wn.style.color = Art.RARITY_COL[w.q || 0];
-      head.append(wn);
-      host.append(head);
-      const was = statsOf(w);
-      let any = false;
-      for (const key of Object.keys(G.defs.affix)) {
-        const dv = (mine[key] || 0) - (was[key] || 0);
-        if (!dv) continue;
-        any = true;
-        const label = G.defs.affix[key][0], pct = label.includes("%") ? "%" : "";
-        host.append(el("div", dv > 0 ? "dl up" : "dl dn", `${dv > 0 ? "▲" : "▼"} ${label.replace(" %", "")} ${dv > 0 ? "+" : "−"}${Math.abs(dv)}${pct}`));
-      }
-      if (!any) host.append(el("div", "dl", "능력치 차이 없음"));
-      if (w.lg && w.lg !== entry.lg) host.append(el("div", "dl dn", `◆ 잃는 힘: ${G.defs.legend[w.lg][1]}`));
-      if (w.set && w.set !== entry.set && setWorn(w.set) > 1) host.append(el("div", "dl dn", `${G.defs.sets[w.set].name} 세트가 ${setWorn(w.set) - 1}개로 줄어듭니다`));
+  const s = G.self, d = G.defs.items[entry.id], wrap = el("div", "tcards"), main = card(entry, o);
+  wrap.append(main);
+  host.append(wrap);
+  if (o.worn || !isGear(entry.id)) return;
+  const mine = statsOf(entry);
+  for (const k of slotsFor(d.type)) {
+    const w = s.eq[k];
+    if (!w) continue;
+    const cmp = el("div", "tc-sec");
+    cmp.append(el("div", "tc-cmp", `장착 중 ${SLOT_NAME[k]} 대비`));
+    const dls = el("div", "tc-dls"), was = statsOf(w);
+    for (const key of Object.keys(G.defs.affix)) {
+      const dv = (mine[key] || 0) - (was[key] || 0);
+      if (!dv) continue;
+      const label = G.defs.affix[key][0], pct = label.includes("%") ? "%" : "";
+      dls.append(el("span", dv > 0 ? "tc-d up" : "tc-d dn", `${dv > 0 ? "▲" : "▼"} ${label.replace(" %", "")} ${dv > 0 ? "+" : "−"}${Math.abs(dv)}${pct}`));
     }
+    if (!dls.firstChild) dls.append(el("span", "tc-d", "능력치 차이 없음"));
+    cmp.append(dls);
+    if (w.lg && w.lg !== entry.lg) cmp.append(el("div", "tc-d dn", `◆ 잃는 힘: ${G.defs.legend[w.lg][1]}`));
+    if (w.set && w.set !== entry.set && setWorn(w.set) > 1) cmp.append(el("div", "tc-d dn", `${G.defs.sets[w.set].name} 세트가 ${setWorn(w.set) - 1}개로 줄어듭니다`));
+    main.append(cmp);
+    wrap.append(card(w, { eq: k }));
   }
 }
 /** Every number a piece gives: base (with its enhancement), affixes, runes and a runeword. */
 function statsOf(entry) {
-  const it = G.defs.items[entry.id], e = entry.enh || 0, out = {};
+  const out = {};
   const add = (k, v) => { out[k] = (out[k] || 0) + v; };
-  for (const k of Object.keys(it.base || {})) add(k, k === "spd" || k === "crit" ? it.base[k] : Math.round(it.base[k] * (1 + (G.defs.enhPct ? G.defs.enhPct[e] : 10 * e) / 100)));
+  for (const [k, v] of baseStats(entry)) add(k, v);
   for (const [k, v] of entry.af || []) add(k, v);
   for (const r of entry.ru || []) if (r) add(G.defs.runes[r][1], G.defs.runes[r][2]);
   const rw = runewordOf(entry);
@@ -179,7 +223,7 @@ export function useSlot(i) {
     closeDrawer(); Mini.cooking(G.defs.items[d.cook].name, (score) => act({ t: "cook", id: entry.id, s: score }));
   } else if (isGear(entry.id)) {
     if (d.cls && d.cls !== s.cls) { toast(`${G.defs.classes[d.cls].name} 전용 장비입니다`); Sound.play("no"); return; }
-    if (s.lvl < d.req) { toast(`레벨 ${d.req}부터 장착할 수 있습니다`); Sound.play("no"); return; }
+    if (s.lvl < reqLv(entry)) { toast(`레벨 ${reqLv(entry)}부터 장착할 수 있습니다`); Sound.play("no"); return; }
     act({ t: "eq", s: i }); G.sel = -1;
   } else if (d.type === "rune") { G.sel = i; toast("끼울 홈을 가방 아래에서 고르세요"); refreshUi(); return; }
   else return;

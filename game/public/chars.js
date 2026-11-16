@@ -36,7 +36,7 @@ const LINE = "#2c2430";
 let STYLE = { tall: false, flat: false };
 export function setStyle(s) { STYLE = { tall: !!s.tall, flat: !!s.flat }; }
 let ink = LINE, flat = false, tall = false;
-const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30"];
+const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30", null, "#d2b48c"];
 const TAU = Math.PI * 2;
 
 // ───────────────────────────── colour ─────────────────────────────

@@ -114,7 +114,8 @@ button:disabled { filter: grayscale(1); opacity: .45; cursor: default; }
 .slot.q2 { box-shadow: inset 0 0 0 1px #d8b84a, inset 0 0 10px rgba(216, 184, 74, .3); }
 .slot.q3 { box-shadow: inset 0 0 0 1px #e8803a, inset 0 0 12px rgba(232, 128, 58, .45); }
 .slot.q4 { box-shadow: inset 0 0 0 1px #5fd47a, inset 0 0 12px rgba(95, 212, 122, .4); }
-.slot.q1.sel, .slot.q2.sel, .slot.q3.sel, .slot.q4.sel { outline: 2px solid var(--gold); outline-offset: -2px; }
+.slot.q5 { box-shadow: inset 0 0 0 1px #d2b48c, inset 0 0 12px rgba(210, 180, 140, .45); }
+.slot.q1.sel, .slot.q2.sel, .slot.q3.sel, .slot.q4.sel, .slot.q5.sel { outline: 2px solid var(--gold); outline-offset: -2px; }
 .slot .sk { position: absolute; left: 3px; bottom: 3px; display: flex; gap: 1px; pointer-events: none; }
 .slot .sk i { width: 4px; height: 4px; background: #000; border: 1px solid #777; border-radius: 50%; }
 .slot .sk i.on { background: #ffd84a; border-color: #fff; }

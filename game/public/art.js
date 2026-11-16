@@ -418,8 +418,8 @@ export { charSprite, drawFigure, setStyle, playerLook, npcLook, HAIR, SKIN, STYL
 
 // ───────────────────────────── icons ─────────────────────────────
 
-/** Rarity colours: common · magic · rare · legendary. */
-export const RARITY_COL = ["#d8d4c8", "#6a9cff", "#f0d050", "#ff8a30", "#5fd47a"];
+/** Item rarity colours: 일반 · 마법 blue · 희귀 yellow · 전설 orange · 세트 green · 유니크 golden beige. */
+export const RARITY_COL = ["#d8d4c8", "#6a9cff", "#f0d050", "#ff8a30", "#5fd47a", "#d2b48c"];
 // tier 6 운철 (meteor iron): night-blue metal; its accents are starlight gold
 const METAL = [null, ["#a8acb4", "#74787f"], ["#c8ccd4", "#8e94a0"], ["#9ab8e0", "#5a78b0"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"], ["#8a9ae0", "#3a4680"]];
 const RUNE_COL = { ign: "#ff6a3a", aeg: "#8aa0c0", vit: "#e84a5a", men: "#4a8aff", cel: "#7ae8a0", acu: "#ffd84a", san: "#c03048", lum: "#fff0a0", fos: "#b07aff" };

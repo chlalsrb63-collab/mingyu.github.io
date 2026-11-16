@@ -43,7 +43,7 @@ export const text = $("#text"), tg = text.getContext("2d");
  * character creation always use the whole window.
  */
 const SIDE = 288, DOCK = 184;
-/** The side column narrows on small desktops (≤ 1100 wide: 256 px, menu glyphs only; hud.css matches the breakpoint). */
+/** The side column narrows on small desktops (≤ 1100 wide: 256 px, six menu columns; hud.css matches the breakpoint). */
 const sideW = (W) => (W <= 1100 ? 256 : SIDE);
 /** The dock grows a little on tall screens (more chat lines): 184 px up to 920 high, 216 at 1080; 160 on short screens (≤ 640). */
 const dockH = (H) => (H <= 640 ? 160 : Math.round(clamp(H * 0.2, DOCK, 224)));

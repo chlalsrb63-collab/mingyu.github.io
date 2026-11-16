@@ -7,7 +7,8 @@
 //   node scripts/shot.mjs --page scene --map crypt --x 30 --y 22 --q "mobs=ratking,bonehound&el=1"
 //   node scripts/shot.mjs --page mobs --q "k=twinhare,lambmaw&z=4"
 //   node scripts/shot.mjs --page world --map forest            (whole map, real renderer)
-//   pages: scene world iso over mobs sheet species wardrobe swing bow title icons uicons emo mini
+//   pages: scene world iso over mobs sheet species wardrobe swing bow title icons uicons emo mini tip
+//   node scripts/shot.mjs --page tip [--q "hud=linen&ts=l&w=300&only=0"]   (item tooltips: fake entries, compare cards)
 //
 // Live mode: the real game against a running dev server (npm run dev:local first).
 // Logs in with a throwaway account (cached in shots/.shot-account.json), creates
@@ -71,7 +72,7 @@ if (opt.serve) {
   const port = opt.serve === true ? 5178 : Number(opt.serve);
   await serve(port);
   console.log(`dev preview pages (Ctrl+C to stop; re-run after changing the maps):`);
-  for (const p of ["scene?map=town", "scene?map=meadow&mobs=twinhare,lambmaw", "world?map=forest", "over?map=cave", "iso?map=town", "mobs", "sheet", "species", "wardrobe", "swing", "title", "icons", "uicons", "emo", "mini"]) {
+  for (const p of ["scene?map=town", "scene?map=meadow&mobs=twinhare,lambmaw", "world?map=forest", "over?map=cave", "iso?map=town", "mobs", "sheet", "species", "wardrobe", "swing", "title", "icons", "uicons", "emo", "mini", "tip"]) {
     const [name, q] = p.split("?");
     console.log(`  http://127.0.0.1:${port}/_${name}.html${q ? "?" + q : ""}`);
   }
