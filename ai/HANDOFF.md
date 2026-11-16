@@ -269,3 +269,9 @@ no longer walks out of a rift. Q6 weekly boss quests are in. **Open (owner/balan
 mobs kill a Lv.196 tier-6 char; tracker never uses waypoint stones/귀환; NPC idle lines don't change after arcs end;
 재봉사 실비 opens a window titled 루루 and a sewn piece isn't auto-worn; docked quest window 228 px wide at 1100×680.
 Pending owner picks: Q3 (late main kill counts), Q4 (party-only side goals), Q7 (post-Lv.200 goals).
+
+## 0.9 레이드던전 (was 차원 균열) retuned (2026-11-16) — main green 60/60
+Players see "레이드던전" (owner's name; 균열 지기 / 차원의 오벨리스크 unchanged). Owner's pacing: gauges of all 3 floors ≈ 6 min
+for fast mob killing, boss ≤ 3 min; the 15 min `limit` is only a cap against pushing the step to farm, not a time attack.
+Retune: `gK` 2.5→4.2, `hpBase` 4.9→4, `bossHp` 0.65→0.6 (31-maps-dim.js); tests/dimrift.mjs has pace bands for duo/trio.
+Bots ≈ 4–5 min, real play expected 6–8 (QA duo took 12.5 before). If still slow: `gK` 4.5. Solo/low-tier trios still wipe on some bot draws.
