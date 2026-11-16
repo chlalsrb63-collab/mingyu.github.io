@@ -315,3 +315,8 @@ Design: `docs/design/prefix-effects.md` (95 powers). Built: the registry, the ho
 Known: a basic arrow now calls `blow` (so 뇌명의 works on a bow; before it silently did not); `deathLoss(ch, p)`, `skMp`, `dashCd(p)`, recall, pet interval, campfire rest read `pfxNum`.
 **P1a merged 4d02d68 (2026-11-16).** Codex: W1/W2/W3-A may start. Effect part files: Codex offense = `52-prefix-*.js`, Claude defense = `53-prefix-guard.js`,
 helm utility + phase-2 hooks = `54-prefix-util.js`; extension recipe, hook signatures and helpers are in §0.11 above. Suite 62/62.
+**W3-B merged (2026-11-16, suite 64/64):** `53-prefix-guard.js` (33 defense; 28 `on`, **5 held back `on:0`: after relax chase panic slick** — their move-speed half only changes
+`stats(p).spd`; the client walks at `self.spd` (= `spd0`) × its own buff constants (`public/update.js:203`), so a timed/conditional prefix speed needs a wire field first) +
+`54-prefix-util.js` (8 helm + 8 phase-2, all `on`). Shared edits: `80-simulation.js mobHit` sets `p.hitHow`; `51-prefix.js pfxMiti` reads `p.pc.aura`.
+Known: 추적(trace) +25 % xp is cut to +15 % by the prefix xp cap (tooltip overpromises); 후광(halo) works solo; zone events shake the screen every 0.5 s; new weapons' `lg` have no weapon look
+(only the first 8 powers do, `tests/wardrobe.mjs LOOKS`). Codex W3-A/W2 will touch `itemlevel.mjs`/`wardrobe.mjs` the same way — keep the permissive wardrobe check.
