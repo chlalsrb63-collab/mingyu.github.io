@@ -2,7 +2,7 @@
 // (deterministic, capped, every room reachable), the ready check and its edge cases, the gauge,
 // orbs and shrines, the way down at 100% on floors 1–2, the final boss in its hall on floor 3, the chest
 // and the way home, death and failure, cleanup, the wire, and a bot party clearing the 3-floor raid in
-// about 10 minutes. node tests/dimrift.mjs [-v]
+// about 6 minutes of gauges and under 3 for the boss. node tests/dimrift.mjs [-v]
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
@@ -16,6 +16,7 @@ if (process.env.HPB) X_DIM_SET.push(["hpBase", +process.env.HPB]);
 if (process.env.BOSSHP) X_DIM_SET.push(["bossHp", +process.env.BOSSHP]);
 if (process.env.BOSSATK) X_DIM_SET.push(["bossAtk", +process.env.BOSSATK]);
 if (process.env.LVK) X_DIM_SET.push(["lvK", +process.env.LVK]);
+for (const kv of (process.env.DIMSET || "").split(",").filter(Boolean)) X_DIM_SET.push([kv.split("=")[0], +kv.split("=")[1]]);   // DIMSET=gK=3.5,normal=1.2
 const VERBOSE = process.argv.includes("-v");
 const log = (...a) => { if (VERBOSE) console.log(...a); };
 const THEMES = Object.keys(X.DIM_THEMES);
@@ -612,9 +613,11 @@ function runParty(lv, classes, seedSalt, shift = 0, opt = {}) {
     if (!process.env.ONLY || +process.env.ONLY === lv) for (const sh of shifts) runs.push({ ...runParty(lv, fours[salt % 2], salt, sh), sh });
   }
   // The bot party is chaotic (any rule change reshuffles every draw), so the raid is judged as a rate: at least 75 % of the
-  // runs walk all three floors and beat the final boss in 8–12.5 min (owner, 2026-11-15: a ≈ 10 minute party raid, the
-  // limit 15), every level clears at least once, and the average sits in 9–11.
-  const miss = (r) => r.clear === null || r.floors.length !== 2 || !(r.clear >= 8 && r.clear <= 12.5);
+  // runs walk all three floors and beat the final boss in 4–10.5 min (owner, 2026-11-16: ≈ 6 min of gauges + a boss
+  // in ≤ 3 — was 8–12.5 min under the 2026-11-15 ≈ 10 minute target; the 15 min limit is only a cap), every level clears at
+  // least once, and the average sits in 5.5–8 (bots run ≈ 1.5× quicker than real play: QA's two Lv.196 needed 12.5 min for
+  // gauges the duo bots filled in 7, now 4).
+  const miss = (r) => r.clear === null || r.floors.length !== 2 || !(r.clear >= 4 && r.clear <= 10.5);
   const missed = runs.filter(miss), say = missed.map((r) => `Lv.${r.lv} (+${r.sh}) ${r.state} floor ${r.floor} ${r.clear && r.clear.toFixed(2)}`).join(", ");
   for (const r of runs) {
     const [f2, f3] = r.floors, end = r.clear ?? (r.state === "fail" ? D.limit / 60000 : 0);
@@ -625,10 +628,24 @@ function runParty(lv, classes, seedSalt, shift = 0, opt = {}) {
   const ok = runs.filter((r) => !miss(r)), avg = ok.reduce((s, r) => s + r.clear, 0) / Math.max(1, ok.length);
   log(`${ok.length}/${runs.length} in the window, average clear ${avg.toFixed(2)} min`);
   if (!process.env.NOCLEAR) {
-    assert.ok(missed.length <= Math.floor(runs.length * 0.25), `at least 75 % of ${runs.length} runs clear in 8–12.5 min; bad: ${say}`);
+    assert.ok(missed.length <= Math.floor(runs.length * 0.25), `at least 75 % of ${runs.length} runs clear in 4–10.5 min; bad: ${say}`);
     for (const lv of new Set(runs.map((r) => r.lv))) assert.ok(runs.some((r) => r.lv === lv && !miss(r)), `Lv.${lv} clears at least once (${say})`);
-    if (!process.env.ONLY) assert.ok(avg >= 9 && avg <= 11, `the average clear ${avg.toFixed(2)} min sits inside 9–11`);
+    if (!process.env.ONLY) assert.ok(avg >= 5.5 && avg <= 8, `the average clear ${avg.toFixed(2)} min sits inside 5.5–8`);
   }
+  // pace (owner, 2026-11-16): a competent party of 2–4 fills the three gauges in about 6 minutes and kills the final boss in 3
+  // or less; the 15-minute limit is only a cap against farming steps. SIZES=1,2 LVS=32 PSHIFT=1 for a quick look.
+  // Judged as a rate like the fours above (a bot that wipes on a hard draw is the bots, not the raid): at least 75 % clear, and the
+  // cleared ones fill the gauges in 3–7 min and kill the boss in ≤ 3.2. (Tier 17 duos and trios are not asked: the headless bots
+  // there are under-geared and wipe on the boss; the fours above cover that band.)
+  const pace = [];
+  for (const n of (process.env.SIZES || "2,3").split(",").map(Number)) for (const lv of (process.env.LVS || "32,44").split(",").map(Number)) for (const sh of (process.env.PSHIFT || "0,1").split(",").map(Number)) {
+    const r = runParty(lv, ["warrior", "rogue", "lancer", "mage"].slice(0, n), lv, sh);
+    const b = r.clear && r.boss ? r.clear - r.boss : null;
+    pace.push({ n, lv, sh, ok: r.clear !== null && r.boss >= 3 && r.boss <= 7 && b <= 3.2, r, b });
+    log(`PACE ${n} bots tier ${lv}: gauges ${r.boss && r.boss.toFixed(1)} min (floors ${r.floors.map((f) => f.toFixed(1)).join(", ")}), boss ${b && b.toFixed(1)} min, end ${r.state}, ${r.deaths} deaths`);
+  }
+  const badPace = pace.filter((p) => !p.ok);
+  if (!process.env.NOCLEAR) assert.ok(badPace.length <= Math.floor(pace.length * 0.25), `duos and trios fill the gauges in 3–7 min and kill the boss in ≤ 3.2; bad: ${badPace.map((p) => `${p.n} bots tier ${p.lv} (+${p.sh}) ${p.r.state} gauges ${p.r.boss && p.r.boss.toFixed(1)} boss ${p.b && p.b.toFixed(1)}`).join(", ")}`);
   // a solo player two levels under the band: a raid is meant for four; alone it gets down at least one floor in time
   // (beating it alone is up to the player: the headless bot does not kite, so the rest is only measured)
   const solo = runParty(22, ["warrior"], 7);

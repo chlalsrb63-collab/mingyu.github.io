@@ -15,8 +15,8 @@ const DIM = {
   // a floor: a `grid` of GX × GY cells of CW × CH tiles (106 × 74; the owner, 2026-11-15: five times the old 56 × 40 and more);
   // rooms per floor and packs per room in DIM_FLOORS; side rooms: `vaults` (a guardian and a chest) and `dens` (two elites)
   w: 106, h: 74, grid: [6, 5, 17, 14], deco: 1.5, path: 60, vaults: [2, 3], dens: [1, 2], pack: [3, 5], mobCap: 110, cap: 140,
-  limit: 900000, warn: 180000,            // the whole three-floor run: 15 minutes from the open; a warning with 3 minutes left
-  // 3단 레이드 (owner, 2026-11-15): three floors in a row, ≈ 10 minutes for a party of four. At 100% floors 1–2 open
+  limit: 900000, warn: 180000,            // the whole three-floor run: a generous 15-minute cap (not a time attack: it only stops the step being pushed to farm); a warning with 3 minutes left
+  // 3단 레이드 (owner, 2026-11-15): three floors in a row. Pace (owner, 2026-11-16): a party killing quickly fills the three gauges in ≈ 6 minutes and the final boss dies in ≤ 3. At 100% floors 1–2 open
   // 하강의 문 (everyone inside goes down after `downMs`, sooner once all standing stepped within `downR`); floor 3's 100%
   // wakes the final boss in its hall at the far end. Per floor: monster health and blows ×, pack leaders made elite,
   // elite traits; `boss` the final boss's traits.
@@ -24,8 +24,8 @@ const DIM = {
   floor: [{ hp: 1, atk: 1, elites: 0, traits: 1 }, { hp: 1.1, atk: 1.03, elites: 1, traits: 1 }, { hp: 1.2, atk: 1.06, elites: 1, traits: 1, boss: 2 }],
   emptyMs: 20000, portalMs: 90000, failMs: 8000, memberMs: 180000, rcMs: 20000, near: 80,
   // the gauge: a kill, an elite (guardians too), an orb an elite leaves behind, each × `gK` percent — fixed, so 100% takes
-  // about the old small floor's 35 kills however many monsters a big floor holds: the party picks a route, never clears it all
-  normal: 0.9, elite: 4, orb: 3, orbMs: 25000, orbR: 36, gK: 2.5,
+  // about 26 kills (gK 4.2; was 44 at 2.5) however many monsters a big floor holds: the party picks a route, never clears it all
+  normal: 0.9, elite: 4, orb: 3, orbMs: 25000, orbR: 36, gK: 4.2,
   // shrines (pylons): chance per elite (always on the 3rd and 6th), how long one stands, reach
   shrineP: 0.35, shrineMs: 30000, shrineR: 20, buffR: 400,
   pylons: { atk: ["분노의 기둥", 25000], spd: ["질풍의 기둥", 20000], shield: ["수호의 기둥", 20000], gauge: ["정령의 기둥", 0] },
@@ -37,10 +37,12 @@ const DIM = {
   // → 5.4 with J2's weapon skills, which lost the old kits' party heals, taunts and guards:
   // bot clears 5.2 / 5.6 / 6.3 / 7.0 min at tiers 17 / 24 / 32 / 40; → 4.9 and a low-band step of 0.85 once the test
   // ran five draws of each rift (a hard seed at 24 and at 17 wiped the party): clears 4.7–8.2 min, 6.2 on average)
+  // pace retune (2026-11-16): `hpBase` 4.9 → 4 and `gK` 2.5 → 4.2 (bots of 2–4: gauges 7–10 → 3.5–6 min; real play is ≈ 1.5× slower than
+  // the bots: QA's two Lv.196 took 12.5 min where the duo bots took 7); `bossHp` 0.65 → 0.6 (0.8 would keep the old boss health but wipe-looped the low band: 22–30 deaths on two of twelve draws; 0.6 clears all but a stuck bot)
   // 3-floor raid (2026-11-15), 4 bots × 4 draws at tiers 17 / 32 / 44: `hpMid` [band, width, + at it] adds 0.5 at 32 (the
   // mid band ran 7.5–9 min), `hpHigh` [above this level, − per level] trims the top band (44 took 12+ min), the final boss
   // `bossHp` 0.65 at floor 3's row (0.8 made low-band parties wipe-loop on it): clears 8.6–11.3 min, 9.7 on average.
-  hpBase: 4.9, hpLow: [24, 0.85], hpHigh: [38, 0.12], hpMid: [32, 8, 0.5], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.65, bossAtk: 0.7, poolLv: [3, 2],
+  hpBase: 4, hpLow: [24, 0.85], hpHigh: [38, 0.12], hpMid: [32, 8, 0.5], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
   reviveMs: 25000,
   // the final boss's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then (what the old
   // ladder's tier 3 paid); a failed run's consolation is `failGold` × lv a floor reached
