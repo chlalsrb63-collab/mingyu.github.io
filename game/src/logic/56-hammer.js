@@ -50,7 +50,8 @@ function hammerTick(S, p, now) {
       cracks.delete(primary);
       mult *= move.crackMult * (pasOn(p, "hammer_heart") ? SKILL.hammer_heart.bonus : 1);
     }
-    critical = hurtMob(S, rt, primary, p, mult * power, false, hitOpts) === true;
+    const primaryOpts = rupture && move.shatter ? { ...hitOpts, forceAilment: "physical" } : hitOpts;
+    critical = hurtMob(S, rt, primary, p, mult * power, false, primaryOpts) === true;
     if (rupture && move.hpRefund) healP(rt, p, Math.floor(hpSpent * move.hpRefund));
     if (!skill && !primary.dead && !MOBS[primary.k].chest && pasOn(p, "hammer_crack")) {
       const ms = pasOn(p, "hammer_hold") ? SKILL.hammer_hold.ms : SKILL.hammer_crack.ms;

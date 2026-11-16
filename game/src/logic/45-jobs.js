@@ -332,7 +332,10 @@ function shotTick(S, rt, dt) {
       if (s.blow) magicLand(S, rt, p, s, o);
       else {
         const zx = o.x, zy = o.y;
-        hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
+        const branded = s.brandK && o.brand > S.now;
+        const coldCrit = branded && s.opt?.sk?.coldCrit && (elementActive(S, o, "chill") || elementActive(S, o, "freeze"));
+        const opt = coldCrit ? { ...s.opt, crit: (s.opt.crit || 0) + s.opt.sk.coldCrit } : s.opt || undefined;
+        hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (branded ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, opt);
         if (s.kind < 2 && deriveStats(p).pfx.blow.length) pfxBlow(S, rt, p, stats(p), o, zx, zy, s.kind === 1);   // a plain or finisher arrow is a basic blow (a skill's volley is not)
       }
       p.hitAct = null;

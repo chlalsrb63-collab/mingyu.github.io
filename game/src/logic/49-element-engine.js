@@ -228,8 +228,15 @@ function elementLight(S, rt, source, target, duration) {
     elementRestore(S, rt, source, max * 0.035);
     return;
   }
-  const reserve = elementActive(S, source, "ward") ? source.ail.ward.amount : 0;
-  elementTimed(S, source, "ward", 2800).amount = Math.max(reserve, Math.max(1, Math.round(max * 0.06)));
+  elementWard(S, source, max * 0.06, 2800);
+}
+
+function elementWard(S, actor, amount, duration) {
+  const ward = actor.ail?.ward;
+  const current = ward?.until > S.now ? ward : null;
+  const next = Math.max(current?.amount || 0, 1, Math.round(amount));
+  if (current && current.amount > Math.round(amount)) return;
+  elementTimed(S, actor, "ward", duration).amount = next;
 }
 
 /** Apply one specified elemental ailment. `dotDamage` overrides the already-resisted damage per tick. */
@@ -274,7 +281,7 @@ function elementApplyHit(S, rt, source, target, parts, options = {}) {
     const forced = type === options.forceAilment;
     if (options.proc === false && !forced) continue;
     const damage = amount * (options.scale ?? 1);
-    if (!(damage > 0) || (type === "physical" && !options.crit)) continue;
+    if (!(damage > 0) || (type === "physical" && !options.crit && !forced)) continue;
     if (type === "dark" && !options.noDarkLeech && source?.hp > 0 && !source.dead) {
       elementRestore(S, rt, source, Math.min(damage * 0.17, elementMaxHp(source) * 0.04));
     }

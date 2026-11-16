@@ -56,6 +56,23 @@ function openSpot(W, r) {
 }
 const dirOf = (i) => [Math.cos((i / AIM_N) * 2 * Math.PI), Math.sin((i / AIM_N) * 2 * Math.PI)];
 
+// A movement correction beside a wall must send standable feet back to the client.
+{
+  const W = world("wall-fix", "meadow");
+  let edge;
+  for (let ty = 2; !edge && ty < W.map.h - 2; ty++) for (let tx = 2; tx < W.map.w - 2; tx++) {
+    const x = tx * T - 4, y = ty * T + 10;
+    if (W.canStand(x - 0.4, y) && !W.canStand(x, y) && !W.gate(x, y)) { edge = [x, y]; break; }
+  }
+  assert.ok(edge, "an east-facing solid boundary");
+  const [x, y] = edge;
+  W.at(x - 0.4, y);
+  assert.ok(W.act({ t: "mv", x, y, d: 2 }).ok);
+  const v = W.step();
+  assert.equal(v.me[5], 1, "the browser must correct the rejected step");
+  assert.ok(W.canStand(...v.me.slice(0, 2)), "wire correction preserves the walkable side of the wall");
+}
+
 // ── 1. all eight facings: 36 px, straight along the aim, one event for the trail ──
 {
   const W = world("eight", "meadow");

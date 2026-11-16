@@ -316,6 +316,7 @@ for (const [id, hand] of CASTS) {
   assert.ok(W.step(150).me[8] & 16, "others see the dance");
   assert.ok(Math.hypot(p.x - b.x, p.y - b.y) < 20, "the marked one first");
   assert.equal(b.mk, 0, "its marks are cashed in");
+  assert.ok(b.ail?.bleed?.until > W.now, "a blink that spends three or more marks causes bleeding");
   assert.equal(W.act({ t: "sk", id: "ambush" }).error, "무영난무 중입니다");
   const vs = run(W, 25);
   assert.equal(fx(vs, p.eid).filter((c) => c === 86).length, 6, "seven blinks in all");
@@ -381,8 +382,10 @@ for (const [id, hand] of CASTS) {
   assert.equal(a.mk, 0, "the marks are spent on the stab");
   assert.equal(p.inert, SK.inertia.max, "the inertia is full");
   assert.ok(fx(vs, p.eid).includes(110));
-  // two blows each (sweep, stab)
-  assert.equal(vs.flatMap((v) => evts(v, "h")).filter((e) => e[1] === a.id).length, 2);
+  // Two blows each (sweep, stab). The first blow's aggro cannot spoil the second blow's flank.
+  const hits = vs.flatMap((v) => evts(v, "h")).filter((e) => e[1] === a.id);
+  assert.equal(hits.length, 2);
+  assert.equal(hits[1][3], 1, "a stab against a target that started unaware is a critical hit");
 }
 // 원소 비수: three elements in one monster set off a reaction there; the ice blade slows; marks
 {
@@ -403,6 +406,7 @@ for (const [id, hand] of CASTS) {
   assert.ok(hurt(near) && hurt(tip));
   assert.ok(near.slow > W.now && !(near.stun > W.now + 500), "the near one only slowed (a hit's flinch at most)");
   assert.ok(tip.stun > W.now + 500 && evts(v, "fz").some((e) => e[1] === tip.id) && evts(v, "tip").some((e) => e[1] === tip.id), "the tip freezes");
+  assert.ok(tip.ail?.freeze?.until > W.now, "the guaranteed tip freeze is visible in the elemental status");
   assert.equal(p.weave && p.weave.e, "i", "the ice is held for a reaction");
 }
 // 메아리 법진: beats, brands, and every other beat the elements meet
@@ -411,7 +415,12 @@ for (const [id, hand] of CASTS) {
   const p = W.p;
   const [m] = W.mobs([[70, 0]]);
   assert.ok(W.act({ t: "sk", id: "runecircle", a: 0 }).ok);
-  const vs = run(W, 62);
+  const circle = W.rt.props.find((o) => o.kind === "rune");
+  p.x = circle.x;
+  p.y = circle.y;
+  const first = run(W, 13);
+  assert.ok(p.ail?.ward?.until > W.now && p.ail.ward.amount > 0, "a reaction wards friends standing in the circle");
+  const vs = first.concat(run(W, 49));
   assert.ok(vs.flatMap((v) => evts(v, "pr")).some((e) => e[2] === "rune"), "the circle stands (prop rune)");
   const beats = vs.flatMap((v) => evts(v, "pp"));
   assert.ok(beats.length >= Math.floor(SK.runecircle.ms / SK.runecircle.every) && beats.every((e) => e[4] >= 1 && e[4] <= 3), "beats carry their element");

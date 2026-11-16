@@ -357,46 +357,46 @@ const SKILL = {
 
   // ── single-job signatures
   verdict: { kind: "j", job: "swordsman", wk: "sword", need: 20, name: "단죄의 일격", mp: 16, hpPct: 0.05, autoHp: 0.35, cd: 36000, r: 70, mult: 1.3, miss: 0.9, inert: 0.1, knock: 20, secondaryDamageType: "fire", fx: 83,
-    desc: "대검전사의 기술 · 불을 두른 대검으로 주변을 벤다. 잃은 HP가 많을수록 강하고(최대 +90%), 쌓인 관성을 모두 터뜨려 관성 1당 피해가 10% 늘어난다." },
-  flurry: { kind: "j", job: "thief", wk: "dagger", need: 20, name: "무영난무", mp: 18, hpPct: 0.035, autoHp: 0.35, cd: 36000, n: 7, every: 220, r: 90, mult: 1.2, per: 0.3, fx: 86,
-    desc: "도적의 기술 · 그림자가 되어 주변의 적 사이를 일곱 번 넘나들며 벤다(표식 있는 적부터, 표식 1개당 +30%). 그동안 피해를 입지 않는다." },
-  dragon: { kind: "j", job: "lancer", wk: "spear", need: 20, name: "뇌룡승천", mp: 17, hpPct: 0.04, autoHp: 0.35, cd: 32000, at: 80, r: 64, pull: 20, n: 3, every: 400, mult: 0.4, fin: 0.8, stun: [1500, 600], el: "l", fx: 89,
-    desc: "창술사의 기술 · 앞쪽에 번개 용의 기둥을 세워 적을 끌어당기고 세 번 몰아친 뒤, 마지막 일격으로 기절시킨다. 번개 원소." },
+    desc: "대검전사의 기술 · 불을 두른 대검으로 주변을 벤다. 잃은 HP가 많을수록 강하고(최대 +90%), 쌓인 관성을 모두 터뜨려 관성 1당 피해가 10% 늘어난다. 관성을 가득 채우면 살아남은 적에게 화상을 남긴다." },
+  flurry: { kind: "j", job: "thief", wk: "dagger", need: 20, name: "무영난무", mp: 18, hpPct: 0.035, autoHp: 0.35, cd: 36000, n: 7, every: 220, r: 90, mult: 1.2, per: 0.3, bleedMarks: 3, fx: 86,
+    desc: "도적의 기술 · 그림자가 되어 주변의 적 사이를 일곱 번 넘나들며 벤다(표식 있는 적부터, 표식 1개당 +30%). 표식을 3개 이상 소모하면 출혈을 남긴다. 그동안 피해를 입지 않는다." },
+  dragon: { kind: "j", job: "lancer", wk: "spear", need: 20, name: "뇌룡승천", mp: 17, hpPct: 0.04, autoHp: 0.35, cd: 32000, at: 80, r: 64, pull: 20, pulsePull: 7, n: 3, every: 400, mult: 0.4, fin: 0.8, stun: [1500, 600], el: "l", fx: 89,
+    desc: "창술사의 기술 · 앞쪽에 번개 용의 기둥을 세워 매 박동 적을 중심으로 끌어당긴 뒤, 마지막 일격으로 기절시킨다. 번개 원소." },
   meteor: { kind: "j", job: "wizard", wk: "staff", need: 20, name: "메테오 스톰", mp: 42, cd: 40000, at: 120, r: 80, n: 6, every: 400, hr: 30, mult: 0.6, chain: 0.35, el: "f", mag: 1, fx: 90,
     desc: "마법사의 기술 · 앞쪽에 운석 여섯 개를 떨어뜨린다. 운석마다 번개가 한 적에게 튀어 원소 반응을 일으킨다." },
   pact: { kind: "j", job: "warlock", wk: "book", need: 20, name: "심연의 계약", mp: 40, cd: 38000, ms: 6000, every: 600, bite: 0.8, r: 80, mult: 2.2, brandK: 0.25, mag: 1, fx: 93,
-    desc: "마도사의 기술 · 6초간 심연의 짐승을 불러낸다. 짐승은 가까운 적을 물어뜯고, 사라질 때 저주를 터뜨린다(낙인 찍힌 적에게 +25%)." },
-  rain: { kind: "j", job: "archer", wk: "bow", need: 20, name: "화살비", mp: 34, cd: 30000, at: 110, r: 70, ms: 3000, every: 300, mult: 0.25, armorPenPct: 25, fx: 96,
-    desc: "궁수의 기술 · 하늘로 쏘아 올린 화살이 3초간 앞쪽에 비처럼 쏟아져 안의 모든 적을 맞히고 느리게 한다." },
+    desc: "마도사의 기술 · 6초간 심연의 짐승을 불러낸다. 짐승은 사거리 안에서 낙인 찍힌 적부터 물어뜯고, 사라질 때 저주를 터뜨린다(낙인 찍힌 적에게 +25%)." },
+  rain: { kind: "j", job: "archer", wk: "bow", need: 20, name: "화살비", mp: 34, cd: 30000, at: 110, r: 70, ms: 3000, every: 300, mult: 0.25, centerK: 1.2, armorPenPct: 25, fx: 96,
+    desc: "궁수의 기술 · 하늘로 쏘아 올린 화살이 3초간 앞쪽에 비처럼 쏟아져 안의 적을 느리게 한다. 중심부에서는 피해가 20% 더 들어간다." },
 
   // ── hybrid signatures (either weapon of the pair)
-  crimson: { kind: "h", job: "spellblade", need: 15, name: "원소 마검: 홍련참", mp: 40, cd: 34000, len: 160, half: 20, mult: 1.6, el: "f", fx: 97,
-    desc: "마검사의 기술 · 불꽃을 두른 검기를 일직선으로 날린다. 맞은 적마다 번개가 겹쳐 과부하 폭발이 일어난다." },
-  traps: { kind: "h", job: "tracker", need: 15, name: "사방의 그림자 덫", mp: 38, cd: 36000, hide: 3000, back: 40, n: 4, ring: 45, ms: 8000, trig: 14, root: 1500, stab: 0.35, shot: 0.45, fx: 98,
-    desc: "추적자의 기술 · 3초간 모습을 감추고(이동 속도 +40%) 뒤로 물러나며, 선 자리 둘레에 그림자 덫 넷을 깐다. 밟은 적은 묶이고, 튀어나온 분신이 세 번 찌르고 두 번 쏜다." },
+  crimson: { kind: "h", job: "spellblade", need: 15, name: "원소 마검: 홍련참", mp: 40, cd: 34000, len: 160, half: 20, mult: 1.6, primedK: 1.15, el: "f", fx: 97,
+    desc: "마검사의 기술 · 불꽃을 두른 검기를 일직선으로 날린다. 맞은 적마다 번개가 겹쳐 과부하 폭발이 일어난다. 이미 화상이나 감전에 걸린 적에서 터진 폭발은 15% 강하다." },
+  traps: { kind: "h", job: "tracker", need: 15, name: "사방의 그림자 덫", mp: 38, cd: 36000, hide: 3000, back: 40, n: 4, ring: 45, ms: 8000, trig: 14, root: 1500, stab: 0.35, splashK: 0.4, shot: 0.45, fx: 98,
+    desc: "추적자의 기술 · 3초간 모습을 감추고(이동 속도 +40%) 뒤로 물러나며, 선 자리 둘레에 그림자 덫 넷을 깐다. 밟은 적은 묶이고, 튀어나온 분신이 세 번 찌르고 두 번 쏜다. 옆에 있던 일반 적에게 독이 퍼진다." },
   dive: { kind: "h", job: "dragoon", need: 15, name: "심연의 강림", mp: 44, cd: 40000, at: 120, ghost: 800, r: 110, mult: 2.0, field: 70, ms: 4000, every: 500, drain: 0.2, heal: 0.3, secondaryDamageType: "dark", mag: 1, fx: 99,
     desc: "용기사의 기술 · 하늘로 솟구쳐(0.8초 무적) 착지하며 번개 충격파로 적을 감전시킨다. 착지 지점에 4초간 어둠 장판을 남기고, 장판이 준 피해의 30%만큼 자신의 HP를 회복한다." },
-  bloodburst: { kind: "h", job: "hexblade", need: 15, name: "혈흔 폭발", mp: 36, cd: 30000, r: 100, root: 1200, base: 0.6, bleed: 0.5, mark: 0.4, brand: 0.6, fx: 100,
-    desc: "주술암살자의 기술 · 주변의 적을 1.2초간 묶은 뒤 피를 터뜨린다 — 방어를 무시하는 고정 피해(공격력의 60% + 출혈 50% + 표식 1개당 40% + 낙인 60%). 표식·출혈·낙인은 사라진다." },
-  sanctuary: { kind: "h", job: "darkknight", need: 15, name: "불멸의 성역", mp: 20, hpCost: 0.2, cd: 45000, r: 90, ms: 8000, every: 1000, guard: 0.25, mult: 0.2, autoHp: 0.6, fx: 102,
-    desc: "암흑기사의 기술 · 현재 HP의 20%를 바쳐 8초간 피의 성역을 편다. 안의 파티원은 받는 피해 -25%, 안의 적은 매초 피해를 입고 그 절반이 가장 다친 파티원을 치유한다." },
+  bloodburst: { kind: "h", job: "hexblade", need: 15, name: "혈흔 폭발", mp: 36, cd: 30000, r: 100, root: 1200, base: 0.95, bleed: 0.55, moreBleed: 0.16, mark: 0.4, brand: 0.6, fx: 100,
+    desc: "주술암살자의 기술 · 주변의 적을 1.2초간 묶은 뒤 피를 터뜨린다 — 물리 방어를 무시하는 출혈 피해(공격력의 95% + 첫 출혈 55% 및 추가 중첩당 16%, 최대 3중첩 + 표식당 40% + 낙인 60%). 표식·출혈·낙인은 사라진다." },
+  sanctuary: { kind: "h", job: "darkknight", need: 15, name: "불멸의 성역", mp: 20, hpCost: 0.2, cd: 45000, r: 90, ms: 8000, every: 1000, guard: 0.25, mult: 0.2, autoHp: 0.6, mendBelow: 0.25, mend: 0.65, fx: 102,
+    desc: "암흑기사의 기술 · 현재 HP의 20%를 바쳐 8초간 피의 성역을 편다. 안의 파티원은 받는 피해 -25%, 안의 적은 매초 피해를 입고 그 피해의 50%만큼 가장 다친 파티원을 치유한다. 대상의 HP가 25% 미만이면 65%를 치유한다." },
   // the hybrid expansion (docs/design/jobs-and-stats.md "Hybrid expansion"): fx 120–128
   crosscut: { kind: "h", job: "bladedancer", need: 15, name: "십자 난도", mp: 36, cd: 32000, r: 64, arc: 100, mult: 1.0, marks: 2, stab: 0.6, per: 0.2, crit: 30, armorPenPct: 25, secondaryDamageType: "bleed", fx: 120,
     desc: "검무사의 기술 · 대검으로 앞을 휩쓸어 표식 둘을 새기고, 단검으로 파고들어 출혈 피해를 더한다(표식 1개당 +20%, 나를 노리지 않던 적에게는 반드시 치명타). 관성이 가득 찬다." },
   elemfan: { kind: "h", job: "trickster", need: 15, name: "원소 비수", mp: 36, cd: 30000, len: 140, half: 12, spread: 18, mult: 0.9, rx: 3, slow: 2000, mag: 1, secondaryDamageType: "dark", fx: 124,
-    desc: "환술사의 기술 · 번개와 어둠이 깃든 비수 셋을 부채꼴로 던져 표식을 남긴다. 비수마다 붙은 불·얼음·번개 문양 중 둘이 한 적에 겹치면 원소 반응이 터진다(적 셋까지). 얼음 문양은 적을 느리게 한다." },
+    desc: "환술사의 기술 · 가운데는 번개, 양쪽은 어둠을 주 피해로 하는 비수를 던져 표식을 남긴다. 비수마다 붙은 불·얼음·번개 문양 중 둘이 한 적에 겹치면 원소 반응이 터진다(적 셋까지). 얼음 문양은 적을 느리게 한다." },
   frostspire: { kind: "h", job: "spellspear", need: 15, name: "빙결창", mp: 36, cd: 30000, len: 150, half: 14, mult: 1.4, far: 0.72, freeze: 1000, r: 44, burst: 1.0, el: "i", fx: 125,
     desc: "마창사의 기술 · 얼음을 두른 창을 일직선으로 내지른다. 맞은 적은 느려지고, 창끝(끝 28%)에 걸린 적은 1초간 얼어붙는다. 창끝이 닿은 자리에서 얼음 기둥이 솟아 주변을 친다. 얼음 원소." },
-  runecircle: { kind: "h", job: "runesage", need: 15, name: "메아리 법진", mp: 46, cd: 45000, at: 80, r: 64, ms: 5000, every: 1000, mult: 0.2, rxK: 0.5, mag: 1, fx: 126,
-    desc: "룬술사의 기술 · 앞쪽에 5초간 룬 법진을 새긴다. 1초마다 안의 적을 치고 낙인을 새기며, 불·얼음·번개가 번갈아 깃들어 두 박동마다 법진 안에서 원소 반응이 메아리친다." },
-  inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.8, per: 2, brandK: 0.4, mag: 1, secondaryDamageType: "dark", fx: 128,
-    desc: "각인궁사의 기술 · 냉기와 어둠을 담은 룬 화살 다섯 대를 부채꼴로 쏜다. 적에게 오한과 낙인을 남기고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 한 적은 최대 두 대까지 맞는다." },
+  runecircle: { kind: "h", job: "runesage", need: 15, name: "메아리 법진", mp: 46, cd: 45000, at: 80, r: 64, ms: 5000, every: 1000, mult: 0.2, rxK: 0.5, ward: 0.03, wardMs: 2400, mag: 1, fx: 126,
+    desc: "룬술사의 기술 · 앞쪽에 5초간 룬 법진을 새긴다. 1초마다 안의 적을 치고 낙인을 새기며, 불·얼음·번개가 번갈아 깃들어 두 박동마다 원소 반응을 일으킨다. 반응이 일어나면 안에 있는 파티원은 2.4초 동안 자기 최대 HP의 3%만큼 보호막을 얻는다." },
+  inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.8, per: 2, brandK: 0.4, coldCrit: 12, mag: 1, secondaryDamageType: "dark", fx: 128,
+    desc: "각인궁사의 기술 · 냉기와 어둠을 담은 룬 화살 다섯 대를 부채꼴로 쏜다. 적에게 오한과 낙인을 남기고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 낙인과 오한 또는 빙결이 함께 걸린 적에게는 치명타 확률이 12%p 높다. 한 적은 최대 두 대까지 맞는다." },
   hammer_stamp: { kind: "a", wk: "hammer", need: 1, name: "쐐기찍기", mp: 3, hpPct: 0.02, autoHp: 0.35, cd: 6000, center: 23, r: 28, wind: 200, mult: 2.55, splashMult: 1, stun: 180, fx: 130,
     desc: "앞쪽을 내려찍어 가장 가까운 적에게 정타를 가하고 두 적까지 충격을 준다. 맞은 일반 적은 잠깐 휘청인다." },
   hammer_fault: { kind: "a", wk: "hammer", need: 10, name: "금맥 벌리기", mp: 5, hpPct: 0.03, autoHp: 0.35, cd: 10000, center: 24, r: 31, wind: 200, mult: 2.85, splashMult: 1.10, crackMult: 1.25, hpRefund: 0.5, fx: 131,
     desc: "해머로 땅을 갈라 세 적까지 맞힌다. 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 25% 늘고 소모한 HP의 절반을 돌려받는다." },
-  hammer_final: { kind: "j", job: "destroyer", wk: "hammer", need: 20, name: "파성추", mp: 10, hpPct: 0.05, autoHp: 0.35, cd: 32000, center: 22, r: 36, wind: 400, mult: 4.5, splashMult: 1.60, crackMult: 1.35, hpRefund: 0.5, brace: 0.25, armorPenPct: 35, fx: 132,
-    desc: "파괴자의 기술. 준비 중 경직이 25% 줄어든다. 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 35% 늘고 소모한 HP의 절반을 돌려받는다." },
+  hammer_final: { kind: "j", job: "destroyer", wk: "hammer", need: 20, name: "파성추", mp: 10, hpPct: 0.05, autoHp: 0.35, cd: 32000, center: 22, r: 36, wind: 400, mult: 4.5, splashMult: 1.60, crackMult: 1.35, hpRefund: 0.5, brace: 0.25, shatter: true, armorPenPct: 35, fx: 132,
+    desc: "파괴자의 기술. 준비 중 경직이 25% 줄어든다. 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 35% 늘고 소모한 HP의 절반을 돌려받으며, 적의 방어구를 파쇄한다." },
   hammer_crack: { kind: "p", wk: "hammer", need: 10, name: "균열 새기기", max: 2, ms: 5000, borrow: ["atk", 4],
     desc: "해머 기본 공격 정타에 맞은 적에게 5초 동안 내 균열을 남긴다. 최대 두 개까지 쌓인다." },
   hammer_brace: { kind: "p", wk: "hammer", need: 20, name: "버팀발", brace: 0.20, borrow: ["poise", 8],
@@ -408,9 +408,9 @@ const SKILL = {
   hammer_heart: { kind: "p", wk: "hammer", need: 50, name: "심철의 파문", bonus: 1.08, borrow: ["critd", 8],
     desc: "해머 기술로 내 균열 두 개를 실제로 터뜨리면 정타 피해가 추가로 8% 늘어난다." },
   ironsiege: { kind: "h", job: "mercenary", need: HYB_WM, name: "철쇄 돌진", mp: 24, cd: 28000, len: 48, half: 11, r: 23, mult: 2.45, sweep: 1.05, armorPenPct: 30, fx: 133,
-    desc: "창으로 열린 길을 따라 전진하고 끝에서 해머를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다." },
-  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, creditMs: 10000, fx: 134,
-    desc: "주변을 내리치고 자신과 반경 88 안의 파티원에게 최대 HP 10% + 성기사 공격력의 30%를 회복시킨다. 회복한 파티원이 10초 안에 처치에 기여하면 성기사도 직업 경험치를 받는다." },
+    desc: "창으로 열린 길을 따라 전진하고 끝에서 해머를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다. 돌진에 맞은 일반 적에게 끌림 상태를 남겨 후속 기술을 연계할 수 있다." },
+  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, creditMs: 10000, wardBelow: 0.35, ward: 0.06, wardMs: 3000, fx: 134,
+    desc: "주변을 내리치고 자신과 반경 88 안의 파티원에게 최대 HP 10% + 성기사 공격력의 30%를 회복시킨다. 회복 전 HP가 35% 미만이면 3초 동안 최대 HP의 6%만큼 보호막도 얻는다. 회복한 파티원이 10초 안에 처치에 기여하면 성기사도 직업 경험치를 받는다." },
   // ── the combo actives (docs/design/skill-combos.md, fx 140–145): mastery 25, after the signatures so a fresh bar keeps them
   cleave: { kind: "a", wk: "sword", need: 25, name: "처형 내려베기", mp: 8, hpPct: 0.03, autoHp: 0.35, cd: 16000, wind: 500, len: 56, half: 18, n: 3, mult: 2.4, eat: { stg: 0.6, air: 0.5, frz: 0.6 }, fx: 140,
     desc: "0.5초 동안 대검을 치켜들었다가 앞의 적 셋까지 내려벤다. 경직된 적 +60%, 공중에 뜬 적 +50%, 얼어붙은 적 +60% — 그 상태는 풀린다." },
@@ -8914,7 +8914,10 @@ function shotTick(S, rt, dt) {
       if (s.blow) magicLand(S, rt, p, s, o);
       else {
         const zx = o.x, zy = o.y;
-        hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (s.brandK && o.brand > S.now ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, s.opt || undefined);
+        const branded = s.brandK && o.brand > S.now;
+        const coldCrit = branded && s.opt?.sk?.coldCrit && (elementActive(S, o, "chill") || elementActive(S, o, "freeze"));
+        const opt = coldCrit ? { ...s.opt, crit: (s.opt.crit || 0) + s.opt.sk.coldCrit } : s.opt || undefined;
+        hurtMob(S, rt, o, p, arrowMult(S, rt, p, s, o) * (branded ? 1 + s.brandK : 1) * (s.kind < 2 ? charmMarkK(S, rt, p, o) : 1), false, opt);
         if (s.kind < 2 && deriveStats(p).pfx.blow.length) pfxBlow(S, rt, p, stats(p), o, zx, zy, s.kind === 1);   // a plain or finisher arrow is a basic blow (a skill's volley is not)
       }
       p.hitAct = null;
@@ -9563,8 +9566,15 @@ function elementLight(S, rt, source, target, duration) {
     elementRestore(S, rt, source, max * 0.035);
     return;
   }
-  const reserve = elementActive(S, source, "ward") ? source.ail.ward.amount : 0;
-  elementTimed(S, source, "ward", 2800).amount = Math.max(reserve, Math.max(1, Math.round(max * 0.06)));
+  elementWard(S, source, max * 0.06, 2800);
+}
+
+function elementWard(S, actor, amount, duration) {
+  const ward = actor.ail?.ward;
+  const current = ward?.until > S.now ? ward : null;
+  const next = Math.max(current?.amount || 0, 1, Math.round(amount));
+  if (current && current.amount > Math.round(amount)) return;
+  elementTimed(S, actor, "ward", duration).amount = next;
 }
 
 /** Apply one specified elemental ailment. `dotDamage` overrides the already-resisted damage per tick. */
@@ -9609,7 +9619,7 @@ function elementApplyHit(S, rt, source, target, parts, options = {}) {
     const forced = type === options.forceAilment;
     if (options.proc === false && !forced) continue;
     const damage = amount * (options.scale ?? 1);
-    if (!(damage > 0) || (type === "physical" && !options.crit)) continue;
+    if (!(damage > 0) || (type === "physical" && !options.crit && !forced)) continue;
     if (type === "dark" && !options.noDarkLeech && source?.hp > 0 && !source.dead) {
       elementRestore(S, rt, source, Math.min(damage * 0.17, elementMaxHp(source) * 0.04));
     }
@@ -12068,7 +12078,8 @@ function hammerTick(S, p, now) {
       cracks.delete(primary);
       mult *= move.crackMult * (pasOn(p, "hammer_heart") ? SKILL.hammer_heart.bonus : 1);
     }
-    critical = hurtMob(S, rt, primary, p, mult * power, false, hitOpts) === true;
+    const primaryOpts = rupture && move.shatter ? { ...hitOpts, forceAilment: "physical" } : hitOpts;
+    critical = hurtMob(S, rt, primary, p, mult * power, false, primaryOpts) === true;
     if (rupture && move.hpRefund) healP(rt, p, Math.floor(hpSpent * move.hpRefund));
     if (!skill && !primary.dead && !MOBS[primary.k].chest && pasOn(p, "hammer_crack")) {
       const ms = pasOn(p, "hammer_hold") ? SKILL.hammer_hold.ms : SKILL.hammer_crack.ms;
@@ -12386,7 +12397,7 @@ function skillProps(S, rt, m, now) {
 /** One beat of a prop. Returns true when it is used up. */
 function propPulse(S, rt, m, p, o, now) {
   const opt = { mag: o.mag, sk: o.sk };
-  const hit = (mob, mult) => hurtMob(S, rt, mob, p, mult, false, opt);
+  const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult, false, more ? { ...opt, ...more } : opt);
   switch (o.kind) {
     case "bolt": {
       // the soul bolt arrives: what it takes, it gives back
@@ -12434,9 +12445,15 @@ function propPulse(S, rt, m, p, o, now) {
       return last;
     }
     case "phantom": {
-      // the beast leaps on the nearest monster near it and bites
+      // The beast follows brands first, then the nearest target within its reach.
       let best = null, bd = o.r;
-      for (const mob of rt.mobs) { if (mob.dead) continue; const d = dist(mob.x, mob.y, o.x, o.y); if (d <= bd) { bd = d; best = mob; } }
+      for (const mob of rt.mobs) {
+        if (mob.dead) continue;
+        const d = dist(mob.x, mob.y, o.x, o.y);
+        if (d > o.r) continue;
+        const branded = mob.brand > now, bestBranded = best?.brand > now;
+        if ((branded && !bestBranded) || (branded === bestBranded && d <= bd)) { bd = d; best = mob; }
+      }
       if (!best) return false;
       const d = bd || 1;
       if (d > 10) { o.x = best.x + ((o.x - best.x) / d) * 10; o.y = best.y + ((o.y - best.y) / d) * 10; }
@@ -12445,7 +12462,11 @@ function propPulse(S, rt, m, p, o, now) {
       return false;
     }
     case "rain":
-      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) { mob.slow = Math.max(mob.slow || 0, now + 1200); hit(mob, o.mult); }
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) {
+        mob.slow = Math.max(mob.slow || 0, now + 1200);
+        const center = dist(mob.x, mob.y, o.x, o.y) <= o.r / 2;
+        hit(mob, o.mult * (center ? o.sk.centerK : 1));
+      }
       return false;
     case "storm":
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
@@ -12469,6 +12490,7 @@ function propPulse(S, rt, m, p, o, now) {
       const last = o.left <= 0, list = mobsWithin(rt, o.x, o.y, o.r);
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y), last ? 1 : 0]);
       for (const mob of list) {
+        if (!last) tug(m, mob, o.x, o.y, o.sk.pulsePull);
         if (last && !MOBS[mob.k].boss && mob.el !== 2) mob.stun = Math.max(mob.stun, now + (mob.el ? o.stun[1] : o.stun[0]));
         hit(mob, last ? o.fin : o.mult);
       }
@@ -12489,7 +12511,7 @@ function propPulse(S, rt, m, p, o, now) {
       const next = rt.mobs.filter((q) => !q.dead && !hitNow.includes(q) && dist(q.x, q.y, x, y) <= 70).sort((a, b) => dist(a.x, a.y, x, y) - dist(b.x, b.y, x, y))[0];
       if (next) {
         rt.ev.push(["ln", 4, Math.round(x), Math.round(y - 6), Math.round(next.x), Math.round(next.y - 6)]);
-        hit(next, o.chain);
+        hit(next, o.chain, { elem: "lightning", secondaryType: null });
         weave(S, rt, p, "l", next.x, next.y, o.k);
       }
       return --o.left <= 0;
@@ -12508,7 +12530,11 @@ function propPulse(S, rt, m, p, o, now) {
         for (const q of mobsWithin(rt, o.x, o.y, sk.pull).filter((q) => q !== mob).slice(0, 2)) if (pullTo(m, q, o.x, o.y)) q.drag = now + DRAG_MS;
         return true;
       }
-      for (const q of mobsWithin(rt, o.x, o.y, o.r + 10)) if (!MOBS[q.k].boss && q.el !== 2) q.stun = Math.max(q.stun, now + o.root * (q.el ? 0.5 : 1));
+      for (const q of mobsWithin(rt, o.x, o.y, o.r + 10)) {
+        if (elementFirm(q)) continue;
+        q.stun = Math.max(q.stun, now + o.root * (q.el ? 0.5 : 1));
+        if (q !== mob) hit(q, o.stab * o.sk.splashK, { elem: "poison", secondaryType: null });
+      }
       for (let j = 0; j < 3; j++) hit(mob, o.stab);
       for (let j = 0; j < 2; j++) hit(mob, o.shot);
       return true;
@@ -12527,17 +12553,19 @@ function propPulse(S, rt, m, p, o, now) {
       return false;
     }
     case "burst": {
-      // the blood they carry bursts: fixed dark damage, no armour turns it; marks, bleeding and brands are spent
+      // The burst spends marks, bleed stacks and brands; bleed resistance still applies.
       const atk = stats(p).atk;
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
       for (const mob of rt.mobs) {
         if (mob.dead || !o.ids.includes(mob.id)) continue;
-        const bleed = (mob.dot && mob.dot.until > now) || elementActive(S, mob, "bleed") ? 1 : 0, br = mob.brand > now ? 1 : 0, mk = marksOf(S, mob);
-        const dmg = Math.max(1, Math.round(atk * (o.base + o.bleed * bleed + o.mark * mk + o.brandK * br) * o.k));
+        const stacks = mob.ail?.bleed?.until > now ? mob.ail.bleed.stacks : +(mob.dot?.until > now);
+        const bleed = stacks ? o.bleed + o.sk.moreBleed * Math.min(stacks - 1, 2) : 0;
+        const br = mob.brand > now ? 1 : 0, mk = marksOf(S, mob);
+        const dmg = Math.max(1, Math.round(atk * (o.base + bleed + o.mark * mk + o.brandK * br) * o.k));
         mob.mk = 0; mob.dot = null; mob.brand = 0;
         elementClear(mob, "bleed");
         wmHit(S, p, mob);
-        dealTypedMob(S, rt, mob, p, dmg, "dark");
+        dealTypedMob(S, rt, mob, p, dmg, o.sk.damageType);
       }
       return true;
     }
@@ -12548,8 +12576,14 @@ function propPulse(S, rt, m, p, o, now) {
       const e = "fil"[o.i++ % 3];
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y), WEAVE_CODE[e]]);
       for (const mob of mobsWithin(rt, o.x, o.y, o.r)) hit(mob, o.mult);
-      if (o.held && o.held !== e) { const key = pairKey(e, o.held); o.held = ""; react(S, rt, p, key, o.x, o.y, o.k * o.rxK); }
-      else o.held = e;
+      if (o.held && o.held !== e) {
+        const key = pairKey(e, o.held);
+        o.held = "";
+        react(S, rt, p, key, o.x, o.y, o.k * o.rxK);
+        for (const q of allies(S, p)) {
+          if (!q.dead && dist(q.x, q.y, o.x, o.y) <= o.r) elementWard(S, q, stats(q).mhp * o.sk.ward, o.sk.wardMs);
+        }
+      } else o.held = e;
       return false;
     }
     case "banner": {
@@ -12575,7 +12609,7 @@ function propPulse(S, rt, m, p, o, now) {
       const list = mobsWithin(rt, o.x, o.y, o.r);
       const got = list.length ? dealt(p, list, () => { for (const mob of list) hit(mob, o.mult); }) : 0;
       const low = inside.sort((a, b) => a.hp / stats(a).mhp - b.hp / stats(b).mhp)[0];
-      if (low && got > 0) healP(rt, low, got * 0.5, HIT_CUE.sanctuary);
+      if (low && got > 0) healP(rt, low, got * (low.hp < stats(low).mhp * o.sk.mendBelow ? o.sk.mend : 0.5), HIT_CUE.sanctuary);
       return false;
     }
   }
@@ -12631,7 +12665,8 @@ function danceStep(S, p, now) {
   rt.ev.push(["a", p.eid, 86, Math.round(mob.x), Math.round(mob.y - 6), p.dir, 2, 1]);
   const n = marksOf(S, mob);
   mob.mk = 0;
-  hurtMob(S, rt, mob, p, dn.mult + dn.per * n, false, { sk: SKILL.flurry });
+  const sk = SKILL.flurry;
+  hurtMob(S, rt, mob, p, dn.mult + dn.per * n, false, { sk, forceAilment: n >= sk.bleedMarks ? "bleed" : undefined });
 }
 /** What a hand keeps track of from moment to moment. */
 function weaponTick(S, p, now) {
@@ -12786,7 +12821,9 @@ function skStrike(S, p, id, k, cost, tgt) {
       for (const o of new Set([...struck, ...passed])) {
         const dx = o.x - ox, dy = o.y - oy, d = Math.hypot(dx, dy);
         if (d && hammerLine(m, ox, oy, dx / d, dy / d, d) < d) continue;
+        const hp = o.hp;
         hit(o, struck.includes(o) ? sk.mult : sk.sweep, { mag: 0 });
+        if (!o.dead && o.hp < hp && passed.includes(o) && !elementFirm(o)) o.drag = now + DRAG_MS;
       }
       break;
     }
@@ -12796,8 +12833,10 @@ function skStrike(S, p, id, k, cost, tgt) {
         const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
         if (!d || hammerLine(m, p.x, p.y, dx / d, dy / d, d) >= d) hit(o, sk.mult, { mag: 1 });
       }
-      for (const ally of members(S, p)) if (ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= sk.healR) {
-        healSupport(rt, p, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal, HIT_CUE.oath, sk.creditMs);
+      for (const ally of members(S, p)) if (!ally.dead && ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= sk.healR) {
+        const maxHp = stats(ally).mhp;
+        if (ally.hp < maxHp * sk.wardBelow) elementWard(S, ally, maxHp * sk.ward, sk.wardMs);
+        healSupport(rt, p, ally, maxHp * sk.heal + st.atk * sk.atkHeal, HIT_CUE.oath, sk.creditMs);
       }
       break;
     }
@@ -12857,7 +12896,12 @@ function skStrike(S, p, id, k, cost, tgt) {
       if (inert) { p.inert = 0; ev(110, p.x, p.y - 6); }
       ev(83, p.x, p.y - 6, sk.r);
       rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 2]);
-      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { const [ux, uy] = aimVec(p, o); knock(m, o, ux, uy, sk.knock); hit(o, sk.mult * (1 + miss) * (1 + sk.inert * inert)); }
+      const ignite = inert >= SKILL.inertia.max ? { forceAilment: "fire" } : undefined;
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        const [ux, uy] = aimVec(p, o);
+        knock(m, o, ux, uy, sk.knock);
+        hit(o, sk.mult * (1 + miss) * (1 + sk.inert * inert), ignite);
+      }
       break;
     }
 
@@ -13207,8 +13251,9 @@ function skStrike(S, p, id, k, cost, tgt) {
       ev(97, ...ahead(far), far);
       for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, far, sk.half)) {
         const x = o.x, y = o.y;
+        const primed = elementActive(S, o, "burn") || elementActive(S, o, "shock");
         hit(o, sk.mult);
-        react(S, rt, p, "fl", x, y, k);
+        react(S, rt, p, "fl", x, y, k * (primed ? sk.primedK : 1));
       }
       break;
     }
@@ -13275,18 +13320,19 @@ function skStrike(S, p, id, k, cost, tgt) {
       // the great blade sweeps and marks; the dagger goes into every one it swept, cashing the marks in
       ev(120, ...ahead(sk.r * 0.5), sk.r);
       const list = mobsWithin(rt, p.x, p.y, sk.r).filter((o) => inArc(p, o, sk.arc));
+      const flanked = new Set(list.filter((o) => o.tgt !== p.pid));
       for (const o of list) { hit(o, sk.mult, { secondaryType: null }); addMarks(S, o, sk.marks); }
       for (const o of list) {
         if (o.dead) continue;
         const n = marksOf(S, o);
         o.mk = 0;
-        hit(o, sk.stab + sk.per * n, o.tgt !== p.pid ? { sure: true } : { crit: sk.crit });
+        hit(o, sk.stab + sk.per * n, flanked.has(o) ? { sure: true } : { crit: sk.crit });
       }
       if (pasOn(p, "inertia")) { p.inert = SKILL.inertia.max; p.inertAt = now; ev(110, p.x, p.y - 6); }
       break;
     }
     case "elemfan": {
-      // Each blade deals lightning and dark damage; its sigil decides the reaction.
+      // The central blade leads with lightning, the outer two lead with dark.
       const a0 = Math.atan2(aimY, aimX), els = ["f", "i", "l"], got = new Map();
       ev(124, ...ahead(40), 3);
       els.forEach((e, j) => {
@@ -13294,7 +13340,7 @@ function skStrike(S, p, id, k, cost, tgt) {
         const far = Math.max(12, reach(m, p.x, p.y, ux, uy, sk.len));
         rt.ev.push(["ln", 7, Math.round(p.x), Math.round(p.y), Math.round(p.x + ux * far), Math.round(p.y + uy * far)]);
         for (const o of mobsInLine(rt, p.x, p.y, ux, uy, far, sk.half)) {
-          hit(o, sk.mult);
+          hit(o, sk.mult, j === 1 ? null : { elem: "dark", secondaryType: "lightning" });
           addMarks(S, o, 1);
           if (e === "i") o.slow = Math.max(o.slow || 0, now + sk.slow);
           if (!got.has(o)) got.set(o, []);
@@ -13314,7 +13360,13 @@ function skStrike(S, p, id, k, cost, tgt) {
         const tip = (o.x - p.x) * aimX + (o.y - p.y) * aimY >= far * sk.far;
         if (tip) {
           rt.ev.push(["tip", o.id]);
-          if (!MOBS[o.k].boss && o.el !== 2) { o.stun = Math.max(o.stun, now + sk.freeze * (o.el ? 0.5 : 1)); o.frz = o.stun; rt.ev.push(["fz", o.id, sk.freeze]); }
+          if (!elementFirm(o)) {
+            const hold = sk.freeze * (o.el ? 0.5 : 1);
+            o.stun = Math.max(o.stun, now + hold);
+            o.frz = Math.max(o.frz || 0, now + hold);
+            elementTimed(S, o, "freeze", Math.max(hold, (o.ail?.freeze?.until || 0) - now));
+            rt.ev.push(["fz", o.id, hold]);
+          }
         }
         o.slow = Math.max(o.slow || 0, now + 3000);
         hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? pasTip(S, rt, p) : null);
@@ -22514,9 +22566,12 @@ export function viewFor(S, pid) {
   if (!p) return null;
   const rt = S.maps[p.map];
   const near = (o) => Math.abs(o.x - p.x) < VIEW_X && Math.abs(o.y - p.y) < VIEW_Y;
+  // The browser adopts these coordinates on corrections and arrival. Keep its feet in the
+  // same integer collision cells as the server's, even when a valid position hugs a wall.
+  const selfPos = p.fix || p.sendMap ? Math.floor : Math.round;
   const out = {
     type: "snap",
-    me: [Math.round(p.x), Math.round(p.y), Math.round(p.hp), Math.round(p.mp), p.dead ? 1 : 0, p.fix ? 1 : 0, p.dir, p.sit ? 1 : 0, flagsOf(p, S.now), crValue(p, S.now), p.aim | 0, dashLeft(S, p)],
+    me: [selfPos(p.x), selfPos(p.y), Math.round(p.hp), Math.round(p.mp), p.dead ? 1 : 0, p.fix ? 1 : 0, p.dir, p.sit ? 1 : 0, flagsOf(p, S.now), crValue(p, S.now), p.aim | 0, dashLeft(S, p)],
     P: [], M: [], D: [], F: [],
   };
   // me[12] / a P row's [9]: the carry code (58-life.js carryOf), only while something is held
