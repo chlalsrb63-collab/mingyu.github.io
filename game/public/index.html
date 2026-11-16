@@ -462,9 +462,16 @@
 
     <!-- ── title, account, servers (lobby.js) ──────────── -->
     <div id="studio-intro" role="dialog" aria-modal="true" aria-label="스튜디오 고구마 인트로" hidden>
-      <video id="studio-intro-video" playsinline muted preload="none" aria-label="스튜디오 고구마 인트로 영상"></video>
+      <div class="studio-intro-stage">
+        <video id="studio-intro-video" playsinline muted preload="none" aria-label="스튜디오 고구마 인트로 영상"></video>
+        <div id="studio-intro-standby">
+          <b>스튜디오 고구마</b>
+          <small id="studio-intro-status" role="status"></small>
+        </div>
+      </div>
       <div class="studio-intro-controls">
-        <button type="button" id="studio-intro-sound" class="btn" aria-pressed="false">소리 켜기</button>
+        <button type="button" id="studio-intro-play" class="btn gold" hidden>영상 재생</button>
+        <button type="button" id="studio-intro-sound" class="btn" aria-pressed="false" hidden>소리 켜기</button>
         <button type="button" id="studio-intro-skip" class="btn gold">건너뛰기</button>
       </div>
     </div>

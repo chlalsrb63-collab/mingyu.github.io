@@ -100,11 +100,12 @@ export function init(ctx) {
 }
 
 function playStudioIntro(overlay) {
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
   const video = $("#studio-intro-video"), skip = $("#studio-intro-skip"), sound = $("#studio-intro-sound");
+  const play = $("#studio-intro-play"), standby = $("#studio-intro-standby"), status = $("#studio-intro-status");
   const title = $("#title");
   const listeners = new AbortController();
   const { signal } = listeners;
+  let timeout;
   const finish = () => {
     if (overlay.hidden) return;
     const focusWasInside = overlay.contains(document.activeElement);
@@ -115,11 +116,37 @@ function playStudioIntro(overlay) {
     video.pause();
     if (focusWasInside) $("#t-press").focus({ preventScroll: true });
   };
-  // Limit time on the overlay even when a stalled or unavailable video never fires `ended`.
-  const timeout = setTimeout(finish, 6500);
+  const limit = (ms) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(finish, ms);
+  };
+  const offerPlay = () => {
+    clearTimeout(timeout);
+    status.textContent = "";
+    play.hidden = false;
+    play.focus({ preventScroll: true });
+  };
+  const begin = () => {
+    play.hidden = true;
+    status.textContent = "영상을 불러오는 중";
+    skip.focus({ preventScroll: true });
+    limit(6500);
+    if (!video.getAttribute("src")) video.src = "./assets/intro/studio-goguma.mp4";
+    video.play().catch((err) => {
+      if (overlay.hidden) return;
+      if (err.name === "NotAllowedError") offerPlay(); else finish();
+    });
+  };
+  video.addEventListener("playing", () => {
+    standby.hidden = true;
+    sound.hidden = false;
+    const remaining = (video.duration - video.currentTime) * 1000;
+    limit(Number.isFinite(remaining) ? Math.max(0, remaining) + 4000 : 6500);
+  }, { signal });
   video.addEventListener("ended", finish, { signal });
   video.addEventListener("error", finish, { signal });
   skip.addEventListener("click", finish, { signal });
+  play.addEventListener("click", begin, { signal });
   sound.addEventListener("click", () => {
     video.muted = !video.muted;
     sound.setAttribute("aria-pressed", String(!video.muted));
@@ -130,10 +157,8 @@ function playStudioIntro(overlay) {
   }, { signal });
   title.inert = true;
   overlay.hidden = false;
-  skip.focus({ preventScroll: true });
   video.muted = true;
-  video.src = "./assets/intro/studio-goguma.mp4";
-  video.play().catch(finish);
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) offerPlay(); else begin();
 }
 
 /** Show one of the lobby's screens (or none: "game"). */
