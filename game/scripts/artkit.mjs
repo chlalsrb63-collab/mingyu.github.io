@@ -3,7 +3,7 @@
 // PNG reader/writer (RGBA, 8 bits per channel). Pure node; works on Windows.
 import { createServer } from "node:http";
 import { readFile, stat } from "node:fs/promises";
-import { join, dirname, extname, normalize, sep } from "node:path";
+import { join, resolve, dirname, extname, normalize, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { inflateSync, deflateSync } from "node:zlib";
 
@@ -36,8 +36,17 @@ export async function launch(channel) {
   try {
     ({ chromium } = await import("playwright"));
   } catch {
-    console.error("playwright is not installed. In game/: npm install   (then once: npx playwright install chromium)");
-    process.exit(2);
+    // a git worktree has no node_modules of its own: use the main checkout's (the parent of the shared .git dir)
+    try {
+      const { execFileSync } = await import("node:child_process");
+      const { pathToFileURL } = await import("node:url");
+      const common = execFileSync("git", ["rev-parse", "--git-common-dir"], { encoding: "utf8" }).trim();
+      const main = resolve(common, "..", "game", "node_modules", "playwright", "index.mjs");
+      ({ chromium } = await import(pathToFileURL(main).href));
+    } catch {
+      console.error("playwright is not installed. In game/: npm install   (then once: npx playwright install chromium)");
+      process.exit(2);
+    }
   }
   const tries = channel ? [{ channel: String(channel) }] : [{}, { channel: "msedge" }, { channel: "chrome" }];
   let last;
