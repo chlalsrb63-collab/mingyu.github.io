@@ -12,7 +12,7 @@
 /** Achievement counters live in `ch.cnt` (jobs-and-stats J1 moved them from `ch.st`): every rift counter goes through here. */
 const dimCnt = (ch) => ch.cnt;
 /** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
-const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), 10, TIER_MAX - 1);
+const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), DIM.minTier, TIER_MAX - 1);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 function dimHk(n, lv, mlv) {
   const [mid, width, trim] = DIM.hpMid;
@@ -775,7 +775,7 @@ function dimSelf(p) {
 function dimDefs() {
   return {
     themes: Object.fromEntries(Object.keys(DIM_THEMES).map((k) => [k, DIM_THEMES[k].name])), pylons: DIM.pylons, limit: DIM.limit, party: DIM.party, max: DIM.max,
-    rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near,
+    rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near, minLv: shownLv(DIM.minTier),
     // the 3-floor raid and the boss challenge: [key, name, level needed, the marked cast, pattern names, steps [[level shown, level needed]…], weekly reward bit, rotating 0/1]
     raid: { floors: DIM.floors, daily: DIM.dailyFull, downMs: DIM.downMs, names: DIM_FLOORS.map((c) => c.name) },
     chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0]), stepNames: DIM_CHAL.stepNames,

@@ -137,6 +137,7 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #chat-log p.npc { color: var(--tx2, #e8dcb0); } #chat-log p.npc .who { color: var(--tx-gold, #e2c486); } #chat-log p.party .who { color: var(--tx-info, #8fd0ff); }
 #talk-more { margin-top: 8px; }
 #chat-log .sys { color: var(--tx-hd, var(--b-hi)); }
+#chat-log .guide { color: var(--tx-guide, #7ff0d8); }   /* the periodic <Guide> tips (guide.js): mint, apart from the system gold */
 #chat-log .loot { color: var(--tx2, #b8c4d4); }
 #chat-log .err { color: var(--tx-bad, #ff9a9a); }
 #chat-log .guild { color: var(--tx-ok, #9af0ae); }
@@ -1770,7 +1771,7 @@ body[data-hud="linen"] :is(#hud, #tip, #windows, #dead, #info, #mirror) {
   --b-hi: #fbf1d8; --b-mid: #c9a878; --b-lo: #8c6a44; --b-sh: #5e4429; --b-w: #fffaf0; --b-m: #e2c898;
   --sf0: #8c7456; --sf1: #e2d4b6; --sf2: #b9a07a; --sf3: #d3c3a0; --sf4: #f4ebd6; --sf4h: #fbf5e6; --sf5: #fffbf2; --rim: #a88a5e;
   --cream: #3b2a1a; --tx: #3b2a1a; --tx2: #554230; --tx3: #6a563e; --tx-hd: #74480e; --tx-hd2: #80561e;
-  --tx-gold: #7c5206; --tx-ok: #2c6a32; --tx-bad: #a3302a; --tx-info: #2c578a; --tx-pink: #8e3479;
+  --tx-gold: #7c5206; --tx-ok: #2c6a32; --tx-bad: #a3302a; --tx-info: #2c578a; --tx-pink: #8e3479; --tx-violet: #6a3aa8; --tx-guide: #0c7466;
   --text: #3b2a1a; --muted: #6a563e; --gold: #74480e; --gold-hi: #5a3608; --line: rgba(110, 80, 40, .35); --line-hi: rgba(110, 80, 40, .7); --well: #e4d7bb;
 }
 /* 모래 크림: warm sand and cream, caramel brass */
@@ -1779,7 +1780,7 @@ body[data-hud="sand"] :is(#hud, #tip, #windows, #dead, #info, #mirror) {
   --b-hi: #fff3cf; --b-mid: #d4a85e; --b-lo: #9a6a32; --b-sh: #6a4420; --b-w: #fffbe8; --b-m: #ecc77e;
   --sf0: #957448; --sf1: #e5d0a2; --sf2: #c4a26a; --sf3: #dbc592; --sf4: #f7eaca; --sf4h: #fff5dc; --sf5: #fffbea; --rim: #b08a50;
   --cream: #422d15; --tx: #422d15; --tx2: #5a4020; --tx3: #6e5430; --tx-hd: #84440a; --tx-hd2: #8e5618;
-  --tx-gold: #7e5000; --tx-ok: #2e6a2c; --tx-bad: #a52e22; --tx-info: #2a5688; --tx-pink: #8c3274;
+  --tx-gold: #7e5000; --tx-ok: #2e6a2c; --tx-bad: #a52e22; --tx-info: #2a5688; --tx-pink: #8c3274; --tx-violet: #68359f; --tx-guide: #0c6e60;
   --text: #422d15; --muted: #6e5430; --gold: #84440a; --gold-hi: #5e3204; --line: rgba(120, 80, 30, .35); --line-hi: rgba(120, 80, 30, .7); --well: #e8d4aa;
 }
 /* 올리브 차: sage-beige panels, olive bronze */
@@ -1788,7 +1789,7 @@ body[data-hud="olive"] :is(#hud, #tip, #windows, #dead, #info, #mirror) {
   --b-hi: #f4f2d8; --b-mid: #aaa66e; --b-lo: #6c6b3e; --b-sh: #474827; --b-w: #fdfdf0; --b-m: #ccc890;
   --sf0: #7a7b58; --sf1: #d3d4b4; --sf2: #a8a984; --sf3: #c6c8a4; --sf4: #efefdc; --sf4h: #f7f7ea; --sf5: #fdfdf4; --rim: #8f8e62;
   --cream: #2c3020; --tx: #2c3020; --tx2: #434832; --tx3: #565b42; --tx-hd: #5a560e; --tx-hd2: #66641e;
-  --tx-gold: #6a5606; --tx-ok: #2a642a; --tx-bad: #993224; --tx-info: #2a5678; --tx-pink: #82326a;
+  --tx-gold: #6a5606; --tx-ok: #2a642a; --tx-bad: #993224; --tx-info: #2a5678; --tx-pink: #82326a; --tx-violet: #623494; --tx-guide: #0a6656;
   --text: #2c3020; --muted: #565b42; --gold: #5a560e; --gold-hi: #424008; --line: rgba(80, 84, 40, .35); --line-hi: rgba(80, 84, 40, .7); --well: #d6d7ba;
 }
 /* 밤 모카: dark roast brown for night play, beige text, copper brass */
@@ -1974,3 +1975,26 @@ body[data-lay="full"].playing :is(#w-skill, #w-life, #w-alba, #w-charm, #w-troph
 #w-achieve { --fw: 480px; } #w-collect { --fw: 520px; } #w-dex { --fw: 600px; } #w-settings { --fw: 420px; } #w-help { --fw: 520px; }
 #w-char { --fw: 360px; } #w-quest { --fw: 580px; } #w-party { --fw: 310px; } #w-guild { --fw: 310px; } #w-daily { --fw: 360px; } #w-week { --fw: 380px; }
 body[data-lay="full"].playing #w-dex:not(.docked) { height: var(--win-h); }
+
+/* ── 도움말 (help.js, helptext.js): a search box over a topic list and the text. The list is a column when the window is wide
+   (the floating one), a row of chips when it is not (the docked side panel, a phone). The chips and the search box are the
+   아이템도감's (.dx-chip, .dx-q); colours come from the theme variables, the four mark colours are the NPC marks' (overlay.js). ── */
+#help-body { container-type: inline-size; font: var(--t12)/1.5 var(--pix); }
+#help-body .dx-q { margin-bottom: 5px; }
+.hp-nav { display: flex; flex-wrap: wrap; gap: 3px; margin-bottom: 6px; }
+.hp-t { text-align: left; }
+.hp-text h3 { margin: 0 0 4px; font: 700 var(--t12)/1.4 var(--pix); color: var(--tx-hd, var(--b-hi)); }
+.hp-s { margin: 0 0 5px; padding: 3px 6px 4px; background: var(--sf1, #1c1726); border: 2px solid var(--sf3, #2c2537); border-left: 4px solid var(--b-mid, #cf9f55); }
+.hp-s h4 { margin: 0 0 2px; font: 700 var(--t12)/1.4 var(--pix); color: var(--tx-gold, #e2c486); }
+.hp-s h4 small { margin-right: 5px; padding: 1px 4px; color: var(--tx3, #9a90a8); background: var(--sf2, #231d30); border: 2px solid var(--sf3, #2c2537); }
+.hp-l { margin: 1px 0; padding-left: 12px; text-indent: -12px; color: var(--tx, #e8dcc0); word-break: keep-all; overflow-wrap: anywhere; }
+.hp-l::before { content: "◆"; display: inline-block; width: 12px; text-indent: 0; color: var(--b-mid, #cf9f55); font-size: var(--t10); }
+.hp-l.hit { background: var(--sf3, #2a2433); box-shadow: 0 0 0 2px var(--sf3, #2a2433); }
+.hp-l b { color: var(--tx-hd, var(--b-hi)); font-weight: 700; }
+.hp-l b.hp-y { color: var(--tx-gold, #ffe070); } .hp-l b.hp-b { color: var(--tx-info, #7ab8ff); }
+.hp-l b.hp-g { color: var(--tx-ok, #5ee07a); } .hp-l b.hp-p { color: var(--tx-violet, #c77dff); }
+.hp-k { display: inline-block; min-width: 14px; margin: 0 1px; padding: 1px 3px; text-align: center; text-indent: 0; font: 700 var(--t10)/1.2 var(--pix9); color: var(--tx-hd, var(--b-hi)); background: var(--scr); border: 2px solid var(--ink); }
+@container (min-width: 440px) {
+  .hp-main { display: grid; grid-template-columns: 124px minmax(0, 1fr); gap: 8px; align-items: start; }
+  .hp-nav { position: sticky; top: 0; flex-direction: column; margin: 0; }
+}

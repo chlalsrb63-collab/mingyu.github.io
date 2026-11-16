@@ -60,6 +60,7 @@ import { resize, world, $, G, el, $$, now } from "./state.js";
 import { act, entityPos, connect, disconnect, stopGame, channel, ws, setupNet } from "./net.js";
 import { pathTo, setupInput, toggleAuto, walkToDoor } from "./input.js";
 import * as Track from "./track.js";
+import * as Guide from "./guide.js";
 import * as PMenu from "./pmenu.js";
 import * as SX from "./sxwin.js";
 import { update } from "./update.js";
@@ -95,6 +96,7 @@ for (const b of $$("#menu button")) { const g = MENU_ICON[b.dataset.win || b.id.
 $("#b-auto").prepend(iconImg(MENU_ICON.auto));
 setupInput();
 Track.setup();                                   // the 추적 line's [취소] (track.js)
+Guide.setup();                                   // 설정 → 게임 → 가이드 메시지 (guide.js)
 PMenu.setup(); SX.setup();                       // the player menu, 따라가기, requests, trade, 가위바위보
 setupWindows({ walkToDoor });
 setupItems();
@@ -133,6 +135,7 @@ function frame() {
     update(dt, t);
     Gather.tick(t);
     Coop.tick(t);
+    Guide.tick();                                // a <Guide> tip in the chat when one is due (guide.js)
     PMenu.tick(t); SX.tick(t);
     render(t, dt);
     Radar.draw(t);

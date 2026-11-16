@@ -31,6 +31,7 @@ import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
 import * as Trophies from "./trophies.js";
 import * as Dex from "./dex.js";
+import * as Help from "./help.js";
 import * as Track from "./track.js";
 import * as Info from "./infocard.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
@@ -290,7 +291,7 @@ export function refreshUi() {
   draw("train", () => [s.xp, s.xpt, s.nx, s.rs, s.sw, s.lvl, s.gold, s.respecCost, s.inv.length,
     s.inv.some((item) => item.id === G.defs.jf.respecItem), near, StatWin.trainerKey()],
   (s) => StatWin.renderTrainer($("#train-body"), s, { atTrainer: near === "train" }));
-  draw("help", () => [s.job, s.name], (s) => JobTree.fillHelp($("#help-wp"), s));
+  draw("help", Help.key, Help.render);             // 도움말: topics, sections, search (help.js, helptext.js)
   draw("job", () => [s.job, s.wm, s.gold, near, JobTree.key()], (s) => JobTree.renderJobNpc($("#job-body"), s, { atJob: near === "job" }));
   draw("bank", () => [s.inv, s.wh, s.gold], Growth.renderBank);
   draw("quest", () => [s.q, s.bq, s.bn, s.mk, s.lvl, near, G.qsel, s.sq], renderQuest);

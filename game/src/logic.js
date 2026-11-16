@@ -4182,7 +4182,7 @@ const DIM = {
   // 하강의 문 (everyone inside goes down after `downMs`, sooner once all standing stepped within `downR`); floor 3's 100%
   // wakes the final boss in its hall at the far end. Per floor: monster health and blows ×, pack leaders made elite,
   // elite traits; `boss` the final boss's traits.
-  floors: 3, downMs: 10000, downR: 16, ckR: 12, hallR: 30,   // (ckR: the fallen get up this many steps short of the final boss's hall; hallR: 균열의 문 opens past this)
+  floors: 3, minTier: 10, downMs: 10000, downR: 16, ckR: 12, hallR: 30,   // (minTier: the lowest world tier a raid is made for = Lv.37 shown, defs().dim.minLv; ckR: the fallen get up this many steps short of the final boss's hall; hallR: 균열의 문 opens past this)
   floor: [{ hp: 1, atk: 1, elites: 0, traits: 1 }, { hp: 1.1, atk: 1.03, elites: 1, traits: 1 }, { hp: 1.2, atk: 1.06, elites: 1, traits: 1, boss: 2 }],
   emptyMs: 20000, portalMs: 90000, failMs: 8000, memberMs: 180000, rcMs: 20000, near: 80,
   // the gauge: a kill, an elite (guardians too), an orb an elite leaves behind, each × `gK` percent — fixed, so 100% takes
@@ -15205,7 +15205,7 @@ const socialDefs = () => ({
 /** Achievement counters live in `ch.cnt` (jobs-and-stats J1 moved them from `ch.st`): every rift counter goes through here. */
 const dimCnt = (ch) => ch.cnt;
 /** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
-const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), 10, TIER_MAX - 1);
+const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), DIM.minTier, TIER_MAX - 1);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 function dimHk(n, lv, mlv) {
   const [mid, width, trim] = DIM.hpMid;
@@ -15968,7 +15968,7 @@ function dimSelf(p) {
 function dimDefs() {
   return {
     themes: Object.fromEntries(Object.keys(DIM_THEMES).map((k) => [k, DIM_THEMES[k].name])), pylons: DIM.pylons, limit: DIM.limit, party: DIM.party, max: DIM.max,
-    rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near,
+    rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near, minLv: shownLv(DIM.minTier),
     // the 3-floor raid and the boss challenge: [key, name, level needed, the marked cast, pattern names, steps [[level shown, level needed]…], weekly reward bit, rotating 0/1]
     raid: { floors: DIM.floors, daily: DIM.dailyFull, downMs: DIM.downMs, names: DIM_FLOORS.map((c) => c.name) },
     chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0]), stepNames: DIM_CHAL.stepNames,

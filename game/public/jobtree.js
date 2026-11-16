@@ -219,7 +219,7 @@ export function renderWeapons(box, s, { skills }) {
   box.append(list);
   box.append(legend());
 }
-/** One line under the rows: what the chips are (the long explanation is in the H window, `fillHelp`). */
+/** One line under the rows: what the chips are (the long explanation is the H window's 직업과 숙련 topic, helptext.js). */
 function legend() {
   const l = el("p", "wp-legend");
   const a = el("span", "chip"), b = el("span", "chip pas"), c = el("span", "chip sig off"), n = el("span", "chip off");
@@ -227,11 +227,6 @@ function legend() {
   n.append(el("i", "", "10"));
   l.append(a, " 스킬 ", b, " 패시브 ", c, " 직업 전용기 ", n, " 숫자 = 배우는 숙련 · 자세한 설명은 ", el("kbd", "", K("help")));
   return l;
-}
-/** The skill window's explanation, for the H window's `#help-wp` paragraph (text moved out of the K window). */
-export function fillHelp(p, s) {
-  const d = D(), job = d.jobs[s.job];
-  p.textContent = `스킬은 무기에 딸려 있습니다: 숙련 1과 10에 하나씩, 10에 패시브, 숙련 ${d.jobWm}에 전직하면 그 직업의 기술${d.hybWm ? ` (두 무기를 ${d.hybWm}씩 다루면 두 갈래 직업)` : ""}. 숙련은 그 무기를 들고 싸우면 오르고, 오를 때마다 그 무기 공격력이 1%씩 붙습니다.${job && job.kind === "hybrid" ? ` ${K("swap")}으로 두 무기를 바꿔 듭니다.` : ""}`;
 }
 
 // ── 전직의 길 ──

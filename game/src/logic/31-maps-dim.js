@@ -20,7 +20,7 @@ const DIM = {
   // 하강의 문 (everyone inside goes down after `downMs`, sooner once all standing stepped within `downR`); floor 3's 100%
   // wakes the final boss in its hall at the far end. Per floor: monster health and blows ×, pack leaders made elite,
   // elite traits; `boss` the final boss's traits.
-  floors: 3, downMs: 10000, downR: 16, ckR: 12, hallR: 30,   // (ckR: the fallen get up this many steps short of the final boss's hall; hallR: 균열의 문 opens past this)
+  floors: 3, minTier: 10, downMs: 10000, downR: 16, ckR: 12, hallR: 30,   // (minTier: the lowest world tier a raid is made for = Lv.37 shown, defs().dim.minLv; ckR: the fallen get up this many steps short of the final boss's hall; hallR: 균열의 문 opens past this)
   floor: [{ hp: 1, atk: 1, elites: 0, traits: 1 }, { hp: 1.1, atk: 1.03, elites: 1, traits: 1 }, { hp: 1.2, atk: 1.06, elites: 1, traits: 1, boss: 2 }],
   emptyMs: 20000, portalMs: 90000, failMs: 8000, memberMs: 180000, rcMs: 20000, near: 80,
   // the gauge: a kill, an elite (guardians too), an orb an elite leaves behind, each × `gK` percent — fixed, so 100% takes

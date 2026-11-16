@@ -715,6 +715,7 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   const now22 = L.newChar("새기록", []); Object.assign(now22.dim, { best: 3, ms: 540000, wb: 1, wk: 7 });
   L.addPlayer(S, "o22", now22);
   assert.deepEqual(S.players.o22.ch.dim, { ...fresh, best: 3, ms: 540000, wb: 1, wk: 7 }, "a v22 sheet keeps its record");
+  assert.equal(L.defs().dim.minLv, 4 * D.minTier - 3, "defs().dim.minLv: the lowest level a raid is made for (the help window and the guide tips read it)");
   const rewardMask = L.defs().dim.chal.bosses.reduce((mask, boss) => mask | boss[6], 0);
   assert.deepEqual(X.dimClean({ t: 50, best: 3, ms: 9e9, wb: 99, bw: 99, wk: -3 }), { ...fresh, best: 3, ms: D.limit, wb: 1, bw: rewardMask }, "records and weekly flags are clamped");
   assert.deepEqual(X.dimClean({ t: "x", best: 5000, ms: 1234 }), { ...fresh, best: 3, ms: 1234 });

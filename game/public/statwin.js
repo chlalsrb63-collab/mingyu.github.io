@@ -21,7 +21,8 @@ export function init(deps) { C = deps; }
 const ST = ["str", "wil", "dex", "int", "wis", "luk"];
 /** The glyph and ink of each stat (also the C window's 장비 tab). */
 export const STAT_GLYPH = { str: ["fist", "#ff9a6a"], wil: ["heart", "#f07a8a"], dex: ["feather", "#9af0ae"], int: ["burst", "#8ab8ff"], wis: ["eye", "#c8a0ff"], luk: ["clover", "#ffe070"] };
-const CAP = 99, BATCH = 50, SOFT = [40, 60];
+export const CAP = 99, SOFT = [40, 60];   // (the help window reads both)
+const BATCH = 50;
 /** The derived list: [key, name, value of self]. */
 const DERIVED = [
   ["atk", "공격력", (s) => s.atk], ["mhp", "HP", (s) => s.mhp], ["mmp", "MP", (s) => s.mmp], ["def", "방어", (s) => s.def],
