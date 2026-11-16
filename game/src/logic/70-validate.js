@@ -54,7 +54,10 @@ export function validateAction(S, pid, a) {
   // charms keep to their own ways (66-charms.js)
   const cg = charmGuard(ch, a);
   if (cg) return bad(cg);
+  // a 일일 아르바이트 shift (66-alba.js): the hero stays at the counter
+  if (p.ab && !a.t.startsWith("ab_") && !ALBA_OK.has(a.t)) return bad("아르바이트 중에는 할 수 없습니다");
   switch (a.t) {
+    case "ab_start": case "ab_act": case "ab_leave": case "ab_close": return albaValidate(S, p, a);
     case "nw": return p.npcWhereAt === undefined || now >= p.npcWhereAt ? OK : bad("잠시 뒤 주민 위치를 다시 확인하세요");
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");

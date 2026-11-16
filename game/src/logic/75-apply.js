@@ -17,7 +17,7 @@ export function applyAction(S, pid, a) {
   switch (a.t) {
     case "nw": p.npcWhereAt = now + 5000; p.npcWhere = true; break;
     case "mv": {
-      if (p.dance || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; break; }
+      if (p.dance || p.ab || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; break; }
       const dt = clamp(now - p.mvAt, 0, 600);
       p.mvAt = now;
       const max = (stats(p).spd * dt) / 1000 * 1.6 + 8;
@@ -695,6 +695,7 @@ export function applyAction(S, pid, a) {
     case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": charmApply(S, p, a); break;
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": coopApply(S, p, a); break;
+    case "ab_start": case "ab_act": case "ab_leave": case "ab_close": albaApply(S, p, a); break;
     case "fair_buy": fairApply(S, p, a); break;
     case "fair_open": case "fair_shop": fairMktApply(S, p, a); break;
     // player to player: requests, trade, mini-games (69-social-play.js)

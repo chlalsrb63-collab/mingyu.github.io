@@ -81,6 +81,8 @@ export function newChar(name, look, wk) {
     runeWardAt: 0,
     // 버드나무 장날 (v26, 63-festival.js): the 장날 토큰 purse and today's tokens and best pan score
     fair: fairFresh(),
+    // 일일 아르바이트 (66-alba.js): today's paid games and the best scores (no sheet version bump: a missing one starts fresh)
+    ab: albaFresh(),
     // the 장날 merchants' goods bought on the latest fair day (v27, 64-fair-market.js): { [KST day]: [product ids] }
     fairBuy: {},
     // social and the weekly book (v14, 63-social-weekly.js): blk (blocked names), pity (enhancement gauge), wk
@@ -269,6 +271,7 @@ function migrate(ch) {
   ch.fair = fairClean(ch.fair);
   // the 장날 merchants' purchases (v27): the newest fair day's product ids only (64-fair-market.js)
   ch.fairBuy = fairBuyClean(ch.fairBuy);
+  ch.ab = albaClean(ch.ab);
   ch.v = Math.max(ch.v | 0, SHEET_VERSION);
   return ch;
 }

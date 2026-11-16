@@ -26,6 +26,7 @@ import * as Gather from "./gather.js";
 import * as Radar from "./radar.js";
 import * as Housing from "./housing.js";
 import * as Coop from "./coop.js";
+import * as Alba from "./alba.js";
 import * as SX from "./sxwin.js";
 import { setJobDefs } from "./jobpal.js";
 import { G, el, $, resize, $$, tg, text, now, T } from "./state.js";
@@ -308,6 +309,7 @@ function onSnap(s) {
   Dim.onSnap(s);                               // 레이드던전: HUD, ready check, shrines and orbs (dimrift.js)
   Housing.onSnap(s);                           // a house of one's own: its bar, the ghost, the windows (housing.js)
   Coop.onSnap(s);                              // 협동 아르바이트: cj C cr (coop.js)
+  Alba.onSnap(s);                              // 일일 아르바이트: ab (alba.js)
   SX.onSnap(s);                                // sx: a request for me, the trade window, 가위바위보 (sxwin.js)
   hudBars();
 }

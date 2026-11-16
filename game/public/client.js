@@ -54,6 +54,7 @@ import * as Life from "./life.js";
 import * as Gather from "./gather.js";
 import * as Board from "./board.js";
 import * as Coop from "./coop.js";
+import * as Alba from "./alba.js";
 import * as Charms from "./charms.js";
 import * as Info from "./infocard.js";
 import { resize, world, $, G, el, $$, now } from "./state.js";
@@ -137,6 +138,7 @@ function frame() {
     update(dt, t);
     Gather.tick(t);
     Coop.tick(t);
+    Alba.tick(t);                                // the 일일 아르바이트 window's clock and stage (alba.js)
     Guide.tick();                                // a <Guide> tip in the chat when one is due (guide.js)
     PMenu.tick(t); SX.tick(t);
     render(t, dt);

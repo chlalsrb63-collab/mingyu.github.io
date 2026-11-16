@@ -921,6 +921,12 @@ const SFX = {
   die_small() { this.tone(0.25, 420, 90, 0.16, 0.1); this.noise(0.1, 0.09, 1200, "bandpass", 0.02); },
   die_big() { this.tone("sawtooth", 220, 45, 0.4, 0.13); this.noise(0.3, 0.18, 1800, "lowpass", 0, 150); },
   die_boss() { this.tone("sawtooth", 160, 30, 1.4, 0.16); this.noise(1.2, 0.26, 2400, "lowpass", 0, 80); this.arp("triangle", [392, 330, 262, 196], 0.18, 0.4, 0.1, 0.3); },
+  /** 일일 아르바이트 (alba.js): a good move, a big one, a slip, a fever, the last ten seconds. */
+  alba_ok() { this.tone("square", 520, 780, 0.07, 0.06); },
+  alba_big() { this.tone("square", 660, 1100, 0.12, 0.07); this.tone("square", 990, 1320, 0.14, 0.05, 0.07); },
+  alba_bad() { this.tone("sawtooth", 210, 110, 0.14, 0.09); },
+  alba_fever() { this.tone("square", 440, 880, 0.1, 0.06); this.tone("square", 660, 1320, 0.1, 0.06, 0.08); this.tone("square", 880, 1760, 0.16, 0.06, 0.16); },
+  alba_tick() { this.tone("square", 880, 880, 0.05, 0.04); },
   /** A rallying cry: a low growl that climbs. */
   mob_howl() { this.tone("sawtooth", 150, 300, 0.38, 0.09); this.tone("sawtooth", 110, 84, 0.42, 0.06, 0.04); },
   mob_shot() { this.tone("square", 700, 300, 0.1, 0.06); this.noise(0.05, 0.08, 3000); },

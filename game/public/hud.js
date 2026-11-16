@@ -26,6 +26,7 @@ import { G, $, clamp, VP, el } from "./state.js";
 import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
+import * as Alba from "./alba.js";
 import * as FairMkt from "./fairmkt.js";
 import * as Chores from "./chores.js";
 import * as Charms from "./charms.js";
@@ -311,7 +312,7 @@ export function refreshUi() {
   draw("juana", Charms.juanaKey, Charms.renderJuana);   // 참감정사 주아나
   draw("board", Board.key, Board.render);       // the 알바 board (board.js)
   draw("fairmkt", FairMkt.key, FairMkt.render); // a 장날 merchant's list (fairmkt.js)
-  draw("alba", Board.albaKey, Board.renderAlba);   // the 알바 window: the job in hand, its clock, co-op, trust (board.js)
+  draw("alba", Alba.listKey, Alba.renderList);   // the 알바 window: the job in hand, its clock, co-op, trust (board.js)
   tutCard(s);
 }
 export function section(text, glyph) {

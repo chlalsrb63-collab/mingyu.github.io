@@ -234,7 +234,7 @@ export function interact() {
   else if (n.role === "house") { Housing.openAgent(); openWin("inv"); }
   else if (STATION_ROLE.has(n.role)) Station.open(n.role, n.thing ? n.name : "");
   else if (n.role === "charm") Charms.openJuana();
-  else if (n.role === "jobs") Board.open();
+  else if (n.role === "jobs") openWin("alba");   // 포포: the 일일 아르바이트 list (alba.js)
   else if (n.role === "fairmkt") FairMkt.open(n);
   else openWin(panel);
   setServiceTalk(panel, n);

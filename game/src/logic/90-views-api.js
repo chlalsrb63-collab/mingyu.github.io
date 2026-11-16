@@ -71,6 +71,8 @@ function selfPayload(p) {
     ...socialSelf(p),
     // 협동 아르바이트 paid today (68-coop.js)
     coop: coopSelf(p),
+    // 일일 아르바이트 paid today, best scores, pay slots left (66-alba.js)
+    alba: albaSelf(p),
     // the slots whose 고유 효과 does not count (the same power on a better or earlier piece): the tooltip greys it (51-prefix.js)
     lgOff: st.lgOff,
   };
@@ -102,6 +104,7 @@ export function viewFor(S, pid) {
   // me[12] / a P row's [9]: the carry code (58-life.js carryOf), only while something is held
   const held = carryOf(p);
   if (held) out.me.push(held);
+  albaView(S, p, out);   // the 일일 아르바이트 shift in hand (66-alba.js)
   elementView(S, out, p.eid, p);
   const elementSpeed = elementFrozen(S, p) ? 0 : elementMoveFactor(S, p);
   if (elementSpeed !== 1) out.elspd = elementSpeed;
@@ -317,6 +320,7 @@ export function defs() {
     charms: charmDefs(),
     // 협동 아르바이트: the jobs, cut-offs, tools (68-coop.js)
     coop: coopDefs(),
+    alba: albaDefs(),
     sx: sxDefs(),
     // boss trophies: { list: { kind: { name, fx } }, cap, p, gold, story: { r, limit } } (67-trophies.js)
     trophies: trophyDefs(),
