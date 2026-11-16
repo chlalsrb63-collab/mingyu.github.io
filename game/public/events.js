@@ -12,6 +12,7 @@ import * as Mini from "./minigames.js";
 import * as MobArt from "./mobart.js";
 import * as Growth from "./growth.js";
 import * as SkillFx from "./skillfx.js";
+import { jobSkillFx } from "./job-skill-fx.js";
 import { HAMMER_IMPACT } from "./swing.js";
 import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
@@ -44,6 +45,7 @@ const heightOf = (e) => e.h3 || 1.3;
 const shotColor = (k) => { const ty = G.defs.mobs[k]?.element; return ty && ty !== "physical" ? elementInfo(ty)?.color || "#ff5a4a" : "#ff5a4a"; };
 
 export function onEvent(e, t) {
+  jobSkillFx(e, G, S3, entityPos);
   if (e[0] === "a" && (e[2] === 7 || (e[2] >= 130 && e[2] <= 132))) {
     const [, eid, , x, y, dir, , wind = HAMMER_IMPACT, aim] = e;
     const src = entityPos(eid);

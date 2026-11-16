@@ -172,7 +172,7 @@ export function arrowSprite(ang, tier = 1, hot = false) {
   let c = arrowSprites.get(key);
   if (c) return c;
   const a = (step / ARROW_STEPS) * 2 * Math.PI, ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
-  const N = 17, C = 8, Lr = Math.max(6, Math.round(11 * isoLen(a)));
+  const N = 17, C = 8, Lr = Math.max(6, Math.round((hot ? 14 : 11) * isoLen(a)));
   const px = new Map(), set = (i, j, col) => { if (i >= 1 && j >= 1 && i < N - 1 && j < N - 1) px.set(j * N + i, col); };
   const at = (d, o = 0) => [Math.round(C + ux * d + nx * o), Math.round(C + uy * d + ny * o)];
   const glowInk = ARROW_HOT[tier] || ARROW_HOT[1];
@@ -185,6 +185,10 @@ export function arrowSprite(ang, tier = 1, hot = false) {
   const [hi, hj] = pts[pts.length - 1], [ti, tj] = pts[0];
   if (diag) { set(hi - sx, hj, headD); set(hi, hj - sy, headD); set(ti + sx, tj, fl); set(ti, tj + sy, fl); }
   else for (const o of [-1, 1]) { const [i, j] = at(Lr / 2 - 1, o); set(i, j, headD); const [fi, fj] = at(-Lr / 2 + 0.5, o); set(fi, fj, fl); }
+  if (hot) for (const o of [-2, 2]) {
+    const [i, j] = at(Lr / 2 - 3, o);
+    set(i, j, headD);
+  }
   let x;
   [c, x] = sheet(N, N);
   const ink = hot ? glowInk : INK;
@@ -214,15 +218,20 @@ function drawArrow(f, k) {
   g.fillRect(Math.round(gx - 2), Math.round(gy), 4, 1);
   g.globalAlpha = 1;
   // the trail: dots pinned to the path (they stay where they were left), thinning out behind
-  const back = Math.min(d, f.pierce ? 34 : 16);
+  const back = Math.min(d, f.pierce ? 41 : 16);
+  const horizontal = Math.abs(Math.cos(ang)) >= Math.abs(Math.sin(ang));
+  const sideX = horizontal ? 0 : 1, sideY = horizontal ? 1 : 0;
   for (let u = Math.floor(d) - 2; u > d - back; u--) {
     const far = (d - u) / back, gap = f.pierce ? (far < 0.5 ? 1 : 2) : far < 0.4 ? 2 : 3;
     if (u % gap) continue;
     const [, , tx, ty] = arrowAt(f, u);
-    g.fillStyle = f.pierce && far < 0.6 ? "#ffffff" : col;
-    g.fillRect(Math.round(tx), Math.round(ty), 1, 1);
-    // the piercing streak is two pixels thick near the arrow, its edge in the tier's colour
-    if (f.pierce && far < 0.6) { g.fillStyle = col; g.fillRect(Math.round(tx), Math.round(ty) + 1, 1, 1); }
+    const px = Math.round(tx), py = Math.round(ty);
+    g.fillStyle = col;
+    if (f.pierce && far < 0.6) {
+      g.fillRect(px - sideX, py - sideY, 1 + 2 * sideX, 1 + 2 * sideY);
+      g.fillStyle = "#fff6df";
+    }
+    g.fillRect(px, py, 1, 1);
   }
   g.drawImage(arrowSprite(ang, f.tier, f.pierce), Math.round(x) - 8, Math.round(y) - 8);
 }
@@ -232,6 +241,81 @@ function arrowLanded(f) {
   const [, , x, y, ang] = arrowAt(f, f.len), wx = f.wx + f.ux * f.len, wy = f.wy + f.uy * f.len;
   if (f.end === "stuck") stuckArrow(x, y, ang, f.tier);
   else if (f.end === "hit") fx.arrowHit(wx, wy, Math.atan2(f.uy, f.ux), f.pierce ? ARROW_HOT[f.tier] : "#ffffff", f.pierce, f.h);
+}
+
+/** Draw a few distinct strokes for each lightning cast so it forks, then leaves an afterimage. */
+function lightningFrames(x0, y0, x1, y1) {
+  const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+  const steps = Math.min(18, Math.max(4, Math.round(len / 14)));
+  const jag = Math.min(12, len / 6);
+  return Array.from({ length: 3 }, (_, frame) => {
+    const core = new Path2D(), forks = new Path2D();
+    core.moveTo(x0, y0);
+    for (let i = 1; i < steps; i++) {
+      const side = (Math.random() - 0.5) * jag * (frame === 2 ? 0.75 : 1.65);
+      const x = Math.round(x0 + dx * (i / steps) + nx * side);
+      const y = Math.round(y0 + dy * (i / steps) + ny * side);
+      core.lineTo(x, y);
+      if ((i + frame) % Math.max(2, Math.ceil(steps / 3)) !== 1) continue;
+      const off = (side < 0 ? -1 : 1) * (jag * 1.5 + Math.abs(side));
+      const fx = Math.round(x + dx / steps + nx * off);
+      const fy = Math.round(y + dy / steps + ny * off);
+      forks.moveTo(x, y);
+      forks.lineTo(fx, fy);
+      forks.lineTo(Math.round(fx + dx / steps - nx * off * 0.25), Math.round(fy + dy / steps - ny * off * 0.25));
+    }
+    core.lineTo(x1, y1);
+    return { core, forks };
+  });
+}
+
+function drawLightning(f, k) {
+  const frame = k < 0.19 ? 0 : k < 0.42 ? 1 : 2;
+  const { core, forks } = f.frames[frame];
+  const fade = 1 - k;
+  g.globalAlpha = fade * 0.35;
+  g.strokeStyle = f.color;
+  g.lineWidth = frame === 0 ? 9 : 6;
+  g.stroke(core);
+  g.globalAlpha = fade;
+  g.lineWidth = frame === 2 ? 1 : 2;
+  g.stroke(forks);
+  g.strokeStyle = frame === 2 ? f.color : "#ffffff";
+  g.lineWidth = frame === 0 ? 3 : 1.5;
+  g.stroke(core);
+  g.globalAlpha = 1;
+  g.lineWidth = 1;
+}
+
+/** A bright cutting edge followed by two pieces of the crescent as it peels away. */
+function drawSlash(f, k) {
+  const way = f.rev ? -1 : 1;
+  const progress = Math.min(1, k * 2.6), fade = Math.min(1, (1 - k) * 1.8);
+  const head = f.ang + way * (-1.28 + 2.56 * (1 - (1 - progress) ** 2));
+  const span = 2.48 * Math.min(1, progress * 1.55);
+  const radius = f.r * (0.92 + k * 0.13);
+  const crescent = (reach, tail, scale, thickness, color, alpha) => {
+    g.fillStyle = color;
+    g.globalAlpha = alpha * fade;
+    g.beginPath();
+    const n = 10;
+    // The thicker section follows the tip. Both the tip and the shed tail come to points.
+    for (let i = 0; i <= n * 2 + 1; i++) {
+      const inside = i > n, t = (inside ? n * 2 + 1 - i : i) / n;
+      const a = head - way * (tail + reach * (1 - t));
+      const w = scale - (inside ? thickness * Math.sin(Math.PI * t) * (0.45 + t * 0.75) : 0);
+      g.lineTo(Math.round(f.x + Math.cos(a) * radius * w), Math.round(f.y + Math.sin(a) * radius * w));
+    }
+    g.closePath();
+    g.fill();
+  };
+  if (k > 0.19) {
+    const peel = (k - 0.19) * 0.9;
+    crescent(span * 0.65, 0.32 + peel, 0.76 - peel * 0.14, 0.082, f.color, 0.58);
+    crescent(span * 0.48, 0.57 + peel, 0.59 - peel * 0.14, 0.047, f.color, 0.36);
+  }
+  crescent(span, k * 0.18, 1, 0.33, f.color, 0.95);
+  crescent(span * 0.83, 0, 0.985, k < 0.42 ? 0.16 : 0.083, "#fff9ef", k < 0.51 ? 0.95 : 0.65);
 }
 /** An arrow driven into a wall: its head buried, the shaft quivering a step either way, then gone. */
 function stuckArrow(x, y, ang, tier) {
@@ -277,8 +361,13 @@ export const fx = {
   flash(wx, wy, r = 14, delay = 0, h = 0.35) { const [x, y] = iso(wx, wy); this.add({ k: "flash", x, y: y - h * 22, r, dur: 64, delay }); },
   /** A shockwave: a thin bright ring racing out flat over the ground to radius r, a fainter one behind it. */
   wave(wx, wy, r, color = "#ffffff", dur = 340, delay = 0) { this.add({ k: "wave", x: wx * P, y: wy * P, r: r * P, color, dur, delay }); },
-  /** A pillar of lightning striking (wx, wy) out of the sky, re-forked every frame. */
-  zap(wx, wy, color = "#bfe8ff", dur = 240, delay = 0) { const [x, y] = iso(wx, wy); this.add({ k: "zap", x, y, color, dur, delay }); this.flash(wx, wy, 16, delay, 0.1); this.wave(wx, wy, 26, color, 300, delay); },
+  /** A pillar of lightning striking (wx, wy) out of the sky. */
+  zap(wx, wy, color = "#bfe8ff", dur = 240, delay = 0) {
+    const [x, y] = iso(wx, wy);
+    this.add({ k: "lightning", frames: lightningFrames(x, y - 150, x, y), color, dur, delay });
+    this.flash(wx, wy, 16, delay, 0.1);
+    this.wave(wx, wy, 26, color, 300, delay);
+  },
   /** A marked line something is about to run down, from a to b; it fills as the moment (`ms`) nears. */
   lane(ax, ay, bx, by, ms, color = "#ff5a6a", width = 13) { this.add({ k: "lane", x0: ax * P, y0: ay * P, x1: bx * P, y1: by * P, w: width * P, color, dur: ms }); },
   /** A puddle on the ground: appears after `delay` ms and lies there for `ms`. */
@@ -304,8 +393,11 @@ export const fx = {
     for (let i = 0; i < 9; i++) { const a = (i / 9) * 6.28 + Math.random() * 0.4, pts = [[0, 0]]; let d = 0; while (d < 1) { d += 0.18 + Math.random() * 0.12; pts.push([Math.cos(a) * d + (Math.random() - 0.5) * 0.12, Math.sin(a) * d + (Math.random() - 0.5) * 0.12]); } rays.push(pts); }
     this.add({ k: "crack", x: wx * P, y: wy * P, r: r * P, color, dur, rays, scar });
   },
-  /** A jagged bolt of lightning from a to b, redrawn a little differently each frame. */
-  bolt(ax, ay, bx, by, color = "#9fdcff", dur = 240) { const [x0, y0] = iso(ax, ay), [x1, y1] = iso(bx, by); this.add({ k: "bolt", x0, y0: y0 - 14, x1, y1: y1 - 14, color, dur }); },
+  /** A jagged bolt of lightning from a to b. */
+  bolt(ax, ay, bx, by, color = "#9fdcff", dur = 240) {
+    const [x0, y0] = iso(ax, ay), [x1, y1] = iso(bx, by);
+    this.add({ k: "lightning", frames: lightningFrames(x0, y0 - 14, x1, y1 - 14), color, dur });
+  },
   /** Something huge coming straight down out of the sky onto (wx, wy), landing at `ms`. */
   fall(wx, wy, color = "#ffd84a", ms = 450) { const [x, y] = iso(wx, wy); this.add({ k: "fall", x, y, color, dur: ms + 260, land: ms / (ms + 260) }); },
   /** Snow driven across a round patch of ground for `ms`. */
@@ -434,16 +526,7 @@ export function drawFx(now, ground2) {
       }
       continue;
     }
-    if (f.k === "zap") {
-      // a jagged column from high above down to the ground, forked anew each frame, a branch now and then
-      const top = f.y - 150, n = 12, pts = [];
-      for (let q = 0; q <= n; q++) pts.push([f.x + (q === 0 || q === n ? 0 : (Math.random() - 0.5) * 14), top + ((f.y - top) * q) / n]);
-      g.globalAlpha = k < 0.6 ? 1 : (1 - k) / 0.4;
-      for (const [col, w] of [[f.color, 6], ["#ffffff", 2]]) { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); for (const [x, y] of pts) g.lineTo(x, y); g.stroke(); }
-      if (Math.random() < 0.5) { const [bx, by] = pts[4 + ((Math.random() * 5) | 0)]; g.strokeStyle = f.color; g.lineWidth = 2; g.beginPath(); g.moveTo(bx, by); g.lineTo(bx + (Math.random() - 0.5) * 30, by + 10 + Math.random() * 14); g.stroke(); }
-      g.globalAlpha = 1; g.lineWidth = 1;
-      continue;
-    }
+    if (f.k === "lightning") { drawLightning(f, k); continue; }
     if (f.k === "ring") {
       g.globalAlpha = 1 - k;
       if (f.filled) { g.fillStyle = f.color; g.globalAlpha = (1 - k) * 0.35; g.beginPath(); g.arc(f.x, f.y, f.r * k, 0, 7); g.fill(); g.globalAlpha = 1 - k; }
@@ -487,19 +570,7 @@ export function drawFx(now, ground2) {
       g.beginPath(); g.arc(f.x, f.y, f.r * k, 0, 7); g.fill();
     } else if (f.k === "slash") {
       // a tapered crescent that sweeps open and fades
-      const way = f.rev ? -1 : 1;
-      const a0 = f.ang - 1.25 * way, a1 = a0 + 2.5 * way * Math.min(1, k * 1.8), n = 14;
-      g.globalAlpha = k < 0.5 ? 1 : 2 - 2 * k;
-      g.fillStyle = f.color;
-      g.beginPath();
-      for (let j = 0; j <= n; j++) { const a = a0 + ((a1 - a0) * j) / n; g.lineTo(f.x + Math.cos(a) * f.r, f.y + Math.sin(a) * f.r); }
-      for (let j = n; j >= 0; j--) { const a = a0 + ((a1 - a0) * j) / n, w = f.r * (1 - 0.34 * Math.sin((j / n) * Math.PI)); g.lineTo(f.x + Math.cos(a) * w, f.y + Math.sin(a) * w); }
-      g.closePath(); g.fill();
-      g.fillStyle = "#ffffff";
-      g.beginPath();
-      for (let j = 0; j <= n; j++) { const a = a0 + ((a1 - a0) * j) / n; g.lineTo(f.x + Math.cos(a) * f.r * 0.97, f.y + Math.sin(a) * f.r * 0.97); }
-      for (let j = n; j >= 0; j--) { const a = a0 + ((a1 - a0) * j) / n, w = f.r * (0.97 - 0.14 * Math.sin((j / n) * Math.PI)); g.lineTo(f.x + Math.cos(a) * w, f.y + Math.sin(a) * w); }
-      g.closePath(); g.fill();
+      drawSlash(f, k);
     } else if (f.k === "spark") {
       // an impact: a white core and spokes thrown outward
       g.globalAlpha = 1 - k;
@@ -559,14 +630,6 @@ export function drawFx(now, ground2) {
           g.stroke();
         }
       }
-    } else if (f.k === "bolt") {
-      // a fresh zig-zag every frame between the two ends, a bright core inside a coloured glow
-      const dx = f.x1 - f.x0, dy = f.y1 - f.y0, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len, segs = Math.max(3, Math.round(len / 14));
-      const pts = [[f.x0, f.y0]];
-      for (let q = 1; q < segs; q++) { const o = (Math.random() - 0.5) * 18; pts.push([f.x0 + (dx * q) / segs + nx * o, f.y0 + (dy * q) / segs + ny * o]); }
-      pts.push([f.x1, f.y1]);
-      g.globalAlpha = k < 0.5 ? 1 : 2 - 2 * k;
-      for (const [col, w] of [[f.color, 6], ["#ffffff", 2]]) { g.strokeStyle = col; g.lineWidth = w; g.beginPath(); for (const [x, y] of pts) g.lineTo(x, y); g.stroke(); }
     } else if (f.k === "fall") {
       // a shaft of light dropping onto its mark, then a flash where it lands
       if (k < f.land) {
