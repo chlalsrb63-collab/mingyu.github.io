@@ -19515,13 +19515,217 @@ ALBA_RULES.parcel = {
       Math.max(0, (c ? g.fallAt : g.spawnAt) - now), parcelDrop(g, ab, now), g.rows, g.ev];
   },
 };
-// 일일 아르바이트 · 해충 방제 (STUB: the real game replaces this file; contract in 66-alba.js)
-Object.assign(ALBA, { pest: { name: "해충 방제", npc: "bogle", place: "보글연금공방 지하 창고", skill: "alch", par: 2000, mul: 1.1, outfit: ["hat_goggles","top_alch"], tool: "sprayer", hint: "분무기로 해충 편대를 쏘세요. 급강하하는 놈을 놓치지 마세요!" } });
+// 일일 아르바이트 · 해충 방제 (docs/design/daily-alba-minigames-2026-11-16.md §9.1): a Galaga-style shooter. Contract and shift engine: 66-alba.js.
+// FIXED-STEP simulation: `ab.g.simAt` is the absolute ms of the last simulated step; `adv` (every tick and before every action) runs whole 50 ms
+// steps up to `now` (at most 40 per call, a longer stall just skips ahead), so the shift is a function of the seed and of the (time, input) list only.
+// Inputs are INTENTS, validated hard: { x: 0..240 } the ship's target (it walks ≤ 6 per step), { fire: 0|1 } the auto-fire while held (one spray per 4 steps).
+// Field 240 × 300, the ship at y 282. Sines are an integer table (no float transcendentals), randomness only through `rnd(ab.box)`.
+// ab.g = { simAt, n (steps run), wv (wave 1…), rest (steps until the next wave, 0 = fighting), sw (steps into this wave), ox oy fvx fvy (the formation's offset
+//   and speed), cols, rows, kinds (row kinds, top first), F (per slot: 0 dead · 1 in formation · 2 away), left (bugs alive), D (away bugs: dives and returns),
+//   q (queen) | null, B (sprays [x, y, dx]), W (webs [x, y]), rs (rescue bug) | null, sh (the ship), dn (steps to the next dive), wh (hits this wave), ev, seq, dirty }
+// view = [wave, ms to the next wave (0 = fighting), [ship x, vx per step, stun ms, web ms, invulnerable ms, firing], formation | 0 = [ox, oy, vx, vy, cols,
+//   "row kinds", [row masks of the bugs in place]], dives [kind, x, y, vx, vy, flags 1 spins a web · 2 flying back …], sprays [x, y, dx …], webs [x, y …],
+//   rescue [x, y, vx] | 0, queen [x, y, hp, max] | 0, events [[seq, type, x, y, points]…], bugs left]
+// event types: 1 bug shot · 2 diver shot · 3 ship rammed · 4 webbed · 5 rescued · 6 wave cleared · 7 queen hit · 8 queen shot · 9 queen spits a web
+const PEST = { W: 240, H: 300, SY: 282, STEP: 50, SPD: 4, FCD: 4, BSP: 8, MAXV: 3, FX: 120, FY: 54, SPX: 26, SPY: 20, SWAY: 80, AMP: 20, DESC: 3, MAXDROP: 54, INTRO: 25,
+  REST: 100, STUN: 40, INV: 20, WEB: 60, WEBSP: 4, COMMIT: 60,
+  SINT: [0, 24, 45, 59, 64, 59, 45, 24, 0, -24, -45, -59, -64, -59, -45, -24],
+  COLS: [6, 6, 7, 7, 8, 8, 8, 8], ROWS: [2, 3, 3, 4, 4, 4, 5, 5], KINDS: { 2: [1, 0], 3: [2, 1, 0], 4: [2, 1, 1, 0], 5: [2, 2, 1, 0, 0] },   // 0 cockroach · 1 mosquito · 2 moth
+  WIG: [6, 14, 20], FRQ: [2, 3, 2], PTS: [10, 40, 60, 100, 100] };   // PTS: a bug in place · a diver · the rescue · the wave · the wave without a hit (extra)
+
+const pestSpeed = (wv) => 4 + (wv > 2) + (wv > 4) + (wv > 6);
+const pestSx = (g, i) => PEST.FX + (2 * (i % g.cols) - g.cols + 1) * 13 + g.ox;
+const pestSy = (g, i) => PEST.FY + ((i / g.cols) | 0) * PEST.SPY + g.oy;
+const pestQx = (g) => PEST.FX + g.ox, pestQy = (g) => PEST.FY - 26 + g.oy;
+
+/** The formation's place for step `sw` of the wave: it flies in, then sways ±20 and steps down every 2 s. */
+function pestForm(g) {
+  const P = PEST, sw = g.sw, ph = Math.max(0, sw - P.INTRO), q = (ph + 20) % P.SWAY, oy = g.oy;
+  g.ox = sw < P.INTRO ? 0 : q < 40 ? q - 20 : 60 - q;
+  g.fvx = sw < P.INTRO ? 0 : q < 40 ? 1 : -1;
+  g.oy = sw < P.INTRO ? -100 + 4 * sw : Math.min(P.MAXDROP, P.DESC * ((ph / 40) | 0));
+  g.fvy = g.oy - oy;
+}
+function pestNew(ab, wv) {
+  const g = ab.g, P = PEST, i = Math.min(wv, 8) - 1, cols = P.COLS[i], rows = P.ROWS[i];
+  g.wv = wv; g.cols = cols; g.rows = rows; g.kinds = P.KINDS[rows];
+  g.F = new Array(cols * rows).fill(1); g.left = cols * rows;
+  g.q = wv % 3 === 0 ? { hp: 8 + 2 * wv, mx: 8 + 2 * wv, wt: 30 } : null;
+  if (g.q) g.left++;
+  g.sw = 0; g.dn = 40; g.wh = 0; g.D = []; g.W = []; g.rs = null; g.rest = 0; g.oy = -100; g.fvy = 4; g.ox = 0; g.fvx = 0;
+}
+function pestEv(g, type, x, y, pts) {
+  g.ev.push([++g.seq, type, Math.round(x), Math.round(y), pts | 0, g.n]);
+  if (g.ev.length > 8) g.ev.shift();
+}
+
+/** One step of a bug that is away from its place (a dive, or its flight back from the top). Touches only `d`; returns 1 when the bug spins a web now. */
+function pestDive(g, d, shx) {
+  const P = PEST;
+  if (d.st === 1) {
+    const x = pestSx(g, d.i);
+    d.vx = x - d.x; d.vy = 4; d.x = x; d.y += 4;
+    return 0;
+  }
+  d.a++;
+  const y = d.y0 + pestSpeed(g.wv) * d.a;
+  if (y < P.SY - P.COMMIT) d.cx += clamp(shx - d.cx, -3, 3);   // it homes in on the ship, then commits to its line
+  const x = clamp(d.cx + ((P.WIG[d.k] * P.SINT[((d.a * P.FRQ[d.k]) >> 2) & 15]) >> 6), 8, P.W - 8);
+  d.vx = x - d.x; d.vy = y - d.y; d.x = x; d.y = y;
+  const web = d.web && !d.wd && y >= 130 ? 1 : 0;
+  if (web) d.wd = 1;
+  if (y > P.H + 12) { d.st = 1; d.x = pestSx(g, d.i); d.y = -12; d.vx = 0; d.vy = 4; }   // it flew past: back from the top
+  return web;
+}
+
+/** A spray at (bx, by) that flew from y `oy`: it hits the lowest thing on its way. Returns true when it is used up. */
+function pestHit(ab, T, bx, by, oy) {
+  const g = ab.g, P = PEST, sh = g.sh;
+  let best = 0, bi = 0, bd = null, bestY = -1e9;
+  const test = (x, y, hw, hh, tag, i, d) => {
+    if (Math.abs(bx - x) <= hw + 1 && y + hh >= by && y - hh <= oy && y > bestY) { bestY = y; best = tag; bi = i; bd = d; }
+  };
+  if (g.rs) test(g.rs.x, g.rs.y, 9, 8, 4, 0, null);
+  if (g.q) test(pestQx(g), pestQy(g), 12, 8, 3, 0, null);
+  for (const d of g.D) test(d.x, d.y, 5, 5, 2, d.i, d);
+  for (let i = 0; i < g.F.length; i++) if (g.F[i] === 1) test(pestSx(g, i), pestSy(g, i), 5, 5, 1, i, null);
+  if (!best) return false;
+  if (best === 4) {
+    const r = g.rs, pts = albaGood(ab, T, P.PTS[2]);
+    sh.web = 0; sh.inv = Math.max(sh.inv, 10); g.rs = null;
+    pestEv(g, 5, r.x, r.y, pts);
+  } else if (best === 3) {
+    const q = g.q;
+    if (--q.hp > 0) { pestEv(g, 7, pestQx(g), pestQy(g), 0); return true; }
+    g.q = null; g.left--;
+    pestEv(g, 8, pestQx(g), pestQy(g), albaGood(ab, T, P.PTS[3]));
+  } else if (best === 2) {
+    g.D.splice(g.D.indexOf(bd), 1); g.F[bi] = 0; g.left--;
+    pestEv(g, bd.st ? 1 : 2, bd.x, bd.y, albaGood(ab, T, bd.st ? P.PTS[0] : P.PTS[1]));
+  } else {
+    g.F[bi] = 0; g.left--;
+    pestEv(g, 1, pestSx(g, bi), pestSy(g, bi), albaGood(ab, T, P.PTS[0]));
+  }
+  return true;
+}
+
+/** The fighting part of a step: the formation, the dives, the webs. */
+function pestFight(ab, T) {
+  const g = ab.g, P = PEST, sh = g.sh;
+  g.sw++; pestForm(g);
+  const live = g.sw > P.INTRO;
+  if (g.q && live && --g.q.wt <= 0) { g.q.wt = 60; g.W.push([sh.x, pestQy(g) + 10]); pestEv(g, 9, pestQx(g), pestQy(g), 0); }
+  if (live && --g.dn <= 0) {
+    let away = 0;
+    for (const d of g.D) away += d.st === 0 ? 1 : 0;
+    const open = [];
+    for (let i = 0; i < g.F.length; i++) if (g.F[i] === 1) open.push(i);
+    if (away < 1 + (g.wv > 2) + (g.wv > 4) + (g.wv > 6) && open.length) {
+      const i = open[ri(ab.box, 0, open.length - 1)], k = g.kinds[(i / g.cols) | 0], x = pestSx(g, i), y = pestSy(g, i);
+      g.F[i] = 2;
+      g.D.push({ i, k, x, y, y0: y, cx: x, a: 0, st: 0, vx: 0, vy: 0, web: k === 1 && g.wv >= 2 && rnd(ab.box) < 0.5 ? 1 : 0, wd: 0 });
+      g.dn = Math.max(16, 44 - 3 * g.wv) + ri(ab.box, 0, 10);
+    } else g.dn = 10;
+  }
+  for (let j = g.D.length - 1; j >= 0; j--) {
+    const d = g.D[j];
+    if (pestDive(g, d, sh.x)) g.W.push([d.x, d.y + 6]);
+    if (d.st === 1 && d.y >= pestSy(g, d.i)) { g.F[d.i] = 1; g.D.splice(j, 1); }
+  }
+  for (let j = g.W.length - 1; j >= 0; j--) {
+    const w = g.W[j];
+    w[1] += P.WEBSP;
+    if (w[1] > P.SY + 8) g.W.splice(j, 1);
+    else if (w[1] >= P.SY - 8 && Math.abs(w[0] - sh.x) <= 12 && !sh.web && !sh.inv) {   // webbed: a flashing rescue bug runs across, shoot it to be free
+      g.W.splice(j, 1);
+      sh.web = P.WEB; sh.inv = Math.max(sh.inv, P.INV); g.wh++;
+      albaBad(ab, 0);
+      const right = sh.x >= P.W / 2;
+      g.rs = { x: sh.x + (right ? -60 : 60), y: P.SY - 66, vx: right ? 3 : -3 };
+      pestEv(g, 4, sh.x, P.SY, 0);
+    }
+  }
+  if (g.rs) { const r = g.rs; r.x += r.vx; if (r.x < 8 || r.x > P.W - 8) { r.x = clamp(r.x, 8, P.W - 8); r.vx = -r.vx; } }
+}
+
+function pestStep(ab, T) {
+  const g = ab.g, P = PEST, sh = g.sh;
+  g.n++;
+  if (sh.stun > 0) sh.stun--;
+  if (sh.web > 0 && --sh.web === 0) g.rs = null;
+  if (sh.inv > 0) sh.inv--;
+  if (sh.cd > 0) sh.cd--;
+  sh.vx = 0;
+  if (!sh.stun && !sh.web) { const d = clamp(sh.tx - sh.x, -P.SPD, P.SPD); sh.x += d; sh.vx = d; }
+  if (sh.fire && !sh.stun && !sh.cd) {
+    const fan = T < ab.feverUntil, n = fan ? 3 : 1;   // a fever: the three-way spray
+    let vol = 0;
+    for (const b of g.B) vol += b[2] ? 0 : 1;   // only so many sprays may be in the air (a fan counts once: its middle one)
+    if (vol < P.MAXV) { for (let k = 0; k < n; k++) g.B.push([sh.x, P.SY - 8, fan ? (k - 1) * 2 : 0]); sh.cd = P.FCD; }
+  }
+  if (g.rest) { if (--g.rest === 0) pestNew(ab, g.wv + 1); }
+  else pestFight(ab, T);
+  const keep = [];
+  for (const b of g.B) {
+    const oy = b[1];
+    b[1] -= P.BSP; b[0] += b[2];
+    if (b[1] < -6 || b[0] < 0 || b[0] > P.W || pestHit(ab, T, b[0], b[1], oy)) continue;
+    keep.push(b);
+  }
+  g.B = keep;
+  for (let j = g.D.length - 1; j >= 0; j--) {   // a diver that reaches the ship: a stun
+    const d = g.D[j];
+    if (d.st || sh.inv || Math.abs(d.x - sh.x) >= 12 || Math.abs(d.y - P.SY) >= 10) continue;
+    d.st = 1; d.x = pestSx(g, d.i); d.y = -12; d.vx = 0; d.vy = 4; g.wh++;   // it bounces off and flies back from the top (a rammed bug is not a dead bug)
+    sh.stun = P.STUN; sh.inv = P.STUN + P.INV;
+    albaBad(ab, 0);
+    pestEv(g, 3, sh.x, P.SY, 0);
+  }
+  if (!g.rest && g.left <= 0) {
+    const noHit = g.wh === 0;
+    g.rest = P.REST; g.W = []; g.rs = null; sh.web = 0;
+    pestEv(g, 6, P.FX, 150, albaGood(ab, T, noHit ? P.PTS[3] + P.PTS[4] : P.PTS[3]));
+  }
+  while (g.ev.length && g.n - g.ev[0][5] > 12) g.ev.shift();
+  if (!g.rest || g.B.length || sh.vx || g.ev.length) g.dirty = 1;
+}
+
+ALBA.pest = { name: "해충 방제", npc: "bogle", place: "보글연금공방 지하 창고", skill: "alch", par: 14000, mul: 1.1, outfit: ["hat_goggles", "top_alch"], tool: "sprayer", hint: "마우스·손가락·←→로 이동, 분무는 자동! 급강하하는 놈과 거미줄을 피하세요." };
 ALBA_RULES.pest = {
-  init(S, p, ab) { ab.g = { n: 0 }; },
-  adv() {},
-  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
-  view(ab) { return [ab.g.n]; },
+  init(S, p, ab) {
+    ab.g = { simAt: ab.runAt, n: 0, wv: 0, rest: 0, sw: 0, ox: 0, oy: 0, fvx: 0, fvy: 0, cols: 0, rows: 0, kinds: [], F: [], left: 0, D: [], q: null, B: [], W: [], rs: null,
+      sh: { x: PEST.FX, tx: PEST.FX, vx: 0, stun: 0, web: 0, inv: 0, cd: 0, fire: 0 }, dn: 0, wh: 0, ev: [], seq: 0, dirty: 0 };
+    pestNew(ab, 1);
+  },
+  adv(S, p, ab, now) {
+    const g = ab.g;
+    let k = 0;
+    for (; k < 40 && g.simAt + PEST.STEP <= now; k++) { g.simAt += PEST.STEP; pestStep(ab, g.simAt); }
+    if (k === 40 && g.simAt + PEST.STEP <= now) g.simAt += Math.floor((now - g.simAt) / PEST.STEP) * PEST.STEP;   // a long stall: skip ahead
+    if (g.dirty) { g.dirty = 0; albaTouch(ab); }
+  },
+  act(S, p, ab, a, now) {
+    const sh = ab.g.sh, x = a.x, f = a.fire;
+    if (x === undefined && f === undefined) return "bad";
+    if (x !== undefined && (!Number.isInteger(x) || x < 0 || x > PEST.W)) return "bad";
+    if (f !== undefined && f !== 0 && f !== 1) return "bad";
+    if (sh.stun) return null;   // a stunned sprayer takes no orders
+    if (x !== undefined) sh.tx = clamp(x, 8, PEST.W - 8);
+    if (f !== undefined) sh.fire = f;
+    albaTouch(ab);
+    return null;
+  },
+  view(ab, now) {
+    const g = ab.g, sh = g.sh, P = PEST, lag = now - g.simAt, ms = (st) => Math.max(0, st * P.STEP - lag);
+    const fm = g.rest ? 0 : [g.ox, g.oy, g.fvx, g.fvy, g.cols, g.kinds.join(""), g.kinds.map((_, r) => { let m = 0; for (let c = 0; c < g.cols; c++) if (g.F[r * g.cols + c] === 1) m |= 1 << c; return m; })];
+    const D = [], B = [], W = [];
+    for (const d of g.D) D.push(d.k, d.x, d.y, d.vx, d.vy, d.st ? 2 : d.web && !d.wd ? 1 : 0);
+    for (const b of g.B) B.push(b[0], b[1], b[2]);
+    for (const w of g.W) W.push(w[0], w[1]);
+    const q = g.q;
+    return [g.wv, g.rest ? ms(g.rest) : 0, [sh.x, sh.vx, ms(sh.stun), ms(sh.web), ms(sh.inv), sh.fire], fm, D, B, W, g.rs ? [g.rs.x, g.rs.y, g.rs.vx] : 0,
+      q ? [pestQx(g), pestQy(g), q.hp, q.mx] : 0, g.ev.map((e) => e.slice(0, 5)), g.left];
+  },
 };
 // 일일 아르바이트 · 배관 수리 (STUB: the real game replaces this file; contract in 66-alba.js)
 Object.assign(ALBA, { pipe: { name: "배관 수리", npc: "popo", place: "마을회관 배관실", skill: "craft", par: 1500, mul: 1, outfit: ["hat_coop_cap","top_coop_vest"], tool: "wrench", hint: "조각을 칸에 놓아 급수구에서 배수구까지 길을 이으세요." } });
@@ -19657,13 +19861,216 @@ ALBA_RULES.taiyaki = {
       g.cu.map((c) => [c.id, c.need[0], c.need[1], c.need[2], c.until - rt, c.wait, c.grp]), g.tray, g.n < 8 ? Math.max(0, TAI.more - rt) : 0];
   },
 };
-// 일일 아르바이트 · 철거 알바 (STUB: the real game replaces this file; contract in 66-alba.js)
-Object.assign(ALBA, { wall: { name: "철거 알바", npc: "kangkang", place: "캉캉대장간 옆 헌 벽", skill: "craft", par: 1800, mul: 1.1, outfit: ["hat_coop_cap","top_smith"], tool: "chain", hint: "철구로 벽돌을 부수세요. 발판으로 공을 받아 주세요." } });
+// 일일 아르바이트 · 철거 알바 (docs/design/daily-alba-minigames-2026-11-16.md §9.2): an Arkanoid-style brick breaker. Contract and shift engine: 66-alba.js.
+// FIXED-STEP simulation: `ab.g.simAt` is the absolute ms of the last simulated step; `adv` (every tick and before every action) runs whole 50 ms steps up to
+// `now` (at most 40 per call, a longer stall just skips ahead), so a shift is a function of the seed and of the (time, input) list only. Each step moves a
+// ball in 4 sub-steps, in INTEGER fixed point (1/16 px): a ball is a direction (dx, dy ≈ 64 long) times the level's speed, no floats, no transcendentals.
+// Input is an INTENT, validated hard: { x: 0..240 } the paddle's target (it moves ≤ 10 px per step). Balls launch by themselves.
+// Field 240 × 240; 12 × 9 brick cells of 20 × 8 from y 28 (the wall fills 8 rows, the rush drops it one row); the paddle's top is y 222.
+// ab.g = { simAt, n (steps run), lv (wall 0…), k (per cell: 0 none · 1 plain · 2 bomb · 3 bonus box), h (hits left of a plain brick), it (a bonus box's item),
+//   left (bricks standing), drop (rush: the wall came down a row), balls [{x, y (1/16 px), dx, dy, held}], pad {x, tx, vx, hw}, sv (steps until the ball is served),
+//   I (falling items {x, y, k}), fw fp fs (steps left of wide paddle · piercing · slow ball), ch (bricks hit since the paddle last touched a ball), ev, seq, dirty }
+// view = [wall, [paddle x, vx per step, half width], 108 chars ('.' none · hits left 1-3 · b bomb · w m p s bonus box by item), balls [x, y, vx, vy (¼ px per step), held …],
+//   items [x, y, kind …], [wide ms, piercing ms, slow ms, serve ms], events [[seq, type, x, y, value]…], bricks left, big ball (fever) 0|1]
+// event types: 1 brick broken (value = points of the blow) · 2 brick cracked (hits left) · 3 bomb · 4 item caught (kind) · 5 ball lost · 6 wall cleared (points) · 7 paddle bounce · 8 item dropped (kind)
+// items: 0 wide paddle · 1 three balls · 2 piercing · 3 slow ball
+const WALL = { W: 240, H: 240, STEP: 50, SUB: 4, BW: 20, BH: 8, COLS: 12, ROWS: 9, Y0: 28, PY: 222, PSPD: 10, HW: [20, 32], SERVE: 30, RESERVE: 60, FALL: 3,
+  TAB: [[-55, 32], [-48, 43], [-38, 52], [-26, 58], [-13, 63], [0, 64], [13, 63], [26, 58], [38, 52], [48, 43], [55, 32]],   // paddle bounce directions, 12° apart (dx, up)
+  FX: [240, 160, 200], PTS: { plain: 10, crack: 5, bomb: 20, box: 30, item: 30, wall: 150, lost: 50 } };
+const wallSpeed = (g) => (((40 + 4 * Math.min(g.lv, 4)) * (g.fs > 0 ? 7 : 10)) / 10) | 0;   // 1/16 px per sub-step
+const wallEv = (g, type, x, y, v) => { g.ev.push([++g.seq, type, Math.round(x), Math.round(y), v | 0, g.n]); if (g.ev.length > 8) g.ev.shift(); };
+/** A brick event scores through the combo and a chain bonus (+20 % per brick hit since the paddle last touched a ball, up to +100 %; a piercing ball sweeps for the flat price). */
+function wallScore(ab, T, base, flat) {
+  const g = ab.g, c = flat ? 0 : Math.min(g.ch, 5);
+  g.ch++;
+  return albaGood(ab, T, Math.round((base * (10 + 2 * c)) / 10));
+}
+
+/** Lay out wall `g.lv`: a shape by number, harder bricks and more bombs as the walls go on, bonus boxes with their items. */
+function wallBuild(ab) {
+  const g = ab.g, box = ab.box, lv = g.lv, W = WALL, N = W.COLS * W.ROWS, pool = [];
+  g.k = new Array(N).fill(0); g.h = new Array(N).fill(0); g.it = new Array(N).fill(0);
+  const ph = Math.min(0.55, 0.1 + 0.08 * lv), t = lv % 5;
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < W.COLS; c++) {
+      const on = t === 0 ? true : t === 1 ? c % 4 !== 3 : t === 2 ? c >= (r >> 1) && c <= 11 - (r >> 1) : t === 3 ? (r + c) % 2 === 0 : r === 0 || r === 7 || c < 2 || c > 9 || (r % 2 === 1 && c >= 4 && c <= 7);
+      if (!on) continue;
+      const i = (r + g.drop) * W.COLS + c, u = rnd(box);
+      g.k[i] = 1; g.h[i] = lv >= 2 && u < ph * 0.3 ? 3 : u < ph ? 2 : 1;
+      pool.push(i);
+    }
+  }
+  const put = (kind, n) => {
+    for (let j = 0; j < n && pool.length; j++) {
+      const i = pool.splice(ri(box, 0, pool.length - 1), 1)[0];
+      g.k[i] = kind; g.h[i] = 1;
+      if (kind === 3) g.it[i] = ri(box, 0, 3);
+    }
+  };
+  put(2, Math.min(8, 2 + lv)); put(3, lv >= 3 ? 5 : 4);
+  g.left = g.k.reduce((n, v) => n + (v ? 1 : 0), 0);
+}
+/** The rush: the whole wall comes down one row. */
+function wallDrop(g) {
+  const C = WALL.COLS, N = C * WALL.ROWS;
+  for (const a of [g.k, g.h, g.it]) { for (let i = N - 1; i >= C; i--) a[i] = a[i - C]; for (let i = 0; i < C; i++) a[i] = 0; }
+  g.drop = 1;
+}
+const wallHeld = (g) => ({ x: g.pad.x * 16, y: (WALL.PY - 3) * 16, dx: 0, dy: 0, held: 1 });
+
+/** Destroy brick `i0` (and the bricks a bomb takes with it): points once for the whole blow, items fall from bonus boxes. */
+function wallBreak(ab, T, i0, flat) {
+  const g = ab.g, W = WALL, q = [i0], pops = [];
+  let base = 0;
+  while (q.length) {
+    const i = q.pop(), k = g.k[i];
+    if (!k) continue;
+    const r = (i / W.COLS) | 0, c = i % W.COLS, x = c * W.BW + W.BW / 2, y = W.Y0 + r * W.BH + W.BH / 2;
+    g.k[i] = 0; g.h[i] = 0; g.left--;
+    pops.push([x, y, k]);
+    if (k === 2) {
+      base += W.PTS.bomb;
+      for (let dr = -1; dr <= 1; dr++) for (let dc = -1; dc <= 1; dc++) { const rr = r + dr, cc = c + dc; if ((dr || dc) && rr >= 0 && rr < W.ROWS && cc >= 0 && cc < W.COLS) q.push(rr * W.COLS + cc); }
+    } else if (k === 3) { base += W.PTS.box; g.I.push({ x, y, k: g.it[i] }); wallEv(g, 8, x, y, g.it[i]); }
+    else base += W.PTS.plain;
+  }
+  const pts = wallScore(ab, T, base, flat);
+  pops.forEach(([x, y, k], j) => wallEv(g, k === 2 ? 3 : 1, x, y, j ? 0 : pts));
+}
+/** A ball touches brick `i`: a hard brick cracks, anything else (or any brick, for a piercing ball) is destroyed. */
+function wallDamage(ab, T, i, pierce) {
+  const g = ab.g, W = WALL;
+  g.hn = g.n;
+  if (!pierce && g.k[i] === 1 && g.h[i] > 1) {
+    g.h[i]--;
+    wallScore(ab, T, W.PTS.crack);
+    wallEv(g, 2, (i % W.COLS) * W.BW + W.BW / 2, W.Y0 + ((i / W.COLS) | 0) * W.BH + W.BH / 2, g.h[i]);
+  } else wallBreak(ab, T, i, pierce);
+}
+
+/** One step (4 sub-steps) of a ball: walls, ceiling, paddle, bricks. Returns false when it fell out of the field. */
+function wallBall(ab, T, b) {
+  const g = ab.g, W = WALL, pad = g.pad, big = T < ab.feverUntil, R = (big ? 5 : 3) * 16, pierce = big || g.fp > 0, sp = wallSpeed(g);
+  const WQ = W.W * 16, PYQ = W.PY * 16, BWQ = W.BW * 16, BHQ = W.BH * 16, Y0Q = W.Y0 * 16;
+  for (let s = 0; s < W.SUB; s++) {
+    let nx = b.x + ((b.dx * sp / 64) | 0), ny = b.y + ((b.dy * sp / 64) | 0);
+    if (nx < R) { nx = R; b.dx = Math.abs(b.dx); } else if (nx > WQ - R) { nx = WQ - R; b.dx = -Math.abs(b.dx); }
+    if (ny < R) { ny = R; b.dy = Math.abs(b.dy); }
+    if (b.dy > 0 && b.y + R <= PYQ + 48 && ny + R > PYQ && Math.abs(nx - pad.x * 16) <= pad.hw * 16 + R) {   // the paddle: the angle comes from where the ball lands on it
+      let idx = clamp(Math.round(5 + (5 * (nx - pad.x * 16)) / (pad.hw * 16 + R)), 0, 10);
+      if (g.n - g.hn > 160) { idx = ri(ab.box, 0, 10); g.hn = g.n; }   // 8 s without breaking a brick: this bounce goes wherever it likes (no endless loops, no unreachable last brick)
+      ny = PYQ - R; b.dx = W.TAB[idx][0]; b.dy = -W.TAB[idx][1]; g.ch = 0;
+      wallEv(g, 7, nx / 16, W.PY, 0);
+    }
+    const c0 = Math.max(0, Math.floor((nx - R) / BWQ)), c1 = Math.min(W.COLS - 1, Math.floor((nx + R - 1) / BWQ));
+    const r0 = Math.max(0, Math.floor((ny - R - Y0Q) / BHQ)), r1 = Math.min(W.ROWS - 1, Math.floor((ny + R - 1 - Y0Q) / BHQ));
+    let hit = -1, area = 0, hox = 0, hoy = 0;
+    for (let r = r0; r <= r1; r++) {
+      for (let c = c0; c <= c1; c++) {
+        const i = r * W.COLS + c;
+        if (!g.k[i]) continue;
+        const ox = Math.min(nx + R, (c + 1) * BWQ) - Math.max(nx - R, c * BWQ), oy = Math.min(ny + R, Y0Q + (r + 1) * BHQ) - Math.max(ny - R, Y0Q + r * BHQ);
+        if (pierce) { wallDamage(ab, T, i, true); continue; }
+        if (ox * oy > area) { area = ox * oy; hit = i; hox = ox; hoy = oy; }
+      }
+    }
+    if (hit >= 0) {   // bounce off the face it went in by (the smaller overlap), both ways at a corner
+      const c = hit % W.COLS, r = (hit / W.COLS) | 0, bx = c * BWQ + BWQ / 2, by = Y0Q + r * BHQ + BHQ / 2;
+      if (hox <= hoy) { nx = nx < bx ? c * BWQ - R : (c + 1) * BWQ + R; b.dx = nx < bx ? -Math.abs(b.dx) : Math.abs(b.dx); }
+      if (hoy <= hox) { ny = ny < by ? Y0Q + r * BHQ - R : Y0Q + (r + 1) * BHQ + R; b.dy = ny < by ? -Math.abs(b.dy) : Math.abs(b.dy); }
+      wallDamage(ab, T, hit, false);
+    }
+    if (Math.abs(b.dy) < 16) b.dy = b.dy < 0 ? -16 : 16;   // never a flat, endless rally
+    b.x = nx; b.y = ny;
+    if (ny > (W.H + 8) * 16) return false;
+  }
+  return true;
+}
+/** A caught item: points and its effect. */
+function wallItem(ab, T, k) {
+  const g = ab.g;
+  albaGood(ab, T, WALL.PTS.item);
+  if (k === 0) g.fw = WALL.FX[0]; else if (k === 2) g.fp = WALL.FX[1]; else if (k === 3) g.fs = WALL.FX[2];
+  else {   // three balls: the first flying ball splits into itself and two turned ±20°
+    const b = g.balls.find((z) => !z.held);
+    if (b && g.balls.length < 3) for (const s of [1, -1]) g.balls.push({ x: b.x, y: b.y, dx: ((b.dx * 60 - s * b.dy * 22) / 64) | 0, dy: ((s * b.dx * 22 + b.dy * 60) / 64) | 0, held: 0 });
+  }
+}
+
+function wallStep(ab, T) {
+  const g = ab.g, W = WALL, pad = g.pad;
+  g.n++;
+  if (g.fw > 0) g.fw--;
+  if (g.fp > 0) g.fp--;
+  if (g.fs > 0) g.fs--;
+  pad.hw = g.fw > 0 ? W.HW[1] : W.HW[0];
+  const x0 = pad.x;
+  pad.x = clamp(pad.x + clamp(pad.tx - pad.x, -W.PSPD, W.PSPD), pad.hw, W.W - pad.hw);
+  pad.vx = pad.x - x0;
+  if (!g.drop && T >= ab.endAt - ALBA_T.rushMs) wallDrop(g);
+  if (g.balls[0].held) {   // waiting to be served: the ball rides the paddle; once the timer is out and the player has done anything, it flies off at one of four angles
+    const b = g.balls[0];
+    b.x = pad.x * 16;
+    if (g.sv > 0) g.sv--;
+    if (!g.sv && g.la && g.n - g.la <= 120) { const t = W.TAB[[3, 4, 6, 7][ri(ab.box, 0, 3)]]; b.dx = t[0]; b.dy = -t[1]; b.held = 0; g.ch = 0; g.hn = g.n; }
+  } else {
+    const keep = [];
+    for (const b of g.balls) if (wallBall(ab, T, b)) keep.push(b);
+    g.balls = keep;
+    if (!keep.length) {
+      albaBad(ab, W.PTS.lost);
+      g.fw = g.fp = g.fs = 0; g.ch = 0; g.sv = W.RESERVE; g.balls = [wallHeld(g)];
+      wallEv(g, 5, pad.x, W.PY, 0);
+    }
+  }
+  const keepI = [];
+  for (const it of g.I) {
+    it.y += W.FALL;
+    if (it.y >= W.PY - 4 && it.y <= W.PY + 10 && Math.abs(it.x - pad.x) <= pad.hw + 6) { wallItem(ab, T, it.k); wallEv(g, 4, it.x, W.PY, it.k); } else if (it.y < W.H + 10) keepI.push(it);
+  }
+  g.I = keepI;
+  if (g.left <= 0) {   // the wall is down: the next, harder one
+    wallEv(g, 6, W.W / 2, 100, albaGood(ab, T, W.PTS.wall));
+    g.lv++; g.fw = g.fp = g.fs = 0; g.I = []; g.ch = 0; g.sv = W.SERVE;
+    wallBuild(ab);
+    g.balls = [wallHeld(g)];
+  }
+  while (g.ev.length && g.n - g.ev[0][5] > 12) g.ev.shift();
+  if (!g.balls[0].held || g.I.length || pad.vx || g.ev.length) g.dirty = 1;
+}
+
+ALBA.wall = { name: "철거 알바", npc: "kangkang", place: "캉캉대장간 옆 헌 벽", skill: "craft", par: 7200, mul: 1.1, outfit: ["hat_coop_cap", "top_smith"], tool: "chain", hint: "마우스·손가락·←→로 발판을 움직여 철구를 받으세요. 벽돌을 다 부수면 새 벽! 떨어지는 상자는 발판으로 받기." };
 ALBA_RULES.wall = {
-  init(S, p, ab) { ab.g = { n: 0 }; },
-  adv() {},
-  act(S, p, ab, a, now) { ab.g.n++; albaGood(ab, now, 10); return null; },
-  view(ab) { return [ab.g.n]; },
+  init(S, p, ab) {
+    const g = ab.g = { simAt: ab.runAt, n: 0, lv: 0, k: [], h: [], it: [], left: 0, drop: 0, balls: [], pad: { x: 120, tx: 120, vx: 0, hw: WALL.HW[0] }, sv: WALL.SERVE, I: [], fw: 0, fp: 0, fs: 0, ch: 0, la: 0, hn: 0, ev: [], seq: 0, dirty: 0 };
+    wallBuild(ab);
+    g.balls = [wallHeld(g)];
+  },
+  adv(S, p, ab, now) {
+    const g = ab.g;
+    let k = 0;
+    for (; k < 40 && g.simAt + WALL.STEP <= now; k++) { g.simAt += WALL.STEP; wallStep(ab, g.simAt); }
+    if (k === 40 && g.simAt + WALL.STEP <= now) g.simAt += Math.floor((now - g.simAt) / WALL.STEP) * WALL.STEP;   // a long stall: skip ahead
+    if (g.dirty) { g.dirty = 0; albaTouch(ab); }
+  },
+  act(S, p, ab, a, now) {
+    const x = a.x, go = a.go, g = ab.g;
+    if (x === undefined && go === undefined) return "bad";
+    if (x !== undefined && (!Number.isInteger(x) || x < 0 || x > WALL.W)) return "bad";
+    if (go !== undefined && go !== 1) return "bad";
+    g.la = g.n + 1;   // any input is the player's "ready" (for the next 6 s): an idle player never serves
+    if (x !== undefined && g.pad.tx !== x) { g.pad.tx = x; albaTouch(ab); }
+    return null;
+  },
+  view(ab, now) {
+    const g = ab.g, W = WALL, lag = now - g.simAt, ms = (st) => Math.max(0, st * W.STEP - lag);
+    let s = "";
+    for (let i = 0; i < g.k.length; i++) s += g.k[i] === 1 ? g.h[i] : g.k[i] === 2 ? "b" : g.k[i] === 3 ? "wmps"[g.it[i]] : ".";
+    const B = [], I = [];
+    for (const b of g.balls) B.push(Math.round(b.x / 16), Math.round(b.y / 16), ((b.dx * wallSpeed(g)) / 64) | 0, ((b.dy * wallSpeed(g)) / 64) | 0, b.held);
+    for (const it of g.I) I.push(it.x, it.y, it.k);
+    return [g.lv + 1, [g.pad.x, g.pad.vx, g.pad.hw], s, B, I, [ms(g.fw), ms(g.fp), ms(g.fs), ms(g.sv)], g.ev.map((e) => e.slice(0, 5)), g.left, now < ab.feverUntil ? 1 : 0];
+  },
 };
 // ───────────────────────────── 보스전리품 (boss trophies) and the solo story fight ─────────────────────────────
 // docs/design/boss-trophies.md. Every hunting ground's field boss (FIELD_BOSS) stands at its spot (fbHome) and is back
