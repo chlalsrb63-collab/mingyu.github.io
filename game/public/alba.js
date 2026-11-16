@@ -9,6 +9,7 @@
  *   setState(g, recvAt)   the server's view(): the full state, only when it changed (times in it are ms FROM THE MOMENT OF RECEIPT, recvAt = performance.now() then)
  *   frame(t, info)        every animation frame while the window is open; `info` = { phase: "brief"|"run"|"end", left, toStart, score, combo, fever, rush }
  *   key(e)  (optional)    a keydown: return true if the game used it (the world never sees keys while a shift is open)
+ *   keyup(e) (optional)   a keyup (for hold notes and the like)
  *   unmount()             the window closed
  * api = { act(obj) → sends {t:"ab_act", ...obj}, fx(kind, text?, x?, y?) → the stage reacts ("good" | "bad" | "big" | "fever"), sfx(name), now() }
  * Sounds the games may use: alba_ok alba_big alba_bad alba_fever alba_tick (audio.js), anything else is silent.
@@ -118,7 +119,11 @@ addEventListener("keydown", (e) => {
   if (e.key === "Escape") { e.preventDefault(); return; }
   if (st.mod && st.mod.key && st.mod.key(e)) e.preventDefault();
 }, true);
-addEventListener("keyup", (e) => { if (st.k && !(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) e.stopImmediatePropagation(); }, true);
+addEventListener("keyup", (e) => {
+  if (!st.k || (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) return;
+  e.stopImmediatePropagation();
+  if (st.mod && st.mod.keyup) st.mod.keyup(e);   // optional: a game that needs releases (holds)
+}, true);
 
 // ── the result card
 function showResult() {
