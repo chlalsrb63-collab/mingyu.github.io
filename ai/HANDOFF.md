@@ -16,6 +16,7 @@
   새 지형 요소 `grove henge spring` + 넓은 구역 다중 배치(`featureMore`: dunesea mesa oasis coast inklake; 정글은 구역 테스트 때문에 제외) · **명칭 정리(오너): 사냥형 = "토벌"**(일일 토벌 = 사냥 목표만, 주간 토벌, 반복 토벌, 게시판 사냥 일감 태그 "토벌"), 생활형 = "아르바이트".
   남은 것: 알바 게시판의 사냥 일감 10종(`jb_hunt_*`)은 아직 게시판 안에 있음(토벌 창으로 옮길지 오너 결정) · 주간 수첩은 사냥·생활 혼합이라 이름 유지 · `skills`/`combos` 테스트는 고정 시드(31337)로 굴림.
 - **일일 아르바이트 (2026-11-17, 오너 지시):** 알바는 이제 4분짜리 **미니게임**(기획 `docs/design/daily-alba-minigames-2026-11-16.md`). 엔진 `66-alba.js`(서버 세션 `p.ab`, 액션 `ab_start ab_act ab_leave ab_close`, 와이어 `ab`, 저장 `ch.ab` — 시트 버전 안 올림) + 창 `public/alba.js`(위 연출 · 아래 게임판) + 게임마다 `67-alba-<k>.js`/`alba_<k>.js`/`tests/alba-<k>.mjs`.
+- **일일 아르바이트 개선 라운드 (2026-11-17):** 목록 창이 열리지 않던 버그(`listKey` 인자) · 그만두기 확인창이 알바 창 뒤에 가려지던 버그 · 접속 끊김 시 판이 얼어붙던 것을 고치고, 오늘의 특근(2종 ×1.25) · 결과 카드(받은 골드·신기록·한 번 더) · 목록 도장 · 업적 4개 · 협동 알바 목록 복원을 더함. 실제 클라이언트 스모크: `scripts/alba-smoke.js`(머리말대로 `shot.mjs --live --eval`). 설계 기록 `docs/design/daily-alba-minigames-2026-11-16.md` §10.
   1차: pipe fly store parcel laundry taiyaki · 2차: pest(갤러그) wall(알카노이드) cross lamp rhythm garland. 등급 C 0.30 · B 0.65 · A 0.85 · S 1.0 × par, 종류별 하루 1회 보수, 하루 4회 상한. **옛 알바 일감(bring make fish deliver scout chore)은 `JB_RETIRED`로 신규 수락 불가**, 협동 배관은 철거(협동 5종 유지).
   **par는 봇(사람 같은 봇 ≈ B)에 맞춘 초안** — 실제 플레이 뒤 조정(붕어빵은 촘촘해서 일반 플레이어가 C일 가능성). 새 게임 추가법: 엔진 헤더 주석(`66-alba.js`)과 `alba.js` 헤더의 계약, `ALBA_ORDER`와 `LOADERS`에 키 추가.
 - 작업 폴더·브랜치는 정리됨(병합된 에이전트 브랜치 164개 삭제). 남은 오래된 에이전트 폴더 2개(`agent-a2033284…` 미커밋 수정, `agent-a72d64ca…` 미병합)는 내용을 모르므로 보존.

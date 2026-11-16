@@ -321,41 +321,8 @@ function nextReset(t = Date.now()) {
   const DAY = 86400000, K = 9 * 3600000, R = 6 * 3600000;
   return (Math.floor((t + K - R) / DAY) + 1) * DAY - K + R;
 }
-export const albaKey = () => [key(), G.self.coop];
-/** The 알바 window: the job in hand with its clock, today's count, the co-op shifts, trust with the 알바 NPCs. */
-export function renderAlba(s) {
-  const box = $("#alba-body");
-  box.textContent = "";
-  if (!s.jb || !D()) { box.append(el("p", "hint", "불러오는 중…")); return; }
-  const [, offers, done] = s.jb, per = D().jbPay.perDay, a = active(s);
-  const top = el("div", "daily-top");
-  const rs = el("b", ""); rs.id = "alba-reset";
-  top.append(iconImg("note", "#e2c486"), el("span", "", `오늘의 알바 ${done.length}/${per}`), rs);
-  box.append(top);
-  box.append(el("div", "section", "수행 중인 알바"));
-  if (a) {
-    const card = jobCard(s, a, true), o = offers.find((r) => r[0] === a.id), g = o ? o[6] || 0 : 0;
-    const info = el("small", "where", `의뢰인 ${a.t.npcName || npcLabel(a.t.npc)} · ${(KIND[a.t.kind] || [a.t.kind])[0]} · ${(D().jbGrade || { name: ["쉬움"] }).name[g]}`);
-    card.querySelector(".say").after(info);
-    const ck = el("div", "alba-clock"); ck.id = "alba-clock"; ck.hidden = true;
-    const ru = el("div", "alba-clock"); ru.id = "alba-rush"; ru.hidden = true;
-    info.after(ck, ru);
-    if (a.t.kind === "deliver" && a.prog !== 1) ru.after(el("small", "hint", "꾸러미를 받는 순간부터 제한 시간이 흐릅니다."));
-    box.append(card);
-  } else {
-    box.append(el("p", "hint", done.length >= per ? `오늘의 알바 ${per}개를 모두 끝냈습니다. 아침 6시에 새 의뢰가 붙습니다.` : "맡은 알바가 없습니다. 버드나무 마을 알바 게시판에서 맡을 수 있습니다."));
-  }
-  const btns = el("div", "btns"), b = el("button", "btn", "알바 게시판 보기");
-  b.addEventListener("click", () => { open(); Sound.play("open"); });
-  btns.append(b);
-  const go = !a && done.length < per && !nearPopo() && Track.button("popo", "알바 중개인 포포");
-  if (go) btns.append(go);
-  box.append(btns);
-  const fin = done.map(J).filter(Boolean);
-  if (fin.length) {
-    box.append(el("div", "section", `오늘 끝낸 알바 ${fin.length}`));
-    for (const t of fin) box.append(el("p", "ds", `✓ ${t.npcName} — ${t.text.replace(/[.!].*$/, "")}`));
-  }
+/** The rest of the 알바 window (alba.js lists the solo games first): the co-op shifts with a way to each, then the trust with the 알바 residents. */
+export function albaExtras(box, s) {
   const coop = Object.entries((G.defs.coop && G.defs.coop.jobs) || {});
   if (coop.length) {
     const paid = s.coop || [];
@@ -370,7 +337,6 @@ export function renderAlba(s) {
   }
   box.append(el("div", "section", "알바 주민의 신뢰"));
   trustList(box, s);
-  clockLines(now());
 }
 /** Each trusted NPC's badge, most trusted first (the 생활 window and the 알바 window). */
 function trustList(box, s) {

@@ -43,7 +43,7 @@ const APPS = [
   { id: "achieve", name: "업적", game: "업적 · 칭호", glyph: "trophy", hue: "#e09a30", win: "achieve", key: "achieve", note: "업적과 얻은 칭호" },
   { id: "collect", name: "몬스터\n도감", game: "몬스터 도감", glyph: "paw", hue: "#8aa83a", win: "collect", key: "collect", note: "만난 몬스터 기록" },
   { id: "dex", name: "아이템\n도감", game: "아이템도감", glyph: "codex", hue: "#5a62c8", win: "dex", key: "dex", note: "전설 · 유니크 접두사의 효과를 한눈에" },
-  { id: "alba", name: "알바", game: "아르바이트", glyph: "crate", hue: "#d87a3a", win: "alba", key: "alba", note: "맡은 알바와 남은 시간" },
+  { id: "alba", name: "알바", game: "아르바이트", glyph: "crate", hue: "#d87a3a", win: "alba", key: "alba", note: "일일 아르바이트 · 오늘의 특근" },
   { id: "life", name: "생활", game: "생활 기술", glyph: "life", hue: "#58b050", win: "life", key: "life", note: "낚시 · 채집 · 요리 같은 생활 기술" },
   { id: "charm", name: "참\n보드", game: "참 보드", glyph: "gem", hue: "#c85aa8", win: "charm", key: "charm", note: "참을 끼워 능력 높이기" },
   { id: "trophy", name: "전리품", game: "보스 전리품", glyph: "skull", hue: "#b8404a", win: "trophy", key: "trophy", note: "잡은 보스의 전리품" },

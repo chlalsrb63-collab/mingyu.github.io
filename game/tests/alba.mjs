@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { ALBA, ALBA_RULES, ALBA_T, ALBA_ORDER, JB_PAY, albaGood, albaBad, albaMult, albaGrade, albaClean };\n";
+  "\nexport const __t = { ALBA, ALBA_RULES, ALBA_T, ALBA_ORDER, JB_PAY, albaGood, albaBad, albaMult, albaGrade, albaClean, albaHot, albaStamps, albaPay };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t;
 // the real games refuse an empty input, so the engine is tested with three stand-ins registered like any game (66-alba.js)
@@ -82,6 +82,8 @@ tick(X.ALBA_T.runMs);
 assert.equal(p.ab.state, "end"); assert.ok(p.ab.res && p.ab.res[0] === 4, "S at a tiny par");
 assert.ok(ch.gold > gold0 && ch.ab.done[K] === 4 && ch.ab.best[K] > 0, "paid, recorded");
 const paid = ch.gold - gold0;
+assert.equal(p.ab.res[8], paid, "the result carries the gold paid"); assert.equal(p.ab.res[7], 0, "no best before the first run"); assert.equal(p.ab.res[9], X.albaHot(S).includes(K) ? 1 : 0, "the 특근 flag");
+assert.ok(ch.ach.includes("alba1") && ch.ach.includes("albaS1"), "a first C and a first S earn their achievements");
 assert.equal(act({ t: "ab_act" }).ok, true); assert.equal(p.ab.state, "end");
 const wire = view().ab; assert.equal(wire[1], 1); assert.ok(Array.isArray(wire[8]) && wire[8][0] === 4, "the result rides the wire");
 assert.ok(act({ t: "ab_close" }).ok && !p.ab, "closing the result frees the hero"); assert.equal(p.ghost, 0);
@@ -92,6 +94,40 @@ assert.ok(act({ t: "ab_start", k: K }).ok); tick(X.ALBA_T.briefMs + 100);
 for (let i = 0; i < 5; i++) { tick(100); act({ t: "ab_act" }); }
 tick(X.ALBA_T.runMs);
 assert.equal(p.ab.res[4], 2, "already paid today"); assert.equal(ch.gold - gold0, paid, "no second pay"); act({ t: "ab_close" });
+
+// the record: a second run knows the best before it
+{
+  const before = ch.ab.best[K];
+  assert.ok(act({ t: "ab_start", k: K }).ok); tick(X.ALBA_T.briefMs + 100); tick(100); act({ t: "ab_act" }); tick(X.ALBA_T.runMs);
+  assert.equal(p.ab.res[7], before, "the best before this run rides the result"); assert.equal(p.ab.res[8], 0, "a practice run pays no gold"); act({ t: "ab_close" });
+}
+
+// 특근: two distinct games a day, the same all day, a new pair on other days; the pay is 1.25 ×
+{
+  S.now = now;
+  const h = X.albaHot(S);
+  assert.equal(h.length, 2); assert.notEqual(h[0], h[1]); assert.ok(h.every((k) => X.ALBA[k])); assert.deepEqual(X.albaHot(S), h);
+  const seen = new Set(); for (let d = 0; d < 40; d++) { S.now = now + d * 86400000; for (const k of X.albaHot(S)) seen.add(k); }
+  assert.ok(seen.size >= 8, "over forty days most games take a turn: " + seen.size);
+  S.now = now;
+  const hk = h[0], nk = X.ALBA_ORDER.find((k) => X.ALBA[k] && !h.includes(k)), mul = [X.ALBA[hk].mul, X.ALBA[nk].mul];
+  X.ALBA[hk].mul = X.ALBA[nk].mul = 1;
+  const pay = (k) => { ch.ab.done = {}; const g0 = ch.gold; X.albaPay(S, p, { k, score: X.ALBA[k].par }, 4); return ch.gold - g0; };
+  const a = pay(hk), b = pay(nk);
+  assert.ok(b > 0 && Math.abs(a - b * 1.25) <= 1.5, `a 특근 game pays 1.25 ×: ${a} vs ${b}`);
+  X.ALBA[hk].mul = mul[0]; X.ALBA[nk].mul = mul[1];
+  assert.equal(D.alba.hot, 1.25, "the bonus rides the defs");
+  p.dirty = true; const sv = view().self; assert.ok(sv && Array.isArray(sv.alba) && sv.alba.length === 4, "the window's record carries done · best · slots · 특근"); assert.deepEqual(sv.alba[3], h);
+}
+
+// stamps (the best score against the cut-offs) feed the achievements
+{
+  const real = X.ALBA_ORDER.filter((k) => X.ALBA[k]), c2 = { ab: { day: 0, done: {}, best: {} } };
+  assert.equal(X.albaStamps(c2, 1), 0); assert.equal(X.albaStamps({}, 1), 0, "an old sheet has none");
+  for (const k of real) c2.ab.best[k] = X.ALBA[k].par;
+  assert.equal(X.albaStamps(c2, 4), real.length); c2.ab.best[real[0]] = Math.round(X.ALBA[real[0]].par * 0.3);
+  assert.equal(X.albaStamps(c2, 4), real.length - 1); assert.equal(X.albaStamps(c2, 1), real.length);
+}
 
 // give up: no pay, no slot used
 const slots = X.JB_PAY.perDay - Object.keys(ch.ab.done).length;

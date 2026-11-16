@@ -17,8 +17,8 @@
 import { Sound } from "./audio.js";
 import * as SP from "./sprites.js";
 import { G, $, el, clamp } from "./state.js";
-import { act } from "./net.js";
-import { ask } from "./windows.js";
+import { act, ws } from "./net.js";
+import * as Board from "./board.js";
 
 const GAMES = {};   // k → module, loaded on first use
 const LOADERS = {
@@ -52,9 +52,13 @@ function build() {
   const box = el("div", "ap-box"), head = el("div", "ap-head");
   const title = el("b", "ap-title"), time = el("span", "ap-time"), score = el("span", "ap-score"), combo = el("span", "ap-combo");
   const quit = el("button", "btn small", "그만두기"); quit.type = "button";
+  // two presses to give up: the page's confirm box (windows.js ask) sits under this window, so the button asks for itself
   quit.addEventListener("click", () => {
     if (st.ab && st.ab[1]) { act({ t: "ab_close" }); return; }
-    ask("아르바이트를 그만둘까요? 보수는 받을 수 없습니다.", "그만두기", () => act({ t: "ab_leave" }));
+    if (quit.dataset.sure) { act({ t: "ab_leave" }); return; }
+    quit.dataset.sure = "1"; quit.textContent = "정말 그만두기? (보수 없음)";
+    clearTimeout(st.sureT);
+    st.sureT = setTimeout(() => { delete quit.dataset.sure; if (!(st.ab && st.ab[1])) quit.textContent = "그만두기"; }, 3000);
   });
   head.append(title, time, score, combo, quit);
   const stage = document.createElement("canvas"); stage.className = "ap-stage"; stage.width = 480; stage.height = 120;
@@ -80,7 +84,7 @@ async function open(k) {
     const d = build(), row = G.defs.alba.rows[k];
     st.k = k; st.mod = mod; st.parts.length = 0; st.react = null; st.result = null; st.shown = "";
     d.title.textContent = row.name; d.hint.textContent = row.hint; d.res.hidden = true; d.res.textContent = "";
-    d.board.textContent = ""; d.root.hidden = false; d.quit.textContent = "그만두기";
+    d.board.textContent = ""; d.root.hidden = false; d.quit.textContent = "그만두기"; delete d.quit.dataset.sure;
     const th = THEME[row.tool] || THEME.box; d.box.style.setProperty("--ap-acc", th[2]);
     d.marks.forEach((m, i) => { m.style.left = `${(G.defs.alba.cuts[i] / 1.1) * 100}%`; });
     st.host = el("div", "ap-host"); d.board.append(st.host);
@@ -98,6 +102,8 @@ function close() {
   dispatchEvent(new Event("blur"));   // input.js forgets the keys held (their keyup went to the window, not to the world)
 }
 
+/** Out of the world (the socket dropped): the window must not stay over the lobby. */
+export function reset() { st.ab = null; st.pending = null; st.result = null; st.shown = ""; close(); }
 /** Every snapshot: the shift in hand (or its absence = closed). */
 export function onSnap(s) {
   const ab = s.ab;
@@ -127,17 +133,25 @@ addEventListener("keyup", (e) => {
 
 // ── the result card
 function showResult() {
-  const d = st.dom, r = st.result, [g, score, par, best, code, maxc, cuts] = r;
+  const d = st.dom, r = st.result, [g, score, par, best, code, maxc, cuts, prev = 0, gold = 0, hot = 0] = r, k = st.k;
   st.shown = "1";
   d.res.hidden = false; d.res.textContent = "";
   const stamp = el("div", `ap-stamp g${g}`, g ? "CBAS"[g - 1] : "－");
+  const rec = score > prev && score > 0 ? (prev ? `신기록! (이전 ${prev.toLocaleString()}점)` : "첫 기록!") : "";
   const lines = [
     `점수 ${score.toLocaleString()} (기준 ${par.toLocaleString()})`, `최고 기록 ${best.toLocaleString()} · 최대 콤보 ${maxc}`,
+    rec && ["b", rec],
+    code === 1 ? ["b", `보수 ${gold.toLocaleString()}G${hot ? " · 특근 보너스!" : ""}`] : "",
     ["C 등급에 닿지 못했어요. 오늘 다시 도전할 수 있어요.", "오늘의 보수를 받았습니다!", "오늘 이 알바의 보수는 이미 받았어요 (연습 기록).", "오늘 받을 수 있는 보수 횟수를 모두 썼어요."][code],
     `다음 등급까지: ${g >= 4 ? "최고 등급!" : `${["C", "B", "A", "S"][g]} ${cuts[g].toLocaleString()}점`}`,
-  ];
-  const ok = el("button", "btn gold", "확인"); ok.type = "button"; ok.addEventListener("click", () => act({ t: "ab_close" }));
-  d.res.append(stamp, ...lines.map((l) => el("p", "", l)), ok);
+  ].filter(Boolean);
+  const btns = el("div", "ap-btns");
+  const again = el("button", "btn", "한 번 더"), ok = el("button", "btn gold", "닫기");
+  again.type = ok.type = "button";
+  again.addEventListener("click", () => { act({ t: "ab_close" }); act({ t: "ab_start", k }); });   // the server takes them in order
+  ok.addEventListener("click", () => act({ t: "ab_close" }));
+  btns.append(again, ok);
+  d.res.append(stamp, ...lines.map((l) => (Array.isArray(l) ? el("p", "ap-rec", l[1]) : el("p", "", l))), btns);
   d.quit.textContent = "닫기";
   api.sfx(g ? "alba_big" : "alba_bad");
 }
@@ -216,6 +230,12 @@ export function tick(t) {
   const d = st.dom, toStart = Math.max(0, st.startAt - t), left = Math.max(0, st.endAt - t), ended = !!st.ab[1];
   const phase = ended ? "end" : toStart > 0 ? "brief" : "run", fever = Math.max(0, st.feverEnd - t);
   const par = G.defs.alba.rows[st.k].par, score = st.ab[4], combo = st.ab[5];
+  // the socket dropped (net.js retries by itself): say so over the frozen board; the shift will not survive a new connection
+  const down = !(ws && ws.readyState === 1);
+  if (down !== st.down) {
+    st.down = down; d.root.classList.toggle("down", down);
+    d.hint.textContent = down ? "서버와의 연결이 끊겼어요. 다시 연결하는 중… 진행하던 알바는 이어지지 않을 수 있어요." : G.defs.alba.rows[st.k].hint;
+  }
   const txt = ended ? "종료" : phase === "brief" ? `준비 ${Math.ceil(toStart / 1000)}` : mmss(left);
   if (txt !== st.last.t) { d.time.textContent = txt; st.last.t = txt; if (phase === "run" && left < 10500 && left > 0) api.sfx("alba_tick"); }
   if (score !== st.last.s) { d.score.textContent = `${score.toLocaleString()}점`; st.last.s = score; d.fill.style.width = `${clamp(score / par / 1.1, 0, 1) * 100}%`; }
@@ -230,27 +250,31 @@ export function tick(t) {
 }
 
 // ── the 알바 window: the games, today's pay, best scores; [시작]
-export const listKey = (s) => [s.alba, !!G.defs?.alba, s.lvl, G.map && G.map.id, !!s.ab];
+export const listKey = () => { const s = G.self || {}; return [s.alba, s.coop, s.rep, !!(G.defs && G.defs.alba), s.lvl, G.map && G.map.id]; };   // hud.js draw() calls it with no argument
 export function renderList(s) {
   const box = $("#alba-body");
   box.textContent = "";
   const D = G.defs.alba;
   if (!D || !s.alba) { box.append(el("p", "hint", "불러오는 중…")); return; }
-  const [done, best, slots] = s.alba, inTown = !G.map || !D.field.includes(G.map.id);
+  const [done, best, slots, hot = []] = s.alba, inTown = !G.map || !D.field.includes(G.map.id);
+  const stampOf = (k) => { let g = 0; while (g < 4 && (best[k] || 0) >= Math.round(D.rows[k].par * D.cuts[g])) g++; return g; };
+  const nS = D.order.filter((k) => stampOf(k) === 4).length;
   const top = el("div", "daily-top");
   top.append(el("span", "", `오늘의 알바 보수 ${D.perDay - slots}/${D.perDay}`), el("b", "", "매일 아침 6시에 새로 받을 수 있어요"));
   box.append(top);
+  box.append(el("p", "hint", `S 도장 ${nS}/${D.order.length}${hot.length ? ` · 오늘의 특근: ${hot.map((k) => D.rows[k].name).join(", ")} (보수 +${Math.round((D.hot - 1) * 100)}%)` : ""}`));
   box.append(el("p", "hint", `한 번에 약 ${Math.round((D.runMs + D.briefMs) / 60000 * 10) / 10}분. 종류마다 하루 한 번 보수를 받고, 다시 하면 기록 연습이에요. 하루에 ${D.perDay}번까지 보수를 받을 수 있어요.`));
   for (const k of D.order) {
     const r = D.rows[k], g = done[k], card = el("div", "dcard jb-card" + (g ? " done" : ""));
     const hd = el("div", "dh"), nm = el("b", "", r.name), tags = el("span", "");
     const tag = (txt, bg) => { const x = el("span", "tag", txt); if (bg) x.style.background = bg; x.style.marginLeft = "3px"; tags.append(x); };
+    if (hot.includes(k) && !g) tag(`특근 +${Math.round((D.hot - 1) * 100)}%`, "#ff9a3a");
     if (g) tag(`오늘 ${"CBAS"[g - 1]} 보수 받음`, "#5ee07a"); else if (!slots) tag("오늘 보수 끝", "#999");
-    if (best[k]) tag(`최고 ${best[k].toLocaleString()}점`);
+    if (best[k]) tag(`최고 ${stampOf(k) ? "CBAS"[stampOf(k) - 1] + " · " : ""}${best[k].toLocaleString()}점`, stampOf(k) === 4 ? "#ffd84a" : "");
     hd.append(nm, tags);
     card.append(hd, el("p", "say", r.hint), el("small", "where", `${r.place} · 기준 ${r.par.toLocaleString()}점`));
-    const btns = el("div", "btns"), b = el("button", "btn gold", s.ab ? "진행 중" : "시작");
-    b.type = "button"; b.disabled = !!s.ab || !inTown;
+    const btns = el("div", "btns"), b = el("button", "btn gold", "시작");
+    b.type = "button"; b.disabled = !inTown;   // (a shift in hand covers this window; the server refuses a second one)
     if (!inTown) b.title = "마을에서 시작할 수 있어요";
     b.addEventListener("click", () => { Sound.play("ui"); act({ t: "ab_start", k }); });
     btns.append(b);
@@ -258,4 +282,5 @@ export function renderList(s) {
     card.append(btns);
     box.append(card);
   }
+  Board.albaExtras(box, s);   // 협동 알바 (with a way to each) and the trust with the 알바 residents
 }

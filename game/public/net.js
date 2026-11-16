@@ -176,6 +176,7 @@ export function stopGame() {
   saveOpen(true);   // which windows were open, before they close (windows.js)
   for (const w of $$("#windows .window, #panel .window")) if (!w.hidden) closeWin(w.id.slice(2));
   phoneShut();
+  Alba.reset();   // a shift's window would stay over the lobby (alba.js)
   resize();
   tg.clearRect(0, 0, text.width, text.height);
 }

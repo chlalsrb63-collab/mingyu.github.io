@@ -14848,6 +14848,11 @@ const ACH = [
   ["coopS_alch", "생활", "가마의 달인", "보글연금공방 가마 S 등급", 20, (c) => c.cnt.coopS_alch >= 1, "가마의 달인"],
   ["coopS_lib", "생활", "서고의 달인", "올빼미 도서관 책 분류 S 등급", 20, (c) => c.cnt.coopS_lib >= 1, "서고의 달인"],
   ["coopall", "생활", "협동 알바 왕", "모든 협동 알바에서 S 등급", 40, (c) => CNT_KEYS.every((k) => !k.startsWith("coopS_") || c.cnt[k] >= 1), "협동 알바 왕"],
+  // 일일 아르바이트 (66-alba.js): stamps are the best scores against each game's cut-offs
+  ["alba1", "생활", "첫 아르바이트", "일일 아르바이트에서 C 등급 이상 받기", 5, (c) => albaStamps(c, 1) >= 1],
+  ["albaS1", "생활", "알바 에이스", "일일 아르바이트 하나에서 S 등급 받기", 10, (c) => albaStamps(c, 4) >= 1],
+  ["albaS6", "생활", "알바의 달인", "일일 아르바이트 여섯 종에서 S 등급 받기", 20, (c) => albaStamps(c, 4) >= 6, "알바의 달인"],
+  ["albaSall", "생활", "만능 알바생", "일일 아르바이트의 모든 종류에서 S 등급 받기", 40, (c) => albaStamps(c, 4) >= ALBA_ORDER.length, "만능 알바생", [["gold", 5]]],
   ["coop20", "생활", "단골 알바생", "협동 알바 20번 완수", 30, (c) => c.cnt.coop >= 20, "단골 알바생"],
   ...LIFE.map((k, i) => [`life50_${k}`, "생활", LIFE_MASTER[i], `${LIFE_NAME[i]} Lv.50 달성`, 30, (c) => !!c.life && c.life[k].lv >= LIFE_MAX, LIFE_MASTER[i]]),
   ["gat100", "생활", "부지런한 채집꾼", "채집 100번", 5, (c) => c.cnt.gat >= 100],
@@ -18218,6 +18223,7 @@ const ALBA_T = {
   cuts: [0.30, 0.65, 0.85, 1.0],                  // share of the game's par for C B A S
   gradeK: [0.7, 1.0, 1.3, 1.7],                   // pay multiplier per grade
   rep: [1, 2, 2, 3], stone: [0, 0, 1, 2], life: 0.5,
+  hot: 1.25,                                      // today's two 특근 games pay this much more
 };
 /** What a hero may still do on a shift (everything else is refused until it ends). */
 const ALBA_OK = new Set(["nw", "opt", "chat", "pchat", "gchat", "emo", "respawn"]);
@@ -18242,9 +18248,23 @@ function albaToday(p) {
   return ch.ab;
 }
 const albaPaid = (p) => Object.keys(albaToday(p).done).length;
+/** Today's two 특근 games (a pick seeded by the day, so everyone sees the same two; they pay ALBA_T.hot × once). */
+function albaHot(S) {
+  const ks = ALBA_ORDER.filter((k) => ALBA[k]), n = ks.length;
+  if (n < 3) return [];
+  const h = strHash(`hot:${dayOf(S.now)}`) >>> 0, a = h % n;
+  return [ks[a], ks[(a + 1 + ((h >>> 8) % (n - 1))) % n]];
+}
+/** How many games the hero's best score has taken to grade `g` (1 C · 2 B · 3 A · 4 S) or better (the 알바 achievements). */
+function albaStamps(ch, g) {
+  const b = isObj(ch.ab) ? ch.ab.best : null;
+  let n = 0;
+  if (b) for (const k of ALBA_ORDER) if (ALBA[k] && (b[k] || 0) >= Math.round(ALBA[k].par * ALBA_T.cuts[g - 1])) n++;
+  return n;
+}
 function albaSelf(p) {
   const a = albaToday(p);
-  return [a.done, a.best, Math.max(0, JB_PAY.perDay - Object.keys(a.done).length)];
+  return [a.done, a.best, Math.max(0, JB_PAY.perDay - Object.keys(a.done).length), albaHot(p.S)];
 }
 
 // ── the points
@@ -18304,7 +18324,7 @@ function albaPay(S, p, ab, g) {
   if (Object.hasOwn(a.done, k)) return 2;
   if (Object.keys(a.done).length >= JB_PAY.perDay) return 3;
   a.done[k] = g;
-  const Tt = Math.max(1, Math.floor(toTier(ch.lvl))), kk = ALBA_T.gradeK[g - 1] * (J.mul || 1);
+  const hot = albaHot(S).includes(k), Tt = Math.max(1, Math.floor(toTier(ch.lvl))), kk = ALBA_T.gradeK[g - 1] * (J.mul || 1) * (hot ? ALBA_T.hot : 1);
   const gold = Math.round((JB_PAY.gold[0] + JB_PAY.gold[1] * Tt) * kk * (repOf(ch, J.npc) >= REP_TIER[0] ? REP_TIP : 1));
   ch.gold += gold;
   p.gain.push(["gold", gold]);
@@ -18314,19 +18334,22 @@ function albaPay(S, p, ab, g) {
   const stone = ALBA_T.stone[g - 1];
   if (stone && addItem(ch, "stone", stone)) p.gain.push(["item", "stone", stone, 0]);
   const tokens = gainWillowToken(p, 1);
-  toast(p, `[${J.name}] ${"CBAS"[g - 1]} 등급! 보수 ${gold.toLocaleString()}G${tokens ? ` · 버드나무토큰 +${tokens}` : ""}`);
+  toast(p, `[${J.name}] ${"CBAS"[g - 1]} 등급! 보수 ${gold.toLocaleString()}G${hot ? " (특근!)" : ""}${tokens ? ` · 버드나무토큰 +${tokens}` : ""}`);
   p.dirty = true;
   return 1;
 }
 function albaFinish(S, p, ab) {
   if (ab.state === "end") return;
   ab.state = "end";
+  const prev = albaToday(p).best[ab.k] || 0, gold0 = p.ch.gold;
   const g = albaGrade(ab.k, ab.score), code = albaPay(S, p, ab, g);
   if (code === 2) toast(p, "오늘 이 알바의 보수는 이미 받았어요. 기록 연습으로 끝났습니다.");
   else if (code === 3) toast(p, `오늘 받을 수 있는 알바 보수 ${JB_PAY.perDay}번을 모두 받았어요.`);
   else if (!g) toast(p, "C 등급에 닿지 못했어요. 오늘 다시 도전할 수 있어요.");
-  // [grade, score, par, best, pay code, max combo, cut-offs]
-  ab.res = [g, Math.round(ab.score), ALBA[ab.k].par, albaToday(p).best[ab.k] || 0, code, ab.maxCombo, ALBA_T.cuts.map((c) => Math.round(ALBA[ab.k].par * c))];
+  // [grade, score, par, best, pay code, max combo, cut-offs, the best before this run, gold paid, 특근 (1/0)]
+  ab.res = [g, Math.round(ab.score), ALBA[ab.k].par, albaToday(p).best[ab.k] || 0, code, ab.maxCombo, ALBA_T.cuts.map((c) => Math.round(ALBA[ab.k].par * c)),
+    prev, p.ch.gold - gold0, code === 1 && albaHot(S).includes(ab.k) ? 1 : 0];
+  checkAch(S, p);   // a better best (even a practice run's) can earn the 알바 achievements
   ab.rev++;
 }
 /** Bring a shift to `now`: the game's own clock, then the end (and the result's timeout). */
@@ -18384,7 +18407,7 @@ function albaDefs() {
     if (!r) continue;
     rows[k] = { name: r.name, npc: r.npc, place: r.place, skill: r.skill, par: r.par, hint: r.hint, outfit: r.outfit, tool: r.tool };
   }
-  return { order: ALBA_ORDER.filter((k) => ALBA[k]), rows, runMs: ALBA_T.runMs, briefMs: ALBA_T.briefMs, cuts: ALBA_T.cuts, gradeK: ALBA_T.gradeK, perDay: JB_PAY.perDay, feverMs: ALBA_T.feverMs, rushMs: ALBA_T.rushMs, field: Object.keys(DENSITY) };
+  return { order: ALBA_ORDER.filter((k) => ALBA[k]), rows, runMs: ALBA_T.runMs, briefMs: ALBA_T.briefMs, cuts: ALBA_T.cuts, gradeK: ALBA_T.gradeK, perDay: JB_PAY.perDay, feverMs: ALBA_T.feverMs, rushMs: ALBA_T.rushMs, hot: ALBA_T.hot, field: Object.keys(DENSITY) };
 }
 // ───────────────────────────── charms (주아나의 참 공방) ─────────────────────────────
 // docs/design/charms.md. A charm (참) is its own kind of thing, apart from gear: it drops sealed (미감정) in

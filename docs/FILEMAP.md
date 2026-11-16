@@ -251,6 +251,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `editor-server.mjs` [493] | Map editor on 127.0.0.1:5190. Recycles its rules child, backs up `data/`, and starts playtests. `EDITOR_DATA` selects an alternate data directory. |
 | `dump-maps.mjs` [23] | Builds ignored `public/_maps.json` for the browser previews. |
 | `shot.mjs` [181] | Playwright preview/live captures. `--serve` serves previews, `--hour` pins the visual clock, and `--el` crops to a selector. |
+| `alba-smoke.js` [60] | Page-side script for `shot.mjs --live --eval "$(cat scripts/alba-smoke.js)"`: the 알바 window through its real buttons (all 12 games, give-up, a dropped socket); prints `SMOKE ok/FAIL` lines. |
 | `icon-sheet.mjs` [26] | The skill icon sheet (`_icons.html`) in its jobs' colours: serves `/_defs.json` from `logic.defs()`, saves a PNG (`--out`, `--ids`). |
 | `bake-check.mjs` [36] | Compares chunked and whole ground bakes and measures time and canvas memory. |
 | `balance-probe.mjs` [211] | Runs template characters against their level band and prints kills/min, damage and deaths, including hybrid weapon comparisons. |

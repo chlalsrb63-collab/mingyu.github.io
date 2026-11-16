@@ -152,4 +152,4 @@ function frame() {
 requestAnimationFrame(frame);
 
 // handy for automated play-testing
-window.__game = { G, act, S3, go: (wx, wy) => { G.path = pathTo(wx, wy); return !!G.path; }, openWin, closeWin, closeAll };
+window.__game = { G, act, stopGame, disconnect, sock: () => ws, S3, go: (wx, wy) => { G.path = pathTo(wx, wy); return !!G.path; }, openWin, closeWin, closeAll };

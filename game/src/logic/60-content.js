@@ -195,6 +195,11 @@ const ACH = [
   ["coopS_alch", "생활", "가마의 달인", "보글연금공방 가마 S 등급", 20, (c) => c.cnt.coopS_alch >= 1, "가마의 달인"],
   ["coopS_lib", "생활", "서고의 달인", "올빼미 도서관 책 분류 S 등급", 20, (c) => c.cnt.coopS_lib >= 1, "서고의 달인"],
   ["coopall", "생활", "협동 알바 왕", "모든 협동 알바에서 S 등급", 40, (c) => CNT_KEYS.every((k) => !k.startsWith("coopS_") || c.cnt[k] >= 1), "협동 알바 왕"],
+  // 일일 아르바이트 (66-alba.js): stamps are the best scores against each game's cut-offs
+  ["alba1", "생활", "첫 아르바이트", "일일 아르바이트에서 C 등급 이상 받기", 5, (c) => albaStamps(c, 1) >= 1],
+  ["albaS1", "생활", "알바 에이스", "일일 아르바이트 하나에서 S 등급 받기", 10, (c) => albaStamps(c, 4) >= 1],
+  ["albaS6", "생활", "알바의 달인", "일일 아르바이트 여섯 종에서 S 등급 받기", 20, (c) => albaStamps(c, 4) >= 6, "알바의 달인"],
+  ["albaSall", "생활", "만능 알바생", "일일 아르바이트의 모든 종류에서 S 등급 받기", 40, (c) => albaStamps(c, 4) >= ALBA_ORDER.length, "만능 알바생", [["gold", 5]]],
   ["coop20", "생활", "단골 알바생", "협동 알바 20번 완수", 30, (c) => c.cnt.coop >= 20, "단골 알바생"],
   ...LIFE.map((k, i) => [`life50_${k}`, "생활", LIFE_MASTER[i], `${LIFE_NAME[i]} Lv.50 달성`, 30, (c) => !!c.life && c.life[k].lv >= LIFE_MAX, LIFE_MASTER[i]]),
   ["gat100", "생활", "부지런한 채집꾼", "채집 100번", 5, (c) => c.cnt.gat >= 100],
