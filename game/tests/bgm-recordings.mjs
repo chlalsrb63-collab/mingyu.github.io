@@ -2,9 +2,12 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { setImmediate as nextTurn } from "node:timers/promises";
 import { Sound } from "../public/audio.js";
+import { LOCAL_BGM_PATH } from "../public/local-host.js";
 
 const { bgmLocal } = JSON.parse(readFileSync(new URL("../public/assets/manifest.json", import.meta.url), "utf8"));
-const paths = new Set(Object.values(bgmLocal).filter(Array.isArray).flat().map(([file]) => `/__local-bgm/${file}`));
+const localPath = file => `/__local-bgm/${encodeURI(file)}`;
+const paths = new Set(Object.values(bgmLocal).filter(Array.isArray).flat().map(([file]) => localPath(file)));
+assert.ok([...paths].every(path => LOCAL_BGM_PATH.test(path)), "all catalogued local recordings have a valid route");
 
 const played = [];
 const param = { setValueAtTime() {}, linearRampToValueAtTime() {}, cancelAndHoldAtTime() {} };
@@ -26,7 +29,7 @@ async function check(src, key) {
   for (let i = 0; i < 12 && live()?.key !== key; i++) await nextTurn();
   const current = live();
   assert.equal(current.key, key);
-  assert.equal(current.src, `/__local-bgm/${src}`);
+  assert.equal(current.src, localPath(src));
   assert.equal(current.source.loop, true);
   return current;
 }
@@ -79,6 +82,23 @@ try {
   await check("inside/starlight_inn.mp3", "starlight_inn");
   Sound.bgm("house:22", "inn", "interior");
   await check("inside/inn.mp3", "inn");
+  for (const [lobby, fallback, lobbyFile, shift, track, loopEnd] of [
+    ["dongdong_apt", "clean", "dongdong_apt", "coop_apt", "apt", 104.98],
+    ["juju_diner", "juju", "juju_diner", "coop_diner", "restaurant", 177.55],
+    ["kangkang_forge", "forge", "kangkang_forge", "coop_forge", "Blacksmith", 121.83],
+    ["owl_library", "cafe", "owl_library", "coop_lib", "library", 120.08],
+  ]) {
+    Sound.bgm(lobby, fallback, "interior");
+    await check(`inside/${lobbyFile}.mp3`, lobby);
+    Sound.bgm("dim:32", shift, "interior");
+    const current = await check(`arbeit/${track}.mp3`, shift);
+    assert.equal(current.source.loopEnd, loopEnd);
+    Sound.bgm(lobby, fallback, "interior");
+    await check(`inside/${lobbyFile}.mp3`, lobby);
+  }
+  Sound.bgm("airship", "oasis", "mist");
+  const airship = await check("17. aircraft.mp3", "airship");
+  assert.equal(airship.source.loopEnd, 200, "the airship plays the full decoded recording");
   Sound.localScores = {};
   Sound.bgm("without_recordings", "without_recordings");
   for (let i = 0; i < 12 && live(); i++) await nextTurn();
@@ -104,4 +124,4 @@ try {
   Sound.ctx.decodeAudioData = decode;
 }
 
-console.log("recorded BGM: LAN, rift terrains, indoor loops, variants, missing clips, and cancellation without synthesis");
+console.log("recorded BGM: LAN, rift terrains, indoor and co-op loops, airship, variants, missing clips, and cancellation without synthesis");

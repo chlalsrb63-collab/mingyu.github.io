@@ -68,6 +68,8 @@ const pct = (c) => Math.max(0, Math.round(1000 * (1 - c.out / c.u0)));
   assert.ok(act(w, "c0", { t: "coop_start", k: "apt" }).ok);
   const dim = shiftOf(w), m = dim.map, c = dim.coop;
   assert.deepEqual([m.w, m.h, m.theme, m.safe], [64, 37, "interior", true]);
+  for (const k of ["apt", "diner", "forge", "lib"]) assert.equal(X.COOP[k].tpl.bgm, `coop_${k}`);
+  assert.equal(m.bgm, "coop_apt", "a shift's map carries its recording key");
   for (const r of [...J.tpl.ground, ...J.tpl.objects]) assert.equal(r.length, 64);
   const open = m.reach.reduce((n, v) => n + v, 0);
   log("apt open tiles", open, "dirt cells", c.cells.length, "opening dirt", c.u0);

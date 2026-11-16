@@ -6,3 +6,6 @@ export function localHost(host) {
   const first = Number(parts[1]), second = Number(parts[2]);
   return first === 127 || first === 10 || (first === 172 && second >= 16 && second <= 31) || (first === 192 && second === 168);
 }
+
+/** Paths served by the local recording route, in URL-encoded form. */
+export const LOCAL_BGM_PATH = /^\/__local-bgm\/((?:(?:inside|arbeit)\/)?[a-z0-9][a-z0-9_.-]*\.mp3|17\.%20aircraft\.mp3)$/i;

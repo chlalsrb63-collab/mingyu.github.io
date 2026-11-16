@@ -20,7 +20,7 @@
 import type { Env } from "./env";
 import { CHANNELS, MAX_BODY_BYTES, parseApiBody } from "./accounts.js";
 import { Room, VAULT_NAME, VAULT_PATH } from "./room";
-import { localHost } from "../public/local-host.js";
+import { LOCAL_BGM_PATH, localHost } from "../public/local-host.js";
 
 export { Room };
 
@@ -82,7 +82,7 @@ export default {
     const url = new URL(request.url);
 
     // Recordings from loose files are available on loopback and home LAN during local playtests.
-    const music = url.pathname.match(/^\/__local-bgm\/((?:inside\/)?[a-z0-9][a-z0-9_.-]*\.mp3)$/i);
+    const music = url.pathname.match(LOCAL_BGM_PATH);
     if (music && request.method === "GET" && env.PLAYTEST === "1" && env.HF_ENV !== "prod"
         && localHost(url.hostname)) {
       const asset = await env.ASSETS.fetch(new Request(new URL(`/assets/music/${music[1]}`, url)));

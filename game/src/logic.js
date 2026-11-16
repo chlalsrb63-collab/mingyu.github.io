@@ -2083,7 +2083,7 @@ const COOP = {
     st: { dump: APT.dump, rack: APT.rack },
     start: [[28, 14], [29, 14], [28, 16], [29, 16]],
     rooms: APT_MAP.rooms,
-    tpl: { name: "동동아파트 (근무 중)", theme: "interior", style: "apt", bgm: "clean", safe: true, w: APT.W, h: APT.H, entry: [28, 15], ground: APT_MAP.ground, objects: APT_MAP.objects },
+    tpl: { name: "동동아파트 (근무 중)", theme: "interior", style: "apt", bgm: "coop_apt", safe: true, w: APT.W, h: APT.H, entry: [28, 15], ground: APT_MAP.ground, objects: APT_MAP.objects },
   },
   diner: {
     name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan", "tray"], combo: 25000, skill: "cook",
@@ -2095,7 +2095,7 @@ const COOP = {
     st: { stove: DIN.stove, board: DIN.board, veg: DIN.veg, fish: DIN.fish, meat: DIN.meat, trash: DIN.trash, sink: DIN.sink, pass: DIN.pass, rack: DIN.rack },
     tables: DIN.tables,
     start: [[29, 4], [33, 4], [29, 9], [33, 9]],
-    tpl: { name: "쥬쥬식당 (영업 중)", theme: "interior", style: "tavern", bgm: "juju", safe: true, w: DIN.W, h: DIN.H, entry: [31, 9], ground: DIN_MAP.ground, objects: DIN_MAP.objects },
+    tpl: { name: "쥬쥬식당 (영업 중)", theme: "interior", style: "tavern", bgm: "coop_diner", safe: true, w: DIN.W, h: DIN.H, entry: [31, 9], ground: DIN_MAP.ground, objects: DIN_MAP.objects },
   },
   forge: {
     name: "캉캉대장간 단조", npc: "kangkang", lobby: "kangkang_forge", mins: 5, tools: ["tongs", "hammer"], combo: 40000, skill: "craft",
@@ -2116,7 +2116,7 @@ const COOP = {
     seats: [0, 1, 2, 3, 4, 5].map((i) => [HALL.shelfX + 1, HALL.shelfY + i]), door: HALL.door,
     start: [[14, 16], [22, 14], [14, 22], [29, 14]],
     tpl: {
-      name: "캉캉대장간 · 대형 단조장 (작업 중)", theme: "interior", style: "forge", bgm: "forge", safe: true, w: HALL.W, h: HALL.H, entry: [20, 19],
+      name: "캉캉대장간 · 대형 단조장 (작업 중)", theme: "interior", style: "forge", bgm: "coop_forge", safe: true, w: HALL.W, h: HALL.H, entry: [20, 19],
       ground: Array.from({ length: HALL.H }, () => "x".repeat(HALL.W)), objects: COOP_HALL,
     },
   },
@@ -2310,7 +2310,7 @@ COOP.lib = {
   // stations (tiles): the 반납대's ten tiles, the 48 shelf tiles (shelf i = tiles 6i … 6i+5), the rack
   st: { desk: Array.from({ length: 10 }, (_, i) => [LIBH.desk[0] + i, LIBH.desk[2]]), shelf: LIBH.shelves.flatMap(([x, y]) => [0, 1, 2, 3, 4, 5].map((i) => [x + i, y])), rack: LIBH.rack, door: LIBH.door },
   start: [[29, 30], [33, 30], [27, 29], [35, 29]],
-  tpl: { name: "올빼미 도서관 · 대형 서고 (작업 중)", theme: "interior", style: "library", bgm: "cafe", safe: true, w: LIBH.W, h: LIBH.H, entry: [31, 30], ground: COOP_LIB_MAP.ground, objects: COOP_LIB_MAP.objects },
+  tpl: { name: "올빼미 도서관 · 대형 서고 (작업 중)", theme: "interior", style: "library", bgm: "coop_lib", safe: true, w: LIBH.W, h: LIBH.H, entry: [31, 30], ground: COOP_LIB_MAP.ground, objects: COOP_LIB_MAP.objects },
 };
 /**
  * The library's numbers. Returners arrive every `arriveMs[n]` (÷feverK in fever: the crowd), each with `books` [min, max] books, and

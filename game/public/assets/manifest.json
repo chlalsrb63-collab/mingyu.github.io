@@ -25,6 +25,7 @@
     "abyss": [["9.abyss.mp3", 0, 109.68]],
     "maple": [["10.maple.mp3", 1.76, 111.48]],
     "oasis": [["11.oasis.mp3", 0, 106.02]],
+    "airship": [["17. aircraft.mp3"]],
     "coast": [["12.coast.mp3", 2.53, 108.22]],
     "dunesea": [["13.dunesea.mp3", 0.82, 112.81]],
     "frostkeep": [["14.frostkeep.mp3", 0, 107.70]],
@@ -48,6 +49,10 @@
     "pet_house": [["inside/pet_house.mp3", 0, 102.02]],
     "starlight_inn": [["inside/starlight_inn.mp3", 0, 158.20]],
     "tales_cafe": [["inside/tales_cafe.mp3", 0, 120.33]],
-    "town_hall": [["inside/town_hall.mp3"]]
+    "town_hall": [["inside/town_hall.mp3"]],
+    "coop_apt": [["arbeit/apt.mp3", 0, 104.98]],
+    "coop_diner": [["arbeit/restaurant.mp3", 0, 177.55]],
+    "coop_forge": [["arbeit/Blacksmith.mp3", 0, 121.83]],
+    "coop_lib": [["arbeit/library.mp3", 0, 120.08]]
   }
 }

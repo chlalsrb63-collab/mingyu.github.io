@@ -9,7 +9,7 @@
 
 import { TRACKS } from "./bgm.js";
 import { arrangedTrack, DEFAULT_MUSIC_STYLE, MUSIC_STYLES } from "./bgm-arrangements.js";
-import { localHost } from "./local-host.js";
+import { LOCAL_BGM_PATH, localHost } from "./local-host.js";
 import { ready as assetsReady } from "./assetlib.js";
 
 // ───────────────────────────── notes and chords ─────────────────────────────
@@ -62,11 +62,11 @@ const NIGHT = { town: "town_night", meadow: "field_night", forest: "field_night"
 /** Per-track level trims, measured by rendering each offline, so all sit near the same loudness. */
 const TRIM = { cafe: 1.2, hall: 1.2, inn: 1.15, city: 1.6, rift: 1.55, boss: 1.45, cave: 1.5, crypt: 1.15 };
 /** Old names some maps still carry. */
-const ALIAS = { field: "meadow" };
+const ALIAS = { field: "meadow", coop_apt: "clean", coop_diner: "juju", coop_forge: "forge", coop_lib: "cafe" };
 const DIM_RECORDINGS = new Set(["crypt", "sewer", "cave", "abyss"]);
 const RECORDING_KEY = /^[a-z][a-z0-9_]*$/;
-const RECORDING_SRC = /^(?:assets\/music\/[a-z][a-z0-9_]*-[a-f0-9]{12}\.(mp3|ogg|wav)|\/__local-bgm\/(?:inside\/)?[a-z0-9][a-z0-9_.-]*\.mp3)$/i;
-const localTrack = ([file, start, end]) => ({ src: `/__local-bgm/${file}`, start, end, loose: true });
+const RECORDING_SRC = /^assets\/music\/[a-z][a-z0-9_]*-[a-f0-9]{12}\.(mp3|ogg|wav)$/i;
+const localTrack = ([file, start, end]) => ({ src: `/__local-bgm/${encodeURI(file)}`, start, end, loose: true });
 
 /** Unroll a track into bars: [{ chord: [midi…], notes: [[hz, step, len]…] }]. */
 function compile(def) {
@@ -228,7 +228,7 @@ export const Sound = {
     const c = this.ctx;
     for (const entry of candidates) {
       if (this.recordingRequest !== request) return;
-      if (!RECORDING_SRC.test(entry.src) || seen.has(entry.src)) continue;
+      if (!(entry.loose ? LOCAL_BGM_PATH : RECORDING_SRC).test(entry.src) || seen.has(entry.src)) continue;
       seen.add(entry.src);
       const live = this.playing.find(p => !p.dying);
       if (live?.src === entry.src) { live.key = keys[0]; return; }

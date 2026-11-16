@@ -85,6 +85,10 @@ Moved out of `AGENTS.md`; read the one recipe your task needs.
   `BOOST`, rate limit in `THROTTLE`, priority in `IMPORTANT`; play with `Sound.play("name")`. Server-driven sounds are
   played from event handlers in `events.js`/`skillfx.js`.
 - Music: a track in `audio.js TRACKS`; a map picks it with `bgm` in its cfg.
+- Local recordings: keep the original MP3s in the serving checkout's ignored `game/public/assets/music/`
+  directory. `assets/manifest.json` maps `bgmLocal` keys to `[file, loopStart, loopEnd]` clips. Co-op shifts
+  use separate `coop_*` keys so their lobbies retain the indoor recordings. Copy the catalogue's source files
+  to each separate local play checkout at the same relative paths when refreshing its build.
 - External file instead: the External assets section below + `Assets.play(ctx, "sfx.<key>")` (fall back to the synth).
 
 **HD-2D post-fx (그래픽 효과, `public/postfx.js`)**
