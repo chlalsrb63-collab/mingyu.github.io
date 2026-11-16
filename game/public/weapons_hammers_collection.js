@@ -76,168 +76,194 @@ export const HAMMER_COLLECTION_META = [
 // Hammer world canvas: 40×36 (GRIP [5,16], scale 1.25 -> safe bounds s in [-3.1..25], t in [-11.5..11.5]).
 
 export const HAMMER_SILHOUETTES = {
-  // 1) 백은 성기사 대형 망치 — Sleek haft + compact winged guard + smooth gold-capped steel drum
-  royalpaladin: () => ({
-    sh: [
-      R(-2.8, -1.2, -1.2, 2.0, "gold"),
-      R(-1.2, 4.5, -0.8, 1.8, "crimson"),
-      R(4.5, 11.5, -0.8, 1.8, "steel"),
-      P([[7, -4.0], [9.5, -2.0], [9.5, 3.0], [7, 5.0], [8, 0.5]], "steel"),
-      // Crisp trimmed crimson-white cylinder maul + bright gold striking caps (`t = -8.2..8.8`)
-      R(12, 18.5, -6.5, 7.2, "crimson"),
-      R(12.5, 18, -3.0, 3.8, "steel"),
-      R(11.5, 19, -8.5, -5.8, "gold"),
-      R(11.5, 19, 6.2, 9.0, "gold"),
-      P([[18.5, -1.5], [22.5, 0.4], [18.5, 2.2]], "gold"),
-      C(15.2, 0.4, 1.7, "glint"), D(15.2, 0.4, "ruby"),
-    ],
-    head: [11.5, 21, -8.5, 9],
-    blade: ["steel", "gold"],
-  }),
+  // 1) 백은 성기사 대형 망치 — Slender haft + compact winged guard + sleek gold-capped drum
+  royalpaladin: (icon) => {
+    const p = icon ? 0.5 : 0;
+    return {
+      sh: [
+        R(-2.2, -1.0, -0.8, 1.2, "gold"),
+        R(-1.0, 3.5, -0.45 - p * 0.3, 0.85 + p * 0.3, "crimson"),
+        R(3.5, 9.2, -0.45 - p * 0.3, 0.85 + p * 0.3, "steel"),
+        P([[5.8, -2.5], [7.6, -1.2], [7.6, 1.6], [5.8, 2.9], [6.6, 0.2]], "steel"),
+        R(9.5, 14.2, -4.0, 4.4, "crimson"),
+        R(9.9, 13.8, -1.8, 2.2, "steel"),
+        R(9.1, 14.6, -5.2, -3.5, "gold"),
+        R(9.1, 14.6, 3.9, 5.6, "gold"),
+        P([[14.2, -0.9], [16.8, 0.2], [14.2, 1.3]], "gold"),
+        C(11.8, 0.2, 1.1, "glint"), D(11.8, 0.2, "ruby"),
+      ],
+      head: [9.1, 16.8, -5.2, 5.6],
+      blade: ["steel", "gold"],
+    };
+  },
 
-  // 2) 혈철 마신 대형 망치 — Slender haft + smooth horned blood-iron maul with dark eye socket
-  bloodforge: () => ({
-    sh: [
-      R(-2.8, 3.0, -1.0, 2.0, "crimson"),
-      R(3.0, 11.5, -0.7, 1.7, "ironDark"),
-      R(6.5, 8.0, -1.4, 2.2, "crimson"),
-      P([[11.5, -7.8], [13.5, -8.8], [17.5, -8.8], [19.5, -7.5], [18.2, -4.0], [18.2, 4.5],
-         [19.5, 8.0], [17.5, 9.5], [13.5, 9.5], [11.5, 8.2], [12.5, 4.5], [12.5, -4.0]], "bloodIron"),
-      C(15.5, 0.4, 1.6, "ironDark"), C(15.5, 0.4, 0.7, null),
-      L(13, -7, 18, -7, "ember"), L(13, 7.5, 18, 7.5, "ember"),
-    ],
-    head: [11.5, 19.5, -8.8, 9.5],
-    blade: ["bloodIron"],
-  }),
+  // 2) 혈철 마신 대형 망치 — Slender haft + sleek horned blood-iron maul with dark eye socket
+  bloodforge: (icon) => {
+    const p = icon ? 0.5 : 0;
+    return {
+      sh: [
+        R(-2.2, 2.4, -0.6 - p * 0.3, 1.0 + p * 0.3, "crimson"),
+        R(2.4, 9.2, -0.45 - p * 0.3, 0.85 + p * 0.3, "ironDark"),
+        R(5.0, 6.2, -0.9, 1.3, "crimson"),
+        P([[9.0, -4.8], [10.4, -5.5], [13.4, -5.5], [14.8, -4.6], [14.0, -2.4], [14.0, 2.8],
+           [14.8, 5.0], [13.4, 5.9], [10.4, 5.9], [9.0, 5.2], [9.8, 2.8], [9.8, -2.4]], "bloodIron"),
+        C(11.9, 0.2, 1.1, "ironDark"), D(11.9, 0.2, null),
+        L(10.4, -4.4, 13.6, -4.4, "ember"), L(10.4, 4.8, 13.6, 4.8, "ember"),
+      ],
+      head: [9.0, 14.8, -5.5, 5.9],
+      blade: ["bloodIron"],
+    };
+  },
 
-  // 3) 황금 곡괭이 망치 — Slender bronze shaft + flat gold drum & sleek sharp curved pick beak
-  sumpick: () => ({
-    sh: [
-      R(-2.8, -1.2, -1.2, 2.0, "gold"),
-      R(-1.2, 12, -0.7, 1.7, "bronze"),
-      P([[8.5, -1.2], [11, -3.5], [13, -3.5], [13, 4.5], [11, 4.5], [8.5, 2.2]], "gold"),
-      R(12, 18.5, -3.0, 3.8, "crimson"),
-      // Smooth chamfered golden upper anvil (`t = -8.2..-3.0`)
-      R(11.5, 19, -8.2, -3.0, "gold"),
-      L(13, -7.8, 18, -7.8, "silver"),
-      // Crisp sleek armor-piercing pick spike (`t = +3.5..+9.5`)
-      P([[12.5, 3.5], [17.5, 3.5], [18.5, 6.5], [16, 9.5], [14, 9.5], [14.5, 6.5], [12.5, 4.5]], "gold"),
-      D(15.2, 0.4, "amberCore"), P([[18.5, -1.5], [22, 0.4], [18.5, 2.2]], "gold"),
-    ],
-    head: [11.5, 21, -8.2, 9.5],
-    blade: ["gold"],
-  }),
+  // 3) 황금 곡괭이 망치 — Slender bronze shaft + compact gold drum & sleek pick beak
+  sumpick: (icon) => {
+    const p = icon ? 0.5 : 0;
+    return {
+      sh: [
+        R(-2.2, -1.0, -0.8, 1.2, "gold"),
+        R(-1.0, 9.4, -0.45 - p * 0.3, 0.85 + p * 0.3, "bronze"),
+        P([[6.8, -0.8], [8.6, -2.2], [10.2, -2.2], [10.2, 2.6], [8.6, 2.6], [6.8, 1.2]], "gold"),
+        R(9.4, 14.2, -1.9, 2.3, "crimson"),
+        R(9.0, 14.6, -5.2, -1.9, "gold"),
+        L(10.2, -4.9, 13.6, -4.9, "silver"),
+        P([[9.8, 2.2], [13.4, 2.2], [14.2, 4.0], [12.4, 6.0], [11.0, 6.0], [11.4, 4.0], [9.8, 2.8]], "gold"),
+        D(11.8, 0.2, "amberCore"), P([[14.2, -0.9], [16.5, 0.2], [14.2, 1.3]], "gold"),
+      ],
+      head: [9.0, 16.5, -5.2, 6.0],
+      blade: ["gold"],
+    };
+  },
 
-  // 4) 쌍룡 도끼 망치 — Sleek dark haft + smooth coiled gold neck + sharp wedge steel axe-maul
-  dragoncleave: () => ({
-    sh: [
-      R(-2.8, 4.5, -1.0, 2.0, "ironDark"),
-      R(4.5, 11.5, -0.8, 1.8, "ironDark"),
-      C(7.5, 0.4, 1.6, "steel"), D(7.5, 0.4, "glint"),
-      P([[9.5, -4.0], [12.5, -5.5], [13.5, -2], [13.5, 3], [12.5, 6.2], [9.5, 5.0], [11, 0.4]], "gold"),
-      // Smooth wedge-beveled steel cleaver slab (`s = 12..22, t = -8.2..8.5`)
-      P([[12.5, -8.2], [19.5, -8.2], [22, -4.5], [21, 4.5], [17, 8.5], [13, 7.2], [12.5, 2.5]], "steel"),
-      L(18.5, -7.5, 21.2, -4.2, "glint"), L(21.2, -4.2, 20.5, 4.2, "glint"),
-      C(14.5, 0.4, 1.4, "gold"),
-    ],
-    head: [12.5, 22, -8.2, 8.5],
-    blade: ["steel"],
-  }),
+  // 4) 쌍룡 도끼 망치 — Slender dark haft + clean coiled gold collar + sharp wedge axe-maul
+  dragoncleave: (icon) => {
+    const p = icon ? 0.5 : 0;
+    return {
+      sh: [
+        R(-2.2, 3.6, -0.6 - p * 0.3, 1.0 + p * 0.3, "ironDark"),
+        R(3.6, 9.2, -0.45 - p * 0.3, 0.85 + p * 0.3, "ironDark"),
+        C(5.8, 0.2, 1.0, "steel"), D(5.8, 0.2, "glint"),
+        P([[7.5, -2.5], [9.6, -3.5], [10.4, -1.2], [10.4, 1.8], [9.6, 3.9], [7.5, 3.1], [8.6, 0.2]], "gold"),
+        P([[9.8, -5.2], [14.8, -5.2], [16.6, -2.6], [15.8, 3.0], [12.8, 5.6], [10.2, 4.6], [9.8, 1.6]], "steel"),
+        L(14.2, -4.8, 16.0, -2.4, "glint"), L(16.0, -2.4, 15.4, 2.8, "glint"),
+        C(11.4, 0.2, 0.95, "gold"),
+      ],
+      head: [9.8, 16.6, -5.2, 5.6],
+      blade: ["steel"],
+    };
+  },
 
-  // 5) 태엽 강철 톱니 망치 — Sleek dark drum with golden bands opposite clean steel anvil
-  gearfoundry: () => ({
-    sh: [
-      R(-2.8, 3.5, -1.0, 2.0, "leather"),
-      R(3.5, 12, -0.7, 1.7, "ironDark"),
-      R(11.5, 18, -3.0, 3.8, "ironDark"),
-      C(14.5, 0.4, 1.3, "gold"),
-      P([[10.8, -6.8], [12.5, -8.5], [18, -8.5], [19.8, -6.8], [19.8, -4.0], [18, -2.8], [12, -2.8], [10.8, -4.2]], "ironDark"),
-      R(11.2, 19.2, -6.8, -5.8, "gold"), R(11.2, 19.2, -4.6, -3.6, "gold"),
-      R(12.2, 17.5, 3.5, 8.0, "steel"), R(12.5, 17.2, 5.5, 6.8, "gold"),
-      P([[18, -1.2], [21.5, 0.4], [18, 2.0]], "steel"),
-    ],
-    head: [10.8, 21.5, -8.5, 8.0],
-    blade: ["ironDark", "gold"],
-  }),
+  // 5) 태엽 강철 톱니 망치 — Slender haft + trim dark gold-banded drum opposite clean anvil
+  gearfoundry: (icon) => {
+    const p = icon ? 0.5 : 0;
+    return {
+      sh: [
+        R(-2.2, 2.8, -0.6 - p * 0.3, 1.0 + p * 0.3, "leather"),
+        R(2.8, 9.4, -0.45 - p * 0.3, 0.85 + p * 0.3, "ironDark"),
+        R(9.0, 14.0, -1.9, 2.3, "ironDark"),
+        C(11.4, 0.2, 0.9, "gold"),
+        P([[8.6, -4.4], [9.8, -5.4], [14.0, -5.4], [15.2, -4.4], [15.2, -2.6], [14.0, -1.8], [9.4, -1.8], [8.6, -2.8]], "ironDark"),
+        R(8.8, 14.8, -4.4, -3.7, "gold"), R(8.8, 14.8, -2.9, -2.2, "gold"),
+        R(9.6, 13.6, 2.2, 5.2, "steel"), R(9.8, 13.4, 3.4, 4.3, "gold"),
+        P([[14.0, -0.8], [16.4, 0.2], [14.0, 1.2]], "steel"),
+      ],
+      head: [8.6, 16.4, -5.4, 5.2],
+      blade: ["ironDark", "gold"],
+    };
+  },
 
-  // 6) 심홍 성당 십자 망치 — Slender haft + trim gold tower vs crisp pointed crimson spire
-  cathedral: () => ({
-    sh: [
-      P([[-3.0, -2.2], [-1.0, -1.2], [-1.0, 2.0], [-3.0, 3.0]], "gold"),
-      R(-1.0, 12, -0.7, 1.7, "ironDark"),
-      R(11.5, 18, -3.2, 4.0, "gold"),
-      R(11.5, 18.2, -8.2, -3.2, "crimson"),
-      R(11, 18.8, -8.2, -6.0, "gold"),
-      P([[12.2, 3.8], [17.2, 3.8], [15.2, 9.5], [14.2, 9.5]], "crimson"),
-      R(13, 16.5, 4.5, 5.8, "gold"),
-      P([[18, -1.2], [22, 0.4], [18, 2.0]], "crimson"),
-      D(14.8, 0.4, "ruby"),
-    ],
-    head: [11, 22, -8.2, 9.5],
-    blade: ["gold", "crimson"],
-  }),
+  // 6) 심홍 성당 십자 망치 — Slender haft + trim gold-capped crimson tower vs sharp spike
+  cathedral: (icon) => {
+    const p = icon ? 0.5 : 0;
+    return {
+      sh: [
+        P([[-2.4, -1.4], [-0.8, -0.7], [-0.8, 1.1], [-2.4, 1.8]], "gold"),
+        R(-0.8, 9.4, -0.45 - p * 0.3, 0.85 + p * 0.3, "ironDark"),
+        R(9.0, 14.0, -2.0, 2.4, "gold"),
+        R(9.0, 14.2, -5.2, -2.0, "crimson"),
+        R(8.6, 14.6, -5.2, -3.7, "gold"),
+        P([[9.6, 2.4], [13.4, 2.4], [11.9, 6.0], [11.1, 6.0]], "crimson"),
+        R(10.2, 12.8, 2.8, 3.7, "gold"),
+        P([[14.0, -0.8], [16.8, 0.2], [14.0, 1.2]], "crimson"),
+        D(11.5, 0.2, "ruby"),
+      ],
+      head: [8.6, 16.8, -5.2, 6.0],
+      blade: ["gold", "crimson"],
+    };
+  },
 
-  // 7) 빙결 쌍보주 망치 — Sleek golden spear-haft + twin compact glacier crystal spheres (`r=3.2`)
-  glacierorb: () => ({
-    sh: [
-      C(-1.7, 0.5, 1.3, "bronze"),
-      R(-1.0, 13, -0.7, 1.7, "gold"),
-      R(12, 17.5, -2.8, 3.6, "gold"),
-      C(14.8, -5.2, 3.2, "glacier"),
-      C(14.8, 6.0, 3.2, "glacier"),
-      D(13.8, -6.2, "glint"), D(13.8, 5.0, "glint"),
-      P([[15, -1.8], [22.5, 0.4], [15, 2.6]], "gold"),
-      D(18.5, 0.4, "spark"),
-    ],
-    head: [11.5, 22.5, -8.5, 9.2],
-    blade: ["glacier"],
-  }),
+  // 7) 빙결 쌍보주 망치 — Slender gold spear-haft + twin compact crystal spheres
+  glacierorb: (icon) => {
+    const p = icon ? 0.5 : 0;
+    return {
+      sh: [
+        C(-1.4, 0.2, 0.9, "bronze"),
+        R(-0.8, 10.2, -0.45 - p * 0.3, 0.85 + p * 0.3, "gold"),
+        R(9.4, 13.6, -1.8, 2.2, "gold"),
+        C(11.6, -3.4, 2.1, "glacier"),
+        C(11.6, 3.8, 2.1, "glacier"),
+        D(11.0, -4.0, "glint"), D(11.0, 3.2, "glint"),
+        P([[12.0, -1.1], [17.0, 0.2], [12.0, 1.5]], "gold"),
+        D(14.2, 0.2, "spark"),
+      ],
+      head: [9.4, 17.0, -5.5, 5.9],
+      blade: ["glacier"],
+    };
+  },
 
-  // 8) 심안 광기 모닝스타 — Slender smooth S-curved oak haft + neat spiked sun-eye morningstar
-  eyeabyss: () => ({
-    sh: [
-      P([[-3.0, 1.5], [2.0, 2.8], [6.5, 0.2], [11, -1.2], [11.5, 0.8], [6.8, 2.2], [1.8, 4.8], [-2.8, 3.5]], "oak"),
-      C(14, -4.8, 2.4, "gold"),
-      P([[11, -1.5], [10.5, -5.0], [13.5, -3.8], [15.2, -8.0], [16.8, -4.0], [20.5, -5.0], [18.5, -0.5],
-         [22, 0.5], [18.5, 2.2], [20.5, 6.0], [16.8, 4.8], [15.2, 8.5], [13.5, 4.5], [10.5, 5.8], [11, 2.2]], "silver"),
-      C(15.2, 0.4, 2.1, "ironDark"),
-      C(15.2, 0.4, 1.4, "amberCore"),
-      D(15.2, 0.0, "glint"),
-    ],
-    head: [10.5, 22, -8.0, 8.5],
-    blade: ["silver"],
-  }),
+  // 8) 심안 광기 모닝스타 — Slender smooth curved oak haft + compact spoked sun-eye flail ball
+  eyeabyss: (icon) => {
+    const p = icon ? 0.5 : 0;
+    return {
+      sh: [
+        P([[-2.2, 0.8 - p * 0.2], [1.6, 1.7 - p * 0.2], [5.2, 0.0 - p * 0.2], [9.0, -0.8 - p * 0.2], [9.4, 0.4 + p * 0.2], [5.4, 1.3 + p * 0.2], [1.6, 2.9 + p * 0.2], [-2.0, 2.0 + p * 0.2]], "oak"),
+        C(11.0, -3.1, 1.6, "gold"),
+        P([[8.8, -1.0], [8.6, -3.2], [10.6, -2.4], [11.8, -5.2], [13.0, -2.6], [15.6, -3.2], [14.2, -0.3],
+           [16.8, 0.3], [14.2, 1.4], [15.6, 4.0], [13.0, 3.2], [11.8, 5.6], [10.6, 3.0], [8.6, 3.8], [8.8, 1.4]], "silver"),
+        C(11.8, 0.2, 1.4, "ironDark"),
+        C(11.8, 0.2, 0.95, "amberCore"),
+        D(11.8, -0.1, "glint"),
+      ],
+      head: [8.6, 16.8, -5.2, 5.6],
+      blade: ["silver"],
+    };
+  },
 
-  // 9) 전쟁공방 쇠망치 — Clean sleek knight's Lucerne warhammer with chamfered cap & slender spike
-  warforge: () => ({
-    sh: [
-      C(-1.7, 0.5, 1.3, "steel"),
-      R(-1.0, 13, -0.7, 1.7, "ironDark"),
-      R(3.5, 5.0, -1.2, 2.0, "gold"),
-      R(12, 17.8, -2.5, 3.2, "steel"),
-      P([[11.8, -2.5], [11.8, -7.2], [13, -8.4], [16.8, -8.4], [18, -7.2], [18, -2.5]], "gold"),
-      R(12.5, 17.2, -5.0, -2.5, "crimson"),
-      P([[13, 3.2], [17, 3.2], [15.6, 9.2], [14.4, 9.2]], "steel"),
-      D(14.8, 0.4, "amberCore"),
-    ],
-    head: [11.8, 18, -8.4, 9.2],
-    blade: ["gold", "steel"],
-  }),
+  // 9) 전쟁공방 쇠망치 — Sleek knight's Lucerne warhammer with chamfered cap & slender spike
+  warforge: (icon) => {
+    const p = icon ? 0.5 : 0;
+    return {
+      sh: [
+        C(-1.4, 0.2, 0.9, "steel"),
+        R(-0.8, 10.0, -0.45 - p * 0.3, 0.85 + p * 0.3, "ironDark"),
+        R(2.8, 3.8, -0.8, 1.2, "gold"),
+        R(9.2, 13.8, -1.6, 2.0, "steel"),
+        P([[9.2, -1.6], [9.2, -4.6], [10.0, -5.4], [13.0, -5.4], [13.8, -4.6], [13.8, -1.6]], "gold"),
+        R(9.8, 13.2, -3.2, -1.6, "crimson"),
+        P([[10.2, 2.0], [13.0, 2.0], [12.0, 6.0], [11.2, 6.0]], "steel"),
+        D(11.5, 0.2, "amberCore"),
+      ],
+      head: [9.2, 13.8, -5.4, 6.0],
+      blade: ["gold", "steel"],
+    };
+  },
 
-  // 10) 유성운철 대형 망치 — Sleek chamfered octagon stone maul with glowing magma cracks
-  meteor: () => ({
-    sh: [
-      R(-2.8, -1.2, -1.2, 2.0, "bronze"),
-      R(-1.2, 11.5, -0.8, 1.8, "oak"),
-      R(10, 12, -1.8, 2.5, "bronze"),
-      P([[11.5, -4.5], [13.5, -7.8], [18.5, -7.8], [20.5, -4.5], [20.5, 5.2], [18.5, 8.4], [13.5, 8.4], [11.5, 5.2]], "meteor"),
-      L(14, -6, 16, -1.5, "ember"), L(16, -1.5, 18.5, -4.5, "ember"),
-      L(14, 6.5, 16, 2.0, "ember"),  L(16, 2.0, 18.5, 5.0, "ember"),
-      C(16, 0.4, 1.7, "amberCore"), D(15.6, 0, "spark"),
-    ],
-    head: [11.5, 20.5, -7.8, 8.4],
-    blade: ["meteor", "amberCore"],
-  }),
+  // 10) 유성운철 대형 망치 — Slender haft + compact chamfered octagon stone maul with magma cracks
+  meteor: (icon) => {
+    const p = icon ? 0.5 : 0;
+    return {
+      sh: [
+        R(-2.2, -1.0, -0.8, 1.2, "bronze"),
+        R(-1.0, 9.2, -0.45 - p * 0.3, 0.85 + p * 0.3, "oak"),
+        R(8.0, 9.5, -1.1, 1.5, "bronze"),
+        P([[9.2, -2.8], [10.6, -5.0], [14.2, -5.0], [15.6, -2.8], [15.6, 3.4], [14.2, 5.4], [10.6, 5.4], [9.2, 3.4]], "meteor"),
+        L(10.8, -3.8, 12.4, -1.0, "ember"), L(12.4, -1.0, 14.0, -2.8, "ember"),
+        L(10.8, 4.0, 12.4, 1.4, "ember"),  L(12.4, 1.4, 14.0, 3.2, "ember"),
+        C(12.4, 0.2, 1.1, "amberCore"), D(12.1, -0.1, "spark"),
+      ],
+      head: [9.2, 15.6, -5.0, 5.4],
+      blade: ["meteor", "amberCore"],
+    };
+  },
 };
 
 // ───────────────────────────── 4. RASTERISERS (mirror weapons.js hammer 40×36 @ 1.25×) ─────────────────────────────

@@ -71,169 +71,152 @@ export const GS_COLLECTION_META = [
   { id: "ws_sword_solaris",        silKey: "solaris",        wk: "sword", slot: "wskin", name: "백열 성화 대검",     desc: "타오르는 불꽃 중심 홈을 품은 얇고 날카로운 쌍날 성검." },
 ];
 
-// Clean shared hilt helper: slim grip [-1..6, t=-1..2]
+// Ultra-sleek greatsword geometry: slender ~2.8px blade (`t ∈ [-1.2, 1.5]`), compact crossguard (`t ∈ [-3.6, 4.0]`),
+// smooth continuous bevels & `icon`-aware slight thickness boost (`p = icon ? 0.5 : 0`) so 16×16 diagonal never breaks!
 export const GS_SILHOUETTES = {
-  // 1) 여명 구름 대검 — Slim dusk sky-blue blade with clean pink ridge ribbon & sleek bronze guard
-  dawncloud: (icon) => ({
+  // 1) 여명 구름 대검 — Sleek sky-azure blade with crisp pink ridge ribbon & trim bronze guard
+  dawncloud: (icon) => { const p = icon ? 0.5 : 0; return ({
     sh: [
-      C(-2.2, 0.5, 1.5, "bronze"), D(-2.2, 0.5, "ruby"),
-      R(-1, 6, -1.0, 2.0, "leather"),
-      P([[5, -4.5], [7.5, -4.5], [8.5, 0.5], [7.5, 5.0], [5, 5.0], [6, 0.5]], "bronze"),
-      D(6.8, 0.5, "ruby"),
-      // Smooth slim sky-azure double-edged blade (`t = -2..3`)
-      P([[8, -2.0], [31, -1.8], [36, 0.5], [31, 2.6], [8, 2.6]], "skyAzure"),
-      // Smooth non-bumpy dawn-pink ribbon fuller down upper facet
-      L(9, -0.5, 32, -0.5, "pinkRidge"),
-      L(11, 0.5, 29, 0.5, "glint"),
+      C(-2.2, 0.2, 1.2, "bronze"),
+      R(-1.2, 5.2, -0.6 - p * 0.3, 1.4 + p * 0.3, "leather"),
+      P([[4.5, -3.5 - p], [6.8, -3.5 - p], [7.5, 0.2], [6.8, 4.0 + p], [4.5, 4.0 + p], [5.4, 0.2]], "bronze"),
+      D(6.0, 0.2, "ruby"),
+      P([[7.2, -1.2 - p], [27.5, -1.0 - p], [32.0, 0.2], [27.5, 1.5 + p], [7.2, 1.7 + p]], "skyAzure"),
+      L(8.5, 0.2, 28, 0.2, "pinkRidge"),
     ],
-    head: [8, 36, -2, 2.6],
+    head: [7.2, 32, -1.2, 1.7],
     blade: ["skyAzure"],
-  }),
+  }); },
 
-  // 2) 비취 해적도 대검 — Ivory grip, clean steel ring guard & graceful thin jade sabre blade
-  jadefalcon: () => ({
+  // 2) 비취 해적도 대검 — Ivory hilt, compact ring guard & graceful razor-thin jade sabre
+  jadefalcon: (icon) => { const p = icon ? 0.5 : 0; return ({
     sh: [
-      R(-3.2, -1.2, -1.5, 2.5, "gold"),
-      R(-1.2, 5.5, -1.0, 2.0, "ivory"),
-      C(6.8, 0.5, 3.2, "steel"),
-      C(6.8, 0.5, 1.4, null),
-      // Graceful curved single-edged jade sabre (`3.5px` slim blade)
-      P([[9, -1.2], [23, -2.2], [32, -3.4], [36.5, -2.2], [32.5, 0.6], [22, 2.0], [9, 2.2]], "jade"),
-      L(11, -1.0, 33, -2.2, "iceEdge"),
-      L(12, 0.5, 27, 0.5, "jadeLit"),
+      R(-3.0, -1.2, -1.0, 1.6, "gold"),
+      R(-1.2, 5.0, -0.6 - p * 0.3, 1.4 + p * 0.3, "ivory"),
+      C(6.2, 0.2, 2.5 + p * 0.4, "steel"),
+      C(6.2, 0.2, 1.0, null),
+      P([[8.2, -0.8 - p], [21.5, -1.4 - p], [28.5, -2.5 - p], [32.5, -1.5], [28.5, 0.4 + p], [20.5, 1.4 + p], [8.2, 1.5 + p]], "jade"),
+      L(10, -0.8, 29, -1.8, "iceEdge"),
     ],
-    head: [9, 36.5, -3.4, 2.2],
+    head: [8.2, 32.5, -2.5, 1.5],
     blade: ["jade"],
-  }),
+  }); },
 
-  // 3) 창공 태양 대검 — Sleek winged gold crossguard & razor-straight glowing cyan-teal blade
-  cyanguild: () => ({
+  // 3) 창공 태양 대검 — Compact golden sunburst wings & sleek cyan crystal greatsword
+  cyanguild: (icon) => { const p = icon ? 0.5 : 0; return ({
     sh: [
-      C(-2.2, 0.5, 1.5, "gold"),
-      R(-1.2, 6, -1.0, 2.0, "leather"), R(1, 2, -1.0, 2.0, "gold"), R(3.5, 4.5, -1.0, 2.0, "gold"),
-      // Compact swept golden sun-wings (`t = -5.5..6.5`)
-      P([[5, -1.5], [6.5, -5.5], [9, -3.5], [9, 4.5], [6.5, 6.5], [5, 2.5]], "gold"),
-      // Crisp slender cyan-teal broadsword (`t = -1.8..2.6`)
-      P([[8.5, -1.8], [31.5, -1.8], [36.5, 0.4], [31.5, 2.6], [8.5, 2.6]], "cyanDark"),
-      L(10, 0.4, 32, 0.4, "cyanDot"),
-      L(10, -1.0, 30, -1.0, "iceEdge"),
+      C(-2.2, 0.2, 1.2, "gold"),
+      R(-1.2, 5.2, -0.6 - p * 0.3, 1.4 + p * 0.3, "leather"), R(1.5, 2.5, -0.6, 1.4, "gold"),
+      P([[4.5, -1.2], [6.0, -4.2 - p], [7.8, -2.5], [7.8, 3.2], [6.0, 4.8 + p], [4.5, 1.8]], "gold"),
+      P([[7.5, -1.2 - p], [27.5, -1.0 - p], [32.5, 0.2], [27.5, 1.5 + p], [7.5, 1.7 + p]], "cyanDark"),
+      L(9, 0.2, 28, 0.2, "cyanDot"),
     ],
-    head: [8.5, 36.5, -1.8, 2.6],
+    head: [7.5, 32.5, -1.2, 1.7],
     blade: ["cyanDark"],
-  }),
+  }); },
 
-  // 4) 자수정 심판 대검 — Trim bronze crossguard + sharp slender faceted amethyst greatsword
-  amethystbroad: () => ({
+  // 4) 자수정 심판 대검 — Trim bronze guard + needle-sharp crystal amethyst greatsword
+  amethystbroad: (icon) => { const p = icon ? 0.5 : 0; return ({
     sh: [
-      R(-3.2, -1.2, -1.5, 2.5, "bronze"),
-      R(-1.2, 6, -1.0, 2.0, "leather"),
-      P([[5.5, -4.5], [8, -4.5], [9, 0.5], [8, 5.5], [5.5, 5.5], [6.5, 0.5]], "bronze"),
-      D(7.2, 0.5, "amberPt"),
-      // Slender tapering crystal-violet blade (`t = -2.2..3.0 -> point 36.5`)
-      P([[8.5, -2.2], [29, -1.8], [36.5, 0.4], [29, 2.6], [8.5, 3.0]], "amethyst"),
-      L(9.5, 0.4, 34, 0.4, "glint"),
-      L(10, -0.5, 29, -0.5, "amethystL"),
+      R(-3.0, -1.2, -1.0, 1.6, "bronze"),
+      R(-1.2, 5.2, -0.6 - p * 0.3, 1.4 + p * 0.3, "leather"),
+      P([[4.8, -3.6 - p], [7.0, -3.6 - p], [7.8, 0.2], [7.0, 4.2 + p], [4.8, 4.2 + p], [5.6, 0.2]], "bronze"),
+      D(6.2, 0.2, "amberPt"),
+      P([[7.5, -1.4 - p], [26.5, -1.0 - p], [32.5, 0.2], [26.5, 1.5 + p], [7.5, 1.8 + p]], "amethyst"),
+      L(8.5, 0.2, 30, 0.2, "glint"),
     ],
-    head: [8.5, 36.5, -2.2, 3.0],
+    head: [7.5, 32.5, -1.4, 1.8],
     blade: ["amethyst"],
-  }),
+  }); },
 
-  // 5) 가시덩굴 독니 대검 — Slender J-hook ivory pommel + split gold guard + clean stepped thorn-edge
-  thornviper: () => ({
+  // 5) 가시덩굴 독니 대검 — Trim J-hook pommel + sleek moss-green sword with 3 tiny clean edge barbs
+  thornviper: (icon) => { const p = icon ? 0.5 : 0; return ({
     sh: [
-      // Graceful slim hook pommel (`t = 0..5.2`)
-      P([[-3.2, 0], [-3.2, 4.2], [-1, 5.5], [1.5, 4.5], [0.5, 3.2], [-1.2, 3.5], [-1.5, 0]], "ivory"),
-      R(-1.5, 6, -1.0, 2.0, "crimson"),
-      P([[5, -4.5], [8, -5.0], [9, 0.5], [8, 5.5], [5, 5.0], [6.5, 0.5]], "gold"),
-      // Clean sleek moss-green blade with 3 evenly spaced crisp edge teeth (`not lumpy!`)
-      P([[8.5, -1.8], [14, -1.8], [16, -4.2], [17.5, -1.8], [22, -1.8], [24, -4.2], [25.5, -1.8],
-         [30, -1.8], [36.5, 0.2], [30, 2.4], [8.5, 2.4]], "mossGreen"),
-      L(10, 0.5, 32, 0.5, "spark"),
+      P([[-3.0, 0], [-3.0, 3.2], [-1.0, 4.2], [1.2, 3.4], [0.4, 2.4], [-1.2, 2.6], [-1.4, 0]], "ivory"),
+      R(-1.4, 5.2, -0.6 - p * 0.3, 1.4 + p * 0.3, "crimson"),
+      P([[4.6, -3.5 - p], [7.2, -3.8 - p], [8.0, 0.2], [7.2, 4.2 + p], [4.6, 3.8 + p], [5.8, 0.2]], "gold"),
+      P([[7.6, -1.1 - p], [13.5, -1.1 - p], [15.0, -2.8 - p], [16.2, -1.1 - p],
+         [21.0, -1.1 - p], [22.5, -2.8 - p], [23.8, -1.1 - p], [27.5, -1.1 - p], [32.5, 0.2],
+         [27.5, 1.6 + p], [7.6, 1.6 + p]], "mossGreen"),
+      L(9, 0.2, 28, 0.2, "spark"),
     ],
-    head: [8.5, 36.5, -4.2, 2.4],
+    head: [7.6, 32.5, -2.8, 1.6],
     blade: ["mossGreen"],
-  }),
+  }); },
 
-  // 6) 별밤 성운 대검 — Sleek ivory hilt, refined S-violet guard & curved starry midnight falchion
-  starryedge: () => ({
+  // 6) 별밤 성운 대검 — Sleek ivory hilt, thin S-violet guard & curved starry midnight falchion
+  starryedge: (icon) => { const p = icon ? 0.5 : 0; return ({
     sh: [
-      R(-3.2, -1.2, -1.5, 2.5, "violet"),
-      R(-1.2, 6, -1.0, 2.0, "ivory"),
-      P([[4.5, -1.5], [6.5, -4.8], [9.5, -4.5], [8, -2.2], [8, 2.2], [5.5, 5.0], [3.5, 4.0], [6, 1.5]], "violet"),
-      // Slim graceful curved cosmic falchion (`3.5px` width)
-      P([[8, -1.4], [24, -2.0], [33, -3.2], [36.5, -1.8], [32, 1.0], [22, 2.2], [8, 2.2]], "midnight"),
-      L(9.5, -1.2, 33.5, -2.2, "iceEdge"),
-      D(15, 0.5, "star"), D(22, -0.5, "star"), D(28, 0, "star"),
+      R(-3.0, -1.2, -1.0, 1.6, "violet"),
+      R(-1.2, 5.2, -0.6 - p * 0.3, 1.4 + p * 0.3, "ivory"),
+      P([[4.2, -1.2], [5.8, -3.8 - p], [8.2, -3.5 - p], [7.0, -1.5], [7.0, 1.8], [5.2, 4.2 + p], [3.5, 3.2 + p], [5.2, 1.2]], "violet"),
+      P([[7.2, -0.9 - p], [21.5, -1.4 - p], [29.0, -2.4 - p], [32.5, -1.2], [28.5, 0.6 + p], [20.5, 1.4 + p], [7.2, 1.5 + p]], "midnight"),
+      L(9, -0.8, 29.5, -1.6, "iceEdge"),
+      D(14, 0.2, "star"), D(21, -0.4, "star"), D(26, 0.0, "star"),
     ],
-    head: [8, 36.5, -3.2, 2.2],
+    head: [7.2, 32.5, -2.4, 1.5],
     blade: ["midnight"],
-  }),
+  }); },
 
-  // 7) 초승달 비철 대검 — Trim teal knuckle-bow guard & sleek curved obsidian talon blade
-  crescentfang: () => ({
+  // 7) 초승달 비철 대검 — Slim teal knuckle-bow & razor-curved obsidian sabre
+  crescentfang: (icon) => { const p = icon ? 0.5 : 0; return ({
     sh: [
-      R(-3.2, -1.2, -1.5, 2.5, "steel"),
-      R(-1.2, 5.5, -1.0, 2.0, "bronze"),
-      // Clean thin teal knuckle-bow (`t = -4..5.5`)
-      P([[5, -4.2], [7.5, -4.2], [8.5, 0], [8, 4.5], [4, 6.2], [0.5, 5.5], [1, 4.0], [5.5, 4.2], [6.5, 2.5], [6.5, -1.5]], "tealArc"),
-      // Razor curved obsidian sabre with gleaming silver spine
-      P([[8, -1.5], [21, -3.0], [31, -4.0], [36.5, -2.8], [32.5, 0.2], [22, 1.8], [8, 2.0]], "obsidian"),
-      L(12, -1.8, 34, -3.0, "glint"),
-      L(10, 0.5, 28, 0.2, "darkEdge"),
+      R(-3.0, -1.2, -1.0, 1.6, "steel"),
+      R(-1.2, 5.0, -0.6 - p * 0.3, 1.4 + p * 0.3, "bronze"),
+      P([[4.5, -3.2 - p], [6.8, -3.2 - p], [7.5, 0], [7.0, 3.6 + p], [3.5, 5.0 + p], [0.6, 4.5 + p], [1.0, 3.2], [4.8, 3.4], [5.8, 2.0], [5.8, -1.0]], "tealArc"),
+      P([[7.2, -1.0 - p], [19.0, -2.0 - p], [28.0, -3.0 - p], [32.5, -2.0], [29.0, 0.2 + p], [20.0, 1.4 + p], [7.2, 1.5 + p]], "obsidian"),
+      L(11, -1.2, 30, -2.2, "glint"),
     ],
-    head: [8, 36.5, -4.0, 2.0],
+    head: [7.2, 32.5, -3.0, 1.5],
     blade: ["obsidian"],
-  }),
+  }); },
 
-  // 8) 황금 신전 대봉검 — Slender shaft tapering smoothly into flared crisp temple-bell crown
-  pillarbell: () => ({
+  // 8) 황금 신전 대봉검 — Slender shaft widening gently into a refined bell crown
+  pillarbell: (icon) => { const p = icon ? 0.4 : 0; return ({
     sh: [
-      P([[-3.5, -2.2], [-1.2, -1.2], [-1.2, 2.2], [-3.5, 3.2]], "gold"),
-      R(-1.2, 6, -1.0, 2.0, "crimson"),
-      P([[5.5, -4.5], [8, -4.5], [8.8, 0.5], [8, 5.5], [5.5, 5.5], [6.5, 0.5]], "gold"),
-      // Smooth continuous flare (`t = ±1.6` waist smoothly flaring out to `±4.8` at `s=34.5`)
-      P([[8.5, -1.6], [23, -1.8], [31, -3.5], [34.5, -4.8], [35.8, -4.8], [35.8, 5.8],
-         [34.5, 5.8], [31, 4.5], [23, 2.8], [8.5, 2.6]], "gold"),
-      L(13, 0.5, 32, 0.5, "amberPt"),
-      D(18, 0.5, "spark"), D(28, 0.5, "spark"),
+      P([[-3.2, -1.6], [-1.2, -0.8], [-1.2, 1.5], [-3.2, 2.2]], "gold"),
+      R(-1.2, 5.2, -0.6 - p * 0.3, 1.4 + p * 0.3, "crimson"),
+      P([[4.8, -3.5 - p], [7.0, -3.5 - p], [7.6, 0.2], [7.0, 4.0 + p], [4.8, 4.0 + p], [5.6, 0.2]], "gold"),
+      P([[7.5, -1.0 - p], [21.0, -1.2 - p], [28.0, -2.4 - p], [30.8, -3.5 - p], [31.8, -3.5 - p],
+         [31.8, 4.2 + p], [30.8, 4.2 + p], [28.0, 3.0 + p], [21.0, 1.8 + p], [7.5, 1.8 + p]], "gold"),
+      L(11, 0.2, 28, 0.2, "amberPt"),
+      D(17, 0.2, "spark"), D(26, 0.2, "spark"),
     ],
-    head: [8.5, 35.8, -4.8, 5.8],
+    head: [7.5, 31.8, -3.5, 4.2],
     blade: ["gold"],
-  }),
+  }); },
 
-  // 9) 심연 별빛 대검 — Sleek notched ocean-steel broadsword with crisp star glyphs & clean bevel
-  abyssalcleaver: () => ({
+  // 9) 심연 별빛 대검 — Sleek ocean-blue notched blade with subtle stepped tip & stars
+  abyssalcleaver: (icon) => { const p = icon ? 0.5 : 0; return ({
     sh: [
-      P([[-3.2, -2.0], [-1.2, -1.0], [-1.2, 2.0], [-3.2, 3.0]], "deepOcean"),
-      R(-1.2, 6, -1.0, 2.0, "obsidian"),
-      P([[5.5, -4.2], [8, -3.8], [8.8, 0.5], [8, 4.8], [5.5, 5.2]], "deepOcean"),
-      D(7, 0.5, "cyanDot"),
-      // Smooth single-step streamlined broad cleaver (`t = -2.0..-4.2..2.8`) with small crisp eyelet
-      P([[8.5, -2.0], [18, -2.0], [20.5, -4.2], [32.5, -4.0], [36.5, -1.0], [32, 2.6], [19, 3.0], [8.5, 2.4]], "deepOcean"),
-      R(28, 30, -2.2, -0.8, null),
-      L(21, -3.2, 32, -3.2, "iceEdge"),
-      D(15, 0.5, "star"), D(23, 0.5, "star"),
+      P([[-3.0, -1.5], [-1.2, -0.8], [-1.2, 1.5], [-3.0, 2.2]], "deepOcean"),
+      R(-1.2, 5.2, -0.6 - p * 0.3, 1.4 + p * 0.3, "obsidian"),
+      P([[4.8, -3.2 - p], [7.0, -3.0 - p], [7.6, 0.2], [7.0, 3.6 + p], [4.8, 3.8 + p]], "deepOcean"),
+      D(6.2, 0.2, "cyanDot"),
+      P([[7.4, -1.2 - p], [16.5, -1.2 - p], [18.5, -2.8 - p], [28.5, -2.6 - p], [32.5, -0.5], [28.0, 1.8 + p], [17.0, 2.0 + p], [7.4, 1.6 + p]], "deepOcean"),
+      R(24.5, 26.2, -1.4, -0.4, null),
+      L(19, -2.1, 28.5, -2.1, "iceEdge"),
+      D(14, 0.3, "star"), D(21, 0.4, "star"),
     ],
-    head: [8.5, 36.5, -4.2, 3.0],
+    head: [7.4, 32.5, -2.8, 2.0],
     blade: ["deepOcean"],
-  }),
+  }); },
 
-  // 10) 백열 성화 대검 — Ultra-sleek twin-pronged royal silver greatsword with ember spine glow
-  solaris: () => ({
+  // 10) 백열 성화 대검 — Ultra-slim twin-pronged paladin greatsword with glowing ember fuller
+  solaris: (icon) => { const p = icon ? 0.5 : 0; return ({
     sh: [
-      C(-2.2, 0.5, 1.5, "gold"),
-      R(-1.2, 6, -1.0, 2.0, "crimson"),
-      P([[5.5, -5.0], [8.2, -3.8], [9, 0.5], [8.2, 4.8], [5.5, 6.0], [6.5, 0.5]], "gold"),
-      D(7.2, 0.5, "spark"),
-      // Sleek twin blades separated by glowing fiery spine (`t = -2.2..3.0`)
-      P([[8.5, -2.2], [32.5, -2.2], [36.5, -1.0], [32, -0.3], [14, -0.3], [14, 1.3],
-         [32, 1.3], [36.5, 2.0], [32.5, 3.2], [8.5, 3.2]], "silver"),
-      L(11, 0.5, 30, 0.5, "amberPt"),
-      D(26, 0.5, "spark"),
+      C(-2.2, 0.2, 1.2, "gold"),
+      R(-1.2, 5.2, -0.6 - p * 0.3, 1.4 + p * 0.3, "crimson"),
+      P([[4.8, -3.8 - p], [7.2, -2.8], [7.8, 0.2], [7.2, 3.2], [4.8, 4.2 + p], [5.8, 0.2]], "gold"),
+      D(6.4, 0.2, "spark"),
+      P([[7.4, -1.4 - p], [28.5, -1.4 - p], [32.5, -0.6], [28.0, -0.2], [13.0, -0.2], [13.0, 0.8],
+         [28.0, 0.8], [32.5, 1.4], [28.5, 2.0 + p], [7.4, 2.0 + p]], "silver"),
+      L(10, 0.3, 27, 0.3, "amberPt"),
+      D(23, 0.3, "spark"),
     ],
-    head: [8.5, 36.5, -2.2, 3.2],
+    head: [7.4, 32.5, -1.4, 2.0],
     blade: ["silver"],
-  }),
+  }); },
 };
 
 // ───────────────────────────── 4. RASTERISERS (mirror weapons.js) ─────────────────────────────

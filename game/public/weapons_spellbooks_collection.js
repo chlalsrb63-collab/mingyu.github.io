@@ -81,18 +81,18 @@ export const BOOK_COLLECTION_META = [
   { id: "ws_book_arcaneeye",     silKey: "arcaneeye",     wk: "book", slot: "wskin", name: "비전 자수정 눈 마도서", desc: "보랏빛 표지 속에서 신비로운 자수정 진실의 눈이 떠진 마도서." },
 ];
 
-// Helper: Sleek compact closed grimoire body (`s in [-5.8..5.8]`, `t in [-6.5..7.5]`)
-function tomeBase(coverMat, spineMat, cornerMat, ribbonMat, ribbonX = -3.4) {
+// Helper: Sleek compact pocket grimoire body (`s in [-4.5..4.5]`, `t in [-5.2..5.4]` -> clean 9×11 px, crisp 1:1 icon!)
+function tomeBase(coverMat, spineMat, cornerMat, ribbonMat, ribbonX = -2.6) {
   return [
-    R(-4.2, 5.8, -6.5, 4.8, coverMat),
-    R(-4.2, 5.2, 4.6, 6.0, "page"),
-    R(-4.2, 5.8, 5.8, 6.6, spineMat),
-    R(-5.8, -3.8, -6.3, 6.4, spineMat),
-    R(-5.8, -3.8, -4.4, -3.5, cornerMat),
-    R(-5.8, -3.8, 2.5, 3.4, cornerMat),
-    P([[3.4, -6.5], [5.8, -6.5], [5.8, -4.0]], cornerMat),
-    P([[3.4, 4.8], [5.8, 4.8], [5.8, 2.4]], cornerMat),
-    P([[ribbonX - 0.8, 6.2], [ribbonX + 0.8, 6.2], [ribbonX + 0.8, 7.8], [ribbonX, 7.2], [ribbonX - 0.8, 7.8]], ribbonMat),
+    R(-3.2, 4.5, -5.2, 3.6, coverMat),
+    R(-3.2, 4.0, 3.4, 4.5, "page"),
+    R(-3.2, 4.5, 4.4, 5.0, spineMat),
+    R(-4.5, -2.9, -5.0, 4.8, spineMat),
+    R(-4.5, -2.9, -3.5, -2.7, cornerMat),
+    R(-4.5, -2.9, 1.8, 2.6, cornerMat),
+    P([[2.6, -5.2], [4.5, -5.2], [4.5, -3.2]], cornerMat),
+    P([[2.6, 3.6], [4.5, 3.6], [4.5, 1.6]], cornerMat),
+    P([[ribbonX - 0.6, 4.8], [ribbonX + 0.6, 4.8], [ribbonX + 0.6, 6.0], [ribbonX, 5.5], [ribbonX - 0.6, 6.0]], ribbonMat),
   ];
 }
 
@@ -101,128 +101,128 @@ export const BOOK_SILHOUETTES = {
   // 1) 해일 비술 마도서 — Crisp aqua scrollwork brackets & sunlit pearl
   azuretide: () => ({
     sh: [
-      ...tomeBase("sapphire", "midnight", "gold", "ribbonBlue", -3.4),
-      R(-2.0, 3.6, -4.5, -3.4, "aquaRune"),
-      R(-2.0, 3.6, 1.5, 2.6, "aquaRune"),
-      C(0.8, -0.8, 1.6, "gold"), D(0.5, -1.2, "glint"),
+      ...tomeBase("sapphire", "midnight", "gold", "ribbonBlue", -2.6),
+      R(-1.6, 2.8, -3.8, -2.9, "aquaRune"),
+      R(-1.6, 2.8, 1.2, 2.1, "aquaRune"),
+      C(0.6, -0.8, 1.2, "gold"), D(0.4, -1.0, "glint"),
     ],
-    head: [-5.8, 5.8, -6.5, 6.5],
+    head: [-4.5, 4.5, -5.2, 5.2],
     blade: ["sapphire", "aquaRune"],
   }),
 
   // 2) 태양륜 화염 마도서 — Crisp golden cross-burst & amber core
   sunember: () => ({
     sh: [
-      ...tomeBase("rustRed", "mahogany", "gold", "ribbonRed", -3.4),
-      R(0.2, 1.4, -4.8, 3.2, "gold"),
-      R(-2.8, 4.4, -1.4, -0.2, "gold"),
-      P([[-1.6, -3.2], [3.2, -3.2], [3.2, 1.6], [-1.6, 1.6]], "gold"),
-      C(0.8, -0.8, 1.4, "amber"), D(0.6, -1.0, "spark"),
+      ...tomeBase("rustRed", "mahogany", "gold", "ribbonRed", -2.6),
+      R(0.1, 1.1, -3.9, 2.3, "gold"),
+      R(-2.3, 3.5, -1.3, -0.3, "gold"),
+      P([[-1.2, -2.6], [2.4, -2.6], [2.4, 1.0], [-1.2, 1.0]], "gold"),
+      C(0.6, -0.8, 1.05, "amber"), D(0.5, -0.9, "spark"),
     ],
-    head: [-5.8, 5.8, -6.5, 6.5],
+    head: [-4.5, 4.5, -5.2, 5.2],
     blade: ["rustRed", "gold"],
   }),
 
   // 3) 월식 암흑 마도서 — Crisp violet ring & slender golden 4-point star
   eclipsevoid: () => ({
     sh: [
-      ...tomeBase("midnight", "midnight", "violet", "ribbonBlue", -3.4),
-      C(0.8, -0.8, 3.3, "violet"),
-      C(0.8, -0.8, 2.0, "midnight"),
-      R(0.3, 1.3, -4.8, 3.2, "gold"),
-      R(-2.4, 4.0, -1.3, -0.3, "gold"),
-      D(0.8, -0.8, "glint"),
+      ...tomeBase("midnight", "midnight", "violet", "ribbonBlue", -2.6),
+      C(0.6, -0.8, 2.5, "violet"),
+      C(0.6, -0.8, 1.5, "midnight"),
+      R(0.2, 1.0, -3.8, 2.2, "gold"),
+      R(-1.9, 3.1, -1.2, -0.4, "gold"),
+      D(0.6, -0.8, "glint"),
     ],
-    head: [-5.8, 5.8, -6.5, 6.5],
+    head: [-4.5, 4.5, -5.2, 5.2],
     blade: ["midnight", "violet"],
   }),
 
   // 4) 홍옥 봉인 마도서 — Crisp diamond crest locking ruby gem
   crimsonseal: () => ({
     sh: [
-      ...tomeBase("crimson", "rustRed", "gold", "ribbonRed", -3.4),
-      P([[0.8, -4.4], [4.0, -0.8], [0.8, 2.8], [-2.4, -0.8]], "gold"),
-      C(0.8, -0.8, 1.4, "amber"),
-      D(0.8, -0.8, "ruby"), D(0.4, -1.2, "glint"),
+      ...tomeBase("crimson", "rustRed", "gold", "ribbonRed", -2.6),
+      P([[0.6, -3.6], [3.1, -0.8], [0.6, 2.0], [-1.9, -0.8]], "gold"),
+      C(0.6, -0.8, 1.05, "amber"),
+      D(0.6, -0.8, "ruby"), D(0.3, -1.1, "glint"),
     ],
-    head: [-5.8, 5.8, -6.5, 6.5],
+    head: [-4.5, 4.5, -5.2, 5.2],
     blade: ["crimson", "gold"],
   }),
 
   // 5) 초승달 비취 마도서 — Crisp curved golden moon crescent + 4-point star
   lunarjade: () => ({
     sh: [
-      ...tomeBase("emerald", "emerald", "gold", "ribbonRed", -3.4),
-      C(0.8, 0.2, 2.8, "gold"),
-      C(0.8, -1.2, 2.3, "emerald"),
-      R(0.3, 1.3, -4.2, -1.8, "gold"),
-      R(-0.6, 2.2, -3.4, -2.4, "gold"),
-      D(0.8, -3.0, "glint"),
+      ...tomeBase("emerald", "emerald", "gold", "ribbonRed", -2.6),
+      C(0.6, 0.0, 2.1, "gold"),
+      C(0.6, -1.0, 1.7, "emerald"),
+      R(0.2, 1.0, -3.4, -1.5, "gold"),
+      R(-0.5, 1.7, -2.8, -2.0, "gold"),
+      D(0.6, -2.4, "glint"),
     ],
-    head: [-5.8, 5.8, -6.5, 6.5],
+    head: [-4.5, 4.5, -5.2, 5.2],
     blade: ["emerald", "gold"],
   }),
 
   // 6) 장미 성혈 마도서 — Clean twin chalice studs + crisp diamond heart & pedestal bar
   heartblood: () => ({
     sh: [
-      ...tomeBase("crimson", "crimson", "gold", "ribbonRed", -3.4),
-      C(-1.2, -3.8, 1.0, "gold"), C(2.8, -3.8, 1.0, "gold"),
-      P([[0.8, -2.8], [3.0, -0.4], [0.8, 2.0], [-1.4, -0.4]], "gold"),
-      R(-1.6, 3.2, 1.8, 2.8, "gold"),
-      D(0.8, -0.4, "glint"),
+      ...tomeBase("crimson", "crimson", "gold", "ribbonRed", -2.6),
+      C(-0.9, -3.0, 0.8, "gold"), C(2.1, -3.0, 0.8, "gold"),
+      P([[0.6, -2.2], [2.3, -0.4], [0.6, 1.4], [-1.1, -0.4]], "gold"),
+      R(-1.2, 2.4, 1.3, 2.1, "gold"),
+      D(0.6, -0.4, "glint"),
     ],
-    head: [-5.8, 5.8, -6.5, 6.5],
+    head: [-4.5, 4.5, -5.2, 5.2],
     blade: ["crimson", "gold"],
   }),
 
   // 7) 대장간 룬문자 마도서 — Crisp sleek golden X-rune lines locking ruby seal
   runeforge: () => ({
     sh: [
-      ...tomeBase("mahogany", "mahogany", "gold", "ribbonRed", -3.4),
-      L(-2.2, -4.2, 3.8, 2.6, "gold"),
-      L(3.8, -4.2, -2.2, 2.6, "gold"),
-      C(0.8, -0.8, 1.4, "amber"), D(0.8, -0.8, "ruby"),
+      ...tomeBase("mahogany", "mahogany", "gold", "ribbonRed", -2.6),
+      L(-1.7, -3.4, 2.9, 1.8, "gold"),
+      L(2.9, -3.4, -1.7, 1.8, "gold"),
+      C(0.6, -0.8, 1.05, "amber"), D(0.6, -0.8, "ruby"),
     ],
-    head: [-5.8, 5.8, -6.5, 6.5],
+    head: [-4.5, 4.5, -5.2, 5.2],
     blade: ["mahogany", "gold"],
   }),
 
   // 8) 성좌 양피지 법전 — Crisp crimson pentagram star cleanly proportioned
   holyparchment: () => ({
     sh: [
-      ...tomeBase("parchment", "mahogany", "gold", "ribbonBlue", -3.4),
-      P([[0.8, -4.6], [3.8, 2.2], [-2.5, -2.0], [4.1, -2.0], [-2.2, 2.2]], "crimson"),
-      C(0.8, -0.6, 1.5, "crimson"),
-      D(0.8, -0.8, "spark"),
+      ...tomeBase("parchment", "mahogany", "gold", "ribbonBlue", -2.6),
+      P([[0.6, -3.6], [2.9, 1.6], [-2.0, -1.6], [3.2, -1.6], [-1.7, 1.6]], "crimson"),
+      C(0.6, -0.6, 1.1, "crimson"),
+      D(0.6, -0.8, "spark"),
     ],
-    head: [-5.8, 5.8, -6.5, 6.5],
+    head: [-4.5, 4.5, -5.2, 5.2],
     blade: ["parchment", "crimson"],
   }),
 
   // 9) 홍련 불꽃 마도서 — Symmetrical 4-petal + amber heart blossom sigil
   emberflower: () => ({
     sh: [
-      ...tomeBase("rustRed", "crimson", "gold", "ribbonBlue", -3.4),
-      C(0.8, -3.2, 1.3, "gold"), C(0.8, 1.6, 1.3, "gold"),
-      C(-1.6, -0.8, 1.3, "gold"), C(3.2, -0.8, 1.3, "gold"),
-      C(0.8, -0.8, 1.6, "amber"), D(0.5, -1.1, "spark"),
+      ...tomeBase("rustRed", "crimson", "gold", "ribbonBlue", -2.6),
+      C(0.6, -2.6, 1.0, "gold"), C(0.6, 1.0, 1.0, "gold"),
+      C(-1.2, -0.8, 1.0, "gold"), C(2.4, -0.8, 1.0, "gold"),
+      C(0.6, -0.8, 1.2, "amber"), D(0.4, -1.0, "spark"),
     ],
-    head: [-5.8, 5.8, -6.5, 6.5],
+    head: [-4.5, 4.5, -5.2, 5.2],
     blade: ["rustRed", "gold"],
   }),
 
   // 10) 비전 자수정 눈 마도서 — Crisp gold eye ring & glowing amethyst mystic pupil
   arcaneeye: () => ({
     sh: [
-      ...tomeBase("violet", "midnight", "gold", "ribbonRed", -3.4),
-      R(-2.5, 4.2, -1.6, 0.0, "gold"),
-      C(0.8, -0.8, 2.8, "gold"),
-      C(0.8, -0.8, 2.0, "violet"),
-      C(0.8, -0.8, 1.1, "pearl"),
-      D(0.8, -0.8, "glint"),
+      ...tomeBase("violet", "midnight", "gold", "ribbonRed", -2.6),
+      R(-1.9, 3.1, -1.3, -0.2, "gold"),
+      C(0.6, -0.8, 2.1, "gold"),
+      C(0.6, -0.8, 1.5, "violet"),
+      C(0.6, -0.8, 0.85, "pearl"),
+      D(0.6, -0.8, "glint"),
     ],
-    head: [-5.8, 5.8, -6.5, 6.5],
+    head: [-4.5, 4.5, -5.2, 5.2],
     blade: ["violet", "gold"],
   }),
 };
