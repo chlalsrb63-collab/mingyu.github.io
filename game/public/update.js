@@ -233,7 +233,9 @@ export function update(dt, t) {
   }
   if (t - lastSend > 90 && (Math.abs(me.x - sent.x) > 0.3 || Math.abs(me.y - sent.y) > 0.3 || me.dir !== sent.d || me.aimI !== sent.a)) {
     lastSend = t;
-    sent = { x: Math.round(me.x * 10) / 10, y: Math.round(me.y * 10) / 10, d: me.dir, a: me.aimI };
+    // Solid tile boundaries and feet offsets are integers. Truncating to tenths stays on the
+    // same side of the boundary already checked by canStand, even at the very edge of a wall.
+    sent = { x: Math.floor(me.x * 10) / 10, y: Math.floor(me.y * 10) / 10, d: me.dir, a: me.aimI };
     act({ t: "mv", x: sent.x, y: sent.y, d: sent.d, a: sent.a });
   }
   if (wantAtk) attack();

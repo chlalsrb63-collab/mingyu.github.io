@@ -286,7 +286,7 @@ function skillProps(S, rt, m, now) {
 /** One beat of a prop. Returns true when it is used up. */
 function propPulse(S, rt, m, p, o, now) {
   const opt = { mag: o.mag, sk: o.sk };
-  const hit = (mob, mult) => hurtMob(S, rt, mob, p, mult, false, opt);
+  const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult, false, more ? { ...opt, ...more } : opt);
   switch (o.kind) {
     case "bolt": {
       // the soul bolt arrives: what it takes, it gives back
@@ -334,9 +334,15 @@ function propPulse(S, rt, m, p, o, now) {
       return last;
     }
     case "phantom": {
-      // the beast leaps on the nearest monster near it and bites
+      // The beast follows brands first, then the nearest target within its reach.
       let best = null, bd = o.r;
-      for (const mob of rt.mobs) { if (mob.dead) continue; const d = dist(mob.x, mob.y, o.x, o.y); if (d <= bd) { bd = d; best = mob; } }
+      for (const mob of rt.mobs) {
+        if (mob.dead) continue;
+        const d = dist(mob.x, mob.y, o.x, o.y);
+        if (d > o.r) continue;
+        const branded = mob.brand > now, bestBranded = best?.brand > now;
+        if ((branded && !bestBranded) || (branded === bestBranded && d <= bd)) { bd = d; best = mob; }
+      }
       if (!best) return false;
       const d = bd || 1;
       if (d > 10) { o.x = best.x + ((o.x - best.x) / d) * 10; o.y = best.y + ((o.y - best.y) / d) * 10; }
@@ -345,7 +351,11 @@ function propPulse(S, rt, m, p, o, now) {
       return false;
     }
     case "rain":
-      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) { mob.slow = Math.max(mob.slow || 0, now + 1200); hit(mob, o.mult); }
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) {
+        mob.slow = Math.max(mob.slow || 0, now + 1200);
+        const center = dist(mob.x, mob.y, o.x, o.y) <= o.r / 2;
+        hit(mob, o.mult * (center ? o.sk.centerK : 1));
+      }
       return false;
     case "storm":
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
@@ -369,6 +379,7 @@ function propPulse(S, rt, m, p, o, now) {
       const last = o.left <= 0, list = mobsWithin(rt, o.x, o.y, o.r);
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y), last ? 1 : 0]);
       for (const mob of list) {
+        if (!last) tug(m, mob, o.x, o.y, o.sk.pulsePull);
         if (last && !MOBS[mob.k].boss && mob.el !== 2) mob.stun = Math.max(mob.stun, now + (mob.el ? o.stun[1] : o.stun[0]));
         hit(mob, last ? o.fin : o.mult);
       }
@@ -389,7 +400,7 @@ function propPulse(S, rt, m, p, o, now) {
       const next = rt.mobs.filter((q) => !q.dead && !hitNow.includes(q) && dist(q.x, q.y, x, y) <= 70).sort((a, b) => dist(a.x, a.y, x, y) - dist(b.x, b.y, x, y))[0];
       if (next) {
         rt.ev.push(["ln", 4, Math.round(x), Math.round(y - 6), Math.round(next.x), Math.round(next.y - 6)]);
-        hit(next, o.chain);
+        hit(next, o.chain, { elem: "lightning", secondaryType: null });
         weave(S, rt, p, "l", next.x, next.y, o.k);
       }
       return --o.left <= 0;
@@ -408,7 +419,11 @@ function propPulse(S, rt, m, p, o, now) {
         for (const q of mobsWithin(rt, o.x, o.y, sk.pull).filter((q) => q !== mob).slice(0, 2)) if (pullTo(m, q, o.x, o.y)) q.drag = now + DRAG_MS;
         return true;
       }
-      for (const q of mobsWithin(rt, o.x, o.y, o.r + 10)) if (!MOBS[q.k].boss && q.el !== 2) q.stun = Math.max(q.stun, now + o.root * (q.el ? 0.5 : 1));
+      for (const q of mobsWithin(rt, o.x, o.y, o.r + 10)) {
+        if (elementFirm(q)) continue;
+        q.stun = Math.max(q.stun, now + o.root * (q.el ? 0.5 : 1));
+        if (q !== mob) hit(q, o.stab * o.sk.splashK, { elem: "poison", secondaryType: null });
+      }
       for (let j = 0; j < 3; j++) hit(mob, o.stab);
       for (let j = 0; j < 2; j++) hit(mob, o.shot);
       return true;
@@ -427,17 +442,19 @@ function propPulse(S, rt, m, p, o, now) {
       return false;
     }
     case "burst": {
-      // the blood they carry bursts: fixed dark damage, no armour turns it; marks, bleeding and brands are spent
+      // The burst spends marks, bleed stacks and brands; bleed resistance still applies.
       const atk = stats(p).atk;
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
       for (const mob of rt.mobs) {
         if (mob.dead || !o.ids.includes(mob.id)) continue;
-        const bleed = (mob.dot && mob.dot.until > now) || elementActive(S, mob, "bleed") ? 1 : 0, br = mob.brand > now ? 1 : 0, mk = marksOf(S, mob);
-        const dmg = Math.max(1, Math.round(atk * (o.base + o.bleed * bleed + o.mark * mk + o.brandK * br) * o.k));
+        const stacks = mob.ail?.bleed?.until > now ? mob.ail.bleed.stacks : +(mob.dot?.until > now);
+        const bleed = stacks ? o.bleed + o.sk.moreBleed * Math.min(stacks - 1, 2) : 0;
+        const br = mob.brand > now ? 1 : 0, mk = marksOf(S, mob);
+        const dmg = Math.max(1, Math.round(atk * (o.base + bleed + o.mark * mk + o.brandK * br) * o.k));
         mob.mk = 0; mob.dot = null; mob.brand = 0;
         elementClear(mob, "bleed");
         wmHit(S, p, mob);
-        dealTypedMob(S, rt, mob, p, dmg, "dark");
+        dealTypedMob(S, rt, mob, p, dmg, o.sk.damageType);
       }
       return true;
     }
@@ -448,8 +465,14 @@ function propPulse(S, rt, m, p, o, now) {
       const e = "fil"[o.i++ % 3];
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y), WEAVE_CODE[e]]);
       for (const mob of mobsWithin(rt, o.x, o.y, o.r)) hit(mob, o.mult);
-      if (o.held && o.held !== e) { const key = pairKey(e, o.held); o.held = ""; react(S, rt, p, key, o.x, o.y, o.k * o.rxK); }
-      else o.held = e;
+      if (o.held && o.held !== e) {
+        const key = pairKey(e, o.held);
+        o.held = "";
+        react(S, rt, p, key, o.x, o.y, o.k * o.rxK);
+        for (const q of allies(S, p)) {
+          if (!q.dead && dist(q.x, q.y, o.x, o.y) <= o.r) elementWard(S, q, stats(q).mhp * o.sk.ward, o.sk.wardMs);
+        }
+      } else o.held = e;
       return false;
     }
     case "banner": {
@@ -475,7 +498,7 @@ function propPulse(S, rt, m, p, o, now) {
       const list = mobsWithin(rt, o.x, o.y, o.r);
       const got = list.length ? dealt(p, list, () => { for (const mob of list) hit(mob, o.mult); }) : 0;
       const low = inside.sort((a, b) => a.hp / stats(a).mhp - b.hp / stats(b).mhp)[0];
-      if (low && got > 0) healP(rt, low, got * 0.5, HIT_CUE.sanctuary);
+      if (low && got > 0) healP(rt, low, got * (low.hp < stats(low).mhp * o.sk.mendBelow ? o.sk.mend : 0.5), HIT_CUE.sanctuary);
       return false;
     }
   }
@@ -531,7 +554,8 @@ function danceStep(S, p, now) {
   rt.ev.push(["a", p.eid, 86, Math.round(mob.x), Math.round(mob.y - 6), p.dir, 2, 1]);
   const n = marksOf(S, mob);
   mob.mk = 0;
-  hurtMob(S, rt, mob, p, dn.mult + dn.per * n, false, { sk: SKILL.flurry });
+  const sk = SKILL.flurry;
+  hurtMob(S, rt, mob, p, dn.mult + dn.per * n, false, { sk, forceAilment: n >= sk.bleedMarks ? "bleed" : undefined });
 }
 /** What a hand keeps track of from moment to moment. */
 function weaponTick(S, p, now) {
@@ -686,7 +710,9 @@ function skStrike(S, p, id, k, cost, tgt) {
       for (const o of new Set([...struck, ...passed])) {
         const dx = o.x - ox, dy = o.y - oy, d = Math.hypot(dx, dy);
         if (d && hammerLine(m, ox, oy, dx / d, dy / d, d) < d) continue;
+        const hp = o.hp;
         hit(o, struck.includes(o) ? sk.mult : sk.sweep, { mag: 0 });
+        if (!o.dead && o.hp < hp && passed.includes(o) && !elementFirm(o)) o.drag = now + DRAG_MS;
       }
       break;
     }
@@ -696,8 +722,10 @@ function skStrike(S, p, id, k, cost, tgt) {
         const dx = o.x - p.x, dy = o.y - p.y, d = Math.hypot(dx, dy);
         if (!d || hammerLine(m, p.x, p.y, dx / d, dy / d, d) >= d) hit(o, sk.mult, { mag: 1 });
       }
-      for (const ally of members(S, p)) if (ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= sk.healR) {
-        healSupport(rt, p, ally, stats(ally).mhp * sk.heal + st.atk * sk.atkHeal, HIT_CUE.oath, sk.creditMs);
+      for (const ally of members(S, p)) if (!ally.dead && ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= sk.healR) {
+        const maxHp = stats(ally).mhp;
+        if (ally.hp < maxHp * sk.wardBelow) elementWard(S, ally, maxHp * sk.ward, sk.wardMs);
+        healSupport(rt, p, ally, maxHp * sk.heal + st.atk * sk.atkHeal, HIT_CUE.oath, sk.creditMs);
       }
       break;
     }
@@ -757,7 +785,12 @@ function skStrike(S, p, id, k, cost, tgt) {
       if (inert) { p.inert = 0; ev(110, p.x, p.y - 6); }
       ev(83, p.x, p.y - 6, sk.r);
       rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 2]);
-      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) { const [ux, uy] = aimVec(p, o); knock(m, o, ux, uy, sk.knock); hit(o, sk.mult * (1 + miss) * (1 + sk.inert * inert)); }
+      const ignite = inert >= SKILL.inertia.max ? { forceAilment: "fire" } : undefined;
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        const [ux, uy] = aimVec(p, o);
+        knock(m, o, ux, uy, sk.knock);
+        hit(o, sk.mult * (1 + miss) * (1 + sk.inert * inert), ignite);
+      }
       break;
     }
 
@@ -1107,8 +1140,9 @@ function skStrike(S, p, id, k, cost, tgt) {
       ev(97, ...ahead(far), far);
       for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, far, sk.half)) {
         const x = o.x, y = o.y;
+        const primed = elementActive(S, o, "burn") || elementActive(S, o, "shock");
         hit(o, sk.mult);
-        react(S, rt, p, "fl", x, y, k);
+        react(S, rt, p, "fl", x, y, k * (primed ? sk.primedK : 1));
       }
       break;
     }
@@ -1175,18 +1209,19 @@ function skStrike(S, p, id, k, cost, tgt) {
       // the great blade sweeps and marks; the dagger goes into every one it swept, cashing the marks in
       ev(120, ...ahead(sk.r * 0.5), sk.r);
       const list = mobsWithin(rt, p.x, p.y, sk.r).filter((o) => inArc(p, o, sk.arc));
+      const flanked = new Set(list.filter((o) => o.tgt !== p.pid));
       for (const o of list) { hit(o, sk.mult, { secondaryType: null }); addMarks(S, o, sk.marks); }
       for (const o of list) {
         if (o.dead) continue;
         const n = marksOf(S, o);
         o.mk = 0;
-        hit(o, sk.stab + sk.per * n, o.tgt !== p.pid ? { sure: true } : { crit: sk.crit });
+        hit(o, sk.stab + sk.per * n, flanked.has(o) ? { sure: true } : { crit: sk.crit });
       }
       if (pasOn(p, "inertia")) { p.inert = SKILL.inertia.max; p.inertAt = now; ev(110, p.x, p.y - 6); }
       break;
     }
     case "elemfan": {
-      // Each blade deals lightning and dark damage; its sigil decides the reaction.
+      // The central blade leads with lightning, the outer two lead with dark.
       const a0 = Math.atan2(aimY, aimX), els = ["f", "i", "l"], got = new Map();
       ev(124, ...ahead(40), 3);
       els.forEach((e, j) => {
@@ -1194,7 +1229,7 @@ function skStrike(S, p, id, k, cost, tgt) {
         const far = Math.max(12, reach(m, p.x, p.y, ux, uy, sk.len));
         rt.ev.push(["ln", 7, Math.round(p.x), Math.round(p.y), Math.round(p.x + ux * far), Math.round(p.y + uy * far)]);
         for (const o of mobsInLine(rt, p.x, p.y, ux, uy, far, sk.half)) {
-          hit(o, sk.mult);
+          hit(o, sk.mult, j === 1 ? null : { elem: "dark", secondaryType: "lightning" });
           addMarks(S, o, 1);
           if (e === "i") o.slow = Math.max(o.slow || 0, now + sk.slow);
           if (!got.has(o)) got.set(o, []);
@@ -1214,7 +1249,13 @@ function skStrike(S, p, id, k, cost, tgt) {
         const tip = (o.x - p.x) * aimX + (o.y - p.y) * aimY >= far * sk.far;
         if (tip) {
           rt.ev.push(["tip", o.id]);
-          if (!MOBS[o.k].boss && o.el !== 2) { o.stun = Math.max(o.stun, now + sk.freeze * (o.el ? 0.5 : 1)); o.frz = o.stun; rt.ev.push(["fz", o.id, sk.freeze]); }
+          if (!elementFirm(o)) {
+            const hold = sk.freeze * (o.el ? 0.5 : 1);
+            o.stun = Math.max(o.stun, now + hold);
+            o.frz = Math.max(o.frz || 0, now + hold);
+            elementTimed(S, o, "freeze", Math.max(hold, (o.ail?.freeze?.until || 0) - now));
+            rt.ev.push(["fz", o.id, hold]);
+          }
         }
         o.slow = Math.max(o.slow || 0, now + 3000);
         hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? pasTip(S, rt, p) : null);
