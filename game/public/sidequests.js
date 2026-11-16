@@ -76,20 +76,25 @@ function steps(det, q, st) {
   det.append(el("div", "section", "이야기 순서"), ol);
 }
 
-/** "?" when a quest is ready to hand in to this NPC, "!" when one can be taken, else "". */
-export function mark(npc, s) {
-  if (!s) return "";
+/** A side quest's class (owner 2026-11-16): monsters to fell = 토벌의뢰 (blue marks), everything else — fetching, delivering, talking, making — = 심부름 (pink). */
+export const isHunt = (q) => ["kill", "fb", "elite"].includes(q.goal?.type);
+export const kindName = (q) => (isHunt(q) ? "토벌의뢰" : "심부름");
+/** The mark over this NPC and its class: ["?" ready to hand in | "!" can be taken, hunt?], or null. */
+export function markOf(npc, s) {
+  if (!s) return null;
   const st = states(s);
-  let m = "";
+  let m = null;
   for (const q of side()) {
     if (q.giver !== npc.id && turnIn(q) !== npc.id) continue;
     const v = st.get(q.id);
     if (!v) continue;
-    if (v.st === 3 && turnIn(q) === npc.id) return "?";
-    if (v.st === 1 && q.giver === npc.id) m = "!";
+    if (v.st === 3 && turnIn(q) === npc.id) return ["?", isHunt(q)];
+    if (v.st === 1 && q.giver === npc.id && !(m && m[1])) m = ["!", isHunt(q)];
   }
   return m;
 }
+/** "?" when a quest is ready to hand in to this NPC, "!" when one can be taken, else "". */
+export const mark = (npc, s) => (markOf(npc, s) || [""])[0];
 
 /** Talking to someone counts for every quest under way that asks you to talk to them. */
 export function onTalk(npc, s) {
@@ -138,7 +143,7 @@ export function renderTalk(box, npc, s, say) {
     if (v.st === 4) { box.append(el("p", "ds", q.repeat === "week" ? `이번 주 완료 · ${q.title} (주간) — 월요일 아침 6시에 다시 받을 수 있습니다.` : `완료 · ${q.title}`)); continue; }
     const here = turnIn(q) === npc.id, away = !here && v.st >= 2;   // handed in somewhere else
     const card = el("div", `sq-card st${v.st}`);
-    card.append(el("div", "q-title", `${q.title}${q.repeat === "week" ? " (주간)" : q.repeat ? " (반복)" : ""}`));
+    card.append(el("div", "q-title", `[${kindName(q)}] ${q.title}${q.repeat === "week" ? " (주간)" : q.repeat ? " (반복)" : ""}`));
     card.append(el("p", "say", here && v.st === 3 && q.giver !== npc.id ? `${q.giverName}의 부탁으로 왔다.` : q.text));
     if (v.st === 1) card.append(el("div", "q-goal", `목표: ${goalText(q)}`));
     else card.append(goalRow(q, v));
@@ -186,7 +191,7 @@ export function listEntries(s, entry, group, chapters = false) {
   for (const q of on) {
     const v = st.get(q.id);
     const sub = v.st === 1 ? "새 의뢰" : v.st === 3 ? (q.goal.type === "deliver" ? "전하러 가기" : q.choice ? "대답하기" : "완료!") : v.st === 4 ? "완료" : `${Math.min(v.n, v.need)}/${v.need}`;
-    entry(`sq:${q.id}`, q.title, sub, v.st === 3 ? "done" : v.st === 4 ? "past" : "");
+    entry(`sq:${q.id}`, `[${kindName(q)}] ${q.title}`, sub, v.st === 3 ? "done" : v.st === 4 ? "past" : "");
   }
 }
 /** The quest window's detail for a side quest. */
@@ -198,7 +203,7 @@ export function detail(det, id, s) {
     det.append(el("div", "q-title", q.title), el("p", "say", q.done), el("p", "ds", "완료한 주요 의뢰입니다."));
     return;
   }
-  det.append(el("div", "q-title", q.title), el("p", "say", q.text), goalRow(q, v));
+  det.append(el("div", "q-title", `[${kindName(q)}] ${q.title}`), el("p", "say", q.text), goalRow(q, v));
   extras(det, q, v);
   det.append(el("div", "q-reward", rewardOf(q)));
   steps(det, q, st);

@@ -22,7 +22,8 @@ import { entityPos } from "./net.js";
 import { mobMax, DUNGEONS, RANK_NAME } from "./events.js";
 import { enchantName, statusesAt } from "./elements.js";
 /** Quest marks over NPCs (owner): the main chain in yellow, side quests in blue; "!" to take, "?" to hand in (a lighter tint). */
-const MAIN_MARK = "#ffd84a", MAIN_DONE = "#fff0a0", SIDE_MARK = "#5aaaff", SIDE_DONE = "#a8d8ff", JOB_MARK = "#5ee07a", JOB_DONE = "#b4f5c0";   // 알바 in green
+const MAIN_MARK = "#ffd84a", MAIN_DONE = "#fff0a0", SIDE_MARK = "#5aaaff", SIDE_DONE = "#a8d8ff", ERRAND_MARK = "#ff7ac4", ERRAND_DONE = "#ffb8e0",   // side quests: 토벌의뢰 blue, 심부름 pink
+   JOB_MARK = "#5ee07a", JOB_DONE = "#b4f5c0";   // 알바 in green
 const COOP_MARK = "#c77dff";   // 협동 알바 still open today, over its owner in its building (purple)
 /** The co-op job NPC `n` offers here today (its owner, in its lobby, not yet worked today): a purple "!". */
 function coopMark(n) {
@@ -36,8 +37,8 @@ function npcMark(n) {
     const q = G.self.q, quest = G.defs.quests[q.i], mk = !quest ? "" : q.st === 0 ? "!" : q.n >= quest.n ? "?" : "";
     if (mk) return [mk, mk === "!" ? MAIN_MARK : MAIN_DONE];
   }
-  const sq = SideQ.mark(n, G.self);
-  if (sq) return [sq, sq === "!" ? SIDE_MARK : SIDE_DONE];
+  const sq = SideQ.markOf(n, G.self);
+  if (sq) return [sq[0], sq[1] ? (sq[0] === "!" ? SIDE_MARK : SIDE_DONE) : sq[0] === "!" ? ERRAND_MARK : ERRAND_DONE];
   const co = coopMark(n);
   if (co) return co;
   const jm = Board.markFor(n);
