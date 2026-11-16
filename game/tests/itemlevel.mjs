@@ -55,7 +55,9 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.ok(tot(5) > tot(3) * 1.10 && tot(5) < tot(3) * 1.15, `unique ${tot(5).toFixed(3)} vs legendary ${tot(3).toFixed(3)} = ${(tot(5) / tot(3)).toFixed(3)}`);
   assert.ok(tot(3) > tot(2) && tot(2) > tot(1));
   // every power is drawn, and the sockets follow the rarity as for the others (never fewer than a legendary's)
-  assert.equal(new Set(by[5].map((g) => g.lg)).size, 8);
+  // (the pools follow the item type now, 51-prefix.js: the eight first powers are all drawn, along with the live ones that came later)
+  const drawn = new Set(by[5].map((g) => g.lg));
+  for (const k of ["chain", "nova", "haste", "giant", "echo", "greed", "thorn", "feast"]) assert.ok(drawn.has(k), `${k} is drawn`);
   assert.ok(by[5].filter((g) => !["r_3", "n_4"].includes(g.id)).every((g) => g.sk >= 1));
   if (VERBOSE) console.log("line strength", [1, 2, 3, 5].map((q) => [q, tot(q).toFixed(3)]), "unique / legendary", (tot(5) / tot(3)).toFixed(3));
 }
