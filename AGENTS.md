@@ -84,6 +84,9 @@ browser (public/)                       Cloudflare Worker (src/worker.ts)
   its build scripts are injected by the platform) and our own Cloudflare (`wrangler.deploy.jsonc`,
   Worker `lumentale-online`, served from `./public`, GitHub Actions on push). Local dev uses
   `wrangler.local.jsonc`. Storage does **not** move between them.
+- **Owner policy (2026-11-17): local-first.** Develop and test on the local build only. Do not update, deploy,
+  push to or keep compatible with the online (multiplayer) build and its deploy files; the owner uploads the
+  finished local version later.
 
 ## 3. 어디에 무엇이 — where things live (full map: `docs/FILEMAP.md`)
 

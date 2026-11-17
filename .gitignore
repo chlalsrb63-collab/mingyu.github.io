@@ -16,3 +16,7 @@ asset/reference/*
 .claude/worktrees/
 # graphify code graph (local, rebuilt with `graphify update game`)
 graphify-out/
+# the desktop app's per-machine dev-server list (absolute paths)
+.claude/launch.json
+# wrangler cache when a dev server is started from the repo root (launch.json)
+.wrangler/

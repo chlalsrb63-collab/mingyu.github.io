@@ -254,6 +254,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `dump-maps.mjs` [23] | Builds ignored `public/_maps.json` for the browser previews. |
 | `shot.mjs` [181] | Playwright preview/live captures. `--serve` serves previews, `--hour` pins the visual clock, and `--el` crops to a selector. |
 | `alba-smoke.js` [60] | Page-side script for `shot.mjs --live --eval "$(cat scripts/alba-smoke.js)"`: the 알바 window through its real buttons (all 12 games, give-up, a dropped socket); prints `SMOKE ok/FAIL` lines. |
+| `client-prof.mjs` [75] | Client performance probe against a dev server: frame time, canvas draw calls per frame and top CPU functions per map; `THROTTLE=6` slows the CPU, `STRESS=4` fires skill effects. Header has the usage. |
 | `icon-sheet.mjs` [26] | The skill icon sheet (`_icons.html`) in its jobs' colours: serves `/_defs.json` from `logic.defs()`, saves a PNG (`--out`, `--ids`). |
 | `bake-check.mjs` [36] | Compares chunked and whole ground bakes and measures time and canvas memory. |
 | `balance-probe.mjs` [211] | Runs template characters against their level band and prints kills/min, damage and deaths, including hybrid weapon comparisons. |
