@@ -29,20 +29,39 @@ export function scenery() {
     if (fruit) for (const [x, y] of [[13, 23], [26, 17], [32, 29], [20, 33], [37, 20], [8, 30]]) { b.r(x, y, 3, 3, fruit); b.r(x, y, 1, 1, lt(fruit, 1.5)); }
   });
   // The blossom branches spread outward from a forked trunk, leaving small openings under the crown.
+  const cherryForms = [
+    // Tall crown, split crown, and hanging sprays.
+    { bend: 2, crowns: [[39,12,14,10], [30,22,13,10], [46,24,14,11], [31,33,11,8], [47,36,12,8]],
+      branches: [[[37,58], [34,34], [36,18], [41,26], [42,43], [43,61]]] },
+    { bend: -2, crowns: [[15,26,12,9], [23,17,14,10], [30,28,10,9], [49,21,11,10], [61,24,12,9], [54,34,13,8]],
+      branches: [[[36,59], [30,47], [18,33], [18,24], [26,34], [37,45], [41,56]],
+        [[40,58], [46,42], [57,33], [61,24], [65,24], [61,36], [49,49], [44,62]]] },
+    { bend: 4, crowns: [[29,20,12,8], [39,16,14,9], [51,20,13,9], [61,27,10,8], [63,37,8,12], [55,47,7,11], [47,31,9,9], [25,31,9,9], [20,39,6,10]],
+      branches: [[[37,64], [40,42], [44,29], [52,22], [62,26], [64,35], [60,31], [53,29], [47,36], [43,52], [42,64]],
+        [[37,51], [30,40], [23,35], [21,41], [21,32], [29,32], [34,38], [40,46]]] },
+  ];
   const cherry = (v) => prop(78, 78, (b) => {
-    const bend = v === 0 ? -4 : v === 1 ? 3 : 0;
+    const form = cherryForms[v - 3];
+    const bend = form?.bend ?? (v === 0 ? -4 : v === 1 ? 3 : 0);
     const [d, m, l, cream] = [
       ["#b56f91", "#de9ab3", "#f4bdcb", "#ffe7dd"],
       ["#a56986", "#d790aa", "#f0b4c5", "#ffe1da"],
       ["#be8498", "#e8acbc", "#f9cbd0", "#fff0e6"],
+      ["#b985a1", "#e1b2c2", "#f3ced8", "#fff1e7"],
+      ["#a66086", "#d381a4", "#eea9bf", "#ffe2da"],
+      ["#ba7f9b", "#dca0b9", "#f0bfd0", "#ffe9df"],
     ][v];
     b.tri([[26,76], [33,71], [35,47], [34+bend,36], [40+bend,35], [43,62], [44,71], [52,76]], "#76564f");
     b.tri([[34,73], [38,59], [37+bend,41], [41+bend,38], [45,72], [49,75], [42,76]], "#59414a");
-    b.tri([[37,59], [31,50], [18,42], [12,31], [16,34], [24,41], [39,49]], "#76564f");
-    b.tri([[40,56], [44,45], [54,39], [62,25], [62,34], [57,42], [46,54]], "#62474d");
+    if (form) {
+      for (const branch of form.branches) b.tri(branch, "#76564f");
+    } else {
+      b.tri([[37,59], [31,50], [18,42], [12,31], [16,34], [24,41], [39,49]], "#76564f");
+      b.tri([[40,56], [44,45], [54,39], [62,25], [62,34], [57,42], [46,54]], "#62474d");
+    }
     b.r(34, 67, 2, 5, "#a9816c"); b.r(37, 57, 2, 9, "#a17a68"); b.r(42, 64, 1, 6, "#906358");
     const spread = v === 1 ? 0.85 : 1;
-    const crowns = [
+    const crowns = form?.crowns ?? [
       [12,31,11,8], [20,23,14,11], [32,15,13,12], [45,16,14,12],
       [58,20,13,10], [66,32,11,9], [53,37,14,11], [37,34,15,12], [22,39,14,8],
     ].map(([x, y, w, h], i) => [39 + (x - 39) * spread + bend, y + (v === 2 && i < 6 ? 4 : 0),
@@ -52,9 +71,12 @@ export function scenery() {
       b.oval(x - 1, y, w - 1, h - 2, m);
       b.oval(x - 3, y - 3, w * 0.72, h * 0.58, l);
     }
-    b.tri([[35,54], [31,47], [23,42], [25,41], [33,44], [38,50]], "#76564f");
-    b.tri([[40,51], [48,44], [54,42], [50,46], [42,54]], "#76564f");
-    for (let i = 0; i < 75; i++) {
+    if (!form) {
+      b.tri([[35,54], [31,47], [23,42], [25,41], [33,44], [38,50]], "#76564f");
+      b.tri([[40,51], [48,44], [54,42], [50,46], [42,54]], "#76564f");
+    }
+    const petalClusters = form ? crowns.length * 8 : 75;
+    for (let i = 0; i < petalClusters; i++) {
       const [cx, cy, w, h] = crowns[i % crowns.length];
       const x = Math.round(cx + (hash(i, v, 171) - 0.5) * w * 1.25);
       const y = Math.round(cy + (hash(v, i, 169) - 0.6) * h * 1.22);
@@ -72,6 +94,18 @@ export function scenery() {
       b.r(x - 2, tip + 1, 5, 2, "#e4aa2d");
       b.r(x - 1, tip - 1, 3, 3, "#f6ca3b");
       b.r(x - 1, tip, 2, 1, "#fff0a0");
+    }
+  });
+  const rapeseedSpray = (stems, [shade, yellow, light]) => prop(31, 26, (b) => {
+    for (const [root, y, tipX, tipY] of stems) {
+      b.tri([[root - 1, y], [tipX, tipY + 2], [tipX + 1, tipY + 3], [root + 1, y]], "#56743d");
+      const leafY = Math.round((y + tipY) / 2) + 2;
+      const leafX = Math.round((root + tipX) / 2);
+      b.tri([[leafX, leafY + 2], [leafX - 4, leafY], [leafX - 1, leafY - 1]], "#789843");
+      b.tri([[leafX, leafY + 3], [leafX + 4, leafY - 1], [leafX + 4, leafY + 1]], "#a4b455");
+      b.r(tipX - 2, tipY + 1, 5, 3, shade);
+      b.r(tipX - 1, tipY, 3, 4, yellow);
+      b.r(tipX - 1, tipY, 2, 2, light);
     }
   });
   const pine = (tall) => prop(40, 68, (b) => {
@@ -286,8 +320,13 @@ export function scenery() {
     if (v === 2) for (const [fx, fy] of [[17, 12], [31, 19], [10, 28], [40, 30], [24, 30]]) { b.r(fx, fy, 3, 3, "#e8484e"); b.r(fx + 1, fy + 1, 1, 1, "#ffd24a"); }
   });
   SC = {
-    "桜": [cherry(0), cherry(1), cherry(2)],
-    rapeseed: [rapeseed(0), rapeseed(1), rapeseed(2)],
+    "桜": Array.from({ length: 3 + cherryForms.length }, (_, v) => cherry(v)),
+    rapeseed: [
+      rapeseed(0), rapeseed(1), rapeseed(2),
+      rapeseedSpray([[9,20,5,12], [13,22,9,9], [15,20,15,7], [18,22,20,10], [22,21,26,13]], ["#d6a129", "#f6c745", "#ffeab0"]),
+      rapeseedSpray([[13,22,9,10], [17,21,13,4], [19,23,20,5], [21,22,25,11]], ["#d79b27", "#f2bd36", "#ffec84"]),
+      rapeseedSpray([[6,20,3,14], [9,21,9,12], [14,23,13,16], [17,20,18,12], [21,22,23,15], [25,21,27,13]], ["#d3b13b", "#f5d85a", "#fff4b1"]),
+    ],
     "Ψ": [palm(0, 0), palm(1, 1), palm(-1, 0), palm(0.5, 1)],
     "Φ": [reef(0), reef(1), prop(26, 18, (b, x) => {
       // a low one, barely out of the water

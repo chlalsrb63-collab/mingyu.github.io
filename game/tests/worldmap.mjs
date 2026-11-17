@@ -7,6 +7,8 @@ const D = defs(), chart = mapChart(D.maps);
 assert.equal(chart.nodes.size, D.maps.length, "the routing graph includes interiors");
 assert.deepEqual(chart.outdoor.map(({ d }) => d.id), D.maps.filter(m => m.kind !== "in").map(m => m.id));
 assert.equal(new Set(chart.outdoor.map(({ x, y }) => `${x},${y}`)).size, chart.outdoor.length);
+assert.ok(chart.nodes.get("sunset_beach").x < chart.nodes.get("willow").x, "Sunset Beach is on the west coast");
+assert.deepEqual(shortestRoute(chart.graph, "willow", "sunset_beach"), ["willow", "sunset_beach"]);
 for (const m of D.maps) {
   const n = chart.nodes.get(m.id);
   if (m.kind !== "in") {

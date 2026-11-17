@@ -24826,7 +24826,7 @@ export function mapStats() {
 
 // Fixed positions for the main world map at 1×. Editor maps fall back to layout by route.
 const WORLD_MAP_POS = {
-  willow: [170, 233], blossom_trail: [152, 148], sunset_beach: [248, 302], town: [327, 205], meadow: [348, 93], forest: [548, 124], crypt: [723, 133],
+  willow: [170, 233], blossom_trail: [152, 148], sunset_beach: [118, 316], town: [327, 205], meadow: [348, 93], forest: [548, 124], crypt: [723, 133],
   city: [367, 334], sewer: [552, 320], cave: [710, 302], abyss: [928, 335], maple: [824, 229],
   jungle: [203, 417], coast: [370, 528], oasis: [622, 470], dunesea: [838, 516], frostkeep: [915, 91],
   airship: [622, 389], mesa: [764, 386], inklake: [850, 300],
