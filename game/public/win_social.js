@@ -85,7 +85,7 @@ export function renderParty() {
   const list = el("div", "list");
   let near = 0;
   for (const [eid, w] of G.who) {
-    if (eid === G.you || inParty.has(eid)) continue;
+    if (eid === G.you || w.buddy || inParty.has(eid)) continue;
     near++;
     const row = el("div", "it");
     const tx = el("div", "tx", w.name);
@@ -216,7 +216,7 @@ export function renderGuild() {
   const list = el("div", "list");
   let near = 0;
   for (const [eid, w] of G.who) {
-    if (eid === G.you || w.guild) continue;
+    if (eid === G.you || w.buddy || w.guild) continue;
     near++;
     const row = el("div", "it");
     const tx = el("div", "tx", w.name);

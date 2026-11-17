@@ -121,11 +121,11 @@ for (const n of [2, 3, 4]) {
   assert.match(act(w, "c0", { t: "coop_act" }).error, /근무 중이 아닙니다/);
   at(w.S.players.c0, 300, 300);
   assert.match(act(w, "c0", { t: "coop_start", k: "apt" }).error, /동동에게 다가가/);
-  // party-only: alone, or a party whose other member is not in the lobby, is refused with the reason
-  assert.match(act(world(1), "c0", { t: "coop_start", k: "apt" }).error, /2명 이상 파티로만/, "no solo shift");
+  // A lone player needs a buddy; a party starts with its members.
+  assert.match(act(world(1), "c0", { t: "coop_start", k: "apt" }).error, /짝꿍/, "no solo shift without a buddy");
   L.runtime(w.S, p1.map).n--; p1.map = "town"; L.runtime(w.S, "town").n++;
   { const dd = X.mapOf(J.lobby).npcs.find((o) => o.id === "dongdong"); at(w.S.players.c0, dd.x * T + 8, dd.y * T + 28); }
-  assert.match(act(w, "c0", { t: "coop_start", k: "apt" }).error, /2명 이상 파티로만.*이 방에/, "the other member must be in the lobby");
+  assert.match(act(w, "c0", { t: "coop_start", k: "apt" }).error, /파티원과 함께 이 방에/, "the other member must be in the lobby");
   const w2 = world(2);
   assert.ok(act(w2, "c0", { t: "coop_start", k: "apt" }).ok);
   assert.match(act(w2, "c0", { t: "coop_act" }).error, /곧 근무가 시작/, "nothing during the briefing");
@@ -981,7 +981,7 @@ for (const n of [2, 3, 4]) {
 // ── party-only in every job: a solo start is refused with the reason
 for (const k of ["diner", "forge", "alch"]) {
   const w1 = k === "diner" ? dworld(1) : fworld(1, 1000, 20251111, k);
-  assert.match(act(w1, "c0", { t: "coop_start", k }).error, /협동 알바는 2명 이상 파티로만/, `${k}: no solo shift`);
+  assert.match(act(w1, "c0", { t: "coop_start", k }).error, /짝꿍/, `${k}: no solo shift without a buddy`);
 }
 
 // ── leaving mid-shift: no reward, back in the lobby; the empty shift closes in 20 s
@@ -1105,7 +1105,7 @@ const libGuests = (c) => c.ents.filter((e) => e.t === 13 && e.phase === 1);
 {
   const w = lworld(2);
   assert.match(act(world(2), "c0", { t: "coop_start", k: "lib" }).error, /보름에게 다가가/);
-  assert.match(act(lworld(1), "c0", { t: "coop_start", k: "lib" }).error, /2명 이상 파티로만/);
+  assert.match(act(lworld(1), "c0", { t: "coop_start", k: "lib" }).error, /짝꿍/);
   assert.ok(act(w, "c0", { t: "coop_start", k: "lib" }).ok);
   const dim = shiftOf(w), m = dim.map, c = dim.coop;
   checkLayout(dim, JL, 32, 29);

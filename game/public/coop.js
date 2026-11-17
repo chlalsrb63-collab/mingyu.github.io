@@ -483,22 +483,23 @@ function renderCard() {
   const done = !!(k && game.self?.coop?.includes(k));
   const leader = party[0]?.[0] === game.you;
   const present = k ? party.filter(([, , , , hp, , , , , id]) => hp > 0 && id === m.id).length : 0;
-  const key = k ? [k, done, party.length, present, leader].join() : "";
+  const withBuddy = party.length < 2 && !!game.self?.buddy?.[3] && !game.self.buddy[5];
+  const key = k ? [k, done, party.length, present, leader, withBuddy].join() : "";
   if (key === st.cardKey) return;
   st.cardKey = key;
   if (!k) { b.hidden = true; return; }
   const j = D().jobs[k];
-  const canStart = leader && present >= 2;
-  const startHint = party.length < 2 ? "파티원을 초대하고 이 방에서 만나세요."
+  const canStart = withBuddy || (leader && present >= 2);
+  const startHint = withBuddy ? "짝꿍과 둘이서 근무해요." : party.length < 2 ? "파티원을 초대하거나 내 핸드폰으로 짝꿍을 불러 주세요."
     : present < 2 ? "파티원이 이 방에 도착하면 시작할 수 있어요."
       : leader ? "이 방에 있는 파티원만 참가해요." : "파티장이 근무를 시작하면 함께 입장해요.";
-  b.innerHTML = `<b>협동 아르바이트 · ${j[0]}</b><p>${n.name}: "일손이 필요해요! 2~4명 파티로, ${j[1]}분 근무예요."</p>` +
+  b.innerHTML = `<b>협동 아르바이트 · ${j[0]}</b><p>${n.name}: "일손이 필요해요! 파티나 짝꿍과 함께 ${j[1]}분 근무예요."</p>` +
     `<p>${esc(j[6] || "")}${CARD_TIP[k] || ""}</p>` +
     `<p class="cc-day">${done ? "오늘 보수 수령 완료 · 보수 없이 다시 참여할 수 있어요. 조건을 충족한 미수령 팀원은 보수를 받아요."
       : `C 등급 이상에서 참여 조건을 충족하면 골드·버드나무토큰·강화석·장비·${SKILL[k] || "생활"} 경험치를 받아요.`}</p>` +
     (done ? "" : `<p class="cc-day">등급별 보수 ${gradePct()}</p>`) +
     `<div class="cc-buttons">${hasWalkthrough(k) ? '<button class="btn cc-guide" type="button">진행 방법</button>' : ""}` +
-    (canStart ? `<button class="btn gold cc-start" type="button">${done ? "파티와 다시 근무" : "파티와 근무 시작"}</button>` : "") +
+    (canStart ? `<button class="btn gold cc-start" type="button">${withBuddy ? "짝꿍" : "파티"}와 ${done ? "다시 근무" : "근무 시작"}</button>` : "") +
     `</div><p class="cc-day">${party.length > 1 ? `모인 파티원 ${present}/${party.length}명 · ` : ""}${startHint}</p>`;
   b.querySelector(".cc-guide")?.addEventListener("click", (e) => openWalkthrough(k, j, e.currentTarget));
   b.querySelector(".cc-start")?.addEventListener("click", () => { closeWalkthrough(); A.act({ t: "coop_start", k }); });
@@ -513,7 +514,7 @@ function showReport(cr) {
   b.innerHTML = `<div class="cr-g g${grade}">${GRADE[grade]}</div><b>${finish}</b>` +
     `<p>점수 ${score} · 이 채널 최고 ${best}</p><p class="cr-cut">C ${cuts[0]} · B ${cuts[1]} · A ${cuts[2]} · S ${cuts[3]}</p>` +
     (reward === undefined ? "" : `<p class="cr-cut">${reward === 2 ? "오늘 보수 수령 완료 · " : ""}${pay}</p>`) +
-    `<table>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${tools[r[2]] || ""}</td><td>${r[1]}점</td><td>${r[3] ? "" : "참여 조건 미충족"}</td></tr>`).join("")}</table>` +
+    `<table>${rows.map((r) => `<tr><td>${esc(r[0])}</td><td>${tools[r[2]] || ""}</td><td>${r[1]}점</td><td>${r[3] === 2 ? "동행 NPC" : r[3] ? "" : "참여 조건 미충족"}</td></tr>`).join("")}</table>` +
     `<p class="cr-note">잠시 뒤 로비로 돌아갑니다.</p><button class="btn">확인</button>`;
   b.querySelector("button").addEventListener("click", () => { b.hidden = true; });
   b.hidden = false;

@@ -37,6 +37,7 @@ const APPS = [
   { id: "skill", name: "스킬", game: "무기 · 스킬", glyph: "book", hue: "#8a5ad0", win: "skill", key: "skill", note: "무기 숙련 · 스킬 · 전직의 길" },
   { id: "quest", name: "퀘스트", game: "의뢰", glyph: "scroll", hue: "#d6a82c", win: "quest", key: "quest", note: "받은 의뢰와 진행 상황" },
   { id: "party", name: "파티", game: "파티", glyph: "party", hue: "#4aa860", win: "party", key: "party", note: "함께 사냥할 파티 만들기 · 초대" },
+  { id: "buddy", name: "짝꿍부르기", game: "짝꿍부르기", glyph: "heart", hue: "#c35278", win: "buddy", note: "산책·사냥·협동 알바를 함께할 짝꿍에게 메시지 보내기" },
   { id: "guild", name: "길드", game: "길드", glyph: "banner", hue: "#d0505a", win: "guild", key: "guild", note: "길드 만들기 · 가입 · 멤버" },
   { id: "daily", name: "토벌\n의뢰", game: "토벌 의뢰", glyph: "cal", hue: "#2aa8a0", win: "daily", key: "daily", note: "오늘의 토벌 목표" },
   { id: "week", name: "주간\n수첩", game: "주간 수첩", glyph: "clock", hue: "#3a90c8", win: "week", key: "week", note: "이번 주 목표와 보상" },
@@ -245,7 +246,7 @@ function appButton(a) {
   b.addEventListener("click", () => launch(a));
   hoverTip(b, (h) => {
     h.classList.add("mn-tip");
-    h.append(el("div", "nm", `${plain(a.name)} (${K(a.key)})`));
+    h.append(el("div", "nm", a.key ? `${plain(a.name)} (${K(a.key)})` : plain(a.name)));
     h.append(el("div", "hint", a.game.replace(/\s/g, "") !== a.name.replace(/\s/g, "") ? `${a.game} — ${a.note}` : a.note));
   }, true);
   return b;

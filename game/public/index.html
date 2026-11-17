@@ -109,6 +109,7 @@
           <button data-win="skill" title="무기 · 스킬 (K)"><span>스킬</span><kbd data-key="skill">K</kbd></button>
           <button data-win="quest" title="의뢰 (L)"><span>의뢰</span><kbd data-key="quest">L</kbd></button>
           <button data-win="party" title="파티 (P)"><span>파티</span><kbd data-key="party">P</kbd></button>
+          <button data-win="buddy" title="짝꿍부르기"><span>짝꿍</span></button>
           <button data-win="guild" title="길드 (G)"><span>길드</span><kbd data-key="guild">G</kbd></button>
           <button data-win="daily" title="토벌 의뢰 (U)"><span>토벌</span><kbd data-key="daily">U</kbd></button>
           <button data-win="week" title="주간 수첩 (Shift+U)"><span>주간</span><kbd data-key="week">S+U</kbd></button>
@@ -262,6 +263,23 @@
       <section class="window" id="w-party" hidden>
         <header><span class="t">파티</span><kbd data-key="party">P</kbd><button class="x" title="닫기 (Esc)"></button></header>
         <div class="body"><div id="party-body"></div></div>
+      </section>
+
+      <section class="window" id="w-buddy" hidden>
+        <header><span class="t">짝꿍부르기</span><button class="x" title="닫기 (Esc)"></button></header>
+        <div class="body buddy-body">
+          <div class="buddy-contact">
+            <div><b id="buddy-name">짝꿍에게 연락하기</b><small id="buddy-status"></small></div>
+            <button class="btn" type="button" id="buddy-leave" hidden>잠시 헤어지기</button>
+          </div>
+          <div id="buddy-messages" class="sunk buddy-messages" role="log" aria-label="짝꿍과의 메시지"></div>
+          <form id="buddy-form">
+            <label class="buddy-label" for="buddy-message">메시지</label>
+            <div class="buddy-compose"><input id="buddy-message" type="text" maxlength="60" autocomplete="off" required value="지금 어디야? 혹시 같이 갈래?"><button class="btn gold" type="submit" value="call" id="buddy-send">보내기</button></div>
+            <p id="buddy-cooldown" class="hint"></p>
+            <button class="btn" type="submit" value="new" id="buddy-new" hidden>새 짝꿍에게 보내기</button>
+          </form>
+        </div>
       </section>
 
       <section class="window" id="w-map" hidden>

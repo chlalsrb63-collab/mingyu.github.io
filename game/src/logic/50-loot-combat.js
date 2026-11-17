@@ -263,7 +263,7 @@ function damageEvent(rt, eid, amount, crit, player, cue, parts) {
 }
 
 /** Take `dmg` off a monster on behalf of `p`; true if that killed it. */
-function dealMob(S, rt, mob, p, dmg, crit, cue, parts) {
+function dealMob(S, rt, mob, p, dmg, crit, cue, parts, buddyHit = false) {
   // a boss that dived out of reach is not hit at all (56-boss-script.js)
   if (mob.dead || mob.dive) return false;
   const poison = runePoisonFactor(S, mob);
@@ -276,6 +276,7 @@ function dealMob(S, rt, mob, p, dmg, crit, cue, parts) {
   if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
   dmg = elementShield(S, mob, dmg);
   mob.hp -= dmg;
+  if (!buddyHit && dmg > 0 && mob.hp > 0 && p.ch.buddy?.active) buddyEngage(S, p, mob);
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
   if (mob.dim) dimDealt(S, rt, mob, p, dmg);   // the carry guard's damage share (64-dim.js)
   if (mob.cast) bsDealt(S, rt, mob, dmg);      // a scripted boss's stagger gauge (56-boss-script.js)

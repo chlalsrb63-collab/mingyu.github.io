@@ -41,6 +41,7 @@ import { openStats, openTree } from "./win_char.js";
 import { doorFade } from "./win_world.js";
 import * as Charms from "./charms.js";
 import { renderRank, renderParty, renderGuild, renderPartyHud, renderInvite, partyDisplayKey } from "./win_social.js";
+import * as Buddy from "./buddy.js";
 
 // ───────────────────────────── connection ─────────────────────────────
 
@@ -172,6 +173,7 @@ export function stopGame() {
   G.playing = false;
   G.auto = false;
   Coop.onSnap({ cj: 0 });
+  Buddy.reset();
   hideBriefing();
   NpcLife.load(null, null);
   resetPurse(); // the next character's purse starts without a +N
@@ -245,9 +247,9 @@ function onSnap(s) {
 
   if (s.who) {
     G.who.clear();
-    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, pet, wk, guild, title, cos, wl] of s.who) {
+    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, pet, wk, guild, title, cos, wl, , buddy] of s.who) {
       // the outfit (cosmetic codes) and the weapon's legendary/set key ride along in `gear`
-      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk, ...Wardrobe.wireGear(G.defs, cos, wl) }, party, guild, title, pet: pet || null });
+      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk, ...Wardrobe.wireGear(G.defs, cos, wl) }, party, guild, title, pet: pet || null, buddy: !!buddy });
     }
     if (isOpen("party")) renderParty();
     if (isOpen("guild")) renderGuild();
@@ -316,6 +318,7 @@ function onSnap(s) {
   Coop.onSnap(s);                              // 협동 아르바이트: cj C cr (coop.js)
   renderBriefing(s, G.defs?.coop, G.you);
   Alba.onSnap(s);                              // 일일 아르바이트: ab (alba.js)
+  Buddy.onSnap(s, t);
   SX.onSnap(s);                                // sx: a request for me, the trade window, 가위바위보 (sxwin.js)
   hudBars();
 }
@@ -348,5 +351,6 @@ export function entityPos(id) {
 
 /** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */
 export function setupNet() {
+  Buddy.setup();
   setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) ws.send("__ping"); }, 30000);
 }

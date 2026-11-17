@@ -42,7 +42,7 @@ import { renderParty, renderGuild } from "./win_social.js";
 // ───────────────────────────── HUD & windows ─────────────────────────────
 
 export const touch = () => document.body.classList.contains("touch");
-const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "guild", "warp", "daily", "achieve", "collect", "dex", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board", "charm", "juana", "week", "trophy", "alba", "trade", "fairmkt"];
+const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "buddy", "guild", "warp", "daily", "achieve", "collect", "dex", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board", "charm", "juana", "week", "trophy", "alba", "trade", "fairmkt"];
 export const winEl = (id) => $(`#w-${id}`);
 /** On a phone the bag lives in the drawer, so it always counts as open; on a desktop it opens in the side panel. */
 export const isOpen = (id) => (id === "inv" && compact()) || !winEl(id).hidden;
@@ -57,7 +57,7 @@ const compact = () => VP.lay !== "full";
  * and take it away again when they close, if they were what brought it.
  */
 /** Every window that may sit in the side panel; which of them do right now is `PANEL` (below). */
-const DOCKABLE = ["inv", "char", "skill", "quest", "party", "guild", "life", "daily", "week", "achieve", "collect", "dex", "rank", "settings", "help", "charm", "trophy", "alba"];
+const DOCKABLE = ["inv", "char", "skill", "quest", "party", "buddy", "guild", "life", "daily", "week", "achieve", "collect", "dex", "rank", "settings", "help", "charm", "trophy", "alba"];
 /** Float over the world by default (they need room); the rest of DOCKABLE opens in the panel. The player's choice wins (`lumentale:dock:<id>`: "1" panel, "0" float). */
 const FLOATS = ["skill", "life", "alba", "charm", "trophy", "rank", "achieve", "collect", "dex", "settings", "help"];
 const DOCK_KEY = (id) => `lumentale:dock:${id}`;
@@ -729,7 +729,7 @@ export function setupWindows({ walkToDoor }) {
     walkToDoor, closeMap: () => closeWin("map"), toast,
     track: (id, name) => Track.start(() => ({ k: "map", id }), name),
     canWarp: () => stoneNear() || !!(G.near && G.near.role === "warp"),
-    info: () => `${channelName()} · ${G.map.safe ? "안전 지대" : "사냥터"} · ${G.who.size}명`,
+    info: () => `${channelName()} · ${G.map.safe ? "안전 지대" : "사냥터"} · ${G.who.size - [...G.who.values()].filter((w) => w.buddy).length}명`,
   });
   $("#chat-fold").addEventListener("click", () => document.body.classList.toggle("chat-folded"));
   // the class gauge's own tooltip

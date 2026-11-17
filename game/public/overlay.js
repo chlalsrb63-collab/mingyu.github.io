@@ -313,7 +313,7 @@ function renderText(t) {
     if (!w) continue;
     const [x, y] = at(p.x, p.y, (p.h3 || 1.32) + 0.22);
     if (off(x, y)) continue;
-    nameLabel(w, x, y, p.dead ? "#9a9aa8" : w.party && w.party === myParty ? "#8cff8c" : "#dce6f2");
+    nameLabel(w.buddy ? { ...w, name: `${w.name} · 짝꿍` } : w, x, y, w.buddy ? "#ffaec4" : p.dead ? "#9a9aa8" : w.party && w.party === myParty ? "#8cff8c" : "#dce6f2");
     if (w.guild) label(`‹${w.guild}›`, x, y - 13, mine && w.guild === mine.guild ? "#9af0ae" : "#c8b8e8", 11);
     if (w.title) label(`「${w.title}」`, x, y - (w.guild ? 26 : 13), "#ffcf6a", 11);
     if (!p.dead) {

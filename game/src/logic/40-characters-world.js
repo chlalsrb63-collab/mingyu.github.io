@@ -1,7 +1,7 @@
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
-const SHEET_VERSION = 28;
+const SHEET_VERSION = 29;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -85,6 +85,7 @@ export function newChar(name, look, wk) {
     ab: albaFresh(),
     // the 장날 merchants' goods bought on the latest fair day (v27, 64-fair-market.js): { [KST day]: [product ids] }
     fairBuy: {},
+    buddy: null,
     // social and the weekly book (v14, 63-social-weekly.js): blk (blocked names), pity (enhancement gauge), wk
     ...socialFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
@@ -99,6 +100,7 @@ export function newChar(name, look, wk) {
 const OLD_ID = { c_1: "r_2", c_2: "n_3", c_3: "r_4" };
 /** Bring a sheet saved by an older version up to the current shape. */
 function migrate(ch) {
+  ch.buddy = buddyClean(ch.buddy);
   // the four-class days (v ≤ 9): a jobless hero of level 4L−3, everything paid back (45-jobs.js)
   const fourClass = typeof ch.cls === "string" && !ch.job;
   if (fourClass) migrateV10(ch);
@@ -495,7 +497,7 @@ function newMob(S, k, r, sp) {
  * place when someone first walks in (or an event needs it). `dims` holds runtime instances.
  */
 export function setup() {
-  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, dims: {}, parties: {}, chat: [], n: 0, evt: null };
+  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, buddies: {}, maps: {}, dims: {}, parties: {}, chat: [], n: 0, evt: null };
   runtime(S, START.map);
   return S;
 }
@@ -731,6 +733,7 @@ export function removePlayer(S, pid) {
   const p = S.players[pid];
   if (!p) return null;
   const ch = exportChar(S, pid);
+  buddyRemove(S, p);
   sxLeave(S, p);
   // remember the party for a quick return (addPlayer → partyRejoin); stale holds are dropped on the next leave
   if (S.parties[p.party]) {
