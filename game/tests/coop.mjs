@@ -706,6 +706,14 @@ function place(w, c, pid, ai, r, m = 0) {
   assert.deepEqual([q.tool, c.pl.c1.tool], ["tongs", "hammer"]);
   step(w, X.COOP_T.briefMs + 1600);
   assert.ok(c.ents.filter((e) => e.t === 8).length >= 1, "customers on the way");
+  for (const i of [1, 2, 3]) {
+    const t = above(JF.st.crate[i]);
+    assert.ok(reachable(m, t)); atTile(p, t);
+    assert.ok(act0(w, "c0").ok);
+    assert.equal(q.hold[0]?.m, i, "the nearer crate wins even when the previous crate is in reach");
+    step(w, 300); assert.ok(act0(w, "c0").ok); assert.equal(q.hold.length, 0);
+    step(w, 300);
+  }
   const want = X.forgeOpen(c)[0];
   atTile(p, below(JF.st.crate[want.m])); assert.ok(act0(w, "c0").ok); assert.ok(q.hold.length === 1 && q.hold[0].m === want.m, "the order's ingot from its crate");
   step(w, 300); atTile(p, below(JF.st.furnace[0])); act0(w, "c0");

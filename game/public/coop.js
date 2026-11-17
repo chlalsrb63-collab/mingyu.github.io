@@ -254,7 +254,11 @@ function libSigns() {
     } });
   };
   LB().shelves.forEach(([x, y], i) => sign("cslib" + i, (x + 3) * T, y * T + 10, LB().genres[i], libCol(i)));
-  sign("cslibdesk", 32 * T, 32 * T + 10, "반납대", "#e8d8b0");
+  const desk = D().jobs.lib?.[7]?.desk;
+  if (desk?.length) {
+    const [left, y] = desk[0], [right] = desk.at(-1);
+    sign("cslibdesk", (left + right + 1) * T / 2, y * T + 10, "반납대", "#e8d8b0");
+  }
 }
 /** 쥬쥬식당 icons, about 8×7: 0 채소 · 1 생선 · 2 고기 (raw), 8 도마 · 9 쓰레기통; 20 동동아파트's dumpster sign. */
 function drawIcon(g, x, y, code) {

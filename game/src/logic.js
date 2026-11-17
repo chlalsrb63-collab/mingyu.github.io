@@ -21422,10 +21422,16 @@ function aptSpawn(S, dim, c, t) {
 }
 // ── 쥬쥬식당 서빙 (C.5, v1)
 
-/** Which of a job's stations `key` p stands by (its index; 0 for a single tile), or -1. */
+/** The closest station of this kind within reach, or -1. */
 function coopSt(c, p, key) {
   const v = COOP[c.k].st[key], list = Array.isArray(v[0]) ? v : [v];
-  return list.findIndex((t) => { const [x, y] = tilePx(t); return dist(p.x, p.y, x, y) <= COOP_T.station + 8; });
+  let closest = -1, best = COOP_T.station + 8;
+  for (const [i, tile] of list.entries()) {
+    const [x, y] = tilePx(tile), d = dist(p.x, p.y, x, y);
+    if (d > best || (d === best && closest >= 0)) continue;
+    closest = i; best = d;
+  }
+  return closest;
 }
 /** A dish in a cook's hands: 0 ready to plate · 1 to chop · 2 to cook. */
 const dinerNeed = (h) => (h.chop > 0 ? 1 : COOP_DINER.dishes[h.r].cook && !h.cooked ? 2 : 0);
