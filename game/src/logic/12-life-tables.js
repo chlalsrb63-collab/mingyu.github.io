@@ -505,13 +505,11 @@ const COOP_T = {
 };
 const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무", pipein: "급수 담당", pipeout: "배수 담당", desk: "접수 담당", sort: "분류 담당" };
 /**
- * 캉캉's big forge hall (forge v2 + ingots; owner, 2026-11-15: "전용 인스턴스 공간은 지금 크기보다 훨씬 크게"): 64×44 like 보글's
- * (the v1 room was 30×16). West: four ingot crates `]` (철 · 은 · 금 · 미스릴, north to south) and the rack `>`; two furnaces `<`
- * with lanterns; four anvils `&` in the middle; two quench barrels `w`; the 진열대 (six counter tiles `m`) far east, 12 tiles
- * from the barrels, with the customers' aisle east of it and their door by the front wall; work benches along the south.
+ * 캉캉's forge: two open production lanes from the western ingot crates to the furnaces, anvils and quench barrels.
+ * Customers share the same east-side counter and straight entrance aisle layout as the alchemy lab.
  */
-const HALL = { W: 64, H: 44, crate: [[8, 13], [8, 17], [8, 21], [8, 25]], furnace: [[13, 15], [13, 23]], anvil: [[22, 13], [22, 25], [29, 13], [29, 25]],
-  quench: [[36, 16], [36, 22]], shelfX: 48, shelfY: 16, door: [49, 41], rack: [4, 32] };
+const HALL = { W: 32, H: 22, crate: [[3, 5], [3, 8], [3, 11], [3, 14]], furnace: [[8, 7], [8, 14]], anvil: [[13, 6], [13, 13], [17, 6], [17, 13]],
+  quench: [[21, 8], [21, 14]], shelfX: 25, shelfY: 6, door: [26, 19], rack: [3, 18] };
 const COOP_HALL = (() => {
   const { W, H } = HALL, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
   const put = (ch, x, y) => { o[y][x] = ch; };
@@ -520,25 +518,24 @@ const COOP_HALL = (() => {
   put(">", HALL.rack[0], HALL.rack[1]);
   for (const [x, y] of HALL.furnace) { put("*", x - 2, y - 1); put("*", x + 2, y - 1); }
   put("g", 1, 1); put("g", W - 2, 1); put("g", 1, H - 2); put("g", W - 2, H - 2);
-  for (let x = 16; x <= 23; x++) put("-", x, 36);
-  for (let x = 34; x <= 41; x++) put("-", x, 36);
+  for (let x = 8; x <= 13; x++) put("-", x, 18);
+  for (let x = 16; x <= 21; x++) put("-", x, 18);
   return o.map((r) => r.join(""));
 })();
 /**
- * 동동아파트 (apt v3; owner, 2026-11-15: "전용 인스턴스 공간은 지금 크기보다 훨씬 크게"): 64×37 (was 45×19), built in code like HALL.
- * Two wings: 윗동 (ten flats north and south of corridor A, y 8–10) and 아랫동 (eight flats round corridor B, y 26–28), joined by
- * the stairwell (x 27–30, y 11–25) where the tool rack stands; the bins empty at the dumpster in the back yard (뒷마당, x 53–62,
- * y 19–35) through the back door at corridor B's east end, the far end from 윗동. `rows`: [y0, y1, door row, flats]; the
- * middle rows give their third column to the stairwell (a flat x 32–38 beside it).
+ * 동동아파트: two wings with ten and eight flats, joined by a stairwell with a tool rack.
+ * The lower corridor opens into the back yard on the east. Each row specifies [top, bottom, door row, flat count].
  */
-const APT = { W: 64, H: 37, cols: [[1, 12], [14, 25], [27, 38], [40, 51], [53, 62]], stair: [27, 30, 11, 25], yard: [53, 19, 62, 35],
-  rows: [[1, 6, 7, 5], [12, 17, 11, 5], [19, 24, 25, 4], [30, 35, 29, 4]], dump: [60, 27], rack: [29, 12] };
+const APT = { W: 44, H: 27, cols: [[1, 7], [9, 16], [18, 26], [28, 34], [36, 42]], stair: [18, 21, 9, 19], yard: [36, 14, 42, 25],
+  rows: [[1, 5, 6, 5], [10, 12, 9, 5], [14, 17, 18, 4], [22, 25, 21, 4]], corridors: [[7, 8], [19, 20]], divider: 13,
+  dump: [40, 20], rack: [20, 11] };
 const APT_MAP = (() => {
-  const { W, H } = APT, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
+  const { W, H } = APT, north = "+===^===".repeat(Math.ceil(W / 8)).slice(0, W);
+  const o = Array.from({ length: H }, (_, y) => (y === 0 ? north : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
   const g = Array.from({ length: H }, () => "f".repeat(W).split("")), rooms = [];
   const put = (ch, x, y) => { o[y][x] = ch; };
   const [sx0, sx1, sy0, sy1] = APT.stair, stair = (x, y) => x >= sx0 && x <= sx1 && y >= sy0 && y <= sy1;
-  for (let x = 1; x < W - 1; x++) if (!stair(x, 18)) put("b", x, 18);
+  for (let x = 1; x < W - 1; x++) if (!stair(x, APT.divider)) put("b", x, APT.divider);
   APT.rows.forEach(([y0, y1, dr, n], ri) => {
     const east = n === 5 ? W - 2 : APT.yard[0] - 2;
     for (let x = 1; x <= east; x++) if (!stair(x, dr)) put("m", x, dr);
@@ -549,68 +546,66 @@ const APT_MAP = (() => {
       for (let y = y0; y <= y1; y++) { if (x1 + 1 < W - 1) put("b", x1 + 1, y); if (x0 - 1 > 0) put("b", x0 - 1, y); }
       put(" ", cx, dr); put(" ", cx + 1, dr);
       for (let y = y0 + 1; y < y1; y++) for (let x = x0 + 1; x < x1; x++) g[y][x] = "uqlu"[(ri + i) % 4];
-      put("p", x0 + 1, back); put("p", x0 + 2, back); put("r", x1 - 1, back); put("o", cx, (y0 + y1) >> 1);
-      if (x1 - x0 > 8) put("s", cx + 2, (y0 + y1) >> 1);
+      if (x1 - x0 >= 5) { put("p", x0 + 1, back); put("r", x1 - 1, back); put("o", cx, (y0 + y1) >> 1); }
     });
   });
   for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) if (stair(x, y)) { o[y][x] = " "; g[y][x] = "n"; }
-  for (const [y0, y1] of [[8, 10], [26, 28]]) for (let y = y0; y <= y1; y++) for (let x = 1; x < W - 1; x++) if (o[y][x] === " ") g[y][x] = "h";
+  for (const [y0, y1] of APT.corridors) for (let y = y0; y <= y1; y++) for (let x = 1; x < W - 1; x++) if (o[y][x] === " ") g[y][x] = "h";
   // the back yard: flagstones, the dumpster `]` (station dump), barrels and plants; the back door at corridor B's east end
   const [yx0, yy0, yx1, yy1] = APT.yard;
   for (let y = yy0; y <= yy1; y++) { put("b", yx0 - 1, y); for (let x = yx0; x <= yx1; x++) { o[y][x] = " "; g[y][x] = "x"; } }
-  for (let y = 26; y <= 28; y++) { put(" ", yx0 - 1, y); g[y][yx0 - 1] = "e"; }
-  put("]", ...APT.dump); put("w", 62, 20); put("w", 62, 21); put("w", 62, 34); put("g", 53, 19); put("g", 53, 35); put("]", 61, 23);
-  put(">", ...APT.rack); put("g", 1, 8); put("g", 62, 8); put("g", 1, 28);
+  const [backDoorTop, backDoorBottom] = APT.corridors[1];
+  for (let y = backDoorTop; y <= backDoorBottom; y++) { put(" ", yx0 - 1, y); g[y][yx0 - 1] = "e"; }
+  put("]", ...APT.dump); put("w", yx1, yy0 + 2); put("w", yx1, yy1 - 1); put("g", yx0, yy0); put("g", yx0, yy1);
+  put(">", ...APT.rack); put("g", 1, 8); put("g", W - 2, 8); put("g", 1, backDoorBottom);
   return { ground: g.map((r) => r.join("")), objects: o.map((r) => r.join("")), rooms };
 })();
 /**
- * 쥬쥬식당's hall (diner v2; owner, 2026-11-15: "훨씬 크게 … 손님이 계속 몰려오게"): 64×36 (was 44×24), built in code. The kitchen
- * along the north wall (four stoves `:`, three boards `-`, the crates 채소 `]` · 생선 `w` · 고기 `]`, the trash `w`, the sink `r`),
- * the counter at y 7 with an 8-tile pass round the rack and two gaps, and a hall of 20 tables (4 rows × 5, 4–28 tiles from the pass).
+ * 쥬쥬식당's 32×24 shift hall. Stoves, chopping boards and ingredient crates line the north wall. Workers pass food across
+ * the counter and reach the sink and kitchen through two side aisles. The dining room retains twenty tables.
  */
-const DIN = { W: 64, H: 36, stove: [[6, 1], [10, 1], [14, 1], [18, 1]], board: [[24, 1], [27, 1], [30, 1]], veg: [36, 1], fish: [39, 1], meat: [42, 1],
-  trash: [48, 1], sink: [52, 1], pass: [[27, 7], [28, 7], [29, 7], [30, 7], [32, 7], [33, 7], [34, 7], [35, 7]], rack: [31, 7], gaps: [12, 50],
-  tables: [12, 18, 24, 30].flatMap((y) => [7, 19, 31, 43, 55].map((x) => [x, y])) };
+const DIN = { W: 32, H: 24, counter: 6, stove: [[3, 1], [6, 1], [9, 1], [12, 1]], board: [[16, 1], [19, 1], [22, 1]],
+  veg: [24, 1], fish: [27, 1], meat: [30, 1], trash: [2, 4], sink: [29, 4], gaps: [5, 25],
+  tables: [10, 14, 18, 22].flatMap((y) => [4, 10, 16, 22, 28].map((x) => [x, y])) };
+const DIN_RACK = [16, DIN.counter];
 const DIN_MAP = (() => {
-  const { W, H } = DIN, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
-  const g = Array.from({ length: H }, (_, y) => (y >= 1 && y <= 6 ? "l" + "x".repeat(W - 2) + "l" : y === 15 || y === 21 || y === 27 ? "l" + "y".repeat(W - 2) + "l" : "l".repeat(W)));
+  const { W, H, counter } = DIN, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
+  const g = Array.from({ length: H }, (_, y) => (y >= 1 && y < counter ? "l" + "x".repeat(W - 2) + "l" : [12, 16, 20].includes(y) ? "l" + "y".repeat(W - 2) + "l" : "l".repeat(W)));
   const put = (ch, x, y) => { o[y][x] = ch; };
-  for (let x = 1; x < W - 1; x++) put("m", x, 7);
-  for (const x of DIN.gaps) { put(" ", x, 7); put(" ", x + 1, 7); }
-  put(">", ...DIN.rack); put("r", 2, 1); put("r", 60, 1);
+  for (let x = 1; x < W - 1; x++) put("m", x, counter);
+  for (const x of DIN.gaps) { put(" ", x, counter); put(" ", x + 1, counter); }
+  put(">", ...DIN_RACK); put("r", 1, 1); put("r", 14, 1);
   for (const t of DIN.stove) put(":", ...t);
   for (const t of DIN.board) put("-", ...t);
   put("]", ...DIN.veg); put("w", ...DIN.fish); put("]", ...DIN.meat); put("w", ...DIN.trash); put("r", ...DIN.sink);
   for (const [x, y] of DIN.tables) { put("k", x - 1, y); put("o", x, y); put("k", x + 1, y); }
-  put("g", 1, 8); put("g", W - 2, 8); put("g", 1, H - 2); put("g", W - 2, H - 2); put("s", 20, H - 2); put("s", 42, H - 2); put("#", 31, H - 2);
+  put("g", 1, counter + 1); put("g", W - 2, counter + 1); put("g", 1, H - 2); put("g", W - 2, H - 2);
+  put("s", 7, H - 2); put("s", 25, H - 2); put("#", 13, H - 2);
   return { ground: g, objects: o.map((r) => r.join("")) };
 })();
 /** The jobs: name, owner NPC and lobby, shift minutes, the two tools (rotation A B A B), par, combo window, life skill, template. */
 const COOP = {
   apt: {
     name: "동동아파트 청소", npc: "dongdong", lobby: "dongdong_apt", mins: 5, tools: ["broom", "bin"], combo: 20000, skill: "deliver",
-    // the score is the 청소율 in ‰ (1000 = spotless), so the cut-offs are shares of it: par 1000 · parN[n] · cuts, tuned on walking
-    // bots (tests/coop.mjs, owner 2026-11-15: hard, mess keeps coming): quick bots (an act every 300 ms) 604 · 650 · 766 ‰, just over S
-    // (581 · 625 · 739); realistic ones (every 400 ms, walking at 90 %) 448 · 473 · 520, B
-    par: 1000, parN: { 2: 0.66, 3: 0.71, 4: 0.84 },
+    // The score is the clean share in ‰ (1000 = spotless). Keep the opening mess and arrival rules on the smaller floor.
+    par: 1000, parN: { 2: 1, 3: 1, 4: 0.96 },
     hint: "빗자루로 먼지를 쓸어 모으면, 쓰레기통 담당이 주워 담아 뒷마당(아랫동 동쪽 끝 뒷문)의 버리는 곳에 버려요. 청소율을 최대한 올리세요!",
     // stations (tiles; solid furniture, used from a neighbouring tile): the dumpster in the back yard, the tool rack in the stairwell
     st: { dump: APT.dump, rack: APT.rack },
-    start: [[28, 14], [29, 14], [28, 16], [29, 16]],
+    start: [[18, 14], [20, 14], [18, 16], [20, 16]],
     rooms: APT_MAP.rooms,
-    tpl: { name: "동동아파트 (근무 중)", theme: "interior", style: "apt", bgm: "coop_apt", safe: true, w: APT.W, h: APT.H, entry: [28, 15], ground: APT_MAP.ground, objects: APT_MAP.objects },
+    tpl: { name: "동동아파트 (근무 중)", theme: "interior", style: "apt", bgm: "coop_apt", safe: true, w: APT.W, h: APT.H, entry: [19, 15], ground: APT_MAP.ground, objects: APT_MAP.objects },
   },
   diner: {
     name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan", "tray"], combo: 25000, skill: "cook",
     hint: "프라이팬 담당은 상자에서 재료를 꺼내 도마·화덕을 거쳐 패스대에, 쟁반 담당은 패스대의 요리를 주문한 테이블로! 손님이 계속 몰려와요.",
-    // cut-offs tuned on walking bots in the 64×36 hall (tests/coop.mjs: clearing and washing plates; owner 2026-11-15: hard, customers flood in):
-    // quick bots (an act every 300 ms) 391 · 804 · 1,467, just over S; realistic ones (every 600 ms, walking at 90 %) 414 · 719 · 985 (S · A · B)
-    par: 1000, parN: { 2: 0.43, 3: 0.89, 4: 1.45 },
-    // stations (tiles; solid furniture on the kitchen's back wall, used from the tile below; the pass and the rack on the counter at y 7)
-    st: { stove: DIN.stove, board: DIN.board, veg: DIN.veg, fish: DIN.fish, meat: DIN.meat, trash: DIN.trash, sink: DIN.sink, pass: DIN.pass, rack: DIN.rack },
+    // Shorter walks let teams serve more tables. Calibrate to the same walking-bot grades: quick S · S · S, realistic S · A · B.
+    par: 1000, parN: { 2: 0.83, 3: 2.28, 4: 3.5 },
+    st: { stove: DIN.stove, board: DIN.board, veg: DIN.veg, fish: DIN.fish, meat: DIN.meat, trash: DIN.trash, sink: DIN.sink,
+      pass: [12, 13, 14, 15, 17, 18, 19, 20].map((x) => [x, DIN.counter]), rack: DIN_RACK },
     tables: DIN.tables,
-    start: [[29, 4], [33, 4], [29, 9], [33, 9]],
-    tpl: { name: "쥬쥬식당 (영업 중)", theme: "interior", style: "tavern", bgm: "coop_diner", safe: true, w: DIN.W, h: DIN.H, entry: [31, 9], ground: DIN_MAP.ground, objects: DIN_MAP.objects },
+    start: [[14, 4], [14, 8], [18, 4], [18, 8]],
+    tpl: { name: "쥬쥬식당 (영업 중)", theme: "interior", style: "tavern", bgm: "coop_diner", safe: true, w: DIN.W, h: DIN.H, entry: [16, 8], ground: DIN_MAP.ground, objects: DIN_MAP.objects },
   },
   forge: {
     name: "캉캉대장간 단조", npc: "kangkang", lobby: "kangkang_forge", mins: 5, tools: ["tongs", "hammer"], combo: 40000, skill: "craft",
@@ -621,40 +616,36 @@ const COOP = {
       cooled: "식었어요 — 집게로 다시 달구세요!", a: ["주문 색에 맞는 주괴 상자에서 주괴를 꺼내세요 (화덕 앞에서는 풀무질!)", "달군 주괴를 빈 모루에 올리세요", "화덕에 넣어 달구세요 (상자에 도로 넣을 수도 있어요)"],
       b: ["모루 위 달군 쇠를 음표에 맞춰 두드리세요", "담금질 통에 식히세요", "진열대(동쪽)에 올리세요"], full: "진열대가 꽉 찼어요 — 손님을 기다리세요!",
       flip: "뒤집기! 화살표 음표는 방향키로", noflip: "방향키는 화살표 음표에서만!", duet: "갑옷은 번갈아 쳐요 — 받는 음표는 다른 사람이!" } },
-    // hard cut-offs (owner, 2026-11-15) tuned on walking bots in the 64×44 hall with ingots (tests/coop.mjs): near-perfect bots
-    // (92 % perfect) score ≈ 816 · 2,265 · 2,837, just over S; realistic ones (55 / 30 / 15 %) ≈ 597 · 1,612 · 1,812, B
-    par: 1000, parN: { 2: 0.86, 3: 2.38, 4: 2.99 },
+    // Walking bots in the compact hall: near-perfect timing reaches S, realistic timing reaches B.
+    par: 1000, parN: { 2: 2, 3: 4.7, 4: 5.7 },
     // stations (tiles; solid furniture, used from a neighbouring tile; COOP_HALL): the four ingot crates `]` (index = metal),
     // furnaces `<`, anvils `&`, quench barrels `w`, the 진열대 (six counter tiles `m`, far east) and the rack `>`; customers
     // come in at `door` and wait in the aisle east of the counter (`seats`, one per shelf slot)
     st: { crate: HALL.crate, furnace: HALL.furnace, anvil: HALL.anvil, quench: HALL.quench, shelf: [0, 1, 2, 3, 4, 5].map((i) => [HALL.shelfX, HALL.shelfY + i]), rack: HALL.rack },
     seats: [0, 1, 2, 3, 4, 5].map((i) => [HALL.shelfX + 1, HALL.shelfY + i]), door: HALL.door,
-    start: [[14, 16], [22, 14], [14, 22], [29, 14]],
+    start: [[9, 8], [13, 7], [9, 13], [17, 7]],
     tpl: {
-      name: "캉캉대장간 · 대형 단조장 (작업 중)", theme: "interior", style: "forge", bgm: "coop_forge", safe: true, w: HALL.W, h: HALL.H, entry: [20, 19],
+      name: "캉캉대장간 · 대형 단조장 (작업 중)", theme: "interior", style: "forge", bgm: "coop_forge", safe: true, w: HALL.W, h: HALL.H, entry: [13, 10],
       ground: Array.from({ length: HALL.H }, () => "x".repeat(HALL.W)), objects: COOP_HALL,
     },
   },
 };
 /**
- * 보글's big kiln hall (alch v2; owner, 2026-11-15: every co-op shift runs in its own big hall, "the same building" but roomier):
- * 64×44 (5.9× the forge's 30×16 room; owner: "훨씬 크게"). The kiln `<` in the middle with four 풀무 tiles round its north
- * half and lanterns, the cauldron `&` 3 tiles in front of it; the herb wall west (`]` between two shelves, 21 tiles from the
- * cauldron), the rack `>`, the 진열대 (six counter tiles `m`, 21 tiles east) with the customers' aisle east of it and their door
- * by the front wall; shelves, jars, glassware, work benches and 보글's lectern for flavour. Positions: LAB.
+ * 보글's kiln hall: bellows players gather round the kiln, while the fan player carries herbs from the west
+ * shelves to the cauldron and bottles to the east counter. Keep the shop aisle clear from door to seats.
  */
-const LAB = { W: 64, H: 44, kiln: [31, 18], pot: [31, 21], herbs: [10, 21], rack: [4, 30], shelfX: 52, shelfY: 18, door: [53, 41] };
+const LAB = { W: 32, H: 22, kiln: [15, 8], pot: [15, 12], herbs: [5, 12], rack: [3, 16], shelfX: HALL.shelfX, shelfY: HALL.shelfY, door: HALL.door };
 const COOP_LAB = (() => {
   const { W, H } = LAB, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
   const put = (ch, x0, x1, y) => { for (let x = x0; x <= x1; x++) o[y][x] = ch; };
   const [kx, ky] = LAB.kiln, [hx, hy] = LAB.herbs;
-  put("b", 3, 12, 1); put(")", 14, 14, 1); put(";", 15, 20, 1); put(")", 22, 22, 1); put("b", 38, 46, 1); put(";", 48, 51, 1); put("w", 58, 60, 1);
-  put("g", 1, 1, 1); put("g", W - 2, W - 2, H - 2); put("g", 1, 1, H - 2); put("t", 1, 1, 10); put("t", 1, 1, 11); put("t", 1, 1, 12);
+  put("b", 3, 7, 1); put(")", 9, 9, 1); put(";", 10, 13, 1); put(")", 15, 15, 1); put("b", 19, 23, 1); put(";", 24, 26, 1); put("w", 28, 29, 1);
+  put("g", 1, 1, 1); put("g", W - 2, W - 2, H - 2); put("g", 1, 1, H - 2); put("t", 1, 1, 8); put("t", 1, 1, 9); put("t", 1, 1, 10);
   put("<", kx, kx, ky); put("*", kx - 3, kx - 3, ky - 2); put("*", kx + 3, kx + 3, ky - 2); put("&", LAB.pot[0], LAB.pot[0], LAB.pot[1]);
   put("r", hx, hx, hy - 1); put("]", hx, hx, hy); put("r", hx, hx, hy + 1); put(">", LAB.rack[0], LAB.rack[0], LAB.rack[1]);
   for (let i = 0; i < 6; i++) put("m", LAB.shelfX, LAB.shelfX, LAB.shelfY + i);
-  put("-", 16, 23, 32); put(")", 16, 16, 31); put(";", 23, 23, 31); put("-", 38, 45, 32); put(")", 45, 45, 31); put("|", 40, 40, 9);
-  put("-", 16, 23, 9); put(";", 18, 18, 8); put("b", 3, 8, H - 2);
+  put("-", 8, 12, 18); put(")", 8, 8, 17); put(";", 12, 12, 17); put("-", 18, 22, 18); put(")", 22, 22, 17); put("|", 21, 21, 4);
+  put("-", 8, 11, 4); put(";", 9, 9, 3); put("b", 3, 7, H - 2);
   return o.map((r) => r.join(""));
 })();
 /**
@@ -663,9 +654,8 @@ const COOP_LAB = (() => {
  * where customers buy them (the forge's shop). Rules COOP_JOB.alch (68-coop.js), numbers COOP_BREW.
  */
 COOP.alch = { ...COOP.forge, name: "보글연금공방 가마", npc: "bogle", lobby: "bogle_lab", tools: ["bellows", "fan"], skill: "alch",
-  // hard cut-offs (owner, 2026-11-15) tuned on walking bots in the 64×44 hall (tests/coop.mjs): near-perfect bots (92 % perfect,
-  // quick at every station) score ≈ 1,353 · 2,722 · 3,145, just over S; realistic ones (55 / 30 / 15 %, slower) ≈ 1,166 · 1,997 · 2,649, B–A
-  par: 1000, parN: { 2: 1.43, 3: 2.89, 4: 3.34 },
+  // Walking bots in the compact lab: near-perfect timing reaches S, realistic timing reaches B–A.
+  par: 1000, parN: { 2: 3, 3: 4.5, 4: 4.75 },
   // stations (tiles; solid furniture, used from a neighbouring tile; COOP_LAB): the herb shelf, the kiln (풀무 stand round
   // it), the cauldron in front of it, the 진열대 and its seats, the rack; customers come in at `door`
   st: { herbs: LAB.herbs, kiln: LAB.kiln, pot: LAB.pot, shelf: [0, 1, 2, 3, 4, 5].map((i) => [LAB.shelfX, LAB.shelfY + i]), rack: LAB.rack },
@@ -780,12 +770,11 @@ const COOP_APT = {
 /**
  * 올빼미 도서관 책 분류 (owner, 2026-11-15: "사서가 모두 휴가를 떠나서 … 끊임없이 밀려 들어오는 반납 도서를 각 도서가 꽂혀야할 장르의
  * 책장으로 가져가서 꽂아주세요 … 책 반납을 하러 온 NPC를 맞이하고, 책 반납을 받아서 반납대 위로 올려 두는 역할을 하는 플레이어도 필수!").
- * Its own 64×44 hall, built in code like HALL: the 반납대 (ten counter tiles `m`, x 27–36, y 32; books lie on its slots x 28–35)
- * faces the returners' queue (x 31 from y 33 south towards their door at y 42); the rack `>` (21, 31) west of it; eight genre
- * shelves of six bookcases `b` in two rows of four (y 10 and y 22), shelf i = genre i, used from either side; reading tables between.
+ * The return desk faces a clear queue lane from the south entrance. Eight genre shelves use two rows of four,
+ * with a central aisle connecting them to the desk. The shelves remain accessible from both sides.
  */
-const LIBH = { W: 64, H: 44, desk: [27, 36, 32], slots: [28, 32], queue: [31, 33], door: [31, 42], rack: [21, 31],
-  shelves: [10, 22].flatMap((y) => [5, 18, 40, 53].map((x) => [x, y])) };
+const LIBH = { W: 32, H: 29, desk: [11, 20, 18], slots: [12, 18], queue: [15, 19], door: [15, 27], rack: [7, 18],
+  shelves: [6, 12].flatMap((y) => [2, 9, 17, 24].map((x) => [x, y])) };
 const COOP_LIB_MAP = (() => {
   const { W, H } = LIBH, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
   const g = Array.from({ length: H }, () => "l".repeat(W).split(""));
@@ -793,24 +782,23 @@ const COOP_LIB_MAP = (() => {
   for (let x = LIBH.desk[0]; x <= LIBH.desk[1]; x++) put("m", x, LIBH.desk[2]);
   for (const [x0, y] of LIBH.shelves) for (let x = x0; x < x0 + 6; x++) { put("b", x, y); g[y + 1][x] = "y"; g[y - 1][x] = "y"; }
   // the returners' carpet from the door to the desk, the reading tables between the shelf rows, lamps and plants
-  for (let y = LIBH.queue[1]; y < H - 1; y++) for (let x = 30; x <= 32; x++) g[y][x] = "y";
-  for (const [x, y] of [[29, 14], [35, 14], [29, 18], [35, 18], [12, 16], [47, 16]]) { put("k", x - 1, y); put("o", x, y); put("k", x + 1, y); }
+  const [qx, qy] = LIBH.queue;
+  for (let y = qy; y < H - 1; y++) for (let x = qx - 1; x <= qx + 1; x++) g[y][x] = "y";
+  for (const [x, y] of [[5, 9], [25, 9], [5, 15], [25, 15]]) { put("k", x - 1, y); put("o", x, y); put("k", x + 1, y); }
   put(">", ...LIBH.rack);
-  for (const [x, y] of [[1, 1], [W - 2, 1], [1, H - 2], [W - 2, H - 2], [26, 41], [36, 41], [14, 28], [49, 28]]) put("g", x, y);
-  for (let x = 4; x <= 12; x++) put("-", x, 36);
-  for (let x = 51; x <= 59; x++) put("-", x, 36);
+  for (const [x, y] of [[1, 1], [W - 2, 1], [1, H - 2], [W - 2, H - 2], [11, 27], [20, 27], [3, 21], [28, 21]]) put("g", x, y);
+  for (let x = 4; x <= 9; x++) { put("-", x, 24); put("-", W - 1 - x, 24); }
   return { ground: g.map((r) => r.join("")), objects: o.map((r) => r.join("")) };
 })();
 COOP.lib = {
   name: "올빼미 도서관 책 분류", npc: "lib_borum", lobby: "owl_library", mins: 5, tools: ["desk", "sort"], combo: 20000, skill: "deliver",
-  // cut-offs tuned on walking bots (tests/coop.mjs, hard): quick and accurate (an act every 300 ms) 1,181 · 2,338 · 3,145, just over
-  // S (1,126 · 2,226 · 2,992); realistic (every 400 ms, walking at 90 %, 8 % wrong shelves) 817 · 1,508 · 2,187, B
-  par: 1000, parN: { 2: 1.28, 3: 2.53, 4: 3.4 },
+  // Walking bots in the compact library: quick and accurate sorting reaches S, occasional wrong shelves reach B.
+  par: 1000, parN: { 2: 2.55, 3: 4.8, 4: 6.5 },
   hint: "접수 담당은 반납대에서 줄 선 손님의 책을 받아 반납대에 올리고, 분류 담당은 반납대의 책을 (한 번에 3권까지) 들고 같은 장르의 책장에 꽂으세요! 손님이 줄지어 와요.",
   // stations (tiles): the 반납대's ten tiles, the 48 shelf tiles (shelf i = tiles 6i … 6i+5), the rack
   st: { desk: Array.from({ length: 10 }, (_, i) => [LIBH.desk[0] + i, LIBH.desk[2]]), shelf: LIBH.shelves.flatMap(([x, y]) => [0, 1, 2, 3, 4, 5].map((i) => [x + i, y])), rack: LIBH.rack, door: LIBH.door },
-  start: [[29, 30], [33, 30], [27, 29], [35, 29]],
-  tpl: { name: "올빼미 도서관 · 대형 서고 (작업 중)", theme: "interior", style: "library", bgm: "coop_lib", safe: true, w: LIBH.W, h: LIBH.H, entry: [31, 30], ground: COOP_LIB_MAP.ground, objects: COOP_LIB_MAP.objects },
+  start: [[13, 16], [17, 16], [11, 15], [19, 15]],
+  tpl: { name: "올빼미 도서관 · 서고 (작업 중)", theme: "interior", style: "library", bgm: "coop_lib", safe: true, w: LIBH.W, h: LIBH.H, entry: [15, 16], ground: COOP_LIB_MAP.ground, objects: COOP_LIB_MAP.objects },
 };
 /**
  * The library's numbers. Returners arrive every `arriveMs[n]` (÷feverK in fever: the crowd), each with `books` [min, max] books, and
