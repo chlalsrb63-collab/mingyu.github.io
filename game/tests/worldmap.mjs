@@ -9,6 +9,10 @@ assert.deepEqual(chart.outdoor.map(({ d }) => d.id), D.maps.filter(m => m.kind !
 assert.equal(new Set(chart.outdoor.map(({ x, y }) => `${x},${y}`)).size, chart.outdoor.length);
 assert.ok(chart.nodes.get("sunset_beach").x < chart.nodes.get("willow").x, "Sunset Beach is on the west coast");
 assert.deepEqual(shortestRoute(chart.graph, "willow", "sunset_beach"), ["willow", "sunset_beach"]);
+for (const id of ["sunset_beach", "blossom_trail"]) {
+  assert.equal(chart.nodes.get(id).d.wpn, 1, "the world map lists one waystone");
+  assert.equal(D.waypoints.find((w) => w.id === id)?.n, 1, "the waystone is advertised to the client");
+}
 for (const m of D.maps) {
   const n = chart.nodes.get(m.id);
   if (m.kind !== "in") {

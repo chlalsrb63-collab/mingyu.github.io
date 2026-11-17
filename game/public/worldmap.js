@@ -269,7 +269,8 @@ export function mapDetail(host, d, ctx) {
     stones.append(E("strong", `빠른 이동 ${open.length}/${d.wpn}`));
     if (!open.length) stones.append(E("span", "이동의 돌에 다가가면 해금됩니다"));
     else for (const i of open) {
-      const button = E("button", `${ways?.names?.[i] || `이동의 돌 ${i + 1}`} 이동`);
+      const label = d.wpn === 1 ? "순간이동" : `${ways?.names?.[i] || `이동의 돌 ${i + 1}`} 이동`;
+      const button = E("button", label, "btn small");
       button.type = "button"; button.disabled = !!levelLocked || !canWarp;
       button.title = levelLocked ? `Lv.${d.minLv}에 이용할 수 있습니다` : canWarp ? "" : "이동의 돌 곁에서 이용할 수 있습니다";
       button.addEventListener("click", () => travel(d.id, i)); stones.append(button);

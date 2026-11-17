@@ -880,6 +880,7 @@ body[data-lay="port"] #w-map.map-has-buildings #map-box { height: clamp(175px, c
 body[data-lay="land"] #w-map.map-has-buildings #map-box { height: clamp(130px, calc(100dvh - 230px), 260px); }
 #w-map.world-chart { --win-max: 900px; width: min(900px, calc(var(--zone-w) - 8px)); }
 #w-map.world-chart #map-box { flex: 0 0 auto; height: clamp(250px, calc(var(--zone-h) - var(--tabs-h) - 180px), 555px); background: #5c4638; }
+#w-map.world-chart.map-has-detail #map-box { height: clamp(200px, calc(var(--zone-h) - var(--tabs-h) - 264px), 475px); }
 #map-region-bar { display: flex; align-items: center; gap: 7px; color: var(--tx, #eee0b9); font: 11px var(--pix); }
 #map-world-name { margin-inline-start: auto; color: var(--tx-gold, #f0d7a3); font-size: 13px; white-space: nowrap; }
 #map-region-bar[hidden], #map-detail[hidden] { display: none; }

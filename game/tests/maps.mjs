@@ -109,6 +109,41 @@ const flood = (m, sx, sy) => {
   const fresh = L.atlas(true, [trail.id]).maps[trail.id];
   assert.deepEqual([fresh.g, fresh.o], [trail.g, trail.o], "trail curves and groves come from fixed seeds");
 }
+{
+  const S = L.setup(), pid = "entrance-stones", ch = L.newChar("산책손님");
+  const willow = waypoints.willow;
+  ch.map = "willow";
+  [ch.x, ch.y] = [willow.ax * 16 + 8, willow.ay * 16 + 10];
+  L.addPlayer(S, pid, ch);
+  S.now = 10000;
+  const p = S.players[pid];
+  const act = (action) => {
+    const result = L.validateAction(S, pid, action);
+    assert.ok(result.ok, JSON.stringify(result));
+    L.applyAction(S, pid, action);
+  };
+  const warp = (id) => {
+    act({ t: "warp", to: id, i: 0 });
+    const { ax, ay } = waypoints[id];
+    assert.deepEqual([p.map, p.x, p.y], [id, ax * 16 + 8, ay * 16 + 10]);
+  };
+  for (const id of ["sunset_beach", "blossom_trail"]) {
+    assert.equal(L.validateAction(S, pid, { t: "warp", to: id, i: 0 }).ok, false, "a first visit wakes the stone");
+    const door = maps.willow.portals.find((door) => door.to === id);
+    [p.x, p.y] = [door.x * 16 + 8, door.y * 16 + 8];
+    S.now += 10000;
+    act({ t: "mv", x: p.x, y: p.y + 1, d: 0 });
+    assert.equal(p.map, id);
+    const { x, y, ax, ay } = waypoints[id];
+    const { map, self } = L.viewFor(S, pid);
+    assert.ok(map.marks.some((mark) => mark.kind === "waypoint" && mark.x === x && mark.y === y));
+    assert.ok(maps[id].reach[ay * maps[id].w + ax], "the warp arrival is walkable from the entrance");
+    assert.equal(self.wp[id] & 1, 1, "walking in through the gate immediately wakes the stone");
+    warp("willow");
+  }
+  warp("sunset_beach");
+  warp("blossom_trail");
+}
 const report = [];
 for (const id of HUNT) {
   const m = maps[id];

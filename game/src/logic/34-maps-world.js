@@ -338,7 +338,9 @@ function buildSunsetBeach() {
   for (const [x, y] of [[11, 73], [40, 64], [61, 57], [121, 73], [150, 62]]) o[y][x] = "l";
   for (const [x, y] of [[9, 69], [21, 64], [25, 71], [61, 47], [68, 51], [76, 58], [92, 60], [106, 64], [119, 68], [127, 70], [141, 68], [149, 57]]) o[y][x] = "Ψ";
 
-  m.marks = [];
+  o[63][6] = "Q";
+  WP[SUNSET_BEACH] = { x: 6, y: 63, ax: 6, ay: 64, i: 0 };
+  m.marks = [{ x: 6, y: 63, kind: "waypoint" }];
   for (const [x, y, label, to] of [
     [6, 61, "← 버드나무마을", "willow"], [17, 62, "조개길 · 해변 산책로 →"],
     [29, 71, "작은 선착장 · 낚시"], [58, 47, "야자숲 산책로"],
@@ -416,7 +418,9 @@ function buildBlossomTrail() {
   rect(o, 0, 1, 0, h - 2, "桜");
   rect(o, w - 1, 1, w - 1, h - 2, "桜");
 
-  m.marks = [];
+  o[51][34] = "Q";
+  WP[BLOSSOM_TRAIL] = { x: 34, y: 51, ax: 35, ay: 51, i: 0 };
+  m.marks = [{ x: 34, y: 51, kind: "waypoint" }];
   for (const [x, y, label, to] of [[33, 50, "↓ 버드나무 마을", "willow"], [34, 37, "벚꽃 그늘길"],
     [20, 35, "물결 유채밭"], [52, 35, "햇살 유채밭"], [37, 9, "오래된 벚나무 쉼터"]]) {
     o[y][x] = "G";
