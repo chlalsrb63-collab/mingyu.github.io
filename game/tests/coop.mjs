@@ -1,10 +1,5 @@
-// Headless test of 협동 아르바이트 (docs/design/life-and-coop.md C, H7–H9): party-only (2–4; a solo start refused), 동동아파트 청소
-// v3 by parties of 2–4 (the compact template, the opening dirt, sweep → pile, the bin's 10 칸 and its refusal, the dumpster, the
-// dirt deltas on the wire, the mess growing back, the 청소율 maths and grades, the two-person sofa), failing on the clock, walking
-// bots (--apt: stop after the apartment; --tune: no cut-off asserts), daily rewards and unpaid replays, leaving, a disconnect
-// mid-shift, cleanup, determinism, the wire and an old sheet's migration; 쥬쥬식당 서빙; 캉캉대장간 단조 v2 (each piece's rhythm
-// pattern judged, flips, 갑옷's answers, reheating, the 진열대 and its customers, the latency calibration, walking bots 2–4 at a
-// human-ish accuracy); 보글연금공방 가마 v2 (풀무 notes per direction, 합동 풀무, bands per recipe, boil-overs and the fan, herb order, the shop, walking bots 2–4). node tests/coop.mjs [-v] [--tune]
+// Co-op shift rules, compact layouts, transport, eligibility, and replay rewards.
+// Run with -v to log walking scores or --tune to skip the grade assertions.
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
@@ -61,6 +56,7 @@ function checkLayout(dim, job, width, height) {
   assert.equal(new Set(job.start.map(String)).size, 4, `${job.name}: four distinct starts`);
   for (const t of job.start) assert.ok(reachable(m, t), `${job.name}: start ${t} reachable`);
   for (const [station, tiles] of Object.entries(job.st)) {
+    if (station === "inspector") continue;
     if (station === "door") {
       assert.ok(reachable(m, tiles), `${job.name}: customer door ${tiles} reachable`);
       continue;
@@ -76,37 +72,44 @@ function rewardState({ ch }) {
   const { gold, lvl, xp, xpt, life, inv, rep, cnt, ach, cos } = ch;
   return structuredClone({ gold, lvl, xp, xpt, life, inv, rep, cnt, ach, cos });
 }
-// where a worker stands to use each station (the tile beside it: the rack in the stairwell, the dumpster in the back yard)
-const RACK = [J.st.rack[0] - 1, J.st.rack[1]], DUMP = [J.st.dump[0] - 1, J.st.dump[1]];
-/** The dirt in the 3×3 round tile index i (the broom's reach). */
-const sum3 = (c, W, i) => { let s = 0; for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const j = i + dy * W + dx; if (c.cell[j]) s += c.dirt[j]; } return s; };
-/** Make the 3×3 round tile i all litter (2), keeping c.out in step. */
-const soil3 = (c, W, i) => { for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const j = i + dy * W + dx; if (c.cell[j]) { c.out += 2 - c.dirt[j]; c.dirt[j] = 2; } } };
-const pct = (c) => Math.max(0, Math.round(1000 * (1 - c.out / c.u0)));
-
-// ── the compact apartment, two wings, stairwell, back yard and the opening dirt
+const DUMP = [J.st.dump[0] + 1, J.st.dump[1]];
 {
-  const w = world(2);
+  const w = world(4);
   assert.ok(act(w, "c0", { t: "coop_start", k: "apt" }).ok);
-  const dim = shiftOf(w), m = dim.map, c = dim.coop;
+  const dim = shiftOf(w), c = dim.coop;
   checkLayout(dim, J, 44, 27);
-  for (const k of ["apt", "diner", "forge", "lib"]) assert.equal(X.COOP[k].tpl.bgm, `coop_${k}`);
-  assert.equal(m.bgm, "coop_apt", "a shift's map carries its recording key");
-  const open = m.reach.reduce((n, v) => n + v, 0);
-  log("apt open tiles", open, "dirt cells", c.cells.length, "opening dirt", c.u0);
-  assert.equal(J.rooms.length, 18, "eighteen flats in two wings");
-  for (const [x0, y0, x1, y1] of J.rooms) { let n = 0; for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) n += m.reach[y * m.w + x]; assert.ok(n >= 8, `flat ${x0},${y0}: ${n} open tiles`); }
-  assert.ok(reachable(m, DUMP) && reachable(m, RACK), "the dump and the rack can be reached");
-  // the yard stays clean; most eligible indoor tiles start dirty (seeded), the score starts at 0 ‰
-  const [yx, yy] = X.APT.yard;
-  assert.ok(c.cells.every((i) => m.reach[i] && (i % m.w < yx || Math.floor(i / m.w) < yy)), "dirt stays inside the apartment");
-  assert.ok(c.cells.length > open * 0.8, "the flats, corridors and stairwell");
-  assert.equal(c.u0, c.dirt.reduce((s, v) => s + v, 0), "the opening dirt is every tile's level");
-  const dirty = c.cells.filter((i) => c.dirt[i]).length / c.cells.length;
-  assert.ok(Math.abs(dirty - A.dirt[1]) < 0.05, `${Math.round(dirty * 100)} % of the floor starts dirty`);
-  assert.equal(c.ents.length, 0, "no piles until someone sweeps");
-  const w2 = world(2); act(w2, "c0", { t: "coop_start", k: "apt" });
-  assert.deepEqual([...shiftOf(w2).coop.dirt], [...c.dirt], "the same seed, the same mess");
+  assert.equal(c.runAt - c.t0, 5000);
+  assert.ok(Object.values(c.pl).every((q) => q.tool === "bin"));
+  assert.deepEqual(new Set(c.ents.map((e) => e.variant)), new Set([0, 1, 2, 3]));
+  for (const t of J.st.inspector) assert.ok(reachable(dim.map, t));
+  assert.ok(reachable(dim.map, DUMP));
+}
+
+const trashTile = (o) => [Math.floor(o.x / T), Math.floor(o.y / T)];
+
+for (const n of [2, 3, 4]) {
+  const w = world(n);
+  assert.ok(act(w, "c0", { t: "coop_start", k: "apt" }).ok);
+  const { map, coop: c } = shiftOf(w), dump = DUMP[1] * map.w + DUMP[0];
+  assert.deepEqual([map.w, map.h], [44, 27], "compact apartment");
+  assert.ok(map.solid[J.st.dump[1] * map.w + J.st.dump[0]] && map.reach[dump], "return station has an open approach");
+  assert.deepEqual(Object.values(c.pl).map((q) => q.tool), Array(n).fill("bin"), "everyone starts with a bin");
+  const tiles = c.ents.map((o) => { const [x, y] = trashTile(o); return y * map.w + x; });
+  assert.equal(c.total, n * 24, "trash count scales with the party");
+  assert.equal(tiles.length, c.total);
+  assert.equal(new Set(tiles).size, c.total, "one item per tile");
+  assert.ok(tiles.every((i) => map.reach[i] && !map.solid[i]), "every item is reachable");
+  assert.equal(new Set(c.ents.map((o) => o.variant)).size, A.variants);
+  for (const [x, y] of J.start) assert.ok(map.reach[y * map.w + x], "all four spawn positions are open");
+  const [[inspectorX, from], [, to]] = J.st.inspector;
+  for (let y = to; y <= from; y++) assert.ok(map.reach[y * map.w + inspectorX], "the inspector has a clear aisle");
+  if (n === 4) {
+    const [dumpX, dumpY] = J.st.dump, byParity = [0, 0];
+    for (let y = 0; y < map.h; y++) for (let x = 0; x < map.w; x++) {
+      if (map.reach[y * map.w + x] && Math.hypot(x - dumpX, y - dumpY) * T > X.COOP_T.station + 8 + T) byParity[(x + y) % 2]++;
+    }
+    assert.ok(byParity.every((count) => count >= 96), "every four-player layout has room for all trash");
+  }
 }
 
 // ── validation
@@ -114,7 +117,7 @@ const pct = (c) => Math.max(0, Math.round(1000 * (1 - c.out / c.u0)));
   const w = world(2), p1 = w.S.players.c1;
   assert.match(act(w, "c1", { t: "coop_start", k: "apt" }).error, /파티장만/);
   assert.match(act(w, "c0", { t: "coop_start", k: "zzz" }).error, /열리지 않은/);
-  assert.match(act(w, "c0", { t: "coop_start", k: "alch" }).error, /보글에게 다가가/);
+  assert.match(act(w, "c0", { t: "coop_start", k: "pipe" }).error, /열리지 않은/);
   assert.match(act(w, "c0", { t: "coop_act" }).error, /근무 중이 아닙니다/);
   at(w.S.players.c0, 300, 300);
   assert.match(act(w, "c0", { t: "coop_start", k: "apt" }).error, /동동에게 다가가/);
@@ -126,165 +129,69 @@ const pct = (c) => Math.max(0, Math.round(1000 * (1 - c.out / c.u0)));
   const w2 = world(2);
   assert.ok(act(w2, "c0", { t: "coop_start", k: "apt" }).ok);
   assert.match(act(w2, "c0", { t: "coop_act" }).error, /곧 근무가 시작/, "nothing during the briefing");
+  step(w2, 100);
+  const brief = lastOf("c0", "cj");
+  assert.deepEqual(brief.slice(1, 3), [0, 5], "the shift opens with five seconds of briefing");
+  for (const pid of w2.pids) {
+    const team = lastOf(pid, "cj")[10];
+    assert.equal(team.find(([eid]) => eid === w2.S.players[pid].eid)[1], 0, "each player sees the bin");
+  }
+  step(w2, 4800);
+  assert.deepEqual(lastOf("c0", "cj").slice(1, 3), [0, 1], "briefing remains until the start");
+  step(w2, 100);
+  assert.equal(lastOf("c0", "cj")[1], 1, "work starts at the five-second mark");
 }
 
-// ── one worker does it all (the other stands by): sweep → a pile, the bin takes piles (capacity 10, then refused),
-// only emptying it at the dumpster takes the dirt away; the 청소율 rises by what was dumped
+// ── Only the exact tile can be collected. One party member wins simultaneous pickup.
 {
-  const w = world(2), S = w.S, p = S.players.c0;
+  const w = world(2), [a, b] = w.pids.map((pid) => w.S.players[pid]);
   act(w, "c0", { t: "coop_start", k: "apt" });
-  const dim = shiftOf(w), c = dim.coop, m = dim.map, q = c.pl.c0;
-  assert.deepEqual([c.n, q.tool, c.state], [2, "broom", "brief"]);
-  assert.ok(p.spdBuff >= c.endAt, "×1.4 walking for the shift");
-  step(w, X.COOP_T.briefMs + 100);
-  assert.equal(c.state, "run");
-  // a flat's middle: make its 3×3 all litter (18 units)
-  const [x0, y0, x1, y1] = J.rooms[0], tx = (x0 + x1) >> 1, ty = ((y0 + y1) >> 1) + 1, i0 = ty * m.w + tx;
-  soil3(c, m.w, i0); atTile(p, [tx, ty]);
-  const out0 = c.out, s00 = sum3(c, m.w, i0);
+  const { map, coop: c } = shiftOf(w), q = c.pl.c0, other = c.pl.c1;
+  step(w);
+  const first = c.ents.find((e) => {
+    const [x, y] = trashTile(e);
+    return map.reach[y * map.w + x + 1] && !c.ents.some((o) => trashTile(o).join() === [x + 1, y].join());
+  });
+  assert.ok(first, "one item has an empty neighbour");
+  assert.deepEqual(lastOf("c0", "C").find(([id]) => id === first.id), [first.id, 0, first.x, first.y, first.variant]);
+  step(w, X.COOP_T.briefMs);
+  const [tx, ty] = trashTile(first);
+  atTile(a, [tx + 1, ty]);
+  act(w, "c0", { t: "coop_act" });
+  assert.equal(q.hold.length, 0, "a neighbouring worker cannot take it");
+  step(w, 300);
+  for (const p of [a, b]) at(p, first.x, first.y);
   assert.ok(act(w, "c0", { t: "coop_act" }).ok);
-  const pile = c.ents.find((e) => e.t === 0);
-  assert.ok(pile, "one sweep makes a pile");
-  assert.equal(pile.hp, A.sweepN, `a sweep moves ${A.sweepN} units`);
-  assert.equal(sum3(c, m.w, i0), s00 - A.sweepN, "off the floor round you");
-  assert.equal(c.out, out0, "sweeping alone takes nothing away: the dirt is in the pile");
-  assert.equal(pile.cred.c0, A.sweepN);
-  // more sweeps fill that pile up to pileMax, then a new one starts
-  for (let i = 1; i < A.pileMax / A.sweepN; i++) { if (sum3(c, m.w, i0) < A.sweepN) soil3(c, m.w, i0); step(w, 300); act(w, "c0", { t: "coop_act" }); }
-  assert.equal(pile.hp, A.pileMax, "the same pile, full");
-  soil3(c, m.w, i0); step(w, 300); act(w, "c0", { t: "coop_act" });
-  assert.equal(c.ents.filter((e) => e.t === 0).length, 2, "a full pile: the next sweep starts a new one");
-  assert.ok(c.dlog.length >= 4 * A.sweepN, "every swept tile is logged for the wire");
-  // the broom can't lift a pile; the bin can't sweep
-  step(w, 300); p.toast.length = 0; q.hintAt = 0;
-  const piles = c.ents.filter((e) => e.t === 0);
-  for (const e of piles) { e.x = p.x; e.y = p.y; }
-  step(w, 300); c.out -= sum3(c, m.w, i0); for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) c.dirt[i0 + dy * m.w + dx] = 0;
-  act(w, "c0", { t: "coop_act" });
-  assert.ok(p.toast.some((t) => /빗자루로는 담을 수 없어요/.test(t)), "says why: " + p.toast.join(" / "));
-  atTile(p, RACK); step(w, 300); act(w, "c0", { t: "coop_act" });
-  assert.equal(q.tool, "bin", "the rack swaps the tool");
-  // the bin picks the piles up: off the floor, still not away
-  atTile(p, [tx, ty]); for (const e of piles) { e.x = p.x; e.y = p.y; }
-  const units = piles.reduce((s, e) => s + e.hp, 0), out1 = c.out;
-  for (let i = 0; i < piles.length; i++) { step(w, 300); assert.ok(act(w, "c0", { t: "coop_act" }).ok); }
-  assert.deepEqual([q.hold.length, c.ents.filter((e) => e.t === 0).length], [piles.length, 0], "binned");
-  assert.ok(c.out >= out1, "still counted until dumped");
-  soil3(c, m.w, i0); step(w, 300); p.toast.length = 0; q.hintAt = 0; act(w, "c0", { t: "coop_act" });
-  assert.ok(p.toast.some((t) => /쓰레기통으로는 쓸 수 없어요/.test(t)), "the bin can't sweep");
-  // the rack refuses a swap with a loaded bin
-  atTile(p, RACK); step(w, 300); act(w, "c0", { t: "coop_act" });
-  assert.equal(q.tool, "bin", "a loaded bin: no swap");
-  // capacity: binCap 칸 of binUnit units; a pile bigger than the room left is taken in part, then the full bin refuses
-  const cap = A.binCap * A.binUnit, load = () => q.hold.reduce((s, h) => s + h.amt, 0), room = cap - load() - 5;
-  q.hold.push({ amt: room, cred: { c0: 1 } }); c.out += room;
-  const extra = { id: 998, t: 0, x: p.x, y: p.y, hp: 12, cred: { c0: 12 }, lift: null }; c.ents.push(extra); c.out += 12;
-  step(w, 300); assert.ok(act(w, "c0", { t: "coop_act" }).ok);
-  assert.deepEqual([load(), extra.hp, c.ents.includes(extra)], [cap, 7, true], "five units fit, seven stay on the floor");
-  step(w, 100); assert.equal(lastOf("c0", "cj")[10].find((r) => r[0] === p.eid)[4], A.binCap, "the team row: the bin's 칸");
-  step(w, 300); p.toast.length = 0; q.hintAt = 0; act(w, "c0", { t: "coop_act" });
-  assert.ok(c.ents.includes(extra) && extra.hp === 7 && load() === cap, "a full bin takes no more");
-  assert.ok(p.toast.some((t) => new RegExp(`꽉 찼어요 \\(${A.binCap}/${A.binCap}\\)`).test(t)), "says it is full: " + p.toast.join(" / "));
-  // empty it at the dumpster: the dirt is gone, the 청소율 rises, all credited to the one who did both jobs
-  const loaded = load();
-  atTile(p, DUMP); step(w, 300); const out2 = c.out; assert.ok(act(w, "c0", { t: "coop_act" }).ok);
-  assert.deepEqual([q.hold.length, c.out], [0, out2 - loaded], "emptied");
-  assert.equal(c.score, pct(c), "the score is the 청소율 in ‰");
-  assert.ok(Math.abs(q.pts - loaded) < 1e-6, `one worker gets the whole load's credit: ${q.pts} vs ${loaded}`);
-  step(w, 100); const cj = lastOf("c0", "cj");
-  assert.deepEqual([cj[0], cj[1], cj[3], cj[7]], [0, 1, c.score, X.coopCut(c, 0)], "cj: apt, running, the score, the next cut-off");
-  assert.deepEqual([cj[8], cj[9]], [c.out, c.u0], "the sum: dirt left, the opening dirt");
-  // rate limit: a second act within 250 ms does nothing
-  q.tool = "broom"; atTile(p, [tx, ty]); soil3(c, m.w, i0); step(w, 300);
-  const s0 = sum3(c, m.w, i0);
-  act(w, "c0", { t: "coop_act" }); act(w, "c0", { t: "coop_act" });
-  assert.equal(sum3(c, m.w, i0), s0 - A.sweepN, "250 ms between acts");
-  // a teammate's share: c1 empties a bin that c0 swept
-  const b = S.players.c1, q1 = c.pl.c1;
-  q1.hold = [{ amt: 6, cred: { c0: 6 } }]; c.out += 6; atTile(b, DUMP); const pts0 = [q.pts, q1.pts];
   assert.ok(act(w, "c1", { t: "coop_act" }).ok);
-  assert.ok(Math.abs(q1.pts - pts0[1] - 6 * A.holdK) < 1e-6 && Math.abs(q.pts - pts0[0] - 6 * (1 - A.holdK)) < 1e-6, "the bin gets holdK of a load, the sweepers the rest");
+  assert.equal(q.hold.length, 1);
+  assert.equal(other.hold.length, 0);
+  assert.equal(c.score, 0, "pickup does not score");
+  step(w, 300);
+  assert.ok(lastOf("c1", "C").every(([id]) => id !== first.id), "picked trash disappears for everyone");
+  assert.equal(lastOf("c0", "cj")[10].find(([id]) => id === a.eid)[2], 1, "bin load is on the wire");
+  for (let i = 1; i < A.binCap; i++) {
+    const item = c.ents[0];
+    at(a, item.x, item.y);
+    act(w, "c0", { t: "coop_act" });
+    if (i === A.binCap - 1) assert.ok(a.toast.includes("쓰레기통이 가득 찼어요! 비워주세요"));
+    step(w, 300);
+  }
+  const over = c.ents[0];
+  at(a, over.x, over.y);
+  assert.ok(act(w, "c0", { t: "coop_act" }).ok);
+  assert.equal(q.hold.length, A.binCap);
+  assert.ok(c.ents.includes(over), "a full bin leaves the item in place");
+  atTile(a, DUMP);
+  step(w);
+  assert.equal(q.hold.length, 0, "approaching the station empties the bin without pressing F");
+  assert.equal(c.score, A.binCap);
+  assert.equal(q.pts, A.binCap);
+  assert.deepEqual(lastOf("c1", "cj").slice(8, 10), [c.total - A.binCap, c.total], "same deposited progress for the team");
+  step(w, 1000);
+  assert.equal(c.score, A.binCap, "standing at the station does not award more points");
 }
 
-// ── the wire: the whole dirt map once on the way in, then only the changes
-{
-  const w = world(2), S = w.S, p = S.players.c0;
-  act(w, "c0", { t: "coop_start", k: "apt" });
-  const dim = shiftOf(w), c = dim.coop, m = dim.map;
-  let mine = null, fulls = 0, big = 0;
-  const take = () => { const v = views.c0[views.c0.length - 1]; if (typeof v.cd === "string") { mine = v.cd.split("").map(Number); fulls++; } else if (Array.isArray(v.cd)) { for (const k of v.cd) mine[k >> 2] = k & 3; big = Math.max(big, v.cd.length); } };
-  step(w, 100); take();
-  assert.ok(mine && mine.length === m.w * m.h && fulls === 1, "a string of every tile's level on the way in");
-  const [x0, y0, x1, y1] = J.rooms[3], tx = (x0 + x1) >> 1, ty = ((y0 + y1) >> 1) + 1;
-  for (let i = 0; i < X.COOP_T.briefMs / 100 + 1; i++) { step(w, 100); take(); }
-  atTile(p, [tx, ty]);
-  for (let i = 0; i < 40; i++) { if (i % 3 === 0) act(w, "c0", { t: "coop_act" }); step(w, 100); take(); }
-  assert.equal(fulls, 1, "then only deltas");
-  assert.ok(big > 0 && big < 20, `small deltas: at most ${big} a snapshot`);
-  assert.deepEqual(mine, [...c.dirt], "the client's copy, kept by the deltas, matches");
-  // a resync (map resend) sends the whole map again
-  p.sendMap = true; const v = L.viewFor(S, "c0"); L.endTick(S);
-  assert.equal(typeof v.cd, "string");
-}
-
-// ── the mess keeps coming: dust and litter regrow on their own (faster in fever), the 청소율 never goes below 0;
-// the maths and the grades
-{
-  const w = world(2), S = w.S;
-  act(w, "c0", { t: "coop_start", k: "apt" });
-  const c = shiftOf(w).coop;
-  step(w, X.COOP_T.briefMs + 100);
-  // clean the whole floor so the regrowth shows
-  for (const i of c.cells) c.dirt[i] = 0; c.out = 0;
-  let litter = 0;
-  for (let t = 0; t < 30000; t += 1000) { step(w, 1000); for (const v of views.c0.slice(-10)) for (const e of v.ev || []) if (e[0] === "cj" && e[1] === 18) litter++; }
-  const want = (30000 / A.dustMs[2]) * A.dustN + (30000 / A.litterMs[2]) * A.litterN;
-  log("regrowth in 30 s", c.out, "expected about", Math.round(want), "litter drops", litter);
-  assert.ok(c.out > want * 0.7 && c.out <= want + A.litterN + A.dustN, `dust and litter come back: ${c.out} of about ${Math.round(want)}`);
-  assert.ok(litter >= Math.floor(30000 / A.litterMs[2]) - 1, "residents drop litter (event 18)");
-  assert.equal(c.out, c.dirt.reduce((s, v) => s + v, 0), "c.out is the floor's dirt (no piles, no bins)");
-  // 청소율 = 1 − (dirt left anywhere) / the opening dirt, in ‰, never below 0
-  c.out = Math.round(c.u0 / 4); step(w, 100); assert.equal(c.score, 750);
-  c.out = c.u0 * 2; step(w, 100); assert.equal(c.score, 0, "never below 0");
-  for (const [s, g] of [[0, 0], [X.coopCut(c, 0) - 1, 0], [X.coopCut(c, 0), 1], [X.coopCut(c, 2), 3], [X.coopCut(c, 3), 4], [1000, 4]]) { c.score = s; assert.equal(X.coopGrade(c), g, `${s} ‰ → grade ${g}`); }
-  for (const n of [2, 3, 4]) assert.ok(X.coopCut({ k: "apt", n }, 3) < 1000 && X.coopCut({ k: "apt", n }, 3) > X.coopCut({ k: "apt", n }, 0), `S below 100 % at ${n}`);
-  // fever: the mess comes ×feverK faster
-  c.out = 0; for (const i of c.cells) c.dirt[i] = 0;
-  while (c.state !== "fever") step(w, 1000);
-  const f0 = c.out; step(w, 20000);
-  log("fever regrowth in 20 s", c.out - f0);
-  assert.ok(c.out - f0 > (20000 / A.dustMs[2]) * A.dustN * A.feverK * 0.8, "fever: more mess");
-}
-
-// ── parties of 2–4: one instance, tools by rotation, the sofa needs two and breaks into piles for the bins
-for (const n of [2, 3, 4]) {
-  const w = world(n), S = w.S;
-  assert.ok(act(w, "c0", { t: "coop_start", k: "apt" }).ok, `party of ${n}`);
-  const dim = shiftOf(w), c = dim.coop;
-  assert.equal(Object.keys(S.dims).filter((k) => S.dims[k].coop).length, 1);
-  for (const pid of w.pids) assert.equal(S.players[pid].map, dim.id, `${pid} inside`);
-  assert.deepEqual(w.pids.map((pid) => c.pl[pid].tool), ["broom", "bin", "broom", "bin"].slice(0, n));
-  assert.equal(c.n, n);
-  assert.equal(X.coopCut(c, 3), Math.round(J.par * J.parN[n] * 0.88));
-  assert.match(act(w, "c0", { t: "coop_start", k: "apt" }).error, /동동에게|이미/, "one shift per party");
-  if (n !== 2) continue;
-  step(w, X.COOP_T.briefMs + A.sofaMs / X.COOP_T.parN[2] + 200);
-  const sofa = c.ents.find((e) => e.t === 2);
-  assert.ok(sofa, "the sofa comes");
-  const [a, b] = [S.players.c0, S.players.c1];
-  at(a, sofa.x - 8, sofa.y); at(b, sofa.x + 8, sofa.y);
-  act(w, "c0", { t: "coop_act" });
-  assert.equal(sofa.hp, A.sofaHp, "one alone can't lift it");
-  step(w, 2000); act(w, "c1", { t: "coop_act" });
-  assert.equal(sofa.hp, A.sofaHp, "too late: 1.5 s");
-  for (let i = 0; i < A.sofaHp; i++) { step(w, 300); act(w, "c0", { t: "coop_act" }); act(w, "c1", { t: "coop_act" }); }
-  assert.ok(!c.ents.includes(sofa), "lifted away");
-  const piles = c.ents.filter((e) => e.t === 0 && e.cred.c0 && e.cred.c1);
-  assert.equal(piles.length + c.pl.c1.hold.length, A.sofaPiles, "three piles, credited to both (the bin took one at once)");
-  assert.ok(piles.every((e) => e.hp === A.sofaUnits / A.sofaPiles), "the sofa's units in its piles");
-}
-
-// ── left alone: the mess grows back to 0 ‰ and the shift fails on the clock (still eligible: walking about)
+// ── An empty shift fails on the clock, even if the team spent it walking.
 {
   const w = world(2), S = w.S;
   act(w, "c0", { t: "coop_start", k: "apt" });
@@ -292,8 +199,7 @@ for (const n of [2, 3, 4]) {
   step(w, X.COOP_T.briefMs + 200);
   const before = rewardState(a);
   while (c.state !== "end") { step(w, 1000); for (const o of [a, b]) o.x += (Math.floor(w.now / 1000) % 2 ? 20 : -20); }
-  log("left alone: score", c.score, "dirt", c.out, "of", c.u0);
-  assert.equal(c.score, 0, "nobody cleaned: 0 ‰");
+  assert.equal(c.score, 0, "nobody deposited trash");
   const cr = lastOf("c0", "cr");
   assert.equal(cr[0], 0, "graded below C");
   assert.equal(cr[3][0][3], 1, "walked about: still counted");
@@ -312,7 +218,7 @@ for (const n of [2, 3, 4]) {
  * Walking at a player's own speed (×1.4 in a shift): a BFS distance field over the map's open tiles per goal tile,
  * then a step of spd·dt along it. `go(o, tile)` is true once o stands on that tile.
  */
-function walker(dim) {
+function walker(dim, speedScale = 1) {
   const m = dim.map, W = m.w, fields = new Map();
   const field = ([gx, gy]) => {
     const key = gy * W + gx;
@@ -329,7 +235,7 @@ function walker(dim) {
   const tileOf = (o) => [Math.floor(o.x / T), Math.floor(o.y / T)];
   const steps = (o, goal) => field(goal)[tileOf(o)[1] * W + tileOf(o)[0]];
   function go(o, goal, ms) {
-    let budget = (X.stats(o).spd * ms) / 1000;
+    let budget = (X.stats(o).spd * speedScale * ms) / 1000;
     const d = field(goal);
     while (budget > 0) {
       const [cx, cy] = tileOf(o);
@@ -349,54 +255,30 @@ function walker(dim) {
   return { go, steps, tileOf, tileAt, field };
 }
 
-/**
- * A walking bot shift at player speed (× spdK), acting every MS: a broom heads for the dirtiest 3×3 for its distance
- * (away from the other brooms' targets) and sweeps it clean; a bin collects the nearest piles and empties at the
- * dumpster when full, when nothing is left to pick or when the clock is about to run out; the two nearest lift the
- * sofa. `idle` pids stand still.
- */
-function botShift(w, idle = [], MS = 300, spdK = 1) {
-  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), MW = dim.map.w, goals = {};
-  step(w, X.COOP_T.briefMs + 100);
+/** Workers walk to distinct pieces, then return to unload when full or nearly out of time. */
+function botShift(w, MS = 300, spdK = 1) {
+  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim);
+  if (w.now < c.runAt) step(w, c.runAt - w.now);
   while (c.state !== "end") {
-    const work = w.pids.map((pid) => S.players[pid]).filter((o) => o && o.map === dim.id && !idle.includes(o.pid));
-    const sofa = c.ents.find((e) => e.t === 2), claimed = new Set();
-    // the sofa: the two nearest with empty hands go (a loaded bin empties first)
-    const free = sofa ? work.filter((o) => !c.pl[o.pid].hold.length) : [];
-    const lifters = free.length >= 2 ? free.sort((a, b) => W.steps(a, W.tileAt(sofa)) - W.steps(b, W.tileAt(sofa))).slice(0, 2) : [];
-    for (const o of work) {
-      const q = c.pl[o.pid], act = () => act0(w, o.pid), [hx, hy] = W.tileOf(o), d = W.field([hx, hy]);
-      if (lifters.includes(o)) {
-        if (Math.hypot(o.x - sofa.x, o.y - sofa.y) > X.COOP_T.reach - 4) W.go(o, W.tileAt(sofa), MS * spdK);
-        if (lifters.every((l) => Math.hypot(l.x - sofa.x, l.y - sofa.y) <= X.COOP_T.reach)) act();
-        continue;
-      }
-      if (q.tool === "broom") {
-        let g = goals[o.pid];
-        if (g === undefined || g < 0 || !sum3(c, MW, g)) {
-          const others = Object.entries(goals).filter(([pid]) => pid !== o.pid).map(([, v]) => v);
-          let bv = 0; g = -1;
-          for (const i of c.cells) {
-            if (d[i] < 0 || others.some((j) => Math.abs((j % MW) - (i % MW)) + Math.abs(Math.floor(j / MW) - Math.floor(i / MW)) < 8)) continue;
-            const v = sum3(c, MW, i) / (3 + d[i]);
-            if (v > bv) { bv = v; g = i; }
-          }
-          goals[o.pid] = g;
-        }
-        if (g >= 0 && W.go(o, [g % MW, Math.floor(g / MW)], MS * spdK)) act();
-      } else {
-        const secs = (c.endAt - w.now) / 1000, toDump = W.steps(o, DUMP), walkS = (toDump * T) / X.stats(o).spd / spdK;
-        const pile = c.ents.filter((e) => e.t === 0 && !claimed.has(e.id) && d[W.tileAt(e)[1] * MW + W.tileAt(e)[0]] >= 0)
-          .sort((a, b) => d[W.tileAt(a)[1] * MW + W.tileAt(a)[0]] - d[W.tileAt(b)[1] * MW + W.tileAt(b)[0]] || a.id - b.id)[0];
-        if (q.hold.reduce((s, h) => s + h.amt, 0) >= A.binCap * A.binUnit || (q.hold.length && (!pile || secs < walkS + 4))) { if (W.go(o, DUMP, MS * spdK)) act(); }
-        else if (pile) { claimed.add(pile.id); W.go(o, W.tileAt(pile), MS * spdK); if (Math.hypot(o.x - pile.x, o.y - pile.y) <= X.COOP_T.reach - 4) act(); }
+    const claimed = new Set();
+    for (const p of Object.values(S.players)) {
+      if (p.map !== dim.id) continue;
+      const q = c.pl[p.pid], d = W.field(W.tileOf(p));
+      const distance = (e) => { const [x, y] = W.tileAt(e); return d[y * dim.map.w + x]; };
+      const e = c.ents.filter((o) => !claimed.has(o.id)).sort((a, b) => distance(a) - distance(b))[0];
+      const walkMs = (W.steps(p, DUMP) * T * 1000) / (X.stats(p).spd * spdK);
+      if (q.hold.length && (q.hold.length === A.binCap || !e || c.endAt - w.now < walkMs + 4000)) {
+        W.go(p, DUMP, MS * spdK);
+      } else if (e) {
+        claimed.add(e.id);
+        if (W.go(p, W.tileAt(e), MS * spdK)) act0(w, p.pid);
       }
     }
-    if (VERBOSE && w.now % 30000 < MS) log("  t", Math.round((w.now - c.runAt) / 1000), "out", c.out, "piles", c.ents.filter((e) => e.t === 0).length, "held", Object.values(c.pl).map((q) => q.hold.reduce((s, h) => s + h.amt, 0)).join("·"), "score", c.score);
     step(w, MS);
   }
   return c;
 }
+
 const act0 = (w, pid) => act(w, pid, { t: "coop_act" });
 
 // ── a bot party clears it; rewards once a day; the same party can replay; the next day pays again
@@ -456,17 +338,16 @@ if (!TUNE) {
   assert.deepEqual(b.ch.coopDone, ["apt"]);
 }
 
-// ── walking bots at player speed, 2–4 workers: quick shifts reach S and parties walking at 90% still earn at least B
+// ── Walking bots clear all items with time to spare, at or below walking speed.
 for (const n of [2, 3, 4]) {
   const w = world(n);
   act(w, "c0", { t: "coop_start", k: "apt" });
-  const c = botShift(w);
-  log(`apt ${n}: 청소율`, c.score, "grade", X.coopGrade(c), "cuts", [0, 1, 2, 3].map((i) => X.coopCut(c, i)), "dirt", c.out, "of", c.u0);
-  if (!TUNE) assert.equal(X.coopGrade(c), 4, `${n} quick cleaners reach S: ${c.score}`);
-  const w2 = world(n); act(w2, "c0", { t: "coop_start", k: "apt" });
-  const c2 = botShift(w2, [], 400, 0.9);
-  log(`apt ${n} realistic: 청소율`, c2.score, "grade", X.coopGrade(c2));
-  if (!TUNE) assert.ok(X.coopGrade(c2) >= 2, `${n} cleaners with realistic pace reach at least B: ${c2.score}`);
+  const c = botShift(w, 400, 0.9);
+  log("apt", n, "trash deposited", c.score, "of", c.total, "in", (w.now - c.runAt) / 1000, "s");
+  assert.equal(c.score, c.total);
+  assert.equal(X.coopGrade(c), 4);
+  assert.ok(w.now < c.endAt, "all trash deposited ends the shift early");
+  assert.ok(lastOf("c0", "cr")[3].every((r) => r[3] === 1), "everyone qualified for their day's pay");
 }
 if (process.argv.includes("--apt")) process.exit(0);   // dev aid: the apartment only
 
@@ -482,195 +363,205 @@ function dworld(n, t0 = 1000, seed = 20251111) {
 }
 const below = ([x, y]) => [x, y + 1], above = ([x, y]) => [x, y - 1];
 
-// ── the map: big enough for four, every station and table usable
-{
-  const w = dworld(2), p = w.S.players.c0;
-  assert.ok(act(w, "c0", { t: "coop_start", k: "diner" }).ok, "the diner opens at 쥬쥬");
-  const dim = shiftOf(w), m = dim.map, open = m.reach.reduce((n, v) => n + v, 0);
-  log("diner open tiles", open);
-  checkLayout(dim, JD, 32, 24);
-  assert.equal(JD.tables.length, 20);
-  for (const [x, y] of JD.tables) assert.ok(m.solid[y * m.w + x] && reachable(m, above([x, y])), `table ${x},${y}`);
-  for (const t of JD.st.pass) assert.ok(reachable(m, above(t)) && reachable(m, below(t)), `pass ${t} usable from both sides`);
-  assert.equal(dim.coop.pl.c0.tool, "pan");
-  assert.equal(p.map, dim.id);
-}
+const cookAt = (w, pid, i, r) => act(w, pid, { t: "coop_act", i, r });
 
-// ── one worker (the other stands by): a salad from crate to table, the wrong dish refused, a pot that burns, a customer who leaves angry
-{
-  const w = dworld(2), S = w.S, p = S.players.c0;
-  act(w, "c0", { t: "coop_start", k: "diner" });
-  const dim = shiftOf(w), c = dim.coop, q = c.pl.c0;
-  step(w, X.COOP_T.briefMs + 100);
-  // salad: veg → 4 chops → pass
-  atTile(p, below(JD.st.veg)); act(w, "c0", { t: "coop_act" });
-  assert.deepEqual([q.hold.length, q.hold[0].r], [1, 0], "veg in hand");
-  step(w, 300); atTile(p, above(JD.st.pass[0])); act(w, "c0", { t: "coop_act" });
-  assert.ok(p.toast.some((m) => /도마/.test(m)), "has to be chopped first");
-  atTile(p, below(JD.st.board[0]));
-  for (let i = 0; i < R.dishes[0].chop; i++) { step(w, 300); act(w, "c0", { t: "coop_act" }); }
-  assert.equal(q.hold[0].chop, 0);
-  step(w, 300); atTile(p, above(JD.st.pass[0])); act(w, "c0", { t: "coop_act" });
-  assert.equal(c.ents.filter((e) => e.t === 5).length, 1, "plated at the pass");
-  // fish: on the stove, then forgotten → burnt
-  step(w, 300); atTile(p, below(JD.st.fish)); act(w, "c0", { t: "coop_act" });
-  step(w, 300); atTile(p, below(JD.st.stove[0])); act(w, "c0", { t: "coop_act" });
-  const pot = c.ents.find((e) => e.t === 4);
-  assert.ok(pot && !q.hold.length, "on the stove");
-  step(w, 300); act(w, "c0", { t: "coop_act" });
-  assert.ok(c.ents.includes(pot), "not done yet");
-  const s0 = c.score; step(w, R.dishes[1].cook + R.burnMs + 200);
-  assert.ok(!c.ents.includes(pot), "burnt away");
-  // swap to the tray, take the salad, serve it to the salad table (a fish table refuses it)
-  atTile(p, below(JD.st.rack)); act(w, "c0", { t: "coop_act" });
-  assert.equal(q.tool, "tray");
-  step(w, 300); atTile(p, below(JD.st.pass[0])); act(w, "c0", { t: "coop_act" });
-  assert.equal(q.hold.length, 1, "salad on the tray");
-  const orders = c.ents.filter((e) => e.t === 3);
-  assert.ok(orders.length >= 1 && orders.length <= R.seats[2], `orders: ${orders.length}`);
-  const wrong = orders.find((e) => e.r !== 0);
-  if (wrong) { step(w, 1300); atTile(p, above(JD.tables[wrong.ti])); act(w, "c0", { t: "coop_act" }); assert.ok(p.toast.some((m) => /주문과 다른/.test(m)), "the wrong table says so"); }
-  let salad = c.ents.find((e) => e.t === 3 && e.r === 0);
-  if (!salad) { salad = { id: 9999, t: 3, r: 0, ti: 11, x: X.tilePx(JD.tables[11])[0], y: X.tilePx(JD.tables[11])[1], until: w.now + 60000, pat: 60000 }; c.ents.push(salad); }
-  const before = c.score; step(w, 300); atTile(p, above(JD.tables[salad.ti])); act(w, "c0", { t: "coop_act" });
-  assert.ok(!c.ents.includes(salad) && c.score > before && c.served === 1, `served: ${c.score - before}`);
-  assert.ok(c.score - before >= R.dishes[0].pts, "at least the dish's points");
-  log("diner alone, burnt", s0, "→ served", c.score);
-  // nobody serves now: someone leaves angry
-  const miss = c.miss; step(w, R.patience[2] + 1000);
-  assert.ok(c.miss > miss, "an angry customer");
-  // the wire: orders and pots carry a dish and deciseconds
-  p.cVer = -1; step(w, 100);
-  const C = lastOf("c0", "C"), o = C.find((r) => r[1] === 3);
-  if (o) assert.equal(o.length, 7);
-  const cj = lastOf("c0", "cj");
-  assert.equal(cj[0], 1, "diner is job index 1"); assert.equal(cj[8], c.served); assert.equal(cj[9], c.miss);
-}
-
-// ── plates: a served table eats, leaves a dirty plate that keeps it closed; a tray takes it to the sink, 3 scrubs wash it
-{
-  const w = dworld(2), p = w.S.players.c0;
-  act(w, "c0", { t: "coop_start", k: "diner" });
-  const c = shiftOf(w).coop, q = c.pl.c0;
-  step(w, X.COOP_T.briefMs + 100);
-  c.ents = c.ents.filter((e) => e.t !== 3);
-  const [x, y] = X.tilePx(JD.tables[11]);
-  c.ents.push({ id: c.nid++, t: 3, r: 0, ti: 11, x, y, until: w.now + 60000, pat: 60000 });
-  q.tool = "tray"; q.hold = [{ r: 0, cred: { c0: 1 } }];
-  atTile(p, above(JD.tables[11])); act(w, "c0", { t: "coop_act" });
-  const plate = c.ents.find((e) => e.t === 9);
-  assert.ok(plate && plate.ti === 11 && c.served === 1 && !q.hold.length, "served: a plate on the table");
-  step(w, 300); act(w, "c0", { t: "coop_act" });
-  assert.ok(c.ents.includes(plate) && !q.hold.length, "still eating: not taken yet");
-  for (let i = 0; i < 200; i++) { step(w, 300); assert.ok(!c.ents.some((e) => e.t === 3 && e.ti === 11), "no order at a table with a plate"); }
-  act(w, "c0", { t: "coop_act" });
-  assert.ok(!c.ents.includes(plate) && q.hold.length === 1 && q.hold[0].r === 3, "the dirty plate on the tray");
-  step(w, 300); atTile(p, below(JD.st.sink)); act(w, "c0", { t: "coop_act" });
-  assert.ok(!q.hold.length && c.ents.some((e) => e.t === 9 && e.ti < 0), "into the sink");
-  p.cVer = -1; step(w, 100);
-  assert.deepEqual(lastOf("c0", "C").find((r) => r[1] === 9).slice(4), [0, R.washN, 1], "wire: [.., ds eating, washes left, at the sink]");
-  const s0 = c.score;
-  for (let i = 0; i < R.washN; i++) { step(w, 300); p.toast = []; act(w, "c0", { t: "coop_act" }); assert.ok(p.toast.some((m) => m.includes(`설거지 ${i + 1}/${R.washN}`)), "설거지 n/3"); }
-  assert.ok(!c.ents.some((e) => e.t === 9) && c.score - s0 >= R.washPts, `washed: +${c.score - s0}`);
-  step(w, 300); act(w, "c0", { t: "coop_act" });
-  assert.ok(p.toast.some((m) => /씻을 접시/.test(m)), "nothing left to wash");
-}
-
-/** Diner bots walking at player speed: pans cook what the tables want, trays carry it; alone, one swaps at the rack. */
-function dinerBot(w, MS = 300, spdK = 1) {
-  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), D = R.dishes;
-  step(w, X.COOP_T.briefMs + 100);
-  while (c.state !== "end") {
-    const work = w.pids.map((pid) => S.players[pid]).filter((o) => o && o.map === dim.id), solo = work.length === 1;
-    const orders = c.ents.filter((e) => e.t === 3).sort((a, b) => a.until - b.until), pass = c.ents.filter((e) => e.t === 5);
-    // what is already on its way: plated, on the stoves, in hands
-    const coming = [...pass.map((e) => e.r), ...c.ents.filter((e) => e.t === 4).map((e) => e.r), ...Object.values(c.pl).flatMap((q) => q.hold.map((h) => h.r))];
-    const want = []; { const left = [...coming]; for (const o of orders) { const i = left.indexOf(o.r); if (i >= 0) left.splice(i, 1); else want.push(o.r); } }
-    // plates: dirty on the tables, waiting at the sink
-    const dirty = c.ents.filter((e) => e.t === 9 && e.ti >= 0 && e.due <= w.now), sinkQ = c.ents.filter((e) => e.t === 9 && e.ti < 0);
-    // trays clear plates only when the free tables run short (a walk to the sink costs dishes)
-    const short = JD.tables.length - orders.length - c.ents.filter((e) => e.t === 9 && e.ti >= 0).length < R.seats[c.n] + 2;
-    const claimed = new Set();
-    for (const o of work) {
-      const q = c.pl[o.pid], h = q.hold[0], kitchen = W.tileOf(o)[1] < 7;
-      let goal = null;
-      if (q.tool === "pan") {
-        const done = c.ents.filter((e) => e.t === 4 && e.doneAt <= w.now + 600 && !claimed.has(e.id))[0];
-        if (h) {
-          const need = h.chop > 0 ? 1 : D[h.r].cook && !h.cooked ? 2 : 0;
-          if (need === 1) goal = below(JD.st.board[0]);
-          else if (need === 2) { const s = JD.st.stove.findIndex((t, i) => !c.ents.some((e) => e.t === 4 && e.si === i) && !claimed.has("s" + i)); if (s >= 0) { claimed.add("s" + s); goal = below(JD.st.stove[s]); } }
-          else goal = above(JD.st.pass[pass.length % JD.st.pass.length]);
-        } else if (done) { claimed.add(done.id); goal = below(JD.st.stove[done.si]); }
-        else if (solo && pass.length && (pass.length >= 2 || !want.length)) goal = kitchen ? above(JD.st.rack) : below(JD.st.rack);
-        else if (want.length) { const r = want.shift(); goal = below(JD.st[D[r].crate]); }
-        else if (sinkQ.length) goal = below(JD.st.sink);
-        else if (solo && short && dirty.length) goal = kitchen ? above(JD.st.rack) : below(JD.st.rack);
-        if (!goal) continue;
-      } else {
-        const match = orders.find((e) => q.hold.some((d) => d.r === e.r) && !claimed.has(e.id));
-        if (match && (q.hold.length >= R.trayCap || !pass.some((d) => orders.some((e) => e.r === d.r)) || pass.length === 0)) { claimed.add(match.id); goal = above(JD.tables[match.ti]); }
-        else if (pass.length && q.hold.length < R.trayCap) goal = below(JD.st.pass[0]);
-        else if (match) { claimed.add(match.id); goal = above(JD.tables[match.ti]); }
-        else if (short && q.hold.length < R.trayCap && dirty.some((e) => !claimed.has(e.id))) { const e = dirty.find((e) => !claimed.has(e.id)); claimed.add(e.id); goal = above(JD.tables[e.ti]); }
-        else if (q.hold.some((h) => h.r === 3)) goal = below(JD.st.sink);
-        else if (!q.hold.length && sinkQ.length) goal = below(JD.st.sink);
-        else if (solo && !q.hold.length) goal = kitchen ? above(JD.st.rack) : below(JD.st.rack);
-        if (!goal) continue;
-      }
-      if (W.go(o, goal, MS * spdK)) act0(w, o.pid);
-    }
-    step(w, MS);
-  }
-  return c;
-}
-
-// ── walking bots 2–4: tables, the order rate and patience scale with the party; the cut-offs land them on A–S
 for (const n of [2, 3, 4]) {
-  const w = dworld(n), S = w.S;
+  const w = dworld(n);
+  assert.ok(act(w, "c0", { t: "coop_start", k: "diner" }).ok);
+  const { map, coop: c } = shiftOf(w);
+  checkLayout(shiftOf(w), JD, 32, 24);
+  assert.equal(JD.tables.length, 20);
+  assert.deepEqual(Object.values(c.pl).map((q) => q.tool), Array(n).fill("pan"));
+  assert.equal(JD.st.stove.length, 2);
+  for (const [x, y] of [...JD.st.stove, JD.st.sink, ...JD.tables]) {
+    assert.ok(map.solid[y * map.w + x] && map.reach[(y + 1) * map.w + x], "each station has a reachable approach");
+  }
+  for (const [x, y] of [...JD.start, JD.st.door]) assert.ok(map.reach[y * map.w + x]);
+  const [doorX, doorY] = JD.st.door, [sinkX, sinkY] = JD.st.sink;
+  assert.equal(map.o[sinkY][sinkX], "a", "only the bespoke prop is drawn over the sink footprint");
+  for (const [x, y] of JD.tables) {
+    assert.ok([JD.st.sink, ...JD.st.stove].every(([sx, sy]) => Math.hypot(x - sx, y - sy) * T > 2 * (X.COOP_T.station + 8)),
+      "a table prompt cannot overlap the kitchen stations");
+    for (let col = Math.min(doorX, x); col <= Math.max(doorX, x); col++) assert.ok(reachable(map, [col, y + 1]), "the aisle by this table is clear");
+    for (let row = y + 1; row <= doorY; row++) assert.ok(reachable(map, [doorX, row]), "the entrance route is clear");
+  }
+  const defs = L.defs().coop;
+  assert.deepEqual(defs.jobs.diner[7], JD.st);
+  assert.deepEqual(defs.cook, R.dishes.map((d) => d.cook));
+  assert.equal(defs.stationReach, X.COOP_T.station + 8);
+}
+
+// ── The guest walks in, two stoves cook in parallel, and any worker can pick up a cooked dish.
+{
+  const w = dworld(2), [p0, p1] = w.pids.map((pid) => w.S.players[pid]);
+  act(w, "c0", { t: "coop_start", k: "diner" });
+  const c = shiftOf(w).coop, [q0, q1] = Object.values(c.pl);
+  step(w, X.COOP_T.briefMs + R.firstMs);
+  const first = c.ents.find((e) => e.t === 3);
+  const walking = lastOf("c0", "C").find(([id]) => id === first.id);
+  assert.equal(walking[4], -1, "the order is hidden until they are seated");
+  assert.ok(walking[7] > 0 && walking[8] >= walking[7]);
+  c.next.order = Infinity;
+  step(w, first.arriveAt - w.now);
+  const seated = lastOf("c0", "C").find(([id]) => id === first.id);
+  assert.equal(seated[4], first.r);
+  assert.ok(seated[5] > 0 && seated[7] === 0 && seated[9] === 0);
+  assert.match(cookAt(w, "c0", 9, first.r).error, /조리대와 만들 요리/);
+  assert.match(cookAt(w, "c0", 0, -1).error, /조리대와 만들 요리/);
+  atTile(p0, below(JD.tables[first.ti]));
+  assert.match(cookAt(w, "c0", 0, first.r).error, /조리대 가까이/);
+  atTile(p0, below(JD.st.stove[0])); atTile(p1, below(JD.st.stove[0]));
+  assert.ok(cookAt(w, "c0", 0, first.r).ok);
+  assert.match(cookAt(w, "c1", 0, first.r).error, /사용 중/, "double submission cannot overwrite the cook");
+  atTile(p1, below(JD.st.stove[1]));
+  assert.ok(cookAt(w, "c1", 1, (first.r + 1) % R.dishes.length).ok);
+  assert.equal(c.ents.filter((e) => e.t === 4).length, 2, "both stoves operate at once");
+  step(w, 300);
+  assert.ok(act0(w, "c0").ok);
+  assert.deepEqual(q0.hold, [], "a dish cannot be picked up while cooking");
+  assert.match(p0.toast.at(-1), /아직 요리 중/);
+  const pots = lastOf("c0", "C").filter((r) => r[1] === 4);
+  assert.ok(pots.every((r) => r[5] > 0), "the wire carries the cooking count");
+  step(w, Math.max(...R.dishes.map((r) => r.cook)) + 8000);
+  assert.equal(c.ents.filter((e) => e.t === 4).length, 2, "finished meals remain until collected");
+  act0(w, "c1");
+  atTile(p1, below(JD.tables[first.ti])); step(w, 1300); act0(w, "c1");
+  assert.match(p1.toast.at(-1), /주문과 다른 요리/);
+  assert.equal(c.served, 0);
+  assert.equal(q1.hold.length, 1);
+  atTile(p1, below(JD.st.sink)); step(w, 300); act0(w, "c1");
+  assert.equal(q1.hold.length, 0, "sink also recovers a blocked hand");
+  assert.equal(c.score, 0, "discarded food does not earn points");
+
+  atTile(p1, below(JD.st.stove[0])); step(w, 300); act0(w, "c1");
+  assert.equal(q1.hold[0].r, first.r, "a teammate can take the finished meal");
+  assert.match(cookAt(w, "c1", 0, first.r).error, /들고 있는 것/);
+  step(w, 300);
+  assert.deepEqual(lastOf("c1", "cj")[10].find(([id]) => id === p1.eid)[4], [first.r]);
+  atTile(p1, below(JD.tables[first.ti])); act0(w, "c1"); step(w);
+  assert.equal(c.served, 1);
+  assert.equal(q1.hold.length, 0);
+  assert.equal(c.score, R.dishes[first.r].pts);
+  assert.ok(q0.pts > 0 && q1.pts > 0, "cook and runner both scored");
+  assert.ok(lastOf("c1", "C").find(([id]) => id === first.id)[9] > 0, "the customer is now eating");
+  assert.ok(!c.ents.some((e) => e.t === 9), "the empty plate appears after eating");
+
+  step(w, first.eatAt - w.now);
+  const plate = c.ents.find((e) => e.t === 9);
+  assert.ok(plate && plate.ti === first.ti);
+  const leaving = lastOf("c0", "C").find(([id]) => id === first.id);
+  assert.ok(leaving[10] > 0 && leaving[11] === 1, "the customer walks back to the door");
+  const properScore = c.score;
+  step(w, R.plateMs - 100);
+  assert.equal(c.score, properScore);
+  assert.equal(plate.late, false);
+  step(w, 100);
+  assert.equal(c.score, properScore - R.platePen);
+  assert.equal(plate.late, true);
+  assert.equal(lastOf("c0", "C").find(([id]) => id === plate.id)[5], 1);
+  step(w, 3000);
+  assert.equal(c.score, properScore - R.platePen, "late plate penalizes once");
+  act0(w, "c1"); step(w, 300);
+  assert.ok(!c.ents.includes(plate), "the same plate can be cleaned after its penalty");
+  assert.deepEqual(lastOf("c0", "cj")[10].find(([id]) => id === p1.eid)[4], [3]);
+  atTile(p1, below(JD.st.sink)); act0(w, "c1");
+  assert.equal(q1.hold.length, 0);
+  assert.equal(c.score, properScore - R.platePen + R.washPts, "one action at the sink counts as returning the plate");
+  step(w, 300); act0(w, "c1");
+  assert.equal(c.score, properScore - R.platePen + R.washPts, "a second press cannot earn more");
+}
+
+// ── A guest has the full time-to-order after arrival, then leaves angry once.
+{
+  const w = dworld(2);
   act(w, "c0", { t: "coop_start", k: "diner" });
   const c = shiftOf(w).coop;
-  assert.deepEqual(w.pids.map((pid) => c.pl[pid].tool), ["pan", "tray", "pan", "tray"].slice(0, n));
-  dinerBot(w);
-  log(`diner ${n}: score`, Math.round(c.score), "served", c.served, "missed", c.miss, "grade", X.coopGrade(c), [0, 1, 2, 3].map((i) => X.coopCut(c, i)));
-  if (!TUNE) {
-    assert.equal(X.coopGrade(c), 4, `${n} quick diner workers reach S: ${Math.round(c.score)}`);
-    if (n > 2) assert.ok(c.score < X.coopCut(c, 3) * 1.25, `${n} quick diner workers just over S: ${Math.round(c.score)} vs ${X.coopCut(c, 3)}`);
-  }
-  // rewards: the day's pay once (cook life XP, trust with 쥬쥬), the report card
-  const a = S.players.c0, cr = lastOf("c0", "cr");
-  assert.equal(cr[0], X.coopGrade(c)); assert.equal(cr[3].length, n);
-  assert.deepEqual(a.ch.coopDone, ["diner"]);
-  assert.ok(a.ch.life.cook.xp > 0 || a.ch.life.cook.lv > 1, "life XP (요리)");
-  assert.ok(a.ch.inv.some((s) => s.id === "stone"), "강화석");
-  if (n === 4) {
-    // the same day again: unpaid replay
-    step(w, X.COOP_T.endMs + 200);
-    const jj = X.mapOf(JD.lobby).npcs.find((o) => o.id === "juju");
-    for (const pid of w.pids) at(S.players[pid], jj.x * T + 8, jj.y * T + 28);
-    const gold = a.ch.gold;
-    assert.ok(act(w, "c0", { t: "coop_start", k: "diner" }).ok);
-    dinerBot(w);
-    assert.equal(a.ch.gold, gold, "diner replay is unpaid");
-    assert.equal(lastOf("c0", "cr")[5], 2);
-    assert.deepEqual(a.ch.coopDone, ["diner"]);
-  }
-  // Slower inputs and walking model detours during a real shift. Preserve the original S/A/B grades by party size.
-  const w2 = dworld(n); act(w2, "c0", { t: "coop_start", k: "diner" });
-  const c2 = shiftOf(w2).coop; dinerBot(w2, 600, 0.9);
-  log(`diner ${n} realistic: score`, Math.round(c2.score), "grade", X.coopGrade(c2));
-  const realisticGrade = { 2: 4, 3: 3, 4: 2 };
-  if (!TUNE) assert.equal(X.coopGrade(c2), realisticGrade[n], `${n} diner workers with realistic pace reach their grade: ${Math.round(c2.score)}`);
+  step(w, X.COOP_T.briefMs + R.firstMs);
+  c.next.order = Infinity;
+  const guest = c.ents.find((e) => e.t === 3);
+  assert.equal(guest.until - guest.arriveAt, R.patience[2]);
+  c.score = 50;
+  step(w, guest.until - w.now - 100);
+  assert.ok(c.ents.includes(guest));
+  step(w, 100);
+  assert.ok(guest.goneAt > w.now && c.miss === 1, "the angry guest departs through the entrance");
+  assert.equal(c.score, 50 - R.angryPen);
+  step(w, guest.goneAt - w.now);
+  assert.ok(!c.ents.includes(guest));
+  assert.equal(c.score, 50 - R.angryPen);
 }
 
-// ── the diner's numbers grow with the party
+// ── Walk the whole shift with shared roles and check that every party size can earn its day's pay.
+function dinerBot(w, gap = 600, pace = 0.9) {
+  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim);
+  step(w, X.COOP_T.briefMs);
+  while (c.state !== "end") {
+    const guests = c.ents.filter((e) => e.t === 3 && e.seated && !e.eatAt && !e.goneAt);
+    const pots = c.ents.filter((e) => e.t === 4), plates = c.ents.filter((e) => e.t === 9).sort((a, b) => a.due - b.due);
+    const wanted = guests.map((e) => e.r);
+    for (const e of [...pots, ...Object.values(c.pl).flatMap((q) => q.hold)]) {
+      const i = wanted.indexOf(e.r);
+      if (i >= 0) wanted.splice(i, 1);
+    }
+    const stoves = new Set(), tables = new Set();
+    for (const pid of w.pids) {
+      const p = S.players[pid], h = c.pl[pid].hold[0];
+      const go = (tile) => W.go(p, below(tile), gap * pace);
+      if (h) {
+        const match = guests.find((e) => e.r === h.r && !tables.has(e.ti));
+        if (match) {
+          tables.add(match.ti);
+          if (go(JD.tables[match.ti])) act0(w, pid);
+        } else if (go(JD.st.sink)) act0(w, pid);
+        continue;
+      }
+      const plate = plates.find((e) => !tables.has(e.ti));
+      const ready = pots.find((e) => e.doneAt <= w.now && !stoves.has(e.si));
+      const empty = JD.st.stove.findIndex((_, i) => !pots.some((e) => e.si === i) && !stoves.has(i));
+      if (plate && (plate.due - w.now < 9000 || (!ready && (empty < 0 || !wanted.length)))) {
+        tables.add(plate.ti);
+        if (go(JD.tables[plate.ti])) act0(w, pid);
+      } else if (ready) {
+        stoves.add(ready.si);
+        if (go(JD.st.stove[ready.si])) act0(w, pid);
+      } else if (wanted.length && empty >= 0) {
+        const r = wanted.shift();
+        stoves.add(empty);
+        if (go(JD.st.stove[empty])) cookAt(w, pid, empty, r);
+      }
+    }
+    step(w, gap);
+  }
+}
+
+for (const n of [2, 3, 4]) {
+  const w = dworld(n), S = w.S;
+  assert.ok(act(w, "c0", { t: "coop_start", k: "diner" }).ok);
+  const c = shiftOf(w).coop;
+  dinerBot(w);
+  log("diner", n, "served", c.served, "missed", c.miss, "score", c.score, "grade", X.coopGrade(c), "cuts", [0, 1, 2, 3].map((i) => X.coopCut(c, i)));
+  if (!TUNE) {
+    assert.ok(X.coopGrade(c) >= 2, "walking teams reach at least B");
+    for (const pid of w.pids) assert.equal(lastOf(pid, "cr")[5], 1, "all workers earn their day's pay");
+  }
+  if (n === 4 && !TUNE) {
+    step(w, X.COOP_T.endMs + 200);
+    const jj = X.mapOf(JD.lobby).npcs.find((o) => o.id === JD.npc);
+    for (const pid of w.pids) at(S.players[pid], jj.x * T + 8, jj.y * T + 28);
+    const paid = w.pids.map((pid) => rewardState(S.players[pid]));
+    assert.ok(act(w, "c0", { t: "coop_start", k: "diner" }).ok);
+    dinerBot(w);
+    assert.deepEqual(w.pids.map((pid) => rewardState(S.players[pid])), paid, "diner replay never pays twice");
+    for (const pid of w.pids) assert.equal(lastOf(pid, "cr")[5], 2);
+  }
+}
+
 for (const n of [3, 4]) {
-  assert.ok(R.seats[n] > R.seats[n - 1] && R.orderMs[n] < R.orderMs[n - 1] && R.patience[n] <= R.patience[n - 1], "harder with more hands");
-  assert.ok(X.COOP_APT.dustMs[n] < X.COOP_APT.dustMs[n - 1] && X.COOP_APT.litterMs[n] < X.COOP_APT.litterMs[n - 1], "the apartment too: the mess comes faster");
+  assert.ok(R.seats[n] > R.seats[n - 1] && R.orderMs[n] < R.orderMs[n - 1] && R.patience[n] <= R.patience[n - 1], "demand grows with the team");
 }
 assert.ok(!(1 in X.COOP_T.parN) && ["apt", "diner", "forge", "alch"].every((k) => !(1 in X.COOP[k].parN)), "no solo row");
 
-// ───────────────────────────── 캉캉대장간 단조 v2 (C.6, H8) ─────────────────────────────
+// ───────────────────────────── 캉캉대장간 단조 (C.6, H8) ─────────────────────────────
 
 const JF = X.COOP.forge, F = X.COOP_FORGE;
 /** A world with `n` players by 캉캉 in his forge (k "alch": by 보글 in her lab; one party when n ≥ 2). */
@@ -680,354 +571,206 @@ function fworld(n, t0 = 1000, seed = 20251111, k = "forge") {
   return w;
 }
 const left = ([x, y]) => [x - 1, y];
-const fEnt = (c, t, i) => c.ents.find((e) => e.t === t && (t === 6 ? e.fi : e.ai) === i);
-const noteAt = (a, i) => a.beat0 + F.orders[a.pc.r].pat[i][0] * a.per;
 /** Act at an exact time (between two ticks): a blow (d −1) or a flip. */
 const actAt = (w, pid, t, d = -1) => { const s = w.now; w.now = t; const v = act(w, pid, d >= 0 ? { t: "coop_act", d } : { t: "coop_act" }); w.now = s; return v; };
-/** A hot piece of kind r straight onto anvil `ai` by the tongs holder (its lane starts). */
-function place(w, c, pid, ai, r, m = 0) {
-  const p = w.S.players[pid], q = c.pl[pid];
-  q.hold = [{ r, m, q: 0, n: 0, heat: 100, hot: w.now + 10000, heats: 1, st: "bar", ct: { [pid]: 1 }, ch: {} }];
-  atTile(p, above(JF.st.anvil[ai])); q.actAt = 0;
-  assert.ok(act0(w, pid).ok); const a = fEnt(c, 7, ai);
-  assert.ok(a.pc && a.pc.r === r, "placed");
-  return a;
-}
-
-// ── the map; a party of two: crate → furnace (pumped into the band) → anvil; the lane's first note, the beat ring
-{
-  const w = fworld(2), S = w.S, p = S.players.c0, p1 = S.players.c1;
-  assert.ok(act(w, "c0", { t: "coop_start", k: "forge" }).ok, "the forge opens at 캉캉 for a party");
-  const dim = shiftOf(w), m = dim.map, c = dim.coop, q = c.pl.c0;
-  checkLayout(dim, JF, 32, 22);
-  assert.ok(JF.st.crate.length === 4 && JF.st.anvil.length >= 3 && JF.st.furnace.length === 2 && JF.st.quench.length === 2, "4 ingot crates, 2 furnaces, 3–4 anvils, 2 barrels");
-  for (const t of [...JF.seats, JF.door]) assert.ok(reachable(m, t), `customer aisle ${t} reachable`);
-  assert.equal(JF.st.shelf.length, JF.seats.length);
-  assert.deepEqual([q.tool, c.pl.c1.tool], ["tongs", "hammer"]);
-  step(w, X.COOP_T.briefMs + 1600);
-  assert.ok(c.ents.filter((e) => e.t === 8).length >= 1, "customers on the way");
-  for (const i of [1, 2, 3]) {
-    const t = above(JF.st.crate[i]);
-    assert.ok(reachable(m, t)); atTile(p, t);
-    assert.ok(act0(w, "c0").ok);
-    assert.equal(q.hold[0]?.m, i, "the nearer crate wins even when the previous crate is in reach");
-    step(w, 300); assert.ok(act0(w, "c0").ok); assert.equal(q.hold.length, 0);
-    step(w, 300);
-  }
-  const want = X.forgeOpen(c)[0];
-  atTile(p, below(JF.st.crate[want.m])); assert.ok(act0(w, "c0").ok); assert.ok(q.hold.length === 1 && q.hold[0].m === want.m, "the order's ingot from its crate");
-  step(w, 300); atTile(p, below(JF.st.furnace[0])); act0(w, "c0");
-  const f = fEnt(c, 6, 0);
-  assert.ok(f.bars[0] && !q.hold.length, "in the fire");
-  for (let i = 0; i < 60 && f.bars[0].heat < 100; i++) { step(w, 300); if (f.T < 72) act0(w, "c0"); }
-  assert.equal(f.bars[0].heat, 100, "hot");
-  step(w, 300); act0(w, "c0"); assert.ok(q.hold[0].hot > w.now, "taken out hot");
-  step(w, 300); atTile(p, above(JF.st.anvil[0])); act0(w, "c0");
-  const a = fEnt(c, 7, 0), pc = a.pc;
-  assert.ok(pc && pc.r === want.r && pc.m === want.m, "on the anvil, made for the waiting customer");
-  assert.equal(noteAt(a, 0), w.now + F.leadMs, "the first note a second after placing");
-  step(w, 100); assert.ok(views.c1.slice(-2).some((v) => (v.ev || []).some((e) => e[0] === "cb" && e[1] === a.id && e[2] === F.leadMs)), "the beat ring event");
-  // the hammer stands at the anvil: on the lane (a shorter act gate), a direction key elsewhere does nothing
-  atTile(p1, below(JF.st.anvil[0]));
-  assert.ok(X.COOP_JOB.forge.lane(S, c, p1, c.pl.c1), "on the lane");
-  assert.ok(!X.COOP_JOB.forge.lane(S, c, p, q), "the tongs are not (no 갑옷)");
-  const C = (p1.cVer = -1, step(w, 100), lastOf("c1", "C"));
-  const row = C.find((r) => r[0] === a.id);
-  assert.equal(row.length, 12, "anvil row: v1 fields + beat 0 + heat left + ingot");
-  assert.equal(row[11], want.m);
-  assert.ok(Math.abs(row[9] - (a.beat0 - w.now)) <= 100 && row[10] > 0);
-  assert.ok(C.some((r) => r[1] === 6 && r.length === 5 + 2 * F.slots) && C.filter((r) => r[1] === 8).every((r) => r.length === 11 && r[10] >= 0 && r[10] < 4), "furnace and customer rows (+ ingots)");
-  assert.equal(lastOf("c1", "cj")[0], 2, "forge is job index 2");
-}
-
-// ── every piece's pattern judged: on the note perfect (+2), 200 ms off good (+1), unplayed a miss (−1); flips need their arrow;
-// 갑옷's answers come from another worker (the tongs, hands empty)
-for (let r = 0; r < F.orders.length; r++) {
-  const w = fworld(2), S = w.S;
-  act(w, "c0", { t: "coop_start", k: "forge" });
-  const c = shiftOf(w).coop, P = F.orders[r].pat;
-  step(w, X.COOP_T.briefMs + 200);
-  const a = place(w, c, "c0", 1, r), pc = a.pc;
-  atTile(S.players.c1, below(JF.st.anvil[1]));
-  const duet = P.some((n) => n[1] === 1);
-  // the note to get wrong: the first flip (struck plainly), else the third (갑옷: a call by the answerer; else with an arrow)
-  const flip = P.findIndex((n) => n[1] >= 2), bad = flip >= 0 ? flip : 2, judged = [];
-  for (let i = 0; i < P.length; i++) {
-    const note = P[i][1], who = note === 1 ? "c0" : "c1", d = note >= 2 ? note - 2 : -1, q0 = pc.q;
-    for (const qq of Object.values(c.pl)) qq.offs = [];   // judging only, no calibration here
-    if (i === 1) actAt(w, who, noteAt(a, i) + 200, d);                                                    // late: good
-    else if (i === bad) actAt(w, duet ? (who === "c1" ? "c0" : "c1") : who, noteAt(a, i), flip >= 0 ? -1 : duet ? -1 : 0);
-    else actAt(w, who, noteAt(a, i), d);
-    judged.push(pc.q - q0);
-  }
-  log("forge pattern", X.COOP.forge.skin.orders[r], judged, pc.st);
-  assert.equal(judged[0], 2, `${r}: on the note, perfect`);
-  assert.equal(judged[1], 1, `${r}: 200 ms late, good`);
-  assert.equal(judged[bad], -1, `${r}: the wrong key or the wrong worker, a miss`);
-  assert.ok(judged.every((v, i) => i < 2 || i === bad || v === 2), `${r}: the rest perfect (flips with their arrow)`);
-  assert.equal(pc.st, "shaped", "the last note shapes it");
-  assert.equal(pc.n, P.length);
-}
-// the patterns differ: lengths, tempos, flips and answers
-{
-  const sig = F.orders.map((o) => [o.pat.length, o.per, o.pat.filter((n) => n[1] >= 2).length, o.pat.filter((n) => n[1] === 1).length].join());
-  assert.equal(new Set(sig).size, F.orders.length, "every piece plays its own way");
-  const gaps = F.orders.flatMap((o) => o.pat.slice(1).map((n, i) => (n[0] - o.pat[i][0]) * o.per * F.feverK));
-  const dear = Math.min(...F.metals.map((o) => o.tempo));
-  assert.ok(Math.min(...gaps) * dear > F.laneMs * 2.5, "notes never closer than the lane gate allows (the dearest ingot's tempo too)");
-  assert.deepEqual(F.orders[4].pat.filter((n) => n[1] >= 2).map((n) => n[1]), [4], "냄비: a ↓ flip halfway");
-  const gl = F.orders[2].pat.slice(1).map((n, i) => n[0] - F.orders[2].pat[i][0]);
-  assert.ok(gl[0] > gl.at(-1), "검날 speeds up");
-}
-
-// ── unplayed notes cool the bar: the hammer can't go on, the tongs reheat it (from 50), and the pattern goes on where it stopped
-{
-  const w = fworld(2), S = w.S, p = S.players.c0;
-  act(w, "c0", { t: "coop_start", k: "forge" });
-  const c = shiftOf(w).coop, q = c.pl.c0;
-  step(w, X.COOP_T.briefMs + 200);
-  const a = place(w, c, "c0", 2, 0), pc = a.pc;
-  while (pc.hot && w.now < a.beat0 + 20000) step(w, 100);
-  assert.ok(pc.st === "bar" && !pc.hot && pc.n > 0 && pc.n < F.orders[0].pat.length, `cooled mid-pattern after ${pc.n} misses`);
-  assert.ok(pc.q < 0, "the misses cost quality");
-  atTile(S.players.c1, below(JF.st.anvil[2])); step(w, 300); act0(w, "c1");
-  assert.ok(S.players.c1.toast.some((m) => /식었어요/.test(m)), "the hammer is told to wait for the tongs");
-  q.actAt = 0; act0(w, "c0"); assert.ok(q.hold[0] === pc && !a.pc, "the tongs take it back");
-  step(w, 300); atTile(p, below(JF.st.furnace[1])); act0(w, "c0");
-  const f = fEnt(c, 6, 1);
-  assert.equal(f.bars.find(Boolean).heat, F.reheat, "a reheat starts warm");
-  const n0 = pc.n;
-  f.bars[f.bars.indexOf(pc)].heat = 100; step(w, 300); act0(w, "c0");
-  step(w, 300); atTile(p, above(JF.st.anvil[2])); act0(w, "c0");
-  assert.ok(a.pc === pc && pc.hot > w.now && noteAt(a, n0) === w.now + F.leadMs, "back on the lane at the note it stopped");
-}
-
-// ── the 진열대: quench, shelve, a customer who wants it buys it once (best grade first), another waits; one left too long goes angry
-{
-  const w = fworld(2), S = w.S, p1 = S.players.c1;
-  act(w, "c0", { t: "coop_start", k: "forge" });
-  const c = shiftOf(w).coop, q1 = c.pl.c1;
-  step(w, X.COOP_T.briefMs + 200);
-  c.ents = c.ents.filter((e) => e.t !== 8); c.next.order = 1e15;
-  const piece = (r, qq) => ({ r, q: qq, n: F.orders[r].pat.length, heat: 100, hot: 0, heats: 1, st: "quenched", ct: { c0: 1 }, ch: { c1: 1 } });
-  // not quenched yet: the shelf waits
-  q1.hold = [{ ...piece(0, 12), st: "shaped" }]; atTile(p1, left(JF.st.shelf[0])); act0(w, "c1");
-  assert.equal(c.ents.filter((e) => e.t === 10).length, 0, "only quenched pieces go on show");
-  step(w, 300); atTile(p1, below(JF.st.quench[0])); act0(w, "c1"); assert.equal(q1.hold[0].st, "quenched");
-  step(w, 300); atTile(p1, left(JF.st.shelf[3])); assert.ok(act0(w, "c1").ok);
-  q1.hold = [piece(0, 3)]; step(w, 300); act0(w, "c1");
-  const shelf = c.ents.filter((e) => e.t === 10);
-  assert.deepEqual(shelf.map((e) => e.slot), [0, 1], "the first free slots");
-  // a customer for 편자 walks in from the door, looks, buys the better one: 걸작 (q 12 ≥ 1.6 · 6)
-  const X0 = X.tilePx(JF.door);
-  X.forgeCustomer(S, shiftOf(w), c, w.now);
-  const cu = c.ents.find((e) => e.t === 8);
-  assert.equal(cu.r, 0, "a new customer wants what is on the shelf");
-  assert.ok(cu.at > w.now && cu.at - w.now === Math.round((Math.hypot(cu.x - X0[0], cu.y - X0[1]) / F.walk) * 1000), "walks in");
-  const s0 = c.score, sold0 = c.done;
-  step(w, cu.at - w.now + F.browseMs - 200);
-  assert.equal(c.done, sold0, "still looking");
-  step(w, 300);
-  assert.equal(c.done, sold0 + 1, "bought");
-  assert.equal(cu.gone, 1);
-  const left1 = c.ents.filter((e) => e.t === 10);
-  assert.ok(left1.length === 1 && left1[0].pc.q === 3, "the 걸작 went, the other stays");
-  const pts = c.score - s0;
-  assert.ok(pts >= Math.round(F.orders[0].pts * F.grades[0][1] * (1 + F.timeK * 0.9)), `paid by grade and patience: ${pts}`);
-  assert.ok(c.pl.c0.pts > 0 && c.pl.c1.pts > c.pl.c0.pts, "tongs 45 % / hammer 55 %");
-  step(w, 2000); assert.equal(c.done, sold0 + 1, "a customer buys once");
-  p1.cVer = -1; step(w, 100);
-  const rows = lastOf("c1", "C");
-  assert.ok(rows.some((r) => r[0] === cu.id && r[8] === 1) && rows.some((r) => r[1] === 10 && r.length === 6 && r[5] === 2), "a leaving customer, a 중 piece on show");
-  step(w, F.leaveMs + 100); assert.ok(!c.ents.includes(cu), "gone out the door");
-  // a customer for a piece nobody makes leaves angry: −20, combo 0
-  c.ents = c.ents.filter((e) => e.t !== 10);
-  X.forgeCustomer(S, shiftOf(w), c, w.now);
-  const late = c.late, s1 = c.score; step(w, F.deadMs + 200);
-  assert.ok(c.late === late + 1 && c.score === Math.max(0, s1 - F.latePen) && c.combo === 0, "angry");
-  // a full shelf refuses more
-  for (let i = 0; i < JF.st.shelf.length; i++) c.ents.push({ id: 900 + i, t: 10, x: 0, y: 0, slot: i, pc: piece(1, 0) });
-  q1.hold = [piece(0, 0)]; step(w, 300); q1.hintAt = 0; act0(w, "c1");
-  assert.ok(q1.hold.length === 1 && p1.toast.some((m) => /진열대가 꽉/.test(m)), "full");
-}
-
-// ── ingots (owner): the order's colour names its ingot; each crate gives its own, a wrong one is refused at the anvil with a
-// hint; dearer ingots heat longer, play faster with tighter windows, and sell for more
-{
-  const w = fworld(2), S = w.S, p = S.players.c0;
-  act(w, "c0", { t: "coop_start", k: "forge" });
-  const dim = shiftOf(w), c = dim.coop, q = c.pl.c0, M = F.metals;
-  step(w, X.COOP_T.briefMs + 200);
-  c.ents = c.ents.filter((e) => e.t !== 8); c.next.order = 1e15;
-  assert.deepEqual(M.map((o) => o.name), ["철주괴", "은주괴", "금주괴", "미스릴주괴"]);
-  for (let i = 1; i < 4; i++) assert.ok(M[i].heat > M[i - 1].heat && M[i].price > M[i - 1].price && M[i].tempo < M[i - 1].tempo && M[i].win < M[i - 1].win, `ingot ${i} dearer and harder`);
-  for (let m = 0; m < 4; m++) {
-    atTile(p, below(JF.st.crate[m])); q.actAt = 0;
-    assert.ok(act0(w, "c0").ok && q.hold[0].m === m, `crate ${m} gives ${M[m].name}`);
-    step(w, 300); assert.ok(act0(w, "c0").ok && !q.hold.length, "a cold ingot goes back in its crate");
-    step(w, 300);
-  }
-  // a customer for 금빛 투구: an iron bar is refused with the hint, a gold one is made into it
-  const [sx, sy] = X.tilePx(JF.seats[0]);
-  c.ents.push({ id: 990, t: 8, x: sx, y: sy, r: 3, m: 2, until: w.now + 60000, dur: 60000, at: w.now, spot: 0, gone: 0, goneAt: 0 });
-  const bar = (m) => ({ r: -1, m, q: 0, n: 0, heat: 100, hot: w.now + 10000, heats: 1, st: "bar", ct: { c0: 1 }, ch: {} });
-  q.hold = [bar(0)]; atTile(p, above(JF.st.anvil[0])); q.actAt = 0; q.hintAt = 0; act0(w, "c0");
-  assert.ok(q.hold.length === 1 && !fEnt(c, 7, 0).pc, "refused");
-  assert.ok(p.toast.some((t) => /이 주문엔 금주괴가 필요해요/.test(t) && /금빛 투구/.test(t)), "with the ingot the order needs");
-  q.hold = [bar(2)]; step(w, 300); act0(w, "c0");
-  const a = fEnt(c, 7, 0);
-  assert.ok(a.pc && a.pc.r === 3 && a.pc.m === 2, "made into the gold helmet");
-  assert.equal(a.per, Math.round(F.orders[3].per * M[2].tempo), "a dearer ingot plays faster");
-  // heat time in a furnace held in its band: ×heat per ingot
-  const f = fEnt(c, 6, 0), heatMs = (m) => { f.bars = [{ ...bar(m), heat: 0, hot: 0 }, null]; let ms = 0; while (f.bars[0].heat < 100 && ms < 60000) { f.T = 70; step(w, 100); ms += 100; } return ms; };
-  const h0 = heatMs(0), h3 = heatMs(3);
-  log("heat ms iron, mithril", h0, h3);
-  assert.ok(Math.abs(h0 - 100000 / F.heatIn) <= 200 && Math.abs(h3 / h0 - M[3].heat) < 0.06, `heat ${h0} · ${h3}`);
-  f.bars = [null, null];
-  // price: the same 걸작 편자 in iron and in mithril, sold to customers who came for it
-  const sell = (m) => {
-    c.ents = c.ents.filter((e) => e.t !== 8 && e.t !== 10); c.combo = 0; c.comboAt = -1e9;
-    c.ents.push({ id: 991 + m, t: 10, x: 0, y: 0, slot: 0, pc: { r: 0, m, q: 12, n: 6, heat: 100, hot: 0, heats: 1, st: "quenched", ct: { c0: 1 }, ch: { c1: 1 } } });
-    c.ents.push({ id: 995 + m, t: 8, x: sx, y: sy, r: 0, m, until: w.now + 60000, dur: 60000, at: w.now - F.browseMs, spot: 0, gone: 0, goneAt: 0 });
-    const s0 = c.score; step(w, 100); return c.score - s0;
-  };
-  const pI = sell(0), pM = sell(3);
-  assert.ok(pI > 0 && Math.abs(pM / pI - M[3].price) < 0.05, `mithril sells for ${M[3].price}×: ${pI} · ${pM}`);
-  // a customer only buys the ingot they came for
-  c.ents.push({ id: 999, t: 10, x: 0, y: 0, slot: 0, pc: { r: 0, m: 1, q: 12, n: 6, heat: 100, hot: 0, heats: 1, st: "quenched", ct: {}, ch: {} } });
-  c.ents.push({ id: 998, t: 8, x: sx, y: sy, r: 0, m: 0, until: w.now + 60000, dur: 60000, at: w.now - F.browseMs, spot: 1, gone: 0, goneAt: 0 });
-  step(w, 300); assert.ok(c.ents.some((e) => e.id === 999), "a silver 편자 is not an iron one");
-}
-
-// ── the latency calibration: a steady +200 ms is calibrated out to ±150, so later notes judge "perfect"
-{
-  const w = fworld(2), S = w.S;
-  act(w, "c0", { t: "coop_start", k: "forge" });
-  const c = shiftOf(w).coop, q = c.pl.c1;
-  step(w, X.COOP_T.briefMs + 200);
-  const a = place(w, c, "c0", 1, 2);
-  atTile(S.players.c1, below(JF.st.anvil[1]));
-  const judged = [];
-  for (let i = 0; i < F.orders[2].pat.length; i++) { const q0 = a.pc.q; actAt(w, "c1", noteAt(a, i) + 200); judged.push(a.pc.q - q0); }
-  log("forge lat", judged, q.offs);
-  assert.equal(judged[0], 1, "uncalibrated: 200 ms late is good");
-  assert.ok(judged.slice(-3).every((d) => d === 2), "calibrated: +200 is within 130 of the +150 offset");
-}
-
-// ── a member leaves mid-shift: the shift goes on at the starting size; the one left swaps tools at the rack and does both jobs
-{
-  const w = fworld(2), S = w.S, p = S.players.c0;
-  act(w, "c0", { t: "coop_start", k: "forge" });
+const beatForge = (w, pid) => act(w, pid, { t: "coop_act", beat: 1 });
+const forgeStart = (w) => {
+  assert.ok(act(w, "c0", { t: "coop_start", k: "forge" }).ok);
+  step(w, X.COOP_T.briefMs + F.firstMs + 1700);
   const c = shiftOf(w).coop;
-  step(w, X.COOP_T.briefMs + 200);
-  assert.ok(act(w, "c1", { t: "coop_leave" }).ok);
-  step(w, 300); assert.ok(shiftOf(w) && c.n === 2, "still on, cut-offs for two");
-  atTile(p, left(JF.st.rack)); act0(w, "c0"); assert.equal(c.pl.c0.tool, "hammer", "the rack swaps");
+  const arrivals = c.ents.filter((e) => e.t === 8).map((e) => e.at);
+  assert.ok(arrivals.some((t) => t > w.now), "guests walk to the seats before ordering");
+  step(w, Math.max(...arrivals) - w.now);
+  return c;
+};
+function forgeLoad(w, pid, ai, metal) {
+  const p = w.S.players[pid], tile = JF.st.crate[metal];
+  atTile(p, below(tile)); assert.ok(act0(w, pid).ok);
+  step(w, 300);
+  atTile(p, below(JF.st.anvil[ai])); assert.ok(act0(w, pid).ok);
+}
+function forgeStartPair(w, pid, ai) {
+  atTile(w.S.players[pid], above(JF.st.anvil[ai]));
+  assert.ok(act0(w, pid).ok);
+}
+const nextForgeBeat = (w, a) => { step(w, Math.max(0, a.pair.noteAt - w.now)); };
+
+for (const n of [2, 3, 4]) {
+  const w = fworld(n), c = forgeStart(w), { map } = shiftOf(w);
+  checkLayout(shiftOf(w), JF, 32, 22);
+  assert.ok(reachable(map, JF.st.door), "the customers can enter");
+  assert.equal(JF.st.crate.length, 4);
+  assert.equal(c.anvils.length, 2);
+  assert.deepEqual(Object.values(c.pl).map((q) => q.tool), ["tongs", "hammer", "tongs", "hammer"].slice(0, n));
+  for (const [x, y] of [...JF.st.crate, ...JF.st.anvil]) assert.ok(map.solid[y * map.w + x] && map.reach[(y + 1) * map.w + x]);
+  for (const [x, y] of [...JF.start, ...JF.seats]) assert.ok(map.reach[y * map.w + x]);
+  assert.equal(L.defs().coop.orders.length, F.orders.length);
 }
 
-/**
- * Forge v2 bots at player speed (100 ms steps): tongs feed the furnaces, pump, carry hot bars to free anvils and stay to answer
- * 갑옷's calls; hammers play the lane at a human-ish accuracy (`acc`: perfect below acc[0], good below acc[1], else the note is
- * missed; seeded), take the piece, quench it and put it on the 진열대.
- */
-function forgeBot(w, acc = [0.55, 0.85], gap = 300) {
-  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), MS = 100, st = JF.st;
-  let seed = 4242;
-  const rand = () => ((seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 4294967296);
-  const last = {}, plan = {}, stat = [0, 0, 0];
-  step(w, X.COOP_T.briefMs + 100);
-  while (c.state !== "end") {
-    const now = w.now, work = w.pids.map((pid) => S.players[pid]).filter((o) => o && o.map === dim.id);
-    const furn = c.ents.filter((e) => e.t === 6), anv = c.ents.filter((e) => e.t === 7), cust = c.ents.filter((e) => e.t === 8 && !e.gone), shelf = c.ents.filter((e) => e.t === 10);
-    const pieces = [...furn.flatMap((f) => f.bars.filter(Boolean)), ...anv.filter((a) => a.pc).map((a) => a.pc), ...Object.values(c.pl).flatMap((q) => q.hold)];
-    const claimed = new Set(), tongs = work.filter((o) => c.pl[o.pid].tool === "tongs").length || 1;
-    // the orders no piece is for yet, less the ingots already fetched for them
-    const needs = X.forgeOpen(c);
-    for (const b of pieces.filter((h) => h.r < 0)) { const i = needs.findIndex((o) => o.m === b.m); if (i >= 0) needs.splice(i, 1); }
-    let fetch = 0;
-    const live = (a) => a.pc && a.pc.st === "bar" && a.pc.hot > now;
-    const duet = (a) => F.orders[a.pc.r].pat.some((n) => n[1] === 1);
-    /** Play the anvil's next note if it falls in this step (`answer`: only the 갑옷's answers, else only the rest). */
-    const play = (o, a, answer) => {
-      const i = a.pc.n, P = F.orders[a.pc.r].pat;
-      if (i >= P.length || (P[i][1] === 1) !== answer) return;
-      const key = a.id + ":" + a.beat0 + ":" + i;
-      if (!(key in plan)) { const u = rand(), s = rand() < 0.5 ? -1 : 1; plan[key] = u < acc[0] ? (rand() * 2 - 1) * 90 : u < acc[1] ? s * (170 + rand() * 70) : null; stat[u < acc[0] ? 0 : u < acc[1] ? 1 : 2]++; }
-      if (plan[key] === null) return;
-      const t = noteAt(a, i) + plan[key];
-      if (t >= now && t < now + MS) actAt(w, o.pid, t, P[i][1] >= 2 ? P[i][1] - 2 : -1);
-    };
-    for (const o of work) {
-      const q = c.pl[o.pid], h = q.hold[0], ready = now - (last[o.pid] || 0) >= gap;
-      const go = (goal) => W.go(o, goal, MS);
-      const doAct = () => { last[o.pid] = now; act0(w, o.pid); };
-      const nearest = (list, tile) => list.sort((a, b) => W.steps(o, tile(a)) - W.steps(o, tile(b)))[0];
-      // finished pieces: anyone carries them to a barrel, then to the 진열대
-      if (h && h.st === "shaped") { const t = nearest([...st.quench], (t) => below(t)); if (go(below(t)) && ready) doAct(); continue; }
-      if (h && h.st === "quenched") { if (go(left(st.shelf[2])) && ready) doAct(); continue; }
-      const shapedA = anv.filter((a) => a.pc && a.pc.st !== "bar" && !claimed.has("h" + a.id));
-      if (q.tool === "tongs") {
-        const answer = !h && anv.find((a) => live(a) && duet(a) && !claimed.has("d" + a.id));
-        if (answer) { claimed.add("d" + answer.id); if (go(above(st.anvil[answer.ai]))) play(o, answer, true); continue; }
-        const freeAnv = anv.filter((a) => !a.pc && !claimed.has("a" + a.id));
-        const hotIn = furn.filter((f) => f.bars.some((b) => b && b.heat >= 100) && !claimed.has("f" + f.id));
-        const cooled = anv.filter((a) => a.pc && a.pc.st === "bar" && !live(a) && !claimed.has("a" + a.id));
-        const want = Math.max(1, cust.length - shelf.length + 1);
-        let goal = null, pump = null;
-        if (h && h.hot > now) { const a = nearest(freeAnv, (a) => above(st.anvil[a.ai])); if (a) { claimed.add("a" + a.id); goal = above(st.anvil[a.ai]); } }
-        else if (h && h.r < 0 && X.forgeKind(c, h.m) < 0) goal = below(st.crate[h.m]);   // nobody wants this ingot now: back in its crate
-        // a cold bar into a furnace that already heats one (one tongs keeps one fire going), else the hottest free one
-        else if (h) { const f = furn.filter((f) => f.bars.includes(null)).sort((a, b) => b.bars.filter(Boolean).length - a.bars.filter(Boolean).length || b.T - a.T)[0] || furn[0]; goal = below(st.furnace[f.fi]); pump = f; }
-        else if (hotIn.length && freeAnv.length) { const f = nearest(hotIn, (f) => below(st.furnace[f.fi])); claimed.add("f" + f.id); goal = below(st.furnace[f.fi]); }
-        else if (cooled.length) { const a = nearest(cooled, (a) => above(st.anvil[a.ai])); claimed.add("a" + a.id); goal = above(st.anvil[a.ai]); }
-        else if (needs.length > fetch && pieces.length + fetch < Math.min(want, tongs + 2) && furn.some((f) => f.bars.includes(null))) { goal = below(st.crate[needs[fetch].m]); fetch++; }
-        else if (shapedA.length) { const a = nearest(shapedA, (a) => above(st.anvil[a.ai])); claimed.add("h" + a.id); goal = above(st.anvil[a.ai]); }
-        else { const busy = furn.filter((f) => !claimed.has("p" + f.id)), f = nearest(busy.filter((f) => f.bars.some((b) => b && b.heat < 100)), (f) => below(st.furnace[f.fi])) || nearest(busy, (f) => below(st.furnace[f.fi])) || furn[0]; claimed.add("p" + f.id); goal = below(st.furnace[f.fi]); pump = f; }
-        if (!goal) continue;
-        const need = !pump || (h && pump.bars.includes(null)) || pump.T < 75;
-        if (go(goal) && ready && need) doAct();
-      } else {
-        const hotA = anv.filter((a) => live(a) && !claimed.has("h" + a.id));
-        const [tx, ty] = W.tileOf(o), here = hotA.find((a) => below(st.anvil[a.ai]).join() === [tx, ty].join());
-        const a = here || nearest(hotA, (a) => below(st.anvil[a.ai])) || nearest(shapedA, (a) => below(st.anvil[a.ai]));
-        if (!a) { go(below(st.anvil[1])); continue; }
-        claimed.add("h" + a.id);
-        if (!go(below(st.anvil[a.ai]))) continue;
-        if (a.pc.st !== "bar") { if (ready) doAct(); continue; }
-        play(o, a, false);
-      }
-    }
-    if (process.env.FDBG && now % 10000 < MS) log(Math.round((now - c.runAt) / 1000), work.map((o) => { const q = c.pl[o.pid], h = q.hold[0]; return `${q.tool}@${W.tileOf(o)} ${h ? `${h.r}/${h.m}/${h.st}/${h.hot > now ? "hot" : "cold"}` : "-"}`; }).join(" | "), "furn", furn.map((f) => `${Math.round(f.T)}:${f.bars.map((b) => (b ? Math.round(b.heat) + "/" + b.m : "_")).join(",")}`).join(" "), "anv", anv.map((a) => (a.pc ? `${a.pc.r}/${a.pc.st}` : "_")).join(" "), "cust", cust.map((e) => e.r + "/" + e.m).join(" "), "shelf", shelf.length);
-    step(w, MS);
+// ── An order reserves the right ingot. A lone hammer or a lone tongs worker cannot advance it.
+{
+  const w = fworld(2), c = forgeStart(w), [a] = c.anvils, p0 = w.S.players.c0, p1 = w.S.players.c1;
+  const o = c.ents.find((e) => e.t === 8);
+  const wrongMetal = [0, 1, 2, 3].find((m) => c.ents.every((e) => e.t !== 8 || e.m !== m));
+  assert.notEqual(wrongMetal, undefined);
+  c.next.order = Infinity;
+  assert.match(beatForge(w, "c0").error, /함께 단조를/);
+  for (const i of [1, 2, 3]) {
+    const tile = above(JF.st.crate[i]);
+    assert.ok(reachable(shiftOf(w).map, tile)); atTile(p0, tile);
+    assert.ok(act0(w, "c0").ok);
+    assert.equal(c.pl.c0.hold[0]?.m, i, "F takes the nearer crate even with another in reach");
+    step(w, 300); assert.ok(act0(w, "c0").ok); assert.equal(c.pl.c0.hold.length, 0);
+    step(w, 300);
   }
-  c.stat = stat;
+  forgeLoad(w, "c0", 0, wrongMetal);
+  assert.ok(!a.order && c.pl.c0.hold[0].m === wrongMetal);
+  step(w, 300);
+  atTile(p0, below(JF.st.crate[wrongMetal]));
+  assert.ok(act0(w, "c0").ok);
+  assert.equal(c.pl.c0.hold.length, 0);
+  step(w, 300);
+  forgeLoad(w, "c0", 0, o.m);
+  assert.equal(a.order, o);
+  assert.deepEqual(c.pl.c0.hold, []);
+  atTile(p0, [5, 12]);
+  forgeStartPair(w, "c1", 0);
+  assert.ok(!a.pair, "can't start without the tongs nearby");
+  step(w, 300);
+  atTile(p0, below(JF.st.anvil[0]));
+  forgeStartPair(w, "c1", 0);
+  assert.deepEqual(a.pair.ids, ["c0", "c1"]);
+  step(w, 100);
+  const row = lastOf("c0", "C").find(([id]) => id === a.id);
+  assert.deepEqual(row.slice(4, 7), [o.r, o.m, 2]);
+  assert.ok(row[7] > F.windowMs);
+  assert.deepEqual(row.slice(9), [0, F.orders[o.r].beats, p0.eid, p1.eid, 0]);
+  beatForge(w, "c1");
+  assert.equal(a.pair.taps, 0, "a stray early press cannot hit");
+  c.score = 50;
+  nextForgeBeat(w, a);
+  beatForge(w, "c1");
+  assert.equal(a.progress, 0);
+  assert.equal(a.pair.taps, 2);
+  step(w, 100);
+  beatForge(w, "c1");
+  assert.equal(a.pair.taps, 2, "the same player cannot double-tap the other role");
+  step(w, 300);
+  assert.equal(c.score, 50 - F.missPen);
+  assert.equal(a.progress, 0, "the missed beat must be retried");
+  assert.equal(a.pair.taps, 0);
+  nextForgeBeat(w, a);
+  beatForge(w, "c0");
+  beatForge(w, "c1");
+  assert.equal(a.progress, 1);
+  step(w, 300);
+  assert.ok(act(w, "c0", { t: "coop_act", cancel: 1 }).ok);
+  assert.ok(a.order === o && !a.pair && a.progress === 1, "cancelling preserves the reserved ingot and progress");
+  forgeStartPair(w, "c1", 0);
+  for (let i = 1; i < F.orders[o.r].beats; i++) { nextForgeBeat(w, a); beatForge(w, "c0"); beatForge(w, "c1"); }
+  assert.ok(!a.pair && !a.order);
+  assert.ok(c.ents.includes(o) && o.gone === 1 && o.goneAt > w.now, "the served guest walks back to the door");
+  step(w, 100);
+  const leaving = lastOf("c0", "C").find(([id]) => id === o.id);
+  assert.equal(leaving[8], 1);
+  assert.ok(leaving[9] > 0);
+  step(w, o.goneAt - w.now);
+  assert.ok(!c.ents.includes(o), "the guest leaves the scene only after the walk");
+  assert.equal(c.done, 1, "the matching guest receives exactly one piece on the final beat");
+  assert.ok(c.pl.c0.pts > 0 && c.pl.c1.pts > 0);
+  assert.match(beatForge(w, "c1").error, /함께 단조를/);
+}
+
+// ── Two pairs can run simultaneously. A departure frees the pair and an expired reservation clears the anvil.
+{
+  const w = fworld(4), c = forgeStart(w), [a, b] = c.anvils, [o0, o1] = c.ents.filter((e) => e.t === 8);
+  c.next.order = Infinity;
+  forgeLoad(w, "c0", 0, o0.m);
+  forgeLoad(w, "c2", 1, o1.m);
+  assert.equal(a.order, o0); assert.equal(b.order, o1);
+  atTile(w.S.players.c2, [10, 7]);
+  forgeStartPair(w, "c1", 0);
+  forgeStartPair(w, "c3", 1);
+  assert.equal(b.pair, null, "a worker at the other anvil doesn't join");
+  atTile(w.S.players.c2, below(JF.st.anvil[1]));
+  step(w, 300);
+  forgeStartPair(w, "c3", 1);
+  assert.deepEqual(a.pair.ids, ["c0", "c1"]);
+  assert.deepEqual(b.pair.ids, ["c2", "c3"]);
+  const firstAt = a.pair.noteAt;
+  nextForgeBeat(w, a);
+  beatForge(w, "c0"); beatForge(w, "c1");
+  assert.equal(a.progress, 1);
+  assert.equal(b.progress, 0, "anvil 1's presses cannot affect anvil 2");
+  L.removePlayer(w.S, "c1");
+  step(w);
+  assert.ok(a.pair === null && a.order === o0 && a.progress === 1, "departure unlocks only the affected pair");
+  assert.ok(b.pair && b.pair.noteAt > firstAt);
+  step(w, o0.until - w.now);
+  assert.equal(a.order, null);
+  assert.equal(a.progress, 0);
+  assert.ok(c.late >= 1);
+  assert.equal(o0.gone, 2, "a guest also walks out when the timer expires");
+}
+
+/** Drive both roles through a real timed shift without jumping between stations. */
+function runForgeShift(w) {
+  const { S } = w, dim = shiftOf(w), { coop: c } = dim, W = walker(dim), moveMs = 100;
+  const tongs = w.pids.filter((pid) => c.pl[pid].tool === "tongs"), hammers = w.pids.filter((pid) => c.pl[pid].tool === "hammer");
+  step(w, X.COOP_T.briefMs);
+  while (c.state !== "end") {
+    const open = c.ents.filter((e) => e.t === 8 && e.seated && !e.gone && !c.anvils.some((a) => a.order === e));
+    for (const [i, pid] of tongs.entries()) {
+      const anvil = c.anvils[i], q = c.pl[pid], p = S.players[pid], h = q.hold[0], stand = below(JF.st.anvil[i]);
+      if (anvil.order) { if (!anvil.pair) W.go(p, stand, moveMs); continue; }
+      const j = h ? open.findIndex((e) => e.m === h.m) : 0;
+      const guest = j >= 0 && open.splice(j, 1)[0];
+      if (!h && !guest) continue;
+      const goal = h && guest ? stand : below(JF.st.crate[h ? h.m : guest.m]);
+      if (W.go(p, goal, moveMs) && w.now - q.actAt >= X.COOP_T.actMs) act0(w, pid);
+    }
+    for (const [i, pid] of hammers.entries()) {
+      if (c.anvils.some((a) => a.pair?.ids.includes(pid))) continue;
+      const p = S.players[pid], q = c.pl[pid];
+      const a = hammers.length > 1 ? c.anvils[i] : c.anvils.find((anvil) => anvil.order && !anvil.pair);
+      if (a?.order && W.go(p, above(JF.st.anvil[a.ai]), moveMs) && w.now - q.actAt >= X.COOP_T.actMs) act0(w, pid);
+    }
+    for (const a of c.anvils) {
+      const pair = a.pair;
+      if (pair && w.now >= pair.noteAt) for (const pid of pair.ids) beatForge(w, pid);
+    }
+    step(w, moveMs);
+  }
   return c;
 }
 
-// ── walking bots 2–4 in the big hall: near-perfect (92 % perfect) just over S; realistic (55 / 30 / 15 %) B–A; paid once a day, a same-day replay unpaid
 for (const n of [2, 3, 4]) {
-  const w = fworld(n), S = w.S;
-  act(w, "c0", { t: "coop_start", k: "forge" });
-  const c = shiftOf(w).coop;
-  assert.deepEqual(w.pids.map((pid) => c.pl[pid].tool), ["tongs", "hammer", "tongs", "hammer"].slice(0, n));
-  forgeBot(w, [0.92, 0.99]);
-  log(`forge ${n}: score`, Math.round(c.score), "sold", c.done, "angry", c.late, "notes p/g/m", c.stat, "grade", X.coopGrade(c), [0, 1, 2, 3].map((i) => X.coopCut(c, i)));
-  if (!TUNE) assert.equal(X.coopGrade(c), 4, `${n} near-perfect bots reach S: ${Math.round(c.score)}`);
-  if (!TUNE) assert.ok(c.score < X.coopCut(c, 3) * 1.25, `just over S, not far over: ${Math.round(c.score)} vs ${X.coopCut(c, 3)}`);
-  const a = S.players.c0;
-  assert.deepEqual(a.ch.coopDone, ["forge"]);
-  assert.ok(a.ch.life.craft.xp > 0 || a.ch.life.craft.lv > 1, "life XP (제작)");
-  assert.equal(a.ch.rep.kangkang || 0, Object.hasOwn(X.NPC_MAP, "kangkang") ? X.COOP_T.rep : 0, "trust with 캉캉");
-  step(w, X.COOP_T.endMs + 200);
-  const kk = X.mapOf(JF.lobby).npcs.find((o) => o.id === "kangkang");
-  for (const pid of w.pids) at(S.players[pid], kk.x * T + 8, kk.y * T + 28);
-  const gold = a.ch.gold;
+  const w = fworld(n), before = w.pids.map((pid) => w.S.players[pid].ch.gold);
   assert.ok(act(w, "c0", { t: "coop_start", k: "forge" }).ok);
-  const c2 = forgeBot(w, [0.55, 0.85], 300);
-  log(`forge ${n} realistic: score`, Math.round(c2.score), "sold", c2.done, "angry", c2.late, "grade", X.coopGrade(c2), "notes", c2.stat);
-  if (!TUNE) assert.ok(X.coopGrade(c2) >= 2 && X.coopGrade(c2) <= 3, `a realistic party lands B–A: ${Math.round(c2.score)}`);
-  assert.equal(a.ch.gold, gold, "forge replay is unpaid");
-  assert.equal(lastOf("c0", "cr")[5], 2);
+  const c = runForgeShift(w);
+  log("paired forge", n, c.done, c.score, "grade", X.coopGrade(c));
+  assert.ok(c.done > 5 && X.coopGrade(c) >= 1, `${n} workers complete a paid shift (${c.done} sales, ${c.score} points)`);
+  for (const [i, pid] of w.pids.entries()) {
+    const p = w.S.players[pid];
+    assert.deepEqual(p.ch.coopDone, ["forge"]);
+    assert.ok(p.ch.gold > before[i]);
+    assert.equal(lastOf(pid, "cr")[5], 1);
+  }
+  if (n !== 4) continue;
+  const paid = w.pids.map((pid) => rewardState(w.S.players[pid]));
+  step(w, X.COOP_T.endMs + 100);
+  const npc = X.mapOf(JF.lobby).npcs.find((o) => o.id === JF.npc);
+  for (const pid of w.pids) {
+    assert.equal(w.S.players[pid].map, JF.lobby);
+    at(w.S.players[pid], npc.x * T + 8, npc.y * T + 12 + 16);
+  }
+  assert.ok(act(w, "c0", { t: "coop_start", k: "forge" }).ok);
+  const replay = runForgeShift(w);
+  assert.ok(replay.done > 5 && X.coopGrade(replay) >= 1);
+  for (const [i, pid] of w.pids.entries()) {
+    assert.deepEqual(rewardState(w.S.players[pid]), paid[i], "the playable same-day replay pays nothing twice");
+    assert.equal(lastOf(pid, "cr")[5], 2);
+  }
 }
 
 // ───────────────────────────── 보글연금공방 가마 v2 (COOP_BREW, H9) ─────────────────────────────
@@ -1284,7 +1027,7 @@ for (const k of ["diner", "forge", "alch"]) {
 // ── defs, and an old sheet's co-op fields cleaned by migrate
 {
   const D = L.defs();
-  assert.deepEqual(D.coop.jobs.apt.slice(0, 4), ["동동아파트 청소", 5, ["broom", "bin"], 1000]);
+  assert.deepEqual(D.coop.jobs.apt.slice(0, 4), ["동동아파트 청소", 5, ["bin"], 48]);
   assert.deepEqual(D.coop.cuts, [0.3, 0.5, 0.7, 0.88]);
   const S = L.setup(), old = L.newChar("옛알바", []);
   delete old.coopDay; delete old.coopDone; old.v = 11;
@@ -1343,150 +1086,130 @@ for (let g = 1; g <= 4; g++) {
 }
 assert.deepEqual(L.defs().coop.gradeK, [1, 1.05, 1.1, 1.2]);
 
-// ───────────────────────────── 올빼미 도서관 책 분류 (COOP_LIB, H11) ─────────────────────────────
+// ───────────────────────────── 올빼미 도서관 대출·반납 ─────────────────────────────
 
 const JL = X.COOP.lib, LB = X.COOP_LIB;
 function lworld(n, t0 = 1000, seed = 20251111) {
   const w = world(n, t0, seed), lob = X.mapOf(JL.lobby), bo = lob.npcs.find((o) => o.id === JL.npc);
-  for (const pid of w.pids) { const p = w.S.players[pid]; L.runtime(w.S, p.map).n--; p.map = JL.lobby; L.runtime(w.S, JL.lobby).n++; at(p, bo.x * T + 8, bo.y * T + 12 + 16); }
+  for (const pid of w.pids) {
+    const p = w.S.players[pid];
+    L.runtime(w.S, p.map).n--; p.map = JL.lobby; L.runtime(w.S, JL.lobby).n++;
+    at(p, bo.x * T + 8, bo.y * T + 28);
+  }
   return w;
 }
-// where workers stand: the desk worker and the sorters behind the 반납대, the rack's east side, a shelf's south side
-const deskMid = JL.st.desk[(JL.st.desk.length - 1) >> 1];
-const DESKN = [deskMid[0] + 1, deskMid[1] - 1], DESKS = [deskMid[0] - 1, deskMid[1] - 1];
-const RACKL = [JL.st.rack[0] + 1, JL.st.rack[1]], spot = (g) => below(JL.st.shelf[g * 6 + 2]);
-const queueFront = X.LIBH.queue;
-const books = (c, t) => c.ents.filter((e) => e.t === t);
+const DESKN = above(JL.st.desk[4]), DESKS = above(JL.st.desk[5]);
+const libShelf = (genre) => below(JL.st.shelf[genre * 6 + 2]);
+const libGuests = (c) => c.ents.filter((e) => e.t === 13 && e.phase === 1);
 
-// ── the hall, the titles, validation
 {
   const w = lworld(2);
-  assert.match(act(world(2), "c0", { t: "coop_start", k: "lib" }).error, /보름에게 다가가/, "started at 사서 보름 in the library");
-  assert.match(act(lworld(1), "c0", { t: "coop_start", k: "lib" }).error, /2명 이상 파티로만/, "party-only");
+  assert.match(act(world(2), "c0", { t: "coop_start", k: "lib" }).error, /보름에게 다가가/);
+  assert.match(act(lworld(1), "c0", { t: "coop_start", k: "lib" }).error, /2명 이상 파티로만/);
   assert.ok(act(w, "c0", { t: "coop_start", k: "lib" }).ok);
   const dim = shiftOf(w), m = dim.map, c = dim.coop;
   checkLayout(dim, JL, 32, 29);
-  assert.deepEqual(w.pids.map((pid) => c.pl[pid].tool), ["desk", "sort"]);
-  const Wk = walker(dim);
-  const queue = Array.from({ length: Math.max(...Object.values(LB.queueCap)) }, (_, i) => [queueFront[0], queueFront[1] + i]);
-  for (const t of [DESKN, DESKS, RACKL, ...LB.genres.map((_, i) => spot(i)), ...queue, X.LIBH.door]) {
-    assert.ok(reachable(m, t) && Wk.steps(w.S.players.c0, t) >= 0, `${t} reachable`);
+  assert.deepEqual(w.pids.map((pid) => c.pl[pid].tool), ["desk", "desk"], "both players can work any station");
+  const W = walker(dim), [qx, qy] = X.LIBH.queue;
+  const queue = Array.from({ length: Math.max(...Object.values(LB.queueCap)) }, (_, i) => [qx, qy + i]);
+  for (const t of [DESKN, DESKS, ...LB.genres.map((_, i) => libShelf(i)), ...queue, X.LIBH.door]) {
+    assert.ok(reachable(m, t) && W.steps(w.S.players.c0, t) >= 0, `${t} reachable`);
   }
-  assert.equal(LB.genres.length, 8);
   assert.deepEqual(LB.genres, ["추리소설", "SF소설", "과학소설", "로맨스소설", "웹소설", "판타지소설", "공포소설", "개그소설"]);
-  const all = LB.titles.flat();
-  assert.ok(LB.titles.every((g) => g.length === 10) && new Set(all).size === 80, "ten different titles a genre");
-  const d = L.defs().coop;
-  assert.equal(d.kinds.indexOf("lib"), d.kinds.length - 1, "appended to the kinds (the wire job index; 배관 left the list for the solo 알바)");
-  assert.deepEqual([d.lib.genres.length, d.lib.titles[3][0], d.lib.deskCap, d.lib.carry, d.jobs.lib[4], d.jobs.lib[5]], [8, LB.titles[3][0], 8, 3, "lib_borum", "owl_library"]);
-}
+  assert.ok(LB.titles.every((g) => g.length === 10) && new Set(LB.titles.flat()).size === 80);
 
-// ── the loop: returners queue, the 접수 puts their books on the 반납대 (full → refused), the 분류 carries up to 3 to the right
-// shelf; a wrong shelf costs points and stays marked until the book is pulled back out; a returner left waiting goes home angry
-{
-  const w = lworld(2), S = w.S, [a, b] = [S.players.c0, S.players.c1];
-  act(w, "c0", { t: "coop_start", k: "lib" });
-  const c = shiftOf(w).coop, qa = c.pl.c0, qb = c.pl.c1;
-  step(w, X.COOP_T.briefMs + 2000);
-  const r0 = books(c, 13)[0];
-  assert.ok(r0 && r0.books.length >= LB.books[0], "a returner in the queue");
-  assert.deepEqual([r0.x, r0.y], X.tilePx(queueFront), "at the front, facing the desk");
-  atTile(a, DESKN); atTile(b, DESKS);
-  const n0 = r0.books.length, s0 = c.score;
-  for (let i = 0; i < n0; i++) { assert.ok(act(w, "c0", { t: "coop_act" }).ok); step(w, 300); }
-  assert.equal(books(c, 14).length, n0, "each press puts one book on the 반납대");
-  assert.ok(!c.ents.includes(r0), "served: the returner leaves");
-  assert.ok(c.score > s0 && qa.pts > 0, "intake points");
-  // the sorter takes them (up to 3), the desk keeps the rest
-  const want = Math.min(n0, LB.carry);
-  for (let i = 0; i < want; i++) { assert.ok(act(w, "c1", { t: "coop_act" }).ok); step(w, 300); }
-  assert.equal(qb.hold.length, want);
-  // the right shelf
-  const bk = qb.hold[0], before = [c.score, qa.pts, qb.pts];
-  atTile(b, spot(bk.g)); assert.ok(act(w, "c1", { t: "coop_act" }).ok);
-  assert.equal(c.shelved, 1, "shelved");
-  assert.ok(c.score - before[0] >= LB.shelvePts && qb.pts - before[2] > qa.pts - before[1], "the sorter gets most of it, the 접수 a share");
+  const [a, b] = [w.S.players.c0, w.S.players.c1], [qa, qb] = [c.pl.c0, c.pl.c1];
+  step(w, X.COOP_T.briefMs + LB.firstMs + 100);
+  assert.ok(c.ents.some((e) => e.kind === 0 && e.phase === 0), "a visitor walks in before requesting a loan");
+  step(w, 4100);
+  const loan = libGuests(c).find((e) => e.kind === 0), returned = libGuests(c).find((e) => e.kind === 1);
+  assert.ok(loan && returned, "both kinds of visit are playable");
+  assert.deepEqual([loan.x, loan.y], X.tilePx(X.LIBH.queue));
+
+  atTile(a, libShelf(loan.g)); atTile(b, libShelf(loan.g));
+  act0(w, "c0"); act0(w, "c1");
+  assert.equal(qa.hold[0]?.id, loan.id);
+  assert.equal(qb.hold.length, 0, "the same loan cannot be picked up twice");
   step(w, 300);
-  // a wrong shelf: −wrongPen, combo 0, marked; shelving there waits until the wrong book is pulled
-  qb.hold = [{ g: 0, ti: 1, cred: { c1: 1 } }, { g: 2, ti: 4, cred: { c1: 1 } }];
-  atTile(b, spot(2)); qb.hintAt = 0; b.toast.length = 0;
-  c.score = 100; c.combo = 3;
-  act(w, "c1", { t: "coop_act" });
-  assert.deepEqual([qb.hold.length, qb.hold[0].g, c.score], [1, 0, 100 + Math.round(LB.shelvePts * (1 + 0.1 * (c.combo)))], "a genre that fits goes first");
-  step(w, 300); atTile(b, spot(5)); c.score = 100; act(w, "c1", { t: "coop_act" });
-  const mark = books(c, 15)[0];
-  assert.ok(mark && mark.sh === 5 && mark.g === 0 && qb.hold.length === 0, "the 추리소설 went into the 판타지 shelf");
-  assert.deepEqual([c.score, c.combo, c.wrongN], [100 - LB.wrongPen, 0, 1], "a penalty, the combo gone");
-  assert.ok(b.toast.some((t) => /잘못 꽂았어요/.test(t) && t.includes(LB.titles[0][1])), "says which book: " + b.toast.join(" / "));
-  qb.hold = [{ g: 5, ti: 0, cred: { c1: 1 } }]; step(w, 300); const sh0 = c.shelved;
-  act(w, "c1", { t: "coop_act" });
-  assert.ok(!c.ents.includes(mark) && qb.hold.length === 1 && qb.hold[0].g === 0 && c.shelved === sh0 + 1, "a swap: the wrong book out, the 판타지소설 in");
-  // the 반납대 is full at deskCap: intake waits
-  for (const e of books(c, 14)) c.ents.splice(c.ents.indexOf(e), 1);
-  for (let i = 0; i < LB.deskCap; i++) c.ents.push({ id: 900 + i, t: 14, x: 0, y: 0, hp: 0, g: 1, ti: 1, slot: i, cred: { c0: 1 } });
-  c.ents.push({ id: 990, t: 13, x: 0, y: 0, hp: 0, books: [{ g: 3, ti: 3 }], due: w.now + 60000, pat: 60000, cred: {} });
-  step(w, 300); qa.hintAt = 0; a.toast.length = 0; act(w, "c0", { t: "coop_act" });
-  assert.ok(a.toast.some((t) => /반납대가 꽉 찼어요/.test(t)), "a full desk refuses: " + a.toast.join(" / "));
-  // the wire: rows for returners, desk books, wrong books; the sorter's books in its team row
-  qb.hold = [{ g: 6, ti: 2, cred: {} }]; c.ver++; step(w, 200);
-  const cj = lastOf("c1", "cj"), C = lastOf("c1", "C") || [];
-  assert.equal(cj[0], L.defs().coop.kinds.indexOf("lib")); assert.deepEqual(cj[10].find((r) => r[0] === b.eid)[4], [6 * 16 + 2], "held books: genre·16 + title");
-  assert.ok(C.some((r) => r[1] === 14 && r.length === 6) && C.some((r) => r[1] === 13 && r.length === 8), "desk books and returners on the wire");
-  // patience: nobody greets them, they leave angry
-  for (const e of books(c, 14)) c.ents.splice(c.ents.indexOf(e), 1);
-  const angry0 = c.angry; c.score = 50; at(a, 100, 100);
-  step(w, LB.patience + 1000);
-  assert.ok(c.angry > angry0 && !c.ents.some((e) => e.id === 990), "a returner left waiting goes home angry");
-  // the rack swaps roles with empty hands
-  qb.hold = []; atTile(b, RACKL); step(w, 300); act(w, "c1", { t: "coop_act" });
-  assert.equal(qb.tool, "desk");
+  atTile(a, DESKN); atTile(b, DESKS);
+  act0(w, "c0"); act0(w, "c1");
+  assert.ok(loan.phase === 2 && loan.leftOk, "the loan visitor leaves after receiving a book");
+  assert.ok(returned.phase === 2 && returned.leftOk, "the return visitor leaves after handing over a book");
+  assert.equal(c.done, 1, "only the prepared loan has scored");
+  assert.deepEqual(qb.hold[0], { kind: 1, id: returned.id, g: returned.g, ti: returned.ti });
+  step(w, 300);
+  const cj = lastOf("c1", "cj"), rows = lastOf("c1", "C") || [];
+  assert.deepEqual(cj[10].find((r) => r[0] === b.eid)[4], [returned.g, returned.ti, 1, returned.id]);
+  assert.ok(rows.some((row) => row[0] === loan.id && row[1] === 13 && row[9] === 2 && row[12] === 1));
+
+  atTile(b, libShelf((returned.g + 1) % 8)); act0(w, "c1");
+  assert.equal(qb.hold[0]?.id, returned.id, "another genre cannot consume the return");
+  step(w, 300);
+  atTile(b, libShelf(returned.g)); act0(w, "c1");
+  assert.equal(qb.hold.length, 0);
+  assert.equal(c.done, 2, "return scores only at the correct shelf");
+  assert.ok(qa.pts > 0 && qb.pts > 0);
+  step(w, LB.patience + LB.departMs + 200);
+  assert.ok(c.angry > 0, "idle patrons lose patience and leave");
 }
 
-/**
- * Library bots: the first worker takes the desk, everyone else sorts (a third/fourth swaps at the rack first). Sorters fill their
- * hands at the 반납대 (up to 3 while books are there) and walk each book to its shelf; `miss` of the time a realistic bot walks to
- * a wrong shelf, puts the book in, then pulls it back out.
- */
-function libBot(w, MS = 300, spdK = 1, miss = 0) {
-  const S = w.S, dim = shiftOf(w), c = dim.coop, W = walker(dim), target = {};
-  let seed = 12345;
-  const rnd = () => (seed = (Math.imul(seed, 1103515245) + 12345) >>> 0) / 4294967296;
+{
+  const w = lworld(3); act(w, "c0", { t: "coop_start", k: "lib" });
+  const c = shiftOf(w).coop;
+  const [a, b, remaining] = w.pids.map((pid) => w.S.players[pid]);
+  step(w, X.COOP_T.briefMs + LB.firstMs + 4200);
+  const loan = libGuests(c).find((e) => e.kind === 0), returned = libGuests(c).find((e) => e.kind === 1);
+  atTile(a, libShelf(loan.g)); atTile(b, DESKS);
+  act0(w, "c0"); act0(w, "c1");
+  assert.equal(loan.worker, "c0"); assert.equal(c.pl.c1.hold[0]?.id, returned.id);
+  act(w, "c0", { t: "coop_leave" }); act(w, "c1", { t: "coop_leave" });
+  step(w, 300);
+  assert.equal(loan.worker, "", "a departed worker's reserved loan is free again");
+  assert.equal(lastOf("c2", "cj")[11], 1, "the desk advertises the recovered return");
+  atTile(remaining, DESKN); act0(w, "c2");
+  assert.equal(c.pl.c2.hold[0]?.id, returned.id);
+  step(w, 300); atTile(remaining, libShelf(returned.g)); act0(w, "c2");
+  assert.equal(c.done, 1, "the recovered return can score once");
+  step(w, 300); atTile(remaining, libShelf(loan.g)); act0(w, "c2");
+  assert.equal(c.pl.c2.hold[0]?.id, loan.id);
+}
+
+function libBot(w, ms = 300, speed = 1) {
+  const dim = shiftOf(w), c = dim.coop, W = walker(dim), plans = new Map();
   step(w, X.COOP_T.briefMs + 100);
   while (c.state !== "end") {
-    w.pids.forEach((pid, i) => {
-      const o = S.players[pid], q = c.pl[pid], go = (t) => W.go(o, t, MS * spdK), act = () => act0(w, pid), role = i === 0 ? "desk" : "sort";
-      if (!o || o.map !== dim.id) return;
-      if (q.tool !== role) { if (go(RACKL)) act(); return; }
-      if (q.tool === "desk") { if (go(DESKN)) act(); return; }
-      const onDesk = books(c, 14).length, g = target[pid];
-      // on the way to a shelf (or back at one to pull a wrong book out): go on until it is done
-      if (g !== undefined) { if (go(spot(g))) { const k = q.hold.length; act(); if (!c.ents.some((e) => e.t === 15 && e.sh === g) || (q.hold.length === k && k >= LB.carry)) target[pid] = undefined; } return; }
-      if (q.hold.length < LB.carry && onDesk && (!q.hold.length || W.steps(o, DESKS) === 0)) { if (go(DESKS)) act(); return; }
-      if (!q.hold.length) { go(DESKS); return; }
-      const m = (q.hold[0].g + 1 + Math.floor(rnd() * 7)) % 8;
-      target[pid] = rnd() < miss && !c.ents.some((e) => e.t === 15 && e.sh === m) ? m : q.hold[0].g;
-    });
-    if (VERBOSE && miss && w.now % 30000 < MS) log("  t", Math.round((w.now - c.runAt) / 1000), "queue", books(c, 13).length, "desk", books(c, 14).length, "marks", books(c, 15).map((e) => e.sh).join(""), "held", w.pids.map((pid) => c.pl[pid].tool[0] + c.pl[pid].hold.map((b) => b.g).join("") + ":" + target[pid] + "@" + W.tileOf(S.players[pid])).join(" "));
-    step(w, MS);
+    const waiting = libGuests(c), crew = [...w.pids].sort((a, b) => c.pl[a].pts - c.pl[b].pts);
+    for (const [pid, id] of plans) if (!waiting.some((e) => e.id === id && !e.worker)) plans.delete(pid);
+    for (const pid of crew) {
+      const p = w.S.players[pid], held = c.pl[pid].hold[0], desk = w.pids.indexOf(pid) % 2 ? DESKS : DESKN;
+      let goal = desk;
+      if (held) {
+        if (held.kind === 1 || !waiting.some((e) => e.id === held.id)) goal = libShelf(held.g);
+      } else {
+        const assigned = plans.get(pid), planned = new Set(plans.values());
+        const next = waiting.find((e) => !e.worker && (assigned ? e.id === assigned : !planned.has(e.id)));
+        if (!next) continue;
+        plans.set(pid, next.id);
+        if (next.kind === 0) goal = libShelf(next.g);
+      }
+      if (W.go(p, goal, ms * speed)) act0(w, pid);
+    }
+    step(w, ms);
   }
   return c;
 }
 
-// ── walking bots 2–4 (hard): quick and accurate just over S; realistic (every 400 ms, walking at 90 %, 8 % wrong shelves) B–A
 for (const n of [2, 3, 4]) {
   const w = lworld(n); act(w, "c0", { t: "coop_start", k: "lib" });
   const c = libBot(w);
-  log(`lib ${n}: score`, Math.round(c.score), "grade", X.coopGrade(c), "cuts", [0, 1, 2, 3].map((i) => X.coopCut(c, i)), "shelved", c.shelved, "angry", c.angry, "wrong", c.wrongN);
-  if (!TUNE) assert.ok(X.coopGrade(c) === 4 && c.score < X.coopCut(c, 3) * 1.2, `${n} quick bots just over S: ${Math.round(c.score)} vs ${X.coopCut(c, 3)}`);
-  const w2 = lworld(n); act(w2, "c0", { t: "coop_start", k: "lib" });
-  const c2 = libBot(w2, 400, 0.9, 0.08);
-  log(`lib ${n} realistic: score`, Math.round(c2.score), "grade", X.coopGrade(c2), "shelved", c2.shelved, "angry", c2.angry, "wrong", c2.wrongN);
-  if (!TUNE) assert.ok(X.coopGrade(c2) >= 2 && X.coopGrade(c2) <= 3, `${n} realistic bots land B–A: ${Math.round(c2.score)}`);
-  if (n === 2 && !TUNE) {
-    // paid once a day; an S earns 서고의 달인 and its 책가방
-    const p = w.S.players.c0;
-    assert.ok(p.ch.coopDone.includes("lib") && p.ch.cnt.coopS_lib === 1 && p.ch.ach.includes("coopS_lib"), "S: the achievement");
-  }
+  log(`lib ${n}:`, Math.round(c.score), "served", c.done, "angry", c.angry, "grade", X.coopGrade(c));
+  assert.ok(c.done > 10, "the compact hall supports a sustained shift");
+  if (!TUNE) assert.ok(X.coopGrade(c) >= 2, `${n} working players reach B: ${Math.round(c.score)}`);
+  const realistic = lworld(n); act(realistic, "c0", { t: "coop_start", k: "lib" });
+  const cr = libBot(realistic, 400, 0.9);
+  log(`lib ${n} realistic:`, Math.round(cr.score), "served", cr.done, "angry", cr.angry, "grade", X.coopGrade(cr));
+  if (!TUNE) assert.ok(X.coopGrade(cr) >= 1, `${n} realistic players reach C: ${Math.round(cr.score)}`);
+  assert.ok(w.pids.every((pid) => w.S.players[pid].ch.coopDone.includes("lib")), "each active librarian is paid");
 }
 
 console.log("coop: ok");

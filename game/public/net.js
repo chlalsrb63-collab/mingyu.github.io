@@ -26,6 +26,7 @@ import * as Gather from "./gather.js";
 import * as Radar from "./radar.js";
 import * as Housing from "./housing.js";
 import * as Coop from "./coop.js";
+import { hideBriefing, renderBriefing } from "./coop-briefing.js";
 import * as Alba from "./alba.js";
 import * as SX from "./sxwin.js";
 import { setJobDefs } from "./jobpal.js";
@@ -170,6 +171,8 @@ export const channelName = () => Lobby.label(channel);
 export function stopGame() {
   G.playing = false;
   G.auto = false;
+  Coop.onSnap({ cj: 0 });
+  hideBriefing();
   NpcLife.load(null, null);
   resetPurse(); // the next character's purse starts without a +N
   $("#hud").hidden = true; $("#dead").hidden = true; G.me.dead = false; $("#tip").hidden = true;
@@ -230,6 +233,7 @@ function onSnap(s) {
   if (s.dn) Sky.setSky(s.dn, !!s.map);
   if (s.map) loadMap(s.map);
   else if (s.dn && G.map && G.stallsOpen !== Sky.fairOn() && G.map.id === G.defs?.fair?.map) S3.loadMap(sceneMap(G.map));   // 장날 opens or closes here
+  me.serverX = s.me[0]; me.serverY = s.me[1];
   if (s.nl) NpcLife.onLegs(s.nl);
   if (s.nw) NpcLife.onWhere(s.nw);
   if (s.map || s.me[5]) { me.x = s.me[0]; me.y = s.me[1]; me.dir = s.me[6]; if (s.me[10] !== undefined) me.aimI = s.me[10]; }
@@ -310,6 +314,7 @@ function onSnap(s) {
   Dim.onSnap(s);                               // 레이드던전: HUD, ready check, shrines and orbs (dimrift.js)
   Housing.onSnap(s);                           // a house of one's own: its bar, the ghost, the windows (housing.js)
   Coop.onSnap(s);                              // 협동 아르바이트: cj C cr (coop.js)
+  renderBriefing(s, G.defs?.coop, G.you);
   Alba.onSnap(s);                              // 일일 아르바이트: ab (alba.js)
   SX.onSnap(s);                                // sx: a request for me, the trade window, 가위바위보 (sxwin.js)
   hudBars();

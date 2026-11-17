@@ -496,7 +496,7 @@ const POUCH_MAX = 999;
  * are party-only, 2–4 (owner, 2026-11-15; a shift that drops to 1 goes on at its starting size). Rewards by grade C B A S (C.7).
  */
 const COOP_T = {
-  briefMs: 8000, feverMs: 60000, endMs: 30000, emptyMs: 20000, max: 6, actMs: 250, near: 56, reach: 28, station: 26,
+  briefMs: 5000, feverMs: 60000, endMs: 30000, emptyMs: 20000, max: 6, actMs: 250, near: 56, reach: 28, station: 26,
   zzzMs: 45000, idleMs: 90000, lazy: 0.15, cuts: [0.30, 0.50, 0.70, 0.88], parN: { 2: 1, 3: 1.35, 4: 1.65 },
   // one base reward (about the old A: gold ×2.5 on 2026-11-15, 알바 as a main gold source) × the grade's share C B A S
   // (owner, 2026-11-15: 100 · 105 · 110 · 120 %) for gold, XP and life XP; stones and the gear's rarity stay at base
@@ -505,30 +505,30 @@ const COOP_T = {
 };
 const COOP_TOOLS = { broom: "빗자루", bin: "쓰레기통", pan: "프라이팬", tray: "쟁반", tongs: "집게", hammer: "망치", fan: "부채", bellows: "풀무", pipein: "급수 담당", pipeout: "배수 담당", desk: "접수 담당", sort: "분류 담당" };
 /**
- * 캉캉's forge: two open production lanes from the western ingot crates to the furnaces, anvils and quench barrels.
+ * 캉캉's forge: two independent anvil lanes served by four metal crates on the west side.
  * Customers share the same east-side counter and straight entrance aisle layout as the alchemy lab.
  */
-const HALL = { W: 32, H: 22, crate: [[3, 5], [3, 8], [3, 11], [3, 14]], furnace: [[8, 7], [8, 14]], anvil: [[13, 6], [13, 13], [17, 6], [17, 13]],
-  quench: [[21, 8], [21, 14]], shelfX: 25, shelfY: 6, door: [26, 19], rack: [3, 18] };
+const HALL = { W: 32, H: 22, crate: [[3, 5], [3, 8], [3, 11], [3, 14]], anvil: [[13, 6], [13, 13]],
+  shelfX: 25, shelfY: 6, door: [26, 19] };
 const COOP_HALL = (() => {
   const { W, H } = HALL, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
   const put = (ch, x, y) => { o[y][x] = ch; };
-  for (const [k, ch] of [["crate", "]"], ["furnace", "<"], ["anvil", "&"], ["quench", "w"]]) for (const [x, y] of HALL[k]) put(ch, x, y);
+  for (const [k, ch] of [["crate", "]"], ["anvil", "&"]]) for (const [x, y] of HALL[k]) put(ch, x, y);
   for (let i = 0; i < 6; i++) put("m", HALL.shelfX, HALL.shelfY + i);
-  put(">", HALL.rack[0], HALL.rack[1]);
-  for (const [x, y] of HALL.furnace) { put("*", x - 2, y - 1); put("*", x + 2, y - 1); }
+  for (const y of [5, 12]) { put("*", 9, y); put("*", 17, y); }
+  put("#", HALL.door[0], H - 1);
   put("g", 1, 1); put("g", W - 2, 1); put("g", 1, H - 2); put("g", W - 2, H - 2);
   for (let x = 8; x <= 13; x++) put("-", x, 18);
   for (let x = 16; x <= 21; x++) put("-", x, 18);
   return o.map((r) => r.join(""));
 })();
 /**
- * 동동아파트: two wings with ten and eight flats, joined by a stairwell with a tool rack.
+ * 동동아파트: two wings with ten and eight flats, joined by a stairwell.
  * The lower corridor opens into the back yard on the east. Each row specifies [top, bottom, door row, flat count].
  */
 const APT = { W: 44, H: 27, cols: [[1, 7], [9, 16], [18, 26], [28, 34], [36, 42]], stair: [18, 21, 9, 19], yard: [36, 14, 42, 25],
   rows: [[1, 5, 6, 5], [10, 12, 9, 5], [14, 17, 18, 4], [22, 25, 21, 4]], corridors: [[7, 8], [19, 20]], divider: 13,
-  dump: [40, 20], rack: [20, 11] };
+  dump: [40, 20] };
 const APT_MAP = (() => {
   const { W, H } = APT, north = "+===^===".repeat(Math.ceil(W / 8)).slice(0, W);
   const o = Array.from({ length: H }, (_, y) => (y === 0 ? north : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
@@ -557,73 +557,57 @@ const APT_MAP = (() => {
   const [backDoorTop, backDoorBottom] = APT.corridors[1];
   for (let y = backDoorTop; y <= backDoorBottom; y++) { put(" ", yx0 - 1, y); g[y][yx0 - 1] = "e"; }
   put("]", ...APT.dump); put("w", yx1, yy0 + 2); put("w", yx1, yy1 - 1); put("g", yx0, yy0); put("g", yx0, yy1);
-  put(">", ...APT.rack); put("g", 1, 8); put("g", W - 2, 8); put("g", 1, backDoorBottom);
+  put("g", 1, 8); put("g", W - 2, 8); put("g", 1, backDoorBottom);
   return { ground: g.map((r) => r.join("")), objects: o.map((r) => r.join("")), rooms };
 })();
 /**
- * 쥬쥬식당's 32×24 shift hall. Stoves, chopping boards and ingredient crates line the north wall. Workers pass food across
- * the counter and reach the sink and kitchen through two side aisles. The dining room retains twenty tables.
+ * 쥬쥬식당's 32×24 shift hall. Workers reach the two stoves and sink through gaps in the counter.
+ * Guests walk up the central aisle and across the strip in front of their table.
  */
-const DIN = { W: 32, H: 24, counter: 6, stove: [[3, 1], [6, 1], [9, 1], [12, 1]], board: [[16, 1], [19, 1], [22, 1]],
-  veg: [24, 1], fish: [27, 1], meat: [30, 1], trash: [2, 4], sink: [29, 4], gaps: [5, 25],
-  tables: [10, 14, 18, 22].flatMap((y) => [4, 10, 16, 22, 28].map((x) => [x, y])) };
-const DIN_RACK = [16, DIN.counter];
+const DIN = { W: 32, H: 24, counter: 6, stove: [[11, 3], [20, 3]], sink: [28, 4], door: [13, 22], gaps: [5, 14, 25],
+  tables: [9, 13, 17, 21].flatMap((y) => [4, 10, 16, 22, 28].map((x) => [x, y])) };
 const DIN_MAP = (() => {
   const { W, H, counter } = DIN, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
-  const g = Array.from({ length: H }, (_, y) => (y >= 1 && y < counter ? "l" + "x".repeat(W - 2) + "l" : [12, 16, 20].includes(y) ? "l" + "y".repeat(W - 2) + "l" : "l".repeat(W)));
+  const g = Array.from({ length: H }, (_, y) => (y >= 1 && y < counter ? "l" + "x".repeat(W - 2) + "l" : [11, 15, 19].includes(y) ? "l" + "y".repeat(W - 2) + "l" : "l".repeat(W)));
   const put = (ch, x, y) => { o[y][x] = ch; };
   for (let x = 1; x < W - 1; x++) put("m", x, counter);
   for (const x of DIN.gaps) { put(" ", x, counter); put(" ", x + 1, counter); }
-  put(">", ...DIN_RACK); put("r", 1, 1); put("r", 14, 1);
+  put("r", 2, 1); put("r", 29, 1); put("-", 13, 1); put("-", 16, 1);
   for (const t of DIN.stove) put(":", ...t);
-  for (const t of DIN.board) put("-", ...t);
-  put("]", ...DIN.veg); put("w", ...DIN.fish); put("]", ...DIN.meat); put("w", ...DIN.trash); put("r", ...DIN.sink);
+  put("a", ...DIN.sink);
   for (const [x, y] of DIN.tables) { put("k", x - 1, y); put("o", x, y); put("k", x + 1, y); }
   put("g", 1, counter + 1); put("g", W - 2, counter + 1); put("g", 1, H - 2); put("g", W - 2, H - 2);
-  put("s", 7, H - 2); put("s", 25, H - 2); put("#", 13, H - 2);
+  put("#", DIN.door[0], H - 1);
   return { ground: g, objects: o.map((r) => r.join("")) };
 })();
 /** The jobs: name, owner NPC and lobby, shift minutes, the two tools (rotation A B A B), par, combo window, life skill, template. */
 const COOP = {
   apt: {
-    name: "동동아파트 청소", npc: "dongdong", lobby: "dongdong_apt", mins: 5, tools: ["broom", "bin"], combo: 20000, skill: "deliver",
-    // The score is the clean share in ‰ (1000 = spotless). Keep the opening mess and arrival rules on the smaller floor.
-    par: 1000, parN: { 2: 1, 3: 1, 4: 0.96 },
-    hint: "빗자루로 먼지를 쓸어 모으면, 쓰레기통 담당이 주워 담아 뒷마당(아랫동 동쪽 끝 뒷문)의 버리는 곳에 버려요. 청소율을 최대한 올리세요!",
-    // stations (tiles; solid furniture, used from a neighbouring tile): the dumpster in the back yard, the tool rack in the stairwell
-    st: { dump: APT.dump, rack: APT.rack },
+    name: "동동아파트 청소", npc: "dongdong", lobby: "dongdong_apt", mins: 5, tools: ["bin"], combo: 20000, skill: "deliver",
+    par: 48, parN: { 2: 1, 3: 1.5, 4: 2 },
+    hint: "쓰레기 칸 위에서 F로 주우세요. 통에 10개가 차면 반짝여요. 아랫동 동쪽의 뒷마당 반납대 가까이 가면 자동으로 비워져요.",
+    st: { dump: APT.dump, inspector: [[38, 24], [38, 17]] },
     start: [[18, 14], [20, 14], [18, 16], [20, 16]],
     rooms: APT_MAP.rooms,
     tpl: { name: "동동아파트 (근무 중)", theme: "interior", style: "apt", bgm: "coop_apt", safe: true, w: APT.W, h: APT.H, entry: [19, 15], ground: APT_MAP.ground, objects: APT_MAP.objects },
   },
   diner: {
-    name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan", "tray"], combo: 25000, skill: "cook",
-    hint: "프라이팬 담당은 상자에서 재료를 꺼내 도마·화덕을 거쳐 패스대에, 쟁반 담당은 패스대의 요리를 주문한 테이블로! 손님이 계속 몰려와요.",
-    // Shorter walks let teams serve more tables. Calibrate to the same walking-bot grades: quick S · S · S, realistic S · A · B.
-    par: 1000, parN: { 2: 0.83, 3: 2.28, 4: 3.5 },
-    st: { stove: DIN.stove, board: DIN.board, veg: DIN.veg, fish: DIN.fish, meat: DIN.meat, trash: DIN.trash, sink: DIN.sink,
-      pass: [12, 13, 14, 15, 17, 18, 19, 20].map((x) => [x, DIN.counter]), rack: DIN_RACK },
+    name: "쥬쥬식당 서빙", npc: "juju", lobby: "juju_diner", mins: 5, tools: ["pan"], combo: 25000, skill: "cook",
+    hint: "손님 말풍선의 요리를 확인하고 조리대에서 F로 골라 만드세요. 테이블에 내고, 식사 뒤 빈그릇을 싱크대로 옮겨요!",
+    par: 1000, parN: { 2: 0.95, 3: 1.35, 4: 1.65 },
+    st: { stove: DIN.stove, sink: DIN.sink, door: DIN.door, tables: DIN.tables },
     tables: DIN.tables,
-    start: [[14, 4], [14, 8], [18, 4], [18, 8]],
+    start: [[12, 4], [13, 8], [19, 4], [18, 8]],
     tpl: { name: "쥬쥬식당 (영업 중)", theme: "interior", style: "tavern", bgm: "coop_diner", safe: true, w: DIN.W, h: DIN.H, entry: [16, 8], ground: DIN_MAP.ground, objects: DIN_MAP.objects },
   },
   forge: {
-    name: "캉캉대장간 단조", npc: "kangkang", lobby: "kangkang_forge", mins: 5, tools: ["tongs", "hammer"], combo: 40000, skill: "craft",
-    hint: "집게 담당은 주문의 색을 보고 맞는 주괴(철·은·금·미스릴)를 상자에서 꺼내 화덕(풀무질로 60~80도) → 달군 주괴를 모루에, 망치 담당은 음표에 맞춰 두드리고(화살표 음표는 방향키) 담금질 → 진열대! 손님이 계속 몰려와요.",
-    // the forge engine's words (68-coop.js): piece and grade names, messages
-    skin: { orders: ["편자", "단검", "검날", "투구", "냄비", "방패", "갑옷"], grades: ["걸작", "상", "중", "하"], txt: {
-      busy: "이 모루는 사용 중이에요 — 옆 모루로!", first: "들고 있는 것을 먼저 담금질하고 진열대에 올리세요",
-      cooled: "식었어요 — 집게로 다시 달구세요!", a: ["주문 색에 맞는 주괴 상자에서 주괴를 꺼내세요 (화덕 앞에서는 풀무질!)", "달군 주괴를 빈 모루에 올리세요", "화덕에 넣어 달구세요 (상자에 도로 넣을 수도 있어요)"],
-      b: ["모루 위 달군 쇠를 음표에 맞춰 두드리세요", "담금질 통에 식히세요", "진열대(동쪽)에 올리세요"], full: "진열대가 꽉 찼어요 — 손님을 기다리세요!",
-      flip: "뒤집기! 화살표 음표는 방향키로", noflip: "방향키는 화살표 음표에서만!", duet: "갑옷은 번갈아 쳐요 — 받는 음표는 다른 사람이!" } },
-    // Walking bots in the compact hall: near-perfect timing reaches S, realistic timing reaches B.
-    par: 1000, parN: { 2: 2, 3: 4.7, 4: 5.7 },
-    // stations (tiles; solid furniture, used from a neighbouring tile; COOP_HALL): the four ingot crates `]` (index = metal),
-    // furnaces `<`, anvils `&`, quench barrels `w`, the 진열대 (six counter tiles `m`, far east) and the rack `>`; customers
-    // come in at `door` and wait in the aisle east of the counter (`seats`, one per shelf slot)
-    st: { crate: HALL.crate, furnace: HALL.furnace, anvil: HALL.anvil, quench: HALL.quench, shelf: [0, 1, 2, 3, 4, 5].map((i) => [HALL.shelfX, HALL.shelfY + i]), rack: HALL.rack },
+    name: "캉캉대장간 단조", npc: "kangkang", lobby: "kangkang_forge", mins: 5, tools: ["tongs", "hammer"], combo: 30000, skill: "craft",
+    hint: "집게는 손님이 주문한 주괴를 F로 집어 모루에 올려요. 망치는 집게 담당이 모루 곁에 있을 때 F로 시작해요. 둘이 같은 음표에 스페이스를 눌러 완성하면 주문한 손님에게 바로 전달돼요.",
+    skin: { orders: ["편자", "단검", "검날", "투구", "냄비", "방패", "갑옷"] },
+    par: 1500, parN: { 2: 1, 3: 1, 4: 1.75 },
+    st: { crate: HALL.crate, anvil: HALL.anvil, door: HALL.door },
     seats: [0, 1, 2, 3, 4, 5].map((i) => [HALL.shelfX + 1, HALL.shelfY + i]), door: HALL.door,
-    start: [[9, 8], [13, 7], [9, 13], [17, 7]],
+    start: [[10, 6], [13, 7], [10, 13], [13, 14]],
     tpl: {
       name: "캉캉대장간 · 대형 단조장 (작업 중)", theme: "interior", style: "forge", bgm: "coop_forge", safe: true, w: HALL.W, h: HALL.H, entry: [13, 10],
       ground: Array.from({ length: HALL.H }, () => "x".repeat(HALL.W)), objects: COOP_HALL,
@@ -698,59 +682,34 @@ const COOP_BREW = {
   grades: [[0.75, 1.6], [0.55, 1.3], [0.35, 1.0], [-1e9, 0.5]], timeK: 0.3, tongsK: 0.45, hammerK: 0.55,
 };
 /**
- * 캉캉대장간 단조 v2 (owner's concept, 2026-11-15; C.6 and H8). Furnaces as v1 (T loses `decay`/s, a tongs act pumps +`pump`,
- * a bar heats +`heatIn`/s at T ≥ `lo`, +`heatLo`/s from 30, scorches above `scorch`; hot `hotMs` out of the fire). On an anvil
- * each piece plays its own pattern `pat` ([beat, note]: 0 a blow · 1 the answer of a second worker (갑옷) · 2–5 a flip with
- * ↑ → ↓ ←) at `per` ms a beat (×`feverK` in fever), the first note `leadMs` after placing. A note within `perfect` ms is +2,
- * within `good` +1, else −1 (after the player's own offset: median of the last 5, ±`latMax`); a missed note also takes
- * `missCool` ms off the bar's heat, which lasts the pattern + `slackMs`; cooled, the tongs reheat it (from `reheat`) and the
- * pattern goes on. Grade by quality q vs notes N (`grades` [min q/N, ×pts]). Quenched pieces go on the 진열대; customers (at
- * most `open[n]`, a new one every `orderMs[n]`, `n + 1` at the open) walk in at `walk` px/s, look `browseMs`, buy the best
- * piece of the kind they came for: pts × grade × (1 + `timeK`·patience left) × mult, tongs `tongsK` / hammers `hammerK`;
- * after `deadMs` they leave angry (−`latePen`, combo 0). A new customer wants a piece nobody waits for on the shelf first.
+ * 캉캉대장간 단조: tongs reserves an order with the correct ingot, the hammer starts the lane and both strike every beat.
+ * A missed beat costs score and retries. The last beat supplies the waiting customer automatically.
  */
 const COOP_FORGE = {
-  // 편자 · 단검 · 검날 · 투구 · 냄비 · 방패 · 갑옷 (COOP.forge.skin.orders); `at`: ms into the shift before anyone orders it
+  // 편자 · 단검 · 검날 · 투구 · 냄비 · 방패 · 갑옷
   orders: [
-    { pts: 40, per: 700, pat: [[0, 0], [1, 0], [2, 0], [4, 0], [5, 0], [6, 0]] },                                        // 편자: short, light, 3-beat
-    { pts: 45, per: 640, pat: [[0, 0], [0.5, 0], [2, 0], [2.5, 0], [4, 0], [4.5, 0], [6, 0]] },                          // 단검: quick pairs
-    { pts: 75, per: 760, pat: [[0, 0], [1, 0], [2, 0], [3, 0], [3.75, 0], [4.5, 0], [5.25, 0], [5.75, 0], [6.25, 0], [6.75, 0], [7.25, 0]] },   // 검날: a long chain that speeds up
-    { pts: 60, per: 700, pat: [[0, 0], [1.5, 0], [2, 0], [3.5, 0], [4, 0], [5.5, 0], [6, 0], [7, 0]] },                  // 투구: off the beat
-    { pts: 55, per: 760, pat: [[0, 0], [1, 0], [2, 0], [3, 0], [4.5, 4], [5.5, 0], [6.5, 0], [7.5, 0]] },                // 냄비: 뒤집기 (↓) halfway
-    { pts: 65, per: 900, pat: [[0, 0], [1, 0], [2, 0], [3, 5], [4, 0], [5, 0], [6, 3]] },                                // 방패: slow and heavy, turned ← then →
-    { pts: 95, per: 680, at: 60000, pat: [[0, 0], [1, 1], [2, 0], [3, 1], [4, 0], [5, 1], [6, 0], [7, 1], [8, 0], [9, 1]] },   // 갑옷: call and response
+    { pts: 36, per: 850, beats: 4 }, { pts: 45, per: 750, beats: 5 }, { pts: 55, per: 730, beats: 6 },
+    { pts: 50, per: 800, beats: 5 }, { pts: 45, per: 850, beats: 5 }, { pts: 57, per: 820, beats: 6 },
+    { pts: 72, per: 780, beats: 7 },
   ],
-  // the four ingots (owner, 2026-11-15): every order names its piece's colour (`col` + piece: "금빛 투구" = 금주괴); a dearer
-  // ingot heats `heat`× longer, plays its pattern at `tempo`× the beat with `win`× the judge windows, and sells for `price`×;
-  // `w`: how often customers ask for it
   metals: [
-    { name: "철주괴", col: "잿빛", heat: 1, tempo: 1, win: 1, price: 1, w: 4 },
-    { name: "은주괴", col: "은빛", heat: 1.25, tempo: 0.96, win: 0.94, price: 1.3, w: 3 },
-    { name: "금주괴", col: "금빛", heat: 1.5, tempo: 0.92, win: 0.88, price: 1.6, w: 2 },
-    { name: "미스릴주괴", col: "청록빛", heat: 1.8, tempo: 0.88, win: 0.82, price: 2, w: 2 },
+    { name: "철주괴", col: "잿빛", price: 1, w: 4 },
+    { name: "은주괴", col: "은빛", price: 1.15, w: 3 },
+    { name: "금주괴", col: "금빛", price: 1.35, w: 2 },
+    { name: "미스릴주괴", col: "청록빛", price: 1.5, w: 2 },
   ],
-  open: { 2: 4, 3: 6, 4: 6 }, orderMs: { 2: 8000, 3: 6000, 4: 4500 }, firstMs: 1000, deadMs: 80000, latePen: 15,
-  T0: 60, decay: 4, pump: 9, pumpMs: 300, lo: 60, hi: 80, scorch: 90, heatIn: 14, heatLo: 4, scorchQ: 0.5, hotMs: 12000, reheat: 50, slots: 2,
-  leadMs: 1000, feverK: 0.85, perfect: 130, good: 260, latMax: 150, missCool: 1000, slackMs: 4000, laneMs: 90,
-  walk: 48, browseMs: 1200, leaveMs: 2500,
-  grades: [[1.6, 1.5], [1.0, 1.3], [0.4, 1.0], [-1e9, 0.6]], timeK: 0.3, tongsK: 0.45, hammerK: 0.55, syncMs: 1000,
+  open: { 2: 3, 3: 4, 4: 5 }, orderMs: { 2: 10000, 3: 10000, 4: 6200 }, firstMs: 500, deadMs: 65000,
+  leadMs: 1400, windowMs: 240, laneMs: 90, missPen: 6, latePen: 12,
 };
-/**
- * 쥬쥬식당 서빙 (C.5, v1 + dirty plates, three dishes). By the party size n at the start: at most `seats[n]` tables
- * order at once, a new order every `orderMs[n]` (n of them at the open), patience `patience[n]` (×feverK in fever).
- * A dish: from its crate, `chop` acts at a board, then `cook` ms on a stove (burnt `burnMs` after it is done), plated
- * at the pass; a tray carries 2 to the table that ordered it. Pay `pts × (1 + 0.5·patience left)`, cook 50 % / server 50 %.
- * The customers eat `eatMs`, then leave a dirty plate that keeps the table closed until a tray takes it (one tray slot) to the
- * sink; `washN` acts there wash it for `washPts`. Plating needs no clean plate (washing only pays and frees tables).
- */
+/** Any worker can cook and serve. Guests order once seated, then leave a plate with its own patience timer. */
 const COOP_DINER = {
   dishes: [
-    { name: "채소 샐러드", crate: "veg", chop: 4, cook: 0, pts: 20, at: 0 },
-    { name: "생선구이", crate: "fish", chop: 0, cook: 6000, pts: 30, at: 0 },
-    { name: "고기 스튜", crate: "meat", chop: 4, cook: 8000, pts: 45, at: 90000 },
+    { name: "채소 샐러드", cook: 4000, pts: 20 },
+    { name: "생선구이", cook: 5000, pts: 25 },
+    { name: "고기 스튜", cook: 6500, pts: 30 },
   ],
-  seats: { 2: 6, 3: 8, 4: 10 }, orderMs: { 2: 8000, 3: 6000, 4: 4800 }, patience: { 2: 80000, 3: 75000, 4: 70000 }, feverK: 0.8, firstMs: 3000,
-  burnMs: 8000, burnPen: 5, angryPen: 15, eatMs: 6000, washN: 3, washPts: 5, trayCap: 2, passCap: 6, serveK: 0.5, cookK: 0.5,
+  seats: { 2: 5, 3: 7, 4: 8 }, orderMs: { 2: 8500, 3: 6500, 4: 5250 }, patience: { 2: 55000, 3: 50000, 4: 48000 }, firstMs: 500,
+  walkSpeed: 80, eatMs: 5000, plateMs: 20000, angryPen: 15, platePen: 8, washPts: 5,
 };
 /**
  * 동동아파트 청소 v3 (owner, 2026-11-15: "한명은 빗자루, 다른 한명은 쓰레기통 … 아파트 공간을 최대한 많이 치워야함 (%로 표시) …
@@ -762,18 +721,9 @@ const COOP_DINER = {
  * `dustMs[n]` (dust drifting) and a resident's `litterN`-tile mess every `litterMs[n]` (×feverK faster in fever); the sofa
  * (`sofaUnits`, two lift it `sofaHp` times) breaks into `sofaPiles` piles. The bin holder gets `holdK` of a load's credit.
  */
-const COOP_APT = {
-  dirt: [0.62, 0.86], sweepN: 5, pileMax: 40, pileR: 48, binCap: 10, binUnit: 40, holdK: 0.6,
-  dustMs: { 2: 6000, 3: 4500, 4: 3500 }, dustN: 2, litterMs: { 2: 15000, 3: 11000, 4: 8500 }, litterN: 6, feverK: 1.5,
-  sofaMs: 45000, sofaHp: 4, pairMs: 1500, sofaUnits: 12, sofaPiles: 3,
-};
-/**
- * 올빼미 도서관 책 분류 (owner, 2026-11-15: "사서가 모두 휴가를 떠나서 … 끊임없이 밀려 들어오는 반납 도서를 각 도서가 꽂혀야할 장르의
- * 책장으로 가져가서 꽂아주세요 … 책 반납을 하러 온 NPC를 맞이하고, 책 반납을 받아서 반납대 위로 올려 두는 역할을 하는 플레이어도 필수!").
- * The return desk faces a clear queue lane from the south entrance. Eight genre shelves use two rows of four,
- * with a central aisle connecting them to the desk. The shelves remain accessible from both sides.
- */
-const LIBH = { W: 32, H: 29, desk: [11, 20, 18], slots: [12, 18], queue: [15, 19], door: [15, 27], rack: [7, 18],
+const COOP_APT = { binCap: 10, variants: 4 };
+/** The library desk faces a clear aisle from the entrance. Eight genre shelves are accessible from both sides. */
+const LIBH = { W: 32, H: 29, desk: [11, 20, 18], queue: [15, 19], door: [15, 27],
   shelves: [6, 12].flatMap((y) => [2, 9, 17, 24].map((x) => [x, y])) };
 const COOP_LIB_MAP = (() => {
   const { W, H } = LIBH, o = Array.from({ length: H }, (_, y) => (y === 0 ? "+===^===".repeat(W / 8) : y === H - 1 ? "_".repeat(W) : "=" + " ".repeat(W - 2) + "_").split(""));
@@ -785,29 +735,20 @@ const COOP_LIB_MAP = (() => {
   const [qx, qy] = LIBH.queue;
   for (let y = qy; y < H - 1; y++) for (let x = qx - 1; x <= qx + 1; x++) g[y][x] = "y";
   for (const [x, y] of [[5, 9], [25, 9], [5, 15], [25, 15]]) { put("k", x - 1, y); put("o", x, y); put("k", x + 1, y); }
-  put(">", ...LIBH.rack);
   for (const [x, y] of [[1, 1], [W - 2, 1], [1, H - 2], [W - 2, H - 2], [11, 27], [20, 27], [3, 21], [28, 21]]) put("g", x, y);
   for (let x = 4; x <= 9; x++) { put("-", x, 24); put("-", W - 1 - x, 24); }
   return { ground: g.map((r) => r.join("")), objects: o.map((r) => r.join("")) };
 })();
 COOP.lib = {
-  name: "올빼미 도서관 책 분류", npc: "lib_borum", lobby: "owl_library", mins: 5, tools: ["desk", "sort"], combo: 20000, skill: "deliver",
-  // Walking bots in the compact library: quick and accurate sorting reaches S, occasional wrong shelves reach B.
-  par: 1000, parN: { 2: 2.55, 3: 4.8, 4: 6.5 },
-  hint: "접수 담당은 반납대에서 줄 선 손님의 책을 받아 반납대에 올리고, 분류 담당은 반납대의 책을 (한 번에 3권까지) 들고 같은 장르의 책장에 꽂으세요! 손님이 줄지어 와요.",
-  // stations (tiles): the 반납대's ten tiles, the 48 shelf tiles (shelf i = tiles 6i … 6i+5), the rack
-  st: { desk: Array.from({ length: 10 }, (_, i) => [LIBH.desk[0] + i, LIBH.desk[2]]), shelf: LIBH.shelves.flatMap(([x, y]) => [0, 1, 2, 3, 4, 5].map((i) => [x + i, y])), rack: LIBH.rack, door: LIBH.door },
+  name: "올빼미 도서관 책 분류", npc: "lib_borum", lobby: "owl_library", mins: 5, tools: ["desk"], combo: 20000, skill: "deliver",
+  par: 1400, parN: { 2: 1, 3: 1.35, 4: 1.5 },
+  hint: "대출은 손님이 찾는 장르 책장에서 책을 꺼내 안내데스크에 건네세요. 반납은 안내데스크에서 책을 받아 같은 장르의 책장에 꽂으세요. 누구나 두 작업을 할 수 있어요.",
+  // The counter has ten accessible tiles and each genre shelf has six.
+  st: { desk: Array.from({ length: 10 }, (_, i) => [LIBH.desk[0] + i, LIBH.desk[2]]), shelf: LIBH.shelves.flatMap(([x, y]) => [0, 1, 2, 3, 4, 5].map((i) => [x + i, y])), door: LIBH.door },
   start: [[13, 16], [17, 16], [11, 15], [19, 15]],
   tpl: { name: "올빼미 도서관 · 서고 (작업 중)", theme: "interior", style: "library", bgm: "coop_lib", safe: true, w: LIBH.W, h: LIBH.H, entry: [15, 16], ground: COOP_LIB_MAP.ground, objects: COOP_LIB_MAP.objects },
 };
-/**
- * The library's numbers. Returners arrive every `arriveMs[n]` (÷feverK in fever: the crowd), each with `books` [min, max] books, and
- * queue up to `queueCap[n]`; one not greeted to the end within `patience` leaves angry (−angryPen, combo 0, its books go home). The
- * 접수 takes one book a press onto the 반납대 (`deskCap` slots; full → refused, so slow sorting blocks intake): +intakePts, and
- * +servedPts when a returner's last book is in. The 분류 carries up to `carry` books; at a shelf a press shelves a held book of that
- * genre (+shelvePts, sortK to the sorter, the rest to the one who took it in); with none, the first held book goes in wrong
- * (−wrongPen, combo 0) and marks the shelf until someone pulls it back out. Titles are original (10 a genre).
- */
+/** Patrons alternate between a loan and a return. Each worker carries one book at a time. */
 const COOP_LIB = {
   genres: ["추리소설", "SF소설", "과학소설", "로맨스소설", "웹소설", "판타지소설", "공포소설", "개그소설"],
   cols: ["#4a6ad0", "#40c8d8", "#5ab050", "#f070a8", "#f0a040", "#a070e0", "#b83838", "#f0d840"],
@@ -821,6 +762,6 @@ const COOP_LIB = {
     ["자정의 엘리베이터", "웃지 않는 인형", "지하 3층 보일러실", "창밖의 발자국", "불 꺼진 학교의 종소리", "거울 속 두 번째 나", "안개 숲의 노래", "열리지 않는 서랍", "목 없는 허수아비", "끝나지 않는 복도"],
     ["방귀 뀌는 용", "우리 집 고양이는 사장님", "엉망진창 요리 대회", "양말 한 짝의 대모험", "대머리 마법사의 머리카락 찾기", "펭귄 택시 기사", "재채기 왕국", "냉장고 속 작은 파티", "엉덩이 춤 경연 대회", "게으른 닭의 하루"],
   ],
-  deskCap: 8, carry: 3, books: [1, 3], arriveMs: { 2: 7000, 3: 4200, 4: 3200 }, feverK: 2, queueCap: { 2: 6, 3: 7, 4: 8 }, patience: 60000,
-  intakePts: 2, servedPts: 5, shelvePts: 10, sortK: 0.7, angryPen: 15, wrongPen: 10,
+  carry: 1, firstMs: 500, rushMs: 1500, departMs: 1800, arriveMs: { 2: 7400, 3: 5300, 4: 4400 }, feverK: 1.4,
+  queueCap: { 2: 6, 3: 7, 4: 8 }, patience: 55000, loanPts: 26, returnPts: 24, angryPen: 12,
 };

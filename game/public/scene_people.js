@@ -12,6 +12,11 @@ import * as Sky from "./sky.js";
 import { lowSpec } from "./postfx.js";
 import * as Camp from "./camp.js";
 import * as Carry from "./carry.js";
+import { drawTrashBin } from "./coop-briefing-art.js";
+import { dinerFoodSprite } from "./coop-diner-art.js";
+import { forgeToolSprite, forgeIngotSprite } from "./coop-forge-art.js";
+import { libraryBookSprite } from "./coop-lib-art.js";
+
 import { sAng, DXW, DYW, g, DEG, clamp, P, sheet, G, iso } from "./scene_view.js";
 import { UG } from "./scene_ground.js";
 import { map, theme, OUTDOOR, camps } from "./scene_map.js";
@@ -20,6 +25,17 @@ import { qiBurst, bowSnap, QI_COL, parts, fxCustom, fx } from "./scene_fx.js";
 // ───────────────────────────── creatures ─────────────────────────────
 
 export const ents = new Map();
+const trashBins = [];
+function trashBin(full) {
+  const slot = Number(full);
+  if (!trashBins[slot]) {
+    const canvas = Object.assign(document.createElement("canvas"), { width: 13, height: 16 });
+    drawTrashBin(canvas.getContext("2d"), 0, 0, full);
+    trashBins[slot] = canvas;
+  }
+  return trashBins[slot];
+}
+
 /** Per-entity presentation state: which way it faces, its stride, its weapon's angle. */
 export function state(id, key, make) {
   let s = ents.get(id);
@@ -143,14 +159,41 @@ export function drawPerson(s, e, t, dt, x, y) {
     } else g.drawImage(img, -SP.FOOT[0], -SP.FOOT[1], SP.SIZE, SP.SIZE);
     g.restore();
   };
-  // a parcel or a milk crate in both hands (carry.js, the server's carry code): the weapon is put away meanwhile
-  if (e.carry && !e.dead) {
-    const box = Carry.sprite(e.carry), dip = (frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0) - hop;
-    const carried = () => { if (box) g.drawImage(box, Math.round(x - Carry.W / 2 + sg), Math.round(y - 15 + dip), Carry.W, Carry.H); };
+  // Job props replace the weapon in the same hand layer as deliveries.
+  if ((e.carry || e.aptBin || e.dinerItem || e.forgeTool || e.libraryBook) && !e.dead) {
+    const box = e.carry ? Carry.sprite(e.carry) : null;
+    const dip = (frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0) - hop;
+    const carried = () => {
+      const by = Math.round(y - 15 + dip);
+      if (e.aptBin) {
+        const bx = Math.round(x - 6 + sg * (back ? 4 : 2)), full = e.aptBin === 2;
+        g.drawImage(trashBin(full), bx, by);
+        if (full) {
+          const phase = Math.floor(t / 170) % 4, sx = bx + (phase < 2 ? 12 : 0), sy = by + (phase % 2 ? 1 : -3);
+          g.fillStyle = phase % 2 ? "#fff5d6" : "#ffd574";
+          g.fillRect(sx - 2, sy, 5, 1);
+          g.fillRect(sx, sy - 2, 1, 5);
+        }
+      } else if (e.dinerItem) {
+        const food = dinerFoodSprite(e.dinerItem - 1);
+        if (food) g.drawImage(food, Math.round(x - 7 + sg * (back ? 4 : 2)), by + 3);
+      } else if (e.forgeTool) {
+        const tool = forgeToolSprite(e.forgeTool - 1);
+        const handX = Math.round(x - 8 + sg * (back ? 5 : 3));
+        if (tool) g.drawImage(tool, handX, by + 1);
+        if (e.forgeMetal) {
+          const bar = forgeIngotSprite(e.forgeMetal - 1);
+          if (bar) g.drawImage(bar, handX - 3, by - 5);
+        }
+      } else if (e.libraryBook) {
+        const book = libraryBookSprite(e.libraryBook - 1);
+        if (book) g.drawImage(book, Math.round(x - 8 + sg * (back ? 5 : 3)), by + 2);
+      } else if (box) g.drawImage(box, Math.round(x - Carry.W / 2 + sg), by, Carry.W, Carry.H);
+    };
     if (back) { carried(); body(); } else { body(); carried(); }
     return;
   }
-  if (!s.weapon || e.dead || (fl & 2)) return body();    // (the greatsword is off stuck in the ground)
+  if (!s.weapon || e.dinerWorker || e.libraryWorker || e.dead || (fl & 2)) return body();
   const bob = (frame === F.stretch ? -1 : frame === F.breathe ? 1 : 0) - hop;
   // a canvas shadow per weapon per frame is the slowest thing a crowd draws: 그래픽 끔 goes without
   const glow = lowSpec() ? null : RARITY[s.gear.wq | 0] || (s.gear.we >= 7 ? "#ffffff" : null);
