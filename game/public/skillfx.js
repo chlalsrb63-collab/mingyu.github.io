@@ -1609,7 +1609,7 @@ function bossTele(e, entityPos, G) {
   const R = r * P, R0 = s === 0 ? a * P : 0, A = s === 1 ? a / 1000 : 0, H = b / 1000, mine = s === 2 && a === G.you;
   const where = () => { const o = s === 2 && entityPos(a); return o ? [o.x * P, o.y * P] : [x0 * P, y0 * P]; };
   Sound.play("warn");
-  S3.fx.add({ k: "custom", flat: true, dur: ms, draw: (g, k) => {
+  S3.fx.add({ k: "custom", flat: true, keep: true, dur: ms, draw: (g, k) => {
     const [x, y] = where();
     g.fillStyle = "#ff2a1a"; g.globalAlpha = Math.floor(now() / 140) % 2 ? 0.38 : 0.26;
     telePath(g, s, x, y, R, R0, A, H); g.fill("evenodd");

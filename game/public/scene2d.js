@@ -48,7 +48,7 @@ import { g, vw, vh, G, iso, tI, K, clamp, cam, FLAT, T, playerLook, sAng, P, she
 import { drawSkirt, drawGround, drawLayer, drawPulseParts, lazyLeft, lazyTall } from "./scene_ground.js";
 import { wpLit, lights, map, ground, theme, artGround, drawWater, drawSunsetSea, pulseCv, pulseParts, falls, smokers, statics, npcs, OUTDOOR, emit, strings, critters, roomL, drawAmbient, camps } from "./scene_map.js";
 import { npcOut, npcService, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, makePerson, seatOf, drawPerson, drawJam } from "./scene_people.js";
-import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, drawAimArrow, props, TRAIT_TINT, hooks, glows } from "./scene_fx.js";
+import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, fxFade, drawAimArrow, props, TRAIT_TINT, hooks, glows } from "./scene_fx.js";
 import { drawDepthGround, depthSprite } from "./scene_depth.js";
 import { frame as postFx } from "./postfx.js";
 
@@ -460,6 +460,7 @@ export function render(focusX, focusY, dt, t, snap) {
   for (const h of hooks) { g.save(); h(g, t, P); g.restore(); }
 
   drawFx(now, false);
+  fxFade(true);
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i];
     p.life -= dt;
@@ -470,6 +471,7 @@ export function render(focusX, focusY, dt, t, snap) {
     if (p.z) { g.globalAlpha = clamp(p.life, 0, 1); g.fillStyle = p.color; const zx = Math.round(p.x), zy = Math.round(p.y); g.fillRect(zx, zy, 3, 1); g.fillRect(zx + 1, zy + 1, 1, 1); g.fillRect(zx, zy + 2, 3, 1); continue; }
     g.globalAlpha = clamp(p.life * 3, 0, 1); g.fillStyle = p.color; g.fillRect(Math.round(p.x) - (sz >> 1), Math.round(p.y) - (sz >> 1), sz, sz);
   }
+  fxFade(false);
   g.globalAlpha = 1;
   DC.drawEmitters(g, emit, t, ox, oy, vw, vh, parts);
   DC.drawStrings(g, strings, t, ox, oy, vw, vh, night);
@@ -514,6 +516,6 @@ const ghost = { s: null, gz: 1 };
 export { iso, sAng, PARTS, playerLook, init, resize, setZoomMul, sync, project, pick, pickPlayer, FIGURE_DENSITY } from "./scene_view.js";
 export { loadMap, labels } from "./scene_map.js";
 export { tintWhite, petFetch, npcOut, npcService } from "./scene_people.js";
-export { props, hooks, personFrame, FOOT, fxCustom, glows, qiBurst, arrowSprite, fx, big, shake } from "./scene_fx.js";
+export { props, hooks, personFrame, FOOT, fxCustom, glows, qiBurst, arrowSprite, fx, big, shake, setFxAlpha } from "./scene_fx.js";
 export { pulseBoth, groundInfo } from "./scene_ground.js";
 export { figure, drawFigure } from "./scene_stage.js";
