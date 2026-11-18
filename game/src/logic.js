@@ -4440,7 +4440,7 @@ const DIM_FLOORS = [
 const HANOK_FLOORS = [
   { name: "달그림자 별채", rooms: [18, 21], loops: [3, 6], packs: 1.4, shapes: ["plain", "plain", "ell"], hallFloor: "l" },
   { name: "겹살창 안채", rooms: [17, 20], loops: [3, 6], packs: 1.4, shapes: ["plain", "ell", "ell", "cross"], hallFloor: "l" },
-  { name: "붉은기둥 제례전", rooms: [17, 20], loops: [4, 7], packs: 1.1, shapes: ["plain", "plain", "cross"], hallFloor: "x" },
+  { name: "붉은기둥 제례전", rooms: [17, 20], loops: [4, 7], packs: 1.1, shapes: ["plain", "plain", "cross"], hallFloor: "x", masterSize: [22, 18] },
 ];
 const HANOK_DRESS = {
   guest: [["edge", "t", 0.2], ["edge", "g", 0.12]],
@@ -4516,8 +4516,15 @@ function dimBuild(cfg, seed) {
   const [GX, GY, CW, CH] = DIM.grid, NC = GX * GY;
   const cellBox = (c) => { const i = c % GX, j = (c / GX) | 0; return [2 + i * CW, 2 + j * CH, 2 + i * CW + CW - 1, 2 + j * CH + CH - 1]; };
   const adj = (c) => { const i = c % GX, j = (c / GX) | 0, out = []; if (i > 0) out.push(c - 1); if (i < GX - 1) out.push(c + 1); if (j > 0) out.push(c - GX); if (j < GY - 1) out.push(c + GX); return out; };
-  const nMain = ri(box, cc.rooms[0], cc.rooms[1]);
-  const used = [ri(box, 0, NC - 1)];
+  const roomBudget = ri(box, cc.rooms[0], cc.rooms[1]);
+  const masterCells = [];
+  if (cc.masterSize) {
+    // Reserve a two-by-two corner before the other rooms grow around the hall.
+    const x = ri(box, 0, 1) * (GX - 2), y = ri(box, 0, 1) * (GY - 2), c = y * GX + x;
+    masterCells.push(c, c + 1, c + GX, c + GX + 1);
+  }
+  const used = masterCells.length ? masterCells.slice() : [ri(box, 0, NC - 1)];
+  const nMain = roomBudget + used.length - 1;   // the reserved cells count as one room
   while (used.length < nMain) {
     const edge = [];
     for (const c of used) for (const n of adj(c)) if (!used.includes(n) && !edge.includes(n)) edge.push(n);
@@ -4574,6 +4581,12 @@ function dimBuild(cfg, seed) {
     }
     return (i, j) => mask[j * W + i] === 1;
   };
+  const masterK = masterCells.length ? rooms.length : -1;
+  if (masterK >= 0) {
+    const [w, h] = cc.masterSize, [x0, y0] = cellBox(masterCells[0]);
+    const x = x0 + Math.floor((2 * CW - w) / 2), y = y0 + Math.floor((2 * CH - h) / 2);
+    addRoom(masterCells, "boss", "plain", x, y, x + w - 1, y + h - 1);
+  }
   const SHAPES = ["plain", "cross", "round", "octagon", "ell", "ring", "pillared", "ragged"], BIG = ["pillared", "plain", "ring", "ragged", "cross"];
   for (const c of used) {
     if (cellRoom[c] >= 0) continue;
@@ -4673,11 +4686,13 @@ function dimBuild(cfg, seed) {
   const open = (i) => m.g[(i / W) | 0][i % W] !== "W";
   const tileOf = (r) => r.cy * W + r.cx;
   const far = (from) => { const d = bfs(W, H, tileOf(rooms[from]), open); let best = from; rooms.forEach((r, k) => { if (d[tileOf(r)] > d[tileOf(rooms[best])]) best = k; }); return best; };
-  const startK = far(far(0));
+  const startK = far(masterK >= 0 ? masterK : far(0));
   let dS = bfs(W, H, tileOf(rooms[startK]), open);
   const span = Math.max(...rooms.map((r) => dS[tileOf(r)]));
-  let bossK = -1;
-  rooms.forEach((r, k) => { if (k !== startK && dS[tileOf(r)] >= span * 0.85 && (bossK < 0 || r.area > rooms[bossK].area)) bossK = k; });
+  let bossK = masterK;
+  if (bossK < 0) rooms.forEach((r, k) => {
+    if (k !== startK && dS[tileOf(r)] >= span * 0.85 && (bossK < 0 || r.area > rooms[bossK].area)) bossK = k;
+  });
   // the two ends are open halls: room to arrive in, room to fight in
   const plainOut = (k) => {
     const r = rooms[k];
@@ -4759,7 +4774,7 @@ function dimBuild(cfg, seed) {
     },
     rows(k, t, [ch]) { const r = rooms[k]; for (const [x, y] of t) if ((y - r.y0) % 2 === 1 && (x - r.x0) % 4 !== 0 && Math.abs(x - r.cx) > 1 && y > r.y0 && y < r.y1 && canPut(x, y, k)) m.o[y][x] = ch; },
     altar(k, t, [ch, fl]) {
-      const r = rooms[k], y = r.cy - 3;
+      const r = rooms[k], y = k === masterK ? r.y0 + 1 : r.cy - 3;
       if (canPut(r.cx, y, k)) { m.o[y][r.cx] = ch; for (const x of [r.cx - 2, r.cx + 2]) if (canPut(x, y, k)) m.o[y][x] = fl; }
     },
     ring(k, t, [ch, R]) { const r = rooms[k]; for (let a = 0; a < 12; a++) { if (a % 3 === 1) continue; const x = r.cx + Math.round(Math.cos(a * Math.PI / 6) * R), y = r.cy + Math.round(Math.sin(a * Math.PI / 6) * R * 0.8); if (canPut(x, y, k)) m.o[y][x] = ch; } },

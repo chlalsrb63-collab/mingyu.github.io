@@ -111,6 +111,15 @@ const THEMES = Object.keys(X.DIM_THEMES);
       if (floor === D.floors) {
         assert.equal(m.dim.bossK, "jaemaei", "the ritual hall has its own master");
         assert.ok(X.MOBS[m.dim.bossScaleK], "the boss retains a level-band scale");
+        const hall = m.dim.rooms[m.dim.bossRoom];
+        assert.deepEqual([hall.x1 - hall.x0 + 1, hall.y1 - hall.y0 + 1], [22, 18], "the master gets a dedicated hall");
+        for (let dy = -6; dy <= 6; dy++) for (let dx = -6; dx <= 6; dx++) {
+          assert.equal(m.reach[(hall.cy + dy) * m.w + hall.cx + dx], 1, "the hall has an unobstructed dodging area");
+        }
+        for (const room of m.dim.rooms) if (room !== hall) {
+          assert.ok(room.x1 < hall.x0 || room.x0 > hall.x1 || room.y1 < hall.y0 || room.y0 > hall.y1,
+            "the hall does not overlap neighbouring rooms");
+        }
       } else assert.notEqual(m.dim.bossK, "jaemaei");
       assert.ok(!m.dim.spawns.some((sp) => sp.k === "jaemaei"), "the boss is not in the roaming packs");
       assert.ok(m.dim.loops > 0 && m.dim.path >= D.path, `floor ${floor}, seed ${seed}: loop and long route`);
