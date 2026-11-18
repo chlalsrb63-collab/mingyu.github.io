@@ -149,17 +149,17 @@ for (const rots of SH) for (const cells of rots) assert.ok(Math.min(...cells.map
   assert.ok(ab.g.cur && ab.g.cur.y === 0 && ab.g.fallAt === D, "the first box arrives when the shift starts");
   R.adv(null, null, ab, D * 3 + 5); assert.equal(ab.g.cur.y, 3, "three drops have passed");
   const rev = ab.rev; R.adv(null, null, ab, D * 3 + 6); assert.equal(ab.rev, rev, "nothing happened, the view is unchanged");
-  const ab2 = mkAb(); for (let t = 0; t <= D * 3 + 5; t += 100) R.adv(null, null, ab2, t);
+  const ab2 = mkAb(); for (let t = 0; t <= D * 3 + 5; t += 5) R.adv(null, null, ab2, t);
   assert.equal(ab2.g.cur.y, 3, "the same by small steps");
   const ab3 = mkAb(); R.adv(null, null, ab3, 1e9);   // a huge stall ends at once and leaves a sane state
   assert.ok(ab3.g.b.every((v) => Number.isInteger(v) && v >= 0 && v <= 7));
   // speed: rows, rush, fever
   const g = ab.g;
-  assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 800);
-  g.rows = 10; assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 600, "faster with every row shipped");
-  assert.equal(X.parcelDrop(g, { endAt: 100000, feverUntil: 0 }, 90000), Math.round(600 * 0.7), "the last 15 s rush");
-  assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 500 }, 0), 900, "a fever slows the fall");
-  g.rows = 1000; assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 200, "never faster than 200 ms");
+  assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 490);
+  g.rows = 10; assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 310, "faster with every row shipped");
+  assert.equal(X.parcelDrop(g, { endAt: 100000, feverUntil: 0 }, 90000), Math.round(310 * 0.65), "the last 15 s rush");
+  assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 500 }, 0), 465, "a fever slows the fall");
+  g.rows = 1000; assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 150, "never faster than 150 ms");
 }
 
 // view: shape, and unchanged when nothing happened
@@ -169,7 +169,7 @@ for (const rots of SH) for (const cells of rots) assert.ok(Math.min(...cells.map
   const v = R.view(ab, 5);
   assert.equal(v[0].length, W * H); assert.ok(/^[.1-7f]+$/.test(v[0]));
   assert.ok(v[2] >= 1 && v[2] <= 7); assert.equal(v[1].length, 2 * SH[v[2] - 1][0].length, "the box's cells as x,y pairs");
-  assert.ok(v[7] > 0 && v[8] === 800 && v[9] === 0);
+  assert.ok(v[7] > 0 && v[8] === 490 && v[9] === 0);
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v, "plain JSON");
 }
 
@@ -190,7 +190,7 @@ const sim = (name, seed = 1) => {
 const mulberry = (a) => () => { a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 
 // the bots' brain: score a landing like a Tetris player would (lines, holes, height, bumps, never cover a fragile box)
-function evalPlace(b, fr, k, r, x) {
+function evalPlace(b, fr, k, r, x, blind = false) {
   const sh = SH[k][r];
   let y = 0;
   const fit = (yy) => sh.every(([dx, dy]) => { const cx = x + dx, cy = yy + dy; return cx >= 0 && cx < W && cy >= 0 && cy < H && !b[cy * W + cx]; });
@@ -213,10 +213,10 @@ function evalPlace(b, fr, k, r, x) {
     for (let cy = top; cy < H; cy++) if (!grid[cy][cx]) holes++;
   }
   const agg = hs.reduce((a, v) => a + v, 0), bump = hs.slice(1).reduce((a, v, i) => a + Math.abs(v - hs[i]), 0);
-  return { y, score: 0.76 * lines - 0.51 * agg / 4 - 0.36 * holes * 2 - 0.18 * bump - 3 * cover };
+  return { y, score: 0.76 * lines - 0.51 * agg / 4 - 0.36 * holes * 2 - 0.18 * bump - (blind ? 0 : 3) * cover };
 }
-/** One bot: `gap` ms between inputs, `bad` = chance a box gets a random landing instead of the best one; `oracle` reads the server state instead of the wire. */
-function mkBot(rng, { gap = [300, 700], bad = 0.1, oracle = false }) {
+/** One bot (`blind`: does not mind fragile boxes): `gap` ms between inputs, `bad` = chance a box gets a random landing instead of the best one; `oracle` reads the server state instead of the wire. */
+function mkBot(rng, { gap = [300, 700], bad = 0.1, oracle = false, blind = false }) {
   let wire = null, plan = null;   // plan = the landing chosen for the box in hand
   return {
     delay: () => gap[0] + rng() * (gap[1] - gap[0]),
@@ -233,7 +233,7 @@ function mkBot(rng, { gap = [300, 700], bad = 0.1, oracle = false }) {
       if (r0 < 0) return false;
       if (!plan || plan.k !== k || y0 < plan.y) {   // a new box (another kind, or back at the top)
         const opts = [];
-        for (let r = 0; r < SH[k].length; r++) for (let x = 0; x < W; x++) { const e = evalPlace(bd, fr, k, r, x); if (e) opts.push({ r, x, ...e }); }
+        for (let r = 0; r < SH[k].length; r++) for (let x = 0; x < W; x++) { const e = evalPlace(bd, fr, k, r, x, blind); if (e) opts.push({ r, x, ...e }); }
         if (!opts.length) return false;
         opts.sort((a, b) => b.score - a.score);
         plan = { ...(rng() < bad ? opts[Math.floor(rng() * opts.length)] : opts[0]), k };
@@ -265,7 +265,7 @@ function play(botOpts, seed, { name = `택배${seed}`, hook } = {}) {
       if (hook) hook(s, v);
     }
   }
-  return { score: ab.score, grade: X.albaGrade("parcel", ab.score), rows: ab.g.rows, maxBytes, maxCombo: ab.maxCombo, state: ab.state, swaps, breaks, n: ab.g.n };
+  return { score: ab.score, grade: X.albaGrade("parcel", ab.score), rows: ab.g.rows, maxBytes, maxCombo: ab.maxCombo, state: ab.state, swaps, breaks, n: ab.g.n, out: ab.out, endMs: ab.endAt - ab.runAt };
 }
 
 // (c) the bots
@@ -276,11 +276,12 @@ const BOTS = {
   human: { gap: [300, 700], bad: 0.1 },
   casual: { gap: [450, 950], bad: 0.15 },
   slow: { gap: [700, 1300], bad: 0.25 },
+  wild: { gap: [3000, 5000], bad: 0.5, blind: true },   // the sloppy bot
 };
 const results = {};
 let viewMax = 0;
 for (const [nm, o] of Object.entries(BOTS)) {
-  results[nm] = [1, 2, 3, 4, 5].map((seed) => play(o, seed));
+  results[nm] = Array.from({ length: nm === "human" ? 20 : (nm === "slow" || nm === "wild") ? 12 : 5 }, (_, i) => i + 1).map((seed) => play(o, seed));
   for (const r of results[nm]) { assert.equal(r.state, "end"); viewMax = Math.max(viewMax, r.maxBytes); }
 }
 const idle = play({ idle: true }, 9);
@@ -289,6 +290,13 @@ console.log(`parcel: par ${PAR}  (C ${Math.round(PAR * T.cuts[0])} B ${Math.roun
 for (const [nm, rs] of Object.entries(results)) console.log(`  ${nm.padEnd(8)} scores ${rs.map((r) => r.score).join(" ")}  grades ${rs.map((r) => "-CBAS"[r.grade]).join("")}  rows ${rs.map((r) => r.rows).join(",")}  boxes ${rs.map((r) => r.n).join(",")}  swaps ${rs.map((r) => r.swaps).join(",")} broken ${rs.map((r) => r.breaks).join(",")} combo ${rs.map((r) => r.maxCombo).join(",")}  avg ${avg(rs.map((r) => r.score))} = ${(avg(rs.map((r) => r.score)) / PAR).toFixed(2)} par`);
 console.log(`  idle     score ${idle.score} grade ${"-CBAS"[idle.grade]}   view max ${viewMax} bytes`);
 assert.ok(results.perfect.every((r) => r.grade === 4), "the perfect bot reaches S every time");
+{
+  const rate = (rs) => rs.filter((r) => r.out).length / rs.length;
+  console.log(`parcel strike-outs: perfect ${rate(results.perfect)} human ${rate(results.human).toFixed(2)} sloppy ${rate(results.wild).toFixed(2)}`);
+  assert.equal(rate(results.perfect), 0, "the perfect bot never strikes out");
+  assert.ok(rate(results.human) <= 0.25, "a human-like bot strikes out in at most 25 % of seeds");
+  assert.ok(results.wild.filter((r) => r.out && r.endMs < 75000).length >= results.wild.length / 2, "a sloppy bot strikes out in at least half of its seeds, before 75 s");
+}
 {
   const m = avg(results.human.map((r) => r.score)) / PAR;
   assert.ok(m >= 0.55 && m <= 0.9, `the human-like bot lands around B (${m.toFixed(2)} of par)`);

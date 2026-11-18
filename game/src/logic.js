@@ -19909,7 +19909,7 @@ ALBA_RULES.laundry = {
 //          next: {k, f}, fallAt, spawnAt, rows (shipped), n (boxes spawned), fid, seq, ev: [seq, flags 1 shipped · 2 truck swapped · 4 fragile broken, shipped-row mask] }
 // view = [board (80 chars: . empty · 1-7 box kind · f fragile), cur cells [x,y,…], cur kind (0 none), cur fragile, next cells [x,y,…], next kind, next fragile,
 //         ms to the next drop (or arrival), drop interval, rows shipped, ev]   — the client duplicates no shape table.
-const PARCEL_W = 8, PARCEL_H = 10, PARCEL_GAP = 350;   // the conveyor brings the next box this long after a lock
+const PARCEL_W = 8, PARCEL_H = 10, PARCEL_GAP = 300;   // the conveyor brings the next box this long after a lock
 const PARCEL_PAY = [0, 100, 250, 500, 900];
 /** The distinct clockwise rotations of a box (cells normalised to the top-left corner, row-major). */
 function parcelRots(cells) {
@@ -19939,20 +19939,20 @@ function parcelFits(g, k, r, x, y) {
 }
 /** The next box off the conveyor (fragile ones are the flat boxes, after the first few). */
 function parcelDraw(g, box) {
-  const big = Math.min(g.n, 32) / 32, w = PARCEL_WT.map((v, i) => v + PARCEL_WT2[i] * big);
+  const big = Math.min(g.n, 12) / 12, w = PARCEL_WT.map((v, i) => v + PARCEL_WT2[i] * big);
   let r = rnd(box) * w.reduce((a, b) => a + b, 0), k = 0;
   while (k < 6 && r >= w[k]) r -= w[k++];
-  return { k, f: k <= 2 && g.n >= 4 && rnd(box) < 0.12 ? 1 : 0 };
+  return { k, f: k <= 2 && g.n >= 2 && rnd(box) < 0.18 ? 1 : 0 };
 }
 /** Ms between drops: faster with every row shipped, ×0.7 in the rush, ×1.5 slower in a fever ("지게차"). */
-const parcelDrop = (g, ab, T) => Math.round(Math.max(200, 800 - 20 * g.rows) * (T >= ab.endAt - ALBA_T.rushMs ? 0.7 : 1) * (T < ab.feverUntil ? 1.5 : 1));
+const parcelDrop = (g, ab, T) => Math.round(Math.max(150, 490 - 18 * g.rows) * (T >= ab.endAt - ALBA_T.rushMs ? 0.65 : 1) * (T < ab.feverUntil ? 1.5 : 1));
 
 /** The box comes off the conveyor at the top; a blocked spawn means the stack reached the ceiling: the truck is swapped. */
 function parcelSpawn(ab, T) {
   const g = ab.g, nx = g.next, w = 1 + Math.max(...PARCEL_SHAPES[nx.k][0].map((q) => q[0])), x = (PARCEL_W - w) >> 1;
   g.next = parcelDraw(g, ab.box);
   g.n++;
-  if (!parcelFits(g, nx.k, 0, x, 0)) { g.b.fill(0); g.fr.fill(0); albaBad(ab, 100); g.ev = [++g.seq, 2, 0]; }
+  if (!parcelFits(g, nx.k, 0, x, 0)) { g.b.fill(0); g.fr.fill(0); albaStrike(ab, T, 100); g.ev = [++g.seq, 2, 0]; }   // a full truck costs a life
   g.cur = { k: nx.k, r: 0, x, y: 0, f: nx.f };
   g.fallAt = T + parcelDrop(g, ab, T);
 }
@@ -19966,7 +19966,7 @@ function parcelLock(ab, T) {
   let flags = 0;
   const hit = new Set();
   for (const i of mine) { const j = i + W; if (j < N && g.fr[j] && !mine.includes(j) && !full.includes((j / W) | 0)) hit.add(g.fr[j]); }
-  for (const id of hit) { for (let i = 0; i < N; i++) if (g.fr[i] === id) g.fr[i] = 0; albaBad(ab, 30); flags |= 4; }
+  for (const id of hit) { for (let i = 0; i < N; i++) if (g.fr[i] === id) g.fr[i] = 0; albaStrike(ab, T, 30); flags |= 4; }   // a crushed box costs a life
   if (full.length) {
     const keep = [...Array(PARCEL_H).keys()].filter((y) => !full.includes(y)), nb = new Array(N).fill(0), nf = new Array(N).fill(0);
     keep.forEach((y, i) => { for (let x = 0; x < W; x++) { const d = (PARCEL_H - keep.length + i) * W + x; nb[d] = g.b[y * W + x]; nf[d] = g.fr[y * W + x]; } });
@@ -19977,7 +19977,7 @@ function parcelLock(ab, T) {
   g.cur = null; g.spawnAt = T + PARCEL_GAP;
 }
 
-ALBA.parcel = { name: "택배 상하차", npc: "shop", place: "광장 택배 집하장", skill: "deliver", par: 4400, mul: 1.15, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "box", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 한 줄을 채우면 출하! 깨짐 주의 상자 위엔 쌓지 마세요." };
+ALBA.parcel = { name: "택배 상하차", npc: "shop", place: "광장 택배 집하장", skill: "deliver", par: 2100, lives: 4, mul: 1.15, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "box", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 한 줄을 채우면 출하! 깨짐 주의 상자를 눌러도, 트럭이 가득 차도 ♥ 하나." };
 ALBA_RULES.parcel = {
   init(S, p, ab) {
     const g = ab.g = { b: new Array(PARCEL_W * PARCEL_H).fill(0), fr: new Array(PARCEL_W * PARCEL_H).fill(0), cur: null, next: null, fallAt: 0, spawnAt: ab.runAt, rows: 0, n: 0, fid: 0, seq: 0, ev: [0, 0, 0] };
