@@ -8,7 +8,7 @@
  * Look: dusk, not black: blue-violet cobbles, lavender houses with lit windows, bulbs as bright sparks, lit tiles turn golden and a soft lamp-pool follows the courier.
  */
 const N = 15, AU = 10, CW = N * AU, CH = N * AU + 14, UNIT = 120, STEP = 50;
-const OL = "#1e1838", FONT = "Galmuri9, Galmuri11, sans-serif", FONT11 = "Galmuri11, Galmuri9, sans-serif";
+const OL = "#1e1838", FONT = "Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif", FONT11 = "Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif";
 const DIR = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 const EYE = ["#ff4a4a", "#ff7ac0", "#ff9a2a", "#3ad4ff"];
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);

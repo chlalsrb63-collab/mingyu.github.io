@@ -198,6 +198,7 @@ function drawTool(g, tool, x, y, ang) {
 }
 function stage(t, phase) {
   const d = st.dom, g = d.g, row = G.defs.alba.rows[st.k], W = 480, H = 120;
+  Stage.hiRes(d.stage, g, W, H);
   const dt = Math.min(0.05, Math.max(0, (t - (st.sAt || t)) / 1000)); st.sAt = t;
   st.act = Math.max(0, (st.act || 0) - dt * 0.45);
   const fevered = !!st.endAt && t < st.feverEnd, run = phase === "run";
@@ -224,7 +225,7 @@ function stage(t, phase) {
     const q = st.parts[i]; q.life -= dt2; if (q.life <= 0) { st.parts.splice(i, 1); continue; }
     q.x += q.vx * dt2; q.y += q.vy * dt2; q.vy += (q.txt ? 0 : 160) * dt2;
     g.globalAlpha = clamp(q.life * 2, 0, 1); g.fillStyle = q.col;
-    if (q.txt) { g.font = "bold 14px sans-serif"; g.fillStyle = "#2a2236"; g.fillText(q.txt, q.x + 1, q.y + 1); g.fillStyle = q.col; g.fillText(q.txt, q.x, q.y); } else g.fillRect(Math.round(q.x), Math.round(q.y), 3, 3);
+    if (q.txt) { g.font = "bold 14px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.fillStyle = "#2a2236"; g.fillText(q.txt, q.x + 1, q.y + 1); g.fillStyle = q.col; g.fillText(q.txt, q.x, q.y); } else g.fillRect(Math.round(q.x), Math.round(q.y), 3, 3);
   }
   g.globalAlpha = 1;
   if (st.parts.length > 80) st.parts.splice(0, st.parts.length - 80);

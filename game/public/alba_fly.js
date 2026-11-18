@@ -3,6 +3,7 @@
 // the flies buzz out of their can on their own clock here; a tap in a can's cell swats that can's fly → api.act({hit: id}). Swatting is optimistic
 // (splat at once); the score/combo always come from the server (the floating numbers are the real score change).
 // Look: a sunny brick alley, green bins on light slabs. Sounds: swish (a miss), crunch (a fly), coin (golden), buzz (bee / points lost), thud (poison / bomb).
+import { hiRes } from "./alba_stage.js";
 const W = 240, H = 156, CW = 80, CH = 52;
 const OL = "#2a1c2c", FLY_COL = ["#6a6680", "#ffd84a", "#f2b92a", "#5ea83e", "#8a9a7a"];   // plain · golden · bee · poison · wounded poison
 const LID = "#c4d0e0", CREAM = "#fff4d6", INK = "#4a3424";
@@ -71,7 +72,7 @@ function drawCan(c, shut, t) {
     px("#3a2236", cx - 10, top - 2, 20, 2); px(OL, cx - 12, top - 4, 24, 1);
     for (let i = 0; i < 12; i++) { const lx = cx + 7 + i, ly = top - 5 - Math.round(i * 0.7) + (i > 7 ? sway : 0); px(OL, lx, ly - 3, 1, 7); px(LID, lx, ly - 2, 1, 5); }   // the lid, hinged on the right and swung up
   }
-  g.font = "7px Galmuri11, monospace"; g.textAlign = "left";   // the key that swats this can
+  g.font = "7px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.textAlign = "left";   // the key that swats this can
   px(OL, x + 5, y + 43, 9, 9); px("#6a5470", x + 6, y + 44, 7, 7); g.fillStyle = "#ffffff"; g.fillText(KEYCAP[c], x + 7, y + 50);
 }
 /** A fly sprite centred on (x, y); `fr` is the wing beat, `k` the kind (0 plain · 1 golden · 2 bee · 3 poison · 4 wounded poison). */
@@ -110,8 +111,8 @@ function drawSwatter(x, y, slam) {   // the pointer is the cross; the swatter re
 function plaque(head, sub) {   // a cream label in the middle of the board
   const w = 200, h = sub ? 46 : 28, x = (W - w) / 2, y = (H - h) / 2;
   px(OL, x - 2, y - 2, w + 4, h + 4); px(CREAM, x, y, w, h); px("#ffffff", x, y, w, 1); px("#e0c898", x, y + h - 2, w, 2);
-  g.textAlign = "center"; g.font = "11px Galmuri11, monospace"; g.fillStyle = INK; g.fillText(head, W / 2, y + 17);
-  if (sub) { g.font = "8px Galmuri11, monospace"; g.fillStyle = "#7a6044"; g.fillText(sub, W / 2, y + 35); }
+  g.textAlign = "center"; g.font = "11px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.fillStyle = INK; g.fillText(head, W / 2, y + 17);
+  if (sub) { g.font = "8px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.fillStyle = "#7a6044"; g.fillText(sub, W / 2, y + 35); }
 }
 
 // ── the flies' paths (the server only says when and where; the buzz is decoration)
@@ -184,7 +185,7 @@ export default {
       lastScore = info.score;
     }
     cv.style.cursor = info.phase === "run" ? "none" : "default";
-    g.setTransform(1, 0, 0, 1, 0, 0); px(OL, 0, 0, W, H);
+    hiRes(cv, g, W, H); px(OL, 0, 0, W, H);
     if (t - shake < 200) g.translate(Math.round(Math.sin(t / 22) * 2), 0);
     g.drawImage(bg, 0, 0);
     for (let c = 0; c < 9; c++) drawCan(c, closed[c] > t, t);
@@ -210,7 +211,7 @@ export default {
       g.globalAlpha = Math.min(1, p.life * 4); px(p.col, Math.round(p.x), Math.round(p.y), 2, 2);
     }
     g.globalAlpha = 1;
-    g.font = "9px Galmuri11, monospace"; g.textAlign = "center";
+    g.font = "9px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.textAlign = "center";
     for (let i = floats.length - 1; i >= 0; i--) {
       const f = floats[i], a = t - f.at;
       if (a > 800) { floats.splice(i, 1); continue; }
@@ -221,7 +222,7 @@ export default {
       const on = Math.floor(t / 150) % 2;
       if (t - bombAt > 0 && bombSnd !== bombAt) { bombSnd = bombAt; snd("alba_thud", 500); }
       px(OL, W / 2 - 42, 3, 84, 14); px(on ? "#e8453a" : "#ff8a3a", W / 2 - 41, 4, 82, 12); px("#ffffff55", W / 2 - 41, 4, 82, 2);
-      g.font = "10px Galmuri11, monospace"; g.fillStyle = OL; g.fillText("쓰레기 폭탄!", W / 2 + 1, 14); g.fillStyle = "#ffffff"; g.fillText("쓰레기 폭탄!", W / 2, 13);
+      g.font = "10px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.fillStyle = OL; g.fillText("쓰레기 폭탄!", W / 2 + 1, 14); g.fillStyle = "#ffffff"; g.fillText("쓰레기 폭탄!", W / 2, 13);
     }
     if (info.fever > 0) { const c = Math.floor(t / 90) % 2 ? "#ff9a3a" : "#ffd84a"; px(c, 0, 0, W, 2); px(c, 0, H - 2, W, 2); px(c, 0, 0, 2, H); px(c, W - 2, 0, 2, H); }
     if (mouse && info.phase === "run") drawSwatter(mouse[0], mouse[1], t - swat < 110);

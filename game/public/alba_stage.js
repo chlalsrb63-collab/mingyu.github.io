@@ -377,3 +377,10 @@ export function pose(k, a) {
   }
   return p;
 }
+
+/** Back the canvas with k device pixels per art pixel and draw in logical units, so shapes stay blocky but text rasterises sharp. Call at the start of every frame. */
+export function hiRes(cv, g, W, H) {
+  const k = Math.min(6, Math.max(1, Math.ceil(((cv.clientWidth || W) / W) * (devicePixelRatio || 1) - 0.001)));
+  if (cv.width !== W * k) { cv.width = W * k; cv.height = H * k; }
+  g.setTransform(k, 0, 0, k, 0, 0); g.imageSmoothingEnabled = false;
+}

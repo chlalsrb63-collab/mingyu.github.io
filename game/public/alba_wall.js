@@ -8,7 +8,7 @@
  * Look: a sunny building site (sky, clouds, a skyline, a dirt yard); bricks shade from terracotta to riveted steel by hits left, actors keep the dark plum outline.
  */
 const W = 240, H = 240, BW = 20, BH = 8, COLS = 12, Y0 = 28, PY = 222, FALL = 3, STEP = 50, PSPD = 10;
-const OL = "#3a2a38", FONT9 = "Galmuri9, Galmuri11, sans-serif", FONT11 = "Galmuri11, Galmuri9, sans-serif";
+const OL = "#3a2a38", FONT9 = "Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif", FONT11 = "Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif";
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const ITEMS = ["넓은 발판", "공 3개", "관통 철구", "느린 공"], ITEM_COL = ["#6ab0ff", "#ff8ac0", "#ff9a3a", "#8ae05a"];
 const GLYPH = [[".....", ".X.X.", "XXXXX", ".X.X.", "....."], ["X.X.X", ".....", "X.X.X", ".....", "X.X.X"], ["..X..", ".XXX.", "..X..", "..X..", "..X.."], ["XXXXX", ".XXX.", "..X..", ".XXX.", "XXXXX"]];
@@ -232,7 +232,7 @@ function frame(t, info) {
   [["넓음", 0], ["관통", 1], ["느림", 2]].forEach(([name, i]) => {
     if (fx[i] <= 0) return;
     P(OL, cx, 18, 42, 10); P("#6a4a5a", cx + 1, 19, 40, 8); P(ITEM_COL[[0, 2, 3][i]], cx + 1, 19, Math.round((40 * Math.min(fx[i], 12000)) / 12000), 8);
-    text(name, cx + 5, 18, "#ffffff"); cx += 46;
+    text(name, cx + 5, 19, "#ffffff", 8); cx += 46;
   });
   if (info.phase !== "run") {
     P("rgba(58,42,56,.34)", 0, 17, W, H - 17);

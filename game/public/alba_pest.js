@@ -9,7 +9,7 @@
  * Look: a sunny mint pantry (wall paper, wooden shelves with jars and boxes, a tiled floor); actors carry the dark outline, props stay soft so the bugs read first.
  */
 const W = 240, H = 300, SY = 282, STEP = 50, FX = 120, FY = 54, SX = 13, SPY = 20, SPD = 4, BSP = 8, WSP = 4;
-const OL = "#3a2418", FONT9 = "Galmuri9, Galmuri11, sans-serif", FONT11 = "Galmuri11, Galmuri9, sans-serif";
+const OL = "#3a2418", FONT9 = "Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif", FONT11 = "Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif";
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 // ── sprites: the left half of each row is drawn, the right half is its mirror ('.' is clear)

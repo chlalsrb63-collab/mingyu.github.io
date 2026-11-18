@@ -3,6 +3,7 @@
 // the tray of change, and a pad of coins and bills (100 · 500 · 1000 · 5000 won). Change = 받은 돈 − 합계; the tray empties itself when it goes over.
 // View from the server: [lane ×4]; a lane is 0 or [customer id, kind (0 plain · 1 진상 · 2 단체 · 3 VIP), item prices (hundreds of won), scanned bitmask, paid, tray, ms until she leaves, patience ms, changed-her-mind].
 // Look: a mint shop, cream counter cards, round little customers. Sounds: ding (scan, a customer walks in), coin (change), chime (all scanned), buzz (wrong), swish (clear).
+import { hiRes } from "./alba_stage.js";
 const LW = 120, CW = LW * 4, CH = 312, PAD = [1, 5, 10, 50];
 const COL = {
   bg: "#8fd4c0", bg2: "#9fdccb", card: "#fff6e0", cardLo: "#d8e8dc", belt: "#f2e0b4", edge: "#4a3a3a", lock: "#c6d8cc", txt: "#3a2e3a", dim: "#7a6a62", gold: "#c88a10", goldHi: "#ffd84a",
@@ -11,7 +12,7 @@ const COL = {
 };
 const KIND = ["손님", "진상", "단체", "VIP"], KCOL = ["#4a7aa8", "#d8453a", "#3a78c8", "#b8800a"], KBG = ["#d4eaf8", "#ffd4c4", "#dcecff", "#fff0b4"];
 const SKIN = ["#f6d4b0", "#e8b88c", "#d9a27c", "#fbe0c4"], HAIR = ["#6a4630", "#3a3040", "#e8a040", "#d8607a", "#5a7ac8"];
-const FONT = (px, bold = true) => `${bold ? "bold " : ""}${px}px Galmuri11, "Malgun Gothic", sans-serif`;
+const FONT = (px, bold = true) => `${bold ? "bold " : ""}${px}px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif`;
 const won = (h) => `${(h * 100).toLocaleString()}원`;
 const COIN = [["100", "#d8dce4", 0], ["500", "#ffe27a", 0], ["1천", "#8ac0f0", 1], ["5천", "#f0b070", 1]];   // label, colour, 1 = a bill
 
@@ -205,7 +206,7 @@ export default {
       ended = [];
     }
     prevScore = info.score;
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    hiRes(cv, g, CW, CH);
     R(0, 0, CW, CH, COL.bg);
     for (let x = 0; x < CW; x += 24) R(x, 0, 12, CH, COL.bg2);   // a soft striped wall behind the lanes
     for (let i = 0; i < 4; i++) drawLane(i, t, info);

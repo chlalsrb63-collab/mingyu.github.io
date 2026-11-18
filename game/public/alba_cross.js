@@ -9,7 +9,7 @@
  * Look: a sunny village street (sand road, green median, a blue river, a wooden porch with an awning); a cat-eared courier with a red-ribbon parcel.
  */
 const W = 13, H = 11, AU = 12, CW = W * AU, SH = H * AU, HEAD = 11, CH = SH + HEAD;
-const OL = "#3a2830", FONT = "Galmuri9, Galmuri11, sans-serif", FONT11 = "Galmuri11, Galmuri9, sans-serif";
+const OL = "#3a2830", FONT = "Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif", FONT11 = "Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif";
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const BUDGET = [12000, 26000], COLORS = ["#e8604a", "#5a9af0", "#f0c040", "#6ac060", "#c080e0"];
 const CLOTH = [["#fff0d0", "#e8604a"], ["#fff0d0", "#5a9af0"], ["#fff0d0", "#6ac060"], ["#fff0d0", "#c080e0"]];
@@ -242,7 +242,7 @@ function frame(t, info) {
   if (fever > 0) { const c = Math.floor(t / 90) % 2 ? "#ff9a3a" : "#ffd84a"; P(c, 0, SH - 2, CW, 2); P(c, 0, 0, 2, SH); P(c, CW - 2, 0, 2, SH); }
   if (phase !== "run") {
     P("rgba(58,40,48,.36)", 0, 0, CW, SH);
-    plate(6, 36, CW - 12, 62);
+    plate(6, 36, CW - 12, 67);
     if (phase === "brief") {
       text(info.toStart > 0 ? `준비! ${Math.ceil(info.toStart / 1000)}` : "출발!", CW / 2, 42, "#c8462a", "center", 11);
       text("마차와 행인을 피해 건너고,", CW / 2, 61, "#6a4424"); text("강에서는 통나무에 올라타세요", CW / 2, 73, "#6a4424"); text("← ↑ ↓ → / WASD", CW / 2, 85, "#8a6a44");

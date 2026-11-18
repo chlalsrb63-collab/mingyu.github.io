@@ -7,7 +7,7 @@
  * Sound: a turn snips (swish), a flower pops, a gold flower chimes, a finished garland rings, a crash buzzes.
  */
 const N = 16, C = 12, W = N * C, H = 208, FULL = 12;
-const OL = "#26301e", FONT9 = "9px Galmuri9, Galmuri11, monospace", FONT11 = "bold 11px Galmuri11, Galmuri9, monospace";
+const OL = "#26301e", FONT9 = "9px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif", FONT11 = "bold 11px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif";
 const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
 const LINK = [["#ff9ac8", "#ffd8ec"], ["#fff2f8", "#ffffff"], ["#c8a4ff", "#e8d8ff"]];
 

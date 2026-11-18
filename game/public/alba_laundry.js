@@ -13,7 +13,7 @@ const ICON = {   // a little symbol per colour, so colour is never the only clue
   4: ["..X..", ".XXX.", "XXXXX", ".XXX.", "..X.."], 5: ["..X..", "..X..", "XXXXX", "..X..", "..X.."], 6: [".X.X.", "XXXXX", "XXXXX", ".XXX.", "..X.."],
 };
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-const FONT = "Galmuri11, Galmuri9, sans-serif";
+const FONT = "Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif";
 const INK = "#2a4a6a", EDGE = "#2a3a58", F1 = "#d6ecf8", F2 = "#c8e4f4";
 
 let host = null, api = null, cv = null, g = null, c = 24, sig = "", stops = [], st = null, shift = 0, shiftAt = 0, evSeq = -1, parts = [], flashes = [], lastSend = 0, phase = "brief", lastT = 0, chainShow = null;

@@ -9,7 +9,7 @@
  * Sound: every lane hit plays its own note (alba_n0..n3, so the song is the player's), a miss buzzes, a finished hold chimes, every 10th combo rings.
  */
 const W = 176, H = 208, LX = 16, LW = 36, LINE = 168, SPEED = 0.085;   // lane area, the hit line, px per ms
-const OL = "#2a1630", FONT9 = "9px Galmuri9, Galmuri11, monospace", FONT11 = "bold 11px Galmuri11, Galmuri9, monospace";
+const OL = "#2a1630", FONT9 = "9px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif", FONT11 = "bold 11px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif";
 const COL = [["#ff6a8a", "#ffc0cf", "#c03a5e"], ["#ffc84a", "#fff0a8", "#c8901a"], ["#6adf8a", "#c0f8d0", "#2a9a4a"], ["#6ab4ff", "#c0e0ff", "#2a70c8"]];
 const LABEL = ["D", "F", "J", "K"];
 const CODES = { KeyD: 0, KeyF: 1, KeyJ: 2, KeyK: 3, ArrowLeft: 0, ArrowDown: 1, ArrowUp: 2, ArrowRight: 3 };

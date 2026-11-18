@@ -10,7 +10,7 @@ const BODY = [["#dcae6e", "#f2cc94", "#a87c42"], ["#e6c286", "#f8dcaa", "#b48a56
   ["#bd8546", "#d8a068", "#8a5a2a"], ["#e6a062", "#f8c08a", "#b07034"], ["#c8b07a", "#e0cc9a", "#968050"]];
 const FRAG = ["#f2ece0", "#ffffff", "#c4b8a4"];
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
-const FONT = "Galmuri11, Galmuri9, sans-serif";
+const FONT = "Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif";
 const INK = "#4a3420", EDGE = "#3a2616";
 
 let host = null, api = null, cv = null, g = null, c = 24, sig = "", stops = [], st = null, shift = 0, shiftAt = 0, evSeq = -1, flashes = [], lastSend = 0, phase = "brief", wrap = null;

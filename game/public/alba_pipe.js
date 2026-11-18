@@ -3,6 +3,7 @@
 // View from the server: [site n, inlet row, outlet row, 144-char board, hand + next three (hex), ms to open, ms to end, trashed, last site's end].
 // Tap an empty cell to put the hand piece there (drawn at once, the server's next state corrects it). Pieces are 4-bit masks: N 1 · E 2 · S 4 · W 8.
 // Look: a sunny boiler room — teal tile floor, copper (dry) pipes that turn blue when the water reaches them, a cream control panel. Sounds: snap on place, splash on flow.
+import { hiRes } from "./alba_stage.js";
 const CS = 26, BX = 14, BY = 2, PX = 340, CW = 450, CH = 316;   // cell, board origin, panel x, canvas size (logical pixels, scaled by CSS without smoothing)
 const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
 const COL = {
@@ -11,7 +12,7 @@ const COL = {
   ok: "#3fae62", bad: "#e8554a", gold: "#f0b82a", txt: "#3b2d1f", dim: "#6b5a3e", white: "#fffdf4",
   panel: "#efe3c2", panelLo: "#cdbb90", hole: "#b9cfc6", btn: "#e2b04a", btnHi: "#ffe08a", btnLo: "#a8741e",
 };
-const FONT = (px, bold = true) => `${bold ? "bold " : ""}${px}px Galmuri11, "Malgun Gothic", sans-serif`;
+const FONT = (px, bold = true) => `${bold ? "bold " : ""}${px}px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif`;
 const MSG = { 1: ["수리 완료!", COL.ok], 2: ["누수! 막다른 길", COL.bad], 3: ["시간 초과", COL.bad], 4: ["건너뜀", COL.dim] };
 
 let host = null, api = null, cv = null, g = null;
@@ -279,7 +280,7 @@ export default {
   frame(t, info) {
     if (!g) return;
     const dt = Math.min(0.05, (t - lastT) / 1000 || 0.016); lastT = t;
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    hiRes(cv, g, CW, CH);
     g.fillStyle = COL.bg; g.fillRect(0, 0, CW, CH);
     if (!S) return;
     if (t - shakeAt < 260) g.translate(Math.round(Math.sin(t / 18) * 3), 0);

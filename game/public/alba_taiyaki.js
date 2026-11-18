@@ -3,6 +3,7 @@
 // view = [open slots, [[stage, filling, quality, ms since the stage began (≤ 0), side ms, z0, z1, z2, z3]…8], [[id, n0, n1, n2, ms patience left, patience ms, group]…], [[filling, quality]…], ms to slot 8]
 // Gauges are animated here from those relative times (the server only resends on a change); the green/yellow windows come from the server too.
 // Look: a warm street stall — peach wall, wooden counter, slate mould plates, steam. Sounds: pop (batter / filling), snap (cover), sizzle (bake), swish (flip), ding (ready / perfect), coin (served), buzz (wrong).
+import { hiRes } from "./alba_stage.js";
 const W = 240, H = 198, OL = "#3a2418", CREAM = "#fff4d6", INK = "#5a3a28";
 const FILL = ["#a83a4a", "#fff0a0", "#ffa030"], FNAME = ["팥", "슈크림", "치즈"];
 const CELL = { x0: 8, y0: 44, w: 56, h: 54 }, BTN = { y: 156, w: 72, h: 18 }, TICKET = { w: 38, h: 38 };
@@ -62,7 +63,7 @@ function drawSlot(i, t) {
   px(OL, x + 1, y + 1, CELL.w - 2, CELL.h - 2); px("#8a94aa", x + 2, y + 2, CELL.w - 4, CELL.h - 4); px("#b6c0d6", x + 2, y + 2, CELL.w - 4, 1); px("#6a748a", x + 2, y + CELL.h - 3, CELL.w - 4, 1);
   for (const [rx, ry] of [[4, 4], [CELL.w - 7, 4], [4, CELL.h - 7], [CELL.w - 7, CELL.h - 7]]) { px("#dde4f2", x + rx, y + ry, 2, 2); px("#6a748a", x + rx + 1, y + ry + 1, 1, 1); }   // rivets
   const sh = shakes[i] && t - shakes[i] < 220 ? Math.round(Math.sin(t / 18) * 2) : 0;
-  g.font = "8px Galmuri11, monospace"; g.textAlign = "center";
+  g.font = "8px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.textAlign = "center";
   const label = (txt, c = CREAM) => { g.fillStyle = OL; g.fillText(txt, cx + 1, y + CELL.h - 2); g.fillStyle = c; g.fillText(txt, cx, y + CELL.h - 3); };
   if (i >= n) {   // locked: a padlock and the countdown
     px(OL, cx - 6, cy - 1, 12, 9); px("#f0c050", cx - 5, cy, 10, 7); px("#fff0a0", cx - 5, cy, 10, 1); px(OL, cx - 1, cy + 3, 2, 3); px(OL, cx - 4, cy - 6, 8, 6); px("#8a94aa", cx - 3, cy - 5, 6, 5);
@@ -95,15 +96,15 @@ function drawTicket(c, i, t, ready) {
   const hue = ["#c8944c", "#aab4c2", "#f0b8c0", "#a8d08a", "#b8a0e0", "#e8d070"][c.id % 6];   // the customer: a round head with two ears
   px(OL, x + 3, y + 4 + bob, 3, 3); px(OL, x + 12, y + 4 + bob, 3, 3); px(OL, x + 3, y + 6 + bob, 12, 11); px(hue, x + 4, y + 7 + bob, 10, 9); px(OL, x + 6, y + 10 + bob, 1, 2); px(OL, x + 11, y + 10 + bob, 1, 2); px(OL, x + 8, y + 13 + bob, 3, 1); px("#ff9aa0", x + 4, y + 12 + bob, 2, 1); px("#ff9aa0", x + 12, y + 12 + bob, 2, 1);
   const total = c.need[0] + c.need[1] + c.need[2];
-  if (c.grp) { g.font = "8px Galmuri11, monospace"; g.textAlign = "left"; g.fillStyle = "#b8452a"; g.fillText("단체", x + 19, y + 11); }
-  g.font = "8px Galmuri11, monospace"; g.textAlign = "left"; g.fillStyle = INK;
+  if (c.grp) { g.font = "8px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.textAlign = "left"; g.fillStyle = "#b8452a"; g.fillText("단체", x + 19, y + 11); }
+  g.font = "8px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.textAlign = "left"; g.fillStyle = INK;
   if (c.grp) { for (let f = 0; f < 3; f++) { px(OL, x + 19 + f * 6, y + 14, 5, 5); px(FILL[f], x + 20 + f * 6, y + 15, 3, 3); } g.fillText(`${total}개`, x + 19, y + 28); }
   else { let k = 0; for (let f = 0; f < 3; f++) for (let m = 0; m < c.need[f]; m++, k++) { const ox = x + 19 + (k % 2) * 9, oy = y + 4 + Math.floor(k / 2) * 9; px(OL, ox, oy, 8, 8); px(FILL[f], ox + 1, oy + 1, 6, 6); } }
   px("#c8b898", x + 3, y + 30, 32, 5); px(left > 0.5 ? "#4cc85c" : left > 0.25 ? "#f0b82a" : (Math.floor(t / 150) % 2 ? "#ff5a4a" : "#d8382a"), x + 4, y + 31, Math.round(30 * left), 3);
 }
 const pieceAt = (i) => [8 + i * 30, 178];
 function drawTray() {
-  g.font = "8px Galmuri11, monospace"; g.textAlign = "left"; g.fillStyle = OL; g.fillText("진열", 3, 191); g.fillStyle = CREAM; g.fillText("진열", 2, 190);
+  g.font = "8px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.textAlign = "left"; g.fillStyle = OL; g.fillText("진열", 3, 191); g.fillStyle = CREAM; g.fillText("진열", 2, 190);
   for (let i = 0; i < 6; i++) {
     const [x, y] = pieceAt(i); px("#a06a3c", x + 12, y, 26, 14); px("#8a5830", x + 12, y, 26, 1);
     const p = tray[i]; if (!p) continue;
@@ -112,7 +113,7 @@ function drawTray() {
   }
 }
 function drawButtons() {
-  g.font = "8px Galmuri11, monospace"; g.textAlign = "center";
+  g.font = "8px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.textAlign = "center";
   for (let f = 0; f < 3; f++) {
     const x = 6 + f * 78;
     px(sel === f ? "#e8453a" : OL, x, BTN.y, BTN.w, BTN.h); px(sel === f ? "#ffffff" : "#e8c898", x + 1, BTN.y + 1, BTN.w - 2, BTN.h - 2); px(sel === f ? "#fff0c8" : "#f4dcb0", x + 1, BTN.y + 1, BTN.w - 2, 2);
@@ -186,7 +187,7 @@ export default {
       if (on && cue[i] !== key) snd("alba_ding", 120);
       cue[i] = key;
     }
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    hiRes(cv, g, W, H);
     px("#f6dcb0", 0, 0, W, H); for (let y = 44; y < 154; y += 12) px("#f0d0a0", 0, y, W, 1);   // the wall behind the plates
     px("#e6a870", 0, 0, W, 42); px("#f4c898", 0, 0, W, 2); px("#c07c4c", 0, 41, W, 3);
     px(OL, 6, 42, 228, 113); px("#6a748a", 7, 43, 226, 111);   // the iron frame of the mould plate
@@ -201,7 +202,7 @@ export default {
       g.globalAlpha = Math.min(1, p.life * 4); px(p.col, Math.round(p.x), Math.round(p.y), 2, 2);
     }
     g.globalAlpha = 1;
-    g.font = "9px Galmuri11, monospace"; g.textAlign = "center";
+    g.font = "9px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.textAlign = "center";
     for (let i = floats.length - 1; i >= 0; i--) {
       const f = floats[i], a = t - f.at;
       if (a > 800) { floats.splice(i, 1); continue; }
@@ -212,8 +213,8 @@ export default {
     if (info.phase !== "run") {   // a cream label over the board
       const sub = info.phase === "brief", ph = sub ? 66 : 28, py = (H - ph) / 2;
       px(OL, 14, py - 2, W - 28, ph + 4); px(CREAM, 16, py, W - 32, ph); px("#ffffff", 16, py, W - 32, 1); px("#e0c898", 16, py + ph - 2, W - 32, 2);
-      g.textAlign = "center"; g.fillStyle = INK; g.font = "11px Galmuri11, monospace";
-      if (sub) { g.fillText(`${Math.ceil(info.toStart / 1000)}`, W / 2, py + 16); g.font = "8px Galmuri11, monospace"; g.fillStyle = "#7a6044"; g.fillText("칸을 눌러 반죽 → 맛 → 덮기", W / 2, py + 32); g.fillText("초록·노랑 구간에 뒤집고 꺼내요", W / 2, py + 44); g.fillText("손님을 눌러 붕어빵을 건네요", W / 2, py + 56); }
+      g.textAlign = "center"; g.fillStyle = INK; g.font = "11px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif";
+      if (sub) { g.fillText(`${Math.ceil(info.toStart / 1000)}`, W / 2, py + 16); g.font = "8px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.fillStyle = "#7a6044"; g.fillText("칸을 눌러 반죽 → 맛 → 덮기", W / 2, py + 32); g.fillText("초록·노랑 구간에 뒤집고 꺼내요", W / 2, py + 44); g.fillText("손님을 눌러 붕어빵을 건네요", W / 2, py + 56); }
       else g.fillText("수고했어요!", W / 2, py + 18);
     }
     g.textAlign = "left";
