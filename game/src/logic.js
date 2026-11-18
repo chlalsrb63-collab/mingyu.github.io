@@ -20467,10 +20467,10 @@ ALBA_RULES.pipe = {
 //         3 hold done · 4 hold broken, the last RHY.ring), bpm, [perfect, good, miss]]; the notes are the waiting / held ones within RHY.ahead ms.
 const RHY = {
   ahead: 4000, refresh: 2500, lat: 40, perf: 45, good: 100, wide: 1.5, tailOk: 120, tailEnd: 150, lead: 2000, tail: 1500, sameLane: 240,
-  perSec: 7, strayN: 5, strayMs: 2000, lockMs: 1500, missPen: 10, pts: [10, 20], holdPts: 10, ring: 8, bpm: [100, 140],
-  quarterTo: 15000, holdFrom: 20000, chordFrom: 25000, tripleFrom: 70000,
+  perSec: 9, strayN: 5, strayMs: 2000, lockMs: 1500, missPen: 10, pts: [10, 20], holdPts: 10, ring: 8, bpm: [120, 170], run: 3, skip: 0.4,
+  quarterTo: 4000, holdFrom: 6000, chordFrom: 8000, tripleFrom: 45000,   // 2026-11-18: no gentle intro; `run` misses in a row cost a heart
 };
-Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 9300, mul: 1.05, outfit: ["hat_beret", "top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 D F J K (← ↓ ↑ →) 또는 터치로 연주하세요. 긴 음표는 끝까지 누르세요!" } });
+Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 14600, mul: 1.05, outfit: ["hat_beret", "top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 D F J K (← ↓ ↑ →) 또는 터치로 연주하세요. 긴 음표는 끝까지 누르세요! 음표를 3번 연속 놓치면 ♥ 하나가 깎여요(3개면 퇴근)." } });
 
 const rhyBpm = (t) => RHY.bpm[0] + (RHY.bpm[1] - RHY.bpm[0]) * clamp(t / ALBA_T.runMs, 0, 1);
 /** Fever widens every window ×1.5. */
@@ -20495,7 +20495,7 @@ function rhyBuild(box) {
     const u = t / T, beat = 60000 / rhyBpm(t), act = hEnd.filter((e) => e > t).length, cap = (t >= RHY.tripleFrom ? 3 : 2) - act;
     let busy = 0;
     for (let i = notes.length - 1; i >= 0 && notes[i].t > t - 1000; i--) busy++;   // keys already asked in the last second
-    if (cap > 0 && busy < RHY.perSec && rnd(box) >= (t < RHY.quarterTo ? 0.22 : 0.58 - 0.2 * u)) {
+    if (cap > 0 && busy < RHY.perSec && rnd(box) >= (t < RHY.quarterTo ? 0.22 : RHY.skip - 0.2 * u)) {
       let k = 1;
       if (t >= RHY.chordFrom && cap >= 2 && rnd(box) < 0.06 + 0.14 * u) k = Math.min(t >= RHY.tripleFrom && cap >= 3 && rnd(box) < 0.2 ? 3 : 2, RHY.perSec - busy);
       const lanes = rhyLanes(box, [0, 1, 2, 3].filter((l) => free[l] <= t), prev, k);
@@ -20516,7 +20516,12 @@ function rhyBuild(box) {
   notes.forEach((n, i) => { n.id = i; });
   const Q = [[], [], [], []];
   for (const n of notes) Q[n.l].push(n.id);
-  return { N: notes, Q, P: [0, 0, 0, 0], H: 0, hold: [-1, -1, -1, -1], lock: 0, stray: [], sent: 0, last: notes.length ? notes[notes.length - 1].t + notes[notes.length - 1].h : 0, seq: 0, ev: [], cnt: [0, 0, 0] };
+  return { N: notes, Q, P: [0, 0, 0, 0], H: 0, hold: [-1, -1, -1, -1], lock: 0, mr: 0, stray: [], sent: 0, last: notes.length ? notes[notes.length - 1].t + notes[notes.length - 1].h : 0, seq: 0, ev: [], cnt: [0, 0, 0] };
+}
+/** A missed note; `RHY.run` of them in a row cost a heart. */
+function rhyMiss(ab, T) {
+  const g = ab.g;
+  if (++g.mr >= RHY.run) { g.mr = 0; albaStrike(ab, T, RHY.missPen); } else albaBad(ab, RHY.missPen);
 }
 const rhyEv = (g, l, kind) => { g.ev.push([++g.seq, l, kind]); if (g.ev.length > RHY.ring) g.ev.shift(); };
 
@@ -20534,6 +20539,7 @@ function rhyPress(ab, l, tt, now) {
     const perfect = Math.abs(dt) <= wp;
     n.s = n.h ? 3 : 1;
     if (n.h) g.hold[l] = n.id;
+    g.mr = 0;
     albaGood(ab, now, RHY.pts[perfect ? 1 : 0]);
     g.cnt[perfect ? 0 : 1]++;
     rhyEv(g, l, perfect ? 2 : 1);
@@ -20549,8 +20555,8 @@ function rhyRelease(ab, l, tt, now) {
   if (id < 0) return;
   const n = g.N[id];
   g.hold[l] = -1;
-  if (tt >= n.t + n.h - RHY.tailOk) { n.s = 1; albaGood(ab, now, RHY.holdPts); rhyEv(g, l, 3); }
-  else { n.s = 2; albaBad(ab, RHY.missPen); g.cnt[2]++; rhyEv(g, l, 4); }
+  if (tt >= n.t + n.h - RHY.tailOk) { n.s = 1; g.mr = 0; albaGood(ab, now, RHY.holdPts); rhyEv(g, l, 3); }
+  else { n.s = 2; rhyMiss(ab, now); g.cnt[2]++; rhyEv(g, l, 4); }
 }
 
 ALBA_RULES.rhythm = {
@@ -20564,8 +20570,8 @@ ALBA_RULES.rhythm = {
       for (let l = 0; l < 4; l++) if (g.hold[l] >= 0) { const h = n[g.hold[l]], d = h.t + h.h + RHY.tailEnd; if (d < due) { due = d; id = h.id; tail = true; } }
       if (due >= J) break;
       const m = n[id];
-      if (tail) { m.s = 1; g.hold[m.l] = -1; albaGood(ab, ab.runAt + due + RHY.lat, RHY.holdPts); rhyEv(g, m.l, 3); }
-      else { m.s = 2; albaBad(ab, RHY.missPen); g.cnt[2]++; rhyEv(g, m.l, 0); }
+      if (tail) { m.s = 1; g.mr = 0; g.hold[m.l] = -1; albaGood(ab, ab.runAt + due + RHY.lat, RHY.holdPts); rhyEv(g, m.l, 3); }
+      else { m.s = 2; rhyMiss(ab, ab.runAt + due + RHY.lat); g.cnt[2]++; rhyEv(g, m.l, 0); }
     }
     if (g.sent < g.last && g.sent - (now - ab.runAt) <= RHY.refresh) albaTouch(ab);   // the announced window is running dry: send the next stretch
   },

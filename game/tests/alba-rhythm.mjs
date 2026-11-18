@@ -11,7 +11,7 @@ const X = L.__t, R = X.ALBA_RULES.rhythm, RHY = X.RHY, T = X.ALBA_T, PAR = X.ALB
 
 // ── unit harness: a bare shift object whose clock starts at 0 (runAt 0); notes are set by hand
 const mkAb = (seed = 7) => {
-  const ab = { k: "rhythm", box: { seed }, runAt: 0, endAt: 1e9, score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, rev: 1, g: null };
+  const ab = { k: "rhythm", box: { seed }, runAt: 0, endAt: 1e9, score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, rev: 1, g: null, strikes: 0, out: 0 };
   R.init(null, null, ab);
   return ab;
 };
@@ -164,7 +164,7 @@ for (const [dt, kind] of [[67, 2], [-67, 2], [68, 1], [150, 1], [-150, 1]]) {
   ab.g.last = 9400;
   const v = R.view(ab, 1000);
   assert.deepEqual(v[0], [0, 1, 1800, 0, 0, 1, 2, 2000, 400, 0], "ids, lanes, ms from now, hold, held — only up to 4 s ahead (the note at 5400 is not announced yet)");
-  assert.equal(v[2], 100); assert.deepEqual(v[3], [0, 0, 0]); assert.deepEqual(v[1], []);
+  assert.equal(v[2], 121); assert.deepEqual(v[3], [0, 0, 0]); assert.deepEqual(v[1], []);
   assert.equal(ab.g.sent, 5000);
   const rev = ab.rev;
   R.adv(null, null, ab, 2000); assert.equal(ab.rev, rev, "the announced window (to 5000) is far enough ahead");
@@ -187,7 +187,7 @@ for (const [dt, kind] of [[67, 2], [-67, 2], [68, 1], [150, 1], [-150, 1]]) {
   const seeds = Array.from({ length: 60 }, (_, i) => i * 7919 + 11);
   for (const seed of seeds) {
     const g = X.rhyBuild({ seed }), N = g.N;
-    assert.ok(N.length >= 150 && N.length <= 300, `a song of a sensible length (${N.length})`);
+    assert.ok(N.length >= 200 && N.length <= 420, `a song of a sensible length (${N.length})`);
     assert.ok(N[0].t >= RHY.lead && N.at(-1).t + N.at(-1).h <= T.runMs - RHY.tail + 1, "the song fits the shift with a lead-in and a tail");
     let prevT = -1;
     const byT = new Map(), lastEnd = [-1e9, -1e9, -1e9, -1e9], prevT4 = [];
@@ -197,13 +197,13 @@ for (const [dt, kind] of [[67, 2], [-67, 2], [68, 1], [150, 1], [-150, 1]]) {
       (byT.get(n.t) || byT.set(n.t, []).get(n.t)).push(n);
       assert.ok(n.t - lastEnd[n.l] >= RHY.sameLane, `the same lane is never closer than ${RHY.sameLane} ms (holds: after their end) — seed ${seed} t ${n.t}`);
       lastEnd[n.l] = n.t + n.h;
-      if (n.h) { assert.ok(n.t >= RHY.holdFrom, "holds come late"); assert.ok(n.h >= 400 && n.h <= 2 * 60000 / 100 + 1, `a hold of ${n.h} ms is short enough`); holds++; }
+      if (n.h) { assert.ok(n.t >= RHY.holdFrom, "holds come late"); assert.ok(n.h >= 340 && n.h <= 2 * 60000 / RHY.bpm[0] + 1, `a hold of ${n.h} ms is short enough`); holds++; }
     }
-    // the first 15 s are simple: quarter notes, no chords, no holds
+    // the first 4 s are simple: quarter notes, no chords, no holds
     for (const n of N) if (n.t < RHY.quarterTo) assert.ok(byT.get(n.t).length === 1 && !n.h, "taps only at first");
     // onsets: not too fast (an eighth at the end tempo is ~214 ms), at most 2 at once before the last 20 s, 3 after; holds count as pressed keys
     const times = [...byT.keys()].sort((a, b) => a - b);
-    for (let i = 1; i < times.length; i++) assert.ok(times[i] - times[i - 1] >= 200, `onsets are at least 200 ms apart (${times[i] - times[i - 1]})`);
+    for (let i = 1; i < times.length; i++) assert.ok(times[i] - times[i - 1] >= 170, `onsets are at least 170 ms apart (${times[i] - times[i - 1]})`);
     for (const t of times) {
       const here = byT.get(t), cap = t >= RHY.tripleFrom ? 3 : 2;
       const held = N.filter((n) => n.h && n.t < t && n.t + n.h > t).length;
@@ -213,9 +213,9 @@ for (const [dt, kind] of [[67, 2], [-67, 2], [68, 1], [150, 1], [-150, 1]]) {
       assert.equal(new Set(here.map((n) => n.l)).size, here.length, "a chord uses distinct lanes");
     }
     // at most one second-long window with more than 6 notes
-    for (let i = 0; i < N.length; i++) { let j = i; while (j < N.length && N[j].t < N[i].t + 1000) j++; assert.ok(j - i <= 7, `no stream above 7 notes a second (${j - i})`); }
+    for (let i = 0; i < N.length; i++) { let j = i; while (j < N.length && N[j].t < N[i].t + 1000) j++; assert.ok(j - i <= RHY.perSec, `no stream above ${RHY.perSec} notes a second (${j - i})`); }
     // tempo ramps 100 → 140 BPM
-    assert.equal(Math.round(X.rhyBpm(0)), 100); assert.equal(Math.round(X.rhyBpm(T.runMs)), 140); assert.ok(X.rhyBpm(45000) > 118 && X.rhyBpm(45000) < 122);
+    assert.equal(Math.round(X.rhyBpm(0)), 120); assert.equal(Math.round(X.rhyBpm(T.runMs)), 170); assert.ok(X.rhyBpm(45000) > 144 && X.rhyBpm(45000) < 146);
     // the density grows with the shift: the last 22 s hold more notes than the first 22 s
     const inRange = (a, b) => N.filter((n) => n.t >= a && n.t < b).length;
     assert.ok(inRange(67500, 90000) > inRange(0, 22500), "the song gets busier");
@@ -286,7 +286,7 @@ function play(botOpts, seed, { name = `공연${seed}` } = {}) {
     }
   }
   const g = ab.g;
-  return { score: ab.score, grade: X.albaGrade("rhythm", ab.score), maxBytes, views, maxCombo: ab.maxCombo, state: ab.state, cnt: g.cnt.slice(), n: g.N.length, seen, judged: judged.length, notes: g.N, notesLen: g.N.length, fevers: ab.feverUsed };
+  return { out: ab.out, runMs: ab.endAt - ab.runAt, score: ab.score, grade: X.albaGrade("rhythm", ab.score), maxBytes, views, maxCombo: ab.maxCombo, state: ab.state, cnt: g.cnt.slice(), n: g.N.length, seen, judged: judged.length, notes: g.N, notesLen: g.N.length, fevers: ab.feverUsed };
 }
 
 // (c) the bots
@@ -325,6 +325,16 @@ assert.ok(avg(results.human.map((r) => r.score)) > avg(results.casual.map((r) =>
 assert.ok(avg(results.casual.map((r) => r.score)) > avg(results.slow.map((r) => r.score)), "playing much worse scores much less");
 assert.equal(idle.grade, 0, "an idle player gets no grade"); assert.equal(idle.score, 0, "and no points");
 assert.ok(viewMax < 600, `the view stays small (${viewMax} bytes)`);
+
+// 2026-11-18 strikes: a run of RHY.run misses costs a heart, the hearts are the game's own (ALBA.rhythm.lives). Rates over 12 seeds.
+{
+  const N = 12, avg = (a) => (a.length ? Math.round(a.reduce((x, y) => x + y, 0) / a.length) : 0);
+  const rate = (o) => { const rs = Array.from({ length: N }, (_, i) => play(o, i + 1)), out = rs.filter((x) => x.out); return { r: out.length / N, run: avg(out.map((x) => x.runMs / 1000)) }; };
+  const rp = rate(BOTS.perfect), rh = rate(BOTS.human), rc = rate(BOTS.casual), rs_ = rate(BOTS.slow);
+  console.log(`  strike-outs over ${N} seeds: perfect ${Math.round(rp.r * 100)}% · human ${Math.round(rh.r * 100)}% · casual ${Math.round(rc.r * 100)}% · sloppy (slow) ${Math.round(rs_.r * 100)}% (those runs end after ${rs_.run} s)`);
+  assert.equal(rp.r, 0, "the perfect bot never strikes out"); assert.ok(rh.r <= 0.25, "the human-like bot strikes out in at most a quarter of its shifts");
+  assert.ok(rs_.r >= 0.5, "the sloppy bot strikes out in at least half of its shifts"); assert.ok(rs_.run < 75, `and its run ends before 75 s (${rs_.run} s)`);
+}
 for (const r of results.perfect) {   // the player sees every note coming (≥ 1.5 s ahead) in the views
   for (const n of r.notes) assert.ok(r.seen.has(n.id) && r.seen.get(n.id) >= 1500, `note ${n.id} was announced ≥ 1.5 s ahead (${r.seen.get(n.id)})`);
   assert.ok(r.judged > 100, "the judgements reach the client");
@@ -347,6 +357,7 @@ for (const r of results.perfect) {   // the player sees every note coming (≥ 1
 // (d) hostile input: nothing throws, nothing counts, the state stays sane
 {
   const s = sim("공연해커", 2), ab = s.p.ab, g0 = ab.g;
+  const lives0 = X.ALBA.rhythm.lives; X.ALBA.rhythm.lives = 999;   // the idle hacker must not strike out: this block is about hostile input
   const snap = () => JSON.stringify(ab.g);
   const bad = [{}, { l: "1" }, { l: 1.5 }, { l: -1 }, { l: 4 }, { l: 1e300 }, { l: NaN }, { l: Infinity }, { l: null }, { l: [1] }, { l: { a: 1 } }, { l: true }, { l: "__proto__" }, { l: 0, up: 2 }, { l: 0, up: "1" }, { l: 0, up: true }, { l: 0, up: null },
     { m: 0 }, { m: 16 }, { m: -1 }, { m: 1.5 }, { m: "3" }, { m: NaN }, { m: null }, { m: [3] }, { m: 255 }, { m: 3, l: 1 }, { m: 3, up: 0 }, { up: 1 }, { x: 5, y: 5 }, { d: 1 }, { hit: 3 }, { k: "pipe" }, { N: [] }, { g: {} }, { l: 1, m: 2 }];
@@ -369,7 +380,7 @@ for (const r of results.perfect) {   // the player sees every note coming (≥ 1
   assert.ok(acc <= 8, `50 inputs in 250 ms: only ${acc} 35 ms apart were taken`);
   s.now += 100; acc = 0; last = ab.lastAct;
   for (let i = 0; i < 50; i++) { s.act({ t: "ab_act", l: 1 }); if (ab.lastAct !== last) { acc++; last = ab.lastAct; } }
-  assert.equal(acc, 1, "50 inputs in the same instant: one counts");
+  assert.equal(acc, 1, "50 inputs in the same instant: one counts"); X.ALBA.rhythm.lives = lives0;
   // a press that hits nothing never scores: the score only comes from notes
   assert.ok(ab.score <= 20, "a lone press can score at most one Perfect");
   // after the end the song is frozen
