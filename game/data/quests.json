@@ -1969,6 +1969,42 @@
       "repeat": false
     },
     {
+      "id": "sq_inklake_frost_1",
+      "giver": "inklake_fisher",
+      "title": "끊어진 낚싯줄",
+      "text": "요즘 호수 위로 먹빛 뱀날개가 낮게 날며 낚싯줄을 죄다 끊어 놔. 열 마리만 쫓아 줘. 줄 없는 낚시꾼은 그냥 앉아 있는 사람이야.",
+      "done": "줄이 다시 물에 닿는군. 그런데 북쪽 단풍 왕도 너머에서 찬 바람이 내려와. 잎이 안 지는 이유가 겨울이 한곳에 갇혀서일지도 몰라.",
+      "hint": "먹빛 호수 모닥불의 낚시꾼 갈대",
+      "goal": { "type": "kill", "mob": "serpentwing_ash", "n": 10 },
+      "req": { "lv": 182, "quest": null },
+      "reward": { "xp": 565000, "gold": 5500, "items": [["mp_l", 5], ["fd_honeycake", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_inklake_frost_2",
+      "giver": "inklake_fisher",
+      "title": "얼어붙은 호수 깃털",
+      "text": "서리학 날개에서 얼음 깃털이 떨어져. 이 호수는 얼지 않는 곳인데 깃털은 한여름에도 녹질 않아. 네 개만 주워다 줘.",
+      "done": "손이 시릴 만큼 차군. 이 서리는 북쪽 서리 왕의 성채에서 흘러온 거야. 호수까지 번지고 있어.",
+      "hint": "먹빛 호수 모닥불의 낚시꾼 갈대",
+      "goal": { "type": "collect", "item": "q_inkfrost", "n": 4, "mob": "wingcrane_frost" },
+      "req": { "lv": 185, "quest": "sq_inklake_frost_1" },
+      "reward": { "xp": 600000, "gold": 5700, "items": [["sc_xp", 1], ["el_spd", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_inklake_frost_3",
+      "giver": "inklake_fisher",
+      "title": "서리 학의 우두머리",
+      "text": "서리학 정예가 호수 한복판에서 날개를 치면 물이 얼어붙기 시작해. 그놈이 서리 왕 성채로 가는 길목을 지키는 눈 같아. 눕혀 줘.",
+      "done": "호수가 다시 숨을 쉬네. 이제 서리 왕의 성채로 가는 길을 걱정해야겠군. 몸조심하게, 길벗.",
+      "hint": "먹빛 호수 모닥불의 낚시꾼 갈대",
+      "goal": { "type": "elite", "map": "inklake", "mob": "wingcrane_frost", "n": 1 },
+      "req": { "lv": 188, "quest": "sq_inklake_frost_2" },
+      "reward": { "xp": 640000, "gold": 5900, "items": [["stone_b", 1], ["el_atk", 1]], "title": "서리 길목의 낚시벗" },
+      "repeat": false
+    },
+    {
       "id": "sq_forest_sapfall_1",
       "giver": "trail_sap",
       "title": "굳은 수액 덩이",

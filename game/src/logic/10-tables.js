@@ -94,6 +94,7 @@ const ITEMS = {
   // 은자 바스's arc as a story (Q5): the guard-change song and the 단풍 부적
   q_thornsong: { name: "노래 걸린 가시", type: "quest", price: 0, desc: "왕릉 길에서 꺾은 로제묘 가지. 귀에 대면 가시 끝에서 옛 가락이 웅웅댄다." },
   q_wintersong: { name: "겨울 부르는 가지", type: "quest", price: 0, desc: "로제묘 가지 끝에 서리가 맺혀 있다. 귀에 대면 겨울을 기다리는 가락이 들린다." },
+  q_inkfrost: { name: "얼어붙은 호수 깃털", type: "quest", price: 0, desc: "서리학 날개에서 떨어진 깃털. 호수 한복판에서도 녹지 않고 손끝이 시리다." },
   q_mapcharm: { name: "단풍 부적", type: "quest", price: 0, desc: "붉은 단풍잎 잎맥을 세 번 꼬아 모닥불에 그을린 부적. 교대할 차례가 왔다는 표시다." },
   // 「나루터의 먹물」 (Q1): 사공 여울 at the 먹빛 호수 ferry landing
   q_lampoil: { name: "맑은 등기름", type: "quest", price: 0, desc: "수정꽃과 붉은 단풍잎을 넣어 끓인 등기름. 먹물에 떨어뜨려도 섞이지 않고 금빛으로 뜬다." },

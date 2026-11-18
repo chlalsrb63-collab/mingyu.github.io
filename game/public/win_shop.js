@@ -222,7 +222,7 @@ function questBody(s) {
     if (beatOpen) det.append(el("p", "ds", `먼저 주요 의뢰 [${beat.title}]부터 마쳐야 합니다 — ${beat.giverName} (${beat.giverMap})`));
     if (s.q.st === 1) det.append(goal(`Lv.${mob.lv} ${mob.name}`, s.q.n, q.n));
     else det.append(el("div", "q-goal", `목표: Lv.${mob.lv} ${mob.name} ${q.n}마리`));
-    det.append(SideQ.rewardRow(q));
+    det.append(SideQ.rewardRow({ ...q, title: null }));   // a main row's title is its name; only its honor is a 칭호
     if (s.q.st === 0) button("의뢰 수락", () => act({ t: "quest", a: "accept" }), !beatOpen);
     else button("의뢰 완료", () => act({ t: "quest", a: "done" }), s.q.n >= q.n);
   } else if (kind === "sq") {
