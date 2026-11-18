@@ -890,6 +890,30 @@ const CAMP_FOLK = {
     { id: "coast_lighthouse", name: "등대지기 파도", role: "talk", look: [7, 1, 0, "#4a6a9a"],
       lines: ["등대 불은 아직 내가 켜. 누가 볼진 모르겠지만, 꺼 두면 밤바다가 더 무서워서.", "물가의 거북은 옛날에도 있었어. 등껍질에 돌이 붙은 건 새로 생긴 일이지."] },
   ],
+  city: [
+    { id: "city_conductor", name: "전차 기사 철로", role: "quest", look: [3, 3, 0, "#6a7a9a"], lines: ["도시가 불이 꺼지던 밤에도 나는 마지막 전차를 몰았어. 종점까지 손님 한 명 못 내려놓고 서 버렸지만.","전차는 멈췄어도 선로는 아직 길이야. 달려가는 놈이 짐승뿐이라는 게 서글프지."] },
+    { id: "city_gardener", name: "옥상 정원사 담쟁이", role: "talk", look: [8, 2, 0, "#7aa85a"], lines: ["옥상에 올라오면 도시가 한눈에 보여. 불이 꺼진 뒤로 별이 훨씬 많아졌더라.","화분은 아직 살아 있어. 도시가 사라져도 꽃은 계속 피는 모양이야."] },
+  ],
+  dunesea: [
+    { id: "dunesea_surveyor", name: "측량사 눈금", role: "quest", look: [12, 1, 0, "#b89a5a"], lines: ["이 모래벌판은 전부 옛 강바닥이었어. 말뚝을 박을 때마다 조개껍데기가 같이 나오지.","강이 어디로 갔는지는 몰라. 다만 모래 밑에서 물소리가 날 때가 있어."] },
+    { id: "dunesea_tinker", name: "떠돌이 땜장이 주전자", role: "talk", look: [5, 2, 0, "#8a6a4a"], lines: ["나는 바람 불면 이 길 저 길 떠도는 땜장이야. 모래 속 냄비를 하도 주워서 이름도 주전자가 됐지.","강바닥 한가운데서 파낸 솥에 물때 자국이 높게 나 있었어. 그만큼 물이 찼던 거야."] },
+  ],
+  cloudtemple: [
+    { id: "cloud_monk", name: "탁발승 구름", role: "quest", look: [11, 2, 0, "#9a8a6a"], lines: ["산문에서 꼭대기 법당까지 계단을 헤아리며 오르는 게 우리 수행이야. 구름 아래로 떨어지면 다시 처음부터지.","이 사원은 사람이 지은 건지 산이 자란 건지 알 수 없어. 예전부터 그랬다더군."] },
+    { id: "cloud_novice", name: "종지기 견습 소리", role: "talk", look: [2, 1, 0, "#7a7aa8"], lines: ["나는 종지기 견습이야. 종은 만져 본 적도 없고 종 줄 닦는 일만 삼 년째지.","종이 울리면 구름이 한 겹씩 걷혀. 그 사이에 올라가야 해."] },
+  ],
+  mesa: [
+    { id: "mesa_prospector", name: "금맥꾼 구리", role: "quest", look: [7, 2, 0, "#b8683a"], lines: ["협곡 벽을 따라 금맥이 비친다고 해서 금맥꾼이야. 요즘은 금보다 마디록 피하는 일이 더 많지.","황금 지붕 궁이 왜 이 척박한 데 섰는지 모르겠어. 금이 있어서일 거라고만 생각해."] },
+    { id: "mesa_potter", name: "도공 옹기", role: "talk", look: [6, 1, 0, "#a88a5a"], lines: ["우리 집안은 대대로 궁 기와를 구웠어. 흙을 이 협곡 붉은 바닥에서 퍼 왔지.","금을 입힌 기와는 비가 오면 소리가 달라. 지금 그 소리를 들을 사람은 없겠지만."] },
+  ],
+  inklake: [
+    { id: "inklake_scribe", name: "먹쟁이 붓끝", role: "quest", look: [4, 0, 0, "#4a4a5a"], lines: ["나는 호수를 그리는 먹쟁이야. 물에 붓을 담그면 글씨가 번진다 해서 붓끝이라 불리지.","호수는 하루에 몇 번씩 색이 바뀌어. 같은 그림을 두 번 그려 본 적이 없어."] },
+    { id: "inklake_fisher", name: "낚시꾼 갈대", role: "talk", look: [9, 0, 0, "#6a8a8a"], lines: ["나는 이 호수에서 낚싯대를 드리우는 갈대야. 물고기는 안 잡혀도 이곳에선 마음이 가라앉아.","검은 웅덩이엔 낚싯줄을 드리우지 마. 줄이 끝도 없이 풀려 나가거든."] },
+  ],
+  maple: [
+    { id: "maple_forester", name: "왕도 숲지기 도토리", role: "quest", look: [1, 2, 0, "#a85a2a"], lines: ["나는 왕도 숲을 돌보는 숲지기야. 이 길은 왕도 때 심은 단풍이라 나이가 천 년은 돼.","단풍이 붉은 건 가을이라서가 아니라 땅 밑에서 아직 무언가 따뜻해서래."] },
+    { id: "maple_gatherer", name: "버섯 따는 할멈 홀씨", role: "talk", look: [10, 3, 0, "#8a5a7a"], lines: ["버섯은 단풍 뿌리 밑에 자라. 지금 이 숲 버섯은 보랏빛이야. 먹지 마.","잎이 안 지는 건 겨울이 오기를 기다리는 거지. 그 겨울이 어디 갔는지는 몰라."] },
+  ],
   oasis: [
     { id: "oasis_well", name: "우물지기 샘", role: "quest", look: [12, 0, 0, "#b8985a"],
       lines: ["이 오아시스 우물은 모래 아래 큰 물길 하나에서 올라와. 물길이 마르면 마을도 마르지.", "대상들이 쉬던 자리마다 우물이 있었어. 이젠 이 우물이 마지막 몇 개 중 하나야."] },
@@ -904,8 +928,8 @@ function campFolk(m) {
   if (!folk) return;
   const fires = FIRES[m.id].slice(FIRES[m.id].length - (FIRE_EXTRA[m.id] | 0));
   folk.forEach((n, j) => {
-    const f = fires[j];
-    const at = f && [[2, 0], [-2, 0], [0, 2], [0, -2]].map(([dx, dy]) => [f[0] + dx, f[1] + dy]).find(([x, y]) => m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]));
+    const f = fires[Math.min(j, fires.length - 1)];
+    const at = f && [[2, 0], [-2, 0], [0, 2], [0, -2]].map(([dx, dy]) => [f[0] + dx, f[1] + dy]).find(([x, y]) => m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]) && !m.npcs.some((o) => o.x === x && o.y === y));
     if (at) m.npcs.push({ ...n, say: n.lines[0], x: at[0], y: at[1] });
   });
 }
