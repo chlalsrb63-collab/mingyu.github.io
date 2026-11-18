@@ -828,7 +828,7 @@ const CAMP_KEEPERS = {
   cloudtemple: { id: "camp_cloudtemple", name: "순례자 무명", role: "shop", look: [11, 3, 0, "#8a8a9a"], goods: FIELD_GOODS,
     lines: ["산문에서 꼭대기 법당까지 다섯 층이야. 구름 바다에 빠지면 처음부터 다시 올라야 하지.", "종루의 종이 울리면 조심하게. 꼭대기엔 안개 범이 산다네."] },
   mesa: { id: "camp_mesa", name: "협곡 짐꾼 바위", role: "shop", look: [7, 0, 0, "#a8583a"], goods: FIELD_GOODS,
-    lines: ["협곡 바닥은 미로야. 물소리를 따라가면 폭포 웅덩이가 나오지.", "황금 지붕 궁 앞마당엔 큰 짐승이 버티고, 남동쪽 성벽 안엔 혈루 왕도마뱀이 산다네."] },
+    lines: ["협곡 바닥은 미로야. 물소리를 따라가면 폭포 웅덩이가 나오지.", "황금 지붕 궁 앞마당엔 큰 짐승이 버티고, 남동쪽 성벽 안엔 루비악이 산다네."] },
   inklake: { id: "camp_inklake", name: "나루지기 먹선", role: "shop", look: [4, 1, 0, "#5a5a62"], goods: FIELD_GOODS,
     lines: ["물이 얕아 보여도 검은 웅덩이는 바닥이 없어. 모래톱만 밟고 건너.", "북쪽 외딴 탑 섬에 먹빛 구렁이가 산다네. 그 너머가 단풍 왕도야."] },
 };

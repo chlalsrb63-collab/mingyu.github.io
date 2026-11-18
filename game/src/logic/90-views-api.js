@@ -274,6 +274,7 @@ export function defs() {
     // levels as players see them (4·tier − 3); `tier` the world's own
     mobs[k] = { name: d.name, lore: d.lore || MOB_LORE[k] || "", sp: d.sp, tint: d.tint || null, lv: shownLv(d.lv), tier: d.lv, hp: d.hp, boss: d.boss ? 1 : 0, chest: d.chest ? 1 : 0, xp: d.xp, fly: d.fly ? 1 : 0, aggro: d.aggro || 0 };
     Object.assign(mobs[k], { element: type, resist: res, holyWeak });
+    if (d.epithet) mobs[k].epithet = d.epithet;
     if (d.bonusOptional) mobs[k].optional = 1;
     if (d.questOnly) mobs[k].questOnly = 1;
   }

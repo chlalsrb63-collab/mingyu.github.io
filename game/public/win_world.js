@@ -272,10 +272,12 @@ export function renderCollect(s) {
     const im = el("img"); im.alt = ""; im.src = mobThumb(k, ok);
     const bar = el("div", "bar"), f = el("i"); f.style.width = `${clamp((n / need) * 100, 0, 100)}%`; bar.append(f);
     const progress = ok ? `Lv.${d.lv} · 등록됨` : `${n} / ${need}`;
-    cell.append(im, el("b", "", name), el("small", "", d.optional ? `${progress} · 선택` : progress), bar);
+    cell.append(im, el("b", "", name));
+    if (ok && d.epithet) cell.append(el("small", "col-epithet", d.epithet));
+    if (ok && d.lore) cell.append(el("p", "col-lore", d.lore));
+    cell.append(el("small", "", d.optional ? `${progress} · 선택` : progress), bar);
     const elemental = ok ? monsterElementText(d) : "";
     if (elemental) cell.append(el("small", "col-elements", elemental));
-    if (ok && d.lore) cell.append(el("p", "col-lore", d.lore));
     cell.title = `${name} — ${ok ? "등록됨" : `${need}마리를 잡으면 등록됩니다`} (처치 ${n})`;
     grid.append(cell);
   }
@@ -298,7 +300,7 @@ const TUT_TOUCH = {
   equip: "수련관 카이에게 다가가 [▶ 수련관 카이]를 누르고 무기를 하나 받으세요. 받은 무기를 바로 손에 듭니다.",
   bag: "메뉴 → 가방을 열어 보세요.",
   buy: "보급상 리나에게 다가가 [▶ 보급상 리나]를 누르고 빨간 물약을 사 보세요.",
-  hunt: "동쪽 문으로 나가 바람초원에서 쌍두 토끼를 잡으세요. [공격] 버튼으로 치고, [자동]을 켜면 알아서 사냥합니다.",
+  hunt: "동쪽 문으로 나가 바람초원에서 토비또를 잡으세요. [공격] 버튼으로 치고, [자동]을 켜면 알아서 사냥합니다.",
   rest: "모닥불 곁에서 메뉴 → 앉기를 눌러 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.",
   skill: "든 무기의 첫 스킬은 숙련 1부터 단축칸 1번에 있습니다. 몬스터 곁에서 1번 칸을 눌러 써 보세요.",
   level: "모닥불 곁이나 수련관 카이 앞에서 메뉴 → 캐릭터 → 능력치를 한 칸 올려 보세요. 한 칸이 1레벨입니다.",
