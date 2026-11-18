@@ -14,7 +14,7 @@ const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
 // ── unit harness: a bare shift object, no world
 const mkAb = (seed = 7, endAt = 1e9) => {
-  const ab = { k: "pest", box: { seed }, runAt: 0, endAt, score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, rev: 1, g: null };
+  const ab = { k: "pest", box: { seed }, runAt: 0, endAt, score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, rev: 1, g: null, strikes: 0, out: 0 };
   R.init(null, null, ab);
   return ab;
 };
@@ -26,7 +26,7 @@ const slotOf = (g, r, c) => r * g.cols + c;
 // ── the formation: it flies in, sways ±20 and steps down
 {
   const ab = mkAb(), g = ab.g;
-  assert.equal(g.wv, 1); assert.equal(g.cols, 6); assert.equal(g.rows, 2); assert.equal(g.left, 12);
+  assert.equal(g.wv, 1); assert.equal(g.cols, 7); assert.equal(g.rows, 3); assert.equal(g.left, 21);
   assert.equal(g.oy, -100, "it starts above the field");
   step(ab, P.INTRO); assert.equal(g.oy, 0, "and has flown in after 25 steps"); assert.equal(g.ox, 0);
   const xs = [], ys = [];
@@ -35,8 +35,8 @@ const slotOf = (g, r, c) => r * g.cols + c;
   assert.ok(xs.every((v, i) => i === 0 || Math.abs(v - xs[i - 1]) <= 1), "at one unit per step");
   assert.ok(ys.every((v, i) => i === 0 || v >= ys[i - 1]) && ys[ys.length - 1] > ys[0], "it only ever descends");
   assert.ok(ys.every((v) => v <= P.MAXDROP), "and stops at the limit");
-  const sx = X.pestSx(g, slotOf(g, 0, 0)), ex = X.pestSx(g, slotOf(g, 0, 5));
-  assert.equal(ex - sx, 5 * P.SPX, "slots are 22 apart"); assert.equal((sx + ex) / 2, P.FX + g.ox, "centred on the field");
+  const sx = X.pestSx(g, slotOf(g, 0, 0)), ex = X.pestSx(g, slotOf(g, 0, 6));
+  assert.equal(ex - sx, 6 * P.SPX, "slots are 22 apart"); assert.equal((sx + ex) / 2, P.FX + g.ox, "centred on the field");
 }
 
 // ── the ship: intent, speed cap, bounds
@@ -62,13 +62,13 @@ const slotOf = (g, r, c) => r * g.cols + c;
   const i = slotOf(g, 1, 2), x = X.pestSx(g, i), y = X.pestSy(g, i);
   g.B.push([x + 5, y + 8, 0]);   // a spray right under it (5 to the side is still a hit)
   step(ab);
-  assert.equal(g.F[i], 0, "the bug is shot"); assert.equal(ab.score, 10, "+10"); assert.equal(ab.combo, 1); assert.equal(g.left, 11); assert.equal(g.B.length, 0, "the spray is used up");
+  assert.equal(g.F[i], 0, "the bug is shot"); assert.equal(ab.score, 10, "+10"); assert.equal(ab.combo, 1); assert.equal(g.left, 20); assert.equal(g.B.length, 0, "the spray is used up");
   assert.deepEqual(g.ev.at(-1).slice(1, 5), [1, X.pestSx(g, i), X.pestSy(g, i), 10], "an event tells where and how much");
   // a spray 10 off misses; the lower row shields the upper one in the same column
   const j = slotOf(g, 0, 3), jx = X.pestSx(g, j), jy = X.pestSy(g, j);
   g.B.push([jx + 10, jy + 8, 0]); step(ab); assert.equal(g.F[j], 1, "9 or more to the side: a miss"); assert.equal(g.B.length, 1);
   g.B.length = 0;
-  const lo = slotOf(g, 1, 4), hi = slotOf(g, 0, 4), lx = X.pestSx(g, lo);
+  const lo = slotOf(g, 2, 4), hi = slotOf(g, 1, 4), lx = X.pestSx(g, lo);
   g.B.push([lx, X.pestSy(g, lo) + 30, 0]);
   step(ab, 6); assert.equal(g.F[lo], 0, "the lowest bug takes it"); assert.equal(g.F[hi], 1);
   // a spray that flies off the top is gone
@@ -84,7 +84,7 @@ const slotOf = (g, r, c) => r * g.cols + c;
   assert.equal(g.D.length, 1, "a bug peels off"); const d = g.D[0];
   assert.equal(g.F[d.i], 2, "its place is held"); assert.equal(d.st, 0);
   const y0 = d.y;
-  step(ab, 3); assert.equal(d.y - y0, 3 * 4, "wave 1 dives at 4 per step");
+  step(ab, 3); assert.equal(d.y - y0, 3 * 5, "wave 1 dives at 5 per step");
   const ys = [];
   for (let n = 0; n < 200 && g.D.includes(d) && d.st === 0; n++) { step(ab); if (d.st === 0) ys.push(d.y); }
   assert.ok(ys.every((v, i) => i === 0 || v > ys[i - 1]), "it only goes down");
@@ -95,9 +95,9 @@ const slotOf = (g, r, c) => r * g.cols + c;
   const ab2 = calm(3), g2 = ab2.g;
   g2.dn = 1; step(ab2); const e = g2.D[0]; step(ab2, 10);
   g2.B.push([e.x, e.y + 14, 0]); const before = ab2.score; step(ab2);
-  assert.equal(ab2.score - before, 40, "a diver shot is worth 40"); assert.equal(g2.D.length, 0); assert.equal(g2.F[e.i], 0); assert.equal(g2.left, 11);
+  assert.equal(ab2.score - before, 40, "a diver shot is worth 40"); assert.equal(g2.D.length, 0); assert.equal(g2.F[e.i], 0); assert.equal(g2.left, 20);
   // the speed and the number of divers grow with the wave
-  assert.deepEqual([1, 2, 3, 4, 10].map(X.pestSpeed), [4, 5, 6, 7, 7], "dives get faster with the wave");
+  assert.deepEqual([1, 2, 3, 4, 10].map(X.pestSpeed), [5, 6, 7, 8, 8], "dives get faster with the wave");
   // dive path: deterministic from the same start
   const run = (seed) => { const a = calm(seed), q = a.g; q.dn = 1; step(a, 40); return JSON.stringify(q.D.map((z) => [z.x, z.y])); };
   assert.equal(run(3), run(3)); assert.ok(new Set([1, 2, 3, 4, 5, 6, 7, 8].map(run)).size > 1, "other seeds pick other bugs");
@@ -110,7 +110,7 @@ const slotOf = (g, r, c) => r * g.cols + c;
   g.D.push({ i: 0, k: 0, x: sh.x, y: P.SY - 13, y0: P.SY - 13, cx: sh.x, a: 0, st: 0, vx: 0, vy: 3, web: 0, wd: 0 }); g.F[0] = 2;
   step(ab);
   assert.equal(sh.stun, P.STUN - 0, "rammed: stunned"); assert.equal(ab.combo, 0, "the combo breaks"); assert.equal(ab.score, 300, "no points are lost (albaBad 0)");
-  assert.equal(g.D.length, 1, "the bug bounces off, flying back"); assert.equal(g.D[0].st, 1); assert.equal(g.left, 12, "it is not dead"); assert.equal(g.wh, 1, "counted as a hit this wave");
+  assert.equal(g.D.length, 1, "the bug bounces off, flying back"); assert.equal(g.D[0].st, 1); assert.equal(g.left, 21, "it is not dead"); assert.equal(g.wh, 1, "counted as a hit this wave");
   sh.stun = P.STUN;   // exactly 2 s from here
   sh.fire = 1; const bn = g.B.length;
   assert.equal(R.act(null, null, ab, { x: 10 }, 6), null); step(ab, 5); assert.equal(sh.tx, P.FX, "orders are ignored while stunned"); assert.equal(sh.x, P.FX);
@@ -147,13 +147,13 @@ const slotOf = (g, r, c) => r * g.cols + c;
 // ── the queen (every second wave): many hits, +100
 {
   const ab = calm(2, 2), g = ab.g;
-  assert.ok(g.q && g.q.hp === 14, "wave 2 has a queen with hp 14"); assert.equal(g.left, g.cols * g.rows + 1);
+  assert.ok(g.q && g.q.hp === 18, "wave 2 has a queen with hp 18"); assert.equal(g.left, g.cols * g.rows + 1);
   const hp = g.q.hp;
   g.B.push([X.pestQx(g), X.pestQy(g) + 8, 0]); step(ab);
   assert.equal(g.q.hp, hp - 1); assert.equal(ab.score, 0, "a hit is not worth points"); assert.equal(g.ev.at(-1)[1], 7);
   g.q.hp = 1; g.B.push([X.pestQx(g) + 11, X.pestQy(g) + 8, 0]); step(ab);
   assert.equal(g.q, null); assert.equal(ab.score, 100, "the queen: +100"); assert.equal(g.ev.at(-1)[1], 8);
-  const ab2 = mkAb(); X.pestNew(ab2, 4); assert.equal(ab2.g.q.hp, 22, "wave 4: hp 22"); X.pestNew(ab2, 3); assert.equal(ab2.g.q, null);
+  const ab2 = mkAb(); X.pestNew(ab2, 4); assert.equal(ab2.g.q.hp, 26, "wave 4: hp 26"); X.pestNew(ab2, 3); assert.equal(ab2.g.q, null);
   // she spits webs at the ship
   const ab3 = calm(2, 2), g3 = ab3.g; g3.q.wt = 1; step(ab3); assert.equal(g3.W.length, 1, "the queen spits a web"); assert.equal(g3.W[0][0], g3.sh.x); assert.equal(g3.ev.at(-1)[1], 9);
 }
@@ -177,12 +177,12 @@ const slotOf = (g, r, c) => r * g.cols + c;
   g.B.push([X.pestSx(g, 0), X.pestSy(g, 0) + 8, 0]); step(ab);
   assert.equal(ab.score, 10 + 220, "the last bug, then the wave: +100 and +100 for no hit (the combo is 1: ×1.1)"); assert.equal(g.rest, P.REST); assert.equal(g.ev.at(-1)[1], 6);
   assert.equal(R.view(ab, g.simAt)[3], 0, "no formation while resting");
-  step(ab, P.REST - 1); assert.equal(g.wv, 1); step(ab); assert.equal(g.wv, 2, "after 2.5 s the next wave"); assert.equal(g.left, 22); assert.equal(g.rest, 0);
+  step(ab, P.REST - 1); assert.equal(g.wv, 1); step(ab); assert.equal(g.wv, 2, "after 2.5 s the next wave"); assert.equal(g.left, 33); assert.equal(g.rest, 0);
   const ab2 = calm(), g2 = ab2.g; g2.wh = 1;
   g2.F.fill(0); g2.F[0] = 1; g2.left = 1; g2.B.push([X.pestSx(g2, 0), X.pestSy(g2, 0) + 8, 0]); step(ab2);
   assert.equal(ab2.score, 10 + 110, "a wave with a hit: +100 only (×1.1)");
   const sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 30].map((w) => { const a = mkAb(); X.pestNew(a, w); return a.g.left; });
-  assert.deepEqual(sizes, [12, 22, 32, 41, 40, 41, 40, 41, 40, 41, 41], "12 → 40 bugs in four waves, a queen every second wave, wave 4+ stays the hardest");
+  assert.deepEqual(sizes, [21, 33, 40, 41, 40, 41, 40, 41, 40, 41, 41], "21 → 40 bugs in four waves, a queen every second wave, wave 4+ stays the hardest");
   for (let w = 1; w <= 9; w++) { const a = mkAb(); X.pestNew(a, w); assert.equal(a.g.kinds.length, a.g.rows); assert.ok(a.g.kinds.every((k) => k >= 0 && k <= 2)); }
 }
 
@@ -202,8 +202,8 @@ const slotOf = (g, r, c) => r * g.cols + c;
   const v = R.view(ab, g.simAt + 20);
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v, "plain JSON");
   assert.equal(v[0], 1); assert.equal(v[1], 0); assert.equal(v[2].length, 6); assert.equal(v[2][0], P.FX);
-  const fm = v[3]; assert.equal(fm[4], 6); assert.equal(fm[5], "10"); assert.deepEqual(fm[6], [0b111101, 0b111111 & ~(1 << 1)]);
-  assert.equal(v[10], 12);
+  const fm = v[3]; assert.equal(fm[4], 7); assert.equal(fm[5], "210"); assert.deepEqual(fm[6], [0b1111101, 0b1111110, 0b1111111]);
+  assert.equal(v[10], 21);
   g.rest = 30; assert.equal(R.view(ab, g.simAt)[1], 1500, "ms from now"); g.rest = 0;
   g.sh.stun = 10; assert.equal(R.view(ab, g.simAt + 20)[2][2], 480, "times are ms from now, minus the part of a step not simulated yet");
 }
@@ -348,7 +348,7 @@ function play(botOpts, seed, { name = `방제${seed}`, hook, stepMs = 100 } = {}
       if (hook) hook(s, v);
     }
   }
-  return { score: ab.score, grade: X.albaGrade("pest", ab.score), wave: ab.g.wv, maxBytes, avgBytes: views ? Math.round(sumBytes / views) : 0, maxCombo: ab.maxCombo, state: ab.state, stuns, webs, rescues, fevers: ab.feverUsed, views };
+  return { score: ab.score, grade: X.albaGrade("pest", ab.score), wave: ab.g.wv, maxBytes, avgBytes: views ? Math.round(sumBytes / views) : 0, maxCombo: ab.maxCombo, state: ab.state, out: ab.out, runMs: ab.endAt - ab.runAt, stuns, webs, rescues, fevers: ab.feverUsed, views };
 }
 
 // (c) the bots
@@ -385,6 +385,15 @@ assert.ok(avg(results.human.map((r) => r.score)) > avg(results.casual.map((r) =>
 assert.equal(idle.grade, 0, "an idle player gets no grade"); assert.equal(idle.score, 0, "and no points");
 assert.ok(viewMax < 700, `the view stays small (${viewMax} bytes)`);
 
+// 2026-11-18 strikes: three serious failures end the shift. Rates over 12 seeds.
+{
+  const N = 12, rate = (o) => { const rs = Array.from({ length: N }, (_, i) => play(o, i + 1)); return { r: rs.filter((x) => x.out).length / N, late: rs.filter((x) => x.out && x.runMs >= 75000).length, mean: avg(rs.map((x) => x.runMs / 1000)) }; };
+  const rp = rate(BOTS.perfect), rh = rate(BOTS.human), rc = rate(BOTS.casual);
+  console.log(`  strike-outs over ${N} seeds: perfect ${Math.round(rp.r * 100)}% · human ${Math.round(rh.r * 100)}% · sloppy ${Math.round(rc.r * 100)}% (mean run ${rc.mean} s)`);
+  assert.equal(rp.r, 0, "the perfect bot never strikes out"); assert.ok(rh.r <= 0.25, "the human-like bot strikes out in at most a quarter of its shifts");
+  assert.ok(rc.r >= 0.5, "the sloppy bot strikes out in at least half of its shifts"); assert.ok(rc.mean < 75, `and its run ends before 75 s (mean ${rc.mean} s)`);
+}
+
 // (a) determinism: the same seed and inputs give the same shift, whatever the tick rate; another seed plays differently
 {
   const a = play(BOTS.human, 3), b = play(BOTS.human, 3);
@@ -400,7 +409,7 @@ assert.ok(viewMax < 700, `the view stays small (${viewMax} bytes)`);
       const ta = i < script.length ? t0 + script[i][0] : Infinity;
       if (ta <= nextTick) { s.now = ta; s.act({ t: "ab_act", ...script[i][1] }); i++; } else { s.now = nextTick; s.tick(0); nextTick += stepMs; }
     }
-    return [ab.score, ab.g.wv, ab.g.n, JSON.stringify({ ...ab.g, simAt: 0 })];
+    return ab.out ? [ab.score, ab.strikes, ab.endAt] : [ab.score, ab.g.wv, ab.g.n, JSON.stringify({ ...ab.g, simAt: 0 })];   // a struck-out shift stops counting at its last strike; the frozen field behind it may differ by tick rate
   };
   const r100 = run(100); assert.ok(r100[0] > 0, "the script scores");
   assert.deepEqual(run(50), r100, "ticked at 50 ms: the same"); assert.deepEqual(run(230), r100, "ticked at 230 ms: the same");

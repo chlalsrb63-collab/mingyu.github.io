@@ -20051,9 +20051,9 @@ const PEST = { W: 240, H: 300, SY: 282, STEP: 50, SPD: 4, FCD: 4, BSP: 8, MAXV: 
   COLS: [6, 6, 7, 7, 8, 8, 8, 8], ROWS: [2, 3, 3, 4, 4, 4, 5, 5], KINDS: { 2: [1, 0], 3: [2, 1, 0], 4: [2, 1, 1, 0], 5: [2, 2, 1, 0, 0] },   // 0 cockroach · 1 mosquito · 2 moth
   WIG: [6, 14, 20], FRQ: [2, 3, 2], PTS: [10, 40, 60, 100, 100] };   // PTS: a bug in place · a diver · the rescue · the wave · the wave without a hit (extra)
 
-// A shift is ~90 s, so a wave climbs two "difficulty levels" (size, speed, divers, queen) at once: wave 1 · 2 · 3 · 4 = level 1 · 3 · 5 · 7.
-const pestLv = (wv) => 2 * wv - 1;
-const pestSpeed = (wv) => { const l = pestLv(wv); return 4 + (l > 2) + (l > 4) + (l > 6); };
+// A shift is ~90 s and ends at once after three rammed ships (2026-11-18: harder), so there is no gentle wave: wave 1 · 2 · 3 · 4 = level 3 · 5 · 7 · 9.
+const pestLv = (wv) => 2 * wv + 1;
+const pestSpeed = (wv) => { const l = pestLv(wv); return 4 + (l > 2) + (l > 4) + (l > 6) + (l > 8); };
 const pestSx = (g, i) => PEST.FX + (2 * (i % g.cols) - g.cols + 1) * 13 + g.ox;
 const pestSy = (g, i) => PEST.FY + ((i / g.cols) | 0) * PEST.SPY + g.oy;
 const pestQx = (g) => PEST.FX + g.ox, pestQy = (g) => PEST.FY - 26 + g.oy;
@@ -20141,11 +20141,11 @@ function pestFight(ab, T) {
     const open = [];
     for (let i = 0; i < g.F.length; i++) if (g.F[i] === 1) open.push(i);
     const lv = pestLv(g.wv);
-    if (away < 1 + (lv > 2) + (lv > 4) + (lv > 6) && open.length) {
+    if (away < 1 + (lv > 2) + (lv > 4) + (lv > 6) + (lv > 8) && open.length) {
       const i = open[ri(ab.box, 0, open.length - 1)], k = g.kinds[(i / g.cols) | 0], x = pestSx(g, i), y = pestSy(g, i);
       g.F[i] = 2;
       g.D.push({ i, k, x, y, y0: y, cx: x, a: 0, st: 0, vx: 0, vy: 0, web: k === 1 && g.wv >= 2 && rnd(ab.box) < 0.5 ? 1 : 0, wd: 0 });
-      g.dn = Math.max(16, 44 - 3 * lv) + ri(ab.box, 0, 10);
+      g.dn = Math.max(12, 40 - 3 * lv) + ri(ab.box, 0, 8);
     } else g.dn = 10;
   }
   for (let j = g.D.length - 1; j >= 0; j--) {
@@ -20160,7 +20160,7 @@ function pestFight(ab, T) {
     else if (w[1] >= P.SY - 8 && Math.abs(w[0] - sh.x) <= 12 && !sh.web && !sh.inv) {   // webbed: a flashing rescue bug runs across, shoot it to be free
       g.W.splice(j, 1);
       sh.web = P.WEB; sh.inv = Math.max(sh.inv, P.INV); g.wh++;
-      albaBad(ab, 0);
+      albaStrike(ab, T, 0);
       const right = sh.x >= P.W / 2;
       g.rs = { x: sh.x + (right ? -60 : 60), y: P.SY - 66, vx: right ? 3 : -3 };
       pestEv(g, 4, sh.x, P.SY, 0);
@@ -20199,7 +20199,7 @@ function pestStep(ab, T) {
     if (d.st || sh.inv || Math.abs(d.x - sh.x) >= 12 || Math.abs(d.y - P.SY) >= 10) continue;
     d.st = 1; d.x = pestSx(g, d.i); d.y = -12; d.vx = 0; d.vy = 4; g.wh++;   // it bounces off and flies back from the top (a rammed bug is not a dead bug)
     sh.stun = P.STUN; sh.inv = P.STUN + P.INV;
-    albaBad(ab, 0);
+    albaStrike(ab, T, 0);   // the serious failure: a rammed ship costs a ♥
     pestEv(g, 3, sh.x, P.SY, 0);
   }
   if (!g.rest && g.left <= 0) {
@@ -20211,7 +20211,7 @@ function pestStep(ab, T) {
   if (!g.rest || g.B.length || sh.vx || g.ev.length) g.dirty = 1;
 }
 
-ALBA.pest = { name: "해충 방제", npc: "bogle", place: "보글연금공방 지하 창고", skill: "alch", par: 5700, mul: 1.1, outfit: ["hat_goggles", "top_alch"], tool: "sprayer", hint: "마우스·손가락·←→로 이동, 분무는 자동! 급강하하는 놈과 거미줄을 피하세요." };
+ALBA.pest = { name: "해충 방제", npc: "bogle", place: "보글연금공방 지하 창고", skill: "alch", par: 5700, lives: 5, mul: 1.1, outfit: ["hat_goggles", "top_alch"], tool: "sprayer", hint: "마우스·손가락·←→로 이동, 분무는 자동! 급강하하는 놈에게 들이받히거나 거미줄에 걸리면 ♥ 하나씩, 5개가 다 깎이면 퇴근!" };
 ALBA_RULES.pest = {
   init(S, p, ab) {
     ab.g = { simAt: ab.runAt, n: 0, wv: 0, rest: 0, sw: 0, ox: 0, oy: 0, fvx: 0, fvy: 0, cols: 0, rows: 0, kinds: [], F: [], left: 0, D: [], q: null, B: [], W: [], rs: null,
