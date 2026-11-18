@@ -8,11 +8,11 @@
 const L = (fx, o = {}) => ({ speed: 2.2, alpha: 0.85, ...o, fx });
 export const ELEM = {
   physical: { burst: L("explosions/dirt-explosion", { speed: 2.6, cut: 1.3 }), col: L("nature/earth-spike", { speed: 2, cut: 1.7 }), pal: "stone" },
-  bleed: { burst: L("explosions/small-explosion", { pal: "blood", cut: 1.7 }), col: L("impacts/crit-hit", { pal: "blood", speed: 1.8 }), pal: "blood" },
+  bleed: { burst: L("arcane/mana-burst", { pal: "blood", speed: 1.6 }), col: L("impacts/crit-hit", { pal: "blood", speed: 1.8 }), pal: "blood" },
   fire: { burst: L("explosions/small-explosion", { cut: 1.7 }), col: L("fire/flame-pillar", { speed: 2, cut: 1.9 }), pal: "fire" },
   cold: { burst: L("ice/snowflake-burst", { speed: 1.8, cut: 1.5 }), col: L("ice/icicle-fall", { speed: 1.8, cut: 1.5 }), pal: "ice" },
   lightning: { burst: L("lightning/zap-hit", { speed: 1.6, up: 6 }), col: L("lightning/lightning-strike", { speed: 1.6 }), pal: "volt" },
-  poison: { burst: L("explosions/small-explosion", { pal: "poison", cut: 1.7 }), col: L("nature/thorns", { pal: "poison", speed: 2 }), pal: "poison" },
+  poison: { burst: L("arcane/mana-burst", { pal: "poison", speed: 1.6 }), col: L("nature/thorns", { pal: "poison", speed: 2 }), pal: "poison" },
   dark: { burst: L("shadow/dark-explosion", { speed: 2, cut: 1.6 }), col: L("shadow/grasping-hands", { speed: 2, cut: 1.9 }), pal: "shadow" },
   light: { burst: L("holy/smite", { speed: 1.8, cut: 1.5 }), col: L("holy/holy-pillar", { speed: 1.8, cut: 2 }), pal: "holy" },
 };
