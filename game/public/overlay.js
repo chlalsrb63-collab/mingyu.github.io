@@ -18,6 +18,7 @@ import * as NPC from "./npclife.js";
 import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
 import { G, T, dpr, tg, text, $ } from "./state.js";
+import * as TalkCam from "./talkcam.js";
 import { entityPos } from "./net.js";
 import { mobMax, DUNGEONS, RANK_NAME } from "./events.js";
 import { enchantName, statusesAt } from "./elements.js";
@@ -60,7 +61,8 @@ function questMark(mk, sx, sy, t) {
 export function render(t, dt) {
   if (!G.map) return;
   S3.sync(G, dt, t);
-  S3.render(G.me.x, G.me.y, dt, t, G.snapCam);
+  const [fx, fy] = TalkCam.tick(dt);
+  S3.render(fx, fy, dt, t, G.snapCam);
   G.snapCam = false;
   Dim.tick();
   Housing.tick();

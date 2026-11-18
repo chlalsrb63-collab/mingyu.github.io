@@ -63,8 +63,17 @@ export function setWorldTransform(a = 1, b = 0, c = 0, d = 1, x = 0, y = 0) {
   g.setTransform(a * p, b * p, c * p, d * p, x * p, y * p);
 }
 /** Fit the world to a W×H screen rect (the HUD passes the play viewport; default the whole window). */
+let baseZ = 2, zoomMul = 1, lW = 0, lH = 0, lZoom = 0;
+/** The zoom for a close-up (talkcam.js): the resting zoom times `m`, rounded up to whole device pixels; re-sizes only when that changes. */
+export function setZoomMul(m) {
+  zoomMul = m;
+  const D = window.devicePixelRatio || 1;
+  if (lW && !lZoom && (m > 1 ? Math.ceil(baseZ * D * m) / D : baseZ) !== Z) resize(lW, lH, lZoom);
+}
 export function resize(W = innerWidth, H = innerHeight, zoom = 0) {
   if (!cv) return;
+  lW = W; lH = H; lZoom = zoom;
+  const ovw = vw, ovh = vh;
   // about 440×256 world pixels on screen, so the small sprites stay readable
   // pick the zoom in whole DEVICE pixels (Z may be fractional in CSS px): at browser zoom / dpr 1.25 or 1.5 an integer
   // CSS zoom gives uneven 2/3-pixel columns, which shows as broken pixel art
@@ -72,8 +81,11 @@ export function resize(W = innerWidth, H = innerHeight, zoom = 0) {
   Z = Math.max(1, Math.round(Math.min(W / 440, H / 256)));
   if (W < 560) Z = Math.max(2, Math.round(W / 220));
   Z = Math.max(1, Math.round(Z * D)) / D;
+  baseZ = Z;
+  if (zoomMul > 1) Z = Math.ceil(Z * D * zoomMul) / D;
   if (zoom) Z = zoom;                    // preview pages ask for a fixed zoom (1 = the whole map at world size)
   vw = Math.ceil(W / Z); vh = Math.ceil(H / Z);
+  if (!zoom) { cam.x += (ovw - vw) / 2; cam.y += (ovh - vh) / 2; }   // keep the view centred across a zoom step
   // Keep camera, tile and pointer coordinates logical. Use the denser backing only where visible.
   worldDensity = Z * (window.devicePixelRatio || 1) >= FIGURE_DENSITY ? FIGURE_DENSITY : 1;
   cv.width = vw * worldDensity; cv.height = vh * worldDensity;

@@ -19,6 +19,7 @@ import { act } from "./net.js";
 import { usePotion, interact, stoneNear, aimAtPoint, attack, dash, talkKey } from "./actions.js";
 import { autoSt } from "./update.js";
 import { toggleWin, closeTop, openWin, toast, isOpen, replyWhisper } from "./windows.js";
+import * as TalkCam from "./talkcam.js";
 import * as Track from "./track.js";
 import * as PMenu from "./pmenu.js";
 import * as SX from "./sxwin.js";
@@ -172,6 +173,11 @@ function setAimArrow(on) {
   $("#btn-aim").textContent = on ? "켜짐" : "꺼짐";
   localStorage.setItem("lumentale:aim", on ? "1" : "0");
 }
+/** The close-up while talking to an NPC (talkcam.js); on unless turned off. */
+function showTalkCam() {
+  $("#btn-talkcam").classList.toggle("off", !TalkCam.enabled);
+  $("#btn-talkcam").textContent = TalkCam.enabled ? "켜짐" : "꺼짐";
+}
 /** Your own HP and MP bars just under your feet (owner 2026-11-18); off unless turned on. */
 function setMyBars(on) {
   G.myBars = on;
@@ -319,6 +325,8 @@ export function setupInput() {
   PostFX.bindSetting($("#opt-gfx"), () => Sound.play("ui"));
   setAimArrow(localStorage.getItem("lumentale:aim") !== "0");
   $("#btn-aim").addEventListener("click", () => { setAimArrow(!G.aimArrow); Sound.play("ui"); });
+  TalkCam.load(); showTalkCam();
+  $("#btn-talkcam").addEventListener("click", () => { TalkCam.setEnabled(!TalkCam.enabled); showTalkCam(); Sound.play("ui"); });
   let mb = false; try { mb = localStorage.getItem("lumentale:mybar") === "1"; } catch { /* private mode */ }
   setMyBars(mb);
   $("#btn-mybar").addEventListener("click", () => { setMyBars(!G.myBars); Sound.play("ui"); });
