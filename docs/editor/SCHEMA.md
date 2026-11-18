@@ -83,15 +83,16 @@ generated map round-trips tile for tile):
 - `fishing: false` forbids fishing on that map. Optional `grade: 1..5` sets the grade of its fish and life
   materials (default: from `band`; town and bandless maps are grade 1). The editor does not show it yet.
 - `big`: `[{ "t": "house", "x", "y", "v": 0..7 }, { "t": "fountain", "x", "y" }]` — the 4×3 house
-  sprites (v 0–3 town houses, 4–7 city blocks) and the plaza fountain. Omitted: one house per
-  4×3 block of `h` objects.
+  sprites (v 0–3 town houses, 4–7 city blocks) and the plaza fountain. The Willow job sites use `bld` keys `ab_<game>`, with a
+  front-facing sign and a solid `h` footprint. Omitted: one house per 4×3 block of `h` objects.
 - `marks`: `[{ "x", "y", "kind": "sign", "label": "↑ 버드나무광장", "to"?: mapId }]` — signpost texts
   for `G` objects (the waypoint mark is added by the game).
 - `crops`: `[[x, y, crop], …]` hand-planted crop plots (H10 farm; crop 1 감자 · 2 당근 · 3 양배추 · 4 무 ·
   5 옥수수 · 6 호박, `CROP` in 12-life-tables.js) on open, walkable tiles: gathering nodes of kind 3 (작물), safe
   maps included. Omitted: none.
 - NPC `lines` (≤ 12 strings, `{n}` = player name) are what the talk window shows, replacing the
-  role's stock lines; role `elder` (main-quest giver) is allowed too.
+  role's stock lines; role `elder` (main-quest giver) is allowed too. A job-site NPC uses `role: "alba"`
+  with `alba` set to a registered daily mini-game ID. Interaction starts that mini-game from the NPC's position.
 - **Interiors** (`"theme": "interior"`, art in `public/iso_interior.js`; examples
   `tales_cafe.json`, `town_hall.json`, `starlight_inn.json`): a diorama room. Back walls stand on
   the north row (y = 0) and west column (x = 0) only; the south row and east column hold the low

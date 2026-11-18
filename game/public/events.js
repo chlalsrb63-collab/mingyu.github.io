@@ -15,7 +15,7 @@ import * as SkillFx from "./skillfx.js";
 import { hitPfx } from "./skillpfx.js";
 import { jobSkillFx } from "./job-skill-fx.js";
 import { skillFinisherFx } from "./skill-finisher-fx.js";
-import { HAMMER_IMPACT } from "./swing.js";
+import { HAMMER_IMPACT, MELEE_FEEL, MELEE_FX_WEAPON } from "./swing.js";
 import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
 import * as Life from "./life.js";
@@ -133,7 +133,7 @@ export function onEvent(e, t) {
       break;
     }
     case "h": {
-      const [, id, dmg, crit, isPlayer, cost, cue, parts] = e;
+      const [, id, dmg, crit, isPlayer, cost, cue, parts, swing] = e;
       const tgt = entityPos(id);
       if (!tgt) break;
       const h = heightOf(tgt);
@@ -157,25 +157,31 @@ export function onEvent(e, t) {
         // add the attacker to the wire if party play shows it on a friend's blows
         if (!isPlayer && G.lastAtk - G.lastSkill < 5) hitPfx(tgt.x, tgt.y, critical, Math.atan2(tgt.y - G.me.y, tgt.x - G.me.x));
         tgt.hurtT = t; tgt.hsMs = 0;
-        let wk, fin = false, heavy = critical; // my own weapon kind, when it is my blow: the impact sound follows the weapon
-        // recoil away from whoever struck last
-        if (!isPlayer && G.hitFrom) {
-          tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]);
-          // was this my own blow landing? then it gets the full treatment: a held frame, a kick, a burst
-          const mine = t - G.lastAtk < 420;
+        let wk, fin = false, heavy = critical;
+        if (!isPlayer && dmg > 0) {
+          const source = swing && entityPos(swing[0]);
+          const from = source ? [source.x, source.y] : G.hitFrom;
+          if (from) tgt.hurtA = Math.atan2(tgt.y - from[1], tgt.x - from[0]);
+          const weapon = swing && MELEE_FX_WEAPON[swing[1]];
+          const mine = swing ? swing[0] === G.you : !MELEE_FEEL[G.comboWeapon] && t - G.lastAtk < 420;
           if ((mine || t - G.lastSkill < 700) && G.mobs.has(id)) { G.tgt = id; G.tgtT = t; }   // the target frame follows my last blow (hud.js)
-          fin = mine && !grazing && (G.me.atkN === 2 || (G.self?.wk === "sword" && G.me.atkN === 1));
+          fin = !grazing && (swing ? !!swing[2] : mine && G.me.atkN === 2);
           heavy = critical || fin;
-          tgt.hurtP = heavy ? 1.6 : 1;
-          if (mine) {
-            // a local hitstop: the blow and what it struck hold still for a beat (2–3 frames on a
-            // crit, a finisher or a skill; barely one on a plain hit, so the tempo stays high)
-            const stop = heavy ? 60 : 18;
-            wk = G.self?.wk;
-            if (!G.me.hs || t > G.me.hs.at + G.me.hs.dur) G.me.hs = { at: t, dur: stop };
+          tgt.hurtP = grazing ? 0.6 : heavy ? 1.6 : 1;
+          wk = weapon || (mine ? G.self?.wk : undefined);
+          if (mine || weapon) {
+            const feel = MELEE_FEEL[weapon];
+            const stop = grazing ? 10 : heavy ? feel?.heavyStop ?? 60 : feel?.stop ?? 18;
             tgt.hsMs = stop;
-            if (!hammer) S3.shake(heavy ? 5 : 1.5, heavy ? tgt.hurtA : undefined);
-            if (heavy) G.punch = 1;
+            const current = !swing || (weapon === G.comboWeapon && Math.abs(t - G.impactAt) < 84);
+            if (mine && current && (!G.me.hs || G.me.hs.at < G.me.atkT)) {
+              G.me.hs = { at: t, dur: stop };
+              if (!hammer && !grazing) S3.shake(heavy ? feel?.heavyKick ?? 5 : feel?.kick ?? 1.5, tgt.hurtA);
+              if (heavy) {
+                G.punch = 1;
+                if (feel) Sound.duckImpact();
+              }
+            }
           }
         }
         if (isPlayer) S3.fx.burst(tgt.x, tgt.y, h * 0.55, "#ff7a7a", critical ? 14 : 8, critical ? 2.6 : 2);

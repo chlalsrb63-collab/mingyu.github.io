@@ -257,7 +257,8 @@ export function update(dt, t) {
   const cho = Chores.label();
   const gat = cho || (near ? "" : Gather.label());
   // the 알바 in hand names its step at the right NPC (board.js)
-  const jb = near ? Board.promptFor(near) : "";
+  const job = near?.role === "alba" ? G.defs.alba?.rows[near.alba] : null;
+  const jb = job ? `${job.name} 시작` : near ? Board.promptFor(near) : "";
   if (near !== G.near || gat !== G.gatLabel || jb !== G.jbLabel) {
     const moved = near !== G.near;
     G.near = near; G.gatLabel = gat; G.jbLabel = jb;

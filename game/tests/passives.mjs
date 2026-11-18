@@ -78,7 +78,11 @@ const ps = (v, code) => (v.ev || []).some((e) => e[0] === "ps" && e[2] === code)
   W.ready();
   for (let i = 0; i < 3; i++) {
     assert.ok(W.act({ t: "atk", a: 0 }).ok, "blow " + i);
-    if (ps(W.step(100), 141)) quake = true;
+    const view = W.step(100);
+    const meleeHits = view.ev.filter((event) => event[0] === "h" && event[8]?.[0] === W.p.eid);
+    assert.ok(meleeHits.length, "the basic swing reports its attacker");
+    for (const hit of meleeHits) assert.deepEqual(hit[8], [W.p.eid, D.wkinds.sword.fx, +(i === 2)]);
+    if (ps(view, 141)) quake = true;
     if (i < 2) { assert.ok(!quake, "only the finisher"); for (let k = 0; k < 8; k++) W.step(100); }
   }
   assert.ok(quake && b.by[W.p.pid] > 0, "the finisher's shockwave reached the second monster");

@@ -8,6 +8,7 @@
 import * as Art from "./art.js";
 import { API } from "./account.js";
 import { Sound } from "./audio.js";
+import { MELEE_FX_WEAPON, MELEE_FEEL } from "./swing.js";
 import * as S3 from "./scene2d.js";
 import { iconImg, CLASS_ICON } from "./uiicons.js";
 import * as Growth from "./growth.js";
@@ -287,15 +288,21 @@ function onSnap(s) {
     if (isOpen("guild")) renderGuild();
   }
   if (s.fm) FairMkt.onFm(s.fm);              // a 장날 merchant's list, when asked for or after a purchase (fairmkt.js)
-  if (s.ev) for (const e of s.ev) {
+  if (s.ev) {
     const wait = G.impactAt - t;
-    if (wait > 8 && ((e[0] === "h" && !e[4] && e[2] > 0) || e[0] === "k")) {
-      const map = G.map, socket = ws;
-      setTimeout(() => {
-        if (G.playing && G.map === map && ws === socket) onEvent(e, now());
-      }, wait);
+    const delayedHits = wait > 8 ? new Set() : null;
+    const map = G.map, socket = ws;
+    for (const e of s.ev) {
+      const swing = e[0] === "h" ? e[8] : null;
+      const localSwing = swing && swing[0] === G.you && MELEE_FX_WEAPON[swing[1]] === G.comboWeapon && swing[1] !== 7;
+      const hit = e[0] === "h" && !e[4] && e[2] > 0 && (swing ? localSwing : !MELEE_FEEL[G.comboWeapon]);
+      if (delayedHits && (hit || (e[0] === "k" && delayedHits.has(e[1])))) {
+        if (hit) delayedHits.add(e[1]);
+        setTimeout(() => {
+          if (G.playing && G.map === map && ws === socket) onEvent(e, now());
+        }, wait);
+      } else onEvent(e, t);
     }
-    else onEvent(e, t);
   }
   for (const [id, m] of G.gone) if (t - m.goneT > 1500) G.gone.delete(id);
   if (s.chat) for (const c of s.chat) c.w ? whisperLine(c) : c.sys ? addChat(c.m, "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`, c.it) : c.pt ? addChat(c.m, "party", `[파티] ${c.n}`, c.it) : addChat(c.m, "", c.n, c.it);   // it: linked items (windows.js chatLink)

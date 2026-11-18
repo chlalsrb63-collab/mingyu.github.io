@@ -34,6 +34,34 @@ const tick = (ms) => { now += ms; S.now = now; L.tick(S, now); L.endTick(S); };
 const view = () => { S.now = now; const v = L.viewFor(S, "p1"); L.endTick(S); return v; };
 const K = "t_a", K2 = "t_b", K3 = "t_c";
 
+// Every real mini-game has one signed workplace and one reachable NPC at its front.
+{
+  const m = L.atlas().maps.willow, posts = m.npcs.filter((n) => n.role === "alba");
+  assert.equal(posts.length, D.alba.order.length - 3);
+  assert.deepEqual(new Set(posts.map((n) => n.alba)), new Set(D.alba.order.filter((k) => !k.startsWith("t_"))));
+  const start = [p.map, p.x, p.y];
+  p.map = m.id;
+  for (const n of posts) {
+    const b = m.big.find((b) => b.t === "bld" && b.k === "ab_" + n.alba);
+    assert.ok(b && n.y === b.y + b.h && n.x >= b.x && n.x < b.x + b.w, n.alba + " at the front of its site");
+    assert.ok(m.reach[n.y * m.w + n.x], n.alba + " reachable");
+    for (let y = b.y; y < b.y + b.h; y++) {
+      assert.equal(m.o[y].slice(b.x, b.x + b.w), "h".repeat(b.w));
+    }
+    assert.equal(D.alba.rows[n.alba].place, b.name);
+    assert.equal(D.alba.rows[n.alba].npc, n.id);
+    const request = { t: "ab_start", k: n.alba, npc: n.id };
+    p.x = n.x * 16 + 8; p.y = n.y * 16 + 12;
+    assert.equal(L.validateAction(S, "p1", { ...request, k: K }).ok, false, "the NPC cannot start a different game");
+    assert.ok(act(request).ok);
+    assert.equal(p.ab.k, n.alba);
+    assert.ok(act({ t: "ab_leave" }).ok);
+    p.x += 56;
+    assert.equal(L.validateAction(S, "p1", request).ok, false, "out of reach");
+  }
+  [p.map, p.x, p.y] = start;
+}
+
 // scoring helpers
 {
   const ab = { score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, rev: 0, endAt: 1e9 };

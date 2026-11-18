@@ -176,8 +176,16 @@ export const Sound = {
     this.sfxOn = this.bgmOn = !this.vol.mute;
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
+    this.music.gain.cancelScheduledValues(t);
     this.music.gain.setTargetAtTime(this.vol.mute ? 0 : this.vol.music * 0.55, t, 0.05);
     this.sfx.gain.setTargetAtTime(this.vol.mute ? 0 : this.vol.sfx * 0.8, t, 0.05);
+  },
+  duckImpact() {
+    if (this.ctx?.state !== "running" || this.vol.mute || !this.vol.sfx || !this.vol.music) return;
+    const t = this.ctx.currentTime, level = this.vol.music * 0.55, gain = this.music.gain;
+    gain.cancelScheduledValues(t);
+    gain.setTargetAtTime(level * 0.76, t, 0.01);
+    gain.setTargetAtTime(level, t + 0.05, 0.035);
   },
   save() { try { localStorage.setItem(STORE, JSON.stringify(this.vol)); } catch { /* private mode */ } },
   setMusic(v) { this.vol.music = Math.max(0, Math.min(1, v)); this.save(); this.applyVolume(); },

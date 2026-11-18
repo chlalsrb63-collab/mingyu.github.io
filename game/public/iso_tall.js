@@ -15,6 +15,7 @@
  */
 import { hash, vnoise, C, mix, tone, shade, light, Buf, COL, texA, texB } from "./iso_px.js";
 import { UG, GRASS, materials, levels } from "./iso_ground.js";
+import { albaBuildingStyle, albaBuildingDetails } from "./iso_alba.js";
 
 const INK = C("#2b2233");
 /** Heights (pixels) of what stands up. */
@@ -440,10 +441,10 @@ const FLOWERS = ["#f06a7a", "#fffbe8", "#f0c040", "#c8a0ff"];
  * glow sit, as pixel offsets from the footprint's top corner.
  */
 function building(b) {
-  const hanok = HANOK[b.k];
+  const hanok = HANOK[b.k], work = albaBuildingStyle(b.k);
   const S = hanok ? {
     ...hanok, wall: "#ecdfc9", plinth: 7, stone: "#a49a87", floors: 1, kind: "hip", lattice: true,
-  } : BSTYLE[b.k] || BSTYLE.home;
+  } : work || BSTYLE[b.k] || BSTYLE.home;
   const FW = b.w * 16, FD = b.h * 16, HW = S.HW, seed = b.x * 7 + b.y * 13;
   const roof = S.roof, rise = S.rise, eave = S.eave, rp = roofPalette(roof);
   const tall = HW + rise + 48, M = new Model(FW + FD + 40, tall + (FW + FD) / 2 + 24, FD + 20, tall + 6);
@@ -562,7 +563,8 @@ function building(b) {
     const k = off / half;
     // The surface flattens near the eaves, then lifts along the hip corners.
     const hip = Math.min(oA / (cA + eave), oB / (cB + eave));
-    const pitch = hanok ? rise * (1 - k) ** 1.45 + 8 * k ** 3 * hip ** 5
+    const pitch = S.kind === "shed" ? rise * (FD + eave - B) / (FD + 2 * eave)
+      : hanok ? rise * (1 - k) ** 1.45 + 8 * k ** 3 * hip ** 5
       : S.kind === "round" ? rise * Math.sqrt(Math.max(0, 1 - k * k)) : rise * (1 - k);
     const z = HW - 2 + pitch;
     let c;
@@ -621,7 +623,8 @@ function building(b) {
         M.put(a, FD + 3, 0, stoneC[1], 4);
       }
     }
-  } else extras(b, S, M, FW, FD, HW, rise, info, at);
+  } else if (work) albaBuildingDetails(b.k, M, FW, FD, HW, info, at);
+  else extras(b, S, M, FW, FD, HW, rise, info, at);
   M.ink();
   return { M, info };
 }

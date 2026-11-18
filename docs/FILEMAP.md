@@ -157,6 +157,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `coop-briefing.js`, `coop-briefing-art.js` | Five-second illustrated role briefing, in-game instructions, F key labels and apartment props. |
 | `coop-diner.js`, `coop-forge.js`, `coop-library.js` | Job-specific contextual controls, customer movement and props. Sprite drawers in `coop-diner-art.js`, `coop-forge-art.js`, `coop-lib-art.js`. |
 | `alba.js` | 일일 아르바이트 window `#alba-play` (built in JS): header, the hero-at-work stage (outfit from `defs.alba.rows[k].outfit`, tool sprites), score bar with C/B/A/S marks, result card, key capture; game contract `mount/setState/frame/key/unmount`; also the 알바 list window (`renderList`). |
+| `iso_alba.js` | 건물 12종의 작업장 외관. 공통 건물 렌더러에 지붕과 벽 색, 물탱크·철구·빨랫줄 등의 전용 도안을 제공한다. |
 | `alba_<k>.js` | The mini-game boards, one per game (canvas, code-drawn; pointer, touch and keyboard); loaded on first use by `alba.js`. |
 | `pmenu.js` [190] | The menu beside a clicked player (`onWorldDown`, `S3.pickPlayer`): 파티 초대 · 거래 제안 · 친구 추가 · 귓속말 · 따라가기 · 미니게임 ▸ with greyed reasons; 따라가기 (`follow stopFollow tick`, `#follow-ind`). |
 | `sxwin.js` [230] | Snapshot `sx`: the request popup `#sx-ask`, the trade window `#w-trade` (WIN `trade`, closing cancels), the 가위바위보 card `#rps` (code-drawn hands, keys 1 2 3). |

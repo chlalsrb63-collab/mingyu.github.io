@@ -96,12 +96,12 @@ export function qiBurst(wk, beat, x, y, ang, side, size, glow) {
   const fin = beat === 2, col = glow && glow !== "#ffffff" ? glow : QI_COL[wk] || QI_COL.sword;
   const sweep = (R, sq, dur) => fx.add({ k: "qi", s: "cres", x, y: y - 2, ang, side, R: Math.round(R), sq, col, dur, fin });
   const thrust = (L, dur) => fx.add({ k: "qi", s: "thrust", x, y, ang, L, col, dur, fin });
-  if (wk === "sword") fin ? sweep(size * 1.3, 1, 240) : sweep(size + 4, 0.62, 190);
-  else if (wk === "dagger") beat === 1 ? sweep(size + 3, 0.7, 140) : thrust(size + 8 + (fin ? 6 : 0), 140);
-  else if (wk === "spear") beat === 1 ? sweep(size + 2, 0.6, 180) : thrust(size + 14 + (fin ? 10 : 0), 180);
+  if (wk === "sword") fin ? sweep(size * 1.3, 1, 240) : sweep(size + 1, beat === 0 ? 0.82 : 0.55, 128);
+  else if (wk === "dagger") beat === 1 ? sweep(size - 1, 0.7, 94) : thrust(size + (fin ? 5 : 0), 86);
+  else if (wk === "spear") beat === 1 ? sweep(size + 1, 0.6, 128) : thrust(size + 10 + (fin ? 7 : 0), 126);
   else if (wk === "staff") fx.add({ k: "qi", s: "star", x, y, ang, R: fin ? 13 : 9, col, dur: 170, fin });
   else fx.add({ k: "qi", s: "rune", x, y, ang, R: fin ? 13 : 9, col, dur: 180, fin });
-  if (fin) fx.add({ k: "qi", s: "shock", x: x + Math.cos(ang) * size * 0.8, y: y + Math.sin(ang) * size * 0.5 + 4, ang, R: size, col, dur: 260 });
+  if (fin && wk !== "dagger" && wk !== "spear") fx.add({ k: "qi", s: "shock", x: x + Math.cos(ang) * size * 0.8, y: y + Math.sin(ang) * size * 0.5 + 4, ang, R: size, col, dur: 260 });
 }
 /** Draw one burst of sword-qi at k (0-1 of its life). */
 function drawQi(f, k) {
