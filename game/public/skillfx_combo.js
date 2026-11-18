@@ -36,12 +36,12 @@ export function comboEvent(e, ctx) {
     // the wind-up (or a channel opening): light gathering on the caster, or a warning ring on a ground spell's spot
     if (kind === 143) { f.ring(tx, ty, 40, col, 400); S3.fx.ring(tx, ty, 40, p.a, 400); }
     else f.sparkle(src.x, src.y, 0.9, p.l, 10);
-    castPfx(kind, src, tx, ty, 0, Math.atan2(ty - src.y, tx - src.x), p, mine, "wind");
+    castPfx(kind, src, tx, ty, 0, Math.atan2(ty - src.y, tx - src.x), p, "wind");
     return true;
   }
   if (eid !== G.you) { src.atkT = t; src.dir = dir; src.atkN = 2; } else { G.me.dir = dir; G.me.atkN = 2; }
   src.aim = [tx, ty];
-  castPfx(kind, src, tx, ty, 0, Math.atan2(ty - src.y, tx - src.x), p, mine);   // pixelfx layers (skillpfx.js); `extra` here is not a reach
+  castPfx(kind, src, tx, ty, 0, Math.atan2(ty - src.y, tx - src.x), p);   // `extra` here is not a reach
   switch (kind) {
     case 140: f.burst(tx, ty, 0.3, col, 22, 2.4); f.wave(tx, ty, 26, p.l, 300); f.crack(tx, ty, 24, p.l, 480); B.shake(mine ? 6 : 3); Sound.play("slam"); break;
     case 141: f.burst(tx, ty, 0.6, col, 10 + extra * 4, 2); f.sparkle(tx, ty, 0.6, p.a, 4 + extra * 2); if (extra >= 3) f.ring(tx, ty, 32, p.a, 300, true); Sound.play("tip"); break;

@@ -8,13 +8,16 @@
  * iso pixel — the same pixel size as the 64-px heroes. Nothing is baked or cached, so memory stays flat.
  * pixelfx is drawn from the side: its floor rings (frost-nova, fire-ring, quake…) lie flat as a line in our 2:1 view, so
  * the table uses point and column effects (bursts, blasts, pillars, strikes) and leaves the reach rings to skillfx.js.
- * The tables live in skillpfx_melee.js and skillpfx_magic.js (CAST, HIT, PROC). After changing them run
+ * The tables live in skillpfx_melee.js and skillpfx_magic.js (CAST, PROC). Monster hit flashes come from the damage event.
+ * After changing the tables run
  * `node scripts/pfx-vendor.mjs` (copies the named effects into public/pfx/).
  *
  * A layer: { fx: the effect id (category/name), at: "src" | "tgt" (where it plays; default src), to: "tgt" (fly there, then end),
  *   up: iso px above the ground (or [from, to] when flying), r: server units the effect's own reach option is
  *   scaled to (`reachKey`, default "reach"), size: 1 or 2 (2 = one effect pixel per iso pixel, chunkier and twice as big; the effect's own size knob goes in `opts`), speed (play-rate), cut (seconds of effect time shown, it fades over its last fifth),
- *   delay: ms or "flight", on: "wind" (a combo wind-up layer), crit: true (a HIT layer only on crits), ms: how long a looping effect plays (when it does not fly), aim: true = rotate to the aim, pal: a PAL ramp name, a dark→bright hex array, or "job" (the caster's job colours),
+ *   delay: ms or "flight", on: "wind" or "impact" (explicit phase), alpha: opacity, ms: how long a looping
+ *   effect plays (when it does not fly), aim: true = rotate to the aim, pal: a PAL ramp name, a dark→bright
+ *   hex array, or "job" (the caster's job colours),
  *   opts: the effect's own options }.
  */
 import * as S3 from "./scene2d.js";
@@ -23,20 +26,17 @@ import { createFrame, clearFrame, createFx, composite, PAL as RAMPS } from "./pf
 
 const PD = S3.FIGURE_DENSITY;          // fx pixels per iso pixel
 const MAX = 6;                          // live cast/proc layers at once; more are skipped (a crowd of casters)
-const MAX_HIT = 5;                      // live hit layers at once (a skill striking a pack)
-const HIT_MS = 1400;                    // a hit this soon after my own skill is that skill's (projectiles, meteors, echoes)
 const flightMs = (d) => Math.max(110, Math.min(210, Math.round(d * 1.35)));   // skillfx.js fireballOrb
 
 import * as Melee from "./skillpfx_melee.js";
 import * as Magic from "./skillpfx_magic.js";
 
-/** Skill code → layers when it goes off; skill code → layers on each monster it strikes; passive proc code → layers. */
+/** Skill code → cast layers; passive proc code → layers. */
 export const PFX = { ...Melee.CAST, ...Magic.CAST };
-export const HIT = { ...Melee.HIT, ...Magic.HIT };
 export const PROC = { ...Melee.PROC, ...Magic.PROC };
 
 const mods = new Map(), loads = [];
-for (const t of [PFX, HIT, PROC]) for (const layers of Object.values(t)) for (const l of layers) if (!mods.has(l.fx)) {
+for (const t of [PFX, PROC]) for (const layers of Object.values(t)) for (const l of layers) if (!mods.has(l.fx)) {
   mods.set(l.fx, null);
   loads.push(import(`./pfx/fx/${l.fx}.js`).then((m) => mods.set(l.fx, m), (e) => console.warn("pfx", l.fx, e)));
 }
@@ -46,12 +46,8 @@ export const ready = Promise.all(loads);
 /** The caster's job colours as a dark → bright ramp (jobpal.js palette fields). */
 const jobRamp = (p) => [p.d, p.md, p.m, p.l, p.w, "#ffffff"];
 
-let mine = { kind: 0, at: -1e9 };   // my own last skill, for its HIT layers
-
-/** The pixelfx layers of skill `kind` (server units: src {x, y}, target tx, ty; `p` the job palette; `me` = my own cast;
- * `stage` "wind" = a combo skill's wind-up, which plays only the layers marked `on: "wind"`). */
-export function castPfx(kind, src, tx, ty, extra, ang, p, me = false, stage = "") {
-  if (me && !stage) mine = { kind, at: performance.now() };
+/** Draw the layers assigned to this explicit stage of the skill. */
+export function castPfx(kind, src, tx, ty, extra, ang, p, stage = "") {
   const layers = PFX[kind];
   if (!layers || lowSpec()) return;
   const dist = Math.hypot(tx - src.x, ty - src.y), fl = flightMs(dist);
@@ -59,29 +55,20 @@ export function castPfx(kind, src, tx, ty, extra, ang, p, me = false, stage = ""
     if ((l.on || "") !== stage) continue;
     const at = l.at === "tgt" ? [tx, ty] : [src.x, src.y];
     const delay = l.delay === "flight" ? fl : l.delay || 0;
-    play(l, at[0] + (l.dx || 0), at[1] + (l.dy || 0), { to: l.to === "tgt" ? [tx, ty] : null, ms: fl, delay, ang, p, r: l.r ? extra || l.r : 0, tag: 1 });
+    play(l, at[0] + (l.dx || 0), at[1] + (l.dy || 0), { to: l.to === "tgt" ? [tx, ty] : null, ms: fl, delay, ang, p, r: l.r ? extra || l.r : 0 });
   }
-}
-
-/** My own skill struck a monster at (x, y) (events.js "h"): that skill's HIT layers, if it was cast lately.
- * `kind` forces the skill and `wait` delays it (preview pages); `ang` is the blow's direction (from the caster). */
-export function hitPfx(x, y, crit, ang = 0, kind = 0, p = null, wait = 0) {
-  if (!kind) { if (performance.now() - mine.at > HIT_MS) return; kind = mine.kind; }
-  const layers = HIT[kind];
-  if (!layers || lowSpec()) return;
-  for (const l of layers) if (!l.crit || crit) play(l, x + (l.dx || 0), y + (l.dy || 0), { ms: 0, delay: (l.delay || 0) + wait, ang, p, r: 0, tag: 2 });
 }
 
 /** A weapon passive proc'd (skillfx.js procFx, PS code) at (x, y). */
 export function procPfx(code, x, y, ang = 0, p = null) {
   const layers = PROC[code];
   if (!layers || lowSpec()) return;
-  for (const l of layers) play(l, x + (l.dx || 0), y + (l.dy || 0), { ms: 0, delay: l.delay || 0, ang, p, r: 0, tag: 1 });
+  for (const l of layers) play(l, x + (l.dx || 0), y + (l.dy || 0), { ms: 0, delay: l.delay || 0, ang, p, r: 0 });
 }
 
 function play(l, wx, wy, c) {
   const mod = mods.get(l.fx);
-  if (!mod || S3.fx.list.reduce((n, o) => n + (o.pfx === c.tag), 0) >= (c.tag === 2 ? MAX_HIT : MAX)) return;
+  if (!mod || mod.act?.onBody || S3.fx.list.reduce((n, o) => n + !!o.pfx, 0) >= MAX) return;
   const meta = mod.meta, def = meta.options || {};
   const opts = { ...l.opts };
   if (l.pal) opts.palette = l.pal === "job" ? (c.p ? jobRamp(c.p) : undefined) : Array.isArray(l.pal) ? l.pal : RAMPS[l.pal];
@@ -99,7 +86,7 @@ function play(l, wx, wy, c) {
   const isoAng = Math.atan2((Math.sin(ang) + Math.cos(ang)) / 2, Math.cos(ang) - Math.sin(ang));   // the aim on the ground, as seen
   // effects that paint the wrapped character's body (curse, life-steal, divine-shield…) are left out of the tables: given
   // no actor, pixelfx wraps its stock 24×38 one, and the melee effects only use it to find the hands
-  const inst = createFx(mod, { ...opts, x: ox, y: oy, angle: ang ? isoAng : 0, flip: false });
+  const inst = createFx(mod, { ...opts, x: ox, y: oy, angle: l.aim ? isoAng : 0, flip: false });
   const frame = createFrame(W, H), img = new ImageData(W, H);
   const cv = document.createElement("canvas");
   cv.width = W; cv.height = H;
@@ -110,7 +97,7 @@ function play(l, wx, wy, c) {
   const up = Array.isArray(l.up) ? l.up : [l.up || 0, l.up || 0];
   const [x0, y0] = S3.iso(wx, wy), [x1, y1] = c.to ? S3.iso(c.to[0], c.to[1]) : [x0, y0];
   let last = 0, shown = -1;
-  S3.fx.add({ k: "custom", pfx: c.tag, flat: false, dur: durMs, delay: c.delay, draw: (g, k) => {
+  S3.fx.add({ k: "custom", pfx: true, flat: false, dur: durMs, delay: c.delay, draw: (g, k) => {
     const t = Math.min(full, k * full);
     if (t > last) { inst.update(t - last); last = t; }
     const q = Math.floor(t * fps);
@@ -123,7 +110,8 @@ function play(l, wx, wy, c) {
     }
     const x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k - (up[0] + (up[1] - up[0]) * k);
     g.imageSmoothingEnabled = false;
-    if ((meta.loop && !c.to) || (!meta.loop && l.cut && l.cut < meta.duration)) g.globalAlpha = Math.min(1, (1 - k) * 5);
+    const fades = (meta.loop && !c.to) || (!meta.loop && l.cut && l.cut < meta.duration);
+    g.globalAlpha *= (l.alpha ?? 1) * (fades ? Math.min(1, (1 - k) * 5) : 1);
     g.drawImage(cv, Math.round((x - ox / Z) * PD) / PD, Math.round((y - oy / Z) * PD) / PD, W / Z, H / Z);
   } });
 }

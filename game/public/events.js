@@ -12,7 +12,6 @@ import * as Mini from "./minigames.js";
 import * as MobArt from "./mobart.js";
 import * as Growth from "./growth.js";
 import * as SkillFx from "./skillfx.js";
-import { hitPfx } from "./skillpfx.js";
 import { jobSkillFx } from "./job-skill-fx.js";
 import { skillFinisherFx } from "./skill-finisher-fx.js";
 import { HAMMER_IMPACT } from "./swing.js";
@@ -153,9 +152,6 @@ export function onEvent(e, t) {
         const hammer = cue === HIT_CUE.hammer; // the accompanying hm event plays the one landing cue
         const critical = crit === 1, grazing = crit === 2;
         floatDamage(dmg, parts, tgt, h, critical);
-        // shortcut: hits carry no attacker, so any monster hit soon after my own skill gets its HIT layer (skillpfx.js);
-        // add the attacker to the wire if party play shows it on a friend's blows
-        if (!isPlayer && G.lastAtk - G.lastSkill < 5) hitPfx(tgt.x, tgt.y, critical, Math.atan2(tgt.y - G.me.y, tgt.x - G.me.x));
         tgt.hurtT = t; tgt.hsMs = 0;
         let wk, fin = false, heavy = critical; // my own weapon kind, when it is my blow: the impact sound follows the weapon
         // recoil away from whoever struck last
