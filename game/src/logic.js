@@ -20258,19 +20258,19 @@ ALBA_RULES.pest = {
 // The route follows the player: when the water ends up somewhere the route does not go (a spare was built in, a dump sits on the route), a fresh
 // shortest route is drawn from the water's cell and the deck is rebuilt for it; a piece lost to a slip or a trash is replaced right after the hand.
 // So a site can always be finished (or it leaks at once). Trash discards the hand piece for 3 s off the site clock; skip gives a site up; a site
-// that times out scores 0 (albaBad). A site is a pure function of the shift seed and its number.
+// that times out scores 0. A leak or a timeout is a strike (albaStrike: 3 end the shift); a skip only breaks the combo. A site is a pure function of the shift seed and its number.
 //   act: {c: cell 0..143} place · {tr: 1} trash · {sk: 1} skip
 //   view: [site n, inlet row, outlet row, 144-char board ("0" empty, hex = open sides N1 E2 S4 W8, "#" rock), hand + next three (hex), ms to open, ms to end, trashed, last site's end]
 //   last site's end: 0 none · 1 cleared · 2 leak · 3 timeout · 4 skipped
 
-Object.assign(ALBA, { pipe: { name: "배관 수리", npc: "popo", place: "마을회관 배관실", skill: "craft", par: 1100, mul: 1, outfit: ["hat_coop_cap","top_coop_vest"], tool: "wrench", hint: "조각을 칸에 놓아 급수구에서 배수구까지 길을 이으세요." } });
+Object.assign(ALBA, { pipe: { name: "배관 수리", npc: "popo", place: "마을회관 배관실", skill: "craft", par: 460, mul: 1, lives: 4, outfit: ["hat_coop_cap","top_coop_vest"], tool: "wrench", hint: "조각을 칸에 놓아 급수구에서 배수구까지 길을 이으세요. 물이 새거나 시간이 다 되면 ♥ 하나." } });
 
 const APIPE = { gap: 800, trashMs: 3000, spare: 0.3, fit: 0.3, rock: 255 };
 const APIPE_DX = [0, 1, 0, -1], APIPE_DY = [-1, 0, 1, 0];   // direction index: 0 N · 1 E · 2 S · 3 W; a piece is the mask of its open sides (1 << dir)
 const APIPE_SPARE = [10, 5, 3, 6, 12, 9, 15];                  // straight ─ │, the four corners, the cross
-const apipeLen = (n) => Math.min(40, 14 + 4 * n);               // cells on the first route (a ~90 s shift holds about 4-5 sites)
-const apipeRocks = (n) => Math.min(30, 6 + 4 * n);
-const apipeLimit = (n) => Math.max(28, 48 - 3 * n) * 1000;
+const apipeLen = (n) => Math.min(44, 24 + 3 * n);               // cells on the first route (no gentle first site: 2026-11-18 harder)
+const apipeRocks = (n) => Math.min(34, 14 + 3 * n);
+const apipeLimit = (n) => Math.max(19, 33 - 3 * n) * 1000;
 const apipeDir = (a, b) => { const d = b - a; return d === -12 ? 0 : d === 1 ? 1 : d === 12 ? 2 : 3; };
 
 /** A self-avoiding route of `want` cells (fewer when the board is too tight; at least the shortest) from cell `s` to cell `e` over the empty cells of `b` (`s` and `e` themselves count as empty); null when there is no way. */
@@ -20398,7 +20398,8 @@ function apipeSite(ab, goAt, lr) {
 }
 /** The site is over (not cleared: the caller already scored a clear): the combo breaks, the next site opens `gap` after `t`. */
 function apipeEnd(ab, t, lr) {
-  if (lr !== 1) albaBad(ab, 0);
+  if (lr === 2 || lr === 3) albaStrike(ab, t, 0);   // a leak or a timeout: the site failed, a life is lost
+  else if (lr !== 1) albaBad(ab, 0);
   apipeSite(ab, t + APIPE.gap, lr);
 }
 function apipeAdv(ab, now) {

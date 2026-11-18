@@ -108,7 +108,7 @@ function play(bot, delay, seed = 1) {
     advanceTo(now + Math.max(T.actMs, delay(rand)), 250);
   }
   advanceTo(ab.endAt + 50);
-  const r = { score: Math.round(ab.score), grade: ab.res[0], tally, maxCombo: ab.maxCombo };
+  const r = { score: Math.round(ab.score), grade: ab.res[0], tally, maxCombo: ab.maxCombo, out: ab.out, endMs: ab.endAt - ab.runAt };
   act({ t: "ab_close" });
   return r;
 }
@@ -154,7 +154,7 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
         assert.ok(d === 12 || (d === 1 && ((g.path[i] / 12) | 0) === ((g.path[i - 1] / 12) | 0)), "steps are neighbours");
       }
       for (const c of g.path) assert.notEqual(g.b[c], 255, "no rock on the route");
-      assert.equal(g.b.filter((m) => m === 255).length, Math.min(30, 6 + 4 * n), "rocks grow with the site number");
+      assert.equal(g.b.filter((m) => m === 255).length, Math.min(34, 14 + 3 * n), "rocks grow with the site number");
       assert.ok(g.deck.length >= g.path.length, "the deck holds the route"); spare += g.deck.length - g.path.length; cells += g.path.length;
       assert.ok(g.deck[0] === g.pm[0], "the first piece is the inlet's");
       if (g.path.length < X.apipeLen(n)) short++;
@@ -241,7 +241,7 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   const gap = g.goAt - now;
   assert.ok(gap > 0 && gap <= X.APIPE.gap, "the next site opens after a short gap");
   const before = JSON.stringify(R.view(ab, now));
-  act({ t: "ab_act", c: 70 }); assert.equal(g.b[70], 0, "no placing during the gap"); assert.equal(g.di, 0);
+  const fc = g.b.findIndex((m) => m === 0 && !g.path.includes(g.b.indexOf(m))); act({ t: "ab_act", c: fc }); assert.equal(g.b[fc], 0, "no placing during the gap"); assert.equal(g.di, 0);
   void before;
   advanceTo(g.goAt + 50);
   // trash: 3 s off the clock, the bonus is gone
@@ -280,6 +280,8 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   for (let i = 0; i < 30; i++) hum.push(play(honest(rng(300 + i), 0.075), human(), 300 + i));
   for (let i = 0; i < 20; i++) humClean.push(play(honest(rng(400 + i), 0), human(), 400 + i));
   for (let i = 0; i < 30; i++) slow.push(play(honest(rng(500 + i), 0.075), human(700, 1100), 500 + i));
+  const sloppy = [];
+  for (let i = 0; i < 30; i++) sloppy.push(play(honest(rng(700 + i), 0.6), human(700, 1100), 700 + i));
   const idleRun = play(idle(), () => 0, 9);
   const row = (name, rs) => {
     const m = mean(rs.map((r) => r.score)), tl = [1, 2, 3, 4].map((i) => (mean(rs.map((r) => r.tally[i]))).toFixed(1)).join("/");
@@ -292,6 +294,12 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   const rH = row("human 400-700 ms, 7.5% slips", hum);
   const rC = row("human 400-700 ms, no slips", humClean);
   const rS = row("slow 700-1100 ms, 7.5% slips", slow);
+  const rate = (rs) => rs.filter((r) => r.out).length / rs.length;
+  row("sloppy 700-1100 ms, 60% slips", sloppy);
+  console.log(`pipe strike-outs: perfect ${rate([...perfect35, ...expert])} human ${rate(hum).toFixed(2)} sloppy ${rate(sloppy).toFixed(2)}`);
+  assert.equal(rate([...perfect35, ...expert]), 0, "the perfect bot never strikes out");
+  assert.ok(rate(hum) <= 0.25, "a human-like bot strikes out in at most 25 % of seeds");
+    assert.ok(sloppy.filter((r) => r.out && r.endMs < 75000).length >= sloppy.length / 2, "a sloppy bot strikes out in at least half of its seeds, before 75 s");
   assert.equal(idleRun.score, 0, "an idle shift scores 0"); assert.equal(idleRun.grade, 0, "and is below C");
   assert.ok(perfect35.every((r) => r.grade === 4), "a perfect bot is S");
   assert.ok(expert.every((r) => r.grade === 4), "an optimal fast player is S");
@@ -299,7 +307,7 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   assert.ok(hum.filter((r) => r.grade === 4).length <= hum.length * 0.3, "S is rare for a human-like bot: it needs near-flawless play");
   assert.ok(rC > rH && rO > rH, "fewer slips and sure knowledge, more points");
   assert.ok(rO >= 0.9, "a flawless player reads S");
-  assert.ok(rS >= T.cuts[0] && rS < rH, "a slow player still gets a C");
+  assert.ok(rS < rH, "a slow player scores less (and now strikes out: see the rates)");
 }
 
 // ── (d) hostile input: nothing throws, nothing is scored or moved by junk
@@ -318,7 +326,7 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   for (const a of [{ c: 5 }, { c: 70 }, { tr: 1 }, { sk: 1 }, {}]) { act({ t: "ab_act", ...a }); advanceTo(now + 40); }
   assert.equal(key(ab), k0, "nothing happens during the brief"); assert.equal(ab.g.di, 0);
   advanceTo(ab.runAt + 100);
-  const k1 = key(ab);
+  let k1 = key(ab), site = ab.g.n;
   for (const v of junk) {
     for (const a of [{ c: v }, { tr: v }, { sk: v }, { c: v, tr: 1 }, { c: v, sk: 1 }]) {
       assert.doesNotThrow(() => act({ t: "ab_act", ...a }), `no throw on ${show(a)}`);
@@ -336,6 +344,7 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
     for (const f of ["c", "tr", "sk", "x"]) if (r() < 0.5) a[f] = pool[Math.floor(r() * pool.length)];
     if (a.tr === 1 || a.sk === 1 || (Number.isInteger(a.c) && a.c >= 0 && a.c < 144)) continue;
     assert.doesNotThrow(() => act(a), show(a)); advanceTo(now + 36); sane(ab);
+    if (ab.g.n !== site) { site = ab.g.n; k1 = key(ab); }   // a site timed out by itself (the clock, not the junk)
   }
   assert.equal(key(ab), k1, "1000 random junk objects change nothing");
   // spam: ten placements in 90 ms; the 35 ms limit lets only some through
