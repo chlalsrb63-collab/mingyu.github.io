@@ -55,7 +55,7 @@ increasing(maps.jungle, ["vinemonkey", "hydrasnake_poison", "loggator"]);
 increasing(maps.coast, ["hermitskull", "eyegull", "coralturtle"]);
 increasing(maps.oasis, ["foxtwine_gold", "ribvulture_bone", "mummycamel"]);
 increasing(maps.maple, ["blightsquirrel", "gravrose", "bogcrown", "hollowowl", "rootwarden"]);
-assert.deepEqual(D.quests.slice(-4).map((q) => q.mob), ["bogcrown", "hollowowl", "rootwarden", "crownstag"]);
+assert.deepEqual(D.quests.slice(-7, -3).map((q) => q.mob), ["bogcrown", "hollowowl", "rootwarden", "crownstag"]);
 
 const keep = maps.frostkeep;
 const boss = keep.cells.fixed.find((sp) => sp.k === "crownstag");

@@ -47,9 +47,9 @@ const sqSt = (W, id) => { W.p.dirty = true; const r = W.step().self.sq.find((x) 
 const idx = (mob, fb = 0) => Q.findIndex((q) => q.mob === mob && !!q.fb === !!fb);
 
 // ── the chain: eight chapters in order, the two new bands, each beat a mainChapter quest given by 엘더윈
-assert.equal(Q.length, 49);
+assert.equal(Q.length, 52);
 const chaps = Q.map((q, i) => [i, q.chap]).filter(([, c]) => c);
-assert.equal(chaps.length, 8);
+assert.equal(chaps.length, 9);
 chaps.forEach(([i, c], k) => { assert.ok(c.startsWith(`제${k + 1}장 「`), c); assert.ok(Q[i].intro.length > 30, `${c} has an intro`); });
 assert.equal(chaps[0][0], 0, "the first step opens chapter 1");
 const v24 = Q.filter((q) => q.v24).map((q) => q.mob);
@@ -133,7 +133,7 @@ for (const [i, id] of beats) {
 // ── old sheets (v20–v23): the same errand after the four new rows; v24 sheets are left alone; a finished chain stays finished
 {
   const old = Q.map((q, j) => (q.v24 || q.v30 ? -1 : j)).filter((j) => j >= 0);   // the v23 chain, as indexes now
-  assert.equal(old.length, 39);
+  assert.equal(old.length, 42);   // 39 + the three epilogue rows: a finished old sheet lands on the first one
   for (const k of [0, 5, 22, 23, 24, 30, 31, 38, 39]) {
     const ch = { ...L.newChar("옛장", []), v: 23, lvl: 150, q: { i: k, n: 3, st: 1 } };
     const W = world(ch);
@@ -150,7 +150,7 @@ for (const [i, id] of beats) {
   const v30 = Q.filter((q) => q.v30).map((q) => q.mob);
   assert.deepEqual(v30, ["cactushog", "wingcrane", "ribvulture_gold", "clubshrimp", "wingcrane_ash", "serpentwing_ash"]);
   const old = Q.map((q, j) => (q.v30 ? -1 : j)).filter((j) => j >= 0);
-  assert.equal(old.length, 43);
+  assert.equal(old.length, 46);
   for (const k of [0, 25, 26, 30, 38, 42, 43]) {
     const W = world({ ...L.newChar("옛장", []), v: 29, lvl: 150, q: { i: k, n: 2, st: 1 } });
     assert.equal(W.ch.q.i, k < old.length ? old[k] : Q.length, `v29 step ${k}`);
@@ -165,3 +165,8 @@ for (const [i, id] of beats) {
   for (const q of Q) for (const [id] of q.items) assert.ok(D.items[id], `${q.title}: item ${id}`);
 }
 console.log("chapters: ok");
+
+// ── epilogue (제9장): appended after crownstag so a finished sheet (q.i === 49) picks it up; its mobs live in the keep
+assert.deepEqual(Q.slice(-4).map((q) => q.mob), ["crownstag", "rimehare", "frostmoth", "rimewalrus"]);
+assert.ok(Q[49].chap.startsWith("제9장") && Q[49].intro.length > 30);
+for (const q of Q.slice(-3)) assert.ok(Object.values(L.atlas().maps).some((m) => m.spawns.some((s) => s.k === q.mob)), `${q.title}: ${q.mob} spawns somewhere`);
