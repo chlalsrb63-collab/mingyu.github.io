@@ -812,7 +812,8 @@ const MV_GRACE = 1200;
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
 const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 15 };
-const GEAR_CUT = 0.3, MOB_ATK = 1.27;
+// MOB_HARD: owner 2026-11-19 — every monster 20 % more HP and attack (chests excepted)
+const GEAR_CUT = 0.3, MOB_ATK = 1.27, MOB_HARD = 1.2;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
  * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
@@ -1081,7 +1082,8 @@ for (const k of Object.keys(MOBS)) {
   if (!d.sp) d.sp = k;
   for (const mv in TRICKS) if (d[mv] === undefined && MOBS[d.sp] && MOBS[d.sp][mv]) d[mv] = MOBS[d.sp][mv];
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
-  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]));
+  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD);
+  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD);
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;
@@ -4352,7 +4354,7 @@ const DIM = {
   // 3-floor raid (2026-11-15), 4 bots × 4 draws at tiers 17 / 32 / 44: `hpMid` [band, width, + at it] adds 0.5 at 32 (the
   // mid band ran 7.5–9 min), `hpHigh` [above this level, − per level] trims the top band (44 took 12+ min), the final boss
   // `bossHp` 0.65 at floor 3's row (0.8 made low-band parties wipe-loop on it): clears 8.6–11.3 min, 9.7 on average.
-  hpBase: 4, hpLow: [24, 0.85], hpHigh: [38, 0.12], hpMid: [32, 8, 0.5], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
+  hpBase: 4, hpLow: [24, 0.85], hpHigh: [38, 0.12], hpMid: [32, 8, 0.35], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
   reviveMs: 25000,
   // the final boss's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then (what the old
   // ladder's tier 3 paid); a failed run's consolation is `failGold` × lv a floor reached
@@ -12400,6 +12402,7 @@ function bsCast(S, rt, mob, tgt) {
         const tx = Math.floor(x / T), ty = Math.floor(y / T), add = newMob(S, o.kind, [tx, ty, tx, ty], { elite: 0 });
         add.x = add.hx = x; add.y = add.hy = y; readyMob(S, add);
         add.temp = true; add.add = mob.id; add.shield = o.shield; add.feedAt = o.feed ? now + o.feed : 0; add.heal = o.heal;
+        if (mob.dim) { add.hk = 1 / MOB_HARD; add.ak = 1 / MOB_HARD; }   // raid adds keep the raid's tuned pace (64-dim.js dimHk)
         rt.mobs.push(add); rt.ev.push(["r", add.id]);
       }
       dur = 800; break;
@@ -16720,7 +16723,8 @@ function dimHk(n, lv, mlv) {
   const [mid, width, trim] = DIM.hpMid;
   const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv), high = DIM.hpHigh[1] * Math.max(0, lv - DIM.hpHigh[0]);
   const middle = trim * Math.max(0, 1 - Math.abs(lv - mid) / width);
-  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
+  // ÷ MOB_HARD: the raids keep the party pace they were tuned to (bots 5–10 min) when field monsters got tougher
+  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv)) / MOB_HARD;
 }
 
 /**
@@ -16882,7 +16886,7 @@ function dimFloor(S, dim, floor) {
       mob.temp = true; mob.dim = 1;
       if (sp.guard) mob.guard = 1;
       if (!sp.chest) mob.hk = dimHk(dim.n, dim.lv, MOBS[sp.k].lv) * tk.hp * dimRaidHk(map.dim.raid);
-      if (tk.atk > 1) mob.ak = tk.atk;
+      mob.ak = Math.max(1, tk.atk) / MOB_HARD;
       if (mob.el === 1 && tk.traits > 1) mob.tr = rollTraits(S, tk.traits);
       dim.rt.mobs.push(mob);
     }
@@ -16988,7 +16992,7 @@ function dimBoss(S, dim) {
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   const [bh, ba] = dimRaidBoss(dim.map.dim.raid);
   mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid) * bh;
-  mob.ak = DIM.bossAtk * dim.tk.atk * ba;
+  mob.ak = DIM.bossAtk * dim.tk.atk * ba / MOB_HARD;
   mob.hp = mobMax(mob);
   mob.castAt = now + 4000;
   mob.stun = now + FB_WARN;

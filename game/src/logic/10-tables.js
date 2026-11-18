@@ -311,7 +311,8 @@ const MV_GRACE = 1200;
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
 const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 15 };
-const GEAR_CUT = 0.3, MOB_ATK = 1.27;
+// MOB_HARD: owner 2026-11-19 — every monster 20 % more HP and attack (chests excepted)
+const GEAR_CUT = 0.3, MOB_ATK = 1.27, MOB_HARD = 1.2;
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
  * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
@@ -580,7 +581,8 @@ for (const k of Object.keys(MOBS)) {
   if (!d.sp) d.sp = k;
   for (const mv in TRICKS) if (d[mv] === undefined && MOBS[d.sp] && MOBS[d.sp][mv]) d[mv] = MOBS[d.sp][mv];
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
-  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]));
+  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD);
+  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD);
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;
