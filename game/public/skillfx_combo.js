@@ -8,6 +8,7 @@
 import * as S3 from "./scene2d.js";
 import { Sound } from "./audio.js";
 import { fxPal } from "./jobpal.js";
+import { castPfx } from "./skillpfx.js";
 
 const now = () => performance.now();
 const text = (G, str, x, y, h, col) => G.texts.push({ str, x, y, h, col, big: true, t0: now() });
@@ -39,6 +40,7 @@ export function comboEvent(e, ctx) {
   }
   if (eid !== G.you) { src.atkT = t; src.dir = dir; src.atkN = 2; } else { G.me.dir = dir; G.me.atkN = 2; }
   src.aim = [tx, ty];
+  castPfx(kind, src, tx, ty, 0, Math.atan2(ty - src.y, tx - src.x), p);   // pixelfx layers (skillpfx.js); `extra` here is not a reach
   switch (kind) {
     case 140: f.burst(tx, ty, 0.3, col, 22, 2.4); f.wave(tx, ty, 26, p.l, 300); f.crack(tx, ty, 24, p.l, 480); B.shake(mine ? 6 : 3); Sound.play("slam"); break;
     case 141: f.burst(tx, ty, 0.6, col, 10 + extra * 4, 2); f.sparkle(tx, ty, 0.6, p.a, 4 + extra * 2); if (extra >= 3) f.ring(tx, ty, 32, p.a, 300, true); Sound.play("tip"); break;

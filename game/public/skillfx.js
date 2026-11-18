@@ -17,6 +17,7 @@ import { Sound } from "./audio.js";
 import { HAMMER_IMPACT } from "./swing.js";
 import { comboEvent } from "./skillfx_combo.js";
 import { fxPal, jobPal, skillPal, fxSkill, skillDef, skillOwner } from "./jobpal.js";
+import { castPfx } from "./skillpfx.js";
 
 const P = 2;                       // world unit → world pixel, as in scene2d (flat effects are drawn in these)
 /** Server units → iso pixels, lifted `up` pixels: where things in the air are drawn. */
@@ -2505,6 +2506,7 @@ function cast(kind, src, eid, tx, ty, extra, G) {
   const B = S3.big(ang), f = B.fx, mine = eid === G.you;
   const near = mine || skillNear(G, src.x, src.y) || skillNear(G, tx, ty);
   const play = (key) => { if (near) Sound.play(key); };
+  if (near) castPfx(kind, src, tx, ty, extra, ang, p);   // the pixelfx layers (skillpfx.js), over the game's own marks
   switch (kind) {
     // ── 스태프
     case 70: {
