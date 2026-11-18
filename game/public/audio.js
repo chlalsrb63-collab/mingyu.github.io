@@ -832,8 +832,22 @@ const SFX = {
   reso_ready() { this.arp("sine", [784, 988, 1175, 1568], 0.04, 0.14, 0.07); this.tone("triangle", 392, 392, 0.3, 0.04); },
   // 마도서: the soul bolt, the vortex and its beats, the phantom beast's bite and its curse, the brand
   soulbolt() { this.tone("sine", 300, 900, 0.22, 0.08); this.tone("triangle", 150, 450, 0.22, 0.05, 0.03); this.noise(0.2, 0.06, 1600, "bandpass", 0, 400); },
-  gravity() { this.tone("sine", 220, 55, 0.6, 0.14); this.noise(0.6, 0.12, 400, "bandpass", 0, 120); },
-  gravity_tick() { this.tone("sine", 110, 70, 0.12, 0.06); },
+  soulbolt_end() {
+    const p = this.vary();
+    this.tone("triangle", 890 * p, 330 * p, 0.085, 0.1);
+    this.tone("sine", 134 * p, 60 * p, 0.12, 0.11, 0.008);
+    this.noise(0.039, 0.07, 1280 * p, "bandpass", 0, 440 * p);
+  },
+  gravity() {
+    this.noise(0.24, 0.09, 2000, "bandpass", 0, 260);
+    this.tone("sine", 155, 62, 0.32, 0.14, 0.045);
+    this.tone("triangle", 370, 117, 0.16, 0.047, 0.023);
+  },
+  gravity_tick() {
+    const p = this.vary();
+    this.noise(0.066, 0.05, 780 * p, "bandpass", 0, 190 * p);
+    this.tone("sine", 142 * p, 70 * p, 0.10, 0.07, 0.014);
+  },
   pact() { this.tone("sawtooth", 65, 50, 0.9, 0.12); this.arp("square", [147, 139, 131], 0.16, 0.3, 0.05, 0.1); this.noise(0.8, 0.1, 600, "bandpass", 0, 200); },
   phantom_bite() { const p = this.vary(); this.noise(0.08, 0.2, 1600 * p, "bandpass"); this.tone("square", 300 * p, 120 * p, 0.08, 0.06); },
   pact_end() { this.noise(0.5, 0.32, 1200, "lowpass", 0, 70); this.tone("sawtooth", 160, 40, 0.5, 0.14); this.tone("sine", 1200, 300, 0.3, 0.05); },
@@ -930,6 +944,17 @@ const SFX = {
   tip() { this.tone(0.25, 1760, 1760, 0.04, 0.06); },
   hundred() { this.noise(0.4, 0.3, 300, "bandpass", 0, 6000); this.tone("sawtooth", 200, 800, 0.3, 0.08); this.tone(0.5, 2093, 2093, 0.3, 0.04, 0.3); },
   ember() { this.noise(0.3, 0.18, 400, "lowpass", 0, 2400); this.tone("sine", 260, 520, 0.18, 0.08); },
+  fireball_cast() {
+    const p = this.vary();
+    this.noise(0.12, 0.11, 680 * p, "bandpass", 0, 2500 * p);
+    this.tone("triangle", 190 * p, 500 * p, 0.085, 0.065);
+  },
+  fireball_land() {
+    const p = this.vary();
+    this.noise(0.07, 0.20, 2100 * p, "bandpass", 0, 630 * p);
+    this.tone("sine", 147 * p, 58 * p, 0.13, 0.18, 0.006);
+    this.noise(0.095, 0.07, 2950 * p, "highpass", 0.038);
+  },
   frost() { this.tone("triangle", 2200, 800, 0.3, 0.1); this.noise(0.3, 0.1, 6000, "highpass"); },
   bolt() { this.noise(0.12, 0.26, 3000, "highpass"); this.tone("square", 1200, 200, 0.12, 0.08); this.noise(0.25, 0.12, 900, "lowpass", 0.05, 120); },
   steam() { this.noise(0.5, 0.3, 5000, "highpass", 0, 1500); this.noise(0.3, 0.2, 800, "lowpass", 0, 120); this.tone("sine", 160, 60, 0.3, 0.2); },

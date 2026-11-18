@@ -779,58 +779,36 @@ function soulTrail(ax, ay, bx, by, ms) {
 
 /**
  * [불 Fire] 파이어볼 (`fx: 70`):
- * Outlined pixel fireball orb flying from (ax, ay) to (bx, by) with licking flame tail,
- * followed by an r=30 8-tongue pixel fire crown detonation and scorched ground embers.
+ * A hot core with a thin ember trail. At landing, leave the ring and a short spark fan.
  */
-export function fireballOrb(ax, ay, bx, by, r = 30) {
-  const p = PAL;
+export function fireballOrb(ax, ay, bx, by, r = 30, audible = false) {
+  const p = { m: "#ef6a32", al: "#ffc35c" };
   const dist = Math.hypot(bx - ax, by - ay);
   const flightMs = Math.max(110, Math.min(210, Math.round(dist * 1.35)));
   const [x0, y0] = at(ax, ay, 16), [x1, y1] = at(bx, by, 6);
   const d = Math.max(1, Math.hypot(x1 - x0, y1 - y0)), ux = (x1 - x0) / d, uy = (y1 - y0) / d, nx = -uy, ny = ux;
-  // 1. Flying pixel fireball projectile + flame wake
   S3.fxCustom((g, k) => {
     const x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k - Math.sin(k * Math.PI) * 10;
     const tailLen = Math.min(30, d * k);
-    for (let i = 3; i < tailLen; i += 3) {
-      const sway = Math.sin(i * 0.45 - k * 14) * (i < 14 ? 2.5 : 4);
+    for (let i = 3; i < tailLen; i += 4) {
+      const sway = Math.sin(i * 0.45 - k * 14) * (i < 14 ? 1.5 : 3);
       const tx = x - ux * i + nx * sway, ty = y - uy * i + ny * sway;
-      const sz = i < 12 ? 3 : 2;
-      px(g, tx - 2, ty - 2, sz + 2, sz + 2, INK);
-      px(g, tx - 1, ty - 1, sz, sz, i < 9 ? p.m : i < 18 ? p.m : p.md);
+      g.globalAlpha = 1 - i / 35;
+      pixelLine(g, tx, ty, tx - ux * 3, ty - uy * 3, i < 12 ? p.al : p.m, i < 12 ? 2 : 1);
     }
-    // 9x9 outlined pixel fireball head
-    for (let dy = -4; dy <= 4; dy++) {
-      const w = 4 - (Math.abs(dy) > 2 ? Math.abs(dy) - 1 : 0);
-      px(g, x - w - 1, y + dy, w * 2 + 3, 1, INK);
-      px(g, x - w, y + dy, w * 2 + 1, 1, dy > 1 ? p.md : p.m);
-      if (w >= 2) px(g, x - w + 1, y + dy, w * 2 - 1, 1, p.m);
-      if (Math.abs(dy) <= 1) px(g, x - 1, y + dy, 3, 1, p.al);
+    g.globalAlpha = 1;
+    for (let dy = -3; dy <= 3; dy++) {
+      const w = 4 - Math.abs(dy);
+      px(g, x - w, y + dy, w * 2 + 1, 1, dy > 1 ? p.m : p.al);
+      if (Math.abs(dy) <= 1) px(g, x - 2, y + dy, 4, 1, "#fff5c8");
     }
   }, flightMs);
 
-  // 2. Detonation at (bx, by) with radius r = 30
-  later(Math.max(0, flightMs - 30), () => {
-    S3.fx.flash(bx, by, 10, 0, 0.18);
-    S3.fx.wave(bx, by, r, p.m, 250);
-    rim(bx, by, r, p.md, p.al, 310, 0.52);
-    shards(bx, by, r * 0.9, 8, 22, p.md, p.m, 300, 12);
-    S3.fxCustom((g, k) => {
-      const expand = 0.25 + 0.75 * (1 - (1 - Math.min(1, k * 1.5)) ** 2);
-      // 8 rising pixel flame tongues around the r=30 blast perimeter
-      for (let i = 0; i < 8; i++) {
-        const a = i * (Math.PI / 4) + k * 0.25;
-        const rad = r * expand * (i % 2 ? 0.78 : 0.96);
-        const [fx0, fy0] = at(bx + Math.cos(a) * rad, by + Math.sin(a) * rad, 0);
-        const h = Math.max(3, Math.round((i % 2 ? 12 : 16) * Math.sin(k * Math.PI)));
-        for (let step = 0; step < h; step += 2) {
-          const w = step < h * 0.45 ? 3 : step < h * 0.8 ? 2 : 1;
-          const sway = Math.round(Math.sin(step * 0.5 + i) * 1.2);
-          px(g, fx0 + sway - w, fy0 - step - 1, w * 2 + 1, 3, INK);
-          px(g, fx0 + sway - w + 1, fy0 - step, w * 2 - 1, 2, step < 4 ? p.al : step < h * 0.6 ? p.m : p.m);
-        }
-      }
-    }, 320);
+  later(flightMs, () => {
+    S3.fx.flash(bx, by, 7, 0, 0.18);
+    S3.fx.wave(bx, by, r, p.al, 220);
+    shards(bx, by, r * 0.8, 7, 17, p.m, p.al, 230);
+    if (audible) { S3.shake(2.1, Math.atan2(by - ay, bx - ax)); Sound.play("fireball_land"); }
   });
 }
 
@@ -843,8 +821,7 @@ function fireBurnPatch(x, y, r = 30) {
       const a = i * 1.047 + (Math.round(x + y) % 5) * 0.3, d = r * (0.28 + (i % 3) * 0.24);
       const [sx, sy] = at(x + Math.cos(a) * d, y + Math.sin(a) * d, Math.round(k * 9));
       const h = k < 0.65 ? 5 : 3;
-      px(g, sx - 2, sy - h, 5, h + 2, INK);
-      px(g, sx - 1, sy - h + 1, 3, h, p.m);
+      px(g, sx - 1, sy - h + 1, 2, h, p.m);
       px(g, sx, sy - h + 2, 1, Math.max(1, h - 2), p.al);
     }
   }, 260);
@@ -938,7 +915,7 @@ export function chainLightningArc(ax, ay, bx, by) {
  */
 export function gravityWell(x, y, r = 60, ms = 4000) {
   const p = PAL;
-  groundRing(x, y, r, ms, p.m, 0.18);
+  groundRing(x, y, r, ms, p.m, 0.08);
   S3.fxCustom((g, k) => {
     const t = k * ms, fade = Math.min(1, k * 10, (1 - k) * 8);
     const [cx, cy] = at(x, y, 0);
@@ -948,7 +925,6 @@ export function gravityWell(x, y, r = 60, ms = 4000) {
       if (i % 4 === 3) continue;
       const a = (i / 48) * Math.PI * 2 - t / 1800;
       const [bx, by] = at(x + Math.cos(a) * r, y + Math.sin(a) * r, 0);
-      px(g, bx - 2, by - 1, 4, 3, INK);
       px(g, bx - 1, by, 2, 1, i % 4 === 0 ? p.l : i % 2 ? p.m : p.md);
     }
     // 2. Two inward-contracting pixel octagons + 8 inward suction chevrons showing pull toward center
@@ -960,9 +936,8 @@ export function gravityWell(x, y, r = 60, ms = 4000) {
         const ux = Math.cos(a), uy = Math.sin(a), nx = -uy, ny = ux;
         const [px0, py0] = at(x + ux * rad, y + uy * rad, 0);
         const [px1, py1] = at(x + ux * (rad + 5) + nx * 4, y + uy * (rad + 5) + ny * 4, 0);
-        pixelLine(g, px0, py0, px1, py1, INK, 3);
         pixelLine(g, px0, py0, px1, py1, ring === 0 ? p.m : p.md, 1);
-        px(g, px0 - 1, py0 - 1, 3, 3, p.l);
+        px(g, px0 - 1, py0, 2, 1, p.l);
       }
     }
     // 3. 10 dark-matter pixel shards spiraling inward and getting crushed into the singularity
@@ -971,8 +946,7 @@ export function gravityWell(x, y, r = 60, ms = 4000) {
       const d = r * 0.88 * (1 - u * 0.85), a = i * 1.884 + u * 3.6;
       const lift = Math.round(Math.sin(u * Math.PI) * 9);
       const [sx, sy] = at(x + Math.cos(a) * d, y + Math.sin(a) * d, lift);
-      px(g, sx - 2, sy - 2, 5, 4, INK);
-      px(g, sx - 1, sy - 1, 3, 2, i % 2 ? p.m : p.md);
+      px(g, sx - 1, sy, 2, 1, i % 2 ? p.m : p.md);
       px(g, sx, sy - 1, 1, 1, p.l);
     }
     // 4. Central pixel black-hole core (abyssal void #12091f ringed by #b44cff and #f0c4ff)
@@ -1002,7 +976,6 @@ function gravityPulse(x, y, r = 60) {
       const d0 = r * 0.85 * (1 - k * 0.7), d1 = Math.max(4, d0 - 14);
       const [ax, ay] = at(x + Math.cos(a) * d0, y + Math.sin(a) * d0, 3);
       const [bx, by] = at(x + Math.cos(a) * d1, y + Math.sin(a) * d1, 2);
-      pixelLine(g, ax, ay, bx, by, INK, 3);
       pixelLine(g, ax, ay, bx, by, i % 2 ? p.l : p.m, 1);
     }
     px(g, cx - 3, cy - 2, 7, 5, INK);
@@ -1336,6 +1309,7 @@ function propBeat(G, B, f, e) {
       // The server applies each meteor strike with this pulse. Show the crater and the falling trail together.
       const r = G.defs?.skills?.meteor?.hr || 30, flat = S3.fx;
       const [sx, sy] = at(x, y);
+      castPfx(90, { x, y }, x, y, 0, 0, p, "impact");
       S3.fxCustom((g, k) => {
         const h = Math.round(72 * (1 - k)), w = Math.ceil(7 * (1 - k));
         for (let j = 0; j < h; j += 3) {
@@ -1511,12 +1485,12 @@ export function hammerWindup(x, y, r = 28, windMs = 200, ang = 0) {
 
 /**
  * 3-plane pixel stone chunks (22-materials-hard.md Rule 10) bursting from landing center (x, y) toward radius `r`,
- * then settling as small outlined pebbles in the dissipation phase.
+ * then settling as thin stone chips that fade at ground level.
  */
 function stoneDebris(x, y, r, count, ang, topCol, midCol, dur) {
-  const shadeCol = "#454257";
   S3.fxCustom((g, k) => {
     const settle = k >= 0.58;
+    g.globalAlpha *= Math.min(1, (1 - k) * 2.6);
     for (let i = 0; i < count; i++) {
       // Bias half the stones into the forward hemisphere along `ang` so attack direction reads clearly
       const a = ang + (i - (count - 1) / 2) * (Math.PI * 1.45 / Math.max(1, count - 1)) + (i % 2 ? 0.18 : -0.18);
@@ -1528,19 +1502,11 @@ function stoneDebris(x, y, r, count, ang, topCol, midCol, dur) {
       const [sx, sy] = at(x + Math.cos(a) * reach, y + Math.sin(a) * reach, lift);
       if (settle) {
         if (k > 0.84 && (i & 1)) continue;
-        // Phase 3 (Dissipation): small 3x2 outlined pebble on the ground
-        px(g, sx - 2, sy - 1, 5, 4, INK);
-        px(g, sx - 1, sy, 3, 2, midCol);
-        px(g, sx - 1, sy, 2, 1, topCol);
+        px(g, sx - 1, sy, 2, 1, midCol);
       } else {
-        // Phase 2 (Impact): 3-plane chunky rock block (top lit, mid side, dark bottom-right shadow)
-        const w = i % 2 === 0 ? 5 : 4, h = i % 3 === 0 ? 5 : 4;
-        const x0 = Math.round(sx - (w >> 1)), y0 = Math.round(sy - (h >> 1));
-        px(g, x0 - 1, y0 - 1, w + 2, h + 2, INK);
-        px(g, x0, y0, w, h, midCol);
-        px(g, x0, y0, w - 1, Math.max(1, h >> 1), topCol);
-        px(g, x0 + 1, y0 + h - 1, w - 1, 1, shadeCol);
-        px(g, x0 + w - 1, y0 + 1, 1, h - 1, shadeCol);
+        const w = i % 3 === 0 ? 4 : 3, tilt = i % 2 ? 1 : -1;
+        px(g, sx - 1, sy, w, 1, midCol);
+        px(g, sx - 1 + tilt, sy - 1, w - 1, 1, topCol);
       }
     }
   }, dur);
@@ -1575,7 +1541,6 @@ export function hammerImpact(x, y, r, hit, crit, kind, ang = 0) {
           const a = aMid + (j / steps) * span;
           const [gx, gy] = at(x + Math.cos(a) * rad, y + Math.sin(a) * rad, 0);
           const sz = inImpact && isFront ? 3 : 2;
-          px(g, gx - 1, gy - 1, sz + 2, sz + 1, INK);
           px(g, gx, gy, sz, Math.max(1, sz - 1), inImpact && (isFront || Math.abs(j) <= 1) ? "#fff4ce" : col);
           if (inImpact) px(g, gx, gy + sz - 1, sz, 1, edge);
         }
@@ -1584,7 +1549,7 @@ export function hammerImpact(x, y, r, hit, crit, kind, ang = 0) {
   }, dur);
 
   // 3-plane pixel stone debris bursting from (x, y) and settling near `r`
-  const rockCount = final ? 10 : (stamp || fault) ? 8 : hit ? 6 : 4;
+  const rockCount = final ? 8 : (stamp || fault) ? 6 : hit ? 5 : 3;
   stoneDebris(x, y, r, rockCount, ang, stamp ? "#dff7f4" : "#fff4ce", edge, dur);
 
   f.burst(x, y, 0.08, col, final ? 14 : hit ? 7 : 4, final ? 1.9 : 1.1);
@@ -1599,7 +1564,6 @@ export function hammerImpact(x, y, r, hit, crit, kind, ang = 0) {
       // Single compact landing contact star at (cx, cy)
       for (let row = -2; row <= 2; row++) {
         const w = (final ? 6 : 4) - Math.abs(row);
-        px(g, cx - w - 1, cy + row, 3 + w * 2, 1, INK);
         px(g, cx - w, cy + row, 1 + w * 2, 1, "#fff4ce");
       }
     }
@@ -1612,7 +1576,7 @@ export function hammerImpact(x, y, r, hit, crit, kind, ang = 0) {
         const bend = j < 5 ? 0 : (i % 2 ? -1 : 1) * (j < 9 ? 1.2 : 0.6);
         const [sx, sy] = at(x + ux * j - uy * bend, y + uy * j + ux * bend);
         const isTip = j >= armLen - 2;
-        px(g, sx - 1, sy - 1, 4, 3, INK);
+        px(g, sx, sy + 1, 2, 1, "#604940");
         px(g, sx, sy, 2, 1, isTip ? "#fff4ce" : k < 0.35 ? col : "#604940");
       }
     }
@@ -2019,7 +1983,7 @@ export function skillEvent(e, ctx) {
       const src = entityPos(eid);
       const ang = src ? (src.hammerYaw ?? Math.atan2(y - src.y, x - src.x)) : 0;
       hammerImpact(x, y, r, hit, crit, kind, ang);
-      if (eid === G.you || skillNear(G, x, y)) castPfx(kind, src || { x, y }, x, y, r, ang, fxPal(kind, G, eid), eid === G.you);
+      if (eid === G.you || skillNear(G, x, y)) castPfx(kind, src || { x, y }, x, y, r, ang, fxPal(kind, G, eid));
       if (eid === G.you || skillNear(G, x, y)) Sound.play("hammer_land", { kind, hit, crit, final: kind === 132 });
       if (eid === G.you && hit) {
         const strength = kind === 132 ? 4.5 : crit ? 3.3 : kind === 131 ? 2.5 : kind === 130 ? 2 : 1.5;
@@ -2034,7 +1998,7 @@ export function skillEvent(e, ctx) {
       const src = entityPos(eid);
       if (!src) return true;
       // the pixelfx layers (skillpfx.js), over the game's own marks below (combo skills 140–159 call it in skillfx_combo.js)
-      if (eid === G.you || skillNear(G, src.x, src.y) || skillNear(G, tx, ty)) castPfx(kind, src, tx, ty + 6, e[7], Math.atan2(ty + 6 - src.y, tx - src.x), fxPal(kind, G, eid), eid === G.you);
+      if (eid === G.you || skillNear(G, src.x, src.y) || skillNear(G, tx, ty)) castPfx(kind, src, tx, ty + 6, e[7], Math.atan2(ty + 6 - src.y, tx - src.x), fxPal(kind, G, eid));
       if (kind === 135 || kind === 136) {
         const y = ty + 6, near = eid === G.you || skillNear(G, tx, y);
         if (kind === 135) {
@@ -2516,9 +2480,8 @@ function cast(kind, src, eid, tx, ty, extra, G) {
     // ── 스태프
     case 70: {
       const r = G.defs?.skills?.fireball?.r || 30;
-      fireballOrb(src.x, src.y, tx, ty, r);
-      if (near) B.shake(3);
-      play("ember"); play("boom"); break;
+      fireballOrb(src.x, src.y, tx, ty, r, near);
+      play("fireball_cast"); break;
     }
     case 71: {
       const r = extra || 56;
@@ -2620,6 +2583,7 @@ function cast(kind, src, eid, tx, ty, extra, G) {
         S3.fx.flash(tx, ty, 6);
         rim(tx, ty, 16, p.md, p.l, 260, 0.6);
         shards(tx, ty, 15, 6, 14, p.md, p.m, 240);
+        play("soulbolt_end");
       });
       S3.fx.sparkle(src.x, src.y, 0.8, p.m, 6); play("soulbolt");
       break;
@@ -2627,8 +2591,7 @@ function cast(kind, src, eid, tx, ty, extra, G) {
     case 92: {
       const r = extra || 60;
       rim(tx, ty, r, p.md, p.l, 340, 0.45);
-      f.burst(tx, ty, 0.3, "#12091f", 20, 1.8);
-      B.shake(4); play("gravity");
+      B.shake(1.8); play("gravity");
       break;
     }
     case 93: f.sparkle(src.x, src.y, 1, p.m, 20); play("pact"); if (mine) text(G, "심연의 계약", src.x, src.y, 2.2, p.l, true); break;
