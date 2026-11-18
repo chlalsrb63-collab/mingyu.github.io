@@ -17,7 +17,7 @@ import { Sound } from "./audio.js";
 import { HAMMER_IMPACT } from "./swing.js";
 import { comboEvent } from "./skillfx_combo.js";
 import { fxPal, jobPal, skillPal, fxSkill, skillDef, skillOwner } from "./jobpal.js";
-import { castPfx } from "./skillpfx.js";
+import { castPfx, procPfx } from "./skillpfx.js";
 
 const P = 2;                       // world unit → world pixel, as in scene2d (flat effects are drawn in these)
 /** Server units → iso pixels, lifted `up` pixels: where things in the air are drawn. */
@@ -2016,7 +2016,7 @@ export function skillEvent(e, ctx) {
       const src = entityPos(eid);
       const ang = src ? (src.hammerYaw ?? Math.atan2(y - src.y, x - src.x)) : 0;
       hammerImpact(x, y, r, hit, crit, kind, ang);
-      if (eid === G.you || skillNear(G, x, y)) castPfx(kind, src || { x, y }, x, y, r, ang, fxPal(kind, G, eid));
+      if (eid === G.you || skillNear(G, x, y)) castPfx(kind, src || { x, y }, x, y, r, ang, fxPal(kind, G, eid), eid === G.you);
       if (eid === G.you || skillNear(G, x, y)) Sound.play("hammer_land", { kind, hit, crit, final: kind === 132 });
       if (eid === G.you && hit) {
         const strength = kind === 132 ? 4.5 : crit ? 3.3 : kind === 131 ? 2.5 : kind === 130 ? 2 : 1.5;
@@ -2031,7 +2031,7 @@ export function skillEvent(e, ctx) {
       const src = entityPos(eid);
       if (!src) return true;
       // the pixelfx layers (skillpfx.js), over the game's own marks below (combo skills 140–159 call it in skillfx_combo.js)
-      if (eid === G.you || skillNear(G, src.x, src.y) || skillNear(G, tx, ty)) castPfx(kind, src, tx, ty + 6, e[7], Math.atan2(ty + 6 - src.y, tx - src.x), fxPal(kind, G, eid));
+      if (eid === G.you || skillNear(G, src.x, src.y) || skillNear(G, tx, ty)) castPfx(kind, src, tx, ty + 6, e[7], Math.atan2(ty + 6 - src.y, tx - src.x), fxPal(kind, G, eid), eid === G.you);
       if (kind === 135 || kind === 136) {
         const y = ty + 6, near = eid === G.you || skillNear(G, tx, y);
         if (kind === 135) {
@@ -2809,6 +2809,7 @@ function procFx(G, e) {
     case 154: f.ring(x, y, 14, p.a, 280, true); f.spark(x, y, p.a, 1.2); break;
   }
   const word = d[1], at0 = code === 144 || code === 147 || code === 154 || code === 151 ? [x, y] : who ? [who.x, who.y] : [x, y];
+  if (mine || skillNear(G, at0[0], at0[1])) procPfx(code, at0[0], at0[1], who ? Math.atan2(y - who.y, x - who.x) : 0, p);
   if (mine && word) text(G, word, at0[0], at0[1], 1.9, code === 154 || code === 144 ? p.a : p.l);
   if (mine && PS_SOUND[code]) Sound.play(PS_SOUND[code]);
 }

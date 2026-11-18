@@ -6,7 +6,7 @@
 // ?rows=slam,bolt,nova,hit,crit,walk,dash,sk80,sk89:64,pr:grav&map=meadow&ms=33&n=10&z=2&cw=180&ch=150 — dev preview only, not part of the game.
 import * as S from "./scene2d.js";
 import * as SkillFx from "./skillfx.js";
-import { ready as pfxReady } from "./skillpfx.js";
+import { ready as pfxReady, hitPfx } from "./skillpfx.js";
 await pfxReady;
 const q = new URLSearchParams(location.search);
 const maps = await (await fetch("./_maps.json")).json();
@@ -54,7 +54,7 @@ for (let r = 0; r < rows.length; r++) {
   if (setup[row]) setup[row]();
   // weapon skills by fx code (skillfx.js): "sk80", "sk89:64" (code:extra), "pr:grav" (a prop placed, then a beat)
   else if (row.startsWith("sk")) {
-    const [code, extra] = row.slice(2).split(":").map(Number);
+    const [code, extra] = row.slice(2).replace("!", "").split(":").map(Number);
     G.mobs.set(1, mob); G.texts = G.texts || [];
     const ctx = { G, S3: S, entityPos: (id) => (id === 1 ? me : mob), heightOf: () => 1.3, t };
     if (code < 130 || code > 132) me.atkT = t;
@@ -106,6 +106,13 @@ for (let r = 0; r < rows.length; r++) {
     SkillFx.skillEvent(["a", 1, code, Math.round(mob.x), Math.round(mob.y - 6), 2, 2, isNaN(extra) ? undefined : extra], ctx);
     if (code === 94 || code === 95) SkillFx.skillEvent(["ar", 900 + r, me.x, me.y - 6, 1000, 0, 600, code === 94 ? 2 : 3, 1], ctx);
     if (code === 101) SkillFx.skillEvent(["ln", 2, me.x, me.y, mob.x, mob.y], ctx);
+    // the skill's HIT layers on the dummy (the live game plays them on each "h" of my skill); "sk80!" = a crit
+    hitPfx(mob.x, mob.y, row.endsWith("!"), Math.atan2(mob.y - me.y, mob.x - me.x), code, null, 200);
+  } else if (row.startsWith("ps")) {
+    // a weapon passive proc by PS code (skillfx.js procFx): "ps141"
+    G.mobs.set(1, mob); G.texts = G.texts || [];
+    const ctx = { G, S3: S, entityPos: (id) => (id === 1 ? me : mob), heightOf: () => 1.3, t };
+    SkillFx.skillEvent(["ps", 1, Number(row.slice(2)), Math.round(mob.x), Math.round(mob.y)], ctx);
   } else if (row.startsWith("pr:")) {
     G.mobs.set(1, mob); G.texts = G.texts || [];
     const ctx = { G, S3: S, entityPos: (id) => (id === 1 ? me : mob), heightOf: () => 1.3, t };

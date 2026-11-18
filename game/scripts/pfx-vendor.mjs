@@ -1,8 +1,8 @@
-// Copy the pixelfx effects the game uses (public/skillpfx.js PFX table) from a pixelfx checkout into public/pfx/.
+// Copy the pixelfx effects the game uses (the CAST/HIT/PROC tables in public/skillpfx*.js) from a pixelfx checkout into public/pfx/.
 // pixelfx (MIT, Patch + Hugo Duprez: https://github.com/patch-gg/pixelfx) draws pixel effects in code, so they stay
 // code-drawn art. Only the core and the effect files the table names (and what they import) are copied.
 //   node scripts/pfx-vendor.mjs [path to the pixelfx checkout, default ~/pixelfx]
-import { readFile, writeFile, mkdir, rm, copyFile } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rm, copyFile, readdir } from "node:fs/promises";
 import { dirname, join, resolve, relative } from "node:path";
 import { homedir } from "node:os";
 import { fileURLToPath } from "node:url";
@@ -10,9 +10,10 @@ import { fileURLToPath } from "node:url";
 const GAME = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = resolve(process.argv[2] || join(homedir(), "pixelfx"), "src");
 const OUT = join(GAME, "public", "pfx");
-const table = await readFile(join(GAME, "public", "skillpfx.js"), "utf8");
+const tables = (await readdir(join(GAME, "public"))).filter((f) => /^skillpfx.*\.js$/.test(f));
+const table = (await Promise.all(tables.map((f) => readFile(join(GAME, "public", f), "utf8")))).join("\n");
 const ids = [...new Set([...table.matchAll(/fx: "([a-z]+\/[a-z0-9-]+)"/g)].map((m) => m[1]))];
-if (!ids.length) throw new Error("no effect ids found in public/skillpfx.js");
+if (!ids.length) throw new Error("no effect ids found in public/skillpfx*.js");
 
 const seen = new Set();
 async function take(file) {
@@ -32,5 +33,5 @@ for (const file of seen) {
 }
 const root = resolve(SRC, "..");
 await copyFile(join(root, "LICENSE"), join(OUT, "LICENSE"));
-await writeFile(join(OUT, "README.md"), `Vendored from pixelfx (MIT, see LICENSE): https://github.com/patch-gg/pixelfx\nCopied by game/scripts/pfx-vendor.mjs for the effects in public/skillpfx.js. Do not edit here: change the table and re-run the script.\n`);
+await writeFile(join(OUT, "README.md"), `Vendored from pixelfx (MIT, see LICENSE): https://github.com/patch-gg/pixelfx\nCopied by game/scripts/pfx-vendor.mjs for the effects in public/skillpfx*.js. Do not edit here: change the table and re-run the script.\n`);
 console.log(`pfx: ${ids.length} effects, ${seen.size} files → public/pfx/`);
