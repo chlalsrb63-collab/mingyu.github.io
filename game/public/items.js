@@ -235,7 +235,10 @@ export function itemSlot(entry, o = {}) {
   const img = el("img");
   const charm = Charms.isCharm(entry);
   img.src = charm ? Charms.iconUrl(entry) : entryIconUrl(entry, it) || G.icons.url[entry.id];
-  if (charm) d.classList.add("charm", `cg${entry.rev ? entry.g || 1 : 0}`);
+  if (charm) {
+    d.classList.add("charm");
+    d.style.setProperty("--cm-grade", Charms.GRADE_COL[entry.rev ? entry.g || 1 : 0]);
+  }
   img.alt = it.name;
   d.append(img);
   if (entry.sk) {

@@ -15,12 +15,23 @@
 //   rec       charms a migration took off a broken board (claimed at 주아나, never put back by themselves)
 // A charm in the bag: { id: "charm", n: 1, uid, seal, rv, tier, src, rev: 0 } and, once appraised,
 //   rev: 1, g (1 매직 · 2 레어 · 3 전설), sh (shape id), op [[kind, value, arg]], lg (legendary id).
-//   `seal` never leaves the server (charmWire); with `rv` (the rule version it was sealed under) and `src`
-//   it decides the appraisal, so asking again — or after a reconnect — gives the same charm.
+//   The source tier supplies the item level. The seal stays on the server and fixes the appraisal and engraving.
 
 /** The appraisal rules' version: part of every seal's hash. */
-const CHARM_V = 1;
+const CHARM_V = 2;
 const CHARM_SIZE = 5;
+const CHARM_LEVELS = [30, 50, 70, 90, 110, 130, 150, 170, 190, 200];
+const CHARM_RUNES = 20; // Stable glyph ids in the client's engraving atlas.
+/** Each source tier spans four displayed levels. Use its upper bound so the final tier can drop Lv.200. */
+function charmIl(c) {
+  const sourceLv = c.src === 4 ? CHARM_LEVELS[0] : shownLv(c.tier || 1) + 3;
+  return CHARM_LEVELS.findLast((lv) => lv <= sourceLv) ?? CHARM_LEVELS[0];
+}
+const charmReq = (c) => charmIl(c) - IL_GAP;
+const charmLevelError = (ch, c) => {
+  const req = charmReq(c);
+  return ch.lvl < req ? `Lv.${req}부터 장착할 수 있는 참입니다` : "";
+};
 /** Monsters more than this many tiers below the hunter give neither charms nor quest kills. */
 const CHARM_LOW = 4;
 /** The cells bought one at a time after the inner (1,1)–(3,3), in this order. */
@@ -29,19 +40,27 @@ const CHARM_EXPAND = [[4, 1], [4, 2], [4, 3], [1, 4], [2, 4], [3, 4], [4, 4], [0
 const charmExpandCost = (k) => 2000 + 800 * k + 100 * k * k;
 /** What an appraisal costs, by the tier the charm came from (never by what it turns out to be). */
 const charmIdCost = (tier) => Math.round(200 + 12 * tier);
-/** Shapes: cells in the base turn, and what a general option is multiplied by. */
+/** Shapes: cells in the base turn and the general option multiplier. Keep the one-cell shape for old seals. */
 const CHARM_SHAPES = {
-  pin: { cells: [[0, 0]], k: 1.0, w: 40 },
-  bar2: { cells: [[0, 0], [1, 0]], k: 1.7, w: 25 },
-  bar3: { cells: [[0, 0], [1, 0], [2, 0]], k: 2.3, w: 12 },
-  elbow: { cells: [[0, 0], [0, 1], [1, 1]], k: 2.3, w: 13 },
-  tile2: { cells: [[0, 0], [1, 0], [0, 1], [1, 1]], k: 2.9, w: 10 },
+  pin: { cells: [[0, 0]], k: 1 },
+  bar2: { cells: [[0, 0], [1, 0]], k: 1.7 },
+  bar3: { cells: [[0, 0], [1, 0], [2, 0]], k: 2.3 },
+  elbow: { cells: [[0, 0], [0, 1], [1, 1]], k: 2.3 },
+  tile2: { cells: [[0, 0], [1, 0], [0, 1], [1, 1]], k: 2.9 },
+  bar4: { cells: [[0, 0], [1, 0], [2, 0], [3, 0]], k: 2.9 },
+  pole4: { cells: [[0, 0], [0, 1], [0, 2], [0, 3]], k: 2.9 },
+  tee4: { cells: [[0, 0], [1, 0], [2, 0], [1, 1]], k: 2.9 },
+  hook4: { cells: [[0, 0], [0, 1], [0, 2], [1, 2]], k: 2.9 },
+  hook4m: { cells: [[1, 0], [1, 1], [0, 2], [1, 2]], k: 2.9 },
+  step4: { cells: [[1, 0], [2, 0], [0, 1], [1, 1]], k: 2.9 },
+  step4m: { cells: [[0, 0], [1, 0], [1, 1], [2, 1]], k: 2.9 },
 };
-const CHARM_SHAPE_IDS = Object.keys(CHARM_SHAPES);
+const CHARM_SHAPE_V1 = { pin: 40, bar2: 25, bar3: 12, elbow: 13, tile2: 10 };
+const CHARM_SHAPE_V2 = { bar2: 34, bar3: 16, elbow: 16, tile2: 8, bar4: 4, pole4: 4, tee4: 6, hook4: 3, hook4m: 3, step4: 3, step4m: 3 };
 const CHARM_GRADE = ["", "매직", "레어", "전설"];
 /**
  * Where a charm comes from (wire `src`): the chance of a sealed charm, the odds of 매직 / 레어 / 전설 once
- * one fell (percent), and the chance of a 참틀 확장못. 4 is 주아나's first charm (always a 매직 1 × 1).
+ * one fell (percent), and the chance of a 참틀 확장못. 4 is 주아나's first charm.
  */
 const CHARM_SRC = [
   { name: "필드 사냥", p: 0.001, g: [85, 14.8, 0.2], nail: 0.0005 },
@@ -97,12 +116,14 @@ const isCharm = (s) => !!s && s.id === "charm";
 
 // ── shapes and the board
 
-/** The cells of shape `sh` after `r` quarter turns, moved back to the origin, in reading order. */
-function charmCells(sh, r) {
+const charmCellOrder = (a, b) => a[1] - b[1] || a[0] - b[0];
+/** The cells after `r` turns. Keep base order when matching rotated cells to their engravings. */
+function charmCells(sh, r, readingOrder = true) {
   let cells = CHARM_SHAPES[sh].cells.map(([x, y]) => [x, y]);
   for (let i = 0; i < (r & 3); i++) cells = cells.map(([x, y]) => [-y, x]);
   const mx = Math.min(...cells.map((c) => c[0])), my = Math.min(...cells.map((c) => c[1]));
-  return cells.map(([x, y]) => [x - mx, y - my]).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+  cells = cells.map(([x, y]) => [x - mx, y - my]);
+  return readingOrder ? cells.sort(charmCellOrder) : cells;
 }
 /** The open cells of a board with `openN` expansions, as a set of "x,y" (nothing before the board is unlocked). */
 function charmOpen(cs) {
@@ -145,7 +166,7 @@ function charmOwn(ch, c) {
   return out;
 }
 /** One general option for a shape, not one of `have`: [kind, value, arg]. */
-function charmOption(box, sh, have) {
+function charmOption(box, sh, have, level) {
   const total = CHARM_OPT_IDS.reduce((n, k) => n + CHARM_OPT[k].w, 0);
   for (let tries = 0; ; tries++) {
     let roll = rnd(box) * total, kind = CHARM_OPT_IDS[0];
@@ -154,8 +175,12 @@ function charmOption(box, sh, have) {
     const arg = kind === "st" ? ST_ORDER[ri(box, 0, ST_ORDER.length - 1)] : kind === "skd" ? CHARM_SKD[ri(box, 0, CHARM_SKD.length - 1)] : kind === "skh" ? CHARM_SKH[ri(box, 0, CHARM_SKH.length - 1)] : "";
     const base = o.pct ? ri(box, o.lo * 10, o.hi * 10) / 10 : ri(box, o.lo, o.hi);
     if (tries < 40 && have.some((h) => h[0] === kind && h[2] === arg)) continue;
-    const v = base * CHARM_SHAPES[sh].k;
-    return [kind, o.pct ? Math.round(v * 10) / 10 : Math.floor(v), arg];
+    const shape = CHARM_SHAPES[sh];
+    const scale = level ? 1 + 0.08 * CHARM_LEVELS.indexOf(level) : 1;
+    const v = base * shape.k * scale;
+    // Round whole bonuses down, with a size floor so a low roll still rewards fitting a larger new piece.
+    const min = level ? shape.cells.length : 0;
+    return [kind, o.pct ? Math.round(v * 10) / 10 : Math.max(min, Math.floor(v)), arg];
   }
 }
 /** What a seal holds: { g, sh, op, lg }. The same for the same seal, rule version and source, every time. */
@@ -163,24 +188,36 @@ function charmAppraise(c) {
   const box = { seed: strHash(`charm:${c.seal >>> 0}:${c.rv | 0}:${c.src | 0}`) | 0 };
   const odds = (CHARM_SRC[c.src] || CHARM_SRC[0]).g;
   const x = rnd(box) * 100, pick = rnd(box);
-  let g = x < odds[0] ? 1 : x < odds[0] + odds[1] ? 2 : 3, sh = "pin", lg = "";
+  const level = c.rv >= 2 ? charmIl(c) : 0;
+  let g = x < odds[0] ? 1 : x < odds[0] + odds[1] ? 2 : 3, sh = level ? "bar2" : "pin", lg = "";
   if (c.fx) g = 1;
   else if (g === 3 && CHARM_LG_LIVE.length) { lg = CHARM_LG_LIVE[Math.floor(pick * CHARM_LG_LIVE.length)]; sh = CHARM_LEGEND[lg].shape; }
   else {
     if (g === 3) g = 2;
-    const total = CHARM_SHAPE_IDS.reduce((n, k) => n + CHARM_SHAPES[k].w, 0);
-    let roll = pick * total;
-    for (const k of CHARM_SHAPE_IDS) { if (roll < CHARM_SHAPES[k].w) { sh = k; break; } roll -= CHARM_SHAPES[k].w; }
+    let roll = pick * 100;
+    for (const [id, weight] of Object.entries(level ? CHARM_SHAPE_V2 : CHARM_SHAPE_V1)) {
+      if (roll < weight) { sh = id; break; }
+      roll -= weight;
+    }
   }
   const op = [];
-  for (let n = g === 2 ? 2 : 1; n > 0; n--) op.push(charmOption(box, sh, op));
+  for (let n = g === 2 ? 2 : 1; n > 0; n--) op.push(charmOption(box, sh, op, level));
   return { g, sh, op, lg };
 }
 const charmName = (c) => (!c.rev ? "미감정 참" : c.lg ? CHARM_LEGEND[c.lg].name : `${CHARM_GRADE[c.g]} 참`);
-/** What the owner's client is told of a charm: never the seal, and of a sealed one only where it came from. */
+/** One distinct engraving per base cell, from a separate random stream so it cannot change the appraisal. */
+function charmRunes(c) {
+  const box = { seed: strHash(`charms:engrave:${c.seal >>> 0}:${c.rv}:${c.src}`) | 0 };
+  const pool = Array.from({ length: CHARM_RUNES }, (_, i) => i);
+  return CHARM_SHAPES[c.sh].cells.map(() => pool.splice(ri(box, 0, pool.length - 1), 1)[0]);
+}
+
+/** Unappraised charms show their item level and source. The grade, shape and engravings are hidden. */
 function charmWire(c) {
-  if (!c.rev) return { id: "charm", n: 1, uid: c.uid, src: c.src, tier: c.tier, rev: 0, cost: charmIdCost(c.tier) };
-  const out = { id: "charm", n: 1, uid: c.uid, src: c.src, tier: c.tier, rev: 1, g: c.g, sh: c.sh, op: c.op };
+  const il = charmIl(c);
+  const base = { id: "charm", n: 1, uid: c.uid, src: c.src, tier: c.tier, il, req: il - IL_GAP };
+  if (!c.rev) return { ...base, rev: 0, cost: charmIdCost(c.tier) };
+  const out = { ...base, rev: 1, g: c.g, sh: c.sh, op: c.op, runes: charmRunes(c) };
   if (c.lg) out.lg = c.lg;
   return out;
 }
@@ -268,6 +305,7 @@ function charmSum(ch) {
   const cs = ch.charms;
   if (!cs || !cs.placed.length) return out;
   for (const e of cs.placed) {
+    if (ch.lvl < charmReq(e.c)) continue;
     if (e.c.lg && !out.lg && !CHARM_LEGEND[e.c.lg].off) out.lg = e.c.lg;
     for (const [kind, v, arg] of e.c.op) {
       const cap = CHARM_OPT[kind].cap;
@@ -444,7 +482,7 @@ function charmValidate(S, p, a) {
       if (!c) return bad("가방에 없는 참입니다");
       if (!c.rev) return bad("감정하지 않은 참은 놓을 수 없습니다");
       if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
-      const why = charmFit(cs, c.sh, a.x, a.y, a.r, 0);
+      const why = charmLevelError(ch, c) || charmFit(cs, c.sh, a.x, a.y, a.r, 0);
       return why ? bad(why) : OK;
     }
     case "charm_move": {
@@ -452,7 +490,7 @@ function charmValidate(S, p, a) {
       if (!e) return bad("보드에 없는 참입니다");
       if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
       if (e.x === a.x && e.y === a.y && e.r === a.r) return bad("이미 그 자리에 있습니다");
-      const why = charmFit(cs, e.c.sh, a.x, a.y, a.r, e.c.uid);
+      const why = charmLevelError(ch, e.c) || charmFit(cs, e.c.sh, a.x, a.y, a.r, e.c.uid);
       return why ? bad(why) : OK;
     }
     case "charm_remove":
@@ -572,8 +610,9 @@ function charmApply(S, p, a) {
 /** `self.charms`: the board, what waits at 주아나, the quest, the totals and the power at work. */
 function charmSelf(p) {
   const ch = p.ch, cs = ch.charms, q = charmQuest(cs), cm = deriveStats(p).cm;
-  const lg = cs.placed.find((e) => e.c.lg);
+  const lg = cs.placed.find((e) => e.c.lg && ch.lvl >= charmReq(e.c)) || cs.placed.find((e) => e.c.lg);
   const sk = cm.lg && CHARM_LEGEND[cm.lg].sk ? SKILL[CHARM_LEGEND[cm.lg].sk] : null;
+  const lgWhy = sk ? skWhy(ch, sk) || "" : lg && !cm.lg ? charmLevelError(ch, lg.c) || "아직 열리지 않은 효과입니다" : "";
   return {
     un: cs.unlocked ? 1 : 0, openN: cs.openN, open: [...charmOpen(cs)].map((k) => k.split(",").map(Number)),
     next: cs.unlocked && cs.openN < CHARM_EXPAND.length ? { k: cs.openN, cell: CHARM_EXPAND[cs.openN], cost: charmExpandCost(cs.openN), nail: countItem(ch, "charm_nail") } : null,
@@ -583,14 +622,18 @@ function charmSelf(p) {
     quest: q ? { i: q.i, st: q.st, n: cs.kn, need: CHARM_QUESTS[q.i].n, lv: CHARM_QUESTS[q.i].lv, ok: ch.lvl >= CHARM_QUESTS[q.i].lv ? 1 : 0 } : null,
     sum: { st: ST_ORDER.map((k) => cm.st[k]), hp: cm.hp, mp: cm.mp, atk: cm.atk, skd: cm.skd, skh: cm.skh },
     // the power at work, why it cannot go off just now ("" when it can), and how many legendaries lie on the board
-    lg: cm.lg, lgWhy: sk ? skWhy(ch, sk) || "" : lg && !cm.lg ? "아직 열리지 않은 효과입니다" : "", lgN: cs.placed.filter((e) => e.c.lg).length,
+    lg: cm.lg, lgWhy, lgN: cs.placed.filter((e) => e.c.lg).length,
   };
 }
 /** `defs().charms`: everything the board UI draws from. */
 function charmDefs() {
   return {
     v: CHARM_V, size: CHARM_SIZE, lv: CHARM_QUESTS[0].lv, low: CHARM_LOW,
-    shapes: Object.fromEntries(CHARM_SHAPE_IDS.map((id) => [id, { cells: CHARM_SHAPES[id].cells, k: CHARM_SHAPES[id].k, rot: [0, 1, 2, 3].map((r) => charmCells(id, r)) }])),
+    levels: CHARM_LEVELS,
+    shapes: Object.fromEntries(Object.entries(CHARM_SHAPES).map(([id, { cells, k }]) => {
+      const turns = [0, 1, 2, 3].map((r) => charmCells(id, r, false).map(([x, y], i) => [x, y, i]).sort(charmCellOrder));
+      return [id, { cells, k, rot: turns.map((turn) => turn.map(([x, y]) => [x, y])), order: turns.map((turn) => turn.map(([, , i]) => i)) }];
+    })),
     grades: CHARM_GRADE, src: CHARM_SRC.map((s) => s.name),
     opts: Object.fromEntries(CHARM_OPT_IDS.map((k) => [k, { name: CHARM_OPT[k].name, lo: CHARM_OPT[k].lo, hi: CHARM_OPT[k].hi, pct: CHARM_OPT[k].pct ? 1 : 0, cap: CHARM_OPT[k].cap }])),
     skd: CHARM_SKD, skh: CHARM_SKH,

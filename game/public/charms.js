@@ -1,7 +1,7 @@
 /**
  * 주아나의 참 공방 — the client side of the charm system (C2; docs/design/charms.md, "C1 as built" is the wire).
  * The server decides everything; this file draws `self.charms`, the charm rows of `self.inv` and `defs.charms`, and asks.
- * - Words: `charmName gradeText optText describe` (a sealed charm shows its icon and where it came from, nothing else).
+ * - Words: `charmName gradeText optText describe` (appraisal reveals the grade, shape, engravings and options).
  * - Bag: the 전체 · 참 tabs (`bagTabs`), the 참 list (`renderBagList`), a charm's detail pane (`bagDetail`: 보드에 놓기,
  *   부수기 with a second click → `charm_destroy {uid, ok:1}`). win_char.js `renderInv` and items.js call these.
  * - 참 보드 `#w-charm` (WIN `charm`, Shift+C, docked in the side panel): the 5×5 grid (locked / open / the next cell),
@@ -28,11 +28,14 @@ import * as Track from "./track.js";
 
 const ST_NAME = { str: "힘", wil: "의지", dex: "민첩", int: "지능", wis: "지혜", luk: "행운" };
 const ST_KEYS = ["str", "wil", "dex", "int", "wis", "luk"];
-const SHAPE_NAME = { pin: "1칸", bar2: "막대 2칸", bar3: "막대 3칸", elbow: "ㄴ자 3칸", tile2: "정사각 4칸" };
+const SHAPE_NAME = {
+  pin: "1칸", bar2: "막대 2칸", bar3: "막대 3칸", elbow: "ㄴ자 3칸", tile2: "정사각 4칸",
+  bar4: "막대 4칸", pole4: "막대 4칸", tee4: "ㅗ자 4칸",
+  hook4: "ㄴ자 4칸", hook4m: "ㄴ자 4칸", step4: "계단 4칸", step4m: "계단 4칸",
+};
 /** Grade colours (0 sealed) and the one-letter mark printed beside them: a grade is never told by colour alone. */
-export const GRADE_COL = ["#b8b0c4", "#e0a45a", "#dfe6f2", "#ffe070"];
+export const GRADE_COL = ["#b8b0c4", ...Art.RARITY_COL.slice(1, 4)];
 const GRADE_MARK = ["봉", "매", "레", "전"];
-const SETTING = ["봉인된 조각", "청동 각인", "은빛 각인", "황금 각인"];
 
 const st = { tab: "all", pick: null, hover: null, drag: null, wait: null, msg: "", msgT: 0, ask: 0, sent: 0, reveal: null, kill: 0, openN: -1, placed: "", cells: [] };
 window.__charm = st;
@@ -40,6 +43,7 @@ window.__charm = st;
 const D = () => G.defs && G.defs.charms;
 export const isCharm = (e) => !!e && e.id === "charm";
 const gradeOf = (c) => (c.rev ? c.g || 1 : 0);
+const gradeEl = (node, grade) => { node.style.setProperty("--cm-grade", GRADE_COL[grade]); return node; };
 export function charmName(c) {
   const d = D();
   if (!c.rev) return "미감정 참";
@@ -50,32 +54,37 @@ const TILE_PX = 8;
 const BLOCK_PX = 32;
 const RUNE_TONES = [
   null,
-  { bevel: "#edb971", face: "#a86d3c", shadow: "#613921", cut: "#4a2b24", lip: "#db995a" },
-  { bevel: "#dce9f3", face: "#7795b3", shadow: "#3e536e", cut: "#34415f", lip: "#b8d4ec" },
-  { bevel: "#ffdf81", face: "#bf8f43", shadow: "#75502d", cut: "#50322b", lip: "#f5c96f" },
+  { face: "#466eb0", shadow: "#294475", cut: "#192e54", lip: "#9cbcff" },
+  { face: "#ac8638", shadow: "#685022", cut: "#453514", lip: "#ffe580" },
+  { face: "#b46132", shadow: "#783d28", cut: "#48221e", lip: "#ffaf71" },
 ];
-const RUNE_MARKS = {
-  g1: [".#.", "##.", ".##", ".#."],
-  g2: [".#.", "#.#", "###", ".#."],
-  g3: ["#.#", "###", ".#.", "###"],
-  echo: ["#..", "##.", "..#", "##."],
-  knot: ["#.#", "###", "#.#", "###"],
-  lens: [".#.", "#.#", ".#.", ".##"],
-};
+// Stable ids sent by charmWire. Add marks at the end so old engravings keep their ids.
+const RUNE_MARKS = [
+  [".#.", "##.", ".##", ".#."], [".#.", "#.#", "###", ".#."],
+  ["#.#", "###", ".#.", "###"], ["#..", "##.", "..#", "##."],
+  ["#.#", "###", "#.#", "###"], [".#.", "#.#", ".#.", ".##"],
+  ["###", "#..", "##.", "#.."], ["#.#", "#.#", ".#.", ".#."],
+  [".##", ".#.", ".#.", "##."], ["##.", "#.#", "##.", "#.."],
+  ["..#", ".#.", "#.#", ".#."], ["###", ".#.", "##.", ".#."],
+  [".#.", ".##", ".#.", "###"], ["#..", "#.#", ".##", "..#"],
+  ["###", "..#", ".#.", "#.."], ["#.#", ".#.", "#.#", "#.#"],
+  [".#.", "#.#", "##.", "..#"], ["##.", "..#", "..#", "##."],
+  ["#..", ".#.", "..#", "###"], [".#.", "###", "#.#", "#.#"],
+];
 const tileCache = new Map(), blockCache = new Map();
-const runeKey = (c) => Object.hasOwn(RUNE_MARKS, c.lg) ? c.lg : `g${gradeOf(c)}`;
+const engravings = (c, r) => D().shapes[c.sh].order[r & 3].map((i) => c.runes?.[i] ?? i);
 
 /** A square stone, lit from above-left. The offset lip makes the glyph read as an engraving. */
-function runeTile(c) {
-  const rune = runeKey(c), grade = gradeOf(c), key = `${grade}:${rune}`;
+function runeTile(grade, rune) {
+  const key = `${grade}:${rune}`;
   if (tileCache.has(key)) return tileCache.get(key);
   const [tile, g] = Art.canvas(TILE_PX, TILE_PX);
-  const { bevel, face, shadow, cut, lip } = RUNE_TONES[grade] || RUNE_TONES[1];
+  const { face, shadow, cut, lip } = RUNE_TONES[grade];
   g.fillStyle = "#2b2233"; g.fillRect(0, 0, 8, 8);
   g.fillStyle = shadow; g.fillRect(1, 1, 6, 6);
-  g.fillStyle = bevel; g.fillRect(1, 1, 6, 1); g.fillRect(1, 2, 1, 5);
+  g.fillStyle = GRADE_COL[grade]; g.fillRect(1, 1, 6, 1); g.fillRect(1, 2, 1, 5);
   g.fillStyle = face; g.fillRect(2, 2, 4, 4);
-  const glyph = RUNE_MARKS[rune] || RUNE_MARKS.g1;
+  const glyph = RUNE_MARKS[rune] || RUNE_MARKS[0];
   for (const [color, offset] of [[lip, 1], [cut, 0]]) {
     g.fillStyle = color;
     for (let y = 0; y < glyph.length; y++) for (let x = 0; x < glyph[y].length; x++) {
@@ -87,25 +96,25 @@ function runeTile(c) {
   return art;
 }
 
-function blockUrl(c, cells, r, square) {
-  const key = `${gradeOf(c)}:${runeKey(c)}:${c.sh}:${r}:${+square}`;
+function blockUrl(c, r, square) {
+  const cells = D().shapes[c.sh].rot[r & 3], marks = engravings(c, r), grade = gradeOf(c);
+  const key = `${grade}:${c.sh}:${r & 3}:${+square}:${marks.join(",")}`;
   if (blockCache.has(key)) return blockCache.get(key);
   const width = Math.max(...cells.map(([x]) => x)) + 1;
   const height = Math.max(...cells.map(([, y]) => y)) + 1;
   const cell = TILE_PX * (square && Math.max(width, height) < 3 ? 2 : 1);
   const [cv, g] = Art.canvas(square ? BLOCK_PX : width * cell, square ? BLOCK_PX : height * cell);
   const left = (cv.width - width * cell) / 2, top = (cv.height - height * cell) / 2;
-  const { tile } = runeTile(c);
-  for (const [x, y] of cells) g.drawImage(tile, left + x * cell, top + y * cell, cell, cell);
+  cells.forEach(([x, y], i) => g.drawImage(runeTile(grade, marks[i]).tile, left + x * cell, top + y * cell, cell, cell));
   const url = cv.toDataURL();
+  if (blockCache.size >= 256) blockCache.delete(blockCache.keys().next().value);
   blockCache.set(key, url);
   return url;
 }
 
 /** The bag, appraisal and dragged icon all use the server's footprint. */
 export function iconUrl(c, r = 0) {
-  const cells = c.rev && D()?.shapes?.[c.sh]?.rot[r & 3];
-  return cells ? blockUrl(c, cells, r & 3, true) : Art.charmIconUrl("sealed");
+  return c.rev && D()?.shapes?.[c.sh] ? blockUrl(c, r, true) : Art.charmIconUrl("sealed");
 }
 const skillName = (id) => { const k = G.defs.skills && G.defs.skills[id]; return k ? k.name : id; };
 export function optText([kind, v, arg]) {
@@ -115,6 +124,8 @@ export function optText([kind, v, arg]) {
   return `${D().opts[kind] ? D().opts[kind].name : kind} +${v}`;
 }
 const idCost = (c, s = G.self) => (s.charms && s.charms.free ? 0 : c.cost | 0);
+const levelWhy = (s, c) => s && s.lvl < c.req ? `Lv.${c.req}부터 장착할 수 있는 참입니다` : "";
+const levelLine = (c) => el("div", `cm-level${levelWhy(G.self, c) ? " low" : ""}`, `아이템 Lv.${c.il} · 장착 Lv.${c.req}`);
 const charmsIn = (s) => s.inv.filter(isCharm);
 const invKey = (s) => charmsIn(s).map((c) => `${c.uid}:${c.rev}`).join(",");
 const nearJuana = () => !!(G.near && G.near.role === "charm");
@@ -128,29 +139,28 @@ function say(text) { st.msg = text; st.msgT = now(); refreshUi(); }
 /** A miniature of the same piece used on the board. */
 function shapeFig(c, r = 0) {
   const fig = el("img", "cm-fig");
-  fig.src = blockUrl(c, D().shapes[c.sh].rot[r & 3], r & 3, false);
+  fig.src = blockUrl(c, r, false);
   fig.alt = "";
   return fig;
 }
-/** The grade tag: the letter mark and the word (and the setting drawn on the icon). */
+/** The grade tag carries the grade name alongside its color. */
 function gradeTag(c) {
-  const g = gradeOf(c), t = el("span", `cm-tag g${g}`, `${GRADE_MARK[g]} ${gradeText(c)}`);
-  t.title = SETTING[g];
-  return t;
+  const g = gradeOf(c);
+  return gradeEl(el("span", "cm-tag", `${GRADE_MARK[g]} ${gradeText(c)}`), g);
 }
 /** Everything a charm may say about itself (tooltip, bag detail, reveal card). */
 export function describe(c, host, o = {}) {
   const d = D(), g = gradeOf(c);
   const nm = el("div", "nm", charmName(c));
   nm.style.color = GRADE_COL[g];
-  host.append(nm);
+  host.append(nm, levelLine(c));
   if (!c.rev) {
     host.append(el("div", "rar", `미감정 · 획득처: ${d.src[c.src] || "?"}`));
     host.append(el("div", "ds", "주아나에게 감정받으면 등급과 모양, 효과가 드러납니다."));
     host.append(el("div", "gold-line", idCost(c) ? `감정 비용 ${idCost(c).toLocaleString()}G` : "감정 비용 무료 (첫 감정)"));
   } else {
     const row = el("div", "rar cm-line");
-    row.append(gradeTag(c), `${SETTING[g]} · ${SHAPE_NAME[c.sh] || c.sh}`, shapeFig(c, o.r));
+    row.append(gradeTag(c), SHAPE_NAME[c.sh], shapeFig(c, o.r));
     host.append(row);
     for (const op of c.op || []) host.append(el("div", "af", optText(op)));
     if (c.lg && d.legend[c.lg]) host.append(el("div", "lg", `◆ ${d.legend[c.lg].desc}`));
@@ -184,12 +194,12 @@ export function renderBagList(s, host) {
     return;
   }
   for (const [c, i] of list) {
-    const g = gradeOf(c), card = el("div", `cm-card g${g}${i === G.sel ? " sel" : ""}`);
+    const g = gradeOf(c), card = gradeEl(el("div", `cm-card${i === G.sel ? " sel" : ""}`), g);
     const img = el("img", "ic"); img.src = iconUrl(c); img.alt = "";
     const tx = el("div", "tx"), hd = el("div", "hd");
     const nm = el("b", "", charmName(c)); nm.style.color = GRADE_COL[g];
     hd.append(nm, gradeTag(c));
-    tx.append(hd);
+    tx.append(hd, levelLine(c));
     if (c.rev) {
       const row = el("div", "cm-line"); row.append(shapeFig(c), SHAPE_NAME[c.sh] || c.sh);
       tx.append(row);
@@ -207,7 +217,7 @@ export function bagDetail(s, c, det) {
   describe(c, det);
   const btns = el("div", "btns");
   const add = (label, fn, cls = "btn small", off = false) => { const b = el("button", cls, label); b.disabled = off; b.addEventListener("click", () => { hideTip(); fn(); }); btns.append(b); return b; };
-  if (c.rev) add("보드에 놓기", () => { pickFromBag(c.uid); openWin("charm"); Sound.play("ui"); }, "btn gold small", !(s.charms && s.charms.un));
+  if (c.rev) add("보드에 놓기", () => { pickFromBag(c.uid); openWin("charm"); Sound.play("ui"); }, "btn gold small", !s.charms?.un || !!levelWhy(s, c));
   else btns.append(el("span", "ds", "감정은 주아나 곁에서"));
   if (st.kill === c.uid) {
     add("정말 부수기", () => { act({ t: "charm_destroy", uid: c.uid, ok: 1 }); st.kill = 0; G.sel = -1; Sound.play("salvage"); }, "btn small danger");
@@ -235,10 +245,13 @@ function whyNot(s, uid, sh, r, x, y) {
 }
 function pickFromBag(uid) {
   const s = G.self, c = s && charmsIn(s).find((x) => x.uid === uid);
-  if (!c || !c.rev) return;
+  if (!c || !c.rev) return false;
+  const why = levelWhy(s, c);
+  if (why) { say(why); Sound.play("no"); return false; }
   const r = st.pick && st.pick.uid === uid ? st.pick.r : 0, g = D().shapes[c.sh].rot[r][0];
   st.pick = { uid, r, from: "bag", gx: g[0], gy: g[1] };
   st.msg = "";
+  return true;
 }
 function dropPick() { st.pick = null; st.hover = null; st.drag = null; dragChip(null); }
 /** Where the charm in hand would lie with the pointer on cell (hx, hy). */
@@ -246,23 +259,26 @@ function ghost(s) {
   const p = st.pick, h = st.hover, c = p && findCharm(s, p.uid);
   if (!p || !h || !c) return null;
   const x = h[0] - p.gx, y = h[1] - p.gy;
-  return { piece: c, x, y, cells: cellsAt(c.sh, p.r, x, y), why: whyNot(s, p.uid, c.sh, p.r, x, y) };
+  return { piece: c, x, y, cells: cellsAt(c.sh, p.r, x, y), why: levelWhy(s, c) || whyNot(s, p.uid, c.sh, p.r, x, y) };
 }
 /** Paint the ghost on the cells already drawn (no rebuild: the pointer moves every frame). */
 function paintGhost() {
   const s = G.self, gh = s && s.charms ? ghost(s) : null;
   for (const c of st.cells) c.el.classList.remove("gh", "ok", "bad");
   if (!gh) return;
-  const art = `url("${runeTile(gh.piece).url}")`;
+  const marks = engravings(gh.piece, st.pick.r), grade = gradeOf(gh.piece);
   for (const cell of st.cells) {
-    if (!gh.cells.some(([x, y]) => cell.x === x && cell.y === y)) continue;
-    cell.el.style.setProperty("--cm-ghost", art);
+    const i = gh.cells.findIndex(([x, y]) => cell.x === x && cell.y === y);
+    if (i < 0) continue;
+    cell.el.style.setProperty("--cm-ghost", `url("${runeTile(grade, marks[i]).url}")`);
     cell.el.classList.add("gh", gh.why ? "bad" : "ok");
   }
 }
 function rotate() {
   const s = G.self, p = st.pick, c = p && findCharm(s, p.uid);
   if (!c) return;
+  const blocked = levelWhy(s, c);
+  if (blocked) { say(blocked); Sound.play("no"); return; }
   const r = (p.r + 1) & 3;
   const on = s.charms.placed.find((e) => e.c.uid === p.uid);
   // a charm lying on the board (and not being dragged) turns where it lies; one in hand turns its ghost
@@ -313,7 +329,10 @@ function onDown(e, from, uid, cell) {
   if (!s || !s.charms || !s.charms.un || e.button > 0) return;
   e.preventDefault();
   let fresh = false;
-  if (from === "bag") { fresh = !st.pick || st.pick.uid !== uid; pickFromBag(uid); }
+  if (from === "bag") {
+    fresh = !st.pick || st.pick.uid !== uid;
+    if (!pickFromBag(uid)) return;
+  }
   else {
     const hit = pieceAt(s.charms, cell[0], cell[1]);
     // a charm in hand goes down on an empty cell or over itself; another charm's cell picks that one up instead
@@ -414,14 +433,17 @@ export function renderBoard(s) {
       else c.title = "잠긴 칸";
     } else if (e) {
       const g = gradeOf(e.c), cells = cellsAt(e.c.sh, e.r, e.x, e.y), has = (dx, dy) => cells.some((q) => q[0] === x + dx && q[1] === y + dy);
-      c.classList.add("on", `g${g}`);
+      c.classList.add("on");
+      gradeEl(c, g);
+      if (levelWhy(s, e.c)) c.classList.add("low");
       if (!has(0, -1)) c.classList.add("et"); if (!has(1, 0)) c.classList.add("er"); if (!has(0, 1)) c.classList.add("eb"); if (!has(-1, 0)) c.classList.add("el");
       if (st.pick && st.pick.uid === e.c.uid) c.classList.add("sel");
       if (wait && wait.uid === e.c.uid) c.classList.add("away");
       const img = el("img", "cm-tile");
-      img.src = runeTile(e.c).url; img.alt = "";
+      const i = cells.findIndex(([cx, cy]) => cx === x && cy === y);
+      img.src = runeTile(g, engravings(e.c, e.r)[i]).url; img.alt = "";
       c.append(img);
-      if (cells[0][0] === x && cells[0][1] === y) c.append(el("span", "mk", GRADE_MARK[g]));
+      if (i === 0) c.append(el("span", "mk", GRADE_MARK[g]));
       hoverTip(c, (h) => describe(e.c, h, { r: e.r, hint: safe ? "끌어서 옮기기 · 클릭 후 회전/빼기" : "" }));
     }
     if (pend.some((q) => q[0] === x && q[1] === y)) c.classList.add("pend");
@@ -433,12 +455,14 @@ export function renderBoard(s) {
   // the charm in hand: what it is, turn it, take it out, let go
   const bar = el("div", "cm-bar"), p = st.pick, pc = p && findCharm(s, p.uid);
   const btn = (label, fn, off, title) => { const b = el("button", "btn small", label); b.disabled = !!off; if (title) b.title = title; b.addEventListener("click", () => { hideTip(); fn(); }); bar.append(b); };
-  btn("회전 (R)", rotate, !pc || !safe, "고른 참을 90° 돌립니다");
+  const blocked = pc && levelWhy(s, pc);
+  btn("회전 (R)", rotate, !pc || !safe || blocked, blocked || "고른 참을 90° 돌립니다");
   btn("빼기", () => takeOut(p.uid), !pc || p.from !== "board" || !safe, "보드에서 가방으로");
   btn("놓기 취소", () => { dropPick(); refreshUi(); }, !pc);
   box.append(bar);
   const line = el("div", "cm-msg" + (st.msg ? " err" : ""));
   if (st.msg) line.textContent = `✕ ${st.msg}`;
+  else if (blocked) { line.classList.add("err"); line.textContent = blocked; }
   else if (pc) { line.append(`${charmName(pc)} `, shapeFig(pc, p.r), p.from === "bag" ? " — 놓을 칸을 누르세요" : " — 옮길 칸을 누르거나 끌어 옮기세요"); }
   else line.textContent = safe ? "참을 끌어다 놓거나, 고른 뒤 칸을 누르세요." : "";
   box.append(line);
@@ -447,7 +471,10 @@ export function renderBoard(s) {
   const tray = el("div", "cm-tray"); tray.id = "charm-tray";
   const ready = charmsIn(s).filter((c) => c.rev), sealed = charmsIn(s).length - ready.length;
   for (const c of ready) {
-    const g = gradeOf(c), t = el("div", `cm-chip g${g}${p && p.uid === c.uid ? " sel" : ""}${wait && wait.uid === c.uid ? " away" : ""}`);
+    const g = gradeOf(c), t = gradeEl(el("div", "cm-chip"), g);
+    t.classList.toggle("sel", p?.uid === c.uid);
+    t.classList.toggle("away", wait?.uid === c.uid);
+    t.classList.toggle("low", !!levelWhy(s, c));
     const img = el("img"); img.src = iconUrl(c, p && p.uid === c.uid ? p.r : 0); img.alt = "";
     t.append(img, el("span", "mk", GRADE_MARK[g]));
     t.addEventListener("pointerdown", (ev) => onDown(ev, "bag", c.uid));
@@ -473,15 +500,17 @@ export function renderBoard(s) {
   // the legendary at work
   if (cs.lgN) {
     box.append(el("div", "section", "전설 효과"));
-    const first = cs.placed.find((e) => e.c.lg), id = cs.lg || (first && first.c.lg), l = d.legend[id];
-    const card = el("div", "cm-lg" + (cs.lgWhy ? " off" : ""));
+    const legendary = cs.placed.find((e) => cs.lg && e.c.lg === cs.lg && !levelWhy(s, e.c))
+      || cs.placed.find((e) => e.c.lg && !levelWhy(s, e.c)) || cs.placed.find((e) => e.c.lg);
+    const l = legendary && d.legend[legendary.c.lg];
+    const card = gradeEl(el("div", "cm-lg" + (cs.lgWhy ? " off" : "")), 3);
     if (l) {
-      const hd = el("div", "hd"), img = el("img"); img.src = iconUrl({ rev: 1, g: 3, lg: id, sh: l.shape }); img.alt = "";
+      const hd = el("div", "hd"), img = el("img"); img.src = iconUrl(legendary.c, legendary.r); img.alt = "";
       hd.append(img, el("b", "", l.name), el("span", `cm-state${cs.lgWhy ? " off" : ""}`, cs.lgWhy ? "✕ 비활성" : "✓ 활성"));
       card.append(hd, el("div", "ds", l.desc));
       if (cs.lgWhy) card.append(el("div", "err-line", `비활성 사유: ${cs.lgWhy}`));
     }
-    if (cs.lgN > 1) card.append(el("div", "hint", `전설 참 ${cs.lgN}개 — 고유 효과는 먼저 놓은 하나만 작동합니다 (일반 옵션은 모두 적용).`));
+    if (cs.lgN > 1) card.append(el("div", "hint", `전설 참 ${cs.lgN}개 · 장착 레벨을 충족한 참의 일반 옵션이 적용되며 고유 효과는 한 가지만 발동합니다.`));
     box.append(card);
   }
   if (cs.next) box.append(el("div", "hint", `열린 칸 ${cs.open.length}/${d.size * d.size} · 다음 칸 ${cs.next.cost.toLocaleString()}G + 확장못 1개 (주아나)`));
@@ -520,13 +549,13 @@ export function renderJuana(s) {
   box.append(top);
   // the reveal: what the seal held
   if (st.reveal) {
-    const c = st.reveal.c, g = gradeOf(c), card = el("div", `cm-reveal g${g}`);
+    const c = st.reveal.c, g = gradeOf(c), card = gradeEl(el("div", `cm-reveal g${g}`), g);
     const img = el("img", "big"); img.src = iconUrl(c); img.alt = "";
     const tx = el("div", "tx");
     describe(c, tx);
     card.append(el("div", "ray"), img, tx);
     const btns = el("div", "btns");
-    button(btns, "보드에 놓기", () => { st.reveal = null; pickFromBag(c.uid); openWin("charm"); });
+    button(btns, "보드에 놓기", () => { st.reveal = null; pickFromBag(c.uid); openWin("charm"); }, levelWhy(s, c));
     button(btns, "확인", () => { st.reveal = null; refreshUi(); }, "", false);
     card.append(btns);
     box.append(card);
@@ -566,7 +595,7 @@ export function renderJuana(s) {
   if (cs.free && sealed.length) box.append(el("small", "ok", "첫 감정은 무료입니다."));
   for (const c of sealed) {
     const cost = idCost(c, s), row = el("div", "cm-row"), img = el("img"); img.src = iconUrl(c); img.alt = "";
-    const tx = el("div", "tx"); tx.append(el("b", "", "미감정 참"), el("small", "", `획득처: ${d.src[c.src] || "?"}`));
+    const tx = el("div", "tx"); tx.append(el("b", "", "미감정 참"), levelLine(c), el("small", "", `획득처: ${d.src[c.src] || "?"}`));
     row.append(img, tx);
     if (st.ask === c.uid) {
       const ask = el("div", "cm-ask");
