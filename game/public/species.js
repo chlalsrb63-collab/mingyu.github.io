@@ -250,15 +250,40 @@ const FAN_FEATHERS = [
 ];
 const RAISED_TAILS = [4, 8, 13];
 
-// Behind the rump, only a narrow taper of the raised tail remains visible.
-const REAR_ROOT_EDGE = [24, 22, 20, 19];
+// Rear projections, drawn behind the body from the same hip to each distinct tip.
+// Each entry starts at its first occupied row, with the hip end on the left.
+const REAR_TAILS = {
+  2: [24, ["..FF.", ".FFFS", ".FSS.", "SS..."]],
+  3: [19, ["......FF..", ".....FFFS.", ".......FS.", ".......FS.", "......FFS.", ".....FFS..", "...FFSS...", "FFFS......", "FSS......."]],
+  4: [15, [
+    ".......II.", "......IIII", "......IIIT", ".....FIITT",
+    ".....FFFTS", "....FFFFFS", "....FFFFSS", "...FFFFSS.",
+    "..FFFFSS..", ".FFFFSS...", "FFFFSS....", "FSS.......",
+  ]],
+  5: [22, ["....II.", "...IIII", "..IIITT", ".IIIITT", "..TTTS.", "...SS.."]],
+  6: [22, ["......TT.", ".....FFF.", ".....FFSS", "...FFFSS.", ".FFFSS...", "FSS......"]],
+  7: [22, ["........PP", ".......PP.", "......PP..", ".....PQ...", "FFFPPQ....", "FQQ......."]],
+  8: [13, [
+    "......FF..", ".....FFFF.", "....FFFFFS", "....FF.FFS",
+    ".....S.FFS", ".......FFS", "......FFFS", "......FFSS",
+    ".....FFFSS", "....FFFSS.", "...FFFSS..", "..FFFSS...",
+    ".FFFSS....", "FFSS......",
+  ]],
+  9: [22, [".......TF", ".....FFSS", "...FFDDSS", "..DDFFSS.", ".FFDS....", "FSS......"]],
+  10: [21, ["........I.", ".......II.", "......ITT.", "....IFTTS.", "..TFFTS...", ".FFSS.....", "FSS......."]],
+  11: [21, [".....PP.", "....PP.P", "....P..P", "....QQPQ", ".FF..QQ.", "FQQQQQ..", "FQ......"]],
+  12: [24, [".....FFS.", "...FFFFSS", ".FFFFFS..", "FSSSS...."]],
+  13: [20, [
+    "....I.I..", "...IT.I.I", "...IT.TIT", "..FTFTTTS",
+    "..FFFTSS.", ".FFFFSS..", "FFSSS....",
+  ]],
+};
 
-function paintTail(behind, rows, y, palette, sway, back) {
+function paintTail(behind, rows, y, palette, sway) {
   rows.forEach((row, dy) => {
     // The brush tip ebbs with the stride while its root stays attached to the same spot.
     const x = 17 + (dy < 5 ? sway : 0);
-    const edge = back ? REAR_ROOT_EDGE[y + dy - 23] ?? 31 : 31;
-    for (let i = 0; i < row.length && x + i <= edge; i++) {
+    for (let i = 0; i < row.length; i++) {
       const ink = palette[row[i]];
       if (ink) behind(x + i, y + dy, 1, 1, ink);
     }
@@ -289,61 +314,72 @@ export function animal(o, view, f, T, seam) {
   const EYE = darkFur ? "#f8e4a0" : DARK, NOSE = darkFur ? "#f0a8b4" : "#4a3640";
   const H = HEAD_BOB[f] || 0;
   const tail = o.tail ? o.tail : (o.ear | 0) <= 5 ? [3, 5, 2, 4, 6, 7][o.ear | 0] : sp.def.tail || 2;
-  const raisedTail = seam && RAISED_TAILS.includes(tail);
-  if (raisedTail) {
-    seam.head = new Uint32Array(32);
+  const tailSeam = seam && (back ? tail > 1 : RAISED_TAILS.includes(tail));
+  if (tailSeam) {
+    seam.form = new Uint32Array(32);
     seam.tail = new Uint32Array(32);
   }
   let r = (x, y, w, h, col) => {
     b.r(x, y + H, w, h, col);
-    if (raisedTail) markRows(seam.head, x, y + H, w, h);
+    if (tailSeam) markRows(seam.form, x, y + H, w, h);
   };
   const both = (x, y, w, h, col, colR = col) => { r(x, y, w, h, col); r(32 - x - w, y, w, h, colR); };
   const behind = (x, y, w, h, col) => {
     const tx = side ? 32 - x - w : x;
     b.r(tx, y, w, h, col);
-    if (raisedTail) markRows(seam.tail, tx, y, w, h);
+    if (tailSeam) markRows(seam.tail, tx, y, w, h);
   };
   const top = sp.top, rows = sp.rows, wAt = (y) => rows[clamp(y - top, 0, rows.length - 1)];
 
   // ── tail (0: as the ears suggest, as it always was)
   const tc = pat === 3 || pat === 12 ? deep : fur;
   const sway = f === FRAME.stepA ? -1 : 0;
-  [
+  if (back && REAR_TAILS[tail]) {
+    const [y, shape] = REAR_TAILS[tail];
+    const base = tail === 8 ? blend(fur, "#a75b3a", 0.38) : tc;
+    const shadow = tail === 4 ? blend(fur, "#784158", 0.42) : tail === 8 ? blend(fur, "#5f3645", 0.60) : shade(base, 0.32);
+    const pink = blend(fur, "#c98986", 0.64);
+    paintTail(behind, shape, y, {
+      F: base, S: shadow, I: tail === 4 ? "#fff1db" : pale,
+      T: tail === 4 ? "#dfcbbb" : blend(fur, pale, 0.58),
+      D: acc || shade(fur, 0.58), P: pink, Q: shade(pink, 0.29),
+    }, RAISED_TAILS.includes(tail) ? sway : 0);
+  } else [
     null, () => {},
     () => behind(19, 26, 1, 1, tc),
     () => { behind(19, 26, 2, 1, tc); behind(20, 24, 1, 2, tc); },
-    () => paintTail(behind, FOX_BRUSH, 16, { F: fur, S: blend(fur, "#784158", 0.42), I: "#fff1db", T: "#dfcbbb" }, sway, back),
+    () => paintTail(behind, FOX_BRUSH, 16, { F: fur, S: blend(fur, "#784158", 0.42), I: "#fff1db", T: "#dfcbbb" }, sway),
     () => behind(19, 25, 2, 2, tc),
     () => { behind(19, 25, 1, 1, tc); behind(20, 24, 1, 1, tc); },
     () => { behind(19, 26, 3, 1, tc); behind(21, 25, 1, 1, tc); },
-    () => paintTail(behind, SQUIRREL_CURL, 12, { F: blend(fur, "#a75b3a", 0.38), S: blend(fur, "#5f3645", 0.60) }, sway, back),
+    () => paintTail(behind, SQUIRREL_CURL, 12, { F: blend(fur, "#a75b3a", 0.38), S: blend(fur, "#5f3645", 0.60) }, sway),
     () => { behind(19, 24, 3, 3, fur); behind(19, 25, 3, 1, deep); behind(21, 24, 1, 1, deep); },
     () => { behind(19, 26, 3, 1, tc); behind(20, 25, 2, 1, tc); behind(21, 24, 1, 1, deep); behind(21, 26, 1, 1, deep); },
     () => { behind(19, 26, 1, 1, tc); behind(20, 25, 1, 1, tc); behind(21, 26, 1, 1, tc); behind(21, 24, 1, 1, tc); },
-    () => {
-      if (back) { behind(18, 26, 2, 2, tc); behind(19, 27, 2, 1, soft); }
-      else { behind(18, 25, 4, 2, tc); behind(21, 26, 3, 1, tc); behind(23 + sway, 25, 2, 1, soft); behind(19, 27, 4, 1, soft); }
-    },
-    () => paintTail(behind, FAN_FEATHERS, 20, { F: fur, S: soft, I: pale, T: blend(fur, pale, 0.58) }, sway, back),
+    () => { behind(18, 25, 4, 2, tc); behind(21, 26, 3, 1, tc); behind(23 + sway, 25, 2, 1, soft); behind(19, 27, 4, 1, soft); },
+    () => paintTail(behind, FAN_FEATHERS, 20, { F: fur, S: soft, I: pale, T: blend(fur, pale, 0.58) }, sway),
   ][tail]();
 
   // ── body: a tiny lump on two feet; a step lifts one of them
   const bt = 24 + H, cloth = o.cloth;
   const foot = pat === 6 || pat === 12 ? deep : fur;
-  if (raisedTail) markRows(seam.tail, 13, bt, 6, 28 - bt, true);
-  b.r(13, bt, 6, 27 - bt, fur);
-  if (f !== FRAME.stepB) b.r(13, 27, 2, 1, foot);
-  if (f !== FRAME.stepA) b.r(17, 27, 2, 1, foot);
-  if (pat === 6) b.r(13, 26, 6, 1, deep);
-  if (pat === 4) b.r(back ? 14 : 17, 25, 1, 1, deep);
-  if (pat === 10) b.r(back ? 16 : 13, 25, 2, 2, deep);
+  if (tailSeam && !back) markRows(seam.tail, 13, bt, 6, 28 - bt, true);
+  const body = (x, y, w, h, col) => {
+    b.r(x, y, w, h, col);
+    if (tailSeam && back) markRows(seam.form, x, y, w, h);
+  };
+  body(13, bt, 6, 27 - bt, fur);
+  if (f !== FRAME.stepB) body(13, 27, 2, 1, foot);
+  if (f !== FRAME.stepA) body(17, 27, 2, 1, foot);
+  if (pat === 6) body(13, 26, 6, 1, deep);
+  if (pat === 4) body(back ? 14 : 17, 25, 1, 1, deep);
+  if (pat === 10) body(back ? 16 : 13, 25, 2, 2, deep);
   if (cloth) {
-    b.r(13, bt, 6, 26 - bt, cloth); b.r(13, 25, 6, 1, shade(cloth, 0.3));
-    if (!back) b.r(side ? 16 : 15, bt, 2, 1, T.lt(cloth, 1.45));
+    body(13, bt, 6, 26 - bt, cloth); body(13, 25, 6, 1, shade(cloth, 0.3));
+    if (!back) body(side ? 16 : 15, bt, 2, 1, T.lt(cloth, 1.45));
   } else {
-    b.r(13, bt, 6, 1, soft);
-    if (pat === 7 && !back) b.r(side ? 15 : 14, 25, 4, 2, pale);
+    body(13, bt, 6, 1, soft);
+    if (pat === 7 && !back) body(side ? 15 : 14, 25, 4, 2, pale);
   }
 
   // ── ears, set on this head's top and width

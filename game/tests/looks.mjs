@@ -130,12 +130,44 @@ assert.equal(heads.size, SPC.SPECIES.length, "every animal has a face of its own
   const mouth = draw(fox, "side", 0).find(([x, y, w, h, c]) => y === 23 && c === "#f07890");
   assert.ok(mouth && mouth[0] + mouth[2] <= 19, "the fox's smile follows the side-view chin instead of protruding");
 }
-// Pin the species-0 drawing for the original choices, including the redrawn automatic fox tail.
+// Pin the original face and side geometry independently from rear-only artwork.
 {
   const h = createHash("sha1");
   for (let ear = 0; ear < 6; ear++) for (let eye = 0; eye < 6; eye++) for (let nose = 0; nose < 5; nose++)
-    for (const view of views) for (const f of [0, 1, 2, 5]) h.update(JSON.stringify(draw([ear, eye, nose, (ear + eye) % 10, nose % 4, (eye + nose) % 4, ear], view, f)));
-  assert.equal(h.digest("hex"), "3182b678216824d6f577aa729258987bed894f4f", "original look geometry includes the tapered rear fox tail");
+    for (const view of ["front", "side"]) for (const f of [0, 1, 2, 5]) h.update(JSON.stringify(draw([ear, eye, nose, (ear + eye) % 10, nose % 4, (eye + nose) % 4, ear], view, f)));
+  assert.equal(h.digest("hex"), "5b045768856c1d8a326e9a0ee5ecb549c816248a", "front and side shapes retain their original geometry");
+}
+
+// All manual rear tails keep an exposed, connected silhouette behind the body on each frame.
+{
+  const rear = (look, f) => {
+    const pixels = new Map();
+    for (const [x, y, w, h, c] of draw(look, "back", f))
+      for (let py = y; py < y + h; py++) for (let px = x; px < x + w; px++) pixels.set(py * 32 + px, c);
+    return pixels;
+  };
+  const shape = new Set(), tail = SPC.LI.tail;
+  for (const sp of [1, 5, 14, 15, 16]) {
+    const look = SPC.withSpecies([], sp);
+    for (let f = 0; f < 6; f++) {
+      look[tail] = 1;
+      const body = rear(look, f);
+      for (let i = 2; i < SPC.LOOK_N[tail]; i++) {
+        look[tail] = i;
+        const withTail = rear(look, f);
+        const visible = [...withTail.keys()].filter((pixel) => !body.has(pixel));
+        assert.ok(visible.length >= 4, `rear tail ${i} is visible, species ${sp}, frame ${f}`);
+        for (const [pixel, pigment] of body) assert.equal(withTail.get(pixel), pigment, "the rear tail cannot cover the body");
+        const path = [...body.keys()], visited = new Set(path);
+        for (const pixel of path) for (const next of [pixel - 32, pixel + 32, pixel - 1, pixel + 1]) {
+          if (withTail.has(next) && !visited.has(next)) { visited.add(next); path.push(next); }
+        }
+        assert.ok(visible.every((pixel) => visited.has(pixel)), `rear tail ${i} stays attached, species ${sp}, frame ${f}`);
+        if (sp === 1 && f === 0) shape.add(visible.sort((a, b) => a - b).join());
+      }
+    }
+  }
+  assert.equal(shape.size, SPC.LOOK_N[tail] - 2, "each tail has its own rear silhouette");
 }
 
 // ── presets, species defaults and the hat anchor
