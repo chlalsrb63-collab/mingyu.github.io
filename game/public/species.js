@@ -295,6 +295,12 @@ function markRows(rows, x, y, w, h, remove = false) {
   for (let j = y; j < y + h; j++) rows[j] = remove ? rows[j] & ~mask : rows[j] | mask;
 }
 
+export function tailOf(o) {
+  const ear = o.ear | 0;
+  const sp = SPECIES[o.sp | 0] || SPECIES[0];
+  return o.tail || (ear <= 5 ? [3, 5, 2, 4, 6, 7][ear] : sp.def.tail || 2);
+}
+
 /**
  * One frame of a player: `o` from lookOf, `view` front / side / back, `f` a FRAME
  * index, `T` the pixel tools of sprites.js { sheet, brush, finish, shade, blend, lt, FRAME }.
@@ -313,7 +319,7 @@ export function animal(o, view, f, T, seam) {
   const darkFur = lum(fur) < 0.36;
   const EYE = darkFur ? "#f8e4a0" : DARK, NOSE = darkFur ? "#f0a8b4" : "#4a3640";
   const H = HEAD_BOB[f] || 0;
-  const tail = o.tail ? o.tail : (o.ear | 0) <= 5 ? [3, 5, 2, 4, 6, 7][o.ear | 0] : sp.def.tail || 2;
+  const tail = tailOf(o);
   const rear = back && REAR_TAILS[tail];
   const rearLayer = rear ? T.sheet(32) : null;
   const tailBrush = rearLayer ? T.brush(rearLayer[1]) : b;
@@ -451,7 +457,6 @@ export function animal(o, view, f, T, seam) {
     const body = T.finish(c, g, INK, 1);
     if (!rearLayer) return body;
     const rearTail = T.finish(...rearLayer, INK, 1);
-    if (seam) { seam.rearTail = rearTail; return body; }
     rearLayer[1].drawImage(body, 0, 0);
     return rearTail;
   }

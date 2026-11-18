@@ -173,6 +173,91 @@ function tailJoin(pixels, form, tail) {
   }
 }
 
+// Rear tails are authored in native pixels. Each entry is a top row and [x, ink] strips.
+const REAR_TAILS = {
+  2: [49, [[31, "FF"], [30, "HFF"], [30, "HFFS"], [30, "FFFS"], [31, "FSS"], [32, "SS"]]],
+  3: [37, [
+    [48, "FF"], [47, "FFFS"], [47, "HFFS"], [48, "FFS"], [48, "FFS"], [48, "FFS"],
+    [47, "FFS"], [46, "FFS"], [45, "FFS"], [44, "FFSS"], [42, "FFFSS"], [40, "HFFFSS"],
+    [37, "HFFFFSSS"], [33, "HHFFFFFSSS"], [31, "HFFFFFFFFSS"], [30, "FFFFFFFFSS"],
+    [30, "FFFFFSSSS"], [31, "SSSSS"],
+  ]],
+  4: [28, [
+    [49, "I"], [48, "II"], [47, "IIII"], [46, "IIIIIT"], [45, "IIIIIIT"], [44, "IIIIIITT"],
+    [42, "IIIIIIIIST"], [41, "HIIIIIITTSS"], [40, "HIIITTTTSSSS"], [39, "HFFTTTTTSSSS"],
+    [38, "HHFFFTTSSSSS"], [37, "HHFFFFFFSSSSS"], [35, "HHFFFFFFFFSSSS"], [34, "HHFFFFFFFFSSSS"],
+    [33, "HHFFFFFFFFSSS"], [32, "HHFFFFFFFSSSS"], [31, "HHFFFFFFFSSS"], [30, "HHFFFFFFSSS"],
+    [30, "HHFFFFFSSS"], [29, "HHFFFFFSS"], [29, "HFFFFFSS"], [29, "FFFFFFS"],
+    [30, "FFFFFS"], [30, "FFFFSS"], [30, "FSSS"], [31, "SS"],
+  ]],
+  5: [48, [[32, "II"], [30, "IIIT"], [29, "IIIIIT"], [29, "IIIIIIT"], [28, "IIIIIITS"],
+    [28, "TIIIIITS"], [29, "TIIITTS"], [30, "TTTTS"], [31, "SSS"]]],
+  6: [42, [[43, "TT"], [42, "TTH"], [41, "THF"], [41, "HFF"], [41, "HFFS"], [40, "HFFS"],
+    [39, "HFFSS"], [36, "HHFFSSS"], [32, "HHFFFFSSS"], [30, "HFFFFFFSSS"], [30, "FFFFFSSS"],
+    [31, "FFFFSS"], [32, "SSSS"]]],
+  7: [44, [[49, "P"], [47, "PP"], [45, "PPQ"], [43, "PPQ"], [41, "PPQ"], [39, "PPQ"],
+    [36, "PPPQQ"], [33, "PPPPQQ"], [30, "PPPPPQQ"], [30, "PPPQQ"], [31, "QQQ"]]],
+  8: [25, [
+    [48, "HH"], [46, "HHHHF"], [44, "HHHHFFFF"], [43, "HHHFFFFFFS"], [42, "HHHFFFFFFFS"],
+    [41, "HHHFFFFFFFFS"], [41, "HHFFFFFFFFSS"], [40, "HHFFFFFFFFFSS"], [40, "HHFFFFSFFFSSS"],
+    [40, "HFFFSS.FFFSSS"], [40, "FFFS...FFFSSS"], [41, "FSS....HFFSSS"], [48, "HFFFSS"],
+    [48, "HFFFSS"], [47, "HHFFFSS"], [46, "HHFFFFSS"], [45, "HHFFFFSS"], [44, "HHFFFFSS"],
+    [42, "HHFFFFFSS"], [40, "HHFFFFFFSS"], [38, "HHFFFFFFFSS"], [36, "HHFFFFFFFFSS"],
+    [34, "HHFFFFFFFFSS"], [32, "HHFFFFFFFFFSS"], [31, "HHFFFFFFFFSS"], [30, "HFFFFFFFFSS"],
+    [30, "FFFFFFFSS"], [30, "FFFFFSS"], [31, "FFFSS"], [32, "SSS"],
+  ]],
+  9: [40, [[44, "TT"], [43, "TTTF"], [42, "HDDFS"], [41, "HDDDFS"], [40, "HFFFSS"],
+    [39, "HHFFSS"], [38, "HDDDDSS"], [36, "HDDDDDSS"], [34, "HHFFFFSSS"], [32, "HHFFFFFSS"],
+    [30, "HDDFFFSSS"], [30, "DDDDDSS"], [30, "DDDDSS"], [31, "FSSS"], [32, "SS"]]],
+  10: [39, [[44, "I"], [43, "II"], [42, "IIIT"], [41, "IIIIT"], [40, "IIITTS"],
+    [38, "IITIITS"], [37, "IITTTTSS"], [35, "HIIITTSS"], [33, "HHTTTFSS"], [31, "HFFFFFSS"],
+    [30, "FFFFFSS"], [30, "FFFSS"], [31, "FSS"], [32, "S"]]],
+  11: [44, [[41, "PPP"], [39, "PPPPP"], [39, "PP..PQ"], [38, "PP...PQ"], [38, "PP...QQ"],
+    [39, "QQ..PQQ"], [39, ".QQPQQ"], [33, "PP....QQQ"], [31, "PPPP.PQQ"], [30, "PPPPPPQ"],
+    [30, "PPQQQQ"], [31, "QQQ"]]],
+  12: [48, [[31, "HH"], [30, "HFF"], [30, "HFFF"], [30, "HFFFF"], [30, "HFFFFFHHH"],
+    [30, "HFFFFFFFFFH"], [30, "FFFFFFFFFFSS"], [31, "FFFFFFFSSSS"], [33, "FSSSSSSS"], [35, "SSSSS"]]],
+  13: [32, [
+    [17, "I"], [17, "II"], [16, "III"], [15, "IIIT...I"], [15, "IIITT..II"], [14, "IIIITT.III"],
+    [14, "IITIIT.IIIT"], [13, "IITIIITIITTT...I"], [12, "IITTIITIITTTS..I"], [12, "IITTIIHIITTSS.II"],
+    [12, "ITTTHIHIITSSS.II"], [13, "ITTHHHHITTSSFII"], [13, "ITTHHHHITSSFFIT"],
+    [14, "TTTHHFFTTFFFIIT"], [15, "TTHHFFFTTFFFTTS"], [17, "THHFFFFFFFFTSS"],
+    [19, "HHFFFFFFFFFSS"], [21, "HHFFFFFFFSSS"], [23, "HHFFFFFSSS"], [25, "HFFFFSSS"],
+    [27, "FFFFSS"], [29, "FFSS"], [30, "SS"],
+  ]],
+};
+
+/** From behind the tail is nearest to the camera, including above the back of the head. */
+export function drawNativeRearTail(ctx, o, tail, frame) {
+  const shape = REAR_TAILS[tail];
+  if (!shape) return;
+
+  const fur = color(o.fur), accent = color(o.acc);
+  const base = tail === 8 ? tone(fur, color("#a75b3a"), 0.38)
+    : o.pat === 3 || o.pat === 12 ? accent || tone(fur, INK, 0.26) : fur;
+  const pink = tone(fur, color("#c98986"), 0.76);
+  const cream = color("#fff1db"), pale = tail === 4 ? cream : accent || tone(fur, cream, 0.68);
+  const palette = {
+    F: base, H: tone(base, cream, 0.31), S: tone(base, color(tail === 4 || tail === 8 ? "#624052" : "#51435b"), 0.50),
+    I: pale, T: tone(pale, color("#ad897c"), 0.45), D: accent || tone(fur, INK, 0.60),
+    P: pink, Q: tone(pink, INK, 0.33),
+  };
+  const css = Object.fromEntries(Object.entries(palette).map(([key, ink]) =>
+    [key, "#" + (ink & 0xffffff).toString(16).padStart(6, "0")]));
+  const [top, rows] = shape;
+  const sway = frame === 2 ? -1 : frame === 4 ? 1 : 0;
+  const strips = rows.map(([x, row], dy) => [x + (dy < rows.length / 2 ? sway : 0), top + dy, row]);
+  ctx.fillStyle = "#2b2233";
+  for (const [x, y, row] of strips) for (let i = 0; i < row.length; i++) {
+    if (row[i] !== ".") ctx.fillRect(x + i - 1, y - 1, 3, 3);
+  }
+  for (const [x, y, row] of strips) for (let i = 0; i < row.length; i++) {
+    if (row[i] === ".") continue;
+    ctx.fillStyle = css[row[i]];
+    ctx.fillRect(x + i, y, 1, 1);
+  }
+}
+
 /** A native 64×64 player/NPC frame, designed to occupy the same 32 logical pixels on screen. */
 export function refinePerson(base, o = {}, view = "front", f = 0, seam) {
   const cv = document.createElement("canvas");
@@ -193,11 +278,6 @@ export function refinePerson(base, o = {}, view = "front", f = 0, seam) {
     if (cloth) clothes(pixels, cloth, bob, view);
     pawsAndTail(pixels, fur, view === "side");
     if (seam?.form) tailJoin(pixels, seam.form, seam.tail);
-  }
-  if (seam?.rearTail) {
-    const behind = new Uint32Array(pixels.length);
-    contour(seed(seam.rearTail, behind), behind);
-    for (let i = 0; i < pixels.length; i++) if (!pixels[i]) pixels[i] = behind[i];
   }
   for (let i = 0, j = 0; i < pixels.length; i++, j += 4) {
     const pigment = pixels[i];

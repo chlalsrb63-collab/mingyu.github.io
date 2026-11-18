@@ -16,7 +16,7 @@ import * as WPN from "./weapons.js";
 import * as WR from "./wardrobe.js";
 import * as SPC from "./species.js";
 import * as MobArt from "./mobart.js";
-import { refinePerson } from "./person_pixels.js";
+import { drawNativeRearTail, refinePerson } from "./person_pixels.js";
 WR.useSpecies(SPC);
 
 export const SIZE = 32;
@@ -303,9 +303,12 @@ const personDensity = (o) => o.bone || o.mask ? 1 : PERSON_SIZE / S;
 /** A single portrait frame without building the other poses. */
 export function personFrame(o, view, f = FRAME.stand, density = personDensity(o)) {
   const seam = density === 1 ? null : {};
-  const base = person(o, view, f, seam);
+  const nativeBack = seam && view === "back" && o.sp !== undefined;
+  const base = person(nativeBack ? { ...o, tail: 1 } : o, view, f, seam);
   const native = seam ? refinePerson(base, o, view, f, seam) : null;
-  return WR.dress(base, o, view, f, native);
+  const dressed = WR.dress(base, o, view, f, native);
+  if (nativeBack) drawNativeRearTail(dressed.getContext("2d"), o, SPC.tailOf(o), f);
+  return dressed;
 }
 
 /** `{ front, side, back }`, each a list of frames indexed by FRAME. Side frames face right. */

@@ -142,7 +142,7 @@ assert.equal(heads.size, SPC.SPECIES.length, "every animal has a face of its own
   assert.equal(h.digest("hex"), "5b045768856c1d8a326e9a0ee5ecb549c816248a", "front and side shapes retain their original geometry");
 }
 
-// All manual rear tails keep an exposed, connected silhouette behind the body on each frame.
+// The logical 32px base retains its rear tail projections.
 {
   const rear = (look, f) => {
     const pixels = new Map();
@@ -161,7 +161,7 @@ assert.equal(heads.size, SPC.SPECIES.length, "every animal has a face of its own
         const withTail = rear(look, f);
         const visible = [...withTail.keys()].filter((pixel) => !body.has(pixel));
         assert.ok(visible.length >= 4, `rear tail ${i} is visible, species ${sp}, frame ${f}`);
-        for (const [pixel, pigment] of body) assert.equal(withTail.get(pixel), pigment, "the rear tail cannot cover the body");
+        for (const [pixel, pigment] of body) assert.equal(withTail.get(pixel), pigment, "the logical tail stays behind the body");
         const path = [...body.keys()], visited = new Set(path);
         for (const pixel of path) for (const next of [pixel - 32, pixel + 32, pixel - 1, pixel + 1]) {
           if (withTail.has(next) && !visited.has(next)) { visited.add(next); path.push(next); }
@@ -174,35 +174,37 @@ assert.equal(heads.size, SPC.SPECIES.length, "every animal has a face of its own
   assert.equal(shape.size, SPC.LOOK_N[tail] - 2, "each tail has its own rear silhouette");
 }
 
-// Check the real pixels as well: the near body's outline stays opaque across the hidden tail root.
+// Native rear tails sit above the torso and garments; tall styles can overlap the back of the head.
 {
   installCanvas();
   const { personFrame, playerLook } = await import("../public/sprites.js");
-  const back = (look, f, density) => {
-    const frame = personFrame(playerLook("adventurer", look), "back", f, density);
-    return frame.getContext("2d").getImageData(0, 0, frame.width, frame.height).data;
+  const size = 64;
+  const back = (look, f, gear) => {
+    const frame = personFrame(playerLook("adventurer", look, gear), "back", f);
+    assert.equal(frame.width, size);
+    return frame.getContext("2d").getImageData(0, 0, size, size).data;
   };
-  for (const sp of [1, 14]) for (const f of [0, 2, 4]) for (const density of [1, 2]) {
+  const clothes = [{}, { cos: ["top_robe", "back_cape_blue"] }];
+  for (const sp of [1, 5, 14, 15, 16]) for (let f = 0; f < 6; f++) for (const gear of clothes) {
     const look = SPC.withSpecies([], sp);
     look[SPC.LI.cloth] = 3;
     look[SPC.LI.tail] = 1;
-    const body = back(look, f, density);
+    const body = back(look, f, gear);
     for (let i = 2; i < SPC.LOOK_N[SPC.LI.tail]; i++) {
       look[SPC.LI.tail] = i;
-      const tail = back(look, f, density);
-      let visibleBehindHips = false;
+      const tail = back(look, f, gear);
+      let rootVisible = false, headOverlap = false;
       for (let p = 0; p < body.length; p += 4) {
-        if (!body[p + 3]) {
-          const x = (p / 4) % (32 * density) / density;
-          const y = Math.floor(p / 4 / (32 * density)) / density;
-          const ink = tail[p] === 43 && tail[p + 1] === 34 && tail[p + 2] === 51;
-          if (tail[p + 3] && !ink && x >= 14 && x < 19 && y >= 28) visibleBehindHips = true;
-          continue;
-        }
-        assert.ok(body[p] === tail[p] && body[p + 1] === tail[p + 1] && body[p + 2] === tail[p + 2] && body[p + 3] === tail[p + 3],
-          `tail ${i} cannot overwrite the outlined body, species ${sp}, frame ${f}, scale ${density}`);
+        if (!body[p + 3]) continue;
+        const x = (p / 4) % size, y = Math.floor(p / 4 / size);
+        const changed = body[p] !== tail[p] || body[p + 1] !== tail[p + 1] || body[p + 2] !== tail[p + 2] || body[p + 3] !== tail[p + 3];
+        const ink = tail[p] === 43 && tail[p + 1] === 34 && tail[p + 2] === 51;
+        if (!changed || ink) continue;
+        if (x >= 28 && x < 38 && y >= 50 && y < 54) rootVisible = true;
+        if (y >= 38 && y < 46) headOverlap = true;
       }
-      assert.ok(visibleBehindHips, `tail ${i} is visible below the center of the hips, species ${sp}, frame ${f}, scale ${density}`);
+      assert.ok(rootVisible, `tail ${i} shows where it joins the lower back, species ${sp}, frame ${f}`);
+      if ([4, 8, 13].includes(i)) assert.ok(headOverlap, `tail ${i} is visible over the back of the head, species ${sp}, frame ${f}`);
     }
   }
 }
