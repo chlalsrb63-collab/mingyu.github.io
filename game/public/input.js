@@ -172,6 +172,13 @@ function setAimArrow(on) {
   $("#btn-aim").textContent = on ? "켜짐" : "꺼짐";
   localStorage.setItem("lumentale:aim", on ? "1" : "0");
 }
+/** Your own HP and MP bars just under your feet (owner 2026-11-18); off unless turned on. */
+function setMyBars(on) {
+  G.myBars = on;
+  $("#btn-mybar").classList.toggle("off", !on);
+  $("#btn-mybar").textContent = on ? "켜짐" : "꺼짐";
+  try { localStorage.setItem("lumentale:mybar", on ? "1" : "0"); } catch { /* private mode */ }
+}
 function toggleSound() {
   Sound.setMute(!Sound.vol.mute);
   soundUi();
@@ -312,6 +319,9 @@ export function setupInput() {
   PostFX.bindSetting($("#opt-gfx"), () => Sound.play("ui"));
   setAimArrow(localStorage.getItem("lumentale:aim") !== "0");
   $("#btn-aim").addEventListener("click", () => { setAimArrow(!G.aimArrow); Sound.play("ui"); });
+  let mb = false; try { mb = localStorage.getItem("lumentale:mybar") === "1"; } catch { /* private mode */ }
+  setMyBars(mb);
+  $("#btn-mybar").addEventListener("click", () => { setMyBars(!G.myBars); Sound.play("ui"); });
   Sound.load();
   soundUi();
   $("#vol-bgm").addEventListener("input", (ev) => { Sound.unlock(); Sound.setMusic(ev.target.value / 100); });

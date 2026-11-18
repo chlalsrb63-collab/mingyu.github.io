@@ -330,6 +330,12 @@ function renderText(t) {
     if (mine.title) label(`「${mine.title}」`, x, y - (mine.guild ? 26 : 13), "#ffcf6a", 11);
     const ailments = statusesAt(G.you, t);
     if (!me.dead && ailments.length) { bar(x, y + 4, 40, me.hp / (G.self?.mhp || 1), "#58c070"); ailmentRow(ailments, x, y + 11); }
+    // 설정 → 발밑 체력·마력 바: two thin bars close under your feet
+    if (G.myBars && !me.dead && G.self) {
+      const [fx, fy] = at(me.x, me.y, 0), k = (a, b) => Math.max(0, Math.min(1, a / (b || 1)));
+      bar(fx, fy + 7, 34, k(me.hp, G.self.mhp), "#58c070");
+      bar(fx, fy + 13, 34, k(me.mp, G.self.mmp), "#4a8cff");
+    }
   }
   for (const b of G.bobs.values()) if (b.bite) { const [x, y] = at(b.x, b.y, 0.9); label("!", x, y + Math.sin(t / 60) * 2, "#ffe04a", 20); }
   for (const [eid, b] of G.bubbles) {
