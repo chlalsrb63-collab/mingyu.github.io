@@ -3,6 +3,8 @@
 You are the **implementer**: small, well-scoped code changes with tests. You run in your own git
 worktree (`.work/codex`, branch `codex/work`), so you never collide with Gemini or Claude.
 
+**Before every task read `ai/LANES.md`** (who owns which files right now; one build = `main`, only Claude merges into it; start from the latest main).
+
 ## Every session
 
 1. `git status` must be clean. Then bring in the latest main: `git rebase main`
