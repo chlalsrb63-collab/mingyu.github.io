@@ -162,7 +162,7 @@ export function onEvent(e, t) {
       }
       break;
     }
-    case "d": S3.fx.beam(e[2], e[3] + 8, e[4], e[5] + 8, "#8a78c8", 0.6); S3.fx.burst(e[2], e[3] + 8, 0.6, "#4a4468", 10, 1); break;
+    case "d": S3.fx.beam(e[2], e[3] + 8, e[4], e[5] + 8, "#8a78c8", 0.6); S3.fx.burst(e[2], e[3] + 8, 0.6, "#4a4468", 10, 1); Sound.play("dark_beam"); break;
     case "t": if (e[5]) { S3.fx.ring(e[1], e[2], e[3], "#ffe08a", e[4]); break; } S3.fx.tele(e[1], e[2], e[3], e[4]); Sound.play("warn"); break;
     case "b": {
       // a blast on the ground: a monster's (pink, it hurts) or a player's skill landing
@@ -187,7 +187,7 @@ export function onEvent(e, t) {
       const p = entityPos(e[1]);
       S3.fx.ring(e[2], e[3], 26, "#9affc8", 520, true);
       if (p) S3.fx.sparkle(p.x, p.y, 0.7, "#c8ffe0", 16);
-      if (e[1] === G.you) Sound.play("wp_wake");
+      if (e[1] === G.you) Sound.play("wind_shrine");
       break;
     }
     case "rc": {
@@ -233,21 +233,21 @@ export function onEvent(e, t) {
     case "z":
       // something flying from one point to another: a legendary's lightning, or a thrown knife
       if (e[5] >= 2) Growth.lineFx(e, S3.big());              // chain lightning, a phantom's dash
-      else if (e[5]) S3.fx.proj(e[1], e[2] + 8, 0.6, e[3], e[4] + 8, 0.5, "#b8f060", 0.05, 30);
+      else if (e[5]) { S3.fx.proj(e[1], e[2] + 8, 0.6, e[3], e[4] + 8, 0.5, "#b8f060", 0.05, 30); Sound.play("knife_throw"); }
       else { S3.fx.beam(e[1], e[2] + 8, e[3], e[4] + 8, "#fff48a", 0.45); S3.fx.burst(e[3], e[4] + 8, 0.5, "#fff48a", 8, 1.6); Sound.play("magic"); }
       break;
-    case "pk": S3.petFetch(e[1], e[2], e[3]); break;     // a pet fetched something
+    case "pk": S3.petFetch(e[1], e[2], e[3]); if (e[1] === G.you) Sound.play("pet_fetch"); break;     // a pet fetched something
     case "l": {
       const p = entityPos(e[1]);
       if (p) { S3.fx.pillar(p.x, p.y); if (e[1] !== G.you) floatText("LEVEL UP", p.x, p.y, heightOf(p) + 0.5, "#ffd84a", true); }
       break;
     }
-    case "pd": { const p = entityPos(e[1]); if (p) S3.fx.burst(p.x, p.y, 0.6, "#c8c8d8", 12, 1.4); break; }
+    case "pd": { const p = entityPos(e[1]); if (p) { S3.fx.burst(p.x, p.y, 0.6, "#c8c8d8", 12, 1.4); if (e[1] === G.you) Sound.play("pet_poof"); } break; }
     case "jc": {
       // a job change: light, a burst of brass, and for me a banner and a fanfare
       const p = entityPos(e[1]);
       if (p) { S3.fx.pillar(p.x, p.y); S3.fx.burst(p.x, p.y, 1, "#f4d27a", 24, 2.2); floatText("전직!", p.x, p.y, heightOf(p) + 0.6, "#f4d27a", true); }
-      if (e[1] === G.you) { Sound.play("achieve"); const j = G.self && G.defs.jobs[G.self.job]; banner(j && j.kind !== "none" ? `${j.name}의 길` : "전직!"); }
+      if (e[1] === G.you) { Sound.play("job_change"); const j = G.self && G.defs.jobs[G.self.job]; banner(j && j.kind !== "none" ? `${j.name}의 길` : "전직!"); }
       break;
     }
     case "jl": {

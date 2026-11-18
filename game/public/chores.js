@@ -50,14 +50,16 @@ function step() {
 }
 /** The F prompt's text when a chore step is in reach, else "" (update.js). */
 export function label() { const s = step(); return s ? s.label : ""; }
+const CHORE_SFX = { milk: "milk_clink", weed: "weed_pull", flyer: "flyer_slap", litter: "gat_hit", water: "water_pour", dog: "dog_sniff" };
 /** F: do the chore step in reach (true), else false (actions.js goes on). */
 export function interact() {
   const s = step();
   if (!s) return false;
   if (now() - st.sent < 550) return true;
   st.sent = now();
+  const m = mine();
   act(s.a === "do" ? { t: "jb", a: "do", i: s.i } : { t: "jb", a: "pick" });
-  Sound.play(s.a === "do" ? "gat_hit" : "ui");
+  Sound.play(s.a === "do" ? (CHORE_SFX[m && m.job] || "gat_hit") : "water_fill");
   return true;
 }
 /** `["co", eid, i]`: a spot was done. True when handled. */
