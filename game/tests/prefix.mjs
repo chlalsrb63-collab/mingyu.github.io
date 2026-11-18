@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { LEGEND, PFX, PFX_FN, PFX_W, SLOT_L, PFX_HOOKS, PFX_CAP, PX, SLOTS, ITEMS, MOBS, SKILL, plain, rollGear, gearBonus, gearIl, stats, deriveStats, newMob, hurtMob, hurtPlayer, wound, afflict, evadeBlow, dodged, chainBlow, lootFor, skMp, deathLoss, migrate, pfxPick, pfxPc, pfxIcd, pfxStack, pfxHeal, pfxChance, pfxReset, pfxMul, pfxMiti, pfxPre, pfxLoot, pfxNum, aimIdx, atkRange };\n";
+  "\nexport const __t = { LEGEND, PFX, PFX_FN, PFX_W, SLOT_L, PFX_HOOKS, PFX_CAP, PX, SLOTS, ITEMS, MOBS, SKILL, plain, rollGear, gearBonus, gearIl, stats, deriveStats, newMob, hurtMob, hurtPlayer, wound, afflict, evadeBlow, dodged, chainBlow, lootFor, skMp, deathLoss, migrate, pfxPick, pfxPc, pfxIcd, pfxStack, pfxHeal, pfxChance, pfxReset, pfxMul, pfxMiti, pfxPre, pfxLoot, pfxNum, pfxBuild, pfxSkill, aimIdx, atkRange };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs();
 const T = 16;
@@ -37,10 +37,56 @@ function world(name, wk = "sword") {
   return W;
 }
 
+// Crowds still feed kill powers, but one death cannot multiply into an unlimited blast or heal.
+{
+  const W = world("폭발한도");
+  W.wear("weapon", "w_warrior_3", "nova");
+  W.wear("armor", "a_3", "feast");
+  const { S, p, rt } = W, st = X.stats(p);
+  const cluster = Array.from({ length: 7 }, (_, i) => W.mob("twinhare", 205 + 4 * i, 200));
+  p.hp = st.mhp * 0.5;
+  X.hurtMob(S, rt, W.mob("twinhare", 200, 200, { hp: 1 }), p, 1, true);
+  assert.equal(cluster.filter((mob) => mob.by[p.pid] > 0).length, 4);
+  const total = () => cluster.reduce((n, mob) => n + (mob.by[p.pid] || 0), 0);
+  const afterNova = total();
+  for (let i = 0; i < 6; i++) X.hurtMob(S, rt, W.mob("twinhare", 200, 200, { hp: 1 }), p, 1, true);
+  assert.equal(total(), afterNova, "additional kills do not bypass the blast cooldown");
+  assert.ok(Math.abs(p.hp - st.mhp * 0.58) < 0.01, "one burst of kills respects the shared heal budget");
+}
+
+// The four-rune reset wins and consumes its own cooldown, with the gear refund still available later.
+{
+  const W = world("메아리시험"), { S, p, rt } = W;
+  const st = X.stats(p), id = "rend", sk = X.SKILL[id];
+  const probability = X.PFX.echo.p;
+  X.PFX.echo.p = 1;
+  try {
+    st.pfx = X.pfxBuild({ echo: 1 }, ["astrolabe"]);
+    for (let i = 0; i < 1000; i++) {
+      p.pc = null;
+      p.cds[id] = S.now + 12000;
+      S.seed = i * 7919;
+      X.pfxSkill(S, rt, p, st, sk, id, 10);
+      if (p.pc.cd.astrolabe) break;
+    }
+    assert.equal(p.cds[id], S.now);
+    assert.equal(p.pc.cd.echo, undefined, "the longer instant reset never spends the fallback");
+    p.cds[id] = S.now + 12000;
+    X.pfxSkill(S, rt, p, st, sk, id, 10);
+    assert.equal(p.cds[id], S.now + X.PFX.echo.ms);
+    assert.equal(p.pc.cd.echo, S.now + X.PFX.echo.icd);
+    p.cds[id] = S.now + 12000;
+    X.pfxSkill(S, rt, p, st, sk, id, 10);
+    assert.equal(p.cds[id], S.now + 12000, "the two refunds cannot chain without a wait");
+  } finally {
+    X.PFX.echo.p = probability;
+  }
+}
+
 // ── 1. the tables, row by row (a part that adds powers later is checked by the same loop)
 const OLD_DESC = {
-  chain: "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)", nova: "적을 처치하면 폭발해 주변에 피해를 준다 (80%)", greed: "골드 획득 +60%", haste: "공격 속도 +15%",
-  thorn: "받은 피해의 40%를 공격한 적에게 되돌려 준다", feast: "적을 처치할 때마다 최대 HP의 4% 회복", echo: "스킬 사용 시 20% 확률로 재사용 대기시간이 사라진다", giant: "정예와 우두머리에게 주는 피해 +30%",
+  chain: "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)", nova: "적을 처치하면 주변 최대 4명에게 공격력의 80% 화염 피해 (1.2초 간격)", greed: "골드 획득 +60%", haste: "공격 속도 +15%",
+  thorn: "받은 피해의 40%를 공격한 적에게 되돌려 준다", feast: "적을 처치할 때마다 최대 HP의 4% 회복 (접두사·룬 회복 상한 적용)", echo: "스킬 사용 시 16% 확률로 남은 재사용 대기시간이 0.4초로 줄어든다 (8초 간격)", giant: "정예와 우두머리에게 주는 피해 +30%",
 };
 const FAMS = ["blow", "kill", "pass", "crit", "skill", "mit", "sus", "mob", "eco", "xp", "util"], ALLOWED = { O: "WRG", D: "ABNH", U: "H" };
 function checkTables() {

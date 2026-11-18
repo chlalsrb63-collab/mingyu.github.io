@@ -198,10 +198,10 @@ const IL_GAP = 10;
  */
 const PFX = {
   chain: { on: 1, p: 0.25, n: 2, k: 0.6, r: 70 },
-  nova: { on: 1, k: 0.8, r: 34 },
+  nova: { on: 1, k: 0.8, r: 34, n: 4, icd: 1200 },
   haste: { on: 1, iv: 0.85 },
   giant: { on: 1, k: 1.3 },
-  echo: { on: 1, p: 0.2, ms: 400 },
+  echo: { on: 1, p: 0.16, ms: 400, icd: 8000 },
   greed: { on: 1, gold: 60 },
   thorn: { on: 1, k: 0.4 },
   feast: { on: 1, k: 0.04 },
@@ -219,12 +219,12 @@ function pfxText(key, tpl) {
 }
 const LEGEND = {
   chain: ["뇌명의", pfxText("chain", "공격 시 {p:%}% 확률로 번개가 주변 적 {n}명에게 튄다 ({k:%}%)"), "WG", "O", "M", "blow"],
-  nova: ["폭렬의", pfxText("nova", "적을 처치하면 폭발해 주변에 피해를 준다 ({k:%}%)"), "WGR", "O", "M", "kill"],
+  nova: ["폭렬의", pfxText("nova", "적을 처치하면 주변 최대 {n}명에게 공격력의 {k:%}% 화염 피해 ({icd:s}초 간격)"), "WGR", "O", "M", "kill"],
   greed: ["황금손의", pfxText("greed", "골드 획득 +{gold}%"), "RG", "O", "M", "eco"],
   haste: ["질주의", pfxText("haste", "공격 속도 +{iv:-%}%"), "WG", "O", "M", "pass"],
   thorn: ["가시의", pfxText("thorn", "받은 피해의 {k:%}%를 공격한 적에게 되돌려 준다"), "ABH", "D", "M", "mit"],
-  feast: ["포식자의", pfxText("feast", "적을 처치할 때마다 최대 HP의 {k:%}% 회복"), "ANH", "D", "L", "sus"],
-  echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 재사용 대기시간이 사라진다"), "WRG", "O", "L", "skill"],
+  feast: ["포식자의", pfxText("feast", "적을 처치할 때마다 최대 HP의 {k:%}% 회복 (접두사·룬 회복 상한 적용)"), "ANH", "D", "L", "sus"],
+  echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 남은 재사용 대기시간이 {ms:s}초로 줄어든다 ({icd:s}초 간격)"), "WRG", "O", "L", "skill"],
   giant: ["거인 사냥꾼의", pfxText("giant", "정예와 우두머리에게 주는 피해 +{k:+%}%"), "WRG", "O", "L", "pass"],
 };
 /** A warehouse (창고) holds this many slots per character, besides gold. */

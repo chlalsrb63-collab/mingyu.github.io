@@ -1319,10 +1319,7 @@ body.touch #wm .wm-tab { display: none; }
 .cm-tag { flex: none; padding: 0 4px; font: var(--t10)/14px var(--pix); color: #17131d; background: #8a8296; box-shadow: inset 0 0 0 1px #000; white-space: nowrap; }
 .cm-tag.g1 { background: #d89a54; } .cm-tag.g2 { background: #dfe6f2; } .cm-tag.g3 { background: #ffd84a; }
 .cm-line { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
-.cm-fig { display: inline-grid; gap: 1px; vertical-align: middle; }
-.cm-fig i { width: 7px; height: 7px; }
-.cm-fig i.on { background: #8a8296; box-shadow: inset 1px 1px 0 rgba(255, 255, 255, .45), inset -1px -1px 0 rgba(0, 0, 0, .4); }
-.cm-fig.g1 i.on { background: #c8843c; } .cm-fig.g2 i.on { background: #c4ccdc; } .cm-fig.g3 i.on { background: #ffd84a; }
+.cm-fig { flex: none; vertical-align: middle; image-rendering: pixelated; }
 .slot.charm::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: #8a8296; }
 .slot.charm.cg1::after { background: #c8843c; } .slot.charm.cg2::after { background: #dfe6f2; } .slot.charm.cg3::after { background: repeating-linear-gradient(90deg, #ffd84a 0 3px, #a8601c 3px 5px); }
 .window .btn.danger { color: #fff; background: #a83a3a; box-shadow: inset 2px 2px 0 #d86a5a, inset -2px -2px 0 #6a1e24; }
@@ -1340,16 +1337,14 @@ body.touch #wm .wm-tab { display: none; }
 .cm-grid .cc.on { --gc: var(--g1); background: color-mix(in srgb, var(--gc) 34%, var(--sf3, #2a2433)); box-shadow: none; border: 0 solid var(--gc); cursor: grab; margin: -1px; width: calc(var(--cc) + 2px); height: calc(var(--cc) + 2px); z-index: 1; }
 .cm-grid .cc.on.g2 { --gc: var(--g2); } .cm-grid .cc.on.g3 { --gc: var(--g3); }
 .cm-grid .cc.on.et { border-top-width: 3px; } .cm-grid .cc.on.er { border-right-width: 3px; } .cm-grid .cc.on.eb { border-bottom-width: 3px; } .cm-grid .cc.on.el { border-left-width: 3px; }
-.cm-grid .cc.on.g2 { background-image: linear-gradient(135deg, rgba(255, 255, 255, .16) 0 50%, transparent 50%); }
-.cm-grid .cc.on.g3 { background-image: repeating-linear-gradient(45deg, rgba(255, 216, 74, .2) 0 3px, transparent 3px 7px); }
 .cm-grid .cc.on.sel { filter: brightness(1.35); outline: 1px dashed #fff; outline-offset: -5px; }
 .cm-grid .cc.on.away { opacity: .35; }
-.cm-grid .cc img { position: absolute; left: 50%; top: 50%; width: 32px; height: 32px; margin: -16px 0 0 -16px; image-rendering: pixelated; pointer-events: none; }
+.cm-grid .cc .cm-tile { position: absolute; left: 50%; top: 50%; width: 32px; height: 32px; margin: -16px 0 0 -16px; image-rendering: pixelated; pointer-events: none; }
 .cm-grid .cc .mk, .cm-chip .mk { position: absolute; right: 1px; bottom: 0; font: var(--t10) var(--pix9); color: #fff; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; pointer-events: none; }
 .cm-grid .cc.pend::before { content: ""; position: absolute; inset: 3px; border: 2px dashed #e2c486; animation: cm-blink .5s steps(2) infinite; z-index: 2; }
 @keyframes cm-blink { 50% { opacity: .3; } }
-.cm-grid .cc.gh::before { content: "✓"; position: absolute; inset: 0; z-index: 3; display: flex; align-items: center; justify-content: center; font: 700 16px var(--pix); color: var(--tx, #dfffe0); background: rgba(60, 190, 90, .5); box-shadow: inset 0 0 0 2px #7af09a; animation: none; border: 0; }
-.cm-grid .cc.gh.bad::before { content: "✕"; color: var(--tx, #ffe0dc); background: repeating-linear-gradient(45deg, rgba(220, 60, 60, .6) 0 4px, rgba(120, 20, 30, .6) 4px 8px); box-shadow: inset 0 0 0 2px #ff8a7a; }
+.cm-grid .cc.gh::before { content: "✓"; position: absolute; inset: 0; z-index: 3; display: flex; align-items: flex-start; justify-content: flex-end; padding: 1px 2px; font: 700 12px var(--pix); color: #dfffe0; text-shadow: 1px 1px #223525; background: linear-gradient(#4ba46c44, #4ba46c44), var(--cm-ghost) center / 32px 32px no-repeat; image-rendering: pixelated; box-shadow: inset 0 0 0 2px #7af09a; animation: none; border: 0; }
+.cm-grid .cc.gh.bad::before { content: "✕"; color: #ffe0dc; background-image: linear-gradient(#a7365466, #a7365466), var(--cm-ghost); box-shadow: inset 0 0 0 2px #ff8a7a; }
 .cm-bar { display: flex; gap: 4px; justify-content: center; margin: 2px 0; }
 .cm-bar .btn:disabled, #w-juana .btn:disabled { opacity: .45; }
 .cm-msg { min-height: 16px; display: flex; align-items: center; justify-content: center; gap: 4px; flex-wrap: wrap; font: var(--t11) var(--pix); color: var(--tx2, #cfc8b8); text-align: center; }

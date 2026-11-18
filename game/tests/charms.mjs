@@ -649,6 +649,14 @@ function appraised(W, src, want) {
   const saved = clone(L.exportChar(V.S, V.PID));
   const U = world({ ch: clone(saved) });
   assert.deepEqual(clone(U.cs), saved.charms); assert.deepEqual(clone(U.ch.inv), saved.inv);
+
+  const backlog = L.hero("보류참", { lvl: 45 });
+  backlog.charms = { ...X.charmsEmpty(), placed: Array.from({ length: 64 }, (_, i) => ({
+    c: mk(i + 1, pinS), x: 1, y: 1, r: 0,
+  })) };
+  const recovered = X.migrate(backlog);
+  assert.equal(recovered.charms.placed.length, 0, "locked board stays empty");
+  assert.equal(new Set(recovered.charms.rec.map((c) => c.uid)).size, 64, "every owned charm remains recoverable");
 }
 
 // ═════════ 메아리 뿔참: the end of a 대지 가르기 wave, 18% again on the first monster there, 12 s apart
@@ -677,8 +685,22 @@ function appraised(W, src, want) {
   [v] = cast();
   assert.equal(evts(v, "cm").length, 0, "still inside 12 s");
   run(W, 60, 100);
-  [v, ms] = cast();
+  // A teammate's debuff and a raid modifier already affected the hit being copied.
+  const ink = Object.keys(D.runes).find(id => D.runes[id].set === "inkthorn");
+  W.ch.eq.weapon.sk = 2;
+  W.ch.eq.weapon.ru = [ink, ink];
+  W.ch.eq.armor = { id: "a_1", n: 1, q: 0, af: [], enh: 0, sk: 1, ru: [ink] };
+  W.p.stc = null;
+  W.ready();
+  ms = W.mobs([[60 + 95, 0]], 5e6);
+  ms[0].hk = 1.75;
+  ms[0].runePoison = { pid: W.PID, map: "meadow", until: W.S.now + 3000, stacks: 5 };
+  assert.ok(W.act({ t: "sk", id: "rend", a: 0 }).ok);
+  v = W.step();
   assert.equal(evts(v, "cm").length, 1, "12 s on, it answers again");
+  const damage = hits(v, ms[0]);
+  assert.equal(damage.length, 2);
+  assert.equal(damage[1], Math.max(1, Math.round(damage[0] * 0.18)), "copied damage reuses the original hit's target modifiers");
   // nothing in the wave's end: nothing happens, and the wait is not spent
   run(W, 125, 100);
   W.ready(); const only = W.mobs([[60 + 40, 0]], 5e6);

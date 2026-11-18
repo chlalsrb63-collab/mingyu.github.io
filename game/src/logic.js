@@ -699,10 +699,10 @@ const IL_GAP = 10;
  */
 const PFX = {
   chain: { on: 1, p: 0.25, n: 2, k: 0.6, r: 70 },
-  nova: { on: 1, k: 0.8, r: 34 },
+  nova: { on: 1, k: 0.8, r: 34, n: 4, icd: 1200 },
   haste: { on: 1, iv: 0.85 },
   giant: { on: 1, k: 1.3 },
-  echo: { on: 1, p: 0.2, ms: 400 },
+  echo: { on: 1, p: 0.16, ms: 400, icd: 8000 },
   greed: { on: 1, gold: 60 },
   thorn: { on: 1, k: 0.4 },
   feast: { on: 1, k: 0.04 },
@@ -720,12 +720,12 @@ function pfxText(key, tpl) {
 }
 const LEGEND = {
   chain: ["뇌명의", pfxText("chain", "공격 시 {p:%}% 확률로 번개가 주변 적 {n}명에게 튄다 ({k:%}%)"), "WG", "O", "M", "blow"],
-  nova: ["폭렬의", pfxText("nova", "적을 처치하면 폭발해 주변에 피해를 준다 ({k:%}%)"), "WGR", "O", "M", "kill"],
+  nova: ["폭렬의", pfxText("nova", "적을 처치하면 주변 최대 {n}명에게 공격력의 {k:%}% 화염 피해 ({icd:s}초 간격)"), "WGR", "O", "M", "kill"],
   greed: ["황금손의", pfxText("greed", "골드 획득 +{gold}%"), "RG", "O", "M", "eco"],
   haste: ["질주의", pfxText("haste", "공격 속도 +{iv:-%}%"), "WG", "O", "M", "pass"],
   thorn: ["가시의", pfxText("thorn", "받은 피해의 {k:%}%를 공격한 적에게 되돌려 준다"), "ABH", "D", "M", "mit"],
-  feast: ["포식자의", pfxText("feast", "적을 처치할 때마다 최대 HP의 {k:%}% 회복"), "ANH", "D", "L", "sus"],
-  echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 재사용 대기시간이 사라진다"), "WRG", "O", "L", "skill"],
+  feast: ["포식자의", pfxText("feast", "적을 처치할 때마다 최대 HP의 {k:%}% 회복 (접두사·룬 회복 상한 적용)"), "ANH", "D", "L", "sus"],
+  echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 남은 재사용 대기시간이 {ms:s}초로 줄어든다 ({icd:s}초 간격)"), "WRG", "O", "L", "skill"],
   giant: ["거인 사냥꾼의", pfxText("giant", "정예와 우두머리에게 주는 피해 +{k:+%}%"), "WRG", "O", "L", "pass"],
 };
 /** A warehouse (창고) holds this many slots per character, besides gold. */
@@ -10416,14 +10416,15 @@ function damageEvent(rt, eid, amount, crit, player, cue, parts, melee) {
 function dealMob(S, rt, mob, p, dmg, crit, cue, parts, combat = {}) {
   // a boss that dived out of reach is not hit at all (56-boss-script.js)
   if (mob.dead || mob.dive) return false;
-  const poison = runePoisonFactor(S, mob);
-  if (poison !== 1) dmg = Math.max(1, Math.round(dmg * poison));
-  const taken = elementTaken(S, mob);
-  if (taken !== 1) dmg = Math.max(1, Math.round(dmg * taken));
-  // a scripted boss stunned by a broken cast takes more (its script's vuln), half behind its shielding adds
-  if (mob.bs) dmg = bsTaken(S, rt, mob, dmg);
-  // a rift's monster is made tougher for a bigger or stronger party (64-dim.js dimHk)
-  if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
+  // A charm that copies a fraction of an actual hit inherits its target modifiers.
+  if (!combat.copied) {
+    const poison = runePoisonFactor(S, mob);
+    if (poison !== 1) dmg = Math.max(1, Math.round(dmg * poison));
+    const taken = elementTaken(S, mob);
+    if (taken !== 1) dmg = Math.max(1, Math.round(dmg * taken));
+    if (mob.bs) dmg = bsTaken(S, rt, mob, dmg);
+    if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
+  }
   if (combat.buddyCap) dmg = Math.min(dmg, combat.buddyCap);
   dmg = elementShield(S, mob, dmg);
   mob.hp -= dmg;
@@ -10965,8 +10966,8 @@ function pfxBuild(lg, runeSets = []) {
   for (const key of runeSets) {
     const f = RUNE_SET_FN[key];
     for (const n of PFX_HOOKS) if (typeof f[n] === "function") {
-      // A set's full revive is preferred over the legendary fallback at HP 1.
-      if (n === "lethal") h[n].unshift(f[n]);
+      // Resolve a set's instant reset or full revive before trying the equipment fallback.
+      if (n === "lethal" || n === "skill") h[n].unshift(f[n]);
       else h[n].push(f[n]);
     }
   }
@@ -11162,11 +11163,15 @@ const PFX_FN = {
   // 폭렬의: a kill bursts and hurts what stands near (a burst's own kills do not burst again)
   nova: {
     kill(S, rt, p, st, mob, x, y) {
-      if (p.chainKill) return;
       const c = PFX.nova, opt = { ...PX, elem: "fire", typedOnly: true };
+      if (p.chainKill || S.now < (p.pc?.cd.nova || 0)) return;
+      const targets = mobsWithin(rt, x, y, c.r)
+        .sort((a, b) => dist(x, y, a.x, a.y) - dist(x, y, b.x, b.y) || a.id - b.id)
+        .slice(0, c.n);
+      if (!targets.length || !pfxIcd(S, p, "nova", c.icd)) return;
       p.chainKill = true;
       rt.ev.push(["b", Math.round(x), Math.round(y), c.r, 1]);
-      for (const o of mobsWithin(rt, x, y, c.r)) hurtMob(S, rt, o, p, c.k, false, opt);
+      for (const o of targets) if (!o.dead) hurtMob(S, rt, o, p, c.k, false, opt);
       p.chainKill = false;
     },
   },
@@ -11178,15 +11183,17 @@ const PFX_FN = {
   // 메아리의: a skill's wait may vanish
   echo: {
     skill(S, rt, p, st, sk, id) {
-      if (!(rnd(S) < PFX.echo.p * st.proc)) return;
-      p.cds[id] = S.now + PFX.echo.ms;
-      toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`);
+      const c = PFX.echo, reset = S.now + c.ms;
+      if (!(p.cds[id] > reset) || S.now < (p.pc?.cd.echo || 0) || !pfxChance(S, st, c.p)) return;
+      if (!pfxIcd(S, p, "echo", c.icd)) return;
+      p.cds[id] = reset;
+      toast(p, `메아리! [${sk.name}] 재사용 대기시간 감소`);
     },
   },
   // 가시의: part of what p takes goes back to the one who struck
   thorn: { hurt(S, rt, p, st, mob, dmg) { if (mob) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * PFX.thorn.k)), 0); } },
-  // 포식자의: a kill heals (not through pfxHeal: as it always was)
-  feast: { kill(S, rt, p, st) { if (!p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * PFX.feast.k * elementHealFactor(S, p)); } },
+  // 포식자의 shares the sustain budget with the other repeatable kill and hit heals.
+  feast: { kill(S, rt, p, st) { if (!p.dead) pfxHeal(S, p, st, st.mhp * PFX.feast.k); } },
 };
 // ───────────────────────────── equipped rune sets ─────────────────────────────
 
@@ -11624,7 +11631,7 @@ Object.assign(LEGEND, { root: ["뿌리내린", pfxText("root", "{ms:s}초 이상
 Object.assign(PFX_FN, { root: { miti(S, rt, p, st, mob, dmg, raw, r) { if (S.now - p.mvAt >= PFX.root.ms) r.f *= PFX.root.k; } } });
 
 // 올빼미의
-Object.assign(PFX, { owl: { on: 1, k: 0.9 } });
+Object.assign(PFX, { owl: { on: 1, k: 0.8 } });
 Object.assign(LEGEND, { owl: ["올빼미의", pfxText("owl", "밤에 받는 피해 -{k:-%}%"), "NH", "D", "S", "mit"] });
 Object.assign(PFX_FN, { owl: { miti(S, rt, p, st, mob, dmg, raw, r) { if (isNight(S.now)) r.f *= PFX.owl.k; } } });
 
@@ -11700,7 +11707,7 @@ Object.assign(PFX_FN, {
 });
 
 // 되받는: the attacker is struck back for k × attack (a prefix blow: it starts no other power)
-Object.assign(PFX, { counter: { on: 1, p: 0.15, k: 1.5, icd: 2000 } });
+Object.assign(PFX, { counter: { on: 1, p: 0.25, k: 1.5, icd: 2000 } });
 Object.assign(LEGEND, { counter: ["되받는", pfxText("counter", "피격 시 {p:%}% 확률로 공격한 적에게 공격력의 {k:%}% 반격 ({icd:s}초 간격)"), "AB", "D", "M", "mit"] });
 Object.assign(PFX_FN, {
   counter: {
@@ -18705,7 +18712,7 @@ function albaDefs() {
 
 /** The appraisal rules' version: part of every seal's hash. */
 const CHARM_V = 1;
-const CHARM_SIZE = 5, CHARM_REC_MAX = 60;
+const CHARM_SIZE = 5;
 /** Monsters more than this many tiers below the hunter give neither charms nor quest kills. */
 const CHARM_LOW = 4;
 /** The cells bought one at a time after the inner (1,1)–(3,3), in this order. */
@@ -18937,7 +18944,7 @@ function charmsClean(ch) {
   for (const c of stray) {
     if (seen.has(c.uid)) c.uid = cs.nextUid++;
     seen.add(c.uid);
-    if (cs.rec.length < CHARM_REC_MAX) cs.rec.push(c);
+    cs.rec.push(c);
   }
   ch.charms = cs;
 }
@@ -18995,10 +19002,7 @@ function charmEchoHit(S, rt, p, mob, dmg) {
   if (mob.dead || !(dmg > 0)) return;
   charmUsed(S, p, "echo");
   rt.ev.push(["cm", p.eid, 0, Math.round(mob.x), Math.round(mob.y - 6)]);
-  // (`dmg` is what reached the monster: a rift's toughness is already in it)
-  const hk = mob.hk; mob.hk = 0;
-  dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * CHARM_LEGEND.echo.k)), 0);
-  mob.hk = hk;
+  dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * CHARM_LEGEND.echo.k)), 0, 0, null, { copied: true });
 }
 /** 길별의 렌즈참: a 관통 화살 has struck its second target, which lives: it is marked for 4 s. */
 function charmLens(S, rt, p, mob) {
