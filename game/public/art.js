@@ -10,7 +10,7 @@
  */
 
 import * as WPN from "./weapons.js";
-import { equipmentIcon, fitEquipmentIcon } from "./gear_icons.js";
+import { equipmentIcon, fitEquipmentIcon, specialEquipmentIcon } from "./gear_icons.js";
 import * as Assets from "./assetlib.js";
 import { furnIcon } from "./houseart.js";
 import { matIcon } from "./gatherart.js";
@@ -564,7 +564,7 @@ export function buildIcons(items, runes = {}) {
   const equipment = new Set();
   for (const id of Object.keys(items)) {
     const it = items[id];
-    const gear = it.type === "weapon" ? WPN.weaponIcon(it.wk, it.tier, { wl: id }) : equipmentIcon(it.type, it.tier);
+    const gear = it.type === "weapon" ? WPN.weaponIcon(it.wk, it.tier, { wl: id }) : specialEquipmentIcon(id) || equipmentIcon(it.type, it.tier);
     if (gear) { cv[id] = gear; equipment.add(id); }
     else if (it.type === "rune") cv[id] = runeIcon(id, runes[it.rune]);
     else if (it.type === "furn") cv[id] = furnIcon(id) || cv[id] || gem();   // crafted pieces (P8) draw in lifeicons.js

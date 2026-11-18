@@ -65,11 +65,11 @@ function pencil(g) {
   return { rect, poly, line, oval };
 }
 
-function ink(g) {
+function ink(g, color = INK) {
   const N = EQUIP_ICON_SIZE;
   const data = g.getImageData(0, 0, N, N).data;
   const solid = (x, y) => x >= 0 && y >= 0 && x < N && y < N && data[(y * N + x) * 4 + 3];
-  g.fillStyle = INK;
+  g.fillStyle = color;
   for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) {
     if (!solid(x, y) && (solid(x - 1, y) || solid(x + 1, y) || solid(x, y - 1) || solid(x, y + 1))) g.fillRect(x, y, 1, 1);
   }
@@ -240,6 +240,199 @@ export function equipmentIcon(type, tier) {
   return cache.get(key);
 }
 
+// These inventory silhouettes are composed for a square. Held weapon models have their own proportions.
+function swordIcon(p, t, [l,m,s,d,a,c]) {
+  const {poly,rect,line}=p;
+  poly([[4,25],[10,19],[13,22],[7,28]],d);
+  poly([[5,24],[10,19],[11,20],[7,25]],s);
+  rect(5,26,3,2,a);
+  const shoulder = t < 3 ? 13 : 11;
+  poly([[shoulder,17],[21,8],[27,4],[28,7],[24,15],[16,23]],m);
+  poly([[shoulder,17],[21,8],[27,4],[22,13],[14,20]],l);
+  poly([[16,20],[24,11],[28,7],[24,15],[16,23]],s);
+  line(15,18,24,9,t >= 4 ? c : m);
+  poly(t <= 2 ? [[8,16],[10,15],[18,22],[17,25]] : [[6,16],[8,14],[12,17],[16,19],[21,21],[19,24],[13,21]],a);
+  rect(13,19,2,2,t >= 4 ? c : l);
+}
+function daggerIcon(p,t,[l,m,s,d,a,c]) {
+  const {poly,rect,line}=p;
+  poly([[5,24],[12,17],[15,20],[8,27]],d);
+  line(7,23,10,20,l);
+  rect(5,25,3,2,s);
+  poly(t === 5
+    ? [[11,15],[16,11],[20,11],[25,5],[27,10],[24,16],[18,20],[15,20]]
+    : [[11,15],[15,9],[26,5],[23,15],[17,20],[14,20]],m);
+  poly([[11,15],[15,10],[25,6],[19,12],[14,18]],l);
+  poly([[15,18],[21,12],[25,8],[23,15],[17,20]],s);
+  poly([[8,15],[10,14],[18,20],[16,23]],a);
+  rect(13,17,2,2,t >= 4 ? c : s);
+}
+function spearIcon(p,t,[l,m,s,d,a,c]) {
+  const {poly,line,rect}=p;
+  poly([[4,25],[18,12],[20,14],[6,28]],d);
+  line(6,25,18,13,t >= 4 ? m : "#bc925b");
+  rect(5,25,2,2,a);
+  poly([[14,12],[18,11],[21,14],[19,18]],a);
+  if(t===5){
+    poly([[17,13],[15,8],[18,10],[19,7],[25,3],[24,9],[28,8],[25,13],[22,16]],m);
+    poly([[18,12],[20,7],[25,3],[23,10],[21,14]],l);
+  }else{
+    poly([[17,12],[21,6],[28,3],[26,11],[21,16]],m);
+    poly([[17,12],[21,6],[28,3],[23,10],[19,14]],l);
+    poly([[20,14],[25,9],[28,3],[26,11],[21,16]],s);
+  }
+  if(t>=4)rect(21,10,2,2,c);
+}
+function staffIcon(p,t,[l,m,s,d,a,c]) {
+  const {poly,line,oval,rect}=p;
+  poly([[4,26],[15,15],[19,13],[20,16],[8,28]],d);
+  line(6,26,18,14,t<=2?"#c29a62":m);
+  rect(6,25,2,2,a);
+  const cap=t===3||t>=5;
+  poly(cap
+    ? [[14,14],[13,8],[17,3],[24,3],[28,7],[28,11],[23,16],[18,16]]
+    : [[14,15],[15,8],[19,4],[25,5],[28,9],[26,14],[21,17],[17,17]],s);
+  if(cap) oval(21,9,5,4,null);
+  jewel(p,21,9,5,5,t===4?"square":"kite",c,t <= 2 ? a : l,d);
+  line(14,13,17,16,a);
+  if(t>=3)line(17,4,23,4,a);
+}
+function bookIcon(p,t,[l,m,s,d,a,c]) {
+  const {poly,line,rect}=p;
+  poly([[8,4],[23,5],[27,9],[25,26],[21,29],[5,26],[5,8]],d);
+  poly([[7,10],[25,10],[24,25],[21,27],[7,25]],"#dac9a7");
+  line(10,25,22,26,"#a69786");
+  poly([[8,4],[23,5],[27,8],[25,24],[8,23],[5,20],[5,8]],m);
+  poly([[5,8],[8,4],[11,5],[9,23],[6,21]],s);
+  line(10,5,23,6,l); line(25,8,23,21,s);
+  for(const y of [8,18])rect(6,y,4,2,a);
+  if(t<=2){line(13,10,21,11,a);line(13,14,19,14,s);}else jewel(p,17,14,4,5,t===4?"square":"kite",c,a,s);
+  if(t>=3)poly([[18,25],[21,25],[20,29],[19,28],[17,29]],a);
+}
+function bowIcon(p,t,[l,m,s,d,a,c]) {
+  const {poly,line,rect}=p;
+  line(4,10,7,24,"#c7bbab"); line(7,24,22,27,"#a99f9e");
+  poly([[4,10],[6,6],[12,4],[18,5],[23,8],[27,14],[27,21],[25,25],[22,28],[22,23],[24,19],[23,13],[19,9],[13,8],[8,9]],s);
+  poly([[4,10],[6,6],[12,4],[18,5],[23,8],[27,14],[26,19],[24,14],[20,10],[16,8],[10,7]],m);
+  line(7,6,12,5,l); line(24,14,25,19,l);
+  line(8,23,22,9,t>=4?c:"#ccb182");
+  poly([[20,8],[26,5],[24,11],[22,11]],t>=4?a:l);
+  poly([[5,24],[7,20],[9,22],[8,25]],t>=4?a:s);
+  rect(21,11,2,2,a);
+}
+function hammerIcon(p,t,[l,m,s,d,a,c]) {
+  const {poly,line,rect}=p;
+  poly([[5,25],[16,14],[19,16],[8,28]],d);
+  line(7,25,17,15,t>=4?m:"#b98154");
+  rect(6,24,2,2,a);
+  poly(t===5
+    ? [[12,11],[15,6],[23,4],[28,9],[28,16],[24,20],[17,19]]
+    : [[11,10],[16,5],[24,4],[28,8],[29,14],[25,20],[17,20]],m);
+  poly([[11,10],[16,5],[24,4],[28,8],[22,11],[15,13]],l);
+  poly([[22,11],[28,8],[29,14],[25,20],[20,19]],s);
+  poly([[14,13],[19,11],[23,12],[22,16],[18,18]],d);
+  if(t>=3)jewel(p,18,14,3,3,t===4?"square":"kite",c,a,s);
+  else rect(17,13,3,2,l);
+}
+const weaponPainters={sword:swordIcon,dagger:daggerIcon,spear:spearIcon,staff:staffIcon,book:bookIcon,bow:bowIcon,hammer:hammerIcon};
+export function inventoryWeaponIcon(kind,tier,enhancement) {
+  const {cv,g}=surface(), p=pencil(g);
+  const t=Math.min(PALETTE.length,Math.max(1,tier|0));
+  const colors=PALETTE[t-1].slice();
+  if(enhancement>=7){ colors[0]="#fff2bd";colors[4]="#ffd483"; }
+  (weaponPainters[kind] || swordIcon)(p,t,colors);
+  ink(g);
+  if(enhancement>=10) ink(g,"#dbab55");
+  return cv;
+}
+
+// The two raid sets carry their own silhouettes and accents.
+const VEIL={edge:"#afa0c5",face:"#746288",shadow:"#4b3d5e",dark:"#302637",jewel:"#ba6487",shine:"#ffd0ca"};
+const BLOOM={edge:"#f0eee5",face:"#b5c3c1",shadow:"#71868b",dark:"#364553",jewel:"#57c3b7",shine:"#d0fff0"};
+const SETS={
+  veil_h(p,c){
+    const {poly,rect}=p;
+    poly([[4,5],[10,10],[13,7],[16,11],[19,8],[22,10],[28,5],[27,17],[22,23],[17,27],[12,24],[6,19]],c.face);
+    poly([[4,5],[11,12],[15,12],[11,15],[7,14]],c.edge);
+    poly([[24,11],[28,5],[27,17],[22,23],[17,27],[17,19]],c.shadow);
+    poly([[7,15],[13,15],[15,18],[10,19]],c.dark);poly([[18,17],[22,14],[25,14],[22,19]],c.dark);
+    rect(12,16,2,1,c.shine);rect(20,16,2,1,c.shine);
+    poly([[13,20],[17,21],[21,20],[17,24]],c.jewel);
+  },
+  veil_a(p,c){
+    const {poly,line}=p;
+    poly([[6,8],[11,5],[15,8],[18,7],[22,4],[27,9],[24,16],[27,24],[24,27],[19,24],[13,28],[5,25],[8,19],[4,17]],c.face);
+    poly([[5,10],[11,6],[14,8],[11,12],[8,19],[6,24],[12,25],[9,20]],c.edge);
+    poly([[15,10],[21,7],[25,9],[23,15],[26,24],[24,27],[18,23],[12,26],[14,20]],c.shadow);
+    poly([[13,10],[16,8],[21,8],[20,12],[16,15],[13,19]],c.jewel);
+    line(11,15,22,10,c.dark); jewel(p,16,11,3,3,"kite",c.jewel,c.shine,c.dark);
+  },
+  veil_r(p,c){
+    const {oval,poly,line}=p;
+    oval(15,18,10,8,c.shadow);oval(15,16,10,7,c.face);oval(14,17,6,4,null);
+    line(7,16,11,11,c.edge);
+    poly([[10,7],[14,9],[16,14],[12,12]],c.edge);
+    poly([[24,7],[23,12],[19,15],[20,9]],c.shine);
+    jewel(p,17,10,4,4,"kite",c.jewel,c.shine,c.dark);
+  },
+  veil_n(p,c){
+    const {poly,line,rect}=p;
+    line(5,5,10,10,c.edge);line(10,10,16,13,c.face);line(26,5,21,10,c.shadow);line(21,10,16,13,c.face);
+    poly([[15,10],[19,11],[23,16],[23,22],[18,27],[13,26],[9,21],[10,15]],c.dark);
+    jewel(p,16,19,4,6,"kite",c.jewel,c.shine,c.dark);
+    for(const y of [15,18,21]){
+      poly([[9,y],[12,y-1],[15,y+1],[15,y+2],[12,y+1],[10,y+2]],c.edge);
+      poly([[17,y+1],[20,y-1],[23,y],[22,y+2],[20,y+1],[17,y+3]],c.face);
+    }
+    rect(15,12,3,2,c.edge);
+  },
+  bloom_h(p,c){
+    const {poly,line,rect}=p;
+    poly([[5,20],[7,12],[12,8],[17,6],[21,8],[26,12],[27,6],[29,14],[25,21],[23,25],[18,26],[15,22],[11,25],[6,24]],c.face);
+    poly([[7,16],[8,11],[16,7],[20,9],[14,10],[11,13],[10,17]],c.edge);
+    poly([[24,12],[27,6],[29,14],[25,21],[23,25],[20,24],[22,15]],c.shadow);
+    poly([[8,18],[14,14],[21,14],[22,18],[19,21],[12,20]],c.dark);
+    line(12,17,19,16,c.shadow);rect(11,18,3,1,c.shine);
+    jewel(p,17,11,3,4,"kite",c.jewel,c.shine,c.dark);
+  },
+  bloom_a(p,c){
+    const {poly,line}=p;
+    poly([[4,11],[8,6],[13,5],[16,9],[20,5],[25,7],[29,12],[24,19],[22,26],[16,28],[10,25],[8,19],[4,17]],c.shadow);
+    poly([[5,12],[8,8],[13,6],[16,10],[12,13],[9,12],[8,17],[5,16]],c.edge);
+    poly([[17,10],[20,6],[24,8],[28,12],[25,17],[21,15],[20,12]],c.face);
+    for(const y of [13,17,21]){
+      poly([[9,y],[13,y+1],[16,y+3],[16,y+5],[11,y+3]],c.edge);
+      poly([[17,y+3],[22,y],[24,y+1],[21,y+4],[17,y+5]],c.face);
+    }
+    line(12,25,18,26,c.dark);jewel(p,16,14,4,6,"kite",c.jewel,c.shine,c.dark);
+  },
+  bloom_r(p,c){
+    const {oval,poly,line}=p;
+    oval(15,19,10,8,c.shadow);oval(15,17,10,7,c.face);oval(14,18,6,4,null);
+    line(6,17,10,12,c.edge);
+    poly([[10,9],[8,5],[14,6],[17,11],[21,5],[26,6],[23,11],[19,14],[14,13]],c.edge);
+    jewel(p,17,9,5,5,"kite",c.jewel,c.shine,c.dark);
+  },
+  bloom_n(p,c){
+    const {line,poly,rect}=p;
+    line(5,4,10,9,c.edge);line(10,9,16,12,c.face);line(27,4,22,9,c.shadow);line(22,9,16,12,c.face);
+    poly([[11,10],[16,12],[20,9],[25,14],[24,21],[19,28],[15,29],[8,22],[7,16]],c.shadow);
+    poly([[9,15],[11,11],[15,13],[14,18],[12,20]],c.edge);
+    jewel(p,17,19,7,9,"kite",c.jewel,c.shine,c.dark);
+    rect(19,19,2,2,c.edge);
+  },
+};
+export function specialEquipmentIcon(id) {
+  if (!Object.hasOwn(SETS,id)) return null;
+  if (!cache.has(id)) {
+    const {cv,g}=surface();
+    SETS[id](pencil(g),id.startsWith("veil_")?VEIL:BLOOM);
+    ink(g);
+    cache.set(id,cv);
+  }
+  return cache.get(id);
+}
+
 /** Fit weapon-space primitives to a square. Books face forward, other weapons point up-right. */
 export function weaponIconProjection(kind, shapes) {
   const points = [];
@@ -248,15 +441,16 @@ export function weaponIconProjection(kind, shapes) {
     if (sh.k === "p") points.push(...sh.pts);
     else if (sh.k === "c") {
       points.push([sh.s - sh.r, sh.t - sh.r], [sh.s + sh.r, sh.t + sh.r], [sh.s + sh.r, sh.t - sh.r], [sh.s - sh.r, sh.t + sh.r]);
-    } else if (sh.k === "l") points.push(sh.a, sh.b);
-    else points.push([sh.s, sh.t], [sh.s + 1, sh.t + 1]);
+    } else if (sh.k === "l") {
+      for (const [s, t] of [sh.a, sh.b]) points.push([s + 0.5, t + 0.5]);
+    } else points.push([sh.s, sh.t], [sh.s + 1, sh.t + 1]);
   }
   const diagonal = kind !== "book";
   const xs = points.map(([s,t]) => diagonal ? s+t : s);
   const ys = points.map(([s,t]) => diagonal ? t-s : t);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
   // Enough empty pixels for the ink and the +10 rim at every corner.
-  const span = EQUIP_ICON_SIZE - 6;
+  const span = EQUIP_ICON_SIZE - 8;
   const scale = Math.min(diagonal ? 1.8 : 2, span / (x1-x0), span / (y1-y0));
   const ox = EQUIP_ICON_SIZE / 2 - scale * (x0+x1) / 2;
   const oy = EQUIP_ICON_SIZE / 2 - scale * (y0+y1) / 2;
