@@ -3,7 +3,7 @@
  * this opens its own window while `snap.ab` is present and draws two halves: the TOP stage (the hero in the job's outfit, working)
  * and the BOTTOM board (the game's own module `alba_<k>.js`). The 알바 window (#w-alba) lists the games and starts them.
  *
- * snap.ab = [k, ended, ms to start, ms to end, score, combo, fever ms left, game state | 0 (unchanged), result | 0, rev]
+ * snap.ab = [k, ended, ms to start, ms to end, score, combo, fever ms left, game state | 0 (unchanged), result | 0, rev, strikes, lives]
  * A game module (public/alba_<k>.js) has a default export:
  *   mount(host, api)      once, `host` is an empty div (the board); build DOM / a canvas in it
  *   setState(g, recvAt)   the server's view(): the full state, only when it changed (times in it are ms FROM THE MOMENT OF RECEIPT, recvAt = performance.now() then)
@@ -134,13 +134,14 @@ addEventListener("keyup", (e) => {
 
 // ── the result card
 function showResult() {
-  const d = st.dom, r = st.result, [g, score, par, best, code, maxc, cuts, prev = 0, gold = 0, hot = 0] = r, k = st.k;
+  const d = st.dom, r = st.result, [g, score, par, best, code, maxc, cuts, prev = 0, gold = 0, hot = 0, out = 0] = r, k = st.k;
   st.shown = "1";
   d.res.hidden = false; d.res.textContent = "";
   const stamp = el("div", `ap-stamp g${g}`, g ? "CBAS"[g - 1] : "－");
   const rec = score > prev && score > 0 ? (prev ? `신기록! (이전 ${prev.toLocaleString()}점)` : "첫 기록!") : "";
   const lines = [
     `점수 ${score.toLocaleString()} (기준 ${par.toLocaleString()})`, `최고 기록 ${best.toLocaleString()} · 최대 콤보 ${maxc}`,
+    out && ["b", `큰 실수 ${G.defs.alba.rows[k].lives}번 — 근무가 일찍 끝났어요.`],
     rec && ["b", rec],
     code === 1 ? ["b", `보수 ${gold.toLocaleString()}G${hot ? " · 특근 보너스!" : ""}`] : "",
     ["C 등급에 닿지 못했어요. 오늘 다시 도전할 수 있어요.", "오늘의 보수를 받았습니다!", "오늘 이 알바의 보수는 이미 받았어요 (연습 기록).", "오늘 받을 수 있는 보수 횟수를 모두 썼어요."][code],
@@ -242,8 +243,9 @@ export function tick(t) {
     st.down = down; d.root.classList.toggle("down", down);
     d.hint.textContent = down ? "서버와의 연결이 끊겼어요. 다시 연결하는 중… 진행하던 알바는 이어지지 않을 수 있어요." : G.defs.alba.rows[st.k].hint;
   }
-  const txt = ended ? "종료" : phase === "brief" ? `준비 ${Math.ceil(toStart / 1000)}` : mmss(left);
-  if (txt !== st.last.t) { d.time.textContent = txt; st.last.t = txt; if (phase === "run" && left < 10500 && left > 0) api.sfx("alba_tick"); }
+  const lives = st.ab[11] || 0, hearts = lives ? " " + "♥".repeat(Math.max(0, lives - (st.ab[10] || 0))) + "♡".repeat(Math.min(lives, st.ab[10] || 0)) : "";
+  const txt = (ended ? "종료" : phase === "brief" ? `준비 ${Math.ceil(toStart / 1000)}` : mmss(left)) + hearts;
+  if (txt !== st.last.t) { d.time.textContent = txt; st.last.t = txt; if (phase === "run" && left < 10500 && left > 0) api.sfx("alba_tick"); if (st.last.h !== undefined && hearts.length && st.ab[10] > st.last.h) api.sfx("alba_bad"); st.last.h = st.ab[10] || 0; }
   if (score !== st.last.s) { d.score.textContent = `${score.toLocaleString()}점`; st.last.s = score; d.fill.style.width = `${clamp(score / par / 1.1, 0, 1) * 100}%`; }
   const ck = `${combo}|${fever > 0}|${left < G.defs.alba.rushMs}`;
   if (ck !== st.last.c) {

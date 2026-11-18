@@ -18228,6 +18228,8 @@ function cosBossRare(S, p, why) {
 //     order with their own timestamps; keep it O(small) — it runs 10×/s per player;
 //   · `act` gets the raw client object `a` ({t:"ab_act", ...}): validate every field (Number.isInteger, ranges); return a short reason
 //     on refusal (the client is resynced, nothing is shown), or null after applying; change `ab.rev` through `albaTouch(ab)`;
+//   · a serious failure (a bomb, a crushed box, a lost ball, an angry customer …) goes through `albaStrike(ab, now, pen)`: after
+//     `ALBA[k].lives || ALBA_T.lives` of them the shift ends at once (2026-11-18 owner: harder, over in 1~2 minutes);
 //   · points go through `albaGood(ab, now, base)` (combo, fever and the last-15-s rush multiply it) and `albaBad(ab, pen)` (combo
 //     broken, `pen` taken off); never touch `ab.score` directly;
 //   · `view(ab, now)` is the full state for the client, sent only when `ab.rev` changed; every time in it is MILLISECONDS FROM NOW
@@ -18244,6 +18246,7 @@ const ALBA_T = {
   cuts: [0.30, 0.65, 0.85, 1.0],                  // share of the game's par for C B A S
   gradeK: [0.7, 1.0, 1.3, 1.7],                   // pay multiplier per grade
   rep: [1, 2, 2, 3], stone: [0, 0, 1, 2], life: 0.5,
+  lives: 3,                                       // serious failures before the shift ends early (a game may set ALBA[k].lives)
   hot: 1.25,                                      // today's two 특근 games pay this much more
 };
 /** What a hero may still do on a shift (everything else is refused until it ends). */
@@ -18293,6 +18296,7 @@ const albaTouch = (ab) => { ab.rev++; };
 const albaMult = (ab, now) => (1 + 0.1 * Math.min(ab.combo, 10)) * (now < ab.feverUntil ? 2 : 1) * (now >= ab.endAt - ALBA_T.rushMs ? 1.5 : 1);
 /** A good move worth `base` points: combo up, fever when the combo reaches 10 / 20. Returns the points added. */
 function albaGood(ab, now, base) {
+  if (ab.out) return 0;   // struck out: events after the last strike (same advance) score nothing
   const pts = Math.round(base * albaMult(ab, now));
   ab.score += pts;
   ab.combo++;
@@ -18313,12 +18317,20 @@ function albaBad(ab, pen = 0) {
   ab.rev++;
 }
 
+const albaLives = (k) => ALBA[k].lives || ALBA_T.lives;
+/** A serious failure: a slip that also costs a life; the last life ends the shift now (albaAdvance finishes it). */
+function albaStrike(ab, now, pen = 0) {
+  if (ab.out) return;
+  albaBad(ab, pen);
+  if (++ab.strikes >= albaLives(ab.k)) { ab.out = 1; ab.endAt = Math.min(ab.endAt, now); }
+}
+
 // ── a shift's life
 function albaStart(S, p, k) {
   const now = S.now, R = ALBA_RULES[k];
   const ab = {
     k, box: { seed: strHash(`${p.ch.name}:${now}:${k}`) | 0 }, t0: now, runAt: now + ALBA_T.briefMs, endAt: now + ALBA_T.briefMs + ALBA_T.runMs,
-    state: "run", score: 0, combo: 0, maxCombo: 0, nextFever: ALBA_T.feverEvery, feverUntil: 0, feverUsed: 0, lastAct: 0, rev: 1, g: null, res: null,
+    state: "run", score: 0, combo: 0, maxCombo: 0, nextFever: ALBA_T.feverEvery, feverUntil: 0, feverUsed: 0, lastAct: 0, rev: 1, g: null, res: null, strikes: 0, out: 0,
   };
   R.init(S, p, ab);
   p.ab = ab; p.abSeen = 0;
@@ -18367,9 +18379,9 @@ function albaFinish(S, p, ab) {
   if (code === 2) toast(p, "오늘 이 알바의 보수는 이미 받았어요. 기록 연습으로 끝났습니다.");
   else if (code === 3) toast(p, `오늘 받을 수 있는 알바 보수 ${JB_PAY.perDay}번을 모두 받았어요.`);
   else if (!g) toast(p, "C 등급에 닿지 못했어요. 오늘 다시 도전할 수 있어요.");
-  // [grade, score, par, best, pay code, max combo, cut-offs, the best before this run, gold paid, 특근 (1/0)]
+  // [grade, score, par, best, pay code, max combo, cut-offs, the best before this run, gold paid, 특근 (1/0), struck out (1/0)]
   ab.res = [g, Math.round(ab.score), ALBA[ab.k].par, albaToday(p).best[ab.k] || 0, code, ab.maxCombo, ALBA_T.cuts.map((c) => Math.round(ALBA[ab.k].par * c)),
-    prev, p.ch.gold - gold0, code === 1 && albaHot(S).includes(ab.k) ? 1 : 0];
+    prev, p.ch.gold - gold0, code === 1 && albaHot(S).includes(ab.k) ? 1 : 0, ab.out];
   checkAch(S, p);   // a better best (even a practice run's) can earn the 알바 achievements
   ab.rev++;
 }
@@ -18413,12 +18425,12 @@ function albaApply(S, p, a) {
   if (ALBA_RULES[ab.k].act(S, p, ab, a, now)) albaTouch(ab);   // a refused input resyncs the client's board
 }
 
-// ── the wire: `ab: [k, ended, ms to start, ms to end, score, combo, fever ms left, game state | 0 (unchanged), result | 0, rev]`
+// ── the wire: `ab: [k, ended, ms to start, ms to end, score, combo, fever ms left, game state | 0 (unchanged), result | 0, rev, strikes, lives]`
 function albaView(S, p, out) {
   const ab = p.ab, now = S.now;
   if (!ab) return;
   out.ab = [ab.k, ab.state === "end" ? 1 : 0, Math.max(0, ab.runAt - now), Math.max(0, ab.endAt - now), Math.round(ab.score), ab.combo, Math.max(0, ab.feverUntil - now),
-    p.abSeen === ab.rev ? 0 : ALBA_RULES[ab.k].view(ab, now), ab.res || 0, ab.rev];
+    p.abSeen === ab.rev ? 0 : ALBA_RULES[ab.k].view(ab, now), ab.res || 0, ab.rev, ab.strikes, albaLives(ab.k)];
   p.abSeen = ab.rev;
 }
 function albaDefs() {
@@ -18426,7 +18438,7 @@ function albaDefs() {
   for (const k of ALBA_ORDER) {
     const r = ALBA[k];
     if (!r) continue;
-    rows[k] = { name: r.name, npc: r.npc, place: r.place, skill: r.skill, par: r.par, hint: r.hint, outfit: r.outfit, tool: r.tool };
+    rows[k] = { name: r.name, npc: r.npc, place: r.place, skill: r.skill, par: r.par, hint: r.hint, outfit: r.outfit, tool: r.tool, lives: albaLives(k) };
   }
   return { order: ALBA_ORDER.filter((k) => ALBA[k]), rows, runMs: ALBA_T.runMs, briefMs: ALBA_T.briefMs, cuts: ALBA_T.cuts, gradeK: ALBA_T.gradeK, perDay: JB_PAY.perDay, feverMs: ALBA_T.feverMs, rushMs: ALBA_T.rushMs, hot: ALBA_T.hot, field: Object.keys(DENSITY) };
 }
