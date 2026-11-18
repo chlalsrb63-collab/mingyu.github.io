@@ -107,8 +107,8 @@ let n = 0;
 const inside = (rects, view, what) => {
   for (const [x, y, w, h, c] of rects) {
     assert.ok(typeof c === "string" && c, what + ": every pixel has a colour");
-    // the figure stays inside its box on the sheet: the outline needs a pixel around it, the feet stand on row 27
-    assert.ok(x >= 5 && y >= 10 && x + w <= (view === "back" ? 29 : 27) && y + h <= 28 && w > 0 && h > 0, `${what}: ${[x, y, w, h]} inside the figure's box`);
+    // The feet stand on row 27. The rear tail can show just below the feet, with room for an outline.
+    assert.ok(x >= 5 && y >= 10 && x + w <= (view === "back" ? 29 : 27) && y + h <= (view === "back" ? 30 : 28) && w > 0 && h > 0, `${what}: ${[x, y, w, h]} inside the figure's box`);
   }
 };
 // every species with every ear, tail and marking, every view and frame
@@ -190,13 +190,19 @@ assert.equal(heads.size, SPC.SPECIES.length, "every animal has a face of its own
     for (let i = 2; i < SPC.LOOK_N[SPC.LI.tail]; i++) {
       look[SPC.LI.tail] = i;
       const tail = back(look, f, density);
-      let exposed = 0;
+      let visibleBehindHips = false;
       for (let p = 0; p < body.length; p += 4) {
-        if (!body[p + 3]) { if (tail[p + 3]) exposed++; continue; }
+        if (!body[p + 3]) {
+          const x = (p / 4) % (32 * density) / density;
+          const y = Math.floor(p / 4 / (32 * density)) / density;
+          const ink = tail[p] === 43 && tail[p + 1] === 34 && tail[p + 2] === 51;
+          if (tail[p + 3] && !ink && x >= 14 && x < 19 && y >= 28) visibleBehindHips = true;
+          continue;
+        }
         assert.ok(body[p] === tail[p] && body[p + 1] === tail[p + 1] && body[p + 2] === tail[p + 2] && body[p + 3] === tail[p + 3],
           `tail ${i} cannot overwrite the outlined body, species ${sp}, frame ${f}, scale ${density}`);
       }
-      assert.ok(exposed > 0, `tail ${i} remains visible behind the outline`);
+      assert.ok(visibleBehindHips, `tail ${i} is visible below the center of the hips, species ${sp}, frame ${f}, scale ${density}`);
     }
   }
 }

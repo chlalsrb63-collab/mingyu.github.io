@@ -250,39 +250,39 @@ const FAN_FEATHERS = [
 ];
 const RAISED_TAILS = [4, 8, 13];
 
-// Rear projections, drawn behind the body from the same hip to each distinct tip.
-// Each entry starts at its first occupied row, with the hip end on the left.
+// Rear projections [left, top, rows]. The root tucks behind the center of the hips.
+// Long tails curve away from the feet before rising, leaving the cheeks clear.
 const REAR_TAILS = {
-  2: [24, ["..FF.", ".FFFS", ".FSS.", "SS..."]],
-  3: [19, ["......FF..", ".....FFFS.", ".......FS.", ".......FS.", "......FFS.", ".....FFS..", "...FFSS...", "FFFS......", "FSS......."]],
-  4: [17, [
-    ".........II.", "........IIII", "........IIIT", "........FITT",
-    "........FFTS", ".......FFFTS", "......FFFFSS", "....FFFFFSS.",
-    "..FFFFFSS...", "FFFFSS......", "FSS.........",
+  2: [15, 26, ["FS..", "FFS.", ".FFS", "..SS"]],
+  3: [15, 21, ["........FF", ".......FFS", "........FS", ".......FFS", ".......FS.", "FS....FFS.", "FFS..FFS..", ".FFFFFS...", "..SSSS...."]],
+  4: [14, 20, [
+    "...........II.", "..........IIII", "..........IIIT", ".........FIITS",
+    "........FFFTS.", ".......FFFFSS.", ".FS..FFFFFSS..", ".FFFFFFFFSS...",
+    "..FFFFSSS.....", "...SSSS.......",
   ]],
-  5: [22, ["....II.", "...IIII", "..IIITT", ".IIIITT", "..TTTS.", "...SS.."]],
-  6: [22, ["......TT.", ".....FFF.", ".....FFSS", "...FFFSS.", ".FFFSS...", "FSS......"]],
-  7: [22, ["........PP", ".......PP.", "......PP..", ".....PQ...", "FFFPPQ....", "FQQ......."]],
-  8: [15, [
-    ".........FF.", "........FFFF", ".......FFFFS", ".......FF.FS",
-    "........F.FS", "..........FS", ".........FFS", "........FFSS",
-    ".......FFSS.", ".....FFFSS..", "...FFFSS....", ".FFFSS......",
-    "FSS.........",
+  5: [14, 26, [".FFS..", ".IFFTS", ".IIITT", "..TTS."]],
+  6: [15, 24, [".....TT.", "....TFFS", "FS..FFS.", "FF.FFS..", ".FFFS...", "..SS...."]],
+  7: [15, 24, [".........P", "........PP", "FS.....PQ.", "FPP..PPQ..", ".PPPPQ....", "..QQ......"]],
+  8: [14, 17, [
+    "...........FFF.", "..........FFFFF", ".........FFFFFS", ".........FFSFFS",
+    ".........FS.FFS", "............FFS", "...........FFSS", "..........FFFSS",
+    ".........FFFSS.", ".FS....FFFFSS..", ".FFF.FFFFSSS...", "..FFFFFFSS.....",
+    "...SSSSS.......",
   ]],
-  9: [22, [".......TF", ".....FFSS", "...FFDDSS", "..DDFFSS.", ".FFDS....", "FSS......"]],
-  10: [21, ["........I.", ".......II.", "......ITT.", "....IFTTS.", "..TFFTS...", ".FFSS.....", "FSS......."]],
-  11: [21, [".....PP.", "....PP.P", "....P..P", "....QQPQ", ".FF..QQ.", "FQQQQQ..", "FQ......"]],
-  12: [24, [".....FFS.", "...FFFFSS", ".FFFFFS..", "FSSSS...."]],
-  13: [21, [
-    ".......I.I..", "......IT.I.I", "......IT.TIT", "....FFFTTTS.",
-    "...FFFTSS...", ".FFFSS......", "FSS.........",
+  9: [15, 24, ["........TF", "......FTFS", "FS..DFFSS.", "FFDDDDSS..", ".FFFDSS...", "..SSS....."]],
+  10: [15, 23, ["........II", ".......IIT", "......ITTS", "FS...ITTS.", "FF.FTTFS..", ".FFFSSS...", "..SSS....."]],
+  11: [15, 24, [".....PPP", "....PP.P", "FS..P..P", "PP...QQP", ".PPPPQQ.", "..QQQ..."]],
+  12: [15, 26, ["FS......", "FFF...FF", ".FFFFFFS", "..SSSSS."]],
+  13: [9, 23, [
+    "....I......", "..I.IT.....", "..IT.T..FS.", "I.TFTTS.FFS",
+    "ITFFTTSFFS.", ".TFFFFFFSS.", "..SSSSSSS..",
   ]],
 };
 
-function paintTail(behind, rows, y, palette, sway) {
+function paintTail(behind, rows, y, palette, sway, left = 17) {
   rows.forEach((row, dy) => {
     // The brush tip ebbs with the stride while its root stays attached to the same spot.
-    const x = 17 + (dy < 5 ? sway : 0);
+    const x = left + (dy < 5 ? sway : 0);
     for (let i = 0; i < row.length; i++) {
       const ink = palette[row[i]];
       if (ink) behind(x + i, y + dy, 1, 1, ink);
@@ -338,7 +338,7 @@ export function animal(o, view, f, T, seam) {
   const tc = pat === 3 || pat === 12 ? deep : fur;
   const sway = f === FRAME.stepA ? -1 : 0;
   if (rear) {
-    const [y, shape] = rear;
+    const [x, y, shape] = rear;
     const base = tail === 8 ? blend(fur, "#a75b3a", 0.38) : tc;
     const shadow = tail === 4 ? blend(fur, "#784158", 0.42) : tail === 8 ? blend(fur, "#5f3645", 0.60) : shade(base, 0.32);
     const pink = blend(fur, "#c98986", 0.64);
@@ -346,7 +346,7 @@ export function animal(o, view, f, T, seam) {
       F: base, S: shadow, I: tail === 4 ? "#fff1db" : pale,
       T: tail === 4 ? "#dfcbbb" : blend(fur, pale, 0.58),
       D: acc || shade(fur, 0.58), P: pink, Q: shade(pink, 0.29),
-    }, RAISED_TAILS.includes(tail) ? sway : 0);
+    }, tail === 4 || tail === 8 ? sway : 0, x);
   } else [
     null, () => {},
     () => behind(19, 26, 1, 1, tc),
