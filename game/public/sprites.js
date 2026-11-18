@@ -311,13 +311,28 @@ export function personFrame(o, view, f = FRAME.stand, density = personDensity(o)
   return dressed;
 }
 
+/** Create only the poses that a scene or preview actually reads. */
+function poseFrames(draw) {
+  const frames = [];
+  for (const f of Object.values(FRAME)) Object.defineProperty(frames, f, {
+    configurable: true, enumerable: true,
+    get() {
+      const value = draw(f);
+      Object.defineProperty(frames, f, { value, configurable: true, enumerable: true, writable: true });
+      return value;
+    },
+  });
+  return frames;
+}
+
 /** `{ front, side, back }`, each a list of frames indexed by FRAME. Side frames face right. */
 export function personSheet(o, density = personDensity(o)) {
   const key = JSON.stringify([density, o]);
   let s = cache.get(key);
   if (s) cache.delete(key);
   else {
-    const frames = (view) => [0, 1, 2, 3, 4, 5].map((f) => personFrame(o, view, f, density));
+    const look = { ...o, cos: o.cos?.slice(), dye: o.dye && { ...o.dye } };
+    const frames = (view) => poseFrames((f) => personFrame(look, view, f, density));
     s = { front: frames("front"), side: frames("side"), back: frames("back") };
   }
   cache.set(key, s);
@@ -367,9 +382,9 @@ export function juanaSheet() {
   const base = personSheet(SPC.lookOf(JUANA_LOOK));
   const scale = PERSON_SIZE / S;
   const APRON = "#8a4ab0", APRON_D = "#5e3080", BIB = "#e8d8f4", POUCH = "#f4d49a", POUCH_D = "#d8a860", BRASS = "#e8c060", BRASS_D = "#a87a2c", GLASS = "#bfeaff";
-  const dress = (view) => base[view].map((src, f) => {
+  const dress = (view) => poseFrames((f) => {
     const [c, g] = sheet(PERSON_SIZE);
-    g.drawImage(src, 0, 0);
+    g.drawImage(base[view][f], 0, 0);
     const H = f === FRAME.breathe ? 1 : f === FRAME.stretch ? -1 : 0;
     // her parts go over the inked figure; only the pixels they add get a new outline (no second ink round the rest)
     const added = [];

@@ -50,12 +50,18 @@ let subpixels = 0;
 for (const look of looks.values()) {
   const o = SPC.lookOf(look);
   const regular = SP.personSheet(o), legacy = SP.personSheet(o, 1);
+  // The native rear tail is independently drawn. Compare the body footprint with that layer hidden.
+  const body = SPC.tailOf(o) === 1 ? null : SP.personSheet({ ...o, tail: 1 }).back;
+  const legacyBody = body && SP.personSheet({ ...o, tail: 1 }, 1).back;
   for (const view of views) for (const f of frames) {
     const label = `look ${look.join("/")} ${view} ${f}`;
     const { bounds: lo, data: old } = inspect(legacy[view][f], logicalSize, label);
     const { bounds: hi, data } = inspect(regular[view][f], nativeSize, label);
-    const doubled = lo.map((v, i) => 2 * v + Number(i >= 2));
-    assert.ok(hi.every((v, i) => Math.abs(v - doubled[i]) <= 1), label + ": body mass moved");
+    const directRearTail = view === "back" && body;
+    const oldBody = directRearTail ? inspect(legacyBody[f], logicalSize, label).bounds : lo;
+    const newBody = directRearTail ? inspect(body[f], nativeSize, label).bounds : hi;
+    const doubled = oldBody.map((v, i) => 2 * v + Number(i >= 2));
+    assert.ok(newBody.every((v, i) => Math.abs(v - doubled[i]) <= 1), label + ": body mass moved");
     for (let i = 0; i < old.length; i += 4) {
       const x = (i / 4) % logicalSize, y = Math.floor(i / (4 * logicalSize));
       const offset = (y * 2 * nativeSize + x * 2) * 4;

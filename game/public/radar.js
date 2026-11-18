@@ -431,15 +431,24 @@ const view = { tab: "here", z: 1, cx: 0, cy: 0, reset: true, dirty: true, at: 0,
 const bandOf = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
 const residentsPanel = { filter: "all", rows: null, display: "", map: null, route: null };
 const servicePost = (n) => n.role && n.role !== "talk" && n.role !== "quest";
+let questResident = { defs: null, self: null, id: null };
 
 function residentTarget() {
   const picked = NPC.tracked();
   if (picked) return picked;
   const { defs, self } = D.G;
+  if (questResident.defs !== defs || questResident.self !== self) {
+    questResident = { defs, self, id: questResidentId(defs, self) };
+  }
+  return questResident.id;
+}
+
+function questResidentId(defs, self) {
   const main = self?.q, quest = main && defs.quests?.[main.i];
   const elder = defs.questTurnIn?.npc;
   if (quest && main.st === 1 && main.n >= quest.n && NPC.cast(elder)) return elder;
   for (const [id, stage] of self?.sq || []) {
+    if (stage !== 2 && stage !== 3) continue;
     const q = defs.side?.find((s) => s.id === id);
     const npc = stage === 3 ? q?.giver : stage === 2 && q?.goal.type === "talk" ? q.goal.npc : null;
     if (npc && NPC.cast(npc)) return npc;

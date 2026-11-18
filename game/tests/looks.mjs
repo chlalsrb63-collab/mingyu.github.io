@@ -209,6 +209,31 @@ assert.equal(heads.size, SPC.SPECIES.length, "every animal has a face of its own
   }
 }
 
+// A thumbnail or the first visible pose only pays to draw the frame it needs.
+{
+  const { personFrame, personSheet, playerLook } = await import("../public/sprites.js");
+  const gear = { cos: ["top_robe", "back_cape_blue"], dye: { back_cape_blue: 2 } };
+  const look = playerLook("adventurer", SPC.withSpecies([], 14), gear);
+  const pixels = (frame) => frame.getContext("2d").getImageData(0, 0, frame.width, frame.height).data;
+  const expected = pixels(personFrame(look, "back", 2));
+  const create = document.createElement;
+  let canvases = 0;
+  document.createElement = (tag) => { if (tag === "canvas") canvases++; return create(tag); };
+  try {
+    const sheet = personSheet(look);
+    assert.equal(canvases, 0, "creating the sheet defers pixel work");
+    assert.equal(sheet.back.length, 6);
+    // Pending frames must keep the appearance used as the cache key.
+    gear.dye.back_cape_blue = 4;
+    const frame = sheet.back[2];
+    assert.deepEqual(pixels(frame), expected);
+    assert.ok(canvases > 0, "the first request draws the frame");
+    canvases = 0;
+    assert.equal(sheet.back[2], frame);
+    assert.equal(canvases, 0, "a frame is generated only once per sheet");
+  } finally { document.createElement = create; }
+}
+
 // ── presets, species defaults and the hat anchor
 for (const [name, look] of SPC.PRESETS) {
   assert.equal(look.length, 11, name);

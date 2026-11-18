@@ -171,6 +171,7 @@ export const channelName = () => Lobby.label(channel);
 /** Out of the world, back to the lobby (the socket is already closed or closing). */
 export function stopGame() {
   G.playing = false;
+  G.impactAt = 0;
   G.auto = false;
   Coop.onSnap({ cj: 0 });
   Buddy.reset();
@@ -203,6 +204,7 @@ function loadMap(m) {
   // through a house door (into or out of an interior): a warm fade and the door's latch and bell
   if (G.map && G.map.id !== m.id && (G.map.theme === "interior" || m.theme === "interior")) { doorFade(); Sound.play("door"); }
   G.map = m;
+  G.impactAt = 0;
   G.path = null;
   G.comboWeapon = null;
   NpcLife.load(m, G.defs);
@@ -288,7 +290,12 @@ function onSnap(s) {
   if (s.fm) FairMkt.onFm(s.fm);              // a 장날 merchant's list, when asked for or after a purchase (fairmkt.js)
   if (s.ev) for (const e of s.ev) {
     const wait = G.impactAt - t;
-    if (wait > 8 && ((e[0] === "h" && !e[4] && e[2] > 0) || e[0] === "k")) setTimeout(() => onEvent(e, now()), wait);
+    if (wait > 8 && ((e[0] === "h" && !e[4] && e[2] > 0) || e[0] === "k")) {
+      const map = G.map, socket = ws;
+      setTimeout(() => {
+        if (G.playing && G.map === map && ws === socket) onEvent(e, now());
+      }, wait);
+    }
     else onEvent(e, t);
   }
   for (const [id, m] of G.gone) if (t - m.goneT > 1500) G.gone.delete(id);
