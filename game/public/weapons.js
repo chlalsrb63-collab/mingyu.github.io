@@ -12,10 +12,9 @@
  * row, shadowed bottom row, hue-shifted), then the whole is inked with a
  * one-pixel outline in the rarity's colour.
  *
- * A book is the exception: it is drawn open, facing the viewer, around the
- * sheet's centre. A bow is held square to the shot: its limbs run across the
- * sprite, its string and arrow along it, and it is drawn at every pull of its
- * string (bowSprite; swing.js bowPose says which).
+ * A closed book faces the viewer from the sheet's centre. A bow is held square
+ * to the shot: its limbs run across the sprite and its string and arrow along
+ * it. `bowSprite` draws each pull of the string from `swing.js`'s `bowPose`.
  *
  * An approved external image (asset/ → scripts/import-art.mjs --install → public/assets/
  * manifest.json) replaces a look when it is listed: "weapon.<kind>.t<tier>",
@@ -89,36 +88,34 @@ const D = (s, t, m, o) => ({ k: "d", s, t, m, top: true, ...o });
 // decorate it), blade: the material names that are "the blade" (motifs recolour them) }.
 
 const SWORD = [
-  // 1 철제 대검 — a wide, clean blade with a bevel and a wine-red wrapped grip
+  // 1 철제 대검 — a straight bevel and a wine-red wrapped grip
   () => ({
     sh: [
       P([[-4, -1], [-2, -2], [-1, -1], [-1, 2], [-2, 3], [-4, 2]], "steel"),
       R(-2, 4, -1, 2, "oxblood"), R(0, 1, -1, 2, "wrap"), R(2, 3, -1, 2, "wrap"),
-      P([[3, -4], [5, -3], [6, -2], [6, 3], [5, 4], [3, 5]], "iron"),
-      P([[5, -2.8], [20, -2.8], [23, -0.7], [23, 1.4], [20, 3.8], [5, 3.8]], "steel"),
-      P([[6, -2.8], [20, -2.8], [23, -0.7], [21, 0.2], [6, 0.2]], "bright"),
-    ], head: [5, 23, -2.8, 3.8], blade: ["steel", "bright"],
+      P([[3, -4], [5, -3], [6, 0.5], [5, 4], [3, 5]], "iron"),
+      P([[5, -2], [18, -2], [23.5, 0.5], [18, 3], [5, 3]], "steel"),
+      P([[6, -2], [18, -2], [22.5, 0.5], [6, 0.5]], "bright"),
+    ], head: [5, 23.5, -2, 3], blade: ["steel", "bright"],
   }),
   // 2 강철 양손검 — clean steel, a ricasso, a fuller, a long wrapped grip
   () => ({
     sh: [
       P([[-6, 0], [-5, -1], [-3, -1], [-3, 2], [-5, 2], [-6, 1]], "steel"),
       R(-3, 4, -1, 2, "leather"), R(-2, -1, -1, 2, "wrap"), R(0, 1, -1, 2, "wrap"), R(2, 3, -1, 2, "wrap"),
-      R(4, 6, -4, 5, "iron"), R(3, 7, -4, -3, "iron"), R(3, 7, 4, 5, "iron"),
-      R(6, 8, -1, 2, "steel"),
-      P([[8, -2], [22, -2], [25, 0], [25, 1], [22, 3], [8, 3]], "steel"),
-      L(9, 0, 21, 0, "fuller"),
+      P([[3, -3.5], [5, -3], [7, 0.5], [5, 4], [3, 4.5], [4, 0.5]], "iron"),
+      R(6, 9, -1.5, 2.5, "steel"),
+      P([[8, -2], [19, -2], [25.5, 0.5], [19, 3], [8, 3]], "steel"),
+      L(9, 0, 20, 0, "fuller"),
     ], head: [8, 25, -2, 3], blade: ["steel"],
   }),
-  // 3 기사단 클레이모어 — forward-swept quillons with trefoil ends, gilt fittings, a sapphire
+  // 3 기사단 클레이모어 — gilt swept quillons and a sapphire
   () => ({
     sh: [
       C(-5, 0.5, 1.7, "gold"), R(-4, 4, -1, 2, "blue"), R(-2, -1, -1, 2, "gild"), R(1, 2, -1, 2, "gild"),
-      P([[4, -1], [6, -1], [9, -5], [7, -6]], "gold"), P([[4, 2], [6, 2], [9, 6], [7, 7]], "gold"),
-      C(8.5, -6, 1.4, "gold"), C(8.5, 7, 1.4, "gold"),
-      R(4, 7, -2, 3, "gold"), R(5, 6, 0, 1, "sapph", { top: true }),
-      P([[7, -2], [25, -2], [28, 0], [28, 1], [25, 3], [7, 3]], "bright"),
-      L(8, 0, 23, 0, "fuller"), R(7, 9, -2, 3, "gold"),
+      P([[4, 0.5], [7, -3.8], [9, -4.8], [7, -0.5], [7, 1.5], [9, 5.8], [7, 4.8]], "gold"),
+      P([[7, -2.5], [20, -2], [28.5, 0.5], [20, 3], [7, 3.5]], "bright"),
+      L(9, 0, 23, 0, "fuller"), D(5, 0, "sapph"),
     ], head: [9, 28, -2, 3], blade: ["bright"],
   }),
   // 4 고주파 대검 — gunmetal, vented, a cyan emitter edge humming along the blade
@@ -126,33 +123,32 @@ const SWORD = [
     sh: [
       R(-6, -2, -2, 3, "carbon"), D(-4, 0, "glow"),
       R(-2, 4, -1, 2, "dark"), D(0, 0, "glow"), D(2, 0, "glow"),
-      P([[4, -4], [8, -3], [8, 4], [4, 5]], "carbon"), L(5, -2, 5, 3, "glow"),
-      P([[8, -3], [26, -3], [30, 0], [30, 1], [27, 4], [8, 4]], "gun"),
-      R(11, 19, 0, 1, null), R(21, 24, 0, 1, null),
-      L(8, 3, 27, 3, "glow"), L(9, -3, 25, -3, "core"),
-    ], head: [8, 30, -3, 4], blade: ["gun"],
+      P([[4, -3.5], [8, -2], [8, 3], [4, 4.5]], "carbon"), L(5, -2, 5, 2, "glow"),
+      P([[7, -2.5], [24, -2.5], [30.5, 0.5], [25, 3.5], [7, 3.5]], "gun"),
+      L(11, 0, 18, 0, "ink"), L(21, 0, 24, 0, "ink"),
+      L(8, 2, 26, 2, "glow"), L(9, -2, 24, -2, "core"),
+    ], head: [7, 30.5, -2.5, 3.5], blade: ["gun"],
   }),
-  // 5 차원 절단기 — a hooked slab of void with a living edge and shards that float free
+  // 5 차원 절단기 — a swept void blade with a bright fissure
   () => ({
     sh: [
       R(-6, -3, -1, 2, "void"), D(-5, 0, "energy"),
       R(-3, 5, -1, 2, "black"), D(-1, 0, "energy"), D(2, 0, "energy"),
-      P([[5, -2], [7, -6], [9, -6], [8, -1], [8, 2], [9, 7], [7, 7], [5, 3]], "void"),
-      P([[8, -4], [24, -5], [31, -2], [33, 1], [29, 2], [31, 5], [8, 5]], "void"),
-      L(12, -1, 16, 1, "energy"), L(16, 1, 20, -1, "energy"), L(20, -1, 25, 1, "energy"),
-      L(9, 4, 28, 4, "energy"),
-      P([[34, -3], [37, -5], [36, -2]], "crystal"), P([[35, 3], [38, 4], [35, 5]], "crystal"),
-    ], head: [8, 33, -5, 5], blade: ["void"],
+      P([[4, -1], [7, -4], [9, -4], [7, 0], [7, 1], [9, 5], [7, 5], [4, 2]], "violet"),
+      P([[7, -2], [25, -3], [37, -4.5], [32, 0], [24, 3.5], [7, 3]], "void"),
+      P([[9, 1], [24, 1], [34, -2.5], [31, 0], [24, 3], [9, 3]], "crystal"),
+      L(11, -1, 22, -1, "energy"), L(22, -1, 29, -2, "energy"),
+    ], head: [7, 37, -4.5, 3.5], blade: ["void", "crystal"],
   }),
-  // 6 운철 참마도 — a broad night-blue blade of meteor iron, a starlight edge, star flecks, a gold sun guard
+  // 6 운철 참마도 — a night-blue blade with a starlight edge and a gold sun guard
   () => ({
     sh: [
       R(-6, -3, -1, 2, "meteor"), C(-6, 0.5, 1.4, "starfire"),
       R(-3, 5, -1, 2, "black"), R(-1, 0, -1, 2, "gild"), R(2, 3, -1, 2, "gild"),
-      R(5, 8, -4, 5, "starfire"), D(6, 0, "star"),
-      P([[8, -2], [26, -4], [32, -2], [33, 0], [30, 3], [8, 4]], "meteor"),
-      L(9, 3, 29, 2, "star"), D(14, 0, "star"), D(20, 1, "star"), D(25, -1, "white"),
-    ], head: [8, 33, -4, 4], blade: ["meteor"],
+      P([[5, -3.5], [7, -3.5], [9, 0.5], [7, 4.5], [5, 4.5]], "starfire"), D(6, 0, "star"),
+      P([[8, -2], [26, -3], [33.5, -1.5], [29, 2.5], [8, 3.5]], "meteor"),
+      L(9, 2, 28, 1, "star"), D(14, 0, "star"), D(24, -1, "white"),
+    ], head: [8, 33.5, -3, 3.5], blade: ["meteor"],
   }),
 ];
 
@@ -221,62 +217,62 @@ const SPEAR = [
   (icon) => ({
     sh: [
       R(-4, 29, -1, icon ? 1.7 : 1, "ash"), R(-4, -2, -1.4, 1.8, "iron"),
-      R(-1, 4, -1.3, 1.7, "leather"), R(25, 29, -1.6, 2.1, "iron"),
-      P([[28, -1.5], [30.5, -3.5], [34, -2.5], [40, 0.5], [34, 3.5], [30.5, 4.5], [28, 2.5]], "steel"),
-      P([[29, -1.7], [30.5, -3.5], [34, -2.5], [39, 0.25], [29, 0.25]], "bright"),
-    ], head: [28, 40, -3.5, 4.5], blade: ["steel", "bright"],
+      R(-1, 4, -1.3, 1.7, "leather"), R(25, 29, -1.2, 1.8, "iron"),
+      P([[28, -1], [31, -2.5], [40.5, 0.5], [31, 3.5], [28, 2]], "steel"),
+      P([[28, 0.5], [31, -2.5], [39, 0.5]], "bright"),
+    ], head: [28, 40.5, -2.5, 3.5], blade: ["steel", "bright"],
   }),
   // 2 강철 장창 — a long ash shaft, a leaf-bladed steel head, a red tassel
   (icon) => ({
     sh: [
       R(-5, 31, 0, icon ? 2 : 1, "wood"), R(-5, -3, -1, 2, "iron"),
-      P([[27, 1], [30, 1], [31, 6], [26, 6]], "red"),
+      P([[28, 1], [31, 1], [28, 4], [25, 4]], "red"),
       R(29, 31, -1, 2, "iron"),
-      P([[31, -1], [34, -2], [39, 0], [39, 1], [34, 3], [31, 2]], "steel"),
+      P([[30.5, -0.5], [33.5, -2.5], [40, 0.5], [33.5, 3.5], [30.5, 1.5]], "steel"),
       L(32, 0, 37, 0, "fuller"),
-    ], head: [31, 39, -2, 3], blade: ["steel"],
+    ], head: [30.5, 40, -2.5, 3.5], blade: ["steel"],
   }),
   // 3 기사단 할버드 — an axe, a spike and a back hook on a gilt collar
   (icon) => ({
     sh: [
       R(-5, 33, 0, icon ? 2 : 1, "dwood"), R(-5, -3, -1, 2, "gold"), R(12, 14, -1, 2, "gold"),
       R(30, 33, -1, 2, "gold"),
-      P([[31, 1], [36, 1], [38, 6], [36, 8], [32, 7], [30, 4]], "bright"),
-      P([[33, -1], [35, -1], [35, -4], [33, -2]], "bright"),
-      P([[33, -1], [43, 0], [43, 1], [33, 2]], "bright"),
-      L(33, 6, 36, 7, "fuller"),
-    ], head: [30, 43, -4, 8], blade: ["bright"],
+      P([[31, 1], [35, 1], [40, 6], [36, 7], [34, 6], [32, 3]], "bright"),
+      P([[32, 0], [34, -3], [37, -4], [35, 0]], "steel"),
+      P([[32, -1], [36, -1.5], [43.5, 0.5], [36, 2.5], [32, 2]], "bright"),
+      L(34, 3, 38, 6, "fuller"),
+    ], head: [31, 43.5, -4, 7], blade: ["bright", "steel"],
   }),
   // 4 플라즈마 랜스 — a vamplate and a cone of metal with a plasma core
   (icon) => ({
     sh: [
       R(-5, 26, -1, 1, "gun"), R(-1, 0, -1, 1, "glow"), R(2, 3, -1, 1, "glow"),
-      P([[23, -4], [27, -3], [27, 4], [23, 5]], "carbon"), L(24, -2, 24, 3, "glow"),
-      P([[27, -3], [42, 0], [42, 1], [27, 4]], "gun"),
-      L(28, 0, 39, 0, "glow"), L(28, 1, 37, 1, "core"),
-    ], head: [27, 42, -3, 4], blade: ["gun"],
+      P([[23, -2.5], [27, -1.5], [27, 2.5], [23, 3.5]], "carbon"), L(24, -1, 24, 2, "glow"),
+      P([[26, -2.5], [32, -2], [42.5, 0.5], [32, 3], [26, 3.5]], "gun"),
+      L(27, 0, 39, 0, "glow"), L(28, 1, 35, 1, "core"),
+    ], head: [26, 42.5, -2.5, 3.5], blade: ["gun"],
   }),
-  // 5 차원 관통창 — a void trident whose prongs curl in, its point a crystal of the rift
+  // 5 차원 관통창 — sweeping void tines and a crystal point
   (icon) => ({
     sh: [
       R(-5, 30, 0, icon ? 2 : 1, "void"), D(4, 0, "energy"), D(14, 0, "energy"),
       R(28, 31, -1, 2, "black"),
-      P([[30, -1], [33, -5], [38, -6], [34, -3], [32, 0]], "void"),
-      P([[30, 2], [33, 6], [38, 7], [34, 4], [32, 1]], "void"),
-      P([[31, -1], [45, 0], [45, 1], [31, 2]], "crystal"),
-      L(32, 0, 42, 0, "white"),
-      C(41, -5, 1.2, "crystal"), C(41, 6, 1.2, "crystal"),
-    ], head: [30, 45, -6, 7], blade: ["crystal"],
+      P([[30, -1], [34, -4], [41, -5], [36, -2], [33, 0]], "violet"),
+      P([[30, 2], [34, 5], [41, 6], [36, 3], [33, 1]], "violet"),
+      P([[30.5, -0.5], [34, -2], [45.5, 0.5], [34, 3], [30.5, 1.5]], "crystal"),
+      L(32, 0, 42, 0, "energy"),
+    ], head: [30, 45.5, -5, 6], blade: ["crystal"],
   }),
   // 6 운철 천공창 — a meteor-iron shaft studded with stars, gold crescent wings, a long night-blue point
   (icon) => ({
     sh: [
       R(-5, 30, 0, icon ? 2 : 1, "meteor"), D(4, 0, "star"), D(14, 0, "star"), D(24, 0, "star"),
-      R(28, 31, -2, 3, "starfire"),
-      P([[30, -1], [32, -5], [35, -6], [33, -2]], "starfire"), P([[30, 2], [32, 6], [35, 7], [33, 3]], "starfire"),
-      P([[31, -2], [44, 0], [46, 0.5], [44, 1], [31, 3]], "meteor"),
+      R(28, 31, -1.5, 2.5, "starfire"),
+      P([[30, -0.5], [33, -4], [37, -4.5], [34, -1]], "starfire"),
+      P([[30, 1.5], [33, 5], [37, 5.5], [34, 2]], "starfire"),
+      P([[31, -2], [36, -2], [46, 0.5], [36, 3], [31, 3]], "meteor"),
       L(32, 0, 43, 0, "star"),
-    ], head: [30, 46, -6, 7], blade: ["meteor"],
+    ], head: [30, 46, -4.5, 5.5], blade: ["meteor"],
   }),
 ];
 
@@ -338,65 +334,50 @@ const STAFF = [
   }),
 ];
 
-// books are drawn front-on around the sheet's centre (s → x, t → y)
+// Closed books share a left binding, a narrow page block and a single front cover.
+const closedBook = (cover, spine, pages, details) => () => ({
+  sh: [
+    P([[-5, -4.5], [4.5, -4.5], [6, -3], [6, 6], [4.5, 7], [-4.5, 7], [-5, 6]], spine),
+    P([[-4, 3.5], [5.5, 3.5], [5.5, 5.5], [4.5, 6], [-4, 6]], pages),
+    P([[-5, -5.5], [4, -5.5], [5, -4.5], [5, 4], [4, 5], [-5, 5]], cover),
+    P([[-5.5, -4.5], [-4, -5.5], [-3.5, -5.5], [-3.5, 6.5], [-5, 6], [-5.5, 5]], spine),
+    ...details,
+  ],
+  head: [-3.5, 4.5, -4.5, 4.5],
+  blade: [cover],
+});
+
 const BOOK = [
-  // 1 입문 마도서 — a neat bound volume with pale leaves and a small brass clasp
-  () => ({
-    sh: [
-      P([[-8, -5], [-3, -5], [0, -4], [3, -5], [8, -5], [8, 5], [1, 7], [-1, 7], [-8, 5]], "oxblood"),
-      P([[-7, -4.5], [-3, -4.5], [-0.5, -3], [-0.5, 5.4], [-3, 4.4], [-7, 4]], "page"),
-      P([[0.5, -3], [3, -4.5], [7, -4.5], [7, 4], [3, 4.4], [0.5, 5.4]], "page"),
-      L(-5, -1, -2, 0, "line"), L(-5, 1, -2, 2, "line"), L(2, 1, 5, 0, "line"),
-      R(7, 8, 1, 3, "brass"), R(1.5, 3, 4.6, 7.8, "red"),
-    ], head: [-8, 8, -5, 7], blade: ["oxblood"],
-  }),
-  // 2 룬 마도서 — a blue cover, a rune glowing on the open page
-  () => ({
-    sh: [
-      R(-8, 8, -3, 6, "blue"), R(-8, -6, -3, -1, "iron"), R(6, 8, -3, -1, "iron"),
-      R(-7, -1, -4, 5, "page"), R(1, 7, -4, 5, "page"), R(-1, 1, -4, 6, "dark"),
-      L(-6, -2, -3, -2, "line"), L(-6, 0, -2, 0, "line"), L(-6, 2, -3, 2, "line"),
-      L(3, -3, 3, 3, "rune"), L(3, -3, 5, -1, "rune"), L(3, 0, 5, 2, "rune"),
-    ], head: [-8, 8, -3, 6], blade: ["blue"],
-  }),
-  // 3 현자의 법전 — violet with gilt corners and a clasp, a golden sigil
-  () => ({
-    sh: [
-      R(-9, 9, -3, 7, "violet"), R(-9, -7, 5, 7, "gold"), R(7, 9, 5, 7, "gold"), R(-9, -7, -3, -1, "gold"), R(7, 9, -3, -1, "gold"),
-      R(-7, -1, -4, 5, "page"), R(1, 7, -4, 5, "page"), R(-1, 1, -4, 7, "gold"),
-      L(-6, -2, -3, -2, "line"), L(-6, 0, -2, 0, "line"), L(-6, 2, -3, 2, "line"),
-      C(4, 0.5, 2.2, "gild"), C(4, 0.5, 1.1, "page"), D(4, 0, "ruby"),
-      R(-1, 1, 7, 9, "gold"),
-    ], head: [-9, 9, -3, 7], blade: ["violet"],
-  }),
-  // 4 홀로그램 코덱스 — a slate of teal metal whose pages are light, a panel hovering over it
-  () => ({
-    sh: [
-      R(-8, 8, -2, 6, "carbon"), L(-8, 5, 7, 5, "glow"),
-      R(-7, -1, -3, 4, "holo"), R(1, 7, -3, 4, "holo"), R(-1, 1, -3, 6, "gun"),
-      L(-6, -1, -2, -1, "core"), L(-6, 1, -3, 1, "core"), L(2, -1, 6, -1, "core"), L(2, 1, 5, 1, "core"),
-      R(-4, 4, -9, -6, "holo"), L(-3, -8, 2, -8, "core"),
-    ], head: [-8, 8, -2, 6], blade: ["carbon"],
-  }),
-  // 5 공허의 서 — black-violet, an eye of the void open on its pages, shards drifting up
-  () => ({
-    sh: [
-      R(-9, 9, -3, 7, "void"), P([[-9, -3], [-11, -5], [-8, -3]], "void"), P([[9, -3], [11, -5], [8, -3]], "void"),
-      R(-7, -1, -4, 5, "black"), R(1, 7, -4, 5, "black"), R(-1, 1, -4, 7, "violet"),
-      C(-4, 0.5, 2, "energy"), R(-5, -3, 0, 1, "ink", { top: true }), C(4, 0.5, 2, "energy"), R(3, 5, 0, 1, "ink", { top: true }),
-      P([[-3, -8], [-2, -10], [-1, -8]], "crystal"), P([[2, -9], [3, -11], [4, -9]], "crystal"),
-    ], head: [-9, 9, -3, 7], blade: ["void"],
-  }),
-  // 6 성운의 서 — a night-blue cover with gold corners, a constellation drawn across its pages
-  () => ({
-    sh: [
-      R(-9, 9, -3, 7, "meteor"), R(-9, -7, -3, -1, "starfire"), R(7, 9, -3, -1, "starfire"), R(-9, -7, 5, 7, "starfire"), R(7, 9, 5, 7, "starfire"),
-      R(-7, -1, -4, 5, "page"), R(1, 7, -4, 5, "page"), R(-1, 1, -4, 7, "starfire"),
-      L(-6, -2, -4, 0, "rune"), L(-4, 0, -2, 2, "rune"), D(-6, -2, "sapph"), D(-4, 0, "sapph"), D(-2, 2, "sapph"),
-      C(4, 0.5, 1.6, "starfire"), D(4, 0, "white"),
-      D(0, -9, "star"), D(-3, -8, "star"), D(3, -10, "star"),
-    ], head: [-9, 9, -3, 7], blade: ["meteor"],
-  }),
+  // 1 입문 마도서 — wine-red leather with a small brass clasp
+  closedBook("oxblood", "dwood", "page", [
+    L(-2, -3, 2, -3, "brass"), L(-2, 2, 1, 2, "brass"),
+    R(3, 5.5, -0.5, 1.5, "brass"),
+  ]),
+  // 2 룬 마도서 — steel fittings and a cyan rune on the blue cover
+  closedBook("blue", "dark", "page", [
+    R(3, 4.5, -5, -3.5, "iron"), R(3, 4.5, 3, 4.5, "iron"),
+    L(-1, -3, -1, 2, "rune"), L(-1, -3, 2, -1, "rune"), L(-1, -1, 2, 1, "rune"),
+  ]),
+  // 3 현자의 법전 — gilt corners and a ruby seal
+  closedBook("violet", "void", "oldpage", [
+    R(3, 5, -5, -3.5, "gold"), R(3, 5, 3, 4.5, "gold"),
+    P([[0.5, -3], [3, -0.5], [0.5, 2], [-2, -0.5]], "gold"), D(0, -1, "ruby"),
+  ]),
+  // 4 홀로그램 코덱스 — a dark housing with a cyan inlay and illuminated page edges
+  closedBook("carbon", "gun", "holo", [
+    L(-2, -4, 3, -4, "glow"), L(3, -4, 3, 2, "glow"), L(-2, 2, 3, 2, "glow"),
+    L(-1, -2, 1, -2, "core"), D(0, 0, "core"),
+  ]),
+  // 5 공허의 서 — a single violet eye set into the cover
+  closedBook("void", "black", "oldpage", [
+    P([[-3, 0], [-1, -2], [2, -2], [4, 0], [2, 2], [-1, 2]], "violet"),
+    C(0.5, 0, 1.4, "energy"), D(0, 0, "ink"),
+  ]),
+  // 6 성운의 서 — night-blue leather with a small constellation and starlight fittings
+  closedBook("meteor", "black", "page", [
+    R(3, 5, -5, -3.5, "starfire"), R(3, 5, 3, 4.5, "starfire"),
+    L(-2, 2, 0, -1, "rune"), L(0, -1, 2, -2, "rune"), D(-2, 2, "star"), D(0, -1, "star"), D(2, -2, "white"),
+  ]),
 ];
 
 // ── bows. The limbs run ACROSS the weapon (t) and the arrow along it (s), so the sprite turned to
@@ -510,57 +491,58 @@ const BOW = [
   })),
 ];
 
-// Short wrapped hafts leave room for a broad striking face.
+// Slim wrapped hafts leave room for a broad striking face.
 function hammerHead(head, blade, shapes, handle = "dwood", fittings = "iron") {
   return () => ({
     sh: [
-      R(-3, 12, -1.5, 2, handle), R(-3.2, -2, -2, 2.5, fittings),
-      R(-1, 5, -2, 2.5, "leather"), R(0, 1, -2, 2.5, "wrap"), R(3, 4, -2, 2.5, "wrap"),
-      R(8, 11, -2.5, 3, fittings), ...shapes,
+      R(-3, 12, -1, 1.5, handle), R(-3.2, -2, -1.5, 2, fittings),
+      R(-1, 5, -1.5, 2, "leather"), R(0, 1, -1.5, 2, "wrap"), R(3, 4, -1.5, 2, "wrap"),
+      R(8, 11, -2, 2.5, fittings), ...shapes,
     ],
     head, blade,
   });
 }
 
 const HAMMER = [
-  // 1 철제 양손해머 — squared steel faces, a bevel and a bound wooden handle
-  hammerHead([10, 21, -7, 8], ["steel", "bright"], [
-    P([[11,-6],[13,-7],[19,-7],[21,-5],[21,6],[19,8],[13,8],[10,6],[10,-4]], "steel"),
-    P([[11,-6],[13,-7],[19,-7],[21,-5],[20,-3],[12,-3]], "bright"),
-    P([[11,4],[20,4],[21,6],[19,8],[13,8],[10,6]], "iron"),
-    R(12, 14, -4, 5, "iron"),
+  // 1 철제 양손해머 — bevelled steel block on an ash handle
+  hammerHead([10, 20, -6, 7], ["steel", "bright"], [
+    P([[10, -4], [12, -6], [18, -6], [20, -4], [20, 5], [18, 7], [12, 7], [10, 5]], "steel"),
+    P([[10, -4], [12, -6], [18, -6], [20, -4], [17, -3], [12, -3]], "bright"),
+    P([[11, 4], [18, 4], [20, 5], [18, 7], [12, 7], [10, 5]], "iron"),
   ], "ash"),
-  // A double-sided forged sledge with a pinched waist and two wide steel caps.
-  hammerHead([11, 19, -6, 7], ["steel"], [
-    P([[11,-8],[17,-8],[20,-6],[18,-3],[18,3],[20,5],[20,7],[17,8],[11,8],[10,6],[12,3],[12,-3],[10,-5]], "steel"),
-    R(12,18,-2,3,"dark"), R(12,18,-7,-5,"bright"), R(12,18,5,7,"bright"),
-    R(13,17,-1,2,"dull"),
+  // 2 Double-ended steel sledge with a single waist and matching striking faces.
+  hammerHead([10.5, 20, -7, 8], ["steel"], [
+    P([[11, -6], [12, -7], [19, -7], [20, -6], [18, -2], [18, 3], [20, 7],
+      [19, 8], [12, 8], [11, 7], [12.5, 3], [12.5, -2]], "steel"),
+    R(12, 19, -6.5, -5, "bright"), R(12, 19, 6, 7.5, "bright"),
+    R(12, 18, -1, 2, "iron"),
   ], "wood"),
-  // The gatekeeper's ram: capped bronze cylinder, side ribs, a red inspection seal.
-  hammerHead([11, 20, -6, 7], ["gold"], [
-    P([[11,-7],[18,-7],[21,-4],[21,4],[18,7],[11,7],[9,4],[9,-4]], "gold"),
-    R(11,14,-8,8,"iron"), R(17,20,-6,7,"gold"), R(14,17,-5,5,"dwood"),
-    C(14.5,0,2.2,"gold"), D(14,0,"ruby"),
+  // 3 A narrow bronze ram with a red inspection seal.
+  hammerHead([11, 21, -7, 8], ["gold"], [
+    P([[11, -5], [13, -7], [19, -7], [21, -5], [21, 6], [19, 8], [13, 8], [11, 6]], "gold"),
+    R(12, 14, -5, 6, "iron"), R(18.5, 20, -4, 5, "brass"),
+    C(16.5, 0.5, 1.5, "brass"), D(16, 0, "ruby"),
   ], "dwood", "gold"),
-  // A slotted coil is visible between two gunmetal anvils.
-  hammerHead([11, 21, -6, 7], ["gun"], [
-    P([[10,-6],[14,-9],[19,-9],[22,-6],[22,-3],[19,-2],[19,2],[22,3],[22,6],[19,9],[14,9],[10,6]], "gun"),
-    R(12,20,-3,3,"carbon"), R(13,19,-2,2,"teal"),
-    L(13,-2,18,-2,"glow"), L(14,1,18,1,"glow"),
-    R(15,19,-7,-5,"steel"), R(15,19,5,7,"dark"),
+  // 4 A cyan coil recessed between gunmetal faces.
+  hammerHead([10, 22, -7, 8], ["gun"], [
+    P([[10, -4], [13, -7], [20, -7], [22, -5], [21, -2], [21, 3], [22, 6],
+      [20, 8], [13, 8], [10, 5]], "gun"),
+    R(12, 20, -2.5, 3.5, "carbon"), R(13, 19, -1, 2, "teal"),
+    L(13, 0, 18, 0, "glow"), R(14, 20, -5.5, -4, "steel"),
   ], "carbon", "gun"),
-  // Two crystal lobes held around a heavy void socket.
-  hammerHead([12, 22, -6, 7], ["crystal", "void"], [
-    P([[12,-4],[13,-10],[18,-11],[22,-6],[21,-2],[24,0],[21,3],[21,7],[16,11],[12,8],[10,4],[10,-2]], "crystal"),
-    P([[11,-5],[15,-5],[19,-2],[20,1],[17,5],[11,6],[10,3],[10,-2]], "void"),
-    L(14,-8,18,-9,"energy"), L(16,8,19,5,"energy"), D(16,0,"core"),
+  // 5 Two facets meet at a dark void socket.
+  hammerHead([10.5, 23, -8.5, 9.5], ["crystal", "void"], [
+    P([[10.5, -3], [14, -8.5], [20, -8.5], [23, -5], [21, 0.5], [23, 6],
+      [20, 9.5], [14, 9.5], [10.5, 4]], "crystal"),
+    P([[10.5, -3], [15, -4], [21, 0.5], [15, 5], [10.5, 4]], "void"),
+    L(15, -7, 19, -7, "energy"), L(15, 8, 19, 8, "energy"), D(16, 0, "core"),
   ], "black", "void"),
-  // 6 운철 대망치 — a fallen star: a lumpy meteor-iron head, cracks of starlight, a gold collar.
-  hammerHead([11, 22, -6, 7], ["meteor"], [
-    P([[11,-7],[14,-10],[19,-10],[23,-6],[23,6],[19,10],[14,10],[11,7],[10,3],[10,-3]], "meteor"),
-    R(11,13,-8,8,"starfire"),
-    L(15,-7,18,-3,"star"), L(18,-3,16,1,"star"), L(19,3,21,7,"star"),
-    D(20,-6,"white"), D(15,5,"white"),
+  // 6 운철 대망치 — forged meteor iron with a starlight seam
+  hammerHead([10, 23, -8, 9], ["meteor"], [
+    P([[10, -4], [14, -8], [20, -8], [23, -5], [23, 6], [20, 9], [14, 9], [10, 5]], "meteor"),
+    P([[12, -5.5], [14, -7.5], [14, 8.5], [12, 6]], "starfire"),
+    P([[17, -5], [20, -6], [22, -4], [22, 4], [20, 6], [17, 5]], "black"),
+    L(19, -4, 19, 4, "star"), D(19, -4, "white"),
   ], "black", "starfire"),
 ];
 
@@ -569,30 +551,32 @@ export const DESIGNS = { sword: SWORD, dagger: DAGGER, spear: SPEAR, staff: STAF
 // Legendary silhouettes share each weapon's grip position and canvas.
 export const SIL = {
   hammer: {
-    twin: hammerHead([11, 21, -7, 7], ["steel"], [
-      P([[12,-10],[18,-10],[22,-7],[22,-4],[18,-2],[18,2],[22,5],[22,8],[19,10],[12,10],[10,7],[13,3],[13,-3],[10,-7]], "steel"),
-      R(12,19,-2,3,"dark"), R(13,19,-8,-6,"bright"), R(14,19,6,8,"bright"), D(16,0,"sapph"),
+    twin: hammerHead([10, 22, -8, 8], ["steel"], [
+      P([[10, -6], [12, -8], [20, -8], [22, -6], [18, -2], [18, 2], [22, 6], [20, 8],
+        [12, 8], [10, 6], [13, 2], [13, -2]], "steel"),
+      R(12, 18, -2, 2, "dark"), R(12, 20, -7.5, -6, "bright"), R(12, 20, 6, 7.5, "bright"), D(16, 0, "sapph"),
     ], "black", "gold"),
-    furnace: hammerHead([12, 21, -6, 6], ["iron"], [
-      P([[10,-5],[13,-8],[19,-8],[22,-5],[23,0],[22,5],[19,8],[13,8],[10,5]], "iron"),
-      P([[12,-3],[15,-6],[19,-4],[21,0],[19,4],[15,6],[12,3]], "dark"), C(16,0,2.4,"orange"),
-      D(15,-1,"spark"), R(10,13,-7,-5,"gold"), R(10,13,5,7,"gold"),
+    furnace: hammerHead([10, 22, -7, 7], ["iron"], [
+      P([[10, -4], [13, -7], [19, -7], [22, -4], [22, 4], [19, 7], [13, 7], [10, 4]], "iron"),
+      P([[12, -2.5], [15, -5], [19, -3.5], [21, 0], [19, 3.5], [15, 5], [12, 2.5]], "dark"),
+      C(16, 0, 2.2, "orange"), D(15, -1, "spark"), L(13, -6, 18, -6, "gold"),
     ], "dwood", "gold"),
-    bell: hammerHead([11, 20, -7, 8], ["gold"], [
-      P([[11,-3],[13,-5],[17,-7],[20,-10],[22,-10],[22,11],[20,11],[17,8],[13,6],[11,4]], "gold"),
-      R(20,23,-11,12,"iron"), R(12,14,-5,6,"dark"), D(16,-1,"ruby"),
+    bell: hammerHead([11, 23, -9, 10], ["gold"], [
+      P([[11, -3], [14, -5], [20, -8], [22, -8], [22, 9], [20, 9], [14, 6], [11, 4]], "gold"),
+      P([[20, -9], [22, -9], [23, -8], [23, 9], [22, 10], [20, 10]], "iron"),
+      R(12, 14, -4, 5, "brass"), D(16, 0, "ruby"),
     ], "wood", "gold"),
-    tusk: hammerHead([11, 21, -7, 7], ["bone"], [
-      P([[11,-6],[15,-8],[17,-11],[20,-9],[19,-5],[22,-3],[23,2],[21,6],[18,7],[18,10],[15,11],[14,8],[11,5],[10,1]], "bone"),
-      R(12,16,-3,4,"black"), L(16,-2,18,-2,"ruby"), L(18,2,20,2,"dark"),
+    tusk: hammerHead([10, 23, -9, 9], ["bone"], [
+      P([[10, -3], [13, -6], [20, -9], [19, -4], [21, -2], [23, 1], [21, 5],
+        [15, 9], [12, 7], [12, 4], [10, 3]], "bone"),
+      P([[11, -2], [16, -3], [20, 0], [16, 3], [11, 3]], "black"), L(14, -1, 18, 0, "ruby"),
     ], "dwood", "black"),
     // The impact end is a slab split into two glass faces. A forged heel takes the strain below it.
     riftglass: hammerHead([10, 22, -9, 10], ["riftglass"], [
-      P([[10, -6], [12, -9], [20, -9], [23, -5], [22, 4], [18, 8], [16, 11], [11, 10], [9, 7], [9, -1]], "gun"),
-      P([[12, -8], [20, -8], [22, -6], [22, -3], [19, -1], [12, -2], [10, -4]], "riftglass"),
-      P([[13, 0], [19, 1], [21, 0], [21, 4], [17, 7], [13, 5], [11, 3]], "riftglass"),
-      P([[11, 5], [14, 7], [17, 7], [16, 10], [11, 9], [10, 7]], "black"),
-      P([[13, -7], [19, -7], [17, -5], [12, -5]], "holo"), R(12, 16, 7, 8, "gild"),
+      P([[10, -4], [14, -8], [20, -8], [23, -5], [22, 4], [17, 9], [12, 9], [10, 6]], "gun"),
+      P([[11, -4], [14, -7], [20, -7], [22, -5], [20, -2], [12, -1]], "riftglass"),
+      P([[12, 1], [20, 0], [21, 3], [17, 7], [13, 5]], "riftglass"),
+      L(14, -6, 19, -6, "holo"), L(12, 7, 16, 8, "gild"),
     ], "black", "gun"),
   },
   bow: {
@@ -634,15 +618,15 @@ export const SIL = {
       sh: [
         R(-3, 7, -1.5, 1.5, "leather"), R(-4, -2, -2.5, 2.5, "iron"),
         P([[4, -5], [8, -4], [9, 1], [4, 5], [2, 4], [6, 0]], "gold"),
-        P([[7, -2], [22, -2], [31, -5], [34, -8], [34, -3], [30, 1], [22, 4], [7, 3]], "steel"),
+        P([[7, -2], [22, -2], [34, -6], [31, 0], [22, 3.5], [7, 3]], "steel"),
       ],
       head: [8, 29, -2, 3], blade: ["steel"],
     }),
     flamberge: () => ({
       sh: [
         R(-4, 8, -1.5, 1.5, "leather"), R(-4, -2, -2.5, 2.5, "gold"), R(5, 9, -5, 5, "gold"),
-        P([[8, -2], [12, -2], [16, -5], [20, -5], [24, -2], [27, -2], [30, -4], [34, -1],
-          [30, 2], [27, 4], [24, 4], [20, 1], [16, 1], [12, 4], [8, 4]], "bright"),
+        P([[8, -2], [13, -2], [18, -4], [23, -3], [27, -2.5], [34, 0],
+          [27, 3], [23, 3.5], [18, 2], [13, 3], [8, 3]], "bright"),
       ],
       head: [9, 31, -2, 2], blade: ["bright"],
     }),
@@ -650,7 +634,7 @@ export const SIL = {
       sh: [
         R(-4, 8, -2, 2, "leather"), R(-4, -2, -3, 3, "iron"),
         P([[6, -5], [10, -5], [10, 6], [7, 6], [5, 3]], "iron"),
-        P([[9, -3], [15, -3], [16, -7], [31, -7], [34, -4], [34, 4], [30, 7], [12, 6], [9, 3]], "steel"),
+        P([[9, -2.5], [17, -4.5], [32, -4.5], [34, -2], [31, 4.5], [16, 4.5], [9, 3]], "steel"),
       ],
       head: [12, 32, -4, 5], blade: ["steel"],
     }),
@@ -665,16 +649,16 @@ export const SIL = {
     serrated: () => ({
       sh: [
         R(-4, 9, -2, 2, "dwood"), R(-4, -2, -3, 3, "iron"), R(5, 9, -4, 4, "iron"),
-        P([[8, -2], [12, -2], [16, -7], [17, -2], [20, -2], [24, -7], [25, -2], [28, -2],
-          [33, -6], [34, 0], [30, 5], [10, 5], [8, 2]], "steel"),
+        P([[8, -2], [12, -2], [16, -4.5], [17, -2], [21, -2], [25, -4.5], [26, -2],
+          [29, -2], [34, -3.5], [31, 2], [26, 3.5], [8, 3.5]], "steel"),
       ],
       head: [9, 31, -2, 4], blade: ["steel"],
     }),
     bone: () => ({
       sh: [
         R(-3, 9, -2, 2, "black"), C(-1, 0, 3, "bone"),
-        P([[5, -2], [9, -5], [11, -6], [12, -2], [24, -4], [28, -6], [32, -4], [34, 0],
-          [31, 4], [27, 5], [24, 2], [13, 4], [11, 7], [7, 5]], "bone"),
+        P([[5, -1], [10, -4], [12, -2], [24, -4], [29, -4], [34, -0.5],
+          [29, 3], [24, 2], [13, 3], [10, 4.5], [7, 3]], "bone"),
         R(14, 24, -1, 0, "iron"),
       ],
       head: [12, 31, -3, 3], blade: ["bone"],
@@ -682,20 +666,19 @@ export const SIL = {
     crystal: () => ({
       sh: [
         R(-4, 9, -1.5, 1.5, "black"), R(-4, -2, -3, 3, "gun"),
-        P([[5, -3], [10, -2], [13, -6], [19, -4], [23, -7], [34, -3], [29, 1], [23, 4], [17, 3], [13, 6], [9, 2], [6, 4]], "crystal"),
-        P([[14, -2], [23, -5], [31, -3], [23, 1], [19, 0], [14, 2]], "violet"),
+        P([[5, -2], [10, -1.5], [14, -3.5], [19, -3], [24, -5], [34, -3], [29, 1], [24, 3], [16, 3.5], [10, 2.5], [6, 3]], "crystal"),
+        P([[14, -1], [24, -4], [31, -3], [24, 1], [19, 0], [14, 2]], "violet"),
       ],
       head: [12, 29, -3, 4], blade: ["crystal"],
     }),
-    // A broad slab with one broken step in the spine, the remaining facet running toward the point.
+    // The glass facet runs from the offset guard to a clipped point.
     riftglass: () => ({
       sh: [
         R(-4, 8, -1.5, 2, "black"), P([[-4, -2], [-1, -3], [0, -1], [0, 2], [-1, 3], [-4, 2]], "gun"),
-        P([[4, -4], [7, -6], [10, -5], [9, 0], [11, 5], [8, 7], [4, 5], [6, 2], [6, -1]], "gun"),
-        P([[8, -3], [14, -5], [21, -5], [21, -3], [25, -3], [27, -7], [34, -3], [31, 3], [26, 5],
-          [17, 5], [13, 3], [8, 3]], "riftglass"),
-        P([[12, 0], [18, -3], [26, -1], [33, -3], [29, 1], [21, 3], [14, 2]], "violet"),
-        P([[16, -3], [21, -3], [26, -1], [20, -1]], "holo"), R(7, 10, -1, 1, "gild"),
+        P([[4, -3], [7, -4.5], [10, -4], [9, 0], [10, 4], [7, 5.5], [4, 4], [6, 1]], "gun"),
+        P([[8, -2.5], [17, -4.5], [26, -4.5], [34, -2.5], [29, 2], [24, 3.5], [8, 3]], "riftglass"),
+        P([[12, 0], [18, -3], [26, -3], [32, -2.5], [26, 0], [18, 1.5], [12, 2]], "violet"),
+        L(13, 1, 24, 0, "holo"), R(7, 10, -1, 1, "gild"),
       ],
       head: [10, 34, -5, 5], blade: ["riftglass"],
     }),
@@ -743,32 +726,32 @@ export const SIL = {
   spear: {
     glaive: () => ({
       sh: [
-        R(-3, 34, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "iron"), R(24, 29, -2.5, 2.5, "iron"),
-        P([[28, -2], [33, -2], [41, -7], [45, -7], [44, -2], [39, 3], [32, 4], [28, 2]], "steel"),
+        R(-3, 34, -1, 1.5, "dwood"), R(-3, -1, -1.5, 2, "iron"), R(24, 29, -1.5, 2, "iron"),
+        P([[28, -1], [33, -1.5], [42, -5], [45, -6], [43, -1], [38, 2.5], [32, 3.5], [28, 2]], "steel"),
       ],
       head: [30, 42, -2, 3], blade: ["steel"],
     }),
     trident: () => ({
       sh: [
-        R(-3, 34, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "gold"), R(25, 29, -2.5, 2.5, "gold"),
-        P([[29, -2], [33, -6], [42, -7], [40, -4], [34, -3], [34, 3], [40, 4], [42, 7], [33, 6], [29, 2]], "steel"),
-        P([[33, -2], [41, -2], [45, 0], [41, 2], [33, 2]], "steel"),
+        R(-3, 34, -1, 1.5, "dwood"), R(-3, -1, -1.5, 2, "gold"), R(25, 29, -1.5, 2, "gold"),
+        P([[28, -1.5], [33, -4.5], [42, -5.5], [38, -3.5], [33, -2.5], [33, 3.5],
+          [38, 4.5], [42, 6.5], [33, 5.5], [28, 2.5]], "steel"),
+        P([[32, -1.5], [37, -1.5], [45, 0.5], [37, 2.5], [32, 2.5]], "steel"),
       ],
       head: [32, 43, -2, 2], blade: ["steel"],
     }),
     partisan: () => ({
       sh: [
-        R(-3, 32, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "iron"), R(25, 29, -2.5, 2.5, "gold"),
-        P([[28, -2], [30, -3], [28, -7], [32, -6], [35, -4], [39, -3], [45, 0],
-          [39, 3], [35, 4], [32, 6], [28, 7], [30, 3], [28, 2]], "steel"),
+        R(-3, 32, -1, 1.5, "dwood"), R(-3, -1, -1.5, 2, "iron"), R(25, 29, -1.5, 2, "gold"),
+        P([[28, -1], [30, -2.5], [29, -5], [33, -4], [36, -2.5], [45, 0.5],
+          [36, 3.5], [33, 5], [29, 6], [30, 3.5], [28, 2]], "steel"),
       ],
       head: [29, 43, -3, 3], blade: ["steel"],
     }),
     scythe: () => ({
       sh: [
-        R(-3, 34, -1.5, 1.5, "dwood"), R(-3, -1, -2.5, 2.5, "iron"), R(26, 31, -2.5, 2.5, "iron"),
-        P([[29, 2], [30, -3], [34, -8], [39, -11], [45, -11], [44, -8], [40, -7],
-          [37, -4], [36, 0], [33, 4]], "steel"),
+        R(-3, 34, -1, 1.5, "dwood"), R(-3, -1, -1.5, 2, "iron"), R(26, 31, -1.5, 2, "iron"),
+        P([[29, 2], [31, -3], [37, -8], [45, -9], [40, -6.5], [36, -2], [34, 3]], "steel"),
       ],
       head: [32, 43, -8, -4], blade: ["steel"],
     }),
@@ -776,10 +759,10 @@ export const SIL = {
     riftglass: () => ({
       sh: [
         R(-3, 33, -1.5, 1.5, "black"), R(-3, 0, -2, 2, "gun"), R(13, 16, -1.5, 1.5, "gun"),
-        P([[24, -2], [27, -4], [30, -3], [36, -8], [38, -7], [35, -4], [31, 0], [34, 4], [36, 7],
-          [32, 7], [27, 3], [24, 2]], "gun"),
-        P([[30, -2], [33, -4], [38, -2], [45, 0], [39, 3], [33, 4], [30, 2]], "riftglass"),
-        P([[33, -2], [38, -1], [43, 0], [38, 0], [33, 1]], "holo"), R(27, 29, -2, 2, "gild"),
+        P([[25, -1.5], [29, -2.5], [38, -6.5], [34, -2.5], [31, 0.5], [34, 3.5], [37, 7],
+          [32, 5.5], [29, 3], [25, 2.5]], "gun"),
+        P([[30, -0.5], [33, -2.5], [38, -1.5], [45, 0.5], [38, 2.5], [33, 3.5], [30, 1.5]], "riftglass"),
+        P([[33, -1], [38, -0.5], [43, 0.5], [38, 1], [33, 1.5]], "holo"), R(27, 29, -1.5, 2.5, "gild"),
       ],
       head: [30, 45, -4, 4], blade: ["riftglass"],
     }),
@@ -831,55 +814,27 @@ export const SIL = {
     }),
   },
   book: {
-    chained: () => ({
-      sh: [
-        P([[-8, -6], [7, -6], [9, -3], [9, 3], [6, 5], [1, 5], [0, 7], [-2, 5], [-9, 5], [-9, -4]], "black"),
-        R(-7, 7, -5, 4, "oldpage"), R(-9, -6, -5, 5, "dwood"),
-        P([[-5, -5], [-2, -5], [5, 4], [2, 4]], "iron"), R(-7, 7, -1, 1, "iron"),
-        C(0, 0, 2, "gold"),
-      ],
-      head: [-6, 7, -4, 4], blade: ["oldpage"],
-    }),
-    skull: () => ({
-      sh: [
-        P([[-9, -4], [-6, -7], [6, -7], [9, -4], [8, 3], [5, 4], [5, 7], [-4, 7], [-5, 4], [-9, 3]], "black"),
-        P([[-7, -4], [-5, -5], [5, -5], [7, -3], [6, 2], [3, 3], [3, 5], [-3, 5], [-3, 3], [-6, 2]], "bone"),
-        R(-5, -2, -2, 0, "ink"), R(2, 5, -2, 0, "ink"),
-        R(-1, 1, 2, 4, "ink"),
-      ],
-      head: [-4, 5, -4, 4], blade: ["bone"],
-    }),
-    grimoire: () => ({
-      sh: [
-        P([[-10, -3], [-7, -6], [-3, -5], [1, -7], [7, -6], [10, -2], [8, 3], [6, 6], [1, 5], [-3, 7], [-9, 5]], "void"),
-        P([[-8, -2], [-6, -4], [6, -4], [8, -1], [6, 4], [-6, 4], [-8, 3]], "oldpage"),
-        P([[-4, 2], [-1, -3], [1, -6], [5, -3], [4, 2], [0, 5]], "crystal"),
-        L(0, -3, 2, -2, "energy"),
-      ],
-      head: [-5, 6, -3, 4], blade: ["crystal"],
-    }),
-    atlas: () => ({
-      sh: [
-        P([[-10, -4], [-4, -7], [0, -5], [4, -7], [10, -4], [10, 4], [4, 7], [0, 5], [-5, 7], [-10, 4]], "dwood"),
-        P([[-8, -3], [-4, -5], [-1, -3], [-1, 4], [-5, 5], [-8, 3]], "page"),
-        P([[1, -3], [4, -5], [8, -3], [8, 3], [4, 5], [1, 4]], "page"),
-        L(-6, 1, -3, 0, "line"), L(3, 0, 6, 1, "line"),
-      ],
-      head: [-7, 8, -4, 4], blade: ["page"],
-    }),
-    // A closed field grimoire with steel corners, a thick page block and one large inset shard.
-    riftglass: () => ({
-      sh: [
-        P([[-10, -4], [-8, -6], [7, -6], [10, -4], [10, 4], [7, 6], [-9, 6], [-10, 4]], "black"),
-        P([[-6, 3], [9, 3], [8, 5], [-6, 5]], "page"),
-        P([[-7, -5], [7, -5], [9, -3], [9, 2], [7, 4], [-7, 4]], "void"),
-        R(-9, -7, -5, 5, "gun"), R(5, 8, -6, -4, "gun"), R(6, 9, 3, 5, "gun"),
-        P([[-4, 0], [-1, -4], [4, -3], [6, 0], [2, 3], [-2, 3]], "riftglass"),
-        P([[-1, -3], [3, -2], [2, 0], [-2, 1]], "holo"),
-        R(-3, -1, 5, 8, "crystal"),
-      ],
-      head: [-5, 6, -4, 4], blade: ["riftglass"],
-    }),
+    chained: closedBook("black", "dwood", "oldpage", [
+      L(-3, -4, 3, 4, "iron"), L(-3, 0, 4, 0, "steel"),
+      R(-0.5, 2.5, -1.5, 1.5, "gold"), D(1, 0, "ink"),
+    ]),
+    skull: closedBook("black", "dark", "oldpage", [
+      P([[-2, -3], [2.5, -3], [3.5, -2], [3.5, 1], [2, 2], [2, 3.5], [-1.5, 3.5], [-1.5, 2], [-3, 1], [-3, -2]], "bone"),
+      D(-2, -1, "ink"), D(1, -1, "ink"), D(0, 2, "ink"),
+    ]),
+    grimoire: closedBook("void", "black", "oldpage", [
+      P([[-3, -0.5], [0, -4], [3, -2.5], [4, 0.5], [1, 3.5], [-2, 2]], "crystal"),
+      L(0, -2.5, 2, -1.5, "energy"),
+    ]),
+    atlas: closedBook("dwood", "black", "page", [
+      L(-3, -4, 3, -4, "brass"), L(-3, 3, 3, 3, "brass"),
+      L(-2, 0, 2, 0, "gild"), L(0, -2, 0, 2, "gild"), D(0, 0, "rune"),
+    ]),
+    riftglass: closedBook("void", "gun", "page", [
+      R(3, 5, -5, -3.5, "gun"), R(3, 5, 3, 4.5, "gun"),
+      P([[-3, 0], [-1, -3.5], [3, -2.5], [4, 0], [1, 3], [-2, 2]], "riftglass"),
+      P([[-1, -2.5], [2, -1.5], [1, 0], [-2, 1]], "holo"),
+    ]),
   },
 };
 
@@ -1191,8 +1146,8 @@ function sprite(kind, gear, o) {
   }
   const d = build(kind, wt, motif, false, o || undefined);
   const glow = we >= 7 ? { blade: d.blade, col: GLOW7, edgeX: d.edgeX } : null;
-  // Rasterize at the larger size so the hammer keeps a one-pixel outline and the same grip in every pose.
-  const scale = hammer ? 1.25 : 1;
+  // Rasterize at the held size so the outline stays one pixel wide at either scale.
+  const scale = hammer ? 1.25 : book ? 0.85 : 1;
   c = paint(d, W, H, (s, t) => [ox + s * scale, oy + t * scale], (x, y) => [(x - ox) / scale, (y - oy) / scale], glow, we >= 10 ? [RARE_INK[wq] || INK, GLOW10] : [RARE_INK[wq] || INK]);
   cache.set(key, c);
   return c;

@@ -210,6 +210,32 @@ const ROOF = ["#d8604c", "#5a86cc", "#62a86c", "#9a70c8"];
 const NEON = ["#ff5a94", "#5ae4e4", "#ffd24a", "#7aff8a"];
 const BWALL = ["#6c7284", "#7c665a", "#5c687c", "#6c5c80"];
 
+/** Shade the roof planes consistently, with a second tone inside each tile course. */
+function roofPalette(hex) {
+  const planes = [hex, shade(hex, 0.82), light(hex, 1.16), light(hex, 1.08)];
+  return {
+    slope: planes.map(C),
+    seam: planes.map((c) => C(tone(c, "#342943", 0.21))),
+    tile: planes.map((c) => C(tone(c, "#eee2b8", 0.11))),
+    rim: C(shade(hex, 0.58)),
+    fascia: C(shade(hex, 0.72)),
+    ridge: C(light(hex, 1.26)),
+  };
+}
+
+/** Broad staggered shingles catch light along one lip rather than tracing every tile. */
+function shingles(p, side, along, off, half, seed, width, ridge) {
+  if (off >= half - 1) return p.rim;
+  if (off >= half - 2.5) return p.fascia;
+  if (ridge) return p.ridge;
+  const row = Math.floor(off / 4), shift = Math.floor(width / 2) * (row % 2);
+  const u = Math.floor(along) + shift + width;
+  const tile = u % width, lip = off % 4;
+  if (lip < 0.7 || (tile === 0 && lip < 3)) return p.seam[side];
+  if (lip >= 2.5 && tile >= 1 && tile < width - 1 && hash(Math.floor(u / width), row, seed) < 0.5) return p.tile[side];
+  return p.slope[side];
+}
+
 /**
  * A little 3D canvas: points (A, B, z) in texels and pixels, painted with a
  * depth buffer (nearer = larger A + B + z), then outlined.
@@ -222,6 +248,11 @@ class Model {
     if (X < 0 || Y < 0 || X >= this.buf.w || Y >= this.buf.h) return;
     const i = Y * this.buf.w + X, d = A + B + z + bias;
     if (d >= this.z[i]) { this.z[i] = d; this.buf.d[i] = c; }
+  }
+  /** Cover the row skipped when a sloped surface rounds from one pixel to the next. */
+  slope(A, B, z, c, bias) {
+    this.put(A, B, z - 1, c, bias - 2);
+    this.put(A, B, z, c, bias);
   }
   /** Outline the silhouette in ink, one pixel outside. */
   ink() {
@@ -236,8 +267,9 @@ class Model {
 /** A town house: timber-framed walls on a stone footing, a gabled roof along x, a chimney. */
 function townHouse(v, seed) {
   const FW = 64, FD = 48, HW = 30, RISE = 22, EAVE = 4;
-  const roof = ROOF[v % 4], rC = C(roof), rD = C(shade(roof, 0.74)), rL = C(light(roof, 1.14)), rLine = C(shade(roof, 0.6)), rRidge = C(light(roof, 1.3));
-  const wall = C("#f6ecd2"), wallR = C(shade("#f6ecd2", 0.84)), beam = C("#8a5a34"), beamR = C(shade("#8a5a34", 0.8));
+  const roof = ROOF[v % 4], rp = roofPalette(roof);
+  const plaster = ["#f3e7ce", "#e9e5d0", "#f1ddb4", "#eaddd7"][v % 4];
+  const wall = C(plaster), wallR = C(shade(plaster, 0.84)), beam = C("#8a5a34"), beamR = C(shade("#8a5a34", 0.8));
   const stone = C("#b8b0a4"), stoneR = C(shade("#b8b0a4", 0.82)), stoneS = C("#958d82"), stoneL = C("#d6cec2");
   const glass = C("#bfe6f4"), glassL = C("#dff4fc"), shut = C(roof), box = C("#b8844e");
   const top = HW + RISE + 16, M = new Model(FW + FD + 24, top + (FW + FD) / 2 + 16, FD + 12, top + 6);
@@ -247,8 +279,14 @@ function townHouse(v, seed) {
     if (z < 6) c = z === 5 ? stoneL : (z === 2 && A % 2) || (A + (z < 3 ? 4 : 0)) % 9 === 0 ? stoneS : stone;
     else if (A % 21 === 0 || A === FW - 1 || z === 6 || z === HW - 1 || (z === 18 && (A < 20 || A > 44))) c = beam;
     // the door, in the middle of the front
-    const dA = A - 27;
-    if (dA >= 0 && dA < 10 && z >= 1 && z < 21) c = dA === 0 || dA === 9 || z === 20 ? beam : dA === 4 ? C("#96623a") : z === 19 ? C("#c8935a") : (dA === 7 && z === 10) ? C("#f0cc60") : C("#b27a44");
+    const dA = A - 25;
+    if (dA >= 0 && dA < 14 && z <= 22) {
+      if (z <= 1) c = z === 1 ? stoneL : stone;
+      else if (z === 22 || dA === 0 || dA === 13) c = beam;
+      else if (z === 21 || dA === 1 || dA === 12) c = C("#64422d");
+      else if (dA === 9 && z === 10) c = C("#f0cc60");
+      else c = C(dA % 4 === 1 || z === 5 ? "#906039" : "#b58047");
+    }
     // windows with shutters either side and a box of flowers under
     for (const w0 of [7, 47]) {
       const wa = A - w0;
@@ -256,15 +294,15 @@ function townHouse(v, seed) {
         if (wa < 0 || wa >= 10) c = wa === -3 || wa === 12 ? shut : (z % 3 ? shut : C(shade(roof, 0.8)));
         else c = wa === 0 || wa === 9 || z === 10 || z === 20 || wa === 4 || z === 15 ? beam : z > 17 ? glassL : glass;
       }
-      if (wa >= -1 && wa < 11 && z >= 7 && z < 10) c = z === 9 ? C(["#f06a7a", "#fffbe8", "#f0c040"][(A + v) % 3]) : box;
+      if (wa >= -1 && wa < 11 && z >= 7 && z < 10) c = z === 9 ? C(wa % 3 === 1 ? FLOWERS[v] : "#648455") : box;
     }
     // the trade's sign over the door
-    if (dA >= 1 && dA < 9 && z >= 22 && z < 28) c = z === 22 || z === 27 || dA === 1 || dA === 8 ? beam : C("#f2e0b0");
+    if (dA >= 3 && dA < 11 && z >= 23 && z < 28) c = z === 23 || z === 27 || dA === 3 || dA === 10 ? beam : C("#f2e0b0");
     M.put(A, FD - 1, z, c);
   }
   // the trade's mark on the sign
   const mark = [[C("#f078a8"), C("#d8f0ff")], [C("#7a8294"), C("#5a6070")], [C("#f0b030"), C("#f0b030")], [C("#8ab4f0"), C("#f2e0b0")]][v % 4];
-  for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) M.put(29 + 1 + i, FD - 1, 23 + j, (i + j) % 2 ? mark[0] : mark[1], 0.5);
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) M.put(30 + i, FD - 1, 24 + j, (i + j) % 2 ? mark[0] : mark[1], 0.5);
   for (let B = 0; B < FD; B++) for (let z = 0; z < HW; z++) {
     let c = wallR;
     if (z < 6) c = z === 5 ? C(shade("#d6cec2", 0.84)) : (B + (z < 3 ? 4 : 0)) % 9 === 0 ? C(shade("#958d82", 0.8)) : stoneR;
@@ -285,14 +323,9 @@ function townHouse(v, seed) {
   const half = FD / 2 + EAVE;
   for (let A = -2; A < FW + 2; A += 0.5) for (let B = -EAVE; B < FD + EAVE; B += 0.5) {
     const off = Math.abs(B + 0.5 - FD / 2), z = HW - 2 + RISE * (1 - off / half);
-    const front = B + 0.5 > FD / 2, row = Math.floor(off / 3.5), ra = (Math.floor(A) + (row % 2) * 3) % 6;
-    let c = front ? rC : rL;
-    if (off < 1) c = rRidge;
-    else if (off > half - 1.5) c = rLine;
-    else if ((off % 3.5) < 0.6) c = front ? rD : C(shade(roof, 0.86));
-    else if (ra === 0) c = front ? rD : C(shade(roof, 0.9));
-    if (A < -1 || A >= FW + 1) c = rLine;
-    M.put(A, B, z, c, 2);
+    const side = B + 0.5 > FD / 2 ? 0 : 2;
+    const c = A < -1 || A >= FW + 1 ? rp.rim : shingles(rp, side, A, off, half, seed, 8, off < 1);
+    M.slope(A, B, z, c, 2);
   }
   // a chimney on the back slope
   const cA = 44 + (seed % 3) * 4, cB = 10;
@@ -381,18 +414,18 @@ function cityTower(v, seed) {
 
 /** wall, timber (null: stone or logs), plinth height and colour, wall height, storeys, roof colour and shape, rise, eaves, chimney. */
 const BSTYLE = {
-  hall: { wall: "#efe2c4", beam: "#6a4a2e", plinth: 9, stone: "#aaa496", HW: 38, floors: 1, roof: "#5e8a4a", kind: "hip", rise: 24, eave: 5, chim: 0 },
-  library: { wall: "#c9c3b3", beam: null, plinth: 5, stone: "#9a9486", HW: 32, floors: 1, roof: "#566a9a", kind: "gable", rise: 22, eave: 4, chim: 0 },
-  dojo: { wall: "#e6d2a6", beam: "#5a3a22", plinth: 6, stone: "#a8a090", HW: 22, floors: 1, roof: "#a8542e", kind: "hip", rise: 16, eave: 8, chim: 0 },
+  hall: { wall: "#efe2c4", beam: "#6a4a2e", plinth: 9, stone: "#aaa496", HW: 38, floors: 1, roof: "#5e8a4a", kind: "hip", rise: 24, eave: 5, chim: 0, arch: true },
+  library: { wall: "#c9c3b3", beam: null, plinth: 5, stone: "#9a9486", HW: 32, floors: 1, roof: "#566a9a", kind: "gable", rise: 22, eave: 4, chim: 0, arch: true },
+  dojo: { wall: "#e6d2a6", beam: "#5a3a22", plinth: 6, stone: "#a8a090", HW: 22, floors: 1, roof: "#a8542e", kind: "hip", rise: 16, eave: 8, chim: 0, lattice: true },
   store: { wall: "#eed8aa", beam: "#7a5030", plinth: 5, stone: "#b0a898", HW: 28, floors: 1, roof: "#c8743a", kind: "gable", rise: 20, eave: 4, chim: 1 },
-  smithy: { wall: "#a29c90", beam: null, plinth: 28, stone: "#8e887c", HW: 28, floors: 1, roof: "#4e586c", kind: "gable", rise: 18, eave: 4, chim: 2 },
+  smithy: { wall: "#a29c90", beam: null, plinth: 7, stone: "#8e887c", HW: 28, floors: 1, roof: "#4e586c", kind: "gable", rise: 18, eave: 4, chim: 2, arch: true },
   merc: { wall: "#7a5034", beam: null, logs: 1, plinth: 5, stone: "#8a8478", HW: 28, floors: 1, roof: "#4a3a30", kind: "gable", rise: 20, eave: 5, chim: 1 },
   lab: { wall: "#dcc79c", beam: "#6a4a30", plinth: 5, stone: "#a8a090", HW: 28, floors: 1, roof: "#4a9a86", kind: "hip", rise: 12, eave: 3, chim: 3 },
   diner: { wall: "#f2d9a8", beam: "#7a4a2c", plinth: 5, stone: "#b0a898", HW: 30, floors: 1, roof: "#c8443a", kind: "gable", rise: 22, eave: 4, chim: 1 },
   cafe: { wall: "#f6ecd4", beam: "#a87a54", plinth: 4, stone: "#c0b8a8", HW: 28, floors: 1, roof: "#3a9a9a", kind: "gable", rise: 20, eave: 4, chim: 0 },
   inn: { wall: "#f0e2c0", beam: "#6a4a2e", plinth: 5, stone: "#a8a090", HW: 44, floors: 2, roof: "#3a64b8", kind: "gable", rise: 22, eave: 5, chim: 1 },
   boutique: { wall: "#f6dce2", beam: "#c88a9a", plinth: 4, stone: "#c8bcb8", HW: 28, floors: 1, roof: "#e07aa0", kind: "hip", rise: 16, eave: 4, chim: 0 },
-  pet: { wall: "#f2e8c8", beam: "#8a6a3a", plinth: 4, stone: "#b0a898", HW: 20, floors: 1, roof: "#6aa84a", kind: "round", rise: 22, eave: 5, chim: 0 },
+  pet: { wall: "#f2e8c8", beam: "#8a6a3a", plinth: 4, stone: "#b0a898", HW: 20, floors: 1, roof: "#6aa84a", kind: "round", rise: 22, eave: 5, chim: 0, arch: true },
   apt: { wall: "#e8d4aa", beam: "#6a4a2e", plinth: 5, stone: "#a8a090", HW: 58, floors: 3, roof: "#8a5a3a", kind: "gable", rise: 18, eave: 4, chim: 1 },
   home: { wall: "#f6ecd2", beam: "#8a5a34", plinth: 5, stone: "#b8b0a4", HW: 26, floors: 1, roof: "#d8604c", kind: "gable", rise: 20, eave: 4, chim: 1 },
   barn: { wall: "#a8503a", beam: "#5a2e22", plinth: 3, stone: "#8a8478", HW: 30, floors: 1, roof: "#6a4a3a", kind: "gable", rise: 26, eave: 4, chim: 0 },
@@ -405,46 +438,76 @@ const FLOWERS = ["#f06a7a", "#fffbe8", "#f0c040", "#c8a0ff"];
  */
 function building(b) {
   const S = BSTYLE[b.k] || BSTYLE.home, FW = b.w * 16, FD = b.h * 16, HW = S.HW, seed = b.x * 7 + b.y * 13;
-  const roof = S.roof, rise = S.rise, eave = S.eave;
+  const roof = S.roof, rise = S.rise, eave = S.eave, rp = roofPalette(roof);
   const tall = HW + rise + 48, M = new Model(FW + FD + 40, tall + (FW + FD) / 2 + 24, FD + 20, tall + 6);
   const at = (A, B, z) => [A - B, ((A + B) >> 1) - z];
-  const info = { wins: [], sign: null, smoke: [], glow: [], lamps: [] };
+  const info = { wins: [], sign: null, signTrim: roof, smoke: [], glow: [], lamps: [] };
   const wallC = [C(S.wall), C(shade(S.wall, 0.82))], beamC = S.beam ? [C(S.beam), C(shade(S.beam, 0.8))] : null;
   const stoneC = [C(S.stone), C(shade(S.stone, 0.82)), C(shade(S.stone, 0.72)), C(light(S.stone, 1.12))];
-  const glass = [C("#bfe6f4"), C("#dff4fc"), C(shade("#bfe6f4", 0.86))], shut = C(shade(roof, 0.85));
-  const doorFace = b.door === "e" ? 1 : b.door === "s" ? 0 : -1;
-  const dA0 = b.dx >= 0 ? b.dx * 16 + 16 : -999;   // the door's centre along its face
+  const panes = b.k === "smithy" ? ["#80533b", "#f2ab5f", "#553d37"] :
+    S.lattice ? ["#c6a675", "#e6c694", "#ae8c62"] : ["#7cabb8", "#c5e1df", "#5b7c8a"];
+  const glass = panes.map(C), shut = C(shade(roof, 0.85)), frame = beamC || [stoneC[1], stoneC[2]];
+  const frameLight = C(light(S.beam || S.stone, 1.18)), recess = C(shade(S.beam || S.stone, 0.57));
+  const wallShade = [C(shade(S.wall, 0.86)), C(shade(S.wall, 0.72))];
+  const barn = b.k === "barn";
+  const doorFace = barn ? 0 : b.dx < 0 ? -1 : b.door === "e" ? 1 : b.door === "s" ? 0 : -1;
+  const dA0 = b.dx >= 0 ? b.dx * 16 + 16 : FW / 2;   // the door's centre along its face
+  const doorHalf = barn ? 18 : b.k === "hall" ? 13 : 10;
+  const doorHeight = Math.min(HW - 3, barn || b.k === "hall" ? 27 : 25);
   const SH = Math.max(14, Math.floor((HW - S.plinth) / S.floors));
+  const planter = b.k === "cafe" || b.k === "home" || b.k === "apt" || b.k === "pet";
   /** One face's colour at (s along it, z up); f 0 front (+y), 1 right (+x). */
   const face = (f, s, z) => {
     const L = f === 0 ? FW : FD, d = f;
-    // the door: a plank door in a frame, a step of stone, a lamp either side for the wide ones
-    if (f === doorFace && Math.abs(s + 0.5 - dA0) < (b.k === "barn" ? 18 : 8) && z < (b.k === "barn" ? 26 : 22)) {
-      const u = s + 0.5 - dA0, w = b.k === "barn" ? 18 : 8, top = b.k === "barn" ? 25 : 21;
-      if (b.k === "barn") return z === top || Math.abs(u) > w - 1.5 ? beamC[d] : z < 12 && Math.abs(u + 6) < 5 ? C(z === 11 ? "#c8945a" : "#9a6a3a") : C("#2a1e22");
-      if (Math.abs(u) > w - 1.5 || z === top) return beamC ? beamC[d] : stoneC[2];
-      if (z === 0) return stoneC[3];
-      return Math.abs(u) < 0.6 ? C("#7a4a2a") : u > 4 && u < 5.5 && z === 10 ? C("#f0cc60") : C(z === top - 1 ? "#c8935a" : "#a8703e");
+    // Recess the door under an arch or a lintel, with a sill aligned to the existing landing.
+    const u = Math.abs(s + 0.5 - dA0), crown = doorHeight - z;
+    const opening = doorHalf - (S.arch ? Math.max(0, 6 - crown) : 0);
+    if (f === doorFace && crown > 0 && u < opening) {
+      if (z === 0) return stoneC[2];
+      if (z === 1) return stoneC[3];
+      if (crown <= 2 || u >= opening - 2) return crown === 1 || u >= opening - 1 ? frameLight : frame[d];
+      if (crown === 3 || u >= opening - 3) return recess;
+      if (barn) {
+        const x = s - Math.floor(dA0) + 16;
+        const crate = (x >= 3 && x < 17 && z < 10) || (x >= 7 && x < 14 && z < 15) || (x >= 22 && x < 29 && z < 9);
+        if (!crate) return C("#34272a");
+        return C(z === 9 || z === 14 ? "#d3a066" : (x + z) % 7 === 0 ? "#865332" : "#af7849");
+      }
+      if (u < 1) return recess;
+      if (u < 3 && z === (doorHeight >> 1)) return C("#e8c776");
+      if (z === 5 || z === doorHeight - 7) return frame[d];
+      return C((s + Math.floor(dA0)) % 4 === 0 ? (d ? "#805235" : "#95623b") : (d ? "#9c6a46" : "#b98251"));
     }
     // the plinth: stone in courses
     if (z < S.plinth) {
       const k = coursed(s, z, 4, 9, 30 + d, seed);
       return k.seam ? stoneC[2] : k.top && z === S.plinth - 1 ? stoneC[3] : k.t < 0.2 ? stoneC[1] : stoneC[d];
     }
+    if (z >= HW - 3) return z === HW - 3 && beamC ? beamC[d] : wallShade[d];
     // windows: one per tile on each face, every storey, none where the door is
     const ti = Math.floor(s / 16), ws = s - ti * 16, storey = Math.floor((z - S.plinth) / SH), wz = z - S.plinth - storey * SH;
     const doorTile = f === doorFace && Math.abs(ti * 16 + 8 - dA0) < 12;
     const big = b.k === "diner" && f === 0 && !doorTile && storey === 0;
     const wx0 = big ? 2 : 4, wx1 = big ? 14 : 12, wz0 = 6, wz1 = Math.min(SH - 4, 15);
-    if (!doorTile && storey < S.floors && !(b.k === "barn") && ws >= wx0 - 2 && ws < wx1 + 2 && wz >= wz0 - 1 && wz < wz1 + 1 && ti * 16 + 16 <= L) {
-      if (ws < wx0 || ws >= wx1) return wz >= wz0 && wz < wz1 && !big ? shut : beamC ? beamC[d] : stoneC[2];
-      if (wz === wz0 - 1 || wz === wz1) return beamC ? beamC[d] : stoneC[2];
-      if (b.k === "lab" && wz === wz0) return C(FLOWERS[(ti + s) % 4]);
-      return ws === ((wx0 + wx1) >> 1) || wz === ((wz0 + wz1) >> 1) ? (beamC ? beamC[d] : stoneC[2]) : wz > wz1 - 3 ? glass[1] : f ? glass[2] : glass[0];
+    if (!doorTile && storey < S.floors && !barn && ti * 16 + 16 <= L && ws >= wx0 - 2 && ws < wx1 + 2) {
+      // Window frames follow the wall's perspective. Only selected facades carry planters.
+      if (wz === wz0 - 2) {
+        if (!planter) return frameLight;
+        if (ws >= wx0 - 1 && ws < wx1 + 1) return C(ws % 3 === 0 ? FLOWERS[(ti + storey + b.x) % 4] : "#628353");
+      }
+      if (wz === wz0 - 3) return planter ? frame[d] : wallShade[d];
+      if (wz === wz0 - 1) return frame[d];
+      if (wz >= wz0 && wz <= wz1) {
+        const inset = S.arch ? Math.max(0, wz - wz1 + 2) : 0;
+        if (ws < wx0 + inset || ws >= wx1 - inset) return S.arch || S.lattice ? wallC[d] : wz < wz1 && !big ? shut : frame[d];
+        if (wz === wz1 || ws === wx0 + inset || ws === wx1 - 1 - inset) return frame[d];
+        if (b.k === "lab" && wz === wz0 && ws % 3 !== 0) return C(FLOWERS[(ti + ws) % 4]);
+        const mid = (wx0 + wx1) >> 1, cross = (wz0 + wz1) >> 1;
+        if (ws === mid || wz === cross || (S.lattice && ws % 3 === 0)) return frame[d];
+        const glint = wz === wz1 - 2 - ((ws - wx0) % 3) || (S.lattice && wz > cross);
+        return glint ? glass[1] : glass[d ? 2 : 0];
+      }
     }
-    // a box of flowers under each window
-    if (!doorTile && storey < S.floors && wz === wz0 - 2 && ws >= wx0 - 1 && ws < wx1 + 1 && b.k !== "barn" && b.k !== "smithy" && b.k !== "merc" && ti * 16 + 16 <= L) return C(FLOWERS[(ti + storey + b.x) % 4]);
-    if (!doorTile && storey < S.floors && wz === wz0 - 3 && ws >= wx0 - 1 && ws < wx1 + 1 && b.k !== "barn" && b.k !== "smithy" && b.k !== "merc" && ti * 16 + 16 <= L) return C("#8a5a34");
     // the walls themselves
     if (S.logs) { const r = (z - S.plinth) % 5; return r === 0 ? C(shade(S.wall, d ? 0.62 : 0.72)) : r === 1 ? C(light(S.wall, d ? 0.96 : 1.14)) : wallC[d]; }
     if (!beamC) {
@@ -454,7 +517,7 @@ function building(b) {
       return k.t < 0.18 ? C(shade(S.wall, d ? 0.76 : 0.9)) : k.t > 0.88 ? C(light(S.wall, 1.06)) : wallC[d];
     }
     // timber framing: posts at the corners and every tile, a rail at each floor and under the eaves
-    if (s === 0 || s === L - 1 || ws === 0 || z === S.plinth || z === HW - 1 || (z - S.plinth) % SH === 0) return beamC[d];
+    if (s < 2 || s >= L - 2 || ws === 0 || z === S.plinth || (z - S.plinth) % SH === 0) return beamC[d];
     if (b.k === "barn" && (ws === 8 || (Math.abs((ws - 8) - (wz - 8)) < 1 && wz > 2 && wz < SH - 2))) return beamC[d];
     return wallC[d];
   };
@@ -462,7 +525,7 @@ function building(b) {
   for (let B = 0; B < FD; B++) for (let z = 0; z < HW; z++) M.put(FW - 1, B, z, face(1, B, z));
   // where the windows are, for the lamps behind them at night
   for (const [f, L] of [[0, FW], [1, FD]]) for (let ti = 0; ti * 16 + 16 <= L; ti++) {
-    if (b.k === "barn" || (f === doorFace && Math.abs(ti * 16 + 8 - dA0) < 12)) continue;
+      if (barn || (f === doorFace && Math.abs(ti * 16 + 8 - dA0) < 12)) continue;
     for (let st = 0; st < S.floors; st++) {
       const z = S.plinth + st * SH + 10, s = ti * 16 + 8;
       info.wins.push(f === 0 ? at(s, FD, z) : at(FW, s, z));
@@ -470,7 +533,6 @@ function building(b) {
   }
   // the roof
   const cA = FW / 2, cB = FD / 2, half = Math.min(FW, FD) / 2 + eave;
-  const rC = C(roof), rD = C(shade(roof, 0.74)), rL = C(light(roof, 1.14)), rLine = C(shade(roof, 0.6)), rRidge = C(light(roof, 1.3)), rS = C(shade(roof, 0.86));
   const grass = b.k === "pet";
   for (let A = -eave; A < FW + eave; A += 0.5) for (let B = -eave; B < FD + eave; B += 0.5) {
     const oB = Math.abs(B + 0.5 - cB), oA = Math.abs(A + 0.5 - cA);
@@ -479,59 +541,85 @@ function building(b) {
     else { const eA = oA - Math.max(0, (FW - FD) / 2), eB = oB - Math.max(0, (FD - FW) / 2); off = Math.max(eA, eB); side = eB >= eA ? (B + 0.5 > cB ? 0 : 2) : A + 0.5 > cA ? 1 : 3; }
     if (off > half) continue;
     const k = off / half, z = HW - 2 + (S.kind === "round" ? rise * Math.sqrt(Math.max(0, 1 - k * k)) : rise * (1 - k));
-    const row = Math.floor(off / 3.5), ra = (Math.floor(side % 2 ? B : A) + (row % 2) * 3) % 6;
-    let c = side === 0 ? rC : side === 1 ? rS : rL;
-    if (grass) c = hash(Math.floor(A / 2), Math.floor(B / 2), seed) < 0.3 ? C(light(roof, 1.2)) : hash(Math.floor(A), Math.floor(B), 7) < 0.15 ? C(shade(roof, 0.7)) : side === 1 ? rS : side === 0 ? rC : rL;
-    else if (off < 1 && S.kind === "gable") c = rRidge;
-    else if (off > half - 1.5) c = rLine;
-    else if (off % 3.5 < 0.6) c = side === 0 ? rD : C(shade(roof, 0.86));
-    else if (ra === 0) c = side === 0 ? rD : C(shade(roof, 0.9));
-    if (S.kind === "gable" && (A < -1 || A >= FW + 1)) c = rLine;
-    M.put(A, B, z, c, 2);
+    let c;
+    if (grass) {
+      const tuft = hash(Math.floor(A / 3), Math.floor(B / 3), seed);
+      c = off > half - 2 ? rp.fascia : tuft < 0.19 ? rp.tile[side] : tuft > 0.93 ? rp.seam[side] : rp.slope[side];
+    } else if (S.kind === "gable" && (A < -1 || A >= FW + 1)) c = rp.rim;
+    else c = shingles(rp, side, side % 2 ? B : A, off, half, seed, b.k === "smithy" ? 6 : 8, off < 1);
+    M.slope(A, B, z, c, 2);
   }
   // a gable end above the right face
   if (S.kind === "gable") for (let B = 0; B < FD; B++) {
     const o = Math.abs(B + 0.5 - cB), peak = Math.round(rise * (1 - o / half));
     for (let z = HW; z < HW + peak; z++) M.put(FW - 1, B, z, o < 1 || z === HW || (beamC && (z - HW) === Math.round(o * 0.5)) ? (beamC ? beamC[1] : stoneC[2]) : S.logs ? (z % 5 === 0 ? C(shade(S.wall, 0.62)) : wallC[1]) : wallC[1]);
   }
-  const box = (a0, b0, z0, w, d, h, top, cl, cr) => {
-    for (let A = a0; A < a0 + w; A++) for (let B = b0; B < b0 + d; B++) for (let z = z0; z < z0 + h; z++) {
-      M.put(A, B, z, z === z0 + h - 1 ? top : A === a0 + w - 1 ? cr : B === b0 + d - 1 ? cl : top, 3);
-    }
-  };
-  // chimneys: a stone stack, the forge's tall one, the lab's copper pipe
+  // Stone stacks have a projecting cap. The alchemist's copper pipe has darker bands.
   if (S.chim) {
     const cAa = S.chim === 2 ? FW - 20 : FW - 18 - (seed % 3) * 4, cBb = S.chim === 2 ? 6 : 8, w = S.chim === 2 ? 10 : 7;
     const top = HW + rise + (S.chim === 2 ? 22 : S.chim === 3 ? 10 : 6);
-    const col = S.chim === 3 ? ["#c87a3a", "#a8602a", "#e0a060"] : ["#8a7e72", "#9c8e80", "#b8a898"];
-    box(cAa, cBb, HW - 4, w, w, top - HW + 4, C(col[0]), C(col[2]), C(col[1]));
-    for (let A = cAa + 1; A < cAa + w - 1; A++) for (let B = cBb + 1; B < cBb + w - 1; B++) M.put(A, B, top, C(S.chim === 2 ? "#ff8a3a" : "#3a302c"), 4);
+    const [lit, dark, mortar, cap] = (S.chim === 3 ? ["#c5804f", "#985735", "#784632", "#d8a263"] :
+      ["#9d9383", "#736c66", "#696059", "#c1b49c"]).map(C);
+    for (let z = HW - 4; z < top; z++) for (let s = 0; s < w; s++) {
+      const band = S.chim === 3 ? z % 8 === 0 : z % 5 === 0 || (s + Math.floor(z / 5) * 3) % 7 === 0;
+      M.put(cAa + s, cBb + w - 1, z, band ? mortar : lit, 3);
+      M.put(cAa + w - 1, cBb + s, z, band ? mortar : dark, 3);
+    }
+    for (let A = -1; A <= w; A++) for (let B = -1; B <= w; B++) {
+      const hole = A > 0 && A < w - 1 && B > 0 && B < w - 1;
+      if (A === w || B === w) M.put(cAa + A, cBb + B, top - 1, dark, 4);
+      M.put(cAa + A, cBb + B, top, hole ? C(S.chim === 2 ? "#e27c40" : "#3a302c") : cap, 4);
+    }
     info.smoke.push(at(cAa + w / 2, cBb + w / 2, top + 2));
     if (S.chim === 2) info.glow.push(at(cAa + w / 2, cBb + w / 2, top + 2));
   }
-  // the sign: a plank on a bracket beside the door (scene2d hangs the icon on it)
-  if (doorFace >= 0) {
-    const s = dA0 - 14, z = 24;
-    info.sign = doorFace === 0 ? at(s, FD + 3, z) : at(FW + 3, s, z);
-    // a lamp over the door, lit at night
-    info.lamps.push(doorFace === 0 ? at(dA0, FD + 2, 24) : at(FW + 2, dA0, 24));
+  // A hanging shop sign and a wall lantern use the actual entrance face.
+  if (doorFace >= 0 && !barn) {
+    const onDoorFace = (s, z) => doorFace === 0 ? [s, FD + 3, z] : [FW + 3, s, z];
+    const signS = Math.max(6, dA0 - doorHalf - (b.k === "hall" ? 18 : 7));
+    info.sign = at(...onDoorFace(signS, Math.min(HW + 2, 27)));
+    if (b.k !== "hall" && b.k !== "inn") {
+      const s = Math.min((doorFace === 0 ? FW : FD) - 4, dA0 + doorHalf + 3), z = Math.min(HW - 4, doorHeight - 3);
+      for (let i = -1; i <= 1; i++) for (let j = -1; j <= 2; j++) {
+        const c = j === 2 || j === -1 ? "#4b342b" : i === -1 ? "#d79a52" : "#f4ce84";
+        M.put(...onDoorFace(s + i, z + j), C(c), 5);
+      }
+      info.lamps.push(at(...onDoorFace(s, z)));
+    }
   }
-  extras(b, S, M, FW, FD, HW, rise, seed, info, at, box);
+  extras(b, S, M, FW, FD, HW, rise, info, at);
   M.ink();
   return { M, info };
 }
 
 /** What makes each building read at a glance. */
-function extras(b, S, M, FW, FD, HW, rise, seed, info, at, box) {
+function extras(b, S, M, FW, FD, HW, rise, info, at) {
   const put = (A, B, z, c) => M.put(A, B, z, C(c), 4);
   const disc = (A0, z0, r, col, B = FD, edge = null) => { for (let a = -r; a <= r; a++) for (let z = -r; z <= r; z++) if (a * a + z * z <= r * r + 0.5) put(A0 + a, B, z0 + z, edge && a * a + z * z > (r - 1) * (r - 1) ? edge : col); };
+  const awning = (from, to, depth, stripes, edge) => {
+    for (let A = from; A < to; A += 0.5) for (let B = 0; B < depth; B += 0.5) {
+      const stripe = stripes[Math.floor((A - from) / 6) % stripes.length];
+      M.slope(A, FD + B, HW - 5 - B * 0.66, C(B >= depth - 1 ? edge : stripe), 4);
+    }
+    for (let A = from; A < to; A++) put(A, FD + depth - 1, HW - 7 - depth * 0.66, edge);
+  };
   if (b.k === "hall") {
-    // the clock gable over the door, two banners, twin lanterns
+    // A roofed clock dormer, bronze-edged banners and twin lanterns mark the civic entrance.
     const cA = b.dx * 16 + 16;
-    for (let a = -14; a <= 14; a++) for (let z = HW - 2; z < HW + 16 - Math.abs(a); z++) put(cA + a, FD + 1, z, Math.abs(a) > 12 - (z - HW) ? "#6a4a2e" : "#efe2c4");
-    disc(cA, HW + 4, 5, "#f6f0dc", FD + 2, "#6a4a2e"); put(cA, FD + 3, HW + 5, "#2b2233"); put(cA, FD + 3, HW + 6, "#2b2233"); put(cA + 1, FD + 3, HW + 4, "#2b2233");
-    for (const a of [cA - 26, cA + 22]) for (let z = 10; z < 30; z++) for (let i = 0; i < 5; i++) put(a + i, FD + 1, z, z < 12 && (i === 0 || i === 4) ? "#3a6ac8" : z === 20 && i === 2 ? "#f0cc60" : i === 2 && z > 18 && z < 23 ? "#f0cc60" : z < 12 ? "#2b2233" : "#3a6ac8");
-    for (const a of [cA - 11, cA + 11]) { put(a, FD + 2, 22, "#f0cc60"); put(a, FD + 2, 21, "#ffe8a0"); put(a, FD + 2, 23, "#5a3a22"); info.lamps.push(at(a, FD + 2, 22)); }
+    for (let a = -17; a <= 17; a++) {
+      const top = HW + 22 - Math.abs(a);
+      for (let z = HW - 3; z < top; z++) put(cA + a, FD + 5, z, z > top - 3 || z === HW - 3 ? "#6a4a2e" : "#ede1c5");
+      for (let B = FD - 19; B <= FD + 7; B++) M.slope(cA + a, B, top, C(B >= FD + 6 ? "#354f36" : a <= 0 ? "#7ca361" : "#58784b"), 4);
+    }
+    disc(cA, HW + 8, 7, "#f6f0dc", FD + 6, "#705239");
+    for (let i = 0; i < 4; i++) put(cA, FD + 7, HW + 8 + i, "#3e382f");
+    for (let i = 0; i < 3; i++) put(cA + i, FD + 7, HW + 8, "#3e382f");
+    for (const a of [cA - 30, cA + 24]) for (let z = 11; z <= 31; z++) for (let i = 0; i < 7; i++) {
+      if (z < 13 && Math.abs(i - 3) < 2) continue;
+      const trim = i === 0 || i === 6 || z === 30, emblem = z >= 19 && z <= 25 && Math.abs(i - 3) + Math.abs(z - 22) <= 3;
+      put(a + i, FD + 1, z, trim || emblem ? "#d0b46e" : "#467e78");
+    }
+    for (const a of [cA - 16, cA + 16]) { put(a, FD + 2, 22, "#f0cc60"); put(a, FD + 2, 21, "#ffe8a0"); put(a, FD + 2, 23, "#5a3a22"); info.lamps.push(at(a, FD + 2, 22)); }
   } else if (b.k === "library") {
     // a round stone tower at the west end with a slate cone, an owl-eye window
     const tA = 14, tB = FD / 2, R = 13, top = HW + 18;
@@ -547,8 +635,11 @@ function extras(b, S, M, FW, FD, HW, rise, seed, info, at, box) {
     // banner poles at the front corners, long red banners
     for (const a of [2, FW - 3]) for (let z = 0; z < HW + 18; z++) { put(a, FD + 4, z, "#5a3a22"); if (z > HW - 6 && z < HW + 14) for (let i = 1; i < 6; i++) put(a + i, FD + 4, z, z === HW + 2 ? "#f0e0b0" : "#b83a2e"); }
   } else if (b.k === "store") {
-    // a striped awning over the front, barrels' worth of colour
-    for (let A = 4; A < FW - 4; A++) for (let B = FD; B < FD + 9; B++) put(A, B, HW - 8 - (B - FD) * 0.8, Math.floor(A / 6) % 2 ? "#f6ecd2" : "#d84c4c");
+    // Striped canvas above each shop window, with a gap over the entrance.
+    const door = b.dx * 16 + 16;
+    const cloth = ["#eddfbb", "#b85b4c"];
+    awning(4, door - 13, 9, cloth, "#965448");
+    awning(door + 13, FW - 4, 9, cloth, "#965448");
   } else if (b.k === "merc") {
     // round shields on the front wall
     [[16, "#a83a3a"], [FW - 34, "#3a5a9a"], [FW - 16, "#c8a040"]].forEach(([a, c]) => { disc(a, 18, 5, c, FD + 1, "#4a3a30"); put(a, FD + 2, 18, "#d8d0c0"); });
@@ -584,13 +675,10 @@ function extras(b, S, M, FW, FD, HW, rise, seed, info, at, box) {
     for (let z = 0; z < 10; z++) put(a, FD + 5, z, "#6a4226");
     for (let A = a - 2; A < a + 3; A++) for (let z = 10; z < 14; z++) put(A, FD + 5, z, z === 13 ? "#e86a5a" : "#c84a3a");
     for (let A = b.dx * 16 + 10; A < b.dx * 16 + 22; A++) for (let z = 23; z < 27; z++) put(A, FD, z, z === 23 || z === 26 ? "#6a4226" : "#f2e0b0");
-  } else if (b.k === "barn") {
-    // crates stacked inside the open doors
-    const cA = b.dx >= 0 ? b.dx * 16 + 16 : FW / 2;
-    for (const [a, z, c] of [[cA - 12, 0, "#b8844e"], [cA - 4, 0, "#a8743e"], [cA - 10, 7, "#c8945a"], [cA + 6, 0, "#b8844e"]]) for (let i = 0; i < 7; i++) for (let j = 0; j < 7; j++) put(a + i, FD - 3, z + j, i === 0 || j === 6 || i === 6 ? "#6a4226" : c);
   } else if (b.k === "cafe") {
-    // a chalkboard menu on the wall by the door
+    // A short canvas shade and a chalkboard menu beside the entrance.
     const a = b.dx * 16 + 34;
+    awning(a - 3, FW - 5, 7, ["#6caa9c", "#86b6a7"], "#466e69");
     for (let A = a; A < a + 8; A++) for (let z = 4; z < 16; z++) put(A, FD + 1, z, A === a || A === a + 7 || z === 4 || z === 15 ? "#8a5a34" : (z === 12 || z === 9) && A > a + 1 && A < a + 6 ? "#f6ecd4" : "#2e3a34");
   } else if (b.k === "diner") info.steam = at(FW - 12, 6, HW + rise - 4);
   if (b.k === "lab") info.puff = at(FW * 0.35, FD / 2, HW + 24);

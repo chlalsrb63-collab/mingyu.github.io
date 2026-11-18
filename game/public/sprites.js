@@ -298,19 +298,23 @@ export const PET_HOVER = { pet_chick: 0, pet_bat: 9, pet_wisp: 7, pet_hagfish: 6
 
 const cache = new Map();
 const PERSON_CACHE_LIMIT = 128;
+const personDensity = (o) => o.bone || o.mask ? 1 : PERSON_SIZE / S;
+
+/** A single portrait frame without building the other poses. */
+export function personFrame(o, view, f = FRAME.stand, density = personDensity(o)) {
+  const seam = density === 1 ? null : {};
+  const base = person(o, view, f, seam);
+  const native = seam ? refinePerson(base, o, view, f, seam) : null;
+  return WR.dress(base, o, view, f, native);
+}
+
 /** `{ front, side, back }`, each a list of frames indexed by FRAME. Side frames face right. */
-export function personSheet(o, density = o.bone || o.mask ? 1 : PERSON_SIZE / S) {
+export function personSheet(o, density = personDensity(o)) {
   const key = JSON.stringify([density, o]);
   let s = cache.get(key);
   if (s) cache.delete(key);
   else {
-    // worn cosmetics (wardrobe.js) are layered over each plain frame
-    const frames = (view) => [0, 1, 2, 3, 4, 5].map((f) => {
-      const seam = density === 1 ? null : {};
-      const base = person(o, view, f, seam);
-      const native = seam ? refinePerson(base, o, view, f, seam) : null;
-      return WR.dress(base, o, view, f, native);
-    });
+    const frames = (view) => [0, 1, 2, 3, 4, 5].map((f) => personFrame(o, view, f, density));
     s = { front: frames("front"), side: frames("side"), back: frames("back") };
   }
   cache.set(key, s);
@@ -434,7 +438,7 @@ export function weaponKind(cls, gear = {}) {
 
 /**
  * A weapon sprite. Swords, daggers, spears and staves point right with the
- * grip at `GRIP`; a book is drawn open and upright around the sheet's centre.
+ * grip at `GRIP`; a book is drawn closed and upright around the sheet's centre.
  * `kind`: sword · dagger · spear · staff · book · bow · hammer (a class id is accepted too; a bow is
  * held square to the shot, its limbs across the sprite, its riser ahead of the grip).
  * `gear`: wt tier (1–5) · wq rarity (0–4) · we enhancement.
@@ -483,14 +487,12 @@ export function weaponSprite(kind, gear = {}) {
     b.r(22, y - 2, 5, 5, gem); b.r(23, y - 3, 3, 7, gem); b.r(27, y - 1, 1, 3, gem);
     b.r(23, y - 2, 1, 1, "#ffffff"); b.r(24, y + 1, 3, 2, shade(gem, 0.26)); b.r(23, y + 3, 3, 1, shade(gem, 0.26));
   } else {
-    // an open book, seen from the front
+    // Closed cover with a slim page block at the fore edge.
     const cover = COVER[wt], page = "#fff8e8";
-    b.r(8, 13, 16, 9, cover); b.r(8, 21, 16, 1, shade(cover, 0.3));
-    b.r(9, 12, 6, 9, page); b.r(17, 12, 6, 9, page);
-    b.r(14, 12, 1, 9, "#e2d6c0"); b.r(17, 12, 1, 9, "#e2d6c0"); b.r(15, 12, 2, 10, shade(cover, 0.3));
-    b.r(10, 14, 3, 1, "#b8a890"); b.r(10, 16, 4, 1, "#b8a890"); b.r(10, 18, 3, 1, "#b8a890");
-    b.r(19, 14, 3, 1, GEM[wt]); b.r(20, 15, 1, 2, GEM[wt]); b.r(19, 17, 3, 1, GEM[wt]); b.r(20, 18, 1, 1, GEM[wt]);
-    b.r(16, 22, 1, 3, "#e0564a");
+    b.r(11, 10, 9, 13, cover); b.r(12, 10, 8, 1, lt(cover, 1.22));
+    b.r(19, 11, 2, 11, page); b.r(20, 12, 1, 10, "#d9c4a6");
+    b.r(11, 11, 2, 11, shade(cover, 0.34)); b.r(12, 22, 9, 1, shade(cover, 0.3));
+    b.r(15, 14, 2, 4, GEM[wt]); b.r(14, 15, 4, 2, GEM[wt]); b.r(17, 22, 1, 2, "#e0564a");
   }
   // rare weapons are inked in their rarity's colour
   c = finish(cv, g, RARE_INK[wq] || INK, 1);

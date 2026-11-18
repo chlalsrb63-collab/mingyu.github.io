@@ -23,6 +23,7 @@ assert.deepEqual(SPC.PARTS[4].names.slice(0, 4), ["분홍", "빨강", "주황", 
 assert.deepEqual(SPC.PARTS[5].names.slice(0, 4), ["없음", "눈 얼룩", "줄무늬", "포인트"]);
 assert.deepEqual(SPC.PARTS[6].colors.slice(0, 6), [null, "#5a8ae0", "#e0605a", "#5ab87a", "#9a78e0", "#f0c050"]);
 for (const p of SPC.PARTS) assert.equal(new Set(p.names || p.colors).size, (p.names || p.colors).length, p.key + ": no duplicate choices");
+for (const p of SPC.PARTS.filter((part) => part.colors)) assert.equal(p.labels.length, p.colors.length, p.key + ": every colour has a name");
 assert.ok(SPC.SPECIES.length >= 12, "a dozen animals or more");
 assert.ok(SPC.LOOK_N[1] >= 14 && SPC.LOOK_N[2] >= 12 && SPC.LOOK_N[0] >= 12 && SPC.LOOK_N[3] >= 20, "many eyes, mouths, ears and colours");
 
@@ -123,6 +124,12 @@ assert.ok(n > 5000);
 assert.deepEqual(draw([1, 2, 3, 4, 0, 2, 1, 5, 4, 3, 2], "side", 2), draw([1, 2, 3, 4, 0, 2, 1, 5, 4, 3, 2], "side", 2));
 const heads = new Set(SPC.SPECIES.map((_, sp) => JSON.stringify(draw(SPC.withSpecies([], sp), "front", 0))));
 assert.equal(heads.size, SPC.SPECIES.length, "every animal has a face of its own");
+{
+  const fox = SPC.withSpecies([], 5);
+  fox[SPC.LI.nose] = 13;
+  const mouth = draw(fox, "side", 0).find(([x, y, w, h, c]) => y === 23 && c === "#f07890");
+  assert.ok(mouth && mouth[0] + mouth[2] <= 19, "the fox's smile follows the side-view chin instead of protruding");
+}
 // Pin the species-0 drawing for the original choices, including the redrawn automatic fox tail.
 {
   const h = createHash("sha1");
@@ -160,7 +167,7 @@ assert.equal(SPC.withSpecies(SPC.withSpecies([], 13), 1)[SPC.LI.pat], 0);
   L.addPlayer(S, "pid-m", ch);
   const p = S.players["pid-m"];
   const act = (a) => { S.now = now; const v = L.validateAction(S, "pid-m", a); if (v.ok) L.applyAction(S, "pid-m", a); return v; };
-  const want = [2, 12, 7, 0, 3, 12, 3, 13, 2, 9, 0];
+  const want = SPC.PRESETS.find(([name]) => name === "도토리 고슴도치")[1].slice();
   assert.equal(p.map, "town");
   const insufficientGold = D.lookCost - 1;
   ch.gold = insufficientGold;

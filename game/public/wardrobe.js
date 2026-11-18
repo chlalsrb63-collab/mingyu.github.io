@@ -293,49 +293,77 @@ const HAT = {
     ears: "through",
     draw(b, A, p) {
       const T = A.top, W = A.x1 - A.x0 + 1;
-      b.cr(T - 1, W, 1, p.c); b.cr(T - 2, W - 2, 1, p.c); b.cr(T - 3, Math.max(2, W - 6), 1, p.c);
-      b.r(A.x1 - 2, T - 2, 2, 2, sh(p.c)); b.r(A.x0 + 1, T - 2, 2, 1, li(p.c, 0.25));
-      b.cr(T, W + 2, 2, p.b); for (let x = A.x0; x <= A.x1; x += 2) b.px(x, T + 1, sh(p.b));
-      b.cr(T - 5, 2, 2, p.p); b.px(Math.round(A.cx), T - 4, sh(p.p, 0.18));
+      const shadow = sh(p.c, 0.32), rib = sh(p.b, 0.34), shift = A.side ? -1 : 0;
+      b.cr(T - 4, W - 6, 1, p.c, shift);
+      b.cr(T - 3, W - 4, 1, p.c, shift);
+      b.cr(T - 2, W - 2, 1, p.c);
+      b.cr(T - 1, W, 1, shadow);
+      b.r(A.x1 - 2, T - 3, 2, 1, shadow);
+      b.r(A.x0 + 2 + shift, T - 3, 2, 1, li(p.c, 0.26));
+      b.cr(T, W + 2, 1, p.b);
+      b.cr(T + 1, W, 1, rib);
+      for (let x = A.x0 + 1; x < A.x1; x += 2) {
+        b.px(x, T, sh(p.b, 0.2));
+        b.fp(x - 0.5, T + 0.5, li(p.b));
+      }
+      b.grid(b.c0 - 2 + shift, T - 7, [".ll.", "lpps", ".ss."], { p: p.p, l: li(p.p, 0.7), s: sh(p.p, 0.23) });
     },
   },
   // a wide straw brim, a ribbon round the crown; ears poke up through the crown
   straw: {
     ears: "through",
     draw(b, A, p) {
-      const T = A.top;
-      b.cr(T - 4, 8, 1, p.c); b.cr(T - 3, 8, 1, p.c); b.cr(T - 2, 8, 1, p.b); b.r(Math.round(A.cx + 2), T - 4, 2, 2, sh(p.c));
-      b.r(Math.round(A.cx - 3), T - 4, 2, 1, li(p.c, 0.3));
+      const T = A.top, W = A.x1 - A.x0 + 1, shade = sh(p.c, 0.23);
+      b.cr(T - 5, W - 4, 1, li(p.c, 0.34));
+      b.cr(T - 4, W - 2, 2, p.c);
+      b.r(b.c0 + 1, T - 4, Math.floor(W / 2) - 2, 2, shade);
+      b.cr(T - 2, W - 2, 1, p.b);
+      if (!A.front) b.r(b.c0 - 3, T - 2, 2, 2, sh(p.b, 0.34));
+      b.fp(b.c0 - 3, T - 3.5, li(p.c, 0.4));
+      b.fp(b.c0 - 2, T - 3.5, li(p.c, 0.4));
+      b.fp(b.c0 - 1, T - 3.5, li(p.c, 0.4));
     },
     over(b, A, p) {
       const T = A.top, W = A.x1 - A.x0 + 1;
-      b.cr(T - 1, W + 6, 1, li(p.c, 0.2)); b.cr(T, W + 4, 1, sh(p.c));
-      for (let x = Math.round(A.cx + 0.5 - (W + 6) / 2) + 1; x <= Math.round(A.cx + (W + 6) / 2) - 1; x += 3) b.px(x, T - 1, p.c);
+      const dx = A.side ? 1 : 0;
+      b.cr(T - 1, W + 6, 1, p.c, dx);
+      b.cr(T, W + 4, 1, sh(p.c, 0.3), dx);
+      b.cr(T - 1, W - 2, 1, li(p.c, 0.42), dx - 1);
+      if (!A.front) b.px(b.c0 - 3, T - 1, sh(p.b, 0.2));
     },
   },
   // a tall cone that bends at the tip, a band, a star
   wizard: {
     ears: "through",
     draw(b, A, p) {
-      const T = A.top, k = A.side ? -1 : 1;
-      const rows = [[2, 10], [3, 8], [4, 6], [5, 5], [6, 4], [7, 3], [8, 3], [9, 2]];
-      for (const [dy, w] of rows) b.cr(T - dy, w, 1, p.c, dy >= 7 ? k * (dy - 6) : 0);
-      b.cr(T - 10, 2, 1, p.c, k * 4);
-      for (const [dy, w] of rows.slice(1, 5)) b.r(Math.round(A.cx + 0.5 + w / 2 - 2), T - dy, 2, 1, sh(p.c));
-      b.cr(T - 2, 10, 1, p.b);
-      if (!A.back) { b.px(Math.round(A.cx) - 1, T - 5, p.s); b.px(Math.round(A.cx) - 1, T - 4, p.s); }
+      const T = A.top, x = b.c0 - 5, shadow = sh(p.c, 0.32), light = li(p.c, 0.32);
+      b.grid(x, T - 10, [
+        "........ll", "......lccs", ".....lcs..", "....lcs...", "...lccs...", "..lcccs...",
+        "..lccccs..", ".lcccccss.", "bbbbbbbbbb",
+      ], { c: p.c, s: shadow, l: light, b: p.b }, A.side);
+      if (!A.back) {
+        const sx = b.c0 + (A.side ? 1 : -1);
+        b.px(sx, T - 5, p.s);
+        b.r(sx - 1, T - 4, 3, 1, p.s);
+        b.px(sx, T - 3, p.s);
+        b.fp(sx, T - 4, WHITE);
+      }
     },
-    over(b, A, p) { const W = A.x1 - A.x0 + 1; b.cr(A.top - 1, W + 4, 1, p.c); b.cr(A.top, W + 2, 1, sh(p.c)); },
+    over(b, A, p) {
+      const T = A.top, W = A.x1 - A.x0 + 1;
+      b.cr(T - 1, W + 4, 1, p.c, A.side ? 1 : 0);
+      b.cr(T, W + 2, 1, sh(p.c, 0.34), A.side ? 1 : 0);
+      b.cr(T - 1, W - 3, 1, li(p.c, 0.27), -1);
+    },
   },
   // a small crown in front of the ears
   crown: {
     over(b, A, p) {
-      const T = A.top;
-      b.cr(T - 1, 6, 1, sh(p.c, 0.15)); b.cr(T - 2, 6, 1, p.c);
-      b.sym(2, T - 3, 1, 1, p.c); b.sym(0, T - 3, 1, 1, p.c);
-      b.sym(2, T - 4, 1, 1, li(p.c));
-      if (!A.back) b.cr(T - 2, 2, 1, p.g);
-      b.r(Math.round(A.cx + 1.5), T - 2, 2, 1, sh(p.c));
+      const T = A.top, dx = A.side ? 1 : 0;
+      const rows = A.side ? [".....l..", ".l..lc..", ".cllccs.", "..clggs.", "..ssss.."]
+        : [ "...ll...", "l..cc..s", "cllgglcs", ".clggcs.", ".ssssss." ];
+      b.grid(b.c0 - 4 + dx, T - 5, rows, { c: p.c, s: sh(p.c, 0.4), l: li(p.c, 0.58), g: A.back ? p.c : p.g });
+      if (!A.back) b.fp(b.c0 - 0.5 + dx, T - 3, li(p.g, 0.7));
     },
   },
   // a dark-red band with three curved horns and a blood-red gem
@@ -403,11 +431,16 @@ const HAT = {
     ears: "behind",
     draw(b, A, p) {
       const T = A.top, W = A.x1 - A.x0 + 1;
-      b.cr(T - 2, W - 2, 1, p.c); b.cr(T - 1, W + 2, 2, p.c); b.cr(T + 1, W + 2, 1, sh(p.c));
-      b.sym(Math.ceil(W / 2), T + 2, 1, Math.min(2, A.ny - T - 2), sh(p.c));   // cheek guards stop above the nose
-      b.cr(T - 1, W - 4, 1, li(p.c)); b.cr(T - 2, 2, 1, li(p.c, 0.5));
-      const k = A.side ? -1 : 1;
-      b.cr(T - 3, 2, 1, p.b); b.cr(T - 4, 2, 1, p.b, -k); b.cr(T - 5, 3, 1, p.b, -k * 2); b.cr(T - 4, 2, 1, sh(p.b), -k * 3);
+      const metal = sh(p.c, 0.45), bevel = li(p.c, 0.66);
+      b.cr(T - 3, W - 4, 1, bevel);
+      b.cr(T - 2, W, 1, p.c);
+      b.cr(T - 1, W + 2, 2, p.c);
+      b.cr(T + 1, W + 2, 1, metal);
+      b.r(b.c0 + 1, T - 2, Math.floor(W / 2) - 1, 3, sh(p.c, 0.24));
+      b.cr(T - 1, 2, 2, bevel, -1);
+      b.sym(Math.ceil(W / 2) - 1, T + 2, 2, Math.min(2, A.ny - T - 2), metal);
+      b.sym(Math.ceil(W / 2) - 1, T + 1, 1, 1, bevel);
+      b.grid(b.c0 - 4, T - 7, [".llc...", "cccss..", ".ss.cc.", "....sc."], { c: p.b, s: sh(p.b, 0.36), l: li(p.b, 0.46) }, A.back);
     },
   },
   // a frog hat, two goggle eyes on top
@@ -837,24 +870,64 @@ const masterBadge = (b, x, y, trim) => { b.fp(x, y, li(GOLD, 0.4)); b.fp(x + 0.5
 
 const TOP = {
   overalls: {
-    front: [".bcbbcb.", ".cyccyc.", ".ccsscc."], side: [".bbbbcb.", ".scccyc.", ".sccscc."], back: [".bcbbcb.", ".ccsscc.", ".ccsscc."],
+    front: [".blbblb.", ".byccyb.", ".scllcs."],
+    side: [".bblbbb.", ".bccycb.", ".sscccs."],
+    back: [".lbbbbl.", ".blbbcb.", ".scsscs."],
+    icon: ["..bb..bb..", ".bblbblbb.", "bbblbblbbb", "b.byllyb.b", "..sccccs..", "..scllcs..", "..sccccs..", "..ss..ss.."],
+    fine(b, A, pal) {
+      if (!A.front) return;
+      b.fp(15, A.foot - 0.5, pal.s);
+      b.fp(16.5, A.foot - 0.5, pal.s);
+    },
   },
   hoodie: {
-    front: [".cwccwc.", ".cccccc.", ".cssssc."], side: [".scccwc.", ".sccccc.", ".scsssc."], back: [".sccccs.", ".cccccc.", ".sccccs."], nape: "..lccl..",
+    front: [".lccccs.", ".cwccws.", ".scllcs."],
+    side: [".scllcs.", ".scccws.", ".scccls."],
+    back: [".lccccs.", ".scddcs.", ".sccccs."],
+    nape: "..slls..",
+    icon: ["...lccs...", "..ldddcs..", "..lsddcs..", ".lccsscsc.", "lcwccwccss", "cscclcccss", "ssccllcsss", ".ssccccss.", "..ssssss.."],
+    fine(b, A, pal) {
+      if (!A.front) return;
+      b.fp(15, A.foot - 0.5, pal.s);
+      b.fp(16.5, A.foot - 0.5, pal.s);
+      b.fp(14, A.foot - 1.5, pal.w);
+      b.fp(17.5, A.foot - 1.5, pal.w);
+    },
   },
   sailor: {
     pal: (p) => ({ c: WHITE, s: sh(WHITE, 0.3), n: p.c, N: sh(p.c), r: "#e04a4a" }),
     front: [".nnrrnn.", ".ccrccc.", ".NNNNNN."], side: [".cnnnrn.", ".cccccr.", ".NNNNNN."], back: [".nccccn.", ".nnnnnn.", ".NNNNNN."],
   },
   armor: {
-    pal: (p) => ({ c: p.c, s: sh(p.c), l: li(p.c, 0.5), b: "#6a4434", y: GOLD }),
-    front: [".lllccs.", ".lcclcs.", ".bbybbb."], side: [".scllll.", ".sccclc.", ".bbbbyb."], back: [".sllccs.", ".scccss.", ".bbbbbb."],
+    pal: (p) => ({ c: p.c, s: sh(p.c, 0.28), l: li(p.c, 0.6), b: "#71503f", B: "#51374a", y: GOLD }),
+    front: ["llsclls.", ".slccs..", ".bbybbB."],
+    side: [".sclllss", ".ssslcs.", ".Bbbbyb."],
+    back: ["llsclls.", ".sclcs..", ".BbbbbB."],
+    icon: [".ll....ss.", "llscllcsss", "lssccccsss", ".scllccs..", ".dsccss...", "..sccss...", "..bbybb...", "..sccss..."],
+    fine(b, A, pal) {
+      b.fp(14, A.foot - 1.5, pal.l);
+      b.fp(17.5, A.foot - 1.5, pal.l);
+      if (A.front) b.fp(15.5, A.foot - 0.5, pal.B);
+    },
   },
   robe: {
-    front: [".ccbbcc.", ".scbbcs.", "sccbbccs", "...bb..."], side: [".scccbc.", ".scccbc.", "ssccbcc.", "...cc..."], back: [".lccccl.", ".csccsc.", "sccsccss", "...cc..."],
+    front: [".lcBBcs.", ".scbycs.", "sccBBcds", "..sBBs.."],
+    side: [".sscbcs.", ".scclbs.", "sdsccBs.", "...cBs.."],
+    back: [".lccccs.", ".scybcs.", "sscccdss", "..ssss.."],
+    icon: ["..lc..cs..", ".lccbbccs.", "lcccByccss", "ssccBbcsds", "..ccBbcs..", ".lccBbcds.", ".sccBbcdd.", "scccBbcdss", "ssccBBdsss"],
+    fine(b, A, pal) {
+      if (!A.front) return;
+      b.fp(15, A.foot - 1.5, pal.b);
+      b.fp(15.5, A.foot - 1.5, pal.y);
+      b.fp(15.5, A.foot - 1, pal.b);
+      b.fp(15.5, A.foot - 0.5, pal.b);
+    },
   },
   dress: {
-    front: [".lccccl.", ".bbBBbb.", "sccccccs"], side: [".sccccl.", ".bbbbBb.", "sccccccl"], back: [".cccccc.", ".bBbbBb.", "sccssccs"],
+    front: [".lcsscl.", ".bcylcb.", "slcsccss", "..cccc.."],
+    side: [".sccccl.", ".Bbccyb.", "ssccccss", "..sccc.."],
+    back: [".lccccs.", ".sBbbBs.", "slccsccs", "..sccs.."],
+    icon: ["..lc..cs..", ".lccssccs.", "..bcylcb..", "...BBbs...", "..lccccs..", ".lccccccs.", ".sccsccss.", "scccccccss", ".ssssssss."],
   },
   suit: {
     pal: (p) => ({ c: p.c, s: sh(p.c, 0.3), l: li(p.c, 0.25), w: WHITE, b: p.b }),
@@ -1087,122 +1160,116 @@ function wearTop(t) {
 
 const sway = (A) => (A.f === 2 ? 1 : A.f === 4 ? -1 : 0);
 /**
- * A pair of wings from the shoulder blades, drawn from a left-wing template whose bottom-right
- * pixel is the root (on the body's top row, beside the body). They rise past the head so they
- * read beside it, and beat with the walk: up on a breath and the first step, down on the
- * stretch and the second. In a three-quarter view the near wing trails behind the back and the
- * far one shows its tip over the other shoulder, a shade darker.
+ * A pair of wings from the shoulder blades. Each template ends with the root at its lower
+ * right. The roots stay attached through the walk cycle, and the far wing in the side view
+ * sits closer to the centerline and in shadow.
  */
 function wingPair(rows, palOf) {
   return (b, A, p) => {
     const pal = palOf(p), w = rows[0].length, h = rows.length;
     const flap = A.f === 1 || A.f === 2 ? -1 : A.f === 3 || A.f === 4 ? 1 : 0;
-    const y = A.bt + 2 - h + flap;
-    if (A.side) {
-      b.grid(13 - w + 1, y, rows, pal);
-      b.grid(19, y - 1, rows.slice(0, Math.max(2, h - 4)), { ...pal, c: pal.s, l: pal.c }, true);
-      return;
-    }
-    b.grid(12 - w + 1, y, rows, pal);
-    b.grid(19, y, rows, pal, true);
-    // the roots stay on the body whatever the beat
-    b.r(11, A.bt, 2, 2, pal.c); b.r(19, A.bt, 2, 2, pal.c);
-    if (A.back) { b.r(13, A.bt, 1, 2, pal.s); b.r(18, A.bt, 1, 2, pal.s); }
+    const y = A.bt + 1 - h + flap, left = A.side ? 13 : 12, right = A.side ? 17 : 19;
+    b.grid(left - w + 1, y, rows, pal);
+    if (A.icon) return;
+    b.grid(right, A.side ? y + 1 : y, rows, A.side ? { ...pal, c: pal.s, l: pal.c } : pal, true);
+    const rootTop = Math.min(A.bt, y + h - 1);
+    b.r(left - 1, rootTop, 2, A.bt + 2 - rootTop, pal.s);
+    b.r(right, rootTop, 2, A.bt + 2 - rootTop, pal.s);
   };
 }
-const BACK = {
-  cape: (b, A, p) => {
-    const sw = sway(A), last = A.foot - 1, n = last - A.bt;
-    const dk = sh(p.c, 0.3), dd = sh(p.c, 0.5);
+/** The mantle widens into folds at the hem. The walk pulls the lower folds to one side. */
+function cloak(b, A, p, bat = false) {
+  const last = A.foot - 1, shadow = sh(p.c, 0.31), lining = bat ? "#915991" : sh(p.c, 0.49);
+  const top = A.icon ? last - 7 : A.bt;
+  for (let y = top; y <= last; y++) {
+    const spread = Math.round((y - top) * 3 / Math.max(1, last - top)), shift = y === last ? sway(A) : 0;
+    const x = (A.side ? 12 : 13) - spread + shift;
+    const w = A.side ? 2 + spread - shift : 6 + 2 * spread;
+    if (bat && y === last && !A.side) {
+      b.grid(x, y, ["sss.ss.ss.sss"], { s: lining });
+      continue;
+    }
+    b.r(x, y, w, 1, A.front ? shadow : p.c);
     if (A.side) {
-      // trailing behind the back, widening toward the hem, the hem flicking with the step
-      for (let y = A.bt; y <= last; y++) {
-        const k = n ? (y - A.bt) / n : 1, x0 = 12 - Math.round(k * 3) - (y === last ? sw + 1 : 0);
-        b.r(x0, y, 14 - x0, 1, y === last ? dk : p.c);
-        b.px(x0 + 1, y, y > A.bt ? dk : p.c);
-      }
-      return;
+      b.px(x, y, y === last ? lining : li(p.c, 0.2));
+      b.px(x + w - 1, y, shadow);
+    } else if (A.back) {
+      b.px(x + w - 2, y, shadow);
+      b.px(x + 1, y, spread === 0 ? li(p.c, 0.27) : shadow);
+      if (y === last) b.r(x + 1, y, w - 2, 1, lining);
     }
-    for (let y = A.bt - (A.back ? 1 : 0); y <= last; y++) {
-      const k = n ? Math.max(0, y - A.bt) / n : 1, half = 3 + Math.round(k * 2), s = y >= last - 1 ? sw : 0;
-      const x0 = 16 - half + s, w = half * 2;
-      if (!A.back) { b.r(x0, y, w, 1, y === last ? dd : dk); continue; }
-      b.r(x0, y, w, 1, p.c);
-      if (y > A.bt) { b.px(14 + s, y, dk); b.px(17 + s, y, dk); }
-      if (y === A.bt) { b.px(x0, y, li(p.c, 0.3)); b.px(x0 + 1, y, li(p.c, 0.3)); }
-      if (y === last) for (let x = x0; x < x0 + w; x += 2) b.px(x, y, dk);
-    }
-  },
-  // a cape whose hem is cut into three bat-wing points, violet lining showing in the notches
-  batcape: (b, A, p) => {
-    BACK.cape(b, A, p);
-    const last = A.foot - 1, vi = "#6a3a8a", dk = sh(p.c, 0.5);
-    if (A.side) { b.px(13, last, dk); return; }
-    if (!A.back) return;
-    const sw = sway(A), x0 = 11 + sw;
-    for (let k = 0; k < 10; k++) {
-      const notch = k === 3 || k === 6;   // 3 points: 0-2, 4-5, 7-9
-      if (notch) { b.px(x0 + k, last, dk); b.px(x0 + k, last - 1, vi); }
-    }
-    for (let y = A.bt + 2; y < last - 1; y += 2) b.px(16 + sw, y, vi);
-  },
+  }
+  if (A.icon) b.cr(top, 2, 1, GOLD);
+}
+const BACK = {
+  cape: cloak,
+  batcape: (b, A, p) => cloak(b, A, p, true),
   // feathered: a rounded leading edge up top, three feather tips along the bottom
   angel: wingPair([
-    ".ll.....",
-    "lccl....",
-    "lcccl...",
-    "ccsccl..",
-    "cscccc..",
-    "sccscc..",
-    ".s.cscc.",
-    "...s.ccc",
-    "......cc",
+    "ll........",
+    "lcc.......",
+    "lcccl.....",
+    "lcsccl....",
+    "ccssccl...",
+    "sccssccs..",
+    ".sccscccs.",
+    ".s.sccsccs",
+    "...s.scccs",
+    ".....s.scc",
+    "........cc",
   ], (p) => ({ c: p.c, l: "#ffffff", s: p.b })),
   // leathery: a bone along the top from the claw, the membrane scalloped between the fingers
   bat: wingPair([
-    "l.......",
-    "cl......",
-    "ccl.....",
-    "cccll...",
-    "ccccsll.",
-    "c.ccccsl",
-    "...c.ccc",
-    "......cc",
-  ], (p) => ({ c: p.c, l: p.b, s: sh(p.c, 0.3) })),
+    "l.........",
+    "ll........",
+    "lcsl......",
+    "lccsl.....",
+    "cscccll...",
+    "csscsclls.",
+    "ccsscslcsl",
+    "c..ccsccss",
+    "....s..ccs",
+    "........sc",
+  ], (p) => ({ c: p.c, l: p.b, s: sh(p.c, 0.46) })),
   // two little lobes, the upper one pale with a glint, the lower one tinted
   fairy: wingPair([
-    ".cc...",
-    "clcc..",
-    "cclcc.",
-    ".cccc.",
-    "..ccs.",
-    ".bbb.c",
-    "bbbs.c",
-    ".bb...",
-  ], (p) => ({ c: p.c, l: li(p.c, 0.7), b: p.b, s: sh(p.c, 0.25) })),
+    ".lc......",
+    "lclc.....",
+    "lcccl....",
+    ".csccs...",
+    "..cccsc..",
+    "...sccsc.",
+    "..b..csc.",
+    ".blbbscc.",
+    ".bbBbbBcc",
+    "..BBB..cc",
+  ], (p) => ({ c: p.c, l: li(p.c, 0.78), b: p.b, B: sh(p.b, 0.32), s: sh(p.c, 0.39) })),
   pack: (b, A, p) => {
-    const y = A.bt, dk = sh(p.c, 0.3), last = A.foot - 1;
+    const y = A.foot - 5, pal = {
+      c: p.c, s: sh(p.c, 0.36), l: li(p.c, 0.34), d: sh(p.c, 0.57), g: GOLD, a: "#84945f",
+    };
     if (A.back) {
-      b.r(13, y - 1, 6, last - y + 2, p.c); b.r(13, y - 1, 6, 2, dk); b.px(15, y + 1, GOLD); b.px(16, y + 1, GOLD);
-      b.r(13, last, 6, 1, dk); b.r(12, y, 1, last - y, sh(p.c, 0.45)); b.r(19, y, 1, last - y, sh(p.c, 0.45));
-      b.r(14, y - 1, 4, 1, "#7a9a5a");
+      b.grid(12, y, ["..aaaa..", ".llccss.", "dcsssccd", "dclggcsd", ".sssssd."], pal);
+      b.fp(15, A.foot - 1.5, pal.d);
+      b.fp(16, A.foot - 1.5, pal.d);
     } else if (A.side) {
-      b.r(9, y - 1, 4, last - y + 2, p.c); b.r(9, y - 1, 4, 1, dk); b.px(10, y + 1, GOLD); b.r(9, last, 4, 1, dk);
-      b.r(10, y - 2, 3, 1, "#7a9a5a");
-    } else b.r(13, y - 1, 6, 2, p.c);        // from the front: only the top of the bag over the shoulders (the straps are BACK_FRONT)
+      b.grid(8, y, [".aaa..", "llcss.", "csgcsd", "clccsd", ".sssd."], pal);
+    } else b.r(13, A.bt - 1, 6, 2, pal.c);
   },
   // bigger and spikier than a bat's: a horn at the wrist, two finger spines, a ragged edge
   dragon: wingPair([
-    "l........",
-    "ll.......",
-    "cll......",
-    "ccsll....",
-    "cccssll..",
-    "cccccsll.",
-    "c.ccc.ccl",
-    "...c..ccc",
-    ".......cc",
-  ], (p) => ({ c: p.c, l: p.b, s: sh(p.c, 0.3) })),
+    "l..........",
+    "ll.........",
+    "lcs.l......",
+    "lcslcl.....",
+    "cscclcl....",
+    "csccssll...",
+    "csssccscll.",
+    "s..csscssll",
+    "....s.csccs",
+    "........scc",
+    ".........sc",
+  ], (p) => ({ c: p.c, l: p.b, s: sh(p.c, 0.46) })),
   // a surfboard taller than its owner, upright behind one shoulder
   surf: (b, A, p) => {
     const y0 = A.bt - 13, y1 = A.foot - 1, x = A.front ? 20 : 8, dk = sh(p.c, 0.3);
@@ -2117,29 +2184,59 @@ export function dress(base, o, view, f, highBase = null) {
 }
 
 const icons = new Map();
+/** Fit a layer into a 16px icon with a spare pixel around it. */
+function fitIcon(g, frame) {
+  const size = frame.width;
+  const data = frame.getContext("2d").getImageData(0, 0, size, size).data;
+  let x0 = size, y0 = size, x1 = -1, y1 = -1;
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    if (!data[(y * size + x) * 4 + 3]) continue;
+    x0 = Math.min(x, x0);
+    y0 = Math.min(y, y0);
+    x1 = Math.max(x, x1);
+    y1 = Math.max(y, y1);
+  }
+  if (x1 < x0) return;
+  const w = x1 - x0 + 1, h = y1 - y0 + 1;
+  const zoom = 14 / Math.max(w, h);
+  const dw = Math.max(1, Math.round(w * zoom)), dh = Math.max(1, Math.round(h * zoom));
+  g.drawImage(frame, x0, y0, w, h, Math.floor((16 - dw) / 2), Math.floor((16 - dh) / 2), dw, dh);
+}
+
 /**
- * A 16×16 icon of a cosmetic: worn by a plain cat (the face and head cropped close for
- * hats and face pieces, the body close up for tops, the back for back pieces). The cat's
- * fur is picked to stand apart from the item (a white chef's hat on a brown cat).
+ * Draw costume pieces in isolation using their world art. Face pieces keep the
+ * head crop, which shows their position on the face.
  * `sheetOf(o)` is sprites.js personSheet (passed in to avoid a circular import).
  */
 export function cosIcon(id, sheetOf, lookOf) {
   if (icons.has(id)) return icons.get(id);
   const a = ART[id];
-  const c = document.createElement("canvas");
-  c.width = c.height = 16;
-  const g = c.getContext("2d");
-  g.imageSmoothingEnabled = false;
+  const [c, g] = canvas(16);
   if (a && a[0] !== "wskin") {
-    const main = a[2].c || "#ffffff";
-    const o = { ...lookOf(), cos: [id] };
-    if (lum(main) > 0.72) o.fur = "#b98b68";
-    const sh2 = sheetOf(o), fr = sh2.front[0], scale = fr.width / SZ;
-    const crop = (frame, x, y, size) => g.drawImage(frame, x * scale, y * scale, size * scale, size * scale, 0, 0, 16, 16);
-    if (a[0] === "hat") crop(fr, 8, 6, 16);
-    else if (a[0] === "face") crop(fr, 8, 13, 16);
-    else if (a[0] === "top") crop(fr, 12, 20, 8);
-    else crop(sh2.back[0], 8, 14, 16);
+    const [slot, design, pal] = a;
+    const o = { ...lookOf() };
+    if (slot === "face") {
+      o.cos = [id];
+      if (lum(pal.c || "#ffffff") > 0.72) o.fur = "#b98b68";
+      const fr = sheetOf(o).front[0], s = fr.width / SZ;
+      g.drawImage(fr, 8 * s, 13 * s, 16 * s, 16 * s, 0, 0, 16, 16);
+    } else {
+      const view = slot === "back" ? "back" : "front";
+      const [item, ig] = canvas();
+      const A = anchors(sheetOf(o)[view][0], o, view, 0);
+      A.icon = true;
+      const hat = HAT[design];
+      if (slot === "hat" && hat) {
+        layer(ig, (b) => { hat.draw?.(b, A, pal); hat.over?.(b, A, pal); }, A, pal, { col: hat.ink });
+      } else if (slot === "top" && TOP[design]) {
+        const t = TOP[design];
+        const draw = t.icon ? (b) => b.grid(8, 8, t.icon, topPal(t, pal)) : wearTop(t);
+        layer(ig, draw, A, pal);
+      } else if (slot === "back" && BACK[design]) {
+        layer(ig, BACK[design], A, pal);
+      }
+      fitIcon(g, item);
+    }
   }
   icons.set(id, c);
   return c;

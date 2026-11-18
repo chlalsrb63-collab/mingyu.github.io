@@ -85,7 +85,7 @@ export const PORCELAIN_WEAPONS = [
     wk: "book",
     slot: "wskin",
     name: "청화 가마 비결서",
-    desc: "청화 표지 위에 도공 인장 패가 떠오르는 고법 탁본 마도서.",
+    desc: "청화 표지에 도공 인장을 새긴 고법 탁본 마도서.",
     acquire: "학자 길드 외형 도안 (버드나무 토큰 110개 또는 40,000 골드)",
   },
   {
@@ -185,7 +185,7 @@ const bow = (b, extra) => (icon, o = {}) => {
 
 // ───────────────────────────── 7 bespoke weapon silhouettes ─────────────────────────────
 export const PORCELAIN_SHAPES = {
-  // 1. 백자 청화 참마도 — wide swept cleaver-greatsword with bronze cloud collar & cobalt spine wave
+  // 1. 백자 청화 참마도 — swept blade with a bronze guard and a cobalt spine wave
   sword: () => ({
     sh: [
       C(-2.4, 0.5, 1.8, "bronze"),
@@ -193,18 +193,16 @@ export const PORCELAIN_SHAPES = {
       R(-1, 4, -1.5, 2, "mahogany"),
       L(1, -1, 1, 1, "wrap"),
       L(3, -1, 3, 1, "wrap"),
-      P([[3.5, -4.5], [5.5, -5.5], [7, -3.5], [7, 4.5], [5.5, 6.5], [3.5, 5.5]], "bronze"),
+      P([[3.5, -3.5], [5, -4.5], [7, -2.5], [7, 3.5], [5, 5.5], [3.5, 4.5]], "bronze"),
       D(5, 0.5, "seal"),
-      // Glazed porcelain cleaver blade curving smoothly upward to a broad clipped tip
-      P([[6, -3], [16, -3.5], [27, -5], [34, -6.5], [36, -2.5], [32, 2.5], [20, 4], [6, 3]], "porcelain"),
-      // Underglaze cobalt spine + cloud-fret accents
-      P([[7, -3], [27, -4.5], [33.5, -5.8], [30.5, -2.5], [16, -1.5], [7, -1]], "cobalt"),
+      P([[6, -2], [22, -3], [36, -4.5], [30, 0], [21, 3], [6, 3]], "porcelain"),
+      P([[7, -2], [22, -3], [34, -4], [27, -1.5], [17, -0.5], [7, -0.5]], "cobalt"),
       L(11, 0, 15, 0, "ink_cobalt"),
       L(18, -1, 22, -1, "ink_cobalt"),
       L(25, -2, 29, -2, "ink_cobalt"),
       R(8, 10, 0, 2, "seal", { top: true }),
     ],
-    head: [7, 35, -6, 4],
+    head: [7, 36, -4.5, 3],
     blade: ["porcelain"],
   }),
 
@@ -231,26 +229,26 @@ export const PORCELAIN_SHAPES = {
   // 3. 청화 삼지 월아창 — mahogany pole, asymmetrical crescent moon-blade + glazed leaf point
   spear: (icon) => {
     const sStart = icon ? 4 : -4;
-    const my = icon ? -8.5 : -7;
+    const my = -6;
     return {
       sh: [
         R(sStart, 31, 0, icon ? 2.4 : 1, "mahogany"),
         R(sStart, sStart + 2, -1, 2.4, "bronze"),
         R(icon ? 12 : 9, icon ? 14 : 11, -1, 2.2, "bronze"),
         R(21, 23, -1, 2.2, "bronze"),
-        P([[27.5, 2], [31.5, 2], [32.5, icon ? 8 : 7], [26.5, 6.5]], "seal"),
+        P([[28, 1.5], [31.5, 1.5], [29.5, 5], [25.5, 5]], "seal"),
         R(29, 33, -1.5, 2.5, "bronze"),
         // Asymmetrical crescent moon side blade (월아)
-        P([[30, -1], [32, my + 1.2], [37.5, my], [41, my + 2], [35, -3.5], [33, 0]], "cobalt"),
-        P([[33, my + 1.8], [37.5, my + 0.5], [41, my + 2], [36, -4]], "porcelain"),
+        P([[30, -1], [34, -5], [39, my], [42, -5], [36, -3], [33, 0]], "cobalt"),
+        P([[34, -4.5], [39, -5.5], [41, -5], [36, -3.5]], "porcelain"),
         // Counter bronze claw
-        P([[30, 2], [33, icon ? 7 : 5.5], [36.5, icon ? 6 : 4.5], [33, 2]], "bronze"),
+        P([[30, 2], [34, 4.5], [38, 5], [34, 2]], "bronze"),
         // Central elongated porcelain leaf spearhead
-        P([[32, -2], [37, -3], [45.5, 0], [45.5, 1], [37, 4], [32, 3]], "porcelain"),
+        P([[32, -1.5], [36, -2.5], [45.5, 0.5], [36, 3.5], [32, 2.5]], "porcelain"),
         L(33, 0, 42, 0, "cobalt"),
         D(34, 0.5, "seal"),
       ],
-      head: [30, 45.5, my, 6],
+      head: [30, 45.5, my, 5],
       blade: ["porcelain"],
     };
   },
@@ -277,32 +275,18 @@ export const PORCELAIN_SHAPES = {
     blade: ["porcelain"],
   }),
 
-  // 5. 청화 가마 비결서 — front-on open cobalt-porcelain tome with seal badge hovering above
+  // 5. 청화 가마 비결서 — a closed cobalt-bound book with an inlaid potter's seal
   book: () => ({
     sh: [
-      R(-10, 10, -3, 7, "cobalt"),
-      R(-10, 10, 5.5, 7, "bronze"),
-      R(-10, -8, -3, -1, "bronze"),
-      R(8, 10, -3, -1, "bronze"),
-      R(-8.5, -0.5, -4, 5, "porcelain"),
-      R(0.5, 8.5, -4, 5, "porcelain"),
-      R(-0.8, 0.8, -4, 7, "mahogany"),
-      P([[-0.6, 6.5], [1, 6.5], [1.4, 10], [0, 9], [-1, 10]], "seal"),
-      // Left page: cobalt wave medallion & seal dot
-      L(-7, -2, -2, -2, "cobalt"),
-      C(-4.5, 1, 1.7, "cobalt"),
-      D(-4.5, 1, "seal"),
-      // Right page: cobalt ink script lines
-      L(2, -2, 7, -2, "ink_cobalt"),
-      L(2, 0, 6, 0, "ink_cobalt"),
-      L(2, 2, 7, 2, "cobalt"),
-      // Hovering porcelain potter's seal tile
-      R(-3.5, 3.5, -10, -6, "porcelain"),
-      L(-3.5, -10, 3.5, -10, "cobalt"),
-      L(-3.5, -6, 3.5, -6, "cobalt"),
-      D(0, -8, "seal"),
+      P([[-5, -4.5], [4.5, -4.5], [6, -3], [6, 6], [4.5, 7], [-4.5, 7], [-5, 6]], "cobalt_dk"),
+      P([[-4, 4], [5.5, 4], [5.5, 5.5], [4.5, 6], [-4, 6]], "porcelain"),
+      P([[-5, -5.5], [4, -5.5], [5, -4.5], [5, 4], [4, 5], [-5, 5]], "cobalt"),
+      P([[-5.5, -4.5], [-4, -5.5], [-3.5, -5.5], [-3.5, 6.5], [-5, 6], [-5.5, 5]], "mahogany"),
+      R(3, 4.5, -5, -3.5, "bronze"), R(3, 4.5, 3, 4.5, "bronze"),
+      P([[-2.5, -2], [3.5, -2], [3.5, 1.5], [2.5, 2.5], [-1.5, 2.5], [-2.5, 1.5]], "porcelain"),
+      D(0, -1, "seal"), L(-1, 1, 2, 1, "ink_cobalt"),
     ],
-    head: [-10, 10, -3, 7],
+    head: [-3.5, 4.5, -4.5, 4.5],
     blade: ["cobalt"],
   }),
 
@@ -341,26 +325,17 @@ export const PORCELAIN_SHAPES = {
       L(1, -2, 1, 2, "bronze"),
       L(3.5, -2, 3.5, 2, "bronze"),
       R(8.5, 11.5, -3, 3.5, "bronze"),
-      // Heavy flared porcelain drum head
-      P(
-        [
-          [11, -5.5], [13.5, -9.5], [18.5, -9.5], [21, -6.5], [20, -2.5],
-          [20, 2.5], [21, 6.5], [18.5, 9.5], [13.5, 9.5], [11, 5.5], [10, 3], [10, -3],
-        ],
-        "porcelain",
-      ),
-      // Double cobalt drum bands
-      R(12, 20, -8, -5.5, "cobalt"),
-      R(12, 20, 5.5, 8, "cobalt"),
-      // Bronze striking anvil caps
-      R(13.5, 18.5, -10, -8.5, "bronze"),
-      R(13.5, 18.5, 8.5, 10, "bronze"),
+      // A tapered ceramic drum with cobalt rings and bronze striking faces.
+      P([[11, -5], [13, -8], [19, -8], [21, -6], [19, 0.5], [21, 7],
+        [19, 9], [13, 9], [11, 6], [10, 3], [10, -2]], "porcelain"),
+      R(12, 20, -6.5, -5, "cobalt"), R(12, 20, 6, 7.5, "cobalt"),
+      R(13, 19, -8.5, -7, "bronze"), R(13, 19, 8, 9.5, "bronze"),
       // Waist belt & crimson potter's seal
       R(12, 19, -2.5, 2.5, "mahogany"),
       C(15.5, 0, 2.0, "bronze"),
       D(15.5, 0, "seal"),
     ],
-    head: [11, 21, -9.5, 9.5],
+    head: [10, 21, -8.5, 9.5],
     blade: ["porcelain"],
   }),
 };
@@ -524,7 +499,7 @@ export function porcelainWeaponSprite(kind, gear = {}, bowOpts = null) {
   const we = gear.we | 0;
   const d = design(false, bowOpts || undefined);
   const glow = we >= 7 ? { blade: d.blade, col: GLOW7, edgeX: !!d.edgeX } : null;
-  const scale = hammer ? 1.25 : 1;
+  const scale = hammer ? 1.25 : book ? 0.85 : 1;
   return paint(
     d,
     W,

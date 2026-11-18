@@ -201,7 +201,7 @@ export function drawPerson(s, e, t, dt, x, y) {
     // The book arcs across the reader on the charge and turns toward the target on release.
     const out = P ? P.out * hold.push : 0;
     const cross = P ? sg * P.cross : 0;
-    const bx = x + sg * 9 + Math.cos(aimS) * out - Math.sin(aimS) * cross;
+    const bx = x + sg * 13 + Math.cos(aimS) * out - Math.sin(aimS) * cross;
     const by = y - 8 + Math.sin(t / 380 + s.ph) * 1.2 + Math.sin(aimS) * out + Math.cos(aimS) * cross + bob - (P?.lift || 0);
     const book = () => {
       g.save();
@@ -211,7 +211,8 @@ export function drawPerson(s, e, t, dt, x, y) {
       g.drawImage(s.weapon, -16, -16);
       g.restore();
     };
-    if (back) { book(); body(); } else { body(); book(); }
+    // The lifted book travels behind the caster's head during the wind-up.
+    if (back || P?.lift > 2.5) { book(); body(); } else { body(); book(); }
     if (live && k >= Sw.IMPACT && k < Sw.IMPACT + 0.2 && s.qiT !== e.atkT) { s.qiT = e.atkT; qiBurst("book", beat, bx, by, aimS, side, 12, glow); }
     return;
   }

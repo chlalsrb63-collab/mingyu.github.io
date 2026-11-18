@@ -58,10 +58,12 @@ const EYE_EDGE = [
   [0, 1, 1], [0, 1, 0], [0, 1, 1], [0, 2, 1],   // line, iris, sparkle, wink
   [-1, 2, -2], [0, 1, 1], [0, 1, -1], [-1, 2, -1], // brow, teardrop, stars, hearts
   [-1, 2, -1], [-1, 2, 0], [-1, 2, 0], [-1, 2, -1], // round, sleepy, closed, startled
+  [-1, 2, 0], [-1, 2, -1], // eye smile, lashes
 ];
 const NOSE_EDGE = [
   [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 1], null, [0, 1, 1], [-1, 2, 0],
   [0, 1, 0], [0, 1, -1], [0, 1, 0], [0, 1, 0], [0, 1, 0], [-1, 1, 0], [-2, 3, 0],
+  [0, 1, 0], [-1, 2, 0],
 ];
 
 function bevelGlyph(pixels, x, y, side, low, pigments, faceTone) {

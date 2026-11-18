@@ -20,7 +20,7 @@ const plain = (id) => { const g = { id, q: 0, enh: 0, af: [], sk: 0, ru: [] }; g
  * animal, tail, accent colour and eye colour, where 0 means "as before", so a sheet
  * saved with the first seven alone looks exactly as it did.
  */
-const LOOK_MAX = [13, 15, 13, 21, 5, 12, 11, 14, 11, 13, 7];
+const LOOK_MAX = [15, 17, 15, 25, 7, 14, 13, 16, 13, 16, 9];
 const cleanLook = (look) => { const lk = Array.isArray(look) ? look : []; return LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)); };
 /** What a new look costs at the mirror in town (거울 · 미용실). */
 const LOOK_COST = 500;
