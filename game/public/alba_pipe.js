@@ -5,6 +5,7 @@
 // Look: a sunny boiler room — teal tile floor, copper (dry) pipes that turn blue when the water reaches them, a cream control panel. Sounds: snap on place, splash on flow.
 import { hiRes } from "./alba_stage.js";
 const CS = 26, BX = 14, BY = 2, PX = 340, CW = 450, CH = 316;   // cell, board origin, panel x, canvas size (logical pixels, scaled by CSS without smoothing)
+const PW = CW - PX;   // the side panel width: its texts are squeezed to fit
 const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
 const COL = {
   bg: "#4f8590", ol: "#1f2e3a", f1: "#9dc2b8", f2: "#93b9af", f3: "#7aa299", f4: "#b8dad0",
@@ -134,7 +135,7 @@ function cellAt(x, y) {
 }
 
 // ── drawing
-function text(s, x, y, color, px, align = "left", bold = true) { g.font = FONT(px, bold); g.fillStyle = color; g.textAlign = align; g.textBaseline = "alphabetic"; g.fillText(s, x, y); }
+function text(s, x, y, color, px, align = "left", bold = true) { g.font = FONT(px, bold); g.fillStyle = color; g.textAlign = align; g.textBaseline = "alphabetic"; g.fillText(s, x, y, x === PX + 55 ? PW - 4 : CW - 4); }
 function button(r, label, sub, armed) {
   const [x, y, w, h] = r;
   g.fillStyle = COL.ol; g.fillRect(x - 1, y - 1, w + 2, h + 2);

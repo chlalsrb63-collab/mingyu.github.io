@@ -164,10 +164,10 @@ function sprite(name, f, x, y) {
 const dark = (c) => { const n = parseInt(c.length === 4 ? c[1] + c[1] + c[2] + c[2] + c[3] + c[3] : c.slice(1), 16); return (((n >> 16) * 3 + ((n >> 8) & 255) * 6 + (n & 255)) / 10) < 130; };   // dark text sits on a light plate: no outline
 function text(s, x, y, col, size = 9, align = "left") {
   g.font = `${size >= 11 ? "bold " : ""}${size}px ${size >= 11 ? FONT11 : FONT9}`; g.textAlign = "left"; g.textBaseline = "top";
-  { const w = g.measureText(s).width; x = Math.round(align === "center" ? x - w / 2 : align === "right" ? x - w : x); y = Math.round(y); }   // whole-pixel origin: a pixel font stays crisp
+  { const w = Math.min(g.measureText(s).width, W - 4); x = Math.round(align === "center" ? x - w / 2 : align === "right" ? x - w : x); y = Math.round(y); }   // whole-pixel origin: a pixel font stays crisp
   x = px1(x); y = px1(y);
-  if (!dark(col)) { g.fillStyle = OL; g.fillText(s, x + 1, y); g.fillText(s, x - 1, y); g.fillText(s, x, y + 1); g.fillText(s, x, y - 1); g.fillText(s, x + 1, y + 1); }
-  g.fillStyle = col; g.fillText(s, x, y);
+  if (!dark(col)) { g.fillStyle = OL; g.fillText(s, x + 1, y, W - 4); g.fillText(s, x - 1, y, W - 4); g.fillText(s, x, y + 1, W - 4); g.fillText(s, x, y - 1, W - 4); g.fillText(s, x + 1, y + 1, W - 4); }
+  g.fillStyle = col; g.fillText(s, x, y, W - 4);
 }
 /** A cream plate with a brown rim (the toy-box look of the boards). */
 function plate(x, y, w, h) {

@@ -68,7 +68,7 @@ function tap(lane, x, y, info) {
 
 // ── art
 function R(x, y, w, h, c) { g.fillStyle = c; g.fillRect(x, y, w, h); }
-function text(s, x, y, color, px, align = "left", bold = true) { g.font = FONT(px, bold); g.fillStyle = color; g.textAlign = align; g.textBaseline = "alphabetic"; g.fillText(s, x, y); }
+function text(s, x, y, color, px, align = "left", bold = true) { g.font = FONT(px, bold); g.fillStyle = color; g.textAlign = align; g.textBaseline = "alphabetic"; g.fillText(s, x, y, x <= LW ? LW - 4 : CW - 8); }
 function button(x, y, w, h, fill, hi, lo, pressed) {
   R(x - 1, y - 1, w + 2, h + 2, COL.edge); R(x, y, w, h, fill);
   R(x, y, w, 2, pressed ? lo : hi); R(x, y, 2, h, pressed ? lo : hi);
