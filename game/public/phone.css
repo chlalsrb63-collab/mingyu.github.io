@@ -62,10 +62,9 @@ body.phone-ui #phone-btn { display: block; }
 #phone .ph-body {
   pointer-events: auto; position: relative; box-sizing: border-box; width: var(--ph-bw, 352px); height: var(--ph-bh, 640px); zoom: var(--ph-z, 1);
   border: solid transparent; border-width: 36px 18px 56px 18px; border-image: var(--ph-bezel) 36 18 56 18 fill / 36px 18px 56px 18px / 0 round; image-rendering: pixelated;
-  opacity: var(--hud-a, 1); transition: opacity 120ms; animation: ph-pop .16s ease-out; font: var(--t12)/1.4 var(--pix); letter-spacing: 0;
+  animation: ph-pop .16s ease-out; font: var(--t12)/1.4 var(--pix); letter-spacing: 0;
 }
-#phone .ph-body:is(:hover, :focus-within) { opacity: 1; }
-body.hud-peek #phone .ph-body { opacity: var(--hud-a) !important; }
+/* always opaque (owner 2026-11-19): the HUD transparency let world name labels show through the screen */
 @keyframes ph-pop { from { transform: translateY(22px) scale(.95); } to { transform: none; } }
 @media (prefers-reduced-motion: reduce) { #phone .ph-body { animation: none; } }
 .ph-top { position: absolute; left: -18px; top: -36px; width: calc(100% + 36px); height: 36px; display: flex; justify-content: center; align-items: center; gap: 18px; padding-top: 2px; pointer-events: none; }

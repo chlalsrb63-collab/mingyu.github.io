@@ -182,9 +182,13 @@ function place() {
   const right = W - (cx + SAFE) - MARGIN, left = cx - SAFE - MARGIN;
   const onLeft = right < MINW && left > right, room = onLeft ? left : right;
   const w = Math.round(clamp(room, MINW, PW)), z = room >= MINW ? 1 : clamp(room / MINW, 0.6, 1);
-  const pw = Math.round(w * z), ph = Math.round(Math.min(PH, H - 2 * MARGIN));
+  const pw = Math.round(w * z);
   const x = Math.round(clamp(onLeft ? cx - SAFE - pw : cx + SAFE, MARGIN, Math.max(MARGIN, W - pw - MARGIN)));
-  const y = Math.round((H - ph) / 2);
+  // the first-steps box (#tut, top centre) stays readable: a phone under it starts below it
+  const tut = $("#tut"), r = tut && !tut.hidden ? tut.getBoundingClientRect() : null;
+  const top = r && r.right > x && r.left < x + pw ? Math.ceil(r.bottom) + MARGIN : MARGIN;
+  const ph = Math.round(Math.min(PH, H - top - MARGIN));
+  const y = Math.max(top, Math.round((H - ph) / 2));
   const k = [x, y, pw, ph, z].join();
   edge = [x, x + pw];
   if (k === key) return;
