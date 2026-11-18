@@ -236,8 +236,8 @@ export function paintChart(g, chart, base, cam, state) {
     const avail = quests.avail?.get(id) || 0;
     if (avail) {
       const bw = avail > 9 ? 20 : 14;   // two-digit counts need a wider badge
-      pixel(g, x - drawW / 2 - 6, markerY, bw, 13, "#1c2f5a");
-      text(`!${avail}`, x - drawW / 2 - 6 + bw / 2, markerY + 1, bw - 2, "#8ccfff", 10, true);
+      pixel(g, x - drawW / 2 - 6, markerY - 14, bw, 13, "#1c2f5a");
+      text(`!${avail}`, x - drawW / 2 - 6 + bw / 2, markerY - 13, bw - 2, "#8ccfff", 10, true);
     }
     members.forEach(({ n: i, col }, j) => {
       const xx = x - drawW / 2 + 12 * j;

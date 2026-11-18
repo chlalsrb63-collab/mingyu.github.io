@@ -3,6 +3,7 @@
 // up to date: node tests/content.mjs
 import assert from "node:assert/strict";
 import * as L from "../src/logic.js";
+import { readFileSync } from "node:fs";
 
 const D = L.defs();
 const T = 16;
@@ -654,6 +655,20 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   const sv = W.self();
   assert.equal(sv.life.length, 6);
   assert.deepEqual(sv.life[0], [1, 0, 50]);
+}
+
+// ── NPC lines: "@sq_id|text" names a real side quest, and the speech-bubble line (lines[0]) is never one
+{
+  const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") + " export const test = { mapOf };";
+  const X = await import(`data:text/javascript;base64,${Buffer.from(src).toString("base64")}`);
+  const sq = new Set(D.side.map((q) => q.id));
+  let gated = 0;
+  for (const m of D.maps) for (const n of X.test.mapOf(m.id).npcs || []) {
+    if (!n.lines) continue;
+    assert.ok(!n.lines[0].startsWith("@"), n.id + ": lines[0] is the bubble, not an @ line");
+    for (const l of n.lines) { const g = /^@([^|]+)\|/.exec(l); if (g) { gated++; assert.ok(sq.has(g[1]), n.id + ": unknown side quest " + g[1]); } }
+  }
+  assert.ok(gated >= 15, "gated lines found: " + gated);
 }
 
 console.log("content ok — waypoints", D.waypoints.length, "achievements", D.achievements.length);
