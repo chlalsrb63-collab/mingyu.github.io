@@ -183,6 +183,7 @@ function questBody(s) {
   SideQ.listEntries(s, entry, null, true);
   for (let i = cur - 1; i >= 0; i--) entry(`main:${i}`, `${i + 1}. ${qs[i].title}`, "완료", "past");
   SideQ.listEntries(s, entry, (t) => list.append(el("div", "grp", t)));
+  SideQ.listAvailable(s, entry, (t) => list.append(el("div", "grp", t)));
   list.append(el("div", "grp", "반복 토벌"));
   if (s.bq) entry("bq", `${mobs[s.bq.k].name} 토벌`, s.bq.n >= s.bq.need ? "완료!" : `${Math.min(s.bq.n, s.bq.need)}/${s.bq.need}`, s.bq.n >= s.bq.need ? "done" : "");
   for (const k of picks) entry(`bq:${k}`, `${mobs[k].name}`, `Lv.${mobs[k].lv}`, "offer");

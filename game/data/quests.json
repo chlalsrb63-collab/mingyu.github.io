@@ -21,7 +21,7 @@
       "done": "잘했다. 그 녀석들 돌진은 우리 단원들도 무서워하지.",
       "goal": { "type": "kill", "mob": "splitboar", "n": 8 },
       "req": { "lv": 10, "quest": null },
-      "reward": { "xp": 900, "gold": 400, "items": [["hp_m", 5], ["stone", 1]] },
+      "reward": { "xp": 900, "gold": 400, "items": [["cafe_scone", 3], ["stone", 1]] },
       "repeat": false
     },
     {
@@ -98,7 +98,7 @@
       "done": "드디어... 조용해... 쿨쿨... 아, 고마워... 이건 꿈값이야...",
       "goal": { "type": "kill", "mob": "mothface", "n": 8 },
       "req": { "lv": 45, "quest": "sq_lira_song" },
-      "reward": { "xp": 14050, "gold": 1320, "items": [["hp_l", 3], ["stone", 1]] },
+      "reward": { "xp": 14050, "gold": 1320, "items": [["fd_herbtea", 3], ["stone", 1]] },
       "repeat": false
     },
     {
@@ -120,7 +120,7 @@
       "done": "한쪽은 마을 쪽을, 다른 쪽은 숲으로 들어가는 배관을 보는구나.",
       "goal": { "type": "kill", "mob": "twinhare", "n": 4 },
       "req": { "lv": 1, "quest": null },
-      "reward": { "xp": 70, "gold": 50, "items": [["stone", 1]] },
+      "reward": { "xp": 70, "gold": 50, "items": [["fd_rice", 1]] },
       "repeat": false
     },
     {
@@ -142,7 +142,7 @@
       "done": "왕이 적은 이름은 하나였는데 묘실마다 등불을 맡긴 집이 새겨져 있구나. 장부 아래엔 네온 시티의 인장도 있어.",
       "goal": { "type": "kill", "mob": "batcluster", "n": 5 },
       "req": { "lv": 53, "quest": null },
-      "reward": { "xp": 8000, "gold": 700, "items": [["stone", 1]] },
+      "reward": { "xp": 8000, "gold": 700, "items": [["sc_def", 1]] },
       "repeat": false
     },
     {
@@ -153,7 +153,7 @@
       "done": "이제 첫 종과 둘째 종 사이가 들리네. 둘째 종이 울리기 직전에 급수실 아래가 덜컹거려.",
       "goal": { "type": "kill", "mob": "doghead", "n": 6 },
       "req": { "lv": 57, "quest": null },
-      "reward": { "xp": 9000, "gold": 800, "items": [["stone", 1]] },
+      "reward": { "xp": 9000, "gold": 800, "items": [["cafe_pie", 1]] },
       "repeat": false
     },
     {
@@ -175,7 +175,7 @@
       "done": "‘등불 들고 돌아와.’ 어릴 적 나를 부르던 목소리야. 그 집 불이 심연 어귀에서 깜빡이고 있어.",
       "goal": { "type": "kill", "mob": "owlstare", "n": 5 },
       "req": { "lv": 105, "quest": null },
-      "reward": { "xp": 40000, "gold": 3400, "items": [["stone", 2]] },
+      "reward": { "xp": 40000, "gold": 3400, "items": [["el_def", 2]] },
       "repeat": false
     },
     {
@@ -186,7 +186,7 @@
       "done": "옛 날짜는 지웠어. 새 날짜를 적을 칸을 남겨 뒀으니 이 쪽지를 광장의 모리에게 전해 줘.",
       "goal": { "type": "kill", "mob": "sowseer", "n": 5 },
       "req": { "lv": 137, "quest": null },
-      "reward": { "xp": 90000, "gold": 4200, "items": [["stone", 2]] },
+      "reward": { "xp": 90000, "gold": 4200, "items": [["el_atk", 2]] },
       "repeat": false
     },
     {
@@ -230,7 +230,7 @@
       "done": "정말 해냈군! 그 집게는 캉캉에게 가져가 보게. 쓸모가 있을 거야.",
       "goal": { "type": "kill", "mob": "clubshrimp", "n": 1 },
       "req": { "lv": 36, "quest": null },
-      "reward": { "xp": 14000, "gold": 1800, "items": [["stone", 2], ["hp_l", 3]] },
+      "reward": { "xp": 14000, "gold": 1800, "items": [["fd_butter", 2], ["hp_l", 3]] },
       "repeat": false
     },
     {
@@ -241,7 +241,7 @@
       "done": "피눈물 결정은 캉캉이 축복 강화석으로 굳혀 준다더군. 잘 쓰게.",
       "goal": { "type": "kill", "mob": "bloodhorn", "n": 1 },
       "req": { "lv": 41, "quest": "sq_bawi_shrimp" },
-      "reward": { "xp": 40000, "gold": 3500, "items": [["stone_b", 1], ["hp_l", 5]] },
+      "reward": { "xp": 40000, "gold": 3500, "items": [["stone_b", 1], ["fd_butter", 3]] },
       "repeat": false
     },
     {
@@ -311,7 +311,7 @@
       "hint": "오아시스 승강장 곁의 신호수 노을",
       "goal": { "type": "talk", "npc": "airship_signal" },
       "req": { "lv": 98, "quest": "sq_toruk_wedge" },
-      "reward": { "xp": 121049, "gold": 5880, "items": [["recall", 2]] },
+      "reward": { "xp": 121049, "gold": 5880, "items": [["sc_xp", 2]] },
       "repeat": false
     },
     {
@@ -345,7 +345,7 @@
       "done": "수색대가 발을 떼도 되겠군. 정찰등은 어두워도 계속 켜 두겠네. 길을 잃으면 하늘을 보게.",
       "goal": { "type": "kill", "mob": "ribvulture_bone", "n": 5 },
       "req": { "lv": 100, "quest": null },
-      "reward": { "xp": 28000, "gold": 2900, "items": [["stone", 3]] },
+      "reward": { "xp": 28000, "gold": 2900, "items": [["sc_xp", 2]] },
       "repeat": false
     },
     {
@@ -390,7 +390,7 @@
       "done": "정말 해냈구나! 이건 할미가 시집올 때 받은 귀한 돌이란다. 너에게 주마.",
       "goal": { "type": "fb", "map": "meadow", "n": 1 },
       "req": { "lv": 18, "quest": "sq_suguk_crows" },
-      "reward": { "xp": 4050, "gold": 640, "items": [["stone", 1], ["hp_m", 3]] },
+      "reward": { "xp": 4050, "gold": 640, "items": [["cafe_cocoa", 1], ["hp_m", 3]] },
       "repeat": false
     },
     {
@@ -446,7 +446,7 @@
       "done": "결말은 이렇게 쓸래. '작은 꼬리 영웅이 숲에 아침을 돌려주었다.' 헤헤, 이건 감사의 주문서야.",
       "goal": { "type": "elite", "map": "forest", "mob": "hydrasnake", "named": "빛나는 눈의 세머리 뱀", "n": 1 },
       "req": { "lv": 40, "quest": "sq_lumi_snakes" },
-      "reward": { "xp": 14050, "gold": 1090, "items": [["sc_xp", 1], ["stone", 1]] },
+      "reward": { "xp": 14050, "gold": 1090, "items": [["sc_xp", 1], ["fd_veg", 1]] },
       "repeat": false
     },
     {
@@ -457,7 +457,7 @@
       "done": "좋은 광맥이었군. 망치 소리가 다르겠어.",
       "goal": { "type": "collect", "item": "m_o2", "n": 6 },
       "req": { "lv": 45, "quest": null },
-      "reward": { "xp": 14050, "gold": 1050, "items": [["stone", 1]] },
+      "reward": { "xp": 14050, "gold": 1050, "items": [["cafe_tea", 1]] },
       "repeat": false
     },
     {
@@ -490,7 +490,7 @@
       "done": "치치가 종을 한 번 더 울렸다고요? 기뻐서 그런 거예요!",
       "goal": { "type": "talk", "npc": "trail_clock" },
       "req": { "lv": 62, "quest": "sq_moka_rats" },
-      "reward": { "xp": 27480, "gold": 1270, "items": [["cafe_scone", 3], ["recall", 1]] },
+      "reward": { "xp": 27480, "gold": 1270, "items": [["cafe_scone", 3], ["fd_veg", 1]] },
       "repeat": false
     },
     {
@@ -523,7 +523,7 @@
       "done": "「작은 꼬리와 정글의 앙코르」 완성! 쥬쥬식당에서 초연할게. 이건 출연료!",
       "goal": { "type": "elite", "map": "jungle", "n": 3 },
       "req": { "lv": 84, "quest": "sq_piri_monkeys" },
-      "reward": { "xp": 160530, "gold": 2200, "items": [["stone", 2], ["sc_atk", 1]] },
+      "reward": { "xp": 160530, "gold": 2200, "items": [["uncurse", 2], ["sc_atk", 1]] },
       "repeat": false
     },
     {
@@ -534,7 +534,7 @@
       "done": "콸콸! 물이 다시 흐른다! 마을이 반짝반짝해지겠어.",
       "goal": { "type": "kill", "mob": "leechmaw", "n": 12 },
       "req": { "lv": 82, "quest": null },
-      "reward": { "xp": 107900, "gold": 1860, "items": [["hp_l", 2], ["stone", 1]] },
+      "reward": { "xp": 107900, "gold": 1860, "items": [["el_spd", 2], ["stone", 1]] },
       "repeat": false
     },
     {
@@ -556,7 +556,7 @@
       "done": "간식 냄새가 나는 영웅님이다! 펫들이 졸졸 따라다니겠어요.",
       "goal": { "type": "kill", "mob": "bearmaw", "n": 10 },
       "req": { "lv": 98, "quest": null },
-      "reward": { "xp": 263160, "gold": 2260, "items": [["hp_l", 3], ["feather", 1]] },
+      "reward": { "xp": 263160, "gold": 2260, "items": [["cafe_tea", 3], ["feather", 1]] },
       "repeat": false
     },
     {
@@ -567,7 +567,7 @@
       "done": "이제 찌만 보면 되겠군. 허허, 고맙다.",
       "goal": { "type": "kill", "mob": "eyegull", "n": 12 },
       "req": { "lv": 108, "quest": null },
-      "reward": { "xp": 369050, "gold": 2440, "items": [["hp_l", 3], ["fish_l", 1]] },
+      "reward": { "xp": 369050, "gold": 2440, "items": [["sc_def", 2], ["fish_l", 1]] },
       "repeat": false
     },
     {
@@ -589,7 +589,7 @@
       "done": "물동이를 든 아이들이 웃으며 돌아왔어. 고마워.",
       "goal": { "type": "kill", "mob": "cactushog", "n": 12 },
       "req": { "lv": 124, "quest": null },
-      "reward": { "xp": 601980, "gold": 2790, "items": [["hp_l", 3], ["mp_l", 2]] },
+      "reward": { "xp": 601980, "gold": 2790, "items": [["fd_honeybread", 3], ["mp_l", 2]] },
       "repeat": false
     },
     {
@@ -600,7 +600,7 @@
       "done": "신호탄을 올렸어! 하늘의 동료들도 기뻐할 거야. 이건 피난민들이 모은 정성이야.",
       "goal": { "type": "fb", "map": "oasis", "n": 1 },
       "req": { "lv": 126, "quest": "sq_noeul_hogs" },
-      "reward": { "xp": 1258160, "gold": 4010, "items": [["stone", 3], ["uncurse", 1]] },
+      "reward": { "xp": 1258160, "gold": 4010, "items": [["fd_honeycake", 3], ["uncurse", 1]] },
       "repeat": false
     },
     {
@@ -633,7 +633,7 @@
       "done": "…해냈구나. 내 스승님께 받은 스킬 강화석이다. 이제 네 차례다.",
       "goal": { "type": "kill", "mob": "mistiger", "n": 1 },
       "req": { "lv": 136, "quest": "sq_panpan_cranes" },
-      "reward": { "xp": 1898030, "gold": 4770, "items": [["ske_stone", 1], ["stone", 3]] },
+      "reward": { "xp": 1898030, "gold": 4770, "items": [["ske_stone", 1], ["uncurse", 2]] },
       "repeat": false
     },
     {
@@ -644,7 +644,7 @@
       "done": "현상금 지급 완료! 다음 의뢰도 미미가 골라 둘게요.",
       "goal": { "type": "kill", "mob": "ribvulture_gold", "n": 12 },
       "req": { "lv": 128, "quest": null },
-      "reward": { "xp": 656960, "gold": 2880, "items": [["hp_l", 3], ["stone", 2]] },
+      "reward": { "xp": 656960, "gold": 2880, "items": [["el_spd", 2], ["stone", 2]] },
       "repeat": false
     },
     {
@@ -666,7 +666,7 @@
       "done": "흥미롭군! 나머지 절반은 정말 없어. 기록할 맛이 나는구먼.",
       "goal": { "type": "kill", "mob": "horsehalf", "n": 12 },
       "req": { "lv": 128, "quest": null },
-      "reward": { "xp": 656960, "gold": 2880, "items": [["hp_l", 3], ["mp_l", 2]] },
+      "reward": { "xp": 656960, "gold": 2880, "items": [["el_all", 2], ["mp_l", 2]] },
       "repeat": false
     },
     {
@@ -677,7 +677,7 @@
       "done": "완벽한 기록일세! 학계가 뒤집히겠어. 이건 연구비에서 떼어 낸 보상이네.",
       "goal": { "type": "elite", "map": "abyss", "n": 5 },
       "req": { "lv": 136, "quest": "sq_mong_horses" },
-      "reward": { "xp": 1035290, "gold": 3520, "items": [["stone", 3], ["uncurse", 1]] },
+      "reward": { "xp": 1035290, "gold": 3520, "items": [["fd_feast", 3], ["uncurse", 1]] },
       "repeat": false
     },
     {
@@ -722,7 +722,7 @@
       "done": "잘 보게. 잎맥을 세 번 꼬고, 모닥불에 살짝 그을려 냄새를 가두는 거야. 이게 단풍 부적일세. 이건 자네 몫이야. 가슴에 달고 다니면 얼어붙은 숨결이 덜 닿을 게야.",
       "goal": { "type": "collect", "item": "m_h5", "n": 8 },
       "req": { "lv": 170, "quest": "sq_bas_roses" },
-      "reward": { "xp": 1403260, "gold": 3800, "items": [["el_def", 2], ["stone", 2]] },
+      "reward": { "xp": 1403260, "gold": 3800, "items": [["el_def", 2], ["el_xp", 2]] },
       "repeat": false
     },
     {
@@ -1015,7 +1015,7 @@
       "hint": "산호 해안의 정예 호초롱",
       "goal": { "type": "elite", "n": 1, "map": "coast", "mob": "coralturtle", "named": "등불을 삼킨 호초롱" },
       "req": { "lv": 118, "quest": "sq_noeul_stone" },
-      "reward": { "xp": 179194, "gold": 3540, "items": [["stone", 2]] },
+      "reward": { "xp": 179194, "gold": 3540, "items": [["sc_def", 2]] },
       "repeat": false
     },
     {
@@ -1175,7 +1175,7 @@
       "hint": "단풍 왕도의 정예 녹사르",
       "goal": { "type": "elite", "n": 1, "map": "maple", "mob": "rotstag", "named": "마지막 장을 깔고 앉은 사슴왕" },
       "req": { "lv": 181, "quest": "sq_borum_ink" },
-      "reward": { "xp": 553458, "gold": 5430, "items": [["stone", 2]] },
+      "reward": { "xp": 553458, "gold": 5430, "items": [["fd_honeybread", 2]] },
       "repeat": false
     },
     {
@@ -1264,7 +1264,7 @@
       "hint": "먹빛 호수 갈대 안개의 정예 매화디",
       "goal": { "type": "elite", "n": 1, "map": "inklake", "mob": "spiderhand_blood", "named": "등잔을 쥔 매화 거미" },
       "req": { "lv": 174, "quest": "sq_yeoul_oil" },
-      "reward": { "xp": 530815, "gold": 5220, "items": [["stone", 2]] },
+      "reward": { "xp": 530815, "gold": 5220, "items": [["el_all", 2]] },
       "repeat": false
     },
     {
@@ -1595,7 +1595,7 @@
       "hint": "지하묘지 입구의 탁본쟁이 오로",
       "goal": { "type": "kill", "mob": "bonehound", "n": 10 },
       "req": { "lv": 56, "quest": "sq_crypt_ledger_1" },
-      "reward": { "xp": 9000, "gold": 850, "items": [["mp_m",4],["stone",1]] },
+      "reward": { "xp": 9000, "gold": 850, "items": [["mp_m", 4], ["fd_corn", 1]] },
       "repeat": false
     },
     {
@@ -1625,7 +1625,7 @@
       "hint": "하수도 입구의 물때지기 토룩",
       "goal": { "type": "kill", "mob": "crabskull", "n": 10 },
       "req": { "lv": 96, "quest": "sq_sewer_ebb_1" },
-      "reward": { "xp": 28000, "gold": 2500, "items": [["mp_l",3],["stone",2]] },
+      "reward": { "xp": 28000, "gold": 2500, "items": [["mp_l", 3], ["fd_cheese", 2]] },
       "repeat": false
     },
     {
@@ -1655,7 +1655,7 @@
       "hint": "피의 심연 입구의 마지막 등불지기 유리",
       "goal": { "type": "kill", "mob": "lionhand", "n": 12 },
       "req": { "lv": 140, "quest": "sq_abyss_wick_1" },
-      "reward": { "xp": 95000, "gold": 4300, "items": [["ske_stone",2],["stone",3]] },
+      "reward": { "xp": 95000, "gold": 4300, "items": [["ske_stone", 2], ["el_spd", 2]] },
       "repeat": false
     },
     {
@@ -1675,7 +1675,7 @@
       "hint": "수정 동굴 끝자락 모닥불의 광부 돌이",
       "goal": { "type": "kill", "mob": "prismmole", "n": 8 },
       "req": { "lv": 96, "quest": null },
-      "reward": { "xp": 55000, "gold": 2900, "items": [["hp_l", 4], ["stone", 1]] },
+      "reward": { "xp": 55000, "gold": 2900, "items": [["fd_herbtea", 3], ["stone", 1]] },
       "repeat": false
     },
     {
@@ -1725,7 +1725,7 @@
       "hint": "정글 해안도로 모닥불의 정비공 볼트",
       "goal": { "type": "elite", "map": "jungle", "mob": "orchidmantis", "n": 1 },
       "req": { "lv": 92, "quest": "sq_jungle_lamp_2" },
-      "reward": { "xp": 52000, "gold": 3000, "items": [["stone", 2], ["hp_l", 5]], "title": "덩굴 길잡이" },
+      "reward": { "xp": 52000, "gold": 3000, "items": [["sc_def", 2], ["hp_l", 5]], "title": "덩굴 길잡이" },
       "repeat": false
     },
     {
@@ -1735,7 +1735,7 @@
       "hint": "산호 해안 모닥불의 해녀 산호",
       "goal": { "type": "kill", "mob": "coralturtle", "n": 8 },
       "req": { "lv": 102, "quest": null },
-      "reward": { "xp": 58000, "gold": 3000, "items": [["hp_l", 4], ["stone", 1]] },
+      "reward": { "xp": 58000, "gold": 3000, "items": [["fd_feast", 3], ["stone", 1]] },
       "repeat": false
     },
     {
@@ -1775,7 +1775,7 @@
       "hint": "모래바람 오아시스 모닥불의 낙타 상인 모래",
       "goal": { "type": "talk", "npc": "oasis_trader" },
       "req": { "lv": 114, "quest": "sq_oasis_well_1" },
-      "reward": { "xp": 75000, "gold": 3800, "items": [["recall", 2], ["stone", 1]] },
+      "reward": { "xp": 75000, "gold": 3800, "items": [["el_xp", 2], ["stone", 1]] },
       "repeat": false
     },
     {
@@ -1821,7 +1821,7 @@
       "hint": "네온 시티 모닥불의 전차 기사 철로",
       "goal": { "type": "elite", "map": "city", "mob": "catsplit", "n": 1 },
       "req": { "lv": 66, "quest": "sq_city_tram_2" },
-      "reward": { "xp": 15500, "gold": 1950, "items": [["stone", 1], ["el_spd", 1]], "title": "끊긴 선로의 기사" },
+      "reward": { "xp": 15500, "gold": 1950, "items": [["cafe_pie", 1], ["el_spd", 1]], "title": "끊긴 선로의 기사" },
       "repeat": false
     },
     {
@@ -2002,6 +2002,114 @@
       "goal": { "type": "elite", "map": "maple", "mob": "crowscare_frost", "n": 1 },
       "req": { "lv": 188, "quest": "sq_maple_road_2" },
       "reward": { "xp": 650000, "gold": 5900, "items": [["stone_b", 1], ["ske_stone", 1]], "title": "단풍길 파수꾼" },
+      "repeat": false
+    },
+    {
+      "id": "sq_meadow_bloom_1",
+      "giver": "meadow_florist",
+      "title": "꽃밭의 얼음 개구리",
+      "text": "이 초원은 원래 봄마다 꽃이 한꺼번에 피던 곳이었어. 요즘은 서리 낀 배불뚝이 개구리가 꽃뿌리를 얼려 버려. 여덟 마리만 잡아 줘.",
+      "done": "꽃뿌리가 녹겠네. 이 들판은 꽃이 먼저고 길은 나중이었단다. 받아 두렴.",
+      "hint": "초원 모닥불의 꽃지기 달래",
+      "goal": { "type": "kill", "mob": "gutfrog_frost", "n": 8 },
+      "req": { "lv": 13, "quest": null },
+      "reward": { "xp": 1400, "gold": 450, "items": [["cafe_tea", 2], ["fd_rice", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_meadow_bloom_2",
+      "giver": "meadow_florist",
+      "title": "울타리의 오래된 약속",
+      "text": "울타리지기 마루가 이 꽃밭 울타리를 세운 사연을 안대. 풀밭에 왜 울타리가 서 있는지 물어봐 줘.",
+      "done": "마루가 그러던가. 울타리는 가두려던 게 아니라 꽃씨를 지키려던 거라고. 고맙구나.",
+      "hint": "초원 길목의 울타리지기 마루",
+      "goal": { "type": "talk", "npc": "trail_fence" },
+      "req": { "lv": 17, "quest": "sq_meadow_bloom_1" },
+      "reward": { "xp": 1800, "gold": 550, "items": [["sc_atk", 1], ["cafe_scone", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_meadow_bloom_3",
+      "giver": "meadow_florist",
+      "title": "꽃밭을 노리는 까마귀",
+      "text": "눈알까마귀가 꽃 핀 자리만 골라 쪼아 먹어. 꽃씨가 마르면 이 초원의 봄이 끝나. 열두 마리를 쫓아 줘.",
+      "done": "이제 꽃씨가 남겠어. 이 들판의 봄은 네가 지켰다. 이름을 붙여 주마.",
+      "hint": "초원 모닥불의 꽃지기 달래",
+      "goal": { "type": "kill", "mob": "eyecrow", "n": 12 },
+      "req": { "lv": 21, "quest": "sq_meadow_bloom_2" },
+      "reward": { "xp": 2600, "gold": 700, "items": [["el_spd", 1], ["cafe_pie", 2]], "title": "꽃밭 지킴이" },
+      "repeat": false
+    },
+    {
+      "id": "sq_forest_resin_1",
+      "giver": "forest_herbalist",
+      "title": "갉아 먹힌 약초 뿌리",
+      "text": "이 숲 약초는 오래된 나무 밑에서만 자라. 그런데 갉아먹는 오소리가 뿌리를 파 먹고 있어. 열두 마리를 쫓아 줘.",
+      "done": "약초 밭이 숨을 돌리겠네. 이 숲은 약초가 먼저 살던 곳이야. 사례를 받게.",
+      "hint": "숲 모닥불의 약초꾼 쑥",
+      "goal": { "type": "kill", "mob": "gnawbadger", "n": 12 },
+      "req": { "lv": 41, "quest": null },
+      "reward": { "xp": 15000, "gold": 1200, "items": [["fd_herbtea", 2], ["sc_def", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_forest_resin_2",
+      "giver": "forest_herbalist",
+      "title": "수액이 멈춘 이유",
+      "text": "수액지기 느티는 이 숲 나무가 왜 점점 수액을 아끼는지 알고 있을 거야. 가서 물어봐 줘.",
+      "done": "느티가 그렇게 말했나. 숲이 사냥꾼 발소리에 겁을 먹은 거라고. 알겠네, 고맙네.",
+      "hint": "숲 길목의 수액지기 느티",
+      "goal": { "type": "talk", "npc": "trail_sap" },
+      "req": { "lv": 44, "quest": "sq_forest_resin_1" },
+      "reward": { "xp": 17000, "gold": 1350, "items": [["uncurse", 1], ["fd_veg", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_forest_resin_3",
+      "giver": "forest_herbalist",
+      "title": "나방얼굴의 가루",
+      "text": "나방얼굴이 날리는 가루가 약초 꽃을 시들게 해. 여덟 마리만 잡으면 가루가 가라앉을 거야.",
+      "done": "가루가 가라앉는군. 숲의 약초는 사람의 손과 숲의 숨이 같이 키운다네. 이걸 받게.",
+      "hint": "숲 모닥불의 약초꾼 쑥",
+      "goal": { "type": "kill", "mob": "mothface", "n": 8 },
+      "req": { "lv": 47, "quest": "sq_forest_resin_2" },
+      "reward": { "xp": 21000, "gold": 1500, "items": [["el_atk", 1], ["fd_butter", 2]], "title": "숲의 약초지기" },
+      "repeat": false
+    },
+    {
+      "id": "sq_jungle_root_1",
+      "giver": "jungle_botanist",
+      "title": "갉아 먹힌 난초 밭",
+      "text": "이 정글 난초는 옛 탐험대가 심었다고 해. 그런데 알낳이 새끼들이 난초 밭을 짓밟아. 열네 마리만 쫓아 줘.",
+      "done": "난초가 다시 필 거야. 이 정글의 꽃도 누군가의 기록이거든. 받아 둬.",
+      "hint": "정글 모닥불의 식물학자 난초",
+      "goal": { "type": "kill", "mob": "dartbrood", "n": 14 },
+      "req": { "lv": 94, "quest": null },
+      "reward": { "xp": 48000, "gold": 2800, "items": [["fish_jcat", 2], ["sc_xp", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_jungle_root_2",
+      "giver": "jungle_botanist",
+      "title": "기계공의 오래된 지도",
+      "text": "정비공 볼트은 옛 탐험대의 지도를 가지고 있대. 이 정글의 길이 왜 갑자기 닫혔는지 물어봐 줘.",
+      "done": "그렇군. 정글이 길을 삼킨 게 아니라 탐험대가 스스로 길을 지운 거였어. 고맙네.",
+      "hint": "정글 해안도로 모닥불의 정비공 볼트",
+      "goal": { "type": "talk", "npc": "jungle_mechanic" },
+      "req": { "lv": 97, "quest": "sq_jungle_root_1" },
+      "reward": { "xp": 52000, "gold": 3000, "items": [["uncurse", 2], ["el_def", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_jungle_root_3",
+      "giver": "jungle_botanist",
+      "title": "강바닥의 악어",
+      "text": "통나무악어가 옛 탐험대의 표지석을 깔고 앉았어. 여섯 마리를 쫓아 표지석을 드러내 줘.",
+      "done": "표지석이 보이는군. 이 정글에서 길을 아는 건 이제 자네뿐이야. 이름을 남기겠네.",
+      "hint": "정글 모닥불의 식물학자 난초",
+      "goal": { "type": "kill", "mob": "loggator", "n": 6 },
+      "req": { "lv": 100, "quest": "sq_jungle_root_2" },
+      "reward": { "xp": 60000, "gold": 3400, "items": [["el_all", 1], ["fish_bream", 2]], "title": "정글 기록자" },
       "repeat": false
     }
   ]

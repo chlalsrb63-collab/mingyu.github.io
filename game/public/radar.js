@@ -22,6 +22,7 @@
 import * as Art from "./art.js";
 import * as NPC from "./npclife.js";
 import { icon } from "./uiicons.js";
+import * as SideQ from "./sidequests.js";
 import { spent as nodeSpent } from "./gather.js";
 import { mapChart, buildingDoors, shortestRoute, questMaps, nextGate, chartBase, paintChart, mapDetail, unlockState } from "./worldmap.js";
 
@@ -328,6 +329,7 @@ export function draw(t) {
     if (!inView(x, y)) continue;
     const [gl, col] = roleOf(n);
     if (n.role === "talk") dotAt(g, x, y, "#ffe08a", 3); else blit(g, spr(gl, col), x, y - 3);
+    if (SideQ.markOf(n, G.self)?.[0] === "!") dotAt(g, x + 4, y - 5, "#5aaaff", 2);   // a side quest to take here
   }
   if (!hide.has("npc")) for (const n of NPC.list()) {
     if (n.onPost && n.post && servicePost(n.post)) continue;

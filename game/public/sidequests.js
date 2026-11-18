@@ -205,6 +205,11 @@ export function renderTalk(box, npc, s, say) {
   if (!shown && !box.querySelector(".ds")) box.append(el("p", "ds", "지금은 부탁할 일이 없습니다."));
 }
 
+/** Side quests the player can take right now (server state 1), closest to the player's level first. */
+export function available(s) {
+  const st = states(s);
+  return side().filter((q) => !q.mainChapter && st.get(q.id)?.st === 1).sort((a, b) => (b.req?.lv || 0) - (a.req?.lv || 0));
+}
 /** Entries for the quest window's list: the side quests under way (and ready to hand in). */
 export function listEntries(s, entry, group, chapters = false) {
   const st = states(s);
@@ -219,6 +224,13 @@ export function listEntries(s, entry, group, chapters = false) {
     const sub = v.st === 1 ? "새 의뢰" : v.st === 3 ? (q.goal.type === "deliver" ? "전하러 가기" : q.choice ? "대답하기" : "완료!") : v.st === 4 ? "완료" : `${Math.min(v.n, v.need)}/${v.need}`;
     entry(`sq:${q.id}`, `[${kindName(q)}] ${q.title}`, sub, v.st === 3 ? "done" : v.st === 4 ? "past" : "");
   }
+}
+/** The "받을 수 있는 의뢰" group (capped so the list stays short): where each giver stands is the sub line. */
+export function listAvailable(s, entry, group, cap = 8) {
+  const all = available(s);
+  if (!all.length) return;
+  group(`받을 수 있는 의뢰 (${all.length})`);
+  for (const q of all.slice(0, cap)) entry(`sq:${q.id}`, `[${kindName(q)}] ${q.title}`, `${q.giverMap} · ${q.giverName}`, "offer");
 }
 /** The quest window's detail for a side quest. */
 export function detail(det, id, s) {
@@ -235,7 +247,9 @@ export function detail(det, id, s) {
   steps(det, q, st);
   det.append(el("p", "ds", v.st === 3 ? `${q.turnInMap}의 ${q.turnInName}에게 ${turnIn(q) === q.giver ? "돌아가 " : "가서 "}${q.choice ? "대답하세요" : "완료하세요"}.`
     : q.mainChapter && q.goal.type === "kill" && v.st === 2 ? `${q.giverMap}에서 승선장을 찾아 구조에 나서세요.`
+    : v.st === 1 ? `${q.giverMap}의 ${q.giverName}에게 말을 걸어 의뢰를 받으세요.`
     : `의뢰인: ${q.giverName} (${q.giverMap})`));
+  if (v.st === 1 && !q.mainChapter) return;   // not taken yet: nothing to give up; [추적] is added by the window
   const action = q.mainChapter && v.st === 1 ? "take" : q.mainChapter && v.st === 3 ? "done" : "drop";
   const btns = el("div", "btns"), b = el("button", action === "drop" ? "btn" : "btn gold", { take: "수락", done: "완료", drop: "포기" }[action]);
   if (action !== "drop") b.disabled = C.G.near?.id !== q.giver;
