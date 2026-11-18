@@ -2,7 +2,7 @@
 // pixelfx (MIT, Patch + Hugo Duprez: https://github.com/patch-gg/pixelfx) draws pixel effects in code, so they stay
 // code-drawn art. Only the core and the effect files the table names (and what they import) are copied.
 //   node scripts/pfx-vendor.mjs [path to the pixelfx checkout, default ~/pixelfx]
-import { readFile, writeFile, mkdir, rm, copyFile, readdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rm, readdir } from "node:fs/promises";
 import { dirname, join, resolve, relative } from "node:path";
 import { homedir } from "node:os";
 import { existsSync } from "node:fs";
@@ -17,6 +17,7 @@ const table = (await Promise.all(tables.map((f) => readFile(join(GAME, "public",
 const ids = [...new Set([...table.matchAll(/"([a-z]+\/[a-z0-9-]+)"/g)].map((m) => m[1]))].filter((id) => existsSync(join(SRC, "fx", id + ".js")));
 if (!ids.length) throw new Error("no effect ids found in public/skillpfx*.js");
 
+const lf = (text) => text.replace(/\r\n/g, "\n");   // the repo stores LF (a pixelfx checkout on Windows may hold CRLF)
 const seen = new Set();
 async function take(file) {
   if (seen.has(file)) return;
@@ -31,9 +32,9 @@ await rm(OUT, { recursive: true, force: true });
 for (const file of seen) {
   const to = join(OUT, relative(SRC, file));
   await mkdir(dirname(to), { recursive: true });
-  await copyFile(file, to);
+  await writeFile(to, lf(await readFile(file, "utf8")));
 }
 const root = resolve(SRC, "..");
-await copyFile(join(root, "LICENSE"), join(OUT, "LICENSE"));
+await writeFile(join(OUT, "LICENSE"), lf(await readFile(join(root, "LICENSE"), "utf8")));
 await writeFile(join(OUT, "README.md"), `Vendored from pixelfx (MIT, see LICENSE): https://github.com/patch-gg/pixelfx\nCopied by game/scripts/pfx-vendor.mjs for the effects in public/skillpfx*.js. Do not edit here: change the table and re-run the script.\n`);
 console.log(`pfx: ${ids.length} effects, ${seen.size} files → public/pfx/`);
