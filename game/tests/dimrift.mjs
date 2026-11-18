@@ -98,6 +98,32 @@ const THEMES = Object.keys(X.DIM_THEMES);
   }
 }
 
+// ───────────── Hanok floor plans
+{
+  for (let floor = 1; floor <= D.floors; floor++) {
+    const plans = new Set();
+    for (let s = 1; s <= 16; s++) {
+      const seed = Math.imul(s, 40503), theme = X.dimTheme(seed, floor);
+      const cfg = { seed, theme, lv: 20, floor, hanok: true };
+      const m = X.dimension(cfg);
+      assert.equal(m.theme, "interior");
+      assert.equal(m.style, "hanok_raid");
+      assert.ok(m.dim.loops > 0 && m.dim.path >= D.path, `floor ${floor}, seed ${seed}: loop and long route`);
+      assert.ok(m.o.some((r) => r.includes("+")) && m.o.some((r) => r.includes("_")), "lattice and cutaway walls");
+      assert.ok(m.g.some((r) => r.includes("e")) && m.g.some((r) => r.includes("l")), "ondol and maru");
+      for (const [x, y] of [m.dim.door, ...m.dim.rooms.map((r) => [r.cx, r.cy]), ...m.dim.spawns.map((sp) => sp.at)]) {
+        assert.ok(m.reach[y * m.w + x], `floor ${floor}, seed ${seed}: ${x},${y} reachable`);
+      }
+      if (s === 1) {
+        const same = X.dimension(cfg);
+        assert.deepEqual([same.g, same.o, same.dim.spawns], [m.g, m.o, m.dim.spawns]);
+      }
+      plans.add(m.g.join(""));
+    }
+    assert.equal(plans.size, 16, "the rooms and corridors vary with the seed");
+  }
+}
+
 // ───────────── helpers for a world
 let now;
 function world() {
@@ -670,6 +696,21 @@ function quickClear(S, _dim, shares) {
   for (const pid of pids) assert.equal(dim.got[pid], 1, pid + " opened the chest");
   return Object.fromEntries(pids.map((pid) => [pid, last(pid, "dr")]));
 }
+{
+  const S = world(), a = hero(S, "ha", "달채"), b = hero(S, "hb", "안채");
+  const group = party(S, ["ha", "hb"]);
+  assert.ok(act(S, "ha", { t: "dim_open", hanok: true }).ok);
+  step(S);
+  assert.equal(last("hb", "rc")[8], 1, "the party is invited to Hanok");
+  assert.ok(act(S, "hb", { t: "dim_ready", id: group.rc.id, ok: 1 }).ok);
+  assert.equal(a.map, b.map);
+  assert.equal(S.dims[a.map].map.style, "hanok_raid");
+  step(S);
+  assert.equal(last("ha", "dim")[16], 1);
+  quickClear(S, S.dims[a.map], { ha: 1, hb: 1 });
+  assert.equal(lastDim.map.style, "hanok_raid", "the route remains Hanok to floor 3");
+}
+
 const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: "dim_leave" }).ok); for (let i = 0; i < 205; i++) step(S); };
 {
   // three floors, each tougher than the one above it; floor 1 is the rift as it was

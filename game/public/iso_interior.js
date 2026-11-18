@@ -45,7 +45,6 @@ const WH = 46, STUB_H = 7;
 
 const STYLE = {
   cafe: { paper: "#e4cc9c", paper2: "#d4b682", pat: "stripe", wood: "#8a5634", curtain: "#6f9a6a", banner: "#a8443c", trim: "#c89a5a" },
-  hall: { paper: "#4a6650", paper2: "#3e5844", pat: "damask", dot: "#c8a85a", wood: "#6e4a30", curtain: "#a8343c", banner: "#a8343c", trim: "#d8b050" },
   inn: { paper: "#c49c84", paper2: "#b48a74", pat: "flower", dot: "#efe0c4", wood: "#7a4c2e", curtain: "#4a6a9a", banner: "#4a6a9a", trim: "#c8955a" },
   library: { paper: "#5e5070", paper2: "#524462", pat: "damask", dot: "#c8b47a", wood: "#5e3c28", curtain: "#7a3a5a", banner: "#3a5a8a", trim: "#c8a860" },
   // a house of one's own: cream stripes over honey wood, or mint stripes over pale wood
@@ -58,13 +57,16 @@ const STYLE = {
   tavern: { paper: "#e6d2a8", paper2: "#d8c094", pat: "timber", wood: "#6e4228", curtain: "#a8443c", banner: "#a8443c", trim: "#d8a050", cush: "#a8443c" },
   shop: { paper: "#ecdcaa", paper2: "#dcc488", pat: "stripe", wood: "#8a5a34", curtain: "#d8843a", banner: "#d8843a", trim: "#c89a5a", cush: "#d8843a" },
   boutique: { paper: "#f4d6de", paper2: "#e8c0cc", pat: "stripe", wood: "#b88a7a", curtain: "#e87a9a", banner: "#e87a9a", trim: "#e8c890", cush: "#e8a0b8" },
-  dojo: { paper: "#efe6cc", paper2: "#d8cca8", pat: "shoji", wood: "#7a5434", curtain: "#3a4a6a", banner: "#b83a34", trim: "#c8a050", cush: "#3a4a6a" },
   lab: { paper: "#a8c8b0", paper2: "#94b8a0", pat: "tile", wood: "#5a4a3a", curtain: "#7a5a9a", banner: "#7a5a9a", trim: "#b8a060", cush: "#7a5a9a" },
   lobby: { paper: "#e0d0a8", paper2: "#cfbc90", pat: "flower", dot: "#f4ead0", wood: "#7a5a3a", curtain: "#5a8a6a", banner: "#4a7aa8", trim: "#c8a060", cush: "#5a8a6a" },
   // 동동아파트's shift hall: pale striped wallpaper over a grey-green dado; `b`/`m` are plaster partitions, `]` wheelie bins, `n` stairs
   apt: { paper: "#e8e0cc", paper2: "#d8ceb6", pat: "stripe", wood: "#7a8a7a", curtain: "#6a8aa8", banner: "#4a7aa8", trim: "#c8b088", cush: "#6a8aa8", dado: "#9aa894" },
 };
-const styleOf = (m) => STYLE[m.style] || STYLE.cafe;
+const HANOK_ROOM = {
+  paper: "#eee2c6", paper2: "#d9caa8", pat: "hanji", wood: "#7d4636",
+  curtain: "#3f635c", banner: "#974a37", trim: "#b48550", cush: "#8a4d41",
+};
+const styleOf = (m) => m.style === "hanok_raid" || m.style === "dojo" || m.style === "hall" ? HANOK_ROOM : STYLE[m.style] || STYLE.cafe;
 
 /** Packed colour of a hex, memoised; `k` 2 = the face away from the light (right/+x faces). */
 const FC = new Map();
@@ -336,6 +338,7 @@ export function bakeRoom(m) {
   const darkFloor = C("#3a2418");
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     const ch = m.g[y][x], o = obj(x, y);
+    if (ch === "W") continue;
     const base = (oy + (x + y) * 8) * W + ox + (x - y) * 16;
     const wallN = isWall(x, y - 1), wallW = isWall(x - 1, y);
     const shN = stands(x, y - 1), shW = stands(x - 1, y), shNW = stands(x - 1, y - 1);
@@ -347,7 +350,10 @@ export function bakeRoom(m) {
         // (a house's rugs lie over its own floor, which shows round a round rug's edge)
         const fl = "quy".includes(ch) && m.hf ? m.hf : ch;
         const plank = fl === "l" ? planks(WALNUT, A, B, true) : fl === "x" ? flags(A, B) : fl === "h" ? herring(A, B) : planks(PLANK, A, B, false);
-        if (ch === "x") c = flags(A, B);
+        if (S === HANOK_ROOM && ch === "e") {
+          const seam = (A & 31) === 0 || (B & 31) === 0;
+          c = C(seam ? "#963f31" : ((A >> 5) + (B >> 5)) % 2 === 0 ? "#d1ab78" : "#cba170");
+        } else if (ch === "x") c = flags(A, B);
         else if (ch === "h") c = herring(A, B);
         else if (ch === "e") c = matTex(A, B);
         else if (ch === "n") c = stairTex(A, B);
@@ -380,8 +386,18 @@ function hexOfPx(u) {
 
 // ───────────────────────────── walls ─────────────────────────────
 
+function hanjiSkin(S, u, z, k, window = false) {
+  const bay = u & 15;
+  if (bay < 2 || bay > 13 || z >= WH - 5 || z < 4) return F(z === WH - 5 || bay === 1 ? "#aa674c" : S.wood, k);
+  if (z > WH - 9) return F(S.paper2, k);
+  if (bay === 2 || bay === 13 || z === 4 || z === WH - 9) return F(S.curtain, k);
+  if (bay % 4 === 1 || z % 6 === 0) return F(window ? "#baab88" : "#b1a080", k);
+  return F(window ? "#fff0cc" : S.paper, k);
+}
+
 /** The room side of a back wall, by texel `u` along the wall (world) and height z. */
 function wallSkin(S, u, z, k) {
+  if (S === HANOK_ROOM) return hanjiSkin(S, u, z, k);
   if (z < 2) return F("#4a2c1e", k);
   if (z === 2) return F("#9a6440", k);
   if (z < 17) {
@@ -457,6 +473,7 @@ function cutSkin(s, z, k) {
 
 /** What hangs on a wall tile, painted over its skin; `s` 0…15 left→right as seen. */
 function wallDeco(S, ch, s, z, k, x, y, join) {
+  if (S === HANOK_ROOM && ch === "+") return hanjiSkin(S, s, z, k, true);
   if (ch === "+") {
     // a tall window: curtains, a wooden frame, four panes of daylight, a sill
     if ((s < 2 || s > 13) && z >= 21 && z <= 42) return F((s + (z >> 1)) % 3 === 0 ? shade(S.curtain, 0.78) : s === 0 || s === 15 ? shade(S.curtain, 0.88) : S.curtain, k);
@@ -583,6 +600,13 @@ function stubPiece(m, x, y) {
   const o = (i, j) => (i < 0 || j < 0 || i >= m.w || j >= m.h ? null : m.o[j][i]);
   const out = (i, j) => o(i, j) === null;
   const open = (i, j) => { const c = o(i, j); return c !== null && c !== STUB && !WALLS.includes(c) && (j === m.h - 1 || i === m.w - 1); };
+  if (m.style === "hanok_raid") {
+    const M = new Model(10);
+    const edge = (f, s, z, k) => f === "top" ? C("#ae7a56") : F(z < 3 ? "#8d8070" : "#76503b", k);
+    if (m.g[y - 1][x] !== "W") M.box(0, 0, 0, 16, 5, 7, "#aa896a", edge);
+    if (m.g[y][x - 1] !== "W") M.box(0, 0, 0, 5, 16, 7, "#aa896a", edge);
+    return M.piece();
+  }
   // the bottom row runs along x, the right column along y
   const along = y === m.h - 1 && x < m.w - 1 ? "N" : "W";
   const M = new Model(30, along, 84);
@@ -895,6 +919,16 @@ function lantern(m, x, y) {
   M.box(4, 4, 30, 8, 8, 2, "#4a3e44");
   const [sx, sy] = M.scr(8, 8, 26);
   return M.piece({ glow: { x: sx, y: sy, r: 56, col: "#ffc070", k: 0.8, flick: 0.08 } });
+}
+
+function offeringTable() {
+  const M = new Model(24);
+  M.box(2, 4, 0, 12, 8, 3, "#9f6c48");
+  M.box(4, 5, 3, 8, 6, 4, "#713d32");
+  M.box(1, 3, 7, 14, 10, 2, "#a66444");
+  for (const u of [4, 12]) M.cyl(u, 8, 1.7, 9, 3, "#d5b08a");
+  M.cyl(8, 8, 2, 9, 5, "#527a72");
+  return M.piece();
 }
 
 function board(m, x, y) {
@@ -1361,7 +1395,7 @@ export function roomPiece(m, x, y) {
     case "#": p = fireplace(m, x, y); break;
     case "g": p = plant(m, x, y); break;
     case "*": p = lantern(m, x, y); break;
-    case "v": p = board(m, x, y); break;
+    case "v": p = m.style === "hanok_raid" ? offeringTable() : board(m, x, y); break;
     case "-": p = longTable(m, x, y); break;
     case "p": p = bed(m, x, y); break;
     case "w": p = barrel(m, x, y); break;

@@ -623,7 +623,34 @@ export function townProps() {
       const [x, y] = P(8, 8, 15); b.r(x - 2, y - 1, 3, 1, "#ff9a40");
     }),
   };
-  // washing on a line between two posts, in three frames of wind
+  // A bank-side timber frame holds the axle above the current.
+  TP.waterwheel = Array.from({ length: 12 }, (_, frame) => isoProp(3, 2, 76, (b, P, box, quad) => {
+    const axle = 19, radius = 17;
+    box(3, 7, 22, 24, 0, 4, ST[3], ST[1], ST[2]);
+    for (const y of [9, 22]) {
+      post(box, 8, y, 25);
+      post(box, 18, y, 23);
+    }
+    box(5, 5, 22, 25, 23, 27, "#ad8252", WOOD, WOOD_D);
+    box(10, 14, 42, 18, axle - 2, axle + 2, "#b18353", WOOD, WOOD_D);
+    const spin = frame * Math.PI / 48;
+    const rail = (a, angle, r) => P(a, 16 + Math.cos(angle) * r * 0.8, axle + Math.sin(angle) * r);
+    for (const a of [34, 41]) for (let i = 0; i < 8; i++) {
+      const angle = spin + i * Math.PI / 4, next = angle + Math.PI / 4;
+      quad([rail(a, angle, radius), rail(a, next, radius), rail(a, next, radius - 3), rail(a, angle, radius - 3)], a === 41 ? "#b98a55" : "#704631");
+      quad([rail(a, angle - 0.075, radius - 2), rail(a, angle + 0.075, radius - 2), P(a, 16, axle + 1), P(a, 16, axle - 1)], a === 41 ? "#a67546" : "#704631");
+      if (a === 41) quad([rail(34, angle, radius + 1), rail(41, angle, radius + 1), rail(41, angle, radius - 3), rail(34, angle, radius - 3)], Math.sin(angle) > 0 ? "#d6a567" : "#835539");
+    }
+    const [x, y] = P(42, 16, axle);
+    b.oval(x, y, 3, 3, "#80563f");
+    b.r(x - 1, y - 1, 2, 2, "#d6b583");
+    for (let i = 0; i < 4; i++) {
+      const age = (frame + i * 3) % 12;
+      const [sx, sy] = P(43, 18 + age * 0.7, 1 + Math.max(0, 3 - age * 0.55));
+      b.r(sx, sy, age > 5 ? 3 : 1, 1, age > 5 ? "#6fa7b3" : "#afd9d4");
+    }
+  }));
+  // Washing on a line between two posts, in three frames of wind.
   TP.laundry = [0, 1, 2].map((f) => isoProp(2, 1, 40, (b, P, box) => {
     post(box, 2, 8, 24); post(box, 30, 8, 24);
     const CL = ["#f6ecd2", "#8ab4f0", "#f078a8", "#9ad070", "#f0c040"];

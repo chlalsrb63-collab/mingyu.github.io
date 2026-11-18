@@ -17,7 +17,12 @@ function chorePool(job) {
     && (m.crops || []).every((c) => c[0] !== x || c[1] !== y);
   // weeds grow on the giver's plot and backyard (CHORE.weed tiles round them)
   const at = m.npcs.find((n) => n.id === JB.jb_ch_weed.npc), byFarm = (x, y) => !at || Math.max(Math.abs(at.x - x), Math.abs(at.y - y)) <= CHORE.weed;
-  if (job === "milk") { for (const b of m.big) if (b.t === "house" && ok(b.x + 1, b.y + 3)) out.push([b.x + 1, b.y + 3]); }
+  if (job === "milk") {
+    for (const b of m.big) {
+      const cottage = b.t === "house" || (b.t === "bld" && b.k === "hanok");
+      if (cottage && ok(b.x + 1, b.y + 3)) out.push([b.x + 1, b.y + 3]);
+    }
+  }
   else for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const g = m.g[y][x], o = m.o[y][x];
     if (job === "weed" ? g === "t" && ok(x, y) && byFarm(x, y)

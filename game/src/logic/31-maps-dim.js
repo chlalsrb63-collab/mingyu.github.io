@@ -110,6 +110,19 @@ const DIM_FLOORS = [
   { name: "수정 동굴", style: "caves", themes: ["cave"], rooms: [17, 20], loops: [3, 6], packs: 1.4 },
   { name: "핏빛 심연", style: "arena", themes: ["abyss"], rooms: [16, 19], loops: [4, 8], packs: 1.1 },
 ];
+const HANOK_FLOORS = [
+  { name: "달그림자 별채", rooms: [18, 21], loops: [3, 6], packs: 1.4, shapes: ["plain", "plain", "ell"], hallFloor: "l" },
+  { name: "겹살창 안채", rooms: [17, 20], loops: [3, 6], packs: 1.4, shapes: ["plain", "ell", "ell", "cross"], hallFloor: "l" },
+  { name: "붉은기둥 제례전", rooms: [17, 20], loops: [4, 7], packs: 1.1, shapes: ["plain", "plain", "cross"], hallFloor: "x" },
+];
+const HANOK_DRESS = {
+  guest: [["edge", "t", 0.2], ["edge", "g", 0.12]],
+  study: [["edge", "b", 0.32], ["edge", ">", 0.12]],
+  store: [["edge", "%", 0.24], ["clump", "p", 2, 2]],
+  shrine: [["altar", "v", "*"], ["edge", "*", 0.16]],
+};
+const dimFloorName = (floor, hanok) => (hanok ? HANOK_FLOORS : DIM_FLOORS)[floor - 1].name;
+
 /** Floor `n`'s look, from the run's seed. */
 const dimTheme = (seed, n) => { const t = DIM_FLOORS[clamp(n | 0, 1, DIM_FLOORS.length) - 1].themes; return t[((seed >>> 3) >>> 0) % t.length]; };
 /** Where the town's obelisk stands, its keeper, and where someone coming back from an instance lands (tiles). */
@@ -158,10 +171,14 @@ function dimension(cfg) {
 }
 function dimBuild(cfg, seed) {
   const box = { seed };
-  const W = DIM.w, H = DIM.h, lv = cfg.lv | 0 || 10, floor = clamp(cfg.floor | 0 || 1, 1, DIM_FLOORS.length), cc = DIM_FLOORS[floor - 1], style = cc.style;
-  const theme = DIM_THEMES[cfg.theme] ? cfg.theme : cc.themes[0], look = DIM_THEMES[theme];
+  const W = DIM.w, H = DIM.h, lv = cfg.lv | 0 || 10, floor = clamp(cfg.floor | 0 || 1, 1, DIM_FLOORS.length);
+  const hanok = cfg.hanok === true;
+  const cc = (hanok ? HANOK_FLOORS : DIM_FLOORS)[floor - 1], style = hanok ? "halls" : cc.style;
+  const theme = DIM_THEMES[cfg.theme] ? cfg.theme : DIM_FLOORS[floor - 1].themes[0];
+  const look = hanok ? { rooms: HANOK_DRESS } : DIM_THEMES[theme];
   const m = blank(cfg.id || "dim:0", `레이드던전 ${floor}단 · ${cc.name}`, W, H, "W");
-  m.theme = theme; m.bgm = "dim"; m.band = null; m.marks = [];
+  m.theme = hanok ? "interior" : theme; m.bgm = "dim"; m.band = null; m.marks = [];
+  if (hanok) m.style = "hanok_raid";
   const pick = (a) => a[ri(box, 0, a.length - 1)];
   // ── the grid; main rooms grow over a connected set of its cells
   const [GX, GY, CW, CH] = DIM.grid, NC = GX * GY;
@@ -255,7 +272,7 @@ function dimBuild(cfg, seed) {
     }
     const w = two < 0 ? ri(box, 10, CW - 2) : wide ? ri(box, 20, 2 * CW - 3) : ri(box, 9, CW - 3);
     const h = two < 0 ? ri(box, 9, CH - 2) : wide ? ri(box, 9, CH - 2) : ri(box, 16, 2 * CH - 3);
-    let shape = pick(two < 0 ? SHAPES : BIG);
+    let shape = pick(hanok ? cc.shapes : two < 0 ? SHAPES : BIG);
     if ((shape === "ring" && (w < 9 || h < 8)) || (shape === "cross" && (w < 9 || h < 8))) shape = "octagon";
     const x0 = ri(box, cx0 + 1, bx1 - w), y0 = ri(box, cy0 + 1, by1 - h);
     addRoom(cells, "room", shape, x0, y0, x0 + w - 1, y0 + h - 1);
@@ -296,7 +313,7 @@ function dimBuild(cfg, seed) {
   for (const [a, b] of links) {
     const A = rooms[a], B = rooms[b];
     if (style === "caves") tunnel(A, B, rnd(box) < 0.3 ? 2 : 3);
-    else if (style === "halls") line(A.cx, A.cy, B.cx, B.cy, rnd(box) < 0.25 ? 2 : 3, rnd(box) < 0.5);
+    else if (style === "halls") line(A.cx, A.cy, B.cx, B.cy, hanok ? 3 : rnd(box) < 0.25 ? 2 : 3, rnd(box) < 0.5);
   }
   // the field's loops: a ridge of rock along the shared side of two cells, broken by one gap (a chokepoint)
   if (style === "arena") for (const [a, b] of spare) {
@@ -364,7 +381,7 @@ function dimBuild(cfg, seed) {
     const [c, k] = pick(opts);
     free.splice(free.indexOf(c), 1);
     const [cx0, cy0, cx1, cy1] = cellBox(c), w = ri(box, 5, 8), h = ri(box, 5, 7), x0 = ri(box, cx0 + 2, cx1 - 1 - w), y0 = ri(box, cy0 + 2, cy1 - 1 - h);
-    const r = addRoom([c], v < nVault ? "vault" : "den", pick(["plain", "octagon", "round"]), x0, y0, x0 + w - 1, y0 + h - 1);
+    const r = addRoom([c], v < nVault ? "vault" : "den", hanok ? "plain" : pick(["plain", "octagon", "round"]), x0, y0, x0 + w - 1, y0 + h - 1);
     line(rooms[k].cx, rooms[k].cy, r.cx, r.cy, 2, rnd(box) < 0.5);
     r.from = k;
   }
@@ -444,7 +461,8 @@ function dimBuild(cfg, seed) {
     const t = tilesOf(k);
     if (style === "arena" && r.kind === "room") { STEP.blocks(k, t, ["W", ri(box, 1, 3)]); STEP.blocks(k, t, [look.pool, ri(box, 0, 2)]); }
     // the way in and the master's hall keep their floor clear: props along their walls only
-    const steps = r.kind === "start" || r.kind === "boss" ? look.rooms[types[0]].filter((s) => s[0] === "edge" || s[0] === "patch")
+    const steps = hanok && r.kind === "boss" ? HANOK_DRESS.shrine
+      : r.kind === "start" || r.kind === "boss" ? look.rooms[types[0]].filter((s) => s[0] === "edge" || s[0] === "patch")
       : r.kind === "vault" ? [["edge", pick(edgeChs), 0.35]] : look.rooms[r.rt];
     for (const s of steps) STEP[s[0]](k, tilesOf(k), s.slice(1));
   });
@@ -467,6 +485,22 @@ function dimBuild(cfg, seed) {
     }
   }
   for (const [x, y] of lost) m.g[y][x] = "W";
+  if (hanok) {
+    // Walls occupy already solid tiles. Only north and west faces stand tall.
+    for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
+      if (m.g[y][x] === "W") {
+        const back = m.g[y + 1][x] !== "W" || m.g[y][x + 1] !== "W";
+        const front = m.g[y - 1][x] !== "W" || m.g[y][x - 1] !== "W";
+        if (back) m.o[y][x] = (x + y + floor) % 5 === 0 ? "+" : "=";
+        else if (front) m.o[y][x] = "_";
+      } else {
+        const r = rooms[roomAt[y * W + x]], master = r && r.kind === "boss";
+        if (floor === DIM.floors && master && Math.abs(x - r.cx) <= 1) m.g[y][x] = "y";
+        else if (r && (r.rt === "guest" || r.rt === "study" || master)) m.g[y][x] = "e";
+        else m.g[y][x] = r ? "l" : cc.hallFloor;
+      }
+    }
+  }
   // ── who lives here
   const pool = dimPool(theme, lv);
   const tOf = (r) => dS[tileOf(r)] / Math.max(1, span);
@@ -519,7 +553,7 @@ function dimBuild(cfg, seed) {
     rooms: rooms.map(({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt }) => ({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt })),
     start: [st.cx, st.cy], boss: [bs.cx, bs.cy], bossRoom: bossK, startRoom: startK, door, dead, spawns, pool,
     bossK: dimBossKind(theme, lv, pool), path: dS[tileOf(bs)], elites, cap: DIM.cap, links: links.map(([a, b]) => [a, b]),
-    style, floor, loops: links.length - (rooms.filter((r) => r.kind !== "vault" && r.kind !== "den").length - 1),
+    style, floor, hanok, loops: links.length - (rooms.filter((r) => r.kind !== "vault" && r.kind !== "den").length - 1),
   };
   finalize(m);
   return m;

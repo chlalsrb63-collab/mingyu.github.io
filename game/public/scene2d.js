@@ -305,7 +305,7 @@ export function render(focusX, focusY, dt, t, snap) {
     if (o.s) {
       const st = o.s, sl = o.sl;
       let sp = st.sp, dx = st.dx, dy = st.dy;
-      if (st.frames) { const n = st.frames.length; sp = st.frames[((Math.floor(t / 420 + st.x / 37) % n) + n) % n]; }
+      if (st.frames) { const n = st.frames.length; sp = st.frames[((Math.floor(t / (st.frameMs || 420) + st.x / 37) % n) + n) % n]; }
       if (st.pot) {
         if (Math.floor(t / 380) % 3 === 0) sp = st.sp1;
         if (Math.random() < 0.18) parts.push({ x: st.x - 3 + Math.random() * 6, y: st.dy + 9, vx: 3 + Math.random() * 4, vy: -12 - Math.random() * 6, life: 1 + Math.random() * 0.6, color: Math.random() < 0.5 ? "#f4f0f8" : "#d8d4e4", g: -4, s: 2 });

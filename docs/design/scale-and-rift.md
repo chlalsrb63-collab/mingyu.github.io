@@ -259,6 +259,14 @@ Input `{seed, theme, lv, size}`; pure and deterministic via a seed box `rnd(box)
   from start; every spawn standable; boss-room has a >= 5x5 open core), size caps, 200 seeds x 4 themes build
   < 40 ms each (budget: one entry must not stall the room: `tick` alarm 100 ms).
 
+### D.2.1 달그림자 한옥
+
+균열지기의 **달그림자 한옥 입장**에서 선택하는 3단 레이드. 달그림자 별채 → 겹살창 안채 → 붉은기둥 제례전 순으로 진행한다. 파티 입장 준비, 정화 게이지, 하강의 문과 최종 보스 보상은 기존 레이드와 공유한다.
+
+- 시드로 고른 인접 격자에 직사각형 방과 ㄱ자·십자 평면을 배치한다. 신장 트리에 순환로를 더하고 복도로 잇는다. 먼 쪽 별실에는 보물과 정예를 배치한다.
+- 대청 복도는 긴 마룻장, 객실과 서재는 황토색 온돌 바닥, 제례 공간은 붉은 길과 낮은 제상으로 구분한다. 방 접점에는 붉은 목재 기둥과 한지 살창을 세우고 카메라 쪽 벽은 낮게 그린다.
+- 입구에서 끝 방까지 연결을 확보한 뒤 장식한다. 같은 시드의 평면과 장식은 동일하며, 맵 미리보기에서 `hanok-preview-1`부터 `hanok-preview-3`까지 확인할 수 있다.
+
 ### D.3 Progress rules (numbers)
 
 Target clear time: **7 min for 4 players at level (band max)**, 5-10 min window; solo at -2 levels ~ 14 min is

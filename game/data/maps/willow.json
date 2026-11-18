@@ -93,7 +93,7 @@
     "TTP  hhhh    hhhh  hhhh              G      ]  w     L     RCR    CRPP",
     "PTPP        B     B              v      B    aa  aa  aa             TT",
     "TTP                                                 E              PTT",
-    "PP        G                 L L           L L        ]            PTTP",
+    "PP        G                 L L           L L        ]     aa     PTTP",
     "TTT   hhhh   hhhh    hhhh           aa        kok    w             PPP",
     "TPPT  hhhh   hhhh    hhhh           aa             aa              TPT",
     "PTT   hhhh   hhhh    hhhh                    w                      TP",
@@ -538,6 +538,7 @@
   "fishing": true,
   "boss": null,
   "big": [
+    { "t": "prop", "k": "waterwheel", "x": 59, "y": 25, "w": 3, "h": 2 },
     {
       "t": "fountain",
       "x": 36,
@@ -575,36 +576,21 @@
       "w": 2,
       "h": 1
     },
-    {
-      "t": "house",
-      "x": 13,
-      "y": 10,
-      "v": 0
-    },
+    { "t": "bld", "k": "hanok", "x": 13, "y": 10, "w": 4, "h": 3, "door": "", "dx": -1 },
     {
       "t": "house",
       "x": 19,
       "y": 10,
       "v": 2
     },
-    {
-      "t": "house",
-      "x": 24,
-      "y": 10,
-      "v": 1
-    },
+    { "t": "bld", "k": "hanok", "x": 24, "y": 10, "w": 4, "h": 3, "door": "", "dx": -1 },
     {
       "t": "house",
       "x": 5,
       "y": 20,
       "v": 3
     },
-    {
-      "t": "house",
-      "x": 13,
-      "y": 20,
-      "v": 1
-    },
+    { "t": "bld", "k": "hanok", "x": 13, "y": 20, "w": 4, "h": 3, "door": "", "dx": -1 },
     {
       "t": "house",
       "x": 19,
@@ -623,18 +609,8 @@
       "y": 26,
       "v": 3
     },
-    {
-      "t": "house",
-      "x": 21,
-      "y": 26,
-      "v": 1
-    },
-    {
-      "t": "house",
-      "x": 52,
-      "y": 38,
-      "v": 0
-    },
+    { "t": "bld", "k": "hanok", "x": 21, "y": 26, "w": 4, "h": 3, "door": "", "dx": -1 },
+    { "t": "bld", "k": "hanok", "x": 52, "y": 38, "w": 4, "h": 3, "door": "", "dx": -1 },
     {
       "t": "house",
       "x": 58,
@@ -647,12 +623,7 @@
       "y": 43,
       "v": 3
     },
-    {
-      "t": "house",
-      "x": 57,
-      "y": 43,
-      "v": 1
-    },
+    { "t": "bld", "k": "hanok", "x": 57, "y": 43, "w": 4, "h": 3, "door": "", "dx": -1 },
     {
       "t": "house",
       "x": 51,
@@ -665,12 +636,7 @@
       "y": 48,
       "v": 0
     },
-    {
-      "t": "house",
-      "x": 43,
-      "y": 4,
-      "v": 3
-    },
+    { "t": "bld", "k": "hanok", "x": 43, "y": 4, "w": 4, "h": 3, "door": "", "dx": -1 },
     {
       "t": "bld",
       "k": "barn",

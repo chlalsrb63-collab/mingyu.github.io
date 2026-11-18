@@ -408,27 +408,30 @@ function cityTower(v, seed) {
 // One model for every building: walls on a stone plinth (timber-framed, coursed stone or logs), a window in
 // every tile of each face that has no door, the door where the map says (`door` "s" on the front, "e" on the
 // right face, `dx` tiles along), a gable, hip or round roof, a chimney; then each style adds what makes it
-// read at a glance — the hall's clock gable and banners, the library's round tower, the forge's tall chimney,
+// read at a glance — the hall's curved tile roof, the library's round tower, the forge's tall chimney,
 // the store's striped awning, the lodge's shields, the lab's copper dome. Sizes come from the footprint
 // (16 texels a tile), so a building is exactly as wide as the ground it blocks.
 
 /** wall, timber (null: stone or logs), plinth height and colour, wall height, storeys, roof colour and shape, rise, eaves, chimney. */
 const BSTYLE = {
-  hall: { wall: "#efe2c4", beam: "#6a4a2e", plinth: 9, stone: "#aaa496", HW: 38, floors: 1, roof: "#5e8a4a", kind: "hip", rise: 24, eave: 5, chim: 0, arch: true },
   library: { wall: "#c9c3b3", beam: null, plinth: 5, stone: "#9a9486", HW: 32, floors: 1, roof: "#566a9a", kind: "gable", rise: 22, eave: 4, chim: 0, arch: true },
-  dojo: { wall: "#e6d2a6", beam: "#5a3a22", plinth: 6, stone: "#a8a090", HW: 22, floors: 1, roof: "#a8542e", kind: "hip", rise: 16, eave: 8, chim: 0, lattice: true },
   store: { wall: "#eed8aa", beam: "#7a5030", plinth: 5, stone: "#b0a898", HW: 28, floors: 1, roof: "#c8743a", kind: "gable", rise: 20, eave: 4, chim: 1 },
   smithy: { wall: "#a29c90", beam: null, plinth: 7, stone: "#8e887c", HW: 28, floors: 1, roof: "#4e586c", kind: "gable", rise: 18, eave: 4, chim: 2, arch: true },
   merc: { wall: "#7a5034", beam: null, logs: 1, plinth: 5, stone: "#8a8478", HW: 28, floors: 1, roof: "#4a3a30", kind: "gable", rise: 20, eave: 5, chim: 1 },
   lab: { wall: "#dcc79c", beam: "#6a4a30", plinth: 5, stone: "#a8a090", HW: 28, floors: 1, roof: "#4a9a86", kind: "hip", rise: 12, eave: 3, chim: 3 },
   diner: { wall: "#f2d9a8", beam: "#7a4a2c", plinth: 5, stone: "#b0a898", HW: 30, floors: 1, roof: "#c8443a", kind: "gable", rise: 22, eave: 4, chim: 1 },
-  cafe: { wall: "#f6ecd4", beam: "#a87a54", plinth: 4, stone: "#c0b8a8", HW: 28, floors: 1, roof: "#3a9a9a", kind: "gable", rise: 20, eave: 4, chim: 0 },
   inn: { wall: "#f0e2c0", beam: "#6a4a2e", plinth: 5, stone: "#a8a090", HW: 44, floors: 2, roof: "#3a64b8", kind: "gable", rise: 22, eave: 5, chim: 1 },
   boutique: { wall: "#f6dce2", beam: "#c88a9a", plinth: 4, stone: "#c8bcb8", HW: 28, floors: 1, roof: "#e07aa0", kind: "hip", rise: 16, eave: 4, chim: 0 },
   pet: { wall: "#f2e8c8", beam: "#8a6a3a", plinth: 4, stone: "#b0a898", HW: 20, floors: 1, roof: "#6aa84a", kind: "round", rise: 22, eave: 5, chim: 0, arch: true },
   apt: { wall: "#e8d4aa", beam: "#6a4a2e", plinth: 5, stone: "#a8a090", HW: 58, floors: 3, roof: "#8a5a3a", kind: "gable", rise: 18, eave: 4, chim: 1 },
   home: { wall: "#f6ecd2", beam: "#8a5a34", plinth: 5, stone: "#b8b0a4", HW: 26, floors: 1, roof: "#d8604c", kind: "gable", rise: 20, eave: 4, chim: 1 },
   barn: { wall: "#a8503a", beam: "#5a2e22", plinth: 3, stone: "#8a8478", HW: 30, floors: 1, roof: "#6a4a3a", kind: "gable", rise: 26, eave: 4, chim: 0 },
+};
+const HANOK = {
+  hall: { roof: "#4b576b", beam: "#6e3f32", rise: 32, eave: 9, HW: 36 },
+  dojo: { roof: "#43475b", beam: "#703c2e", rise: 23, eave: 8, HW: 27 },
+  cafe: { roof: "#45686a", beam: "#754732", rise: 22, eave: 7, HW: 26 },
+  hanok: { roof: "#4c5267", beam: "#684231", rise: 19, eave: 6, HW: 24 },
 };
 const FLOWERS = ["#f06a7a", "#fffbe8", "#f0c040", "#c8a0ff"];
 
@@ -437,7 +440,11 @@ const FLOWERS = ["#f06a7a", "#fffbe8", "#f0c040", "#c8a0ff"];
  * glow sit, as pixel offsets from the footprint's top corner.
  */
 function building(b) {
-  const S = BSTYLE[b.k] || BSTYLE.home, FW = b.w * 16, FD = b.h * 16, HW = S.HW, seed = b.x * 7 + b.y * 13;
+  const hanok = HANOK[b.k];
+  const S = hanok ? {
+    ...hanok, wall: "#ecdfc9", plinth: 7, stone: "#a49a87", floors: 1, kind: "hip", lattice: true,
+  } : BSTYLE[b.k] || BSTYLE.home;
+  const FW = b.w * 16, FD = b.h * 16, HW = S.HW, seed = b.x * 7 + b.y * 13;
   const roof = S.roof, rise = S.rise, eave = S.eave, rp = roofPalette(roof);
   const tall = HW + rise + 48, M = new Model(FW + FD + 40, tall + (FW + FD) / 2 + 24, FD + 20, tall + 6);
   const at = (A, B, z) => [A - B, ((A + B) >> 1) - z];
@@ -455,7 +462,7 @@ function building(b) {
   const doorHalf = barn ? 18 : b.k === "hall" ? 13 : 10;
   const doorHeight = Math.min(HW - 3, barn || b.k === "hall" ? 27 : 25);
   const SH = Math.max(14, Math.floor((HW - S.plinth) / S.floors));
-  const planter = b.k === "cafe" || b.k === "home" || b.k === "apt" || b.k === "pet";
+  const planter = b.k === "home" || b.k === "apt" || b.k === "pet";
   /** One face's colour at (s along it, z up); f 0 front (+y), 1 right (+x). */
   const face = (f, s, z) => {
     const L = f === 0 ? FW : FD, d = f;
@@ -475,6 +482,7 @@ function building(b) {
       }
       if (u < 1) return recess;
       if (u < 3 && z === (doorHeight >> 1)) return C("#e8c776");
+      if (hanok && z >= 8) return (s % 3 === 0 || z % 5 === 0) ? frame[d] : glass[d ? 2 : 1];
       if (z === 5 || z === doorHeight - 7) return frame[d];
       return C((s + Math.floor(dA0)) % 4 === 0 ? (d ? "#805235" : "#95623b") : (d ? "#9c6a46" : "#b98251"));
     }
@@ -482,6 +490,16 @@ function building(b) {
     if (z < S.plinth) {
       const k = coursed(s, z, 4, 9, 30 + d, seed);
       return k.seam ? stoneC[2] : k.top && z === S.plinth - 1 ? stoneC[3] : k.t < 0.2 ? stoneC[1] : stoneC[d];
+    }
+    if (hanok) {
+      const bay = s % 16;
+      if (z >= HW - 5) return z === HW - 4 ? C(d ? "#46615a" : "#67877b") : frame[d];
+      if (bay === 0 || bay === 15 || z === S.plinth) return frame[d];
+      if (z >= S.plinth + 4 && z <= HW - 7 && bay > 1 && bay < 14) {
+        const bar = bay === 2 || bay === 13 || bay % 4 === 1 || (z - S.plinth) % 5 === 0 || z === HW - 7;
+        return bar ? frame[d] : C(d ? "#c5b9a2" : "#e3d4b3");
+      }
+      return wallC[d];
     }
     if (z >= HW - 3) return z === HW - 3 && beamC ? beamC[d] : wallShade[d];
     // windows: one per tile on each face, every storey, none where the door is
@@ -540,9 +558,15 @@ function building(b) {
     if (S.kind === "gable") { if (A < -2 || A >= FW + 2) continue; off = oB; side = B + 0.5 > cB ? 0 : 2; }
     else { const eA = oA - Math.max(0, (FW - FD) / 2), eB = oB - Math.max(0, (FD - FW) / 2); off = Math.max(eA, eB); side = eB >= eA ? (B + 0.5 > cB ? 0 : 2) : A + 0.5 > cA ? 1 : 3; }
     if (off > half) continue;
-    const k = off / half, z = HW - 2 + (S.kind === "round" ? rise * Math.sqrt(Math.max(0, 1 - k * k)) : rise * (1 - k));
+    const k = off / half;
+    // The surface flattens near the eaves, then lifts along the hip corners.
+    const hip = Math.min(oA / (cA + eave), oB / (cB + eave));
+    const pitch = hanok ? rise * (1 - k) ** 1.45 + 8 * k ** 3 * hip ** 5
+      : S.kind === "round" ? rise * Math.sqrt(Math.max(0, 1 - k * k)) : rise * (1 - k);
+    const z = HW - 2 + pitch;
     let c;
-    if (grass) {
+    if (hanok && off >= half - 1.25) c = Math.floor((side % 2 ? B : A) + eave) % 4 === 0 ? rp.rim : rp.fascia;
+    else if (grass) {
       const tuft = hash(Math.floor(A / 3), Math.floor(B / 3), seed);
       c = off > half - 2 ? rp.fascia : tuft < 0.19 ? rp.tile[side] : tuft > 0.93 ? rp.seam[side] : rp.slope[side];
     } else if (S.kind === "gable" && (A < -1 || A >= FW + 1)) c = rp.rim;
@@ -587,7 +611,16 @@ function building(b) {
       info.lamps.push(at(...onDoorFace(s, z)));
     }
   }
-  extras(b, S, M, FW, FD, HW, rise, info, at);
+  if (hanok) {
+    for (let a = 0; a < FW; a += 4) M.put(a, FD + 1, HW - 2, C("#b59068"), 4);
+    for (let bb = 0; bb < FD; bb += 4) M.put(FW + 1, bb, HW - 2, C("#906a51"), 4);
+    if (doorFace === 0) {
+      for (let a = dA0 - doorHalf; a < dA0 + doorHalf; a++) {
+        M.put(a, FD + 1, 2, stoneC[3], 4);
+        M.put(a, FD + 3, 0, stoneC[1], 4);
+      }
+    }
+  } else extras(b, S, M, FW, FD, HW, rise, info, at);
   M.ink();
   return { M, info };
 }
@@ -603,24 +636,7 @@ function extras(b, S, M, FW, FD, HW, rise, info, at) {
     }
     for (let A = from; A < to; A++) put(A, FD + depth - 1, HW - 7 - depth * 0.66, edge);
   };
-  if (b.k === "hall") {
-    // A roofed clock dormer, bronze-edged banners and twin lanterns mark the civic entrance.
-    const cA = b.dx * 16 + 16;
-    for (let a = -17; a <= 17; a++) {
-      const top = HW + 22 - Math.abs(a);
-      for (let z = HW - 3; z < top; z++) put(cA + a, FD + 5, z, z > top - 3 || z === HW - 3 ? "#6a4a2e" : "#ede1c5");
-      for (let B = FD - 19; B <= FD + 7; B++) M.slope(cA + a, B, top, C(B >= FD + 6 ? "#354f36" : a <= 0 ? "#7ca361" : "#58784b"), 4);
-    }
-    disc(cA, HW + 8, 7, "#f6f0dc", FD + 6, "#705239");
-    for (let i = 0; i < 4; i++) put(cA, FD + 7, HW + 8 + i, "#3e382f");
-    for (let i = 0; i < 3; i++) put(cA + i, FD + 7, HW + 8, "#3e382f");
-    for (const a of [cA - 30, cA + 24]) for (let z = 11; z <= 31; z++) for (let i = 0; i < 7; i++) {
-      if (z < 13 && Math.abs(i - 3) < 2) continue;
-      const trim = i === 0 || i === 6 || z === 30, emblem = z >= 19 && z <= 25 && Math.abs(i - 3) + Math.abs(z - 22) <= 3;
-      put(a + i, FD + 1, z, trim || emblem ? "#d0b46e" : "#467e78");
-    }
-    for (const a of [cA - 16, cA + 16]) { put(a, FD + 2, 22, "#f0cc60"); put(a, FD + 2, 21, "#ffe8a0"); put(a, FD + 2, 23, "#5a3a22"); info.lamps.push(at(a, FD + 2, 22)); }
-  } else if (b.k === "library") {
+  if (b.k === "library") {
     // a round stone tower at the west end with a slate cone, an owl-eye window
     const tA = 14, tB = FD / 2, R = 13, top = HW + 18;
     for (let a = -R; a <= R; a++) for (let bb = -R; bb <= R; bb++) {
@@ -631,9 +647,6 @@ function extras(b, S, M, FW, FD, HW, rise, info, at) {
     }
     disc(tA + 6, top - 10, 4, "#ffe8a0", tB + 11, "#5a4a3a"); put(tA + 5, tB + 12, top - 10, "#2b2233"); put(tA + 7, tB + 12, top - 10, "#2b2233");
     info.wins.push(at(tA + 6, tB + 11, top - 10));
-  } else if (b.k === "dojo") {
-    // banner poles at the front corners, long red banners
-    for (const a of [2, FW - 3]) for (let z = 0; z < HW + 18; z++) { put(a, FD + 4, z, "#5a3a22"); if (z > HW - 6 && z < HW + 14) for (let i = 1; i < 6; i++) put(a + i, FD + 4, z, z === HW + 2 ? "#f0e0b0" : "#b83a2e"); }
   } else if (b.k === "store") {
     // Striped canvas above each shop window, with a gap over the entrance.
     const door = b.dx * 16 + 16;
@@ -675,11 +688,6 @@ function extras(b, S, M, FW, FD, HW, rise, info, at) {
     for (let z = 0; z < 10; z++) put(a, FD + 5, z, "#6a4226");
     for (let A = a - 2; A < a + 3; A++) for (let z = 10; z < 14; z++) put(A, FD + 5, z, z === 13 ? "#e86a5a" : "#c84a3a");
     for (let A = b.dx * 16 + 10; A < b.dx * 16 + 22; A++) for (let z = 23; z < 27; z++) put(A, FD, z, z === 23 || z === 26 ? "#6a4226" : "#f2e0b0");
-  } else if (b.k === "cafe") {
-    // A short canvas shade and a chalkboard menu beside the entrance.
-    const a = b.dx * 16 + 34;
-    awning(a - 3, FW - 5, 7, ["#6caa9c", "#86b6a7"], "#466e69");
-    for (let A = a; A < a + 8; A++) for (let z = 4; z < 16; z++) put(A, FD + 1, z, A === a || A === a + 7 || z === 4 || z === 15 ? "#8a5a34" : (z === 12 || z === 9) && A > a + 1 && A < a + 6 ? "#f6ecd4" : "#2e3a34");
   } else if (b.k === "diner") info.steam = at(FW - 12, 6, HW + rise - 4);
   if (b.k === "lab") info.puff = at(FW * 0.35, FD / 2, HW + 24);
 }
