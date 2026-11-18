@@ -2016,6 +2016,7 @@ export function skillEvent(e, ctx) {
       const src = entityPos(eid);
       const ang = src ? (src.hammerYaw ?? Math.atan2(y - src.y, x - src.x)) : 0;
       hammerImpact(x, y, r, hit, crit, kind, ang);
+      if (eid === G.you || skillNear(G, x, y)) castPfx(kind, src || { x, y }, x, y, r, ang, fxPal(kind, G, eid));
       if (eid === G.you || skillNear(G, x, y)) Sound.play("hammer_land", { kind, hit, crit, final: kind === 132 });
       if (eid === G.you && hit) {
         const strength = kind === 132 ? 4.5 : crit ? 3.3 : kind === 131 ? 2.5 : kind === 130 ? 2 : 1.5;
@@ -2029,6 +2030,8 @@ export function skillEvent(e, ctx) {
       const [, eid, , tx, ty] = e;
       const src = entityPos(eid);
       if (!src) return true;
+      // the pixelfx layers (skillpfx.js), over the game's own marks below (combo skills 140–159 call it in skillfx_combo.js)
+      if (eid === G.you || skillNear(G, src.x, src.y) || skillNear(G, tx, ty)) castPfx(kind, src, tx, ty + 6, e[7], Math.atan2(ty + 6 - src.y, tx - src.x), fxPal(kind, G, eid));
       if (kind === 135 || kind === 136) {
         const y = ty + 6, near = eid === G.you || skillNear(G, tx, y);
         if (kind === 135) {
@@ -2506,7 +2509,6 @@ function cast(kind, src, eid, tx, ty, extra, G) {
   const B = S3.big(ang), f = B.fx, mine = eid === G.you;
   const near = mine || skillNear(G, src.x, src.y) || skillNear(G, tx, ty);
   const play = (key) => { if (near) Sound.play(key); };
-  if (near) castPfx(kind, src, tx, ty, extra, ang, p);   // the pixelfx layers (skillpfx.js), over the game's own marks
   switch (kind) {
     // ── 스태프
     case 70: {

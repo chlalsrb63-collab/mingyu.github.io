@@ -6,6 +6,8 @@
 // ?rows=slam,bolt,nova,hit,crit,walk,dash,sk80,sk89:64,pr:grav&map=meadow&ms=33&n=10&z=2&cw=180&ch=150 — dev preview only, not part of the game.
 import * as S from "./scene2d.js";
 import * as SkillFx from "./skillfx.js";
+import { ready as pfxReady } from "./skillpfx.js";
+await pfxReady;
 const q = new URLSearchParams(location.search);
 const maps = await (await fetch("./_maps.json")).json();
 const m = maps[q.get("map") || "meadow"];
