@@ -6,7 +6,9 @@
 프로젝트 규칙: `AGENTS.md`. 파일 지도: `docs/FILEMAP.md`. 작업 보드: `ai/TASKS.md`. 이번 아이템 개편 명세: `docs/design/item-system-spec-2026-11-16.md`.
 
 ## 1. 지금 상태
-- `main` 초록: **71/71 테스트**, `npm run data:check` 통과, 저장 시트 **v27**. **push 안 함**(push = 배포). 로컬 플레이 서버: 8830 포트, 고정 폴더 `../tt-play-current`(커밋 644a4d8), 설정 이름 `play-local`
+- **2026-11-18 정렬(태그 `play-2026-11-18`):** main에 Codex `codex/regional-monsters`(0f5048d까지: 버디 메신저·솔로 협동 파트너, 외형 다듬기, 64px 뒤꼬리, 성능, 개발 현황판 `docs/development-status.html`, 지역 변이 몬스터 동작) · Gemini `gemini/work`(무기 외형 60종 6팩 + 팔레트 의상 4세트 12종 — **시안 모듈만, 게임 미연결·아이콘 미설치, 오너 승인 대기**; 의상 권장 코드는 147–158이 main과 겹쳐 199–210으로 옮김) · 솔로 알바 라운드(`claude/alba-wip-1118`, 무대 장면 `alba_stage.js`, 스모크 12종 OK) 병합.
+  **대체됨(병합 금지, main에 이미 이식):** 11-14~11-16 codex 브랜치(asset-review combat-effects combat-pressure coop-briefing elemental-combat held-weapon-scale local-play-polish map-bgm rift-beasts rune-sockets skill-effects-followup starter-weapons studio-opening weapon-sil world-map work). 남은 새 작업: `codex/regional-monsters` 5814877(한옥·절차형 레이드), `codex/monster-display-names`.
+- `main` 초록: **84/84 테스트**, `npm run data:check` 통과, 저장 시트 **v29**. **push 안 함**(push = 배포). 로컬 플레이 서버: 8830 포트, 고정 폴더 `../tt-play-current`(커밋 644a4d8), 설정 이름 `play-local`
   (LAN `http://192.168.31.58:8830`, 저장 `game/.wrangler/play`). 새 빌드 반영: `git -C ../tt-play-current checkout --detach <커밋>` 후 `play-local` 재시작. **오너의 서버이니 허락 없이 재시작 금지.**
 - 이번 라운드에 들어간 것: 아이템 레벨(`il`, 착용 = il−10) · 마법2/희귀3/전설4줄 · 유니크(q5, 전설 효과 + 강한 줄) · 접두사 95종 중 52종 구현(`on`) · 아이템도감(Shift+I) · 창 별도 분리/붙이기 ·
   HUD 투명도 · 도움말 15주제 + `<Guide>` 87개 · 레이드던전 개명·6분 페이스 · 장날(화·토 19–21시 KST, 상인 6명) · P9~P12 외형 · 스마트폰 메뉴 UI(`phone.js`, 키 Backquote).
