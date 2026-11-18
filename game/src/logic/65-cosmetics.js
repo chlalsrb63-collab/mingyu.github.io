@@ -130,9 +130,9 @@ const COSMETICS = Object.fromEntries([
   ["top_scarf", 99, "top", "빨간 목도리", 0, "shop", 900, "한쪽 끝이 길게 늘어진 목도리.", "cute"],
   ["back_plush", 100, "back", "곰 인형 배낭", 1, "shop", 3500, "어깨 너머로 빼꼼 내다보는 곰 인형.", "cute"],
   ["ws_bee", 101, "wskin", "꿀벌 무기 외형", 1, "daily", 0, "노랑과 검정 줄무늬.", "cute"],
-  ["back_batcape", 102, "back", "박쥐 망토", 3, "weekly", 0, "밤장막 박쥐군주의 날개를 본뜬 망토. 펄럭일 때마다 작은 박쥐가 숨는다.", "rift"],
-  ["hat_bloodcrown", 103, "hat", "혈루 뿔 왕관", 3, "boss", 0, "혈루 왕도마뱀의 뿔을 깎아 만든 붉은 왕관. 아직 미지근하다."],
-  ["ws_clubclaw", 104, "wskin", "갯가재 집게 무기 외형", 2, "boss", 0, "망치 갯가재의 집게를 씌운 무기. 휘두를 때마다 물이 튄다."],
+  ["back_batcape", 102, "back", "박쥐 망토", 3, "weekly", 0, "벨모라의 날개를 본뜬 망토. 펄럭일 때마다 작은 박쥐가 숨는다.", "rift"],
+  ["hat_bloodcrown", 103, "hat", "혈루 뿔 왕관", 3, "boss", 0, "루비악의 뿔을 깎아 만든 붉은 왕관. 아직 미지근하다."],
+  ["ws_clubclaw", 104, "wskin", "갯가재 집게 무기 외형", 2, "boss", 0, "딱파랑의 집게를 씌운 무기. 휘두를 때마다 물이 튄다."],
   // co-op part-time jobs: the first S grade in each (ACH coopS_<job>)
   ["hat_kerchief", 105, "hat", "동동 청소부 두건", 2, "ach", "coopS_apt", "동동아파트가 S 등급 청소부에게 주는 물방울무늬 두건.", "coop"],
   ["back_tray", 106, "back", "쥬쥬 서빙 쟁반", 2, "ach", "coopS_diner", "뚜껑 덮인 은쟁반. 무엇이 들었는지는 쥬쥬만 안다.", "coop"],

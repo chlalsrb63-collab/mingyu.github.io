@@ -10,13 +10,9 @@
  * (crouch on the wind-up and the landing, stretch at full reach).
  *
  * The blow lands at k = IMPACT (0.2) for these normalized strokes (scene2d's impactMs): the
- * pose keyed there is the one crossing or touching the target. The order is the
- * one the pixel-art rules ask for, at a high tempo: a very short wind-up the other
- * way (15% of the stroke, under ~85 ms), a snap (35%) that crosses the target in
- * its first hundredths and brakes on an out-expo curve, then a held beat and an
- * out-back settle (50%). Poses are 3-D, so a level
- * sweep follows the ground's projected ellipse as the blade swings
- * toward or away from the camera — instead of a clock hand.
+ * pose keyed there is the one crossing or touching the target. The timing of the
+ * wind-up and recovery varies by weapon. The poses are three-dimensional so a
+ * level sweep follows the ellipse of the projected ground.
  */
 
 const D = Math.PI / 180;
@@ -42,74 +38,88 @@ const oExpo = (u) => (u >= 1 ? 1 : 1 - 2 ** (-10 * u));
 const oBack = (u) => { const c = 1.70158, v = u - 1; return 1 + (c + 1) * v * v * v + c * v * v; };
 
 /**
- * Where every stroke is on its 0-1 clock (Sephiria-style tempo): a very short anticipation
- * (0 -> WIND, 15%), a snap (WIND -> SNAP, 35%) whose first hundredths carry the blade across
- * the target (the blow lands at IMPACT), and a follow-through that holds a beat and settles
- * (SNAP -> 1, 50%). scene2d's impactMs, the sword-qi burst and the hit events key off IMPACT.
+ * Nominal breakpoints on the 0–1 stroke clock. The contact point at IMPACT drives
+ * scene2d's impactMs, the sword-qi burst and confirmed hit feedback.
  */
 export const WIND = 0.15, IMPACT = 0.2, SNAP = 0.5;
+
+// Body compression, local hitstop and directional camera kick for a confirmed basic hit.
+export const MELEE_FEEL = {
+  sword: { squash: 0.12, stop: 34, heavyStop: 52, kick: 2.1, heavyKick: 3.6 },
+  dagger: { squash: 0.07, stop: 19, heavyStop: 32, kick: 0.7, heavyKick: 1.7 },
+  spear: { squash: 0.09, stop: 28, heavyStop: 44, kick: 1.4, heavyKick: 2.8 },
+  hammer: { squash: 0.15, stop: 42, heavyStop: 58 },
+};
+export const MELEE_FX_WEAPON = { 0: "sword", 3: "dagger", 4: "spear", 7: "hammer" };
 
 export const HAMMER_IMPACT = 200, HAMMER_RECOVER = 240;
 /** One overhead stroke for every beat, with the head planted at the server's impact time. */
 export function hammerPose(ms, impact = HAMMER_IMPACT) {
-  const fallMs = 64, plantMs = 60;
+  const fallMs = Math.min(54, impact * 0.42), plantMs = 76;
   const fallAt = impact - fallMs;
-  const rise = eIO(Math.max(0, Math.min(1, ms / (fallAt - 26))));
+  const rise = eIO(Math.max(0, Math.min(1, ms / Math.max(1, fallAt - 26))));
   const fall = eIn(Math.max(0, Math.min(1, (ms - fallAt) / fallMs)));
   const held = 1 - eIO(Math.max(0, Math.min(1, (ms - impact - plantMs) / (HAMMER_RECOVER - plantMs))));
   const raised = rise * (1 - fall), planted = fall * held;
+  const brace = eOut(Math.max(0, Math.min(1, (ms - impact) / 30))) * held;
   return {
     yaw: 0,
     // owner (2026-11-15): raised well over the head before the slam (was pitch 112°, lift 9 px; now 120°, 21 px — the head now rides ~35 % higher)
     pitch: (20 + 100 * raised - 53 * planted) * D,
     reach: -3.5 * raised + 5 * planted,
     lift: 21 * raised - 2 * planted,
-    lean: -3.5 * raised + 4 * planted,
-    fr: ms >= impact && ms < impact + 94 ? "crouch" : raised > 0.65 ? "stretch" : "",
+    lean: -4.5 * raised + 5 * planted,
+    fr: ms >= impact && ms < impact + 112 ? "crouch" : raised > 0.65 ? "stretch" : "",
+    squash: brace * MELEE_FEEL.hammer.squash - raised * 0.035,
     strike: false,
   };
 }
 
 /** Key poses: [k, yaw°, pitch°, reach px, lean px, frame, ease into this key, grip lift px]. */
 const K = (k, yaw, pitch, reach, lean, fr, ease, lift = 0) => ({ k, yaw: yaw * D, pitch: pitch * D, reach, lean, fr: fr || "", ease: ease || lin, lift });
-// every stroke: wind-up (eOut) -> impact (linear: the blade at full speed) -> the rest of the
-// snap (out-expo, so a sweep carries on as fast as it crossed and then brakes) -> a held beat
-// -> the settle (out-back). Thrusts keep an extra key: still out at full reach, then drawn back.
+// Each stroke winds up, accelerates through contact, follows through, and settles.
+// Thrusts hold full reach for an extra key before the blade is drawn back.
 const STROKES = {
-  // Two mirrored horizontal cuts. The overhead pose is reserved for sword skills.
+  // A descending cut and a low return. Each follows through toward the next wind-up.
   sword: [
-    [K(WIND, -116, 8, 2, -2, "crouch", eOut), K(IMPACT, 0, 4, 7, 3, "stretch", lin), K(SNAP, 116, -7, 4, 2, "", oExpo), K(0.6, 118, -7, 4, 2, "", lin), K(1, 112, 2, 3, 0, "", oBack)],
-    null, // the second beat is the first, mirrored
+    [K(WIND, -108, 39, 0, -3, "crouch", eOut, 3),
+      K(IMPACT, 0, 5, 6, 5, "stretch", eIn, 1),
+      K(0.38, 112, -16, 4, 5, "crouch", oExpo, -1),
+      K(0.57, 116, -14, 3, 3, "", lin, -1), K(1, 105, -8, 2, 0, "", eIO)],
+    [K(WIND, -106, -12, 1, -2, "crouch", eOut, -2),
+      K(IMPACT, 0, 0, 7, 5, "stretch", eIn),
+      K(0.38, 114, 23, 5, 4, "stretch", oExpo, 2),
+      K(0.57, 117, 27, 3, 3, "", lin, 2), K(1, 105, 30, 2, 0, "", eIO, 2)],
     [K(0.15, -18, 118, 0, -3, "crouch", eOut), K(0.2, 0, 6, 9, 7, "stretch", lin), K(0.5, 4, -42, 7, 7, "crouch", oExpo), K(0.6, 4, -42, 7, 7, "", lin), K(1, 10, -22, 4, 3, "", oBack)],
   ],
   // Dagger: tucked jab, high backhand across the chest, low finishing lunge.
   dagger: [
     [K(0.11, -26, 29, -3, -1, "crouch", eOut, 3),
       K(IMPACT, 0, 2, 8, 3, "stretch", eIn, 1),
-      K(0.37, 3, 0, 7, 2.5, "stretch", eOut, 1),
-      K(0.68, 15, -12, 3, 0, "", eIO, -1), K(1, 22, 17, 1, 0, "", oBack)],
+      K(0.29, 3, 0, 7, 2.5, "stretch", eOut, 1),
+      K(0.57, 18, 13, 0, -0.7, "crouch", eOut), K(1, 24, 22, 1, 0, "", eIO)],
     [K(0.11, -92, 30, 1, -1.5, "crouch", eOut, 4),
       K(IMPACT, 0, 3, 6, 2, "stretch", lin, 3),
       K(0.39, 88, -13, 5, 1.5, "", oExpo, -1),
-      K(0.58, 91, -13, 5, 0.5, "", lin, -1), K(1, 55, 13, 1, 0, "", oBack)],
+      K(0.55, 64, -7, 1, 0.5, "", eOut, -1), K(1, 28, 13, 0, 0, "", eIO)],
     [K(0.11, -18, 19, -5, -2, "crouch", eOut, -1),
-      K(IMPACT, 0, -4, 10, 6, "stretch", eIn),
-      K(0.43, 1, -5, 9, 5, "stretch", eOut),
+      K(IMPACT, 0, -4, 11, 7, "stretch", eIn),
+      K(0.43, 1, -5, 10, 6, "stretch", eOut),
       K(0.72, 9, -16, 4, 1, "crouch", eIO, -2), K(1, 19, 11, 2, 0, "", oBack)],
   ],
   // Spear: level thrust from the hip, braced shaft sweep, extended finishing thrust.
   spear: [
-    [K(0.1, -5, -9, -7, -2, "crouch", eOut, -2),
-      K(IMPACT, 0, -2, 9, 4, "stretch", eIn, 1),
-      K(0.43, 1, -2, 8, 4, "stretch", eOut, 1),
-      K(0.73, 3, 13, 4, 1, "", eIO, 2), K(1, 9, 16, 2, 0, "", oBack)],
+    [K(0.12, -6, -11, -9, -3, "crouch", eOut, -2),
+      K(IMPACT, 0, -2, 11, 5, "stretch", eIn, 1),
+      K(0.39, 0, -2, 10, 5, "stretch", eOut, 1),
+      K(0.7, 4, 12, 1, 1, "crouch", eIO, 1), K(1, 10, 16, 2, 0, "", eIO)],
     [K(0.1, -98, 15, 0, -1.5, "crouch", eOut, 2),
       K(IMPACT, 0, 1, 6, 2.5, "stretch", lin),
       K(0.46, 101, -9, 5, 2, "crouch", oExpo, -2),
       K(0.65, 101, -9, 5, 1, "", lin, -2), K(1, 70, 10, 2, 0, "", oBack)],
-    [K(0.09, -9, 5, -8, -3, "crouch", eOut, -2),
-      K(IMPACT, 0, -3, 12, 6, "stretch", eIn, 1),
-      K(0.45, 0, -4, 11, 5.5, "stretch", eOut, 1),
+    [K(0.12, -9, 5, -10, -4, "crouch", eOut, -2),
+      K(IMPACT, 0, -3, 14, 8, "stretch", eIn, 1),
+      K(0.45, 0, -4, 13, 7, "stretch", eOut, 1),
       K(0.73, 5, 16, 6, 1, "", eIO, 2), K(1, 9, 12, 3, 0, "", oBack)],
   ],
   // Staff: lift the focus, flick it out, or lower it from an overhead flourish for a skill.
@@ -151,7 +161,9 @@ export function pose(wk, beat, k, side) {
   const set = STROKES[wk];
   if (!set) return null;
   const keys = set[beat] || set[0];
-  if (k < keys[0].k) return { pre: k / keys[0].k, ...out(keys[0], side, 0) };
+  const weight = MELEE_FEEL[wk]?.squash || 0;
+  const shape = (p) => p.fr === "crouch" ? weight : p.fr === "stretch" ? weight * -0.5 : 0;
+  if (k < keys[0].k) return { pre: k / keys[0].k, ...out(keys[0], side), squash: shape(keys[0]) * eOut(k / keys[0].k) };
   for (let i = 1; i < keys.length; i++) {
     const a = keys[i - 1], b = keys[i];
     if (k <= b.k) {
@@ -161,6 +173,7 @@ export function pose(wk, beat, k, side) {
         reach: a.reach + (b.reach - a.reach) * u, lean: a.lean + (b.lean - a.lean) * u,
         lift: a.lift + (b.lift - a.lift) * u,
         fr: u < 0.5 ? a.fr : b.fr, strike: i === 1 || i === 2,
+        squash: shape(a) + (shape(b) - shape(a)) * u,
       };
     }
   }

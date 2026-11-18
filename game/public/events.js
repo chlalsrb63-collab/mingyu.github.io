@@ -14,7 +14,7 @@ import * as Growth from "./growth.js";
 import * as SkillFx from "./skillfx.js";
 import { jobSkillFx } from "./job-skill-fx.js";
 import { skillFinisherFx } from "./skill-finisher-fx.js";
-import { HAMMER_IMPACT } from "./swing.js";
+import { HAMMER_IMPACT, MELEE_FEEL, MELEE_FX_WEAPON } from "./swing.js";
 import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
 import * as Life from "./life.js";
@@ -132,7 +132,7 @@ export function onEvent(e, t) {
       break;
     }
     case "h": {
-      const [, id, dmg, crit, isPlayer, cost, cue, parts] = e;
+      const [, id, dmg, crit, isPlayer, cost, cue, parts, swing] = e;
       const tgt = entityPos(id);
       if (!tgt) break;
       const h = heightOf(tgt);
@@ -153,25 +153,31 @@ export function onEvent(e, t) {
         const critical = crit === 1, grazing = crit === 2;
         floatDamage(dmg, parts, tgt, h, critical);
         tgt.hurtT = t; tgt.hsMs = 0;
-        let wk, fin = false, heavy = critical; // my own weapon kind, when it is my blow: the impact sound follows the weapon
-        // recoil away from whoever struck last
-        if (!isPlayer && G.hitFrom) {
-          tgt.hurtA = Math.atan2(tgt.y - G.hitFrom[1], tgt.x - G.hitFrom[0]);
-          // was this my own blow landing? then it gets the full treatment: a held frame, a kick, a burst
-          const mine = t - G.lastAtk < 420;
+        let wk, fin = false, heavy = critical;
+        if (!isPlayer && dmg > 0) {
+          const source = swing && entityPos(swing[0]);
+          const from = source ? [source.x, source.y] : G.hitFrom;
+          if (from) tgt.hurtA = Math.atan2(tgt.y - from[1], tgt.x - from[0]);
+          const weapon = swing && MELEE_FX_WEAPON[swing[1]];
+          const mine = swing ? swing[0] === G.you : !MELEE_FEEL[G.comboWeapon] && t - G.lastAtk < 420;
           if ((mine || t - G.lastSkill < 700) && G.mobs.has(id)) { G.tgt = id; G.tgtT = t; }   // the target frame follows my last blow (hud.js)
-          fin = mine && !grazing && (G.me.atkN === 2 || (G.self?.wk === "sword" && G.me.atkN === 1));
+          fin = !grazing && (swing ? !!swing[2] : mine && G.me.atkN === 2);
           heavy = critical || fin;
-          tgt.hurtP = heavy ? 1.6 : 1;
-          if (mine) {
-            // a local hitstop: the blow and what it struck hold still for a beat (2–3 frames on a
-            // crit, a finisher or a skill; barely one on a plain hit, so the tempo stays high)
-            const stop = heavy ? 60 : 18;
-            wk = G.self?.wk;
-            if (!G.me.hs || t > G.me.hs.at + G.me.hs.dur) G.me.hs = { at: t, dur: stop };
+          tgt.hurtP = grazing ? 0.6 : heavy ? 1.6 : 1;
+          wk = weapon || (mine ? G.self?.wk : undefined);
+          if (mine || weapon) {
+            const feel = MELEE_FEEL[weapon];
+            const stop = grazing ? 10 : heavy ? feel?.heavyStop ?? 60 : feel?.stop ?? 18;
             tgt.hsMs = stop;
-            if (!hammer) S3.shake(heavy ? 5 : 1.5, heavy ? tgt.hurtA : undefined);
-            if (heavy) G.punch = 1;
+            const current = !swing || (weapon === G.comboWeapon && Math.abs(t - G.impactAt) < 84);
+            if (mine && current && (!G.me.hs || G.me.hs.at < G.me.atkT)) {
+              G.me.hs = { at: t, dur: stop };
+              if (!hammer && !grazing) S3.shake(heavy ? feel?.heavyKick ?? 5 : feel?.kick ?? 1.5, tgt.hurtA);
+              if (heavy) {
+                G.punch = 1;
+                if (feel) Sound.duckImpact();
+              }
+            }
           }
         }
         if (isPlayer) S3.fx.burst(tgt.x, tgt.y, h * 0.55, "#ff7a7a", critical ? 14 : 8, critical ? 2.6 : 2);
@@ -196,7 +202,7 @@ export function onEvent(e, t) {
       }
       break;
     }
-    case "d": S3.fx.beam(e[2], e[3] + 8, e[4], e[5] + 8, "#8a78c8", 0.6); S3.fx.burst(e[2], e[3] + 8, 0.6, "#4a4468", 10, 1); break;
+    case "d": S3.fx.beam(e[2], e[3] + 8, e[4], e[5] + 8, "#8a78c8", 0.6); S3.fx.burst(e[2], e[3] + 8, 0.6, "#4a4468", 10, 1); Sound.play("dark_beam"); break;
     case "t": if (e[5]) { S3.fx.ring(e[1], e[2], e[3], "#ffe08a", e[4]); Sound.play("mob_howl"); break; } S3.fx.tele(e[1], e[2], e[3], e[4]); Sound.play("warn"); break;
     case "b": {
       // a blast on the ground: a monster's (pink, it hurts) or a player's skill landing
@@ -221,7 +227,7 @@ export function onEvent(e, t) {
       const p = entityPos(e[1]);
       S3.fx.ring(e[2], e[3], 26, "#9affc8", 520, true);
       if (p) S3.fx.sparkle(p.x, p.y, 0.7, "#c8ffe0", 16);
-      if (e[1] === G.you) Sound.play("wp_wake");
+      if (e[1] === G.you) Sound.play("wind_shrine");
       break;
     }
     case "rc": {
@@ -267,21 +273,21 @@ export function onEvent(e, t) {
     case "z":
       // something flying from one point to another: a legendary's lightning, or a thrown knife
       if (e[5] >= 2) Growth.lineFx(e, S3.big());              // chain lightning, a phantom's dash
-      else if (e[5]) S3.fx.proj(e[1], e[2] + 8, 0.6, e[3], e[4] + 8, 0.5, "#b8f060", 0.05, 30);
+      else if (e[5]) { S3.fx.proj(e[1], e[2] + 8, 0.6, e[3], e[4] + 8, 0.5, "#b8f060", 0.05, 30); Sound.play("knife_throw"); }
       else { S3.fx.beam(e[1], e[2] + 8, e[3], e[4] + 8, "#fff48a", 0.45); S3.fx.burst(e[3], e[4] + 8, 0.5, "#fff48a", 8, 1.6); Sound.play("magic"); }
       break;
-    case "pk": S3.petFetch(e[1], e[2], e[3]); break;     // a pet fetched something
+    case "pk": S3.petFetch(e[1], e[2], e[3]); if (e[1] === G.you) Sound.play("pet_fetch"); break;     // a pet fetched something
     case "l": {
       const p = entityPos(e[1]);
       if (p) { S3.fx.pillar(p.x, p.y); if (e[1] !== G.you) floatText("LEVEL UP", p.x, p.y, heightOf(p) + 0.5, "#ffd84a", true); }
       break;
     }
-    case "pd": { const p = entityPos(e[1]); if (p) S3.fx.burst(p.x, p.y, 0.6, "#c8c8d8", 12, 1.4); break; }
+    case "pd": { const p = entityPos(e[1]); if (p) { S3.fx.burst(p.x, p.y, 0.6, "#c8c8d8", 12, 1.4); if (e[1] === G.you) Sound.play("pet_poof"); } break; }
     case "jc": {
       // a job change: light, a burst of brass, and for me a banner and a fanfare
       const p = entityPos(e[1]);
       if (p) { S3.fx.pillar(p.x, p.y); S3.fx.burst(p.x, p.y, 1, "#f4d27a", 24, 2.2); floatText("전직!", p.x, p.y, heightOf(p) + 0.6, "#f4d27a", true); }
-      if (e[1] === G.you) { Sound.play("achieve"); const j = G.self && G.defs.jobs[G.self.job]; banner(j && j.kind !== "none" ? `${j.name}의 길` : "전직!"); }
+      if (e[1] === G.you) { Sound.play("job_change"); const j = G.self && G.defs.jobs[G.self.job]; banner(j && j.kind !== "none" ? `${j.name}의 길` : "전직!"); }
       break;
     }
     case "jl": {

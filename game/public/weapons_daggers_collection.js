@@ -43,6 +43,7 @@ export const DAGGER_COLLECTION_EXTRA = {
   boltCyan: "#7cf8ff",
   lava:     "#ffae38",
   ruby:     "#ff4860",
+  sapphire: "#3578f2",
   amethyst: "#d478ff",
   darkLine: "#343046",
   scarletE: "#ff5c5c",

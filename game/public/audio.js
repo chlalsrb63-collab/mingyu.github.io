@@ -176,8 +176,16 @@ export const Sound = {
     this.sfxOn = this.bgmOn = !this.vol.mute;
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
+    this.music.gain.cancelScheduledValues(t);
     this.music.gain.setTargetAtTime(this.vol.mute ? 0 : this.vol.music * 0.55, t, 0.05);
     this.sfx.gain.setTargetAtTime(this.vol.mute ? 0 : this.vol.sfx * 0.8, t, 0.05);
+  },
+  duckImpact() {
+    if (this.ctx?.state !== "running" || this.vol.mute || !this.vol.sfx || !this.vol.music) return;
+    const t = this.ctx.currentTime, level = this.vol.music * 0.55, gain = this.music.gain;
+    gain.cancelScheduledValues(t);
+    gain.setTargetAtTime(level * 0.76, t, 0.01);
+    gain.setTargetAtTime(level, t + 0.05, 0.035);
   },
   save() { try { localStorage.setItem(STORE, JSON.stringify(this.vol)); } catch { /* private mode */ } },
   setMusic(v) { this.vol.music = Math.max(0, Math.min(1, v)); this.save(); this.applyVolume(); },
@@ -664,6 +672,15 @@ const THROTTLE = { job_note: 0.06, gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06
   hammer_land: 0.065, graze: 0.045, merc_dash: 0.1, oath_cast: 0.15, oath_heal: 0.28,
   rally_banner: 0.18, rally_mend: 0.26, revive_binding: 0.22, revive_mend: 0.4,
   cross_cut: 0.1, element_dagger: 0.12, frost_lance: 0.12, rune_circle: 0.18, inkshot: 0.12,
+  clang: 0.5, tick: 0.04, cleave_wind: 0.15, cleave_hit: 0.12, rupture: 0.08, hook_chain: 0.12,
+  ignite_wind: 0.15, ignite_burst: 0.12, soul_drain: 0.15, soul_drain_fin: 0.18, snipe_wind: 0.15, snipe_shot: 0.12,
+  whirl_slash: 0.1, musou_thrust: 0.09,
+  cb_stagger: 0.08, cb_shatter: 0.08, cb_aerial: 0.08, cb_mark: 0.08, cb_brand: 0.08, cb_gather: 0.1, cb_launch: 0.08,
+  freeze_lock: 0.1, armor_break: 0.1, hawk_eye: 0.1, edge_cut: 0.1, spear_cd: 0.1, mana_surge: 0.12, double_nock: 0.1,
+  whale_dive: 0.3, whale_burst: 0.3, blood_jet: 0.25, boss_break: 0.2, boss_absorb: 0.15,
+  dark_beam: 0.08, wind_shrine: 0.2, knife_throw: 0.06, pet_fetch: 0.12, pet_poof: 0.12, job_change: 0.4,
+  water_fill: 0.2, water_pour: 0.2, milk_clink: 0.15, weed_pull: 0.15, flyer_slap: 0.15, dog_sniff: 0.2,
+  broom_sweep: 0.1, lift_heave: 0.12, knife_chop: 0.07, plate_clink: 0.08, order_bell: 0.15, dish_scrub: 0.1, dish_clean: 0.1,
 };
 /** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
 const BOOST = {
@@ -674,9 +691,18 @@ const BOOST = {
   charm_place: 1.6, charm_remove: 1.6, charm_id: 1.6, charm_expand: 1.5, ui: 1.8, open: 2, close: 2, tab: 2, blip: 1.8, emote: 1.6, cast: 1.8, coin: 1.5, salvage: 1.5, recall: 1.4, warp_out: 1.4, rift_warn: 1.5, fail: 1.4,
   step_grass: 2.5, step_dirt: 2.5, step_stone: 2, step_wood: 1.6, step_water: 2,
   drip: 1.6, reel: 1.8, slack: 1.6, sizzle: 1.4, pan_place: 1.8, pan_turn: 1.6, pan_bump: 1.6,
+  clang: 1.3, tick: 1.6, cleave_wind: 1.6, cleave_hit: 2, rupture: 1.8, hook_chain: 1.8,
+  ignite_wind: 1.5, ignite_burst: 1.9, soul_drain: 1.6, soul_drain_fin: 1.9, snipe_wind: 1.6, snipe_shot: 2,
+  whirl_slash: 1.9, musou_thrust: 1.9,
+  cb_stagger: 1.8, cb_shatter: 1.8, cb_aerial: 1.7, cb_mark: 1.8, cb_brand: 1.8, cb_gather: 1.7, cb_launch: 1.6,
+  freeze_lock: 1.6, armor_break: 1.6, hawk_eye: 1.5, edge_cut: 1.6, spear_cd: 1.5, mana_surge: 1.5, double_nock: 1.6,
+  whale_dive: 1.8, whale_burst: 2, blood_jet: 1.8, boss_break: 1.9, boss_absorb: 1.6,
+  dark_beam: 1.6, wind_shrine: 1.6, knife_throw: 1.7, pet_fetch: 1.6, pet_poof: 1.5, job_change: 1.6,
+  water_fill: 1.6, water_pour: 1.6, milk_clink: 1.6, weed_pull: 1.6, flyer_slap: 1.6, dog_sniff: 1.6,
+  broom_sweep: 1.6, lift_heave: 1.6, knife_chop: 1.7, plate_clink: 1.6, order_bell: 1.6, dish_scrub: 1.6, dish_clean: 1.6,
 };
 /** Effects that play even when many voices are already sounding. */
-const IMPORTANT = new Set(["verdict", "steam", "overload", "supercon", "dragon_final", "meteor_cast", "crimson", "dive", "thunder", "sanctuary", "pact", "hundred", "oath_cast", "level", "achieve", "death", "rift_start", "rift_boss", "rc_ping", "dim_boss", "dim_clear", "announce", "enh_ok", "enh_fail", "warp", "loot"]);
+const IMPORTANT = new Set(["verdict", "steam", "overload", "supercon", "dragon_final", "meteor_cast", "crimson", "dive", "thunder", "sanctuary", "pact", "hundred", "oath_cast", "level", "achieve", "job_change", "death", "rift_start", "rift_boss", "rc_ping", "dim_boss", "dim_clear", "announce", "enh_ok", "enh_fail", "warp", "loot", "whale_burst", "boss_break", "cleave_hit", "ignite_burst", "soul_drain_fin", "snipe_shot"]);
 /** 일일 아르바이트 sounds that may come in quick bursts (a hop, a brick, a spray) and the three that frame a shift, which never get dropped. */
 Object.assign(THROTTLE, { alba_pop: 0.045, alba_snap: 0.04, alba_crunch: 0.05, alba_step: 0.05, alba_zap: 0.06, alba_sizzle: 0.1, alba_swish: 0.08, alba_thud: 0.06, alba_clang: 0.05, alba_n0: 0.04, alba_n1: 0.04, alba_n2: 0.04, alba_n3: 0.04 });
 for (const n of ["alba_go", "alba_end", "alba_win"]) IMPORTANT.add(n);
@@ -687,10 +713,12 @@ for (const n of ["alba_go", "alba_end", "alba_win"]) IMPORTANT.add(n);
 const JOB_NOTE = {
   adventurer: ["triangle", 520, 520, 0, ""], swordsman: ["triangle", 880, 830, 2600, "bandpass"], thief: ["sine", 1500, 2100, 6000, "highpass"],
   lancer: ["square", 220, 110, 900, "lowpass"], wizard: ["sine", 440, 1320, 3400, "bandpass"], warlock: ["sawtooth", 98, 82, 500, "lowpass"],
-  archer: ["sine", 1800, 1250, 5000, "highpass"], spellblade: ["triangle", 660, 1320, 1800, "bandpass"], tracker: ["sine", 1250, 900, 4200, "highpass"],
+  archer: ["sine", 1800, 1250, 5000, "highpass"], destroyer: ["sawtooth", 130, 65, 650, "lowpass"],
+  spellblade: ["triangle", 660, 1320, 1800, "bandpass"], tracker: ["sine", 1250, 900, 4200, "highpass"],
   dragoon: ["sawtooth", 147, 98, 700, "lowpass"], hexblade: ["sawtooth", 196, 131, 1200, "bandpass"], darkknight: ["square", 110, 98, 600, "lowpass"],
   bladedancer: ["triangle", 1175, 1568, 5200, "highpass"], trickster: ["sine", 784, 1175, 3000, "bandpass"], spellspear: ["sine", 1320, 1980, 7000, "highpass"],
   runesage: ["triangle", 523, 784, 2200, "bandpass"], runearcher: ["sine", 990, 660, 3600, "bandpass"],
+  mercenary: ["square", 196, 147, 1400, "bandpass"], paladin: ["triangle", 587, 880, 2800, "bandpass"],
 };
 /** A plucky lane note for the rhythm game: a triangle with a short bright overtone and a pick click. */
 const albaNote = (s, f) => { s.tone("triangle", f, f, 0.24, 0.075); s.tone("sine", f * 2, f * 2, 0.1, 0.022); s.noise(0.015, 0.02, 4000, "highpass"); };
@@ -1211,4 +1239,291 @@ const SFX = {
   step_stone() { const p = this.vary(); this.noise(0.03, 0.04, 3200 * p, "bandpass"); this.tone("sine", 300 * p, 220 * p, 0.03, 0.018); },
   step_water() { const p = this.vary(); this.noise(0.07, 0.035, 1400 * p, "bandpass", 0, 3200 * p); this.tone("sine", 700 * p, 1100 * p, 0.04, 0.012, 0.015); },
   step_wood() { this.tone("triangle", 220, 160, 0.05, 0.05); this.noise(0.03, 0.025, 1200, "bandpass"); },
+  // ── ambient town anvil & UI countdown ticks (overlay.js, statwin.js, sxwin.js) ──
+  clang() {
+    const p = this.vary();
+    this.tone("square", 980 * p, 720 * p, 0.035, 0.055);
+    this.tone("sine", 1480 * p, 1440 * p, 0.26, 0.045, 0.004);
+    this.tone("sine", 2960 * p, 2880 * p, 0.18, 0.022, 0.008);
+    this.noise(0.03, 0.05, 3800 * p, "highpass");
+  },
+  tick() {
+    const p = this.vary();
+    this.tone(0.25, 1040 * p, 780 * p, 0.028, 0.045);
+    this.noise(0.018, 0.03, 4200 * p, "highpass");
+  },
+  // ── combo actives: wind-ups, strikes & Lv.30 whirls (skillfx_combo.js) ──
+  cleave_wind() {
+    const p = this.vary();
+    this.noise(0.28, 0.09, 520 * p, "bandpass", 0, 2200 * p);
+    this.tone("sawtooth", 120 * p, 240 * p, 0.26, 0.06);
+    this.tone("sine", 880 * p, 1320 * p, 0.18, 0.035, 0.08);
+  },
+  cleave_hit() {
+    const p = this.vary();
+    this.punch(p, 380, 96, 2100, 1.05);
+    this.noise(0.26, 0.24, 1800 * p, "lowpass", 0, 140 * p);
+    this.tone("sawtooth", 150 * p, 42 * p, 0.3, 0.14, 0.02);
+    this.tone("triangle", 520 * p, 190 * p, 0.14, 0.07, 0.03);
+  },
+  rupture(extra = 1) {
+    const p = this.vary(), big = extra >= 3;
+    this.punch(p, 480, 135, 3200, big ? 0.95 : 0.78);
+    this.noise(big ? 0.18 : 0.11, big ? 0.18 : 0.13, 3600 * p, "bandpass", 0, 900 * p);
+    const notes = big ? [880 * p, 1175 * p, 1568 * p, 2093 * p] : [880 * p, 1319 * p];
+    this.arp("sine", notes, 0.035, 0.11, 0.06, 0.02);
+  },
+  hook_chain() {
+    const p = this.vary();
+    this.noise(0.09, 0.15, 2200 * p, "bandpass", 0, 4800 * p);
+    this.tone("triangle", 340 * p, 680 * p, 0.07, 0.065);
+    for (let i = 0; i < 3; i++) this.tone("square", (1350 - i * 160) * p, (980 - i * 120) * p, 0.035, 0.045, 0.06 + i * 0.045);
+    this.tone("sine", 180 * p, 95 * p, 0.12, 0.09, 0.14);
+  },
+  ignite_wind() {
+    const p = this.vary();
+    this.noise(0.26, 0.1, 380 * p, "bandpass", 0, 2600 * p);
+    this.tone("sine", 196 * p, 440 * p, 0.26, 0.065);
+    this.tone("triangle", 392 * p, 880 * p, 0.2, 0.04, 0.06);
+  },
+  ignite_burst() {
+    const p = this.vary();
+    this.tone("sine", 540 * p, 110 * p, 0.09, 0.12);
+    this.noise(0.34, 0.28, 2200 * p, "lowpass", 0.03, 130 * p);
+    this.tone("sawtooth", 165 * p, 45 * p, 0.32, 0.15, 0.03);
+    this.noise(0.16, 0.12, 3400 * p, "bandpass", 0.06, 1200 * p);
+  },
+  soul_drain() {
+    const p = this.vary();
+    this.tone("sine", 392 * p, 247 * p, 0.18, 0.065);
+    this.tone("triangle", 587 * p, 370 * p, 0.18, 0.045, 0.02);
+    this.noise(0.16, 0.055, 1400 * p, "bandpass", 0, 620 * p);
+  },
+  soul_drain_fin() {
+    const p = this.vary();
+    this.noise(0.32, 0.2, 1800 * p, "lowpass", 0, 140 * p);
+    this.tone("sawtooth", 147 * p, 55 * p, 0.32, 0.12);
+    this.arp("sine", [294 * p, 440 * p, 587 * p, 880 * p], 0.05, 0.22, 0.065, 0.04);
+  },
+  snipe_wind() {
+    const p = this.vary();
+    this.noise(0.32, 0.075, 680 * p, "bandpass", 0, 2100 * p);
+    this.tone("triangle", 190 * p, 330 * p, 0.28, 0.045);
+    this.tone("sine", 1320 * p, 1760 * p, 0.18, 0.03, 0.14);
+  },
+  snipe_shot() {
+    const p = this.vary();
+    this.punch(p, 540, 128, 3400, 0.9);
+    this.noise(0.04, 0.22, 4800 * p, "highpass");
+    this.noise(0.24, 0.2, 1800 * p, "bandpass", 0.015, 5800 * p);
+    this.tone("sawtooth", 440 * p, 140 * p, 0.18, 0.09, 0.01);
+  },
+  whirl_slash(fin = false) {
+    const p = this.vary();
+    this.noise(fin ? 0.24 : 0.17, fin ? 0.24 : 0.17, 560 * p, "bandpass", 0, 2900 * p);
+    this.tone("triangle", (fin ? 220 : 175) * p, 78 * p, fin ? 0.2 : 0.14, fin ? 0.11 : 0.075);
+    this.tone(0.5, 520 * p, 240 * p, 0.06, 0.04, 0.02);
+  },
+  musou_thrust(fin = false) {
+    const p = this.vary();
+    this.noise(fin ? 0.18 : 0.12, fin ? 0.2 : 0.15, 1150 * p, "bandpass", 0, 4400 * p);
+    this.tone("triangle", 310 * p, (fin ? 620 : 490) * p, 0.08, 0.06);
+    this.tone("sine", (fin ? 1960 : 1568) * p, 1320 * p, 0.07, 0.045, 0.025);
+  },
+  // ── combo state payoffs ("cb" 1..9 in skillfx_combo.js) ──
+  cb_stagger() {
+    const p = this.vary();
+    this.punch(p, 280, 95, 1400, 0.88);
+    this.noise(0.16, 0.14, 900 * p, "lowpass", 0.02, 180 * p);
+  },
+  cb_shatter() {
+    const p = this.vary();
+    this.noise(0.18, 0.16, 4600 * p, "highpass");
+    this.arp("sine", [1760 * p, 2349 * p, 3136 * p, 2637 * p], 0.03, 0.14, 0.065);
+    this.tone("triangle", 980 * p, 320 * p, 0.18, 0.08);
+  },
+  cb_aerial() {
+    const p = this.vary();
+    this.noise(0.11, 0.14, 1600 * p, "bandpass", 0, 4200 * p);
+    this.arp("triangle", [587 * p, 880 * p, 1175 * p], 0.03, 0.1, 0.065);
+  },
+  cb_mark() {
+    const p = this.vary();
+    this.noise(0.09, 0.16, 3400 * p, "bandpass", 0, 1200 * p);
+    this.tone(0.5, 740 * p, 260 * p, 0.1, 0.08);
+    this.arp("sine", [1175 * p, 1568 * p], 0.035, 0.1, 0.06, 0.02);
+  },
+  cb_brand() {
+    const p = this.vary();
+    this.tone("sawtooth", 196 * p, 65 * p, 0.24, 0.11);
+    this.noise(0.22, 0.14, 1500 * p, "bandpass", 0, 260 * p);
+    this.arp(0.25, [587 * p, 440 * p, 294 * p], 0.04, 0.14, 0.055, 0.02);
+  },
+  cb_gather() {
+    const p = this.vary();
+    this.noise(0.22, 0.13, 420 * p, "bandpass", 0, 2200 * p);
+    this.tone("sine", 140 * p, 360 * p, 0.2, 0.08);
+    this.tone("triangle", 720 * p, 540 * p, 0.09, 0.045, 0.15);
+  },
+  cb_launch() {
+    const p = this.vary();
+    this.noise(0.16, 0.12, 600 * p, "bandpass", 0, 3200 * p);
+    this.tone("triangle", 220 * p, 587 * p, 0.15, 0.065);
+  },
+  // ── status signs, passive procs & boss mechanics (skillfx.js) ──
+  freeze_lock() {
+    const p = this.vary();
+    this.arp("sine", [1568 * p, 2093 * p, 2637 * p], 0.028, 0.11, 0.055);
+    this.noise(0.1, 0.07, 5200 * p, "highpass");
+  },
+  armor_break() {
+    const p = this.vary();
+    this.tone("square", 460 * p, 160 * p, 0.11, 0.075);
+    this.noise(0.1, 0.11, 2200 * p, "bandpass", 0, 680 * p);
+    this.tone("triangle", 920 * p, 480 * p, 0.08, 0.05, 0.03);
+  },
+  hawk_eye() {
+    const p = this.vary();
+    this.tone("sine", 1760 * p, 2349 * p, 0.07, 0.055);
+    this.tone("sine", 2349 * p, 1976 * p, 0.09, 0.045, 0.05);
+  },
+  edge_cut() {
+    const p = this.vary();
+    this.tone(0.5, 880 * p, 440 * p, 0.08, 0.06);
+    this.tone("sine", 1760 * p, 1320 * p, 0.1, 0.045, 0.02);
+  },
+  spear_cd() {
+    const p = this.vary();
+    this.tone("triangle", 523 * p, 784 * p, 0.07, 0.055);
+    this.tone("sine", 1047 * p, 1319 * p, 0.08, 0.04, 0.04);
+  },
+  mana_surge() {
+    const p = this.vary();
+    this.arp("sine", [659 * p, 988 * p, 1319 * p], 0.035, 0.12, 0.045);
+  },
+  double_nock() {
+    const p = this.vary();
+    this.noise(0.05, 0.1, 3200 * p, "highpass");
+    this.tone("triangle", 660 * p, 990 * p, 0.06, 0.045, 0.03);
+  },
+  whale_dive() {
+    this.noise(0.55, 0.18, 1800, "bandpass", 0, 220);
+    this.tone("sine", 240, 58, 0.55, 0.14);
+    this.arp("triangle", [587, 440, 330], 0.09, 0.24, 0.055, 0.06);
+  },
+  whale_burst() {
+    this.noise(0.48, 0.28, 380, "bandpass", 0, 3200);
+    this.tone("sawtooth", 68, 150, 0.38, 0.14);
+    this.tone("sine", 95, 38, 0.42, 0.22, 0.04);
+    this.arp("sine", [784, 1047, 1568], 0.05, 0.2, 0.055, 0.08);
+  },
+  blood_jet() {
+    const p = this.vary();
+    this.noise(0.42, 0.2, 900 * p, "bandpass", 0, 2800 * p);
+    this.tone("sawtooth", 140 * p, 82 * p, 0.38, 0.11);
+    this.tone("square", 320 * p, 160 * p, 0.18, 0.055, 0.04);
+  },
+  boss_break() {
+    this.punch(1, 360, 95, 2400, 0.95);
+    this.arp("triangle", [523, 659, 784, 1047], 0.045, 0.22, 0.085, 0.03);
+    this.noise(0.24, 0.16, 3600, "highpass", 0.02);
+  },
+  boss_absorb() {
+    this.tone("sawtooth", 110, 220, 0.3, 0.09);
+    this.arp("sine", [294, 349, 440], 0.06, 0.18, 0.06, 0.04);
+  },
+  // ── world events, village chores & co-op shifts (events.js, chores.js, coop.js) ──
+  dark_beam() {
+    const p = this.vary();
+    this.tone("sawtooth", 240 * p, 120 * p, 0.2, 0.075);
+    this.noise(0.18, 0.07, 1200 * p, "bandpass", 0, 420 * p);
+  },
+  wind_shrine() {
+    this.noise(0.4, 0.14, 650, "bandpass", 0, 3800);
+    this.arp("sine", [587, 784, 988, 1175, 1568], 0.055, 0.24, 0.065, 0.03);
+  },
+  knife_throw() {
+    const p = this.vary();
+    this.noise(0.065, 0.13, 2800 * p, "bandpass", 0, 5200 * p);
+    this.tone("triangle", 920 * p, 480 * p, 0.06, 0.05);
+  },
+  pet_fetch() {
+    const p = this.vary();
+    this.tone("sine", 988 * p, 1319 * p, 0.065, 0.055);
+    this.tone("sine", 1319 * p, 1568 * p, 0.085, 0.05, 0.06);
+  },
+  pet_poof() {
+    this.noise(0.14, 0.09, 1400, "bandpass", 0, 480);
+    this.tone("sine", 420, 190, 0.12, 0.055);
+  },
+  job_change() {
+    this.arp(0.25, [523, 659, 784, 1047, 1319, 1568], 0.075, 0.26, 0.11);
+    this.arp("triangle", [262, 330, 392, 523, 659, 784], 0.075, 0.3, 0.11);
+    this.tone("sine", 1047, 1047, 0.65, 0.09, 0.45);
+    this.noise(0.55, 0.05, 6500, "highpass", 0.25);
+  },
+  water_fill() {
+    const p = this.vary();
+    this.noise(0.22, 0.09, 900 * p, "bandpass", 0, 2200 * p);
+    for (let i = 0; i < 3; i++) this.tone("sine", (380 + i * 140) * p, (620 + i * 180) * p, 0.06, 0.065, i * 0.065);
+  },
+  water_pour() {
+    const p = this.vary();
+    this.noise(0.28, 0.085, 2400 * p, "bandpass", 0, 4200 * p);
+    this.arp("sine", [1047 * p, 1319 * p, 1568 * p], 0.055, 0.11, 0.045, 0.04);
+  },
+  milk_clink() {
+    const p = this.vary();
+    this.tone("sine", 1920 * p, 1840 * p, 0.09, 0.065);
+    this.tone("sine", 2560 * p, 2480 * p, 0.12, 0.05, 0.045);
+    this.tone("triangle", 320 * p, 210 * p, 0.06, 0.05);
+  },
+  weed_pull() {
+    const p = this.vary();
+    this.noise(0.14, 0.11, 1400 * p, "bandpass", 0, 3600 * p);
+    this.tone("triangle", 240 * p, 480 * p, 0.08, 0.055, 0.03);
+  },
+  flyer_slap() {
+    const p = this.vary();
+    this.noise(0.05, 0.12, 2200 * p, "bandpass");
+    this.tone("triangle", 420 * p, 260 * p, 0.05, 0.06, 0.02);
+  },
+  dog_sniff() {
+    const p = this.vary();
+    this.noise(0.045, 0.07, 2600 * p, "bandpass");
+    this.noise(0.045, 0.07, 3000 * p, "bandpass", 0.065);
+    this.tone("sine", 680 * p, 980 * p, 0.08, 0.065, 0.14);
+  },
+  broom_sweep() {
+    const p = this.vary();
+    this.noise(0.15, 0.095, 1600 * p, "bandpass", 0, 3200 * p);
+  },
+  lift_heave() {
+    const p = this.vary();
+    this.tone("triangle", 140 * p, 220 * p, 0.14, 0.09);
+    this.noise(0.08, 0.08, 700 * p, "lowpass");
+  },
+  knife_chop() {
+    const p = this.vary();
+    this.tone("triangle", 340 * p, 150 * p, 0.045, 0.095);
+    this.noise(0.035, 0.11, 2400 * p, "bandpass");
+  },
+  plate_clink() {
+    const p = this.vary();
+    this.tone("sine", 2200 * p, 2120 * p, 0.08, 0.06);
+    this.tone("sine", 3100 * p, 2980 * p, 0.06, 0.035, 0.02);
+  },
+  order_bell() {
+    this.tone("sine", 1760, 1760, 0.24, 0.07);
+    this.tone("sine", 3520, 3520, 0.16, 0.035, 0.01);
+  },
+  dish_scrub() {
+    const p = this.vary();
+    this.noise(0.14, 0.085, 2200 * p, "bandpass", 0, 3800 * p);
+    this.tone("sine", 900 * p, 1350 * p, 0.06, 0.035, 0.04);
+  },
+  dish_clean() {
+    const p = this.vary();
+    this.arp("sine", [1319 * p, 1760 * p, 2093 * p], 0.04, 0.12, 0.055);
+  },
 };
