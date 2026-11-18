@@ -81,7 +81,7 @@ function play(bot, delay, seed = 1) {
     watch();
   }
   advanceTo(ab.endAt + 50);
-  const r = { score: Math.round(ab.score), grade: ab.res[0], served, arrived: ab.g.n, maxCombo: ab.maxCombo };
+  const r = { score: Math.round(ab.score), grade: ab.res[0], served, arrived: ab.g.n, maxCombo: ab.maxCombo, out: ab.out, endMs: ab.endAt - ab.runAt };
   act({ t: "ab_close" });
   return r;
 }
@@ -123,15 +123,15 @@ const human = (lo = 400, hi = 700) => (rand) => lo + rand() * (hi - lo);
         if (seen.has(c.id)) continue;
         seen.add(c.id); n++;
         kinds[c.kind]++; if (t > 100000) lateKinds[c.kind]++;
-        assert.ok(c.it.length >= 1 && c.it.length <= (c.kind === 2 ? 12 : 5), "1-5 items, a group has twelve");
+        assert.ok(c.it.length >= 1 && c.it.length <= (c.kind === 2 ? 12 : 6), "1-6 items, a group has twelve");
         if (c.kind === 2) assert.equal(c.it.length, 12);
         assert.ok(c.it.every((v) => Number.isInteger(v) && v >= 2 && v <= 15), "prices of 200-1500 won");
         assert.equal(c.tot, sum(c.it)); assert.ok(c.paid > c.tot, "she pays more than the total");
         assert.ok(c.paid - c.tot <= 100, "no absurd change");
         maxDue = Math.max(maxDue, c.paid - c.tot); maxTaps = Math.max(maxTaps, taps(c.paid - c.tot));
-        assert.ok(c.pt >= 7200 + 1800 * c.it.length && c.lv > t - 250, "a patience of at least seven seconds");
+        assert.ok(c.pt >= 6800 + 1400 * c.it.length && c.lv > t - 250, "a patience of at least seven seconds");
         minPt = Math.min(minPt, c.pt);
-        if (n < 4) assert.equal(c.kind, 0, "the first customers are plain");
+        
       }
       const a = bot(ab, t);
       if (a) R.act(S, p, ab, a, t);
@@ -213,7 +213,7 @@ const human = (lo = 400, hi = 700) => (rand) => lo + rand() * (hi - lo);
   g.lanes[2].c = null; g.lanes[2].at = 99999;
   R.adv(S, p, ab, 6499); assert.ok(g.lanes[0].c, "she is still waiting");
   R.adv(S, p, ab, 6501); assert.equal(g.lanes[0].c, null, "she left"); assert.equal(ab.score, 80, "-20"); assert.equal(ab.combo, 0, "and the combo broke");
-  assert.ok(g.lanes[0].at >= 6500 + 2800 - 230 * 8 && g.lanes[0].at < 6500 + 2800 + 1800, "the next one comes after a gap measured from the moment she left");
+  assert.ok(g.lanes[0].at >= 6500 + 2600 - 220 * 10 && g.lanes[0].at < 6500 + 2600 + 1500, "the next one comes after a gap measured from the moment she left");
   // lazy: a long silence applies arrivals and departures in order (each lane: arrive, wait out her patience, leave, again ...)
   const ab2 = fakeAb(5150);
   ab2.score = 1000;
@@ -225,7 +225,7 @@ const human = (lo = 400, hi = 700) => (rand) => lo + rand() * (hi - lo);
   R.adv(S, p, ab3, T.runMs - T.rushMs - 1); assert.equal(ab3.g.lanes[3].c, null);
   R.adv(S, p, ab3, T.runMs - T.rushMs + 500); assert.ok(ab3.g.lanes[3].c, "a fourth lane opens for the last 15 s");
   // difficulty climbs with the score and the time
-  const abD = fakeAb(1); abD.score = 0; assert.equal(X.astoreDiff(abD, 0), 0); abD.score = 1e9; assert.equal(X.astoreDiff(abD, 0), 8); abD.score = 0; assert.equal(X.astoreDiff(abD, 90000), 2);
+  const abD = fakeAb(1); abD.score = 0; assert.equal(X.astoreDiff(abD, 0), 3, "no gentle intro"); abD.score = 1e9; assert.equal(X.astoreDiff(abD, 0), 10); abD.score = 0; assert.equal(X.astoreDiff(abD, 90000), 10); assert.equal(X.astoreDiff(abD, 10000), 4);
 }
 
 // ── (c) the bots
@@ -236,6 +236,8 @@ const human = (lo = 400, hi = 700) => (rand) => lo + rand() * (hi - lo);
   for (let i = 0; i < 30; i++) hum.push(play(clerk(rng(300 + i), 0.075), human(), 300 + i));
   for (let i = 0; i < 20; i++) humClean.push(play(clerk(), human(), 400 + i));
   for (let i = 0; i < 30; i++) slow.push(play(clerk(rng(500 + i), 0.075), human(700, 1100), 500 + i));
+  const sloppy = [];
+  for (let i = 0; i < 30; i++) sloppy.push(play(clerk(rng(700 + i), 0.25), human(800, 1400), 700 + i));
   const idleRun = play(idle(), () => 0, 9);
   const row = (name, rs) => {
     const m = mean(rs.map((r) => r.score));
@@ -247,6 +249,12 @@ const human = (lo = 400, hi = 700) => (rand) => lo + rand() * (hi - lo);
   const rH = row("human 400-700 ms, 7.5% slips", hum);
   const rC = row("human 400-700 ms, no slips", humClean);
   const rS = row("slow 700-1100 ms, 7.5% slips", slow);
+  row("sloppy 800-1400 ms, 25% slips", sloppy);
+  const rate = (rs) => rs.filter((r) => r.out).length / rs.length;
+  console.log(`store strike-outs: perfect ${rate([...perfect35, ...expert])} human ${rate(hum).toFixed(2)} sloppy ${rate(sloppy).toFixed(2)}`);
+  assert.equal(rate([...perfect35, ...expert]), 0, "the perfect bot never strikes out");
+  assert.ok(rate(hum) <= 0.25, "a human-like bot strikes out in at most 25 % of seeds");
+  assert.ok(sloppy.filter((r) => r.out && r.endMs < 75000).length >= sloppy.length / 2, "a sloppy bot strikes out in at least half of its seeds, before 75 s");
   assert.equal(idleRun.score, 0, "an idle shift scores 0"); assert.equal(idleRun.grade, 0, "and is below C");
   assert.ok(perfect35.every((r) => r.grade === 4), "a perfect bot is S");
   assert.ok(expert.every((r) => r.grade === 4), "an optimal fast player is S");
@@ -254,7 +262,7 @@ const human = (lo = 400, hi = 700) => (rand) => lo + rand() * (hi - lo);
   assert.ok(hum.filter((r) => r.grade === 4).length <= hum.length * 0.3, "S is rare for a human-like bot: it needs near-flawless play");
   assert.ok(rC > rH, "fewer slips, more points");
   assert.ok(rC >= 0.9, "a flawless human reads S");
-  assert.ok(rS >= T.cuts[0] && rS < rH, "a slow player still gets a C");
+  assert.ok(rS < rH, "a slow player scores less (and mostly strikes out)");
 }
 
 // ── (d) hostile input: nothing throws, nothing is scored or moved by junk
