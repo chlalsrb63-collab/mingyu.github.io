@@ -20594,7 +20594,7 @@ ALBA_RULES.rhythm = {
 };
 // 일일 아르바이트 · 편의점 아르바이트: a cash register, solo (contract in 66-alba.js; plan docs/design/daily-alba-minigames-2026-11-16.md §3.3).
 // Three customer lanes (a fourth opens for the last 15 s rush). A customer arrives with 1-5 items on the counter, scans nothing herself, and has a
-// patience that runs out (she leaves: albaBad(ab, 20)). The clerk taps the items to scan them (any order); when all are scanned the customer's
+// patience that runs out (she leaves angry: albaStrike(ab, t, 20), a life lost). The clerk taps the items to scan them (any order); when all are scanned the customer's
 // "paid" money is shown and the clerk gives EXACT change by tapping the pad (100 · 500 · 1000 · 5000 won): the change is complete the moment the
 // tray equals paid - total, a tap that overshoots empties the tray (a slip: combo broken, the accuracy bonus lost). Special customers:
 //   · 진상 (kind 1)  hands over another amount when the first coin is tapped, a shorter patience, grows angrier (-3 s) at every slip
@@ -20605,24 +20605,24 @@ ALBA_RULES.rhythm = {
 //   act: {s: lane, i: item} scan · {p: lane, v: 0..3} a coin or bill (pad[v]) · {cl: lane} empty the tray
 //   view: [lane ×4]; a lane is 0 (nobody) or [customer id, kind, item prices (hundreds), scanned bitmask, paid, tray, ms until she leaves, patience ms, changed-her-mind flag]
 
-Object.assign(ALBA, { store: { name: "편의점 아르바이트", npc: "store_kong", place: "다람쥐 잡화점 계산대", skill: "deliver", par: 4000, mul: 1, outfit: ["top_coop_vest"], tool: "scanner", hint: "물건을 눌러 스캔하고, 받은 돈에서 합계를 뺀 거스름돈을 정확히 내주세요." } });
+Object.assign(ALBA, { store: { name: "편의점 아르바이트", npc: "store_kong", place: "다람쥐 잡화점 계산대", skill: "deliver", par: 3000, lives: 4, mul: 1, outfit: ["top_coop_vest"], tool: "scanner", hint: "물건을 눌러 스캔하고 거스름돈을 정확히 내주세요. 손님이 화내며 가면 ♥ 하나!" } });
 
 const ASTORE = { pad: [1, 5, 10, 50], lanes: 4, leavePen: 20, groupItems: 12 };
-/** How hard it is at time `t`: climbs with the score (a level per 280 points) and with the time (two levels over a shift), 0..8. */
-const astoreDiff = (ab, t) => clamp(Math.floor(ab.score / 280 + Math.max(0, t - ab.runAt) / 45000), 0, 8);
+/** How hard it is at time `t`: starts at 3 (no gentle intro), climbs with the score (a level per 220 points) and the time (one per 10 s), 0..10. */
+const astoreDiff = (ab, t) => clamp(Math.floor(ab.score / 220 + 3 + Math.max(0, t - ab.runAt) / 10000), 0, 10);
 /** The wait before the next customer comes to an empty lane (shorter as it gets harder, and 1.4× faster in the rush). */
-const astoreGap = (ab, t) => Math.round((2800 - 230 * astoreDiff(ab, t) + ri(ab.g.gb, 0, 1800)) / (t >= ab.endAt - ALBA_T.rushMs ? 1.4 : 1));
+const astoreGap = (ab, t) => Math.round((2600 - 220 * astoreDiff(ab, t) + ri(ab.g.gb, 0, 1500)) / (t >= ab.endAt - ALBA_T.rushMs ? 1.4 : 1));
 
 /** Customer number `g.n + 1`, arriving at `t`: everything about her follows from the shift seed and her number. */
 function astoreMake(ab, t) {
   const g = ab.g, id = ++g.n, cb = { seed: (ab.box.seed ^ Math.imul(id, 0x85ebca6b)) | 0 }, d = astoreDiff(ab, t), r = rnd(cb);
-  const kind = d >= 3 && r < 0.05 && !g.lanes.some((l) => l.c && l.c.kind === 2) ? 2 : d >= 1 && r < 0.17 ? 1 : d >= 1 && r < 0.27 ? 3 : 0;
-  const n = kind === 2 ? ASTORE.groupItems : ri(cb, 1, Math.min(5, 2 + (d >> 1))), it = [];
+  const kind = d >= 5 && r < 0.05 && !g.lanes.some((l) => l.c && l.c.kind === 2) ? 2 : d >= 1 && r < 0.17 ? 1 : d >= 1 && r < 0.27 ? 3 : 0;
+  const n = kind === 2 ? ASTORE.groupItems : ri(cb, 1 + (d >> 3), Math.min(6, 2 + (d >> 1))), it = [];
   let tot = 0;
   for (let i = 0; i < n; i++) { const v = ri(cb, 2, 15); it.push(v); tot += v; }
   const up = (Math.floor(tot / 10) + 1) * 10, q = rnd(cb);   // the next thousand won above the total, now and then more
   const paid = q < 0.6 ? up : q < 0.8 ? up + 10 : q < 0.9 && up < 50 ? 50 : up < 100 ? 100 : up + 10;
-  const pt = Math.round(Math.max(12000, 28000 - 1500 * d) * (kind === 1 ? 0.8 : 1)) + 1800 * n;
+  const pt = Math.round(Math.max(8500, 25000 - 1600 * d) * (kind === 1 ? 0.8 : 1)) + 1400 * n;
   return { id, kind, it, sc: 0, tot, paid, tray: 0, lv: t + pt, pt, fl: 1, ch: 0 };
 }
 
@@ -20638,7 +20638,7 @@ ALBA_RULES.store = {
       let best = null, bt = Infinity;
       for (const l of g.lanes) { const t = l.c ? l.c.lv : l.at; if (t <= now && t < bt) { bt = t; best = l; } }
       if (!best) return;
-      if (best.c) { best.c = null; best.at = bt + astoreGap(ab, bt); albaBad(ab, ASTORE.leavePen); }
+      if (best.c) { best.c = null; best.at = bt + astoreGap(ab, bt); albaStrike(ab, bt, ASTORE.leavePen); }   // an angry customer costs a life
       else { best.c = astoreMake(ab, bt); albaTouch(ab); }
     }
   },
