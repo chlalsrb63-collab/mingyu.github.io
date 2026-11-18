@@ -6,7 +6,7 @@
 //          next: [a, b], fallAt, spawnAt, locks, washes (chain steps), wc (cells washed), n (pairs spawned), det, stain (locks to the next stains), sb, seq, ev }
 // ev = [seq, chain steps, washed cells (cell*8+colour, ≤48), flags 1 = the washer was emptied]
 // view = [board (72 chars: . empty · 1-6 colour · s stain), cur [x,y,v, x,y,v], next [a,b], ms to the next drop (or arrival), drop interval, chain steps so far, ev]
-const LAUNDRY_W = 6, LAUNDRY_H = 12, LAUNDRY_GAP = 350;   // the next pair comes this long after a lock
+const LAUNDRY_W = 6, LAUNDRY_H = 12, LAUNDRY_GAP = 280;   // the next pair comes this long after a lock
 const LAUNDRY_DX = [0, 1, 0, -1], LAUNDRY_DY = [-1, 0, 1, 0];
 
 const laundryCells = (c) => (c.b ? [[c.x, c.y, c.a], [c.x + LAUNDRY_DX[c.o], c.y + LAUNDRY_DY[c.o], c.b]] : [[c.x, c.y, c.a]]);
@@ -72,18 +72,18 @@ function laundryResolve(b, first) {
 /** The next piece off the line: a pair, or every so often a detergent block; the 6th colour joins late. */
 function laundryDraw(g, box) {
   if (--g.det <= 0) { g.det = ri(box, 11, 15); return [8, 0]; }
-  const nc = g.n >= 24 ? 6 : 5;
+  const nc = g.n >= 10 ? 6 : 5;
   return [ri(box, 1, nc), ri(box, 1, nc)];
 }
 /** Ms between drops: faster with every chain step, ×0.7 in the rush, ×1.5 slower in a fever ("건조기"). */
-const laundryDrop = (g, ab, T) => Math.round(Math.max(200, 650 - 16 * g.washes) * (T >= ab.endAt - ALBA_T.rushMs ? 0.7 : 1) * (T < ab.feverUntil ? 1.5 : 1));
+const laundryDrop = (g, ab, T) => Math.round(Math.max(125, 320 - 12 * g.washes) * (T >= ab.endAt - ALBA_T.rushMs ? 0.65 : 1) * (T < ab.feverUntil ? 1.5 : 1));
 
 /** A pair arrives at the top; if its place is taken the stack reached the ceiling: the washer is emptied. */
 function laundrySpawn(ab, T) {
   const g = ab.g, nx = g.next, c = { a: nx[0], b: nx[1], x: 2, y: 1, o: 0 };
   g.next = laundryDraw(g, ab.box);
   g.n++;
-  if (!laundryFits(g, laundryCells(c))) { g.b.fill(0); albaBad(ab, 100); g.ev = [++g.seq, 0, [], 1]; }
+  if (!laundryFits(g, laundryCells(c))) { g.b.fill(0); albaStrike(ab, T, 100); g.ev = [++g.seq, 0, [], 1]; }   // a full washer costs a life
   g.cur = c;
   g.fallAt = T + laundryDrop(g, ab, T);
 }
@@ -116,10 +116,10 @@ function laundryLock(ab, T) {
   }
 }
 
-ALBA.laundry = { name: "세탁소", npc: "costume", place: "의상실 세탁실", skill: "craft", par: 6800, mul: 1.1, outfit: ["top_apron_moka"], tool: "basket", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 같은 색 4개를 이어 세탁하세요. 얼룩은 옆에서 세탁해야 풀려요." };
+ALBA.laundry = { name: "세탁소", npc: "costume", place: "의상실 세탁실", skill: "craft", par: 5000, lives: 3, mul: 1.1, outfit: ["top_apron_moka"], tool: "basket", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 같은 색 4개를 이어 세탁하세요. 세탁기가 넘치면 ♥ 하나." };
 ALBA_RULES.laundry = {
   init(S, p, ab) {
-    const g = ab.g = { b: new Array(LAUNDRY_W * LAUNDRY_H).fill(0), cur: null, next: null, fallAt: 0, spawnAt: ab.runAt, locks: 0, washes: 0, wc: 0, n: 0, det: 12, stain: 7, sb: { seed: (ab.box.seed ^ 0x2f6b9a1d) | 0 }, seq: 0, ev: [0, 0, [], 0] };
+    const g = ab.g = { b: new Array(LAUNDRY_W * LAUNDRY_H).fill(0), cur: null, next: null, fallAt: 0, spawnAt: ab.runAt, locks: 0, washes: 0, wc: 0, n: 0, det: 12, stain: 4, sb: { seed: (ab.box.seed ^ 0x2f6b9a1d) | 0 }, seq: 0, ev: [0, 0, [], 0] };
     g.next = laundryDraw(g, ab.box);
   },
   adv(S, p, ab, now) {
