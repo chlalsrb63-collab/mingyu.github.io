@@ -7,7 +7,7 @@
  * along the weapon from the hand (0) to the tip, `t` across it (negative is the
  * upper, lit edge) — with a material per shape. Two rasterisers turn that into
  * pixels: the world sprite (pointing right, the hand at sprites.js GRIP) and
- * the 16×16 bag icon (the same weapon laid corner to corner). Every pixel gets
+ * the 32×32 bag icon (the same weapon laid corner to corner). Every pixel gets
  * exactly one palette colour: materials are shaded per output pixel (lit top
  * row, shadowed bottom row, hue-shifted), then the whole is inked with a
  * one-pixel outline in the rarity's colour.
@@ -24,6 +24,7 @@
  */
 
 import * as Assets from "./assetlib.js";
+import { EQUIP_ICON_SIZE, fitEquipmentIcon, weaponIconProjection } from "./gear_icons.js";
 import { porcelainWeaponSprite, porcelainWeaponIcon, PORCELAIN_MOTIF } from "./weapons_porcelain.js";
 
 const GRIP = [5, 16];
@@ -1153,48 +1154,24 @@ function sprite(kind, gear, o) {
   return c;
 }
 
-/** The 16×16 bag icon: the same weapon laid corner to corner (a book upright), fitted to the square. */
+/** The 32×32 bag icon: the same weapon laid corner to corner (a book upright), fitted to the square. */
 export function weaponIcon(kind, tier, o = {}) {
   const motif = MOTIF[o.ws] ? o.ws : MOTIF[o.wl] ? o.wl : "", we = o.we | 0;
   const key = `i:${kind}:${tier}:${motif}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}`;
   let c = cache.get(key);
   if (c) return c;
   if (motif === "porcelain") { c = porcelainWeaponIcon(kind, o); cache.set(key, c); return c; }
-  const ext = fromAsset("icon.weapon." + assetKey(kind, tier, o), 16, 16, 8, 8, true);
+  const ext = Assets.canvas("icon.weapon." + assetKey(kind, tier, o));
   if (ext) {
     // laid corner to corner: the striking part is the upper right
-    c = dressAsset(ext, null, we, (x, y) => kind === "book" || x - y > 1);
+    c = dressAsset(fitEquipmentIcon(ext), null, we, (x, y) => kind === "book" || x - y > 2);
     cache.set(key, c);
     return c;
   }
-  // a bow is shown half drawn, an arrow on the string: the open D of the string reads at 16 px
   const d = build(kind, tier, motif, true, kind === "bow" ? { pull: 0.4, arrow: true } : undefined);
   const glow = we >= 7 ? { blade: d.blade, col: GLOW7 } : null;
-  // the extent of every shape, to fit the square with a pixel to spare for the outline
-  const pts = [];
-  for (const sh of d.sh.concat(d.post)) {
-    if (sh.m === null) continue;
-    if (sh.k === "p") pts.push(...sh.pts);
-    else if (sh.k === "c") pts.push([sh.s - sh.r, sh.t - sh.r], [sh.s + sh.r, sh.t + sh.r]);
-    else if (sh.k === "l") pts.push(sh.a, [sh.b[0] + 1, sh.b[1] + 1]);
-    else pts.push([sh.s, sh.t], [sh.s + 1, sh.t + 1]);
-  }
-  let xf, inv;
-  if (kind === "book") {
-    const s0 = Math.min(...pts.map((p) => p[0])), s1 = Math.max(...pts.map((p) => p[0])), t0 = Math.min(...pts.map((p) => p[1])), t1 = Math.max(...pts.map((p) => p[1]));
-    const k = Math.min(1, 13 / (s1 - s0), 13 / (t1 - t0));
-    const cx = (s0 + s1) / 2, cy = (t0 + t1) / 2;
-    xf = (s, t) => [8 + (s - cx) * k, 8 + (t - cy) * k]; inv = (x, y) => [cx + (x - 8) / k, cy + (y - 8) / k];
-  } else {
-    // s runs up and to the right, t down and to the right: x = u(s + t), y = u(t − s)
-    const xs = pts.map(([s, t]) => s + t), ys = pts.map(([s, t]) => t - s);
-    const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
-    const u = Math.min(0.9, 13 / (x1 - x0), 13 / (y1 - y0));
-    const ox = 8 - (u * (x0 + x1)) / 2, oy = 8 - (u * (y0 + y1)) / 2;
-    xf = (s, t) => [ox + u * (s + t), oy + u * (t - s)];
-    inv = (x, y) => { const a = (x - ox) / u, b = (y - oy) / u; return [(a - b) / 2, (a + b) / 2]; };
-  }
-  c = paint(d, 16, 16, xf, inv, glow, we >= 10 ? [ICON_INK, GLOW10] : [ICON_INK]);
+  const { xf, inv } = weaponIconProjection(kind, d.sh.concat(d.post));
+  c = paint(d, EQUIP_ICON_SIZE, EQUIP_ICON_SIZE, xf, inv, glow, we >= 10 ? [ICON_INK, GLOW10] : [ICON_INK]);
   cache.set(key, c);
   return c;
 }
