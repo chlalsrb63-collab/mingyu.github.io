@@ -81,21 +81,29 @@ const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   const kinds = [0, 0, 0, 0]; a.F.forEach((f) => kinds[f.k]++);
   assert.ok(kinds.every((n) => n > 3), "every kind appears: " + kinds);
   const bomb = (t) => Math.max(...a.F.filter((f) => f.t0 >= t && f.t0 < t + 4000).map((x) => a.F.filter((f) => f.t0 >= x.t0 && f.t0 < x.t0 + 700).length));
-  assert.ok(bomb(45000) >= 7 && bomb(78000) >= 7, "a trash bomb at 45 s and in the last 15 s: " + bomb(45000) + "/" + bomb(78000));
-  const early = a.F.filter((f) => f.t0 < 22500).length, late = a.F.filter((f) => f.t0 >= 60000 && f.t0 < 75000).length;
-  assert.ok(late / 15 > early / 22.5, "the pace ramps up");
-  assert.ok(a.F.length > 90 && a.F.length < 300, "a shift has a long schedule: " + a.F.length);
+  assert.ok(X.FLY.bombs.every((t) => bomb(t) >= 7), "a trash bomb at " + X.FLY.bombs.join("/") + ": " + X.FLY.bombs.map(bomb));
+  const early = a.F.filter((f) => f.t0 >= 2000 && f.t0 < 12000).length, late = a.F.filter((f) => f.t0 >= 70000 && f.t0 < 90000).length;
+  assert.ok(late / 20 > early / 10 * 1.3, "the pace ramps up (last 20 s well beyond the first 10 s): " + (late / 20).toFixed(2) + " vs " + (early / 10).toFixed(2));
+  assert.ok(a.F.length > 120 && a.F.length < 400, "a shift has a long schedule: " + a.F.length);
 }
 
 // (b) bots against the grades
-const perf = scores(perfect, 8), hum = scores(human, 8), idl = scores(idle, 2);
+const perf = scores(perfect, 8), hum = scores(human, 16), idl = scores(idle, 2);
 console.log(`perfect ${perf.map((r) => r.score).join(" ")} | human ${hum.map((r) => r.score).join(" ")} | idle ${idl.map((r) => r.score).join(" ")}`);
 console.log(`par ${X.ALBA[K].par}: perfect avg ${Math.round(avg(perf.map((r) => r.score)))} (grades ${perf.map((r) => r.grade)}) · human avg ${Math.round(avg(hum.map((r) => r.score)))} (grades ${hum.map((r) => r.grade)}) · human max combo ${hum.map((r) => r.combo)}`);
 assert.ok(perf.every((r) => r.grade === 4), "a perfect bot always reaches S");
-assert.ok(hum.every((r) => r.grade >= 2 && r.grade <= 3) && avg(hum.map((r) => r.grade)) <= 2.5, "a human-like bot lands around B");
+assert.ok(avg(hum.map((r) => r.grade)) >= 1.8 && avg(hum.map((r) => r.grade)) <= 2.6, "a human-like bot lands around B");
 assert.ok(idl.every((r) => r.score === 0 && r.grade === 0), "an idle bot scores nothing");
 { const par = X.ALBA[K].par, hs = avg(hum.map((r) => r.score)) / par; assert.ok(hs >= 0.62 && hs <= 0.88, "the human bot is at " + hs.toFixed(2) + " of par"); }
-{ const sloppy = scores(() => human({ miss: 0.3, slip: 0.25, beeTap: 0.3, react: [400, 900] }), 3); assert.ok(sloppy.every((r) => r.grade <= 1), "a sloppy bot stays at C or below: " + sloppy.map((r) => r.score)); }
+{
+  const sloppy = scores(() => human({ miss: 0.3, slip: 0.25, beeTap: 0.3, react: [400, 900] }), 12);
+  assert.ok(sloppy.every((r) => r.grade <= 1), "a sloppy bot stays at C or below: " + sloppy.map((r) => r.score));
+  const rate = (rs) => rs.filter((r) => r.ab.out === 1).length / rs.length;
+  console.log(`strike-outs: perfect ${rate(perf)} human ${rate(hum).toFixed(2)} sloppy ${rate(sloppy).toFixed(2)}`);
+  assert.equal(rate(perf), 0, "the perfect bot never strikes out");
+  assert.ok(rate(hum) <= 0.25, "a human-like bot strikes out in at most 25 % of seeds");
+  assert.ok(sloppy.filter((r) => r.ab.out === 1 && r.ab.endAt - r.ab.runAt < 75000).length >= sloppy.length / 2, "a sloppy bot strikes out in at least half of its seeds, before 75 s");
+}
 
 // (c) hostile inputs never throw and never score illegitimately
 {

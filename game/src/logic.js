@@ -19300,8 +19300,8 @@ ALBA_RULES.cross = {
 // view = [[[id, can, ms to spawn (< 0: already out), life, kind (4 = wounded poison)]… alive or spawning within FLY.ahead ms], [[can, ms the lid stays shut]…]];
 // the view is re-sent (rev) on every hit and whenever the announced window is about to run dry, so an idle player still sees what comes.
 // The only input is {hit: fly id}: it must name a fly that is out (± FLY.grace for latency) and not hit yet; a swing at nothing is refused without a penalty.
-const FLY = { ahead: 3500, refresh: 1200, grace: 250, early: 100, close: 1000, gap: 400, pts: [10, 40, 0, 25], beePen: 30, bombs: [45000, 78000], rate: [1.2, 2.0], life: [[900, 520], [520, 380], [950, 700], [1500, 1000]] };
-Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 4600, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌은 건드리지 마세요!" } });
+const FLY = { ahead: 3500, refresh: 1200, grace: 250, early: 100, close: 1000, gap: 400, pts: [10, 40, 0, 25], beePen: 30, bombs: [22000, 60000, 80000], rate: [1.9, 2.8], life: [[700, 380], [420, 280], [800, 560], [1300, 850]] };
+Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 5200, lives: 4, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌을 치면 ♥ 하나 (네 번이면 끝)!" } });
 
 /** Roll the whole schedule: a spawn clock whose pace and lifetimes ramp with the time, and two 쓰레기 폭탄 (every can opens at once). */
 function flyBuild(box) {
@@ -19313,9 +19313,9 @@ function flyBuild(box) {
   };
   const bag = [];   // kinds come out of a shuffled bag, so every shift holds nearly the same mix
   const kind = (t) => {
-    if (t < 5000) return 0;
+    if (t < 2000) return 0;
     if (!bag.length) {
-      (t < 22000 ? [12, 1, 1, 2] : [11, 1, 3, 3]).forEach((n, k) => { for (let i = 0; i < n; i++) bag.push(k); });
+      (t < 10000 ? [11, 1, 2, 2] : [10, 1, 3, 3]).forEach((n, k) => { for (let i = 0; i < n; i++) bag.push(k); });
       for (let i = bag.length - 1; i > 0; i--) { const j = ri(box, 0, i), x = bag[i]; bag[i] = bag[j]; bag[j] = x; }
     }
     return bag.pop();
@@ -19359,7 +19359,8 @@ ALBA_RULES.fly = {
     if (f.dn || rt < f.t0 - FLY.early || rt > f.t0 + f.life + FLY.grace) return "이미 사라졌어요";
     if (f.k === 3 && f.hp > 1) { f.hp--; albaTouch(ab); return null; }   // a poison fly takes two swats
     f.dn = 1;
-    if (f.k === 2) albaBad(ab, FLY.beePen); else albaGood(ab, now, FLY.pts[f.k]);
+    // a bee sting costs a life
+    if (f.k === 2) albaStrike(ab, now, FLY.beePen); else albaGood(ab, now, FLY.pts[f.k]);
     // the lid drops for a second: the next flies of this can wait for it
     const end = rt + FLY.close, q = g.Q[f.c];
     g.cd[f.c] = end;
