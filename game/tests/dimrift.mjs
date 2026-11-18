@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, DIM_FLOORS, dimTheme, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, skillHpCost, xpNeed, stats, atkRange, aimIdx, ITEMS, SOLID_G, MAXLV, DIM_CHAL, CHAL_KEYS, dimFloorK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk, chalOfWeek };\n";
+  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, DIM_FLOORS, dimTheme, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, skillHpCost, xpNeed, stats, atkRange, aimIdx, ITEMS, SOLID_G, MAXLV, DIM_CHAL, CHAL_KEYS, dimFloorK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk, chalOfWeek, RAID, MAP_META, FIELD_BOSS, dimRaidKey };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, D = X.DIM;
 // tuning runs: HPB=… BOSSHP=… NOCLEAR=1 node tests/dimrift.mjs -v
@@ -190,23 +190,23 @@ const dimIds = (S) => Object.keys(S.dims);
 
   const A = hero(S, "pa", "가장"), B = hero(S, "pb", "나비"), C = hero(S, "pc", "다람"), E = hero(S, "pe", "멀리");
   step(S);
-  // too far: refused
+  // a boss challenge still starts at the obelisk (a raid opens from anywhere: the field raids' section below)
   A.x = 6 * T; A.y = 14 * T;
-  assert.match(act(S, "pa", { t: "dim_open" }).error, /오벨리스크/);
+  assert.match(act(S, "pa", { t: "dim_open", boss: X.CHAL_KEYS[0] }).error, /오벨리스크/);
   A.x = OBX; A.y = OBY;
   const P = party(S, ["pa", "pb", "pc", "pe"]);
   assert.match(act(S, "pb", { t: "dim_open" }).error, /파티장만/, "only the leader opens");
-  // E is out of town: not asked
+  // E is out in the meadow: asked all the same (a raid pulls its party in from anywhere)
   L.runtime(S, "meadow");
   X.changeMap(S, E, "meadow", 30 * T, 20 * T);
   assert.ok(act(S, "pa", { t: "dim_open" }).ok);
   assert.match(act(S, "pa", { t: "dim_open" }).error, /이미 준비/);
   step(S);
   const rc = P.rc;
-  assert.ok(rc && rc.resp.pa === 1 && rc.resp.pb === 0 && rc.resp.pc === 0 && rc.resp.pe === 3);
+  assert.ok(rc && rc.resp.pa === 1 && rc.resp.pb === 0 && rc.resp.pc === 0 && rc.resp.pe === 0);
   const vb = last("pb", "rc");
   assert.ok(Array.isArray(vb) && vb[0] === rc.id && vb[1] === 20 && vb[2].length === 4, "B is shown the check: " + JSON.stringify(vb));
-  assert.equal(last("pe", "rc"), undefined, "E out in the meadow is not asked");
+  assert.ok(Array.isArray(last("pe", "rc")), "E out in the meadow is asked too");
   assert.match(act(S, "pb", { t: "dim_ready", id: rc.id + 1, ok: 1 }).error, /응답할/, "a wrong id is refused");
   assert.ok(act(S, "pb", { t: "dim_ready", id: rc.id, ok: 0 }).ok, "B declines");
   assert.match(act(S, "pb", { t: "dim_ready", id: rc.id, ok: 1 }).error, /이미 응답/, "no second answer");
@@ -512,7 +512,7 @@ function runParty(lv, classes, seedSalt, shift = 0, opt = {}) {
   const ps = classes.map((c, i) => hero(S, pids[i], "봇" + i, c, lv, true));
   if (ps.length > 1) party(S, pids);
   // (a boss challenge)
-  assert.ok(act(S, pids[0], { t: "dim_open", ...(opt.boss ? { boss: opt.boss } : {}) }).ok);
+  assert.ok(act(S, pids[0], { t: "dim_open", ...(opt.boss ? { boss: opt.boss } : {}), ...(opt.raid ? { raid: opt.raid } : {}) }).ok);
   if (ps.length > 1) { const rc = S.parties[ps[0].party].rc; for (const pid of pids.slice(1)) act(S, pid, { t: "dim_ready", id: rc.id, ok: 1 }); }
   // (each floor is its own instance: these follow the party down)
   let dim = S.dims[ps[0].map], m = dim.map, rt = dim.rt, W = m.w;
@@ -701,14 +701,104 @@ function quickClear(S, _dim, shares) {
   const group = party(S, ["ha", "hb"]);
   assert.ok(act(S, "ha", { t: "dim_open", hanok: true }).ok);
   step(S);
-  assert.equal(last("hb", "rc")[8], 1, "the party is invited to Hanok");
+  assert.equal(last("hb", "rc")[8], "hanok", "the party is invited to Hanok");
   assert.ok(act(S, "hb", { t: "dim_ready", id: group.rc.id, ok: 1 }).ok);
   assert.equal(a.map, b.map);
   assert.equal(S.dims[a.map].map.style, "hanok_raid");
   step(S);
-  assert.equal(last("ha", "dim")[16], 1);
+  assert.equal(last("ha", "dim")[16], "hanok");
   quickClear(S, S.dims[a.map], { ha: 1, hb: 1 });
   assert.equal(lastDim.map.style, "hanok_raid", "the route remains Hanok to floor 3");
+}
+
+// ───────────── the four field raids (속삭임 숲, 산호 해안, 모래바람 오아시스, 단풍 왕도): table, floors, rules, a bot clear
+const FIELDS = ["forest", "coast", "oasis", "maple"];
+{
+  assert.deepEqual(Object.keys(X.RAID), ["under", "hanok", ...FIELDS], "display order");
+  const defs = L.defs().dim;
+  assert.deepEqual(defs.raids.map((r) => r.k), Object.keys(X.RAID));
+  assert.deepEqual(defs.raids.map((r) => [r.minLv, r.maxLv]), [[37, 200], [37, 200], [37, 60], [95, 125], [110, 140], [155, 200]]);
+  for (const r of defs.raids) { assert.equal(r.floors.length, 3); assert.ok(r.name && r.theme); }
+  assert.ok(defs.raid.names.length === 3 && defs.raid.hanokNames.length === 3, "the old raid defs stay");
+  const LOOK = { forest: ":;\"pjw=", coast: "S~zp.w", oasis: "szp,.tr=w", maple: ".%;:\"&p=jw" };
+  for (const raid of FIELDS) {
+    const R = X.RAID[raid], own = new Set(X.MAP_META[raid].kinds.filter((k) => !X.MOBS[k].chest)), styles = new Set(), names = new Set(), looks = new Set();
+    for (let floor = 1; floor <= 3; floor++) for (let sd = 1; sd <= 6; sd++) {
+      const seed = Math.imul(sd * 17 + floor, 2654435761) | 0, theme = X.dimTheme(seed >>> 0, floor, raid), cc = R.floors[floor - 1];
+      const lv = Math.max(10, Math.min(49, Math.floor(((R.minLv + R.maxLv) / 2 + 3) / 4)));
+      const m = X.dimension({ id: "dim:9", seed, theme, lv, floor, raid });
+      assert.equal(m.theme, X.DIM_THEMES[cc.look].theme, "the field's own art set"); assert.equal(m.dim.raid, raid); assert.equal(m.dim.style, cc.style);
+      assert.ok(m.name.includes(cc.name)); styles.add(cc.style); names.add(cc.name); looks.add(cc.look);
+      if (sd === 1) { const again = X.dimension({ id: "dim:9", seed, theme, lv, floor, raid }); assert.deepEqual([again.g, again.o, again.dim.spawns], [m.g, m.o, m.dim.spawns], "same seed, same floor"); }
+      // entry → boss hall on one connected piece of ground, every room, spawn and the door home reachable
+      for (const [x, y] of [m.entry, m.dim.door, m.dim.boss, ...m.dim.rooms.map((r) => [r.cx, r.cy]), ...m.dim.spawns.map((q) => q.at)]) assert.ok(m.reach[y * m.w + x], `${raid}/${floor}: ${x},${y} reachable`);
+      assert.ok(m.dim.path >= D.path && m.dim.path <= 220, `${raid}/${floor}: way to the master ${m.dim.path}`);
+      assert.ok(m.dim.loops >= 1 && m.dim.dead.length >= D.vaults[0]);
+      // no cave rock or cave floor left for the browser: ground only from the look (and its dressing), every wall an object
+      let walk = 0;
+      for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
+        walk += m.reach[y * m.w + x];
+        assert.ok(m.g[y][x] !== "W" && m.g[y][x] !== "c" && m.g[y][x] !== "d", `${raid}/${floor}: raw dungeon ground at ${x},${y}`);
+        if (m.g[y][x] === "w") assert.ok(!m.reach[y * m.w + x], "water is not walkable");
+      }
+      assert.ok(walk >= 4 * 465, `${raid}/${floor}: ${walk} walkable tiles`);
+      const used = new Set(m.g.flat().join("")); for (const ch of used) assert.ok(LOOK[raid].includes(ch), `${raid}/${floor}: odd ground "${ch}"`);
+      // the monsters are the field's own kinds (or the field's nearest four when the party has outgrown them)
+      for (const q of m.dim.spawns) if (!q.chest) assert.ok(own.has(q.k), `${raid}: ${q.k} is not one of the field's kinds`);
+      assert.ok(m.dim.spawns.some((q) => q.chest && q.k === "chest_" + X.DIM_THEMES[cc.look].chest));
+      assert.ok(own.has(m.dim.bossK) || m.dim.bossK === X.FIELD_BOSS[raid], "the master is the field's boss or one of its kinds");
+    }
+    assert.equal(names.size, 3); assert.equal(looks.size, 3); assert.equal(styles.size, 3, "three distinct concepts");
+  }
+  // old callers: the pool of an underground theme still falls back to every ground, and `hanok: true` still means the hanok raid
+  assert.equal(X.dimension({ id: "dim:9", seed: 5, theme: "crypt", lv: 20, floor: 1, hanok: true }).dim.raid, "hanok");
+  assert.equal(X.dimension({ id: "dim:9", seed: 5, theme: "crypt", lv: 20, floor: 1 }).dim.raid, "under");
+}
+{
+  // rules: opened from anywhere (not only the obelisk), the level window, an unknown key, the wire
+  const S = world(), a = hero(S, "fa", "숲채", "warrior", 12), b = hero(S, "fb", "벽채", "mage", 12), c = hero(S, "fc", "고수", "rogue", 25);
+  X.changeMap(S, a, "meadow", 30 * T, 30 * T); X.changeMap(S, b, "forest", 30 * T, 30 * T);
+  assert.ok(!act(S, "fa", { t: "dim_open", raid: "nowhere" }).ok, "an unknown raid");
+  const rej = act(S, "fc", { t: "dim_open", raid: "forest" });
+  assert.ok(!rej.ok && /Lv\.37~60/.test(rej.msg || rej.err || JSON.stringify(rej)), "a Lv.97 hero is outside the forest window: " + JSON.stringify(rej));
+  assert.ok(!act(S, "fa", { t: "dim_open", raid: "maple" }).ok, "a Lv.45 hero is under the maple window");
+  const group = party(S, ["fa", "fb", "fc"]);
+  assert.ok(act(S, "fa", { t: "dim_open", raid: "forest" }).ok, "opens away from the obelisk");
+  assert.equal(group.rc.raid, "forest");
+  assert.equal(group.rc.resp.fc, 3, "the Lv.97 member is barred");
+  assert.equal(group.rc.resp.fb, 0, "a member on another map is asked");
+  step(S);
+  assert.equal(last("fb", "rc")[8], "forest", "the ready check carries the raid key");
+  assert.ok(act(S, "fb", { t: "dim_ready", id: group.rc.id, ok: 1 }).ok);
+  assert.equal(S.players.fa.map, S.players.fb.map); assert.ok(S.players.fa.map.startsWith("dim:"));
+  assert.equal(S.players.fc.map, "town", "the barred one stays");
+  const dim = S.dims[S.players.fa.map];
+  assert.equal(dim.map.dim.raid, "forest"); assert.equal(dim.map.theme, "forest");
+  assert.ok(!act(S, "fa", { t: "dim_open", raid: "forest" }).ok, "not from inside an instance");
+  step(S);
+  assert.equal(last("fa", "dim")[16], "forest", "dimView ends with the raid key");
+  assert.equal(last("fa", "dim")[10], "forest_gorge", "the theme is the floor's look");
+  quickClear(S, dim, { fa: 1, fb: 1 });
+  assert.equal(lastDim.map.dim.raid, "forest"); assert.equal(lastDim.map.name.split("· ")[1], X.RAID.forest.floors[2].name, "floor 3 of the route");
+  // a plain open still gives the underground raid and its key
+  const S2 = world(); hero(S2, "ua", "지하", "warrior", 20);
+  assert.ok(act(S2, "ua", { t: "dim_open" }).ok); step(S2);
+  assert.equal(S2.dims[S2.players.ua.map].map.dim.raid, "under"); assert.equal(last("ua", "dim")[16], undefined, "the underground raid sends no key");
+}
+{
+  // a bot party of four clears each field raid inside the cap, at about the pace of the underground raid (4–10.5 min; QA: ≈ 1.5× slower by hand)
+  const mid = { forest: 12, coast: 28, oasis: 32, maple: 44, ...(process.env.FRAID ? { [process.env.FRAID]: +process.env.FLV } : {}) };   // FRAID=forest FLV=10 FSHIFTS=0 for an edge of a window
+  const times = [];
+  for (const raid of FIELDS) for (const sh of (process.env.FSHIFTS || "0,1").split(",").map(Number)) {
+    const r = runParty(mid[raid], ["warrior", "rogue", "lancer", "mage"], 5, sh, { raid });
+    times.push({ raid, sh, r });
+    log(`FIELD ${raid} tier ${mid[raid]} (+${sh}) ${r.theme}: floors ${r.floors.map((f) => f.toFixed(1)).join(", ")}, gauges ${r.boss && r.boss.toFixed(1)}, clear ${r.clear && r.clear.toFixed(1)} min, ${r.deaths} deaths, end ${r.state}`);
+  }
+  const bad = times.filter(({ r }) => r.clear === null || r.floors.length !== 2 || !(r.clear >= 4 && r.clear <= 10.5));
+  if (!process.env.NOCLEAR) {
+    assert.ok(bad.length <= Math.floor(times.length * 0.25), `field raids clear in 4–10.5 min; bad: ${bad.map(({ raid, sh, r }) => `${raid}+${sh} ${r.state} ${r.clear}`).join(", ")}`);
+    for (const raid of FIELDS) assert.ok(times.some((t) => t.raid === raid && !bad.includes(t)), `${raid} clears at least once`);
+  }
 }
 
 const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: "dim_leave" }).ok); for (let i = 0; i < 205; i++) step(S); };

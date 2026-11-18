@@ -102,10 +102,10 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
     assert.ok(Math.abs(door.x - w.x) + Math.abs(door.y - w.y) < 70, id + ": the waypoint is near the way in");
   }
 
-  // warp is refused away from a stone, to a sleeping stone, and in combat
+  // warp works away from a stone (owner 2026-11-18); refused to a sleeping stone, inside an instance, and in combat
   const p = W.p;
   W.to("town", 30, 18); W.step();
-  assert.equal(W.act({ t: "warp", to: "meadow" }).error, "이동의 돌 곁에서만 이동할 수 있습니다");
+  assert.equal(W.act({ t: "warp", to: "meadow" }).error, "아직 깨우지 않은 이동의 돌입니다");
   W.to("town", wpTown.x + 1, wpTown.y); W.step();
   assert.equal(W.act({ t: "warp", to: "meadow" }).error, "아직 깨우지 않은 이동의 돌입니다");
   assert.equal(W.act({ t: "warp", to: "nowhere" }).error, "그곳에는 이동의 돌이 없습니다");
@@ -122,7 +122,11 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   p.hitAt = W.now - 500;
   assert.equal(W.act({ t: "warp", to: "town" }).error, "전투 중에는 이동할 수 없습니다");
   p.hitAt = W.now - 5000;
-  assert.ok(W.act({ t: "warp", to: "town" }).ok);
+  const map0 = p.map; p.map = "dim:test";
+  assert.equal(W.act({ t: "warp", to: "town" }).error, "레이드던전이나 협동 알바 중에는 이동할 수 없습니다");
+  p.map = map0;
+  W.to("meadow", mw.x + 30, mw.y); W.step();
+  assert.ok(W.act({ t: "warp", to: "town" }).ok, "the world map warps far from any stone");
   v = W.step();
   assert.equal(W.p.map, "town");
   const tw = D.waypoints.find((o) => o.id === "town");

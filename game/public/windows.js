@@ -26,7 +26,6 @@ import * as Track from "./track.js";
 import * as Housing from "./housing.js";
 import { $, VP, G, clamp, $$, el, setLayoutHook } from "./state.js";
 import { act, channelName } from "./net.js";
-import { stoneNear } from "./actions.js";
 import { wpWoke } from "./overlay.js";
 import { refreshUi } from "./hud.js";
 import { tutTry } from "./win_world.js";
@@ -731,7 +730,7 @@ export function setupWindows({ walkToDoor }) {
     G, act, toggleWin, isOpen, wpWoke, npcOut: S3.npcOut, miniDots: Dim.miniDots, play: (n) => Sound.play(n),
     walkToDoor, closeMap: () => closeWin("map"), toast,
     track: (id, name) => Track.start(() => ({ k: "map", id }), name),
-    canWarp: () => stoneNear() || !!(G.near && G.near.role === "warp"),
+    canWarp: () => !(G.map && String(G.map.id).startsWith("dim:")),   // warps from anywhere outside an instance (owner 2026-11-18)
     info: () => `${channelName()} · ${G.map.safe ? "안전 지대" : "사냥터"} · ${G.who.size - [...G.who.values()].filter((w) => w.buddy).length}명`,
   });
   $("#chat-fold").addEventListener("click", () => document.body.classList.toggle("chat-folded"));

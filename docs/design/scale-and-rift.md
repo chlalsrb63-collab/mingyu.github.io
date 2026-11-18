@@ -841,3 +841,25 @@ Numbers live in `31-maps-dim.js` `DIM_TIER` / `DIM_CHAL`; rules in `64-dim.js`. 
 - **Gauge**: fixed `DIM.gK` 2.5 × (0.9 kill · 4 elite · 3 orb) — 100 % ≈ 26 kills, of 70–110 monsters on a floor. 3단's 100 % also opens
   균열의 문 beside a party > `hallR` 30 steps from the hall (→ `dim.ck`); while the gauge fills the fallen get up beside a standing member.
 - **Bots** (4 × Lv 17/32/44 × 4 draws): 11/12 clear in 8.1–11.4 min, avg 9.9, ≤ 4 deaths a run; HUD title `n단 · <concept>` from `defs().dim.raid.names`.
+
+### H.8 Field raids — as built (2026-11-18, owner: 레이드던전 on the field maps' concepts and art)
+
+Four more 3단 레이드, same shape as the underground one (6 × 5 grid, 16–21 rooms, 15-minute cap, the gauge and 100% rules untouched). `RAID`
+(`src/logic/31-raids-field.js`) is the table: `under`, `hanok`, `forest` 속삭임 숲 Lv.37–60, `coast` 산호 해안 Lv.95–125, `oasis` 모래바람
+오아시스 Lv.110–140, `maple` 단풍 왕도 Lv.155–200; each has three floor rows (name, layout style, look). Floors: forest 이끼 협곡 (caves) →
+잊힌 사원 뜰 (halls) → 속삭임 늪 (arena); coast 백사장 (caves) → 산호 얕은 물 (arena) → 난파선 만 (halls); oasis 모래바람 사구 (arena) →
+야자 오아시스 (caves) → 모래 유적 (halls); maple 단풍 숲길 (caves) → 무너진 성문 (halls) → 얼음 왕릉 앞 (arena).
+- **Look**: `DIM_THEMES.<raid>_<floor>` carries `theme` (the field's art set: forest / coast / desert / autumn), its ground chars (`ground`,
+  `alt`, `road`) and room dressing from the field map's own object chars. `dimBuild` lays the floor out exactly as before, dresses it, then
+  converts: `c` → the field's ground (corridors → its trail), `d` → `alt`, every rock `W` → a ground under a wall object (trees, rocks, palms,
+  ruin, reef; `deep` behind the first row), so the browser draws the field's art and never a cave wall. The coast's reef floor stands in
+  shallows (`~`) with deep water (`w`) behind its rocks.
+- **Monsters**: `dimPool(art, lv, mapId)` takes that one field map's kinds within [lv−3, lv+2], else its four nearest (never the
+  all-grounds fallback); the master is the field boss when it is near the party's level (forest ribdeer, maple rotstag, oasis mummycamel),
+  else the toughest of the pool. Chest `chest_<field>`. The forest's `hk` 0.72 eases its low band (bots at tier 10–14: 8.2–14.4 min at 1.0).
+- **Rules**: `dim_open {raid}` from anywhere outside an instance, an alba shift or death (a boss challenge still needs the obelisk); the
+  ready check pulls members from any map (`dimFree`). A hero outside a field raid's window is refused ("이 레이드는 Lv.X~Y 파티만 들어갈 수
+  있습니다."); `under` and `hanok` bar nobody (the level is clamped to tier 10 up). Wire: `defs().dim.raids`; `dim` / `rc` / `dj` rows carry the
+  raid key as their last element for every raid but `under`.
+- **Pace** (4 bots, tests/dimrift.mjs): forest tier 12 ≈ 8 min, coast tier 28 ≈ 5.9, oasis tier 32 ≈ 7, maple tier 44 ≈ 5. Preview:
+  `node scripts/shot.mjs --map raid-forest-1 [--x --y]` (dump-maps writes `raid-<key>-<floor>` previews).

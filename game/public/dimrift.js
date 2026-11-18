@@ -148,7 +148,7 @@ function renderHud() {
   const name = D().themes[d[10]] || "레이드던전";
   const label = ["", d[8] ? "최종 보스 출현! 균열의 문으로 보스의 방 앞까지" : "최종 보스 출현! 가장 먼 방으로", "정화 완료 — 귀환의 문까지", "균열이 닫힙니다…", "하강의 문 — 다음 단으로"][d[2]];
   // the floor's own concept (defs().dim.raid.names: 1단 무너진 지하 회랑 …), else the look's name
-  const names = d[16] ? D().raid?.hanokNames : D().raid?.names;
+  const names = raidOf(d[16])?.floors || (d[16] ? D().raid?.hanokNames : D().raid?.names);
   const fname = names?.[d[14] - 1] || name;
   // (the wire carries the rift's world tier; players see levels as 4·tier − 3, like monsters and doors)
   const chal = d[15], bossName = chal && chalDef(chal[0]) ? `${chalDef(chal[0])[1]} · ${stepWord(chal[0], chal[7])}` : "";
@@ -213,9 +213,9 @@ function renderRc() {
   if (!rc) return;
   const left = Math.max(0, rc[1] - Math.floor((now() - st.rcAt) / 1000));
   const me = rc[2].find((r) => r[0] === A.G.you);
-  const WORD = ["대기 중", "수락", "거절", "마을 밖"];
+  const WORD = ["대기 중", "수락", "거절", "입장 불가"];
   $("#rc-lv").textContent = rc[6] ? `보스 도전 · ${(chalDef(rc[6] - 1) || [])[1] || "?"} · ${stepWord(rc[6] - 1, rc[7])} · 최대 ${D().party}명`
-    : `${rc[8] ? "달그림자 한옥" : "레이드던전"} Lv.${4 * rc[3] - 3} · ${floors()}단 레이드 · 최대 ${D().party}명`;
+    : `${rc[8] ? raidOf(rc[8])?.name || "레이드던전" : "레이드던전"} Lv.${4 * rc[3] - 3} · ${floors()}단 레이드 · 최대 ${D().party}명`;
   $("#rc-time").textContent = `${left}초`;
   $("#rc-fill").style.width = `${(100 * left) / Math.max(1, D().rcMs / 1000)}%`;
   const rows = rc[2].map(([eid, name, s]) => `<li class="rc-${s}"><span class="rc-mark"></span><b>${esc(name)}</b><em>${WORD[s]}</em></li>`).join("");
@@ -233,6 +233,8 @@ export function bindUi() {
   $("#dim-open").addEventListener("click", () => { A.act({ t: "dim_open" }); A.Sound.play("ui"); });
   $("#dim-hanok").addEventListener("click", () => { A.act({ t: "dim_open", hanok: true }); A.Sound.play("ui"); });
   $("#dim-pick").addEventListener("click", (e) => {
+    const r = e.target.closest("button[data-a=raid]");
+    if (r) { A.act({ t: "dim_open", raid: r.dataset.k }); A.Sound.play("ui"); return; }
     const b = e.target.closest("button[data-a=boss]");
     if (!b) return;
     A.act({ t: "dim_open", boss: b.dataset.k, step: +b.dataset.s || 0 });
@@ -249,6 +251,8 @@ export function tick() { if (st.rc && A.isOpen("rc")) renderRc(); frame(); }
 
 // ───────────────────────────── the keeper by the obelisk ─────────────────────────────
 
+/** A raid row of defs().dim.raids by its key (the wire carries the key; an old `1` meant the hanok raid). */
+const raidOf = (k) => (D().raids || []).find((r) => r.k === (k === 1 ? "hanok" : k));
 export function openKeeper() { A.openWin("dim"); renderKeeper(); }
 function renderKeeper() {
   const d = D(), s = A.G.self, party = A.G.party || [], dj = st.dj;
@@ -273,17 +277,23 @@ function renderKeeper() {
         `title="Lv.${min}부터 · 골드·경험치 Lv.${L} 기준${s && ch.stepR ? ` · 큰 보상 강화석 +${Math.floor(ch.stepR.stone * s)}${Math.floor(ch.stepR.rune * s) ? ` · 룬 +${Math.floor(ch.stepR.rune * s)}` : ""}${Math.floor(ch.stepR.gear * s) ? ` · 장비 +${Math.floor(ch.stepR.gear * s)}` : ""}` : ""} · [${esc(cast)}]을(를) 무력화하세요">${esc((ch.stepNames || [])[s] || "도전")} ${L ? `Lv.${L}` : ""}</button>`).join("") + `</div>`;
   }).join("") +
     (ch.stepR ? `<div class="dim-step">난이도가 오를수록 보스가 강해지고 골드·경험치는 그 레벨 기준 · 큰 보상에 단계마다 강화석 +${ch.stepR.stone}</div>` : "");
-  const pick = dj ? "" : `<div class="dim-rec">최고 기록 ${r[1] >= r[0] ? mmss(r[2]) : r[1] ? `${r[1]}단까지` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음 · 주간 첫 정화 보너스 ${r[4] ? "받음" : "남음"}</div>` +
+  // the raids by level (defs().dim.raids): the leader picks one; the server checks every member's level
+  const raids = dj ? "" : (d.raids || []).map((x) => {
+    const ok = !lvl || (lvl >= x.minLv && (!x.maxLv || lvl <= x.maxLv));
+    return `<div class="dim-chal"><span><b>${esc(x.name)}</b> <em>Lv.${x.minLv}${x.maxLv ? `~${x.maxLv}` : "+"} · ${esc((x.floors || []).join(" → "))}</em></span>` +
+      `<button class="btn small${ok ? " gold" : ""}" data-a="raid" data-k="${esc(x.k)}"${!lead || !ok ? " disabled" : ""} title="${ok ? (party.length ? "파티 입장 준비" : "혼자 입장") : "레벨이 맞지 않습니다"}">${lead ? "입장" : "파티장만"}</button></div>`;
+  }).join("");
+  const pick = dj ? "" : raids + `<div class="dim-rec">최고 기록 ${r[1] >= r[0] ? mmss(r[2]) : r[1] ? `${r[1]}단까지` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음 · 주간 첫 정화 보너스 ${r[4] ? "받음" : "남음"}</div>` +
     challenges;
   if ($("#dim-pick").dataset.k !== pick) { $("#dim-pick").innerHTML = pick; $("#dim-pick").dataset.k = pick; }
-  $("#dim-hanok").hidden = !!dj || !d.raid?.hanokNames;
+  $("#dim-hanok").hidden = true;   // the raid list (defs().dim.raids) has every raid
   $("#dim-hanok").disabled = !lead;
-  $("#dim-open").hidden = !!dj;
+  $("#dim-open").hidden = !!dj || !!(d.raids && d.raids.length);
   $("#dim-open").disabled = !lead;
   $("#dim-open").textContent = party.length ? (lead ? "균열 열기 (파티 입장 준비)" : "파티장만 열 수 있습니다") : "혼자 균열 열기";
   $("#dim-join").hidden = !dj;
   if (dj) $("#dim-join").textContent = dj[5] ? `합류하기 — 보스 도전 · ${(chalDef(dj[5] - 1) || [])[1] || "?"} · ${stepWord(dj[5] - 1, dj[6])} · ${dj[1]}명 · ${mmss(dj[0])}`
-    : `합류하기 — ${dj[7] ? "달그림자 한옥 · " : ""}Lv.${4 * dj[3] - 3} · ${dj[4]}/${floors()}단 · ${dj[1]}명 · ${(dj[2] / 10).toFixed(0)}% · ${mmss(dj[0])}`;
+    : `합류하기 — ${dj[7] ? `${raidOf(dj[7])?.name || "달그림자 한옥"} · ` : ""}Lv.${4 * dj[3] - 3} · ${dj[4]}/${floors()}단 · ${dj[1]}명 · ${(dj[2] / 10).toFixed(0)}% · ${mmss(dj[0])}`;
 }
 
 // ───────────────────────────── the minimap ─────────────────────────────

@@ -597,7 +597,7 @@ function drawHere(g, W, H, t) {
     blit(g, spr("stone", open ? COL.stone : COL.stoneOff), x, y - 3);
     tag(open ? name : `${name} · 미개방`, x, y + 12, open ? "#bfeaff" : "#a8a090", 10, 3);
     const ok = open && can && !cur;
-    hit(x, y, 9, cur ? `${name} — 지금 여기` : !open ? `${name} — 미개방 (돌에 다가가면 깨어납니다)` : ok ? `${name} — 클릭하면 이동합니다` : `${name} — 이동의 돌 곁에서만 이동할 수 있습니다`,
+    hit(x, y, 9, cur ? `${name} — 지금 여기` : !open ? `${name} — 미개방 (돌에 다가가면 깨어납니다)` : ok ? `${name} — 클릭하면 이동합니다` : `${name} — 지금은 이동할 수 없습니다`,
       ok ? () => { D.act(st.i ? { t: "warp", to: G.map.id, i: st.i } : { t: "warp", to: G.map.id }); D.play("ui"); } : null);
   }
   for (const c of m.camps || []) { const [x, y] = P(c.x, c.y); blit(g, spr("fire", COL.fire), x, y); hit(x, y, 8, "모닥불 — 앉아서(Z) 쉬면 온기를 얻습니다"); }

@@ -121,10 +121,12 @@ const HANOK_DRESS = {
   store: [["edge", "%", 0.24], ["clump", "p", 2, 2]],
   shrine: [["altar", "v", "*"], ["edge", "*", 0.16]],
 };
-const dimFloorName = (floor, hanok) => (hanok ? HANOK_FLOORS : DIM_FLOORS)[floor - 1].name;
 
-/** Floor `n`'s look, from the run's seed. */
-const dimTheme = (seed, n) => { const t = DIM_FLOORS[clamp(n | 0, 1, DIM_FLOORS.length) - 1].themes; return t[((seed >>> 3) >>> 0) % t.length]; };
+/** Floor `n`'s look, from the run's seed (`raid`: a RAID key, 31-raids-field.js; a field raid's floor has the one look it is built for). */
+const dimTheme = (seed, n, raid) => {
+  const i = clamp(n | 0, 1, DIM_FLOORS.length) - 1, row = RAID[dimRaidKey(raid)].floors[i], t = row.look ? [row.look] : DIM_FLOORS[i].themes;
+  return t[((seed >>> 3) >>> 0) % t.length];
+};
 /** Where the town's obelisk stands, its keeper, and where someone coming back from an instance lands (tiles). */
 const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
 
@@ -132,11 +134,13 @@ const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
  * The monsters of an instance: the theme's own kinds within [lv-3, lv+2] (DIM.poolLv), else the kinds of every
  * hunting ground nearest lv-1 (4 of them), lowest level first. Never chests or bosses.
  */
-function dimPool(theme, lv) {
+function dimPool(theme, lv, ownMap) {
   const ok = (k) => MOBS[k] && !MOBS[k].chest && !MOBS[k].boss && !MOBS[k].bonusOptional;
   const own = [];
-  for (const id of Object.keys(MAP_META)) if (MAP_META[id].theme === theme && !MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
+  for (const id of Object.keys(MAP_META)) if ((ownMap ? id === ownMap : MAP_META[id].theme === theme) && !MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
   let pool = own.filter((k) => MOBS[k].lv >= lv - DIM.poolLv[0] && MOBS[k].lv <= lv + DIM.poolLv[1]);
+  // a field raid (`ownMap`: its field's map id) keeps to that ground's own kinds, the four nearest, when the party is past them
+  if (pool.length < 3 && ownMap && own.length >= 3) pool = own.slice().sort((a, b) => Math.abs(MOBS[a].lv - (lv - 1)) - Math.abs(MOBS[b].lv - (lv - 1)) || MOBS[a].lv - MOBS[b].lv || (a < b ? -1 : 1)).slice(0, 4);
   if (pool.length < 3) {
     const all = [];
     for (const id of Object.keys(MAP_META)) if (!MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !all.includes(k)) all.push(k);
@@ -172,12 +176,13 @@ function dimension(cfg) {
 function dimBuild(cfg, seed) {
   const box = { seed };
   const W = DIM.w, H = DIM.h, lv = cfg.lv | 0 || 10, floor = clamp(cfg.floor | 0 || 1, 1, DIM_FLOORS.length);
-  const hanok = cfg.hanok === true;
-  const cc = (hanok ? HANOK_FLOORS : DIM_FLOORS)[floor - 1], style = hanok ? "halls" : cc.style;
-  const theme = DIM_THEMES[cfg.theme] ? cfg.theme : DIM_FLOORS[floor - 1].themes[0];
+  const raid = dimRaidKey(cfg.hanok === true ? "hanok" : cfg.raid), hanok = raid === "hanok", field = !!RAID[raid].field;
+  const cc = RAID[raid].floors[floor - 1], style = hanok ? "halls" : cc.style;
+  const theme = field ? cc.look : DIM_THEMES[cfg.theme] ? cfg.theme : DIM_FLOORS[floor - 1].themes[0];
   const look = hanok ? { rooms: HANOK_DRESS } : DIM_THEMES[theme];
+  const art = field ? look.theme : theme;   // the client's art set (a field look is named for its floor)
   const m = blank(cfg.id || "dim:0", `레이드던전 ${floor}단 · ${cc.name}`, W, H, "W");
-  m.theme = hanok ? "interior" : theme; m.bgm = "dim"; m.band = null; m.marks = [];
+  m.theme = hanok ? "interior" : art; m.bgm = "dim"; m.band = null; m.marks = [];
   if (hanok) m.style = "hanok_raid";
   const pick = (a) => a[ri(box, 0, a.length - 1)];
   // ── the grid; main rooms grow over a connected set of its cells
@@ -485,6 +490,26 @@ function dimBuild(cfg, seed) {
     }
   }
   for (const [x, y] of lost) m.g[y][x] = "W";
+  if (field) {
+    // the field's own ground and barrier: no rock "W" and no cave floor is left for the browser to draw. Walls: the look's objects
+    // against open floor (trees, palms, reef, ruin), `deep` behind them; corridors read as the field's trail, rubble as its alt ground
+    const wall = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m.g[y][x] === "W") {
+      let e = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const yy = y + dy, xx = x + dx; if (yy >= 0 && xx >= 0 && yy < H && xx < W && m.g[yy][xx] !== "W") e = 1; }
+      wall.push([x, y, e]);
+    }
+    const wallCh = () => { let r = rnd(box); for (const [ch, w] of look.wall) { if (r < w) return ch; r -= w; } return look.wall[0][0]; };
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const c = m.g[y][x];
+      if (c === "c") m.g[y][x] = hall[y * W + x] ? look.road : look.ground;
+      else if (c === "d") m.g[y][x] = look.alt;
+    }
+    for (const [x, y, e] of wall) {
+      m.g[y][x] = e ? look.wallG || look.ground : look.deepG || look.wallG || look.ground;
+      m.o[y][x] = e ? wallCh() : look.deep;
+    }
+  }
   if (hanok) {
     // Walls occupy already solid tiles. Only north and west faces stand tall.
     for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
@@ -502,7 +527,7 @@ function dimBuild(cfg, seed) {
     }
   }
   // ── who lives here
-  const pool = dimPool(theme, lv);
+  const pool = dimPool(art, lv, field ? RAID[raid].map : "");
   const tOf = (r) => dS[tileOf(r)] / Math.max(1, span);
   const spawns = [];
   const openIn = (k) => tilesOf(k).filter(([x, y]) => m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]));
@@ -544,7 +569,7 @@ function dimBuild(cfg, seed) {
       return;
     }
     spawns.push({ k: pool[pool.length - 1], n: 1, at: pick(spots), room: k, el: 1, guard: 1 });
-    spawns.push({ k: `chest_${theme}`, n: 1, at: [r.cx, r.cy], room: k, el: 0, chest: 1 });
+    spawns.push({ k: `chest_${field ? look.chest : theme}`, n: 1, at: [r.cx, r.cy], room: k, el: 0, chest: 1 });
     dead.push([r.cx, r.cy]);
     elites++;
   });
@@ -552,8 +577,8 @@ function dimBuild(cfg, seed) {
   m.dim = {
     rooms: rooms.map(({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt }) => ({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt })),
     start: [st.cx, st.cy], boss: [bs.cx, bs.cy], bossRoom: bossK, startRoom: startK, door, dead, spawns, pool,
-    bossK: dimBossKind(theme, lv, pool), path: dS[tileOf(bs)], elites, cap: DIM.cap, links: links.map(([a, b]) => [a, b]),
-    style, floor, hanok, loops: links.length - (rooms.filter((r) => r.kind !== "vault" && r.kind !== "den").length - 1),
+    bossK: dimBossKind(art, lv, pool), path: dS[tileOf(bs)], elites, cap: DIM.cap, links: links.map(([a, b]) => [a, b]),
+    style, floor, hanok, raid, loops: links.length - (rooms.filter((r) => r.kind !== "vault" && r.kind !== "den").length - 1),
   };
   finalize(m);
   return m;

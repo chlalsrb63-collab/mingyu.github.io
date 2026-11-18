@@ -252,10 +252,11 @@ export function validateAction(S, pid, a) {
       if (denied) return bad(denied);
       const minLv = mapLevelNeed(ch, a.to);
       if (minLv) return bad(mapLevelMessage(minLv));
-      const at = wpNear(p);
-      if (!at) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
+      // owner 2026-11-18: the world map warps from anywhere, not only beside a stone; never out of an instance (raid, co-op shift)
+      if (inDim(p)) return bad("레이드던전이나 협동 알바 중에는 이동할 수 없습니다");
       if (!wpWoken(ch, a.to, i)) return bad("아직 깨우지 않은 이동의 돌입니다");
-      if (a.to === p.map && i === (at.i || 0)) return bad("이미 이곳에 있습니다");
+      const at = wpNear(p);
+      if (a.to === p.map && at && i === (at.i || 0)) return bad("이미 이곳에 있습니다");
       if (now - p.hitAt < WARP_CALM) return bad("전투 중에는 이동할 수 없습니다");
       return OK;
     }

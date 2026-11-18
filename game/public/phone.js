@@ -22,6 +22,7 @@ import { K } from "./keymap.js";
 import { act, channelName } from "./net.js";
 import { openCharTab } from "./win_char.js";
 import { openEmotes } from "./win_social.js";
+import { openKeeper } from "./dimrift.js";
 
 const PW = 352, PH = 640, MINW = 300, SAFE = 90, MARGIN = 6;
 const INK = "#0d0b12", CREAM = "#fff6dc";
@@ -45,6 +46,7 @@ const APPS = [
   { id: "collect", name: "몬스터\n도감", game: "몬스터 도감", glyph: "paw", hue: "#8aa83a", win: "collect", key: "collect", note: "만난 몬스터 기록" },
   { id: "dex", name: "아이템\n도감", game: "아이템도감", glyph: "codex", hue: "#5a62c8", win: "dex", key: "dex", note: "전설 · 유니크 접두사의 효과를 한눈에" },
   { id: "alba", name: "알바", game: "아르바이트", glyph: "crate", hue: "#d87a3a", win: "alba", key: "alba", note: "일일 아르바이트 · 오늘의 특근" },
+  { id: "raid", name: "레이드", game: "레이드던전", glyph: "swords", hue: "#7a4ad0", kind: "act", run: () => openKeeper(), note: "레벨에 맞는 레이드던전 고르기 · 파티 입장" },
   { id: "life", name: "생활", game: "생활 기술", glyph: "life", hue: "#58b050", win: "life", key: "life", note: "낚시 · 채집 · 요리 같은 생활 기술" },
   { id: "charm", name: "참\n보드", game: "참 보드", glyph: "gem", hue: "#c85aa8", win: "charm", key: "charm", note: "참을 끼워 능력 높이기" },
   { id: "trophy", name: "전리품", game: "보스 전리품", glyph: "skull", hue: "#b8404a", win: "trophy", key: "trophy", note: "잡은 보스의 전리품" },

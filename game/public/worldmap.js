@@ -272,10 +272,10 @@ export function mapDetail(host, d, ctx) {
       const label = d.wpn === 1 ? "순간이동" : `${ways?.names?.[i] || `이동의 돌 ${i + 1}`} 이동`;
       const button = E("button", label, "btn small");
       button.type = "button"; button.disabled = !!levelLocked || !canWarp;
-      button.title = levelLocked ? `Lv.${d.minLv}에 이용할 수 있습니다` : canWarp ? "" : "이동의 돌 곁에서 이용할 수 있습니다";
+      button.title = levelLocked ? `Lv.${d.minLv}에 이용할 수 있습니다` : canWarp ? "" : "레이드던전·협동 알바 중에는 이용할 수 없습니다";
       button.addEventListener("click", () => travel(d.id, i)); stones.append(button);
     }
-    if (open.length && (!canWarp || levelLocked)) stones.append(E("span", levelLocked ? `Lv.${d.minLv} 필요` : "이동의 돌 곁에서 사용 가능"));
+    if (open.length && (!canWarp || levelLocked)) stones.append(E("span", levelLocked ? `Lv.${d.minLv} 필요` : "레이드던전·협동 알바 중 사용 불가"));
   }
   const body = E("div", "", "map-detail-grid");
   if (chapter) addRow(body, "승선", unlock === 4 ? "해방된 갑판 · 무기 상점과 선원 의뢰"

@@ -110,7 +110,7 @@ const DATA = {
     {"v":1,"id":"general_store","replaces":null,"name":"다람쥐 잡화점","theme":"interior","style":"shop","bgm":"town","safe":true,"band":null,"w":16,"h":12,"ground":["ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffffffffffff","ffffffqqqqqfffff","ffffffqqqqqfffff","ffffffffffffffff","ffffffffefffffff"],"objects":["==+====^^=~==+==","=rrr g    g >rr_","+              _","=%            *_","=              _","=     mmjmm    _","=              _","+ $$        $$ _","=             w_","=]]           w_","=              _","________ _______"],"entry":[8,10],"spawns":[],"npcs":[{"id":"store_dari","name":"잡화점 주인 다리","role":"shop","x":8,"y":3,"look":[12,0,11,10,2,7,11,14,8,2,0],"pose":"wipe","goods":["hp_s","hp_m","hp_l","mp_s","mp_m","mp_l","recall","camp","feather","sc_atk","sc_def","sc_xp","stone"],"lines":["다람쥐 잡화점이에요! 물약부터 주문서까지 다 있어요.","도토리 한 줌… 아니 골드 한 줌이면 충분해요!","먼 길 떠나기 전엔 귀환 주문서 한 장, 꼭 챙기세요."]},{"id":"store_kong","name":"심부름꾼 콩콩","role":"talk","x":11,"y":8,"look":[7,0,11,20,0,7,1,6,2,1,0],"pose":"carry","lines":["영차, 영차! 상자가 나보다 커요.","다리 언니가 그러는데, 물약은 흔들면 안 된대요. …방금 흔들었어요."]}],"portals":[{"x":8,"y":11,"to":"town","tx":65,"ty":38}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"juju_diner","replaces":null,"name":"쥬쥬식당 · 선술집","theme":"interior","style":"tavern","bgm":"juju","safe":true,"band":null,"w":20,"h":14,"ground":["ffffffffffffffffffff","ffffffffffffffffffff","fffxxxffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffqqqqqfffffff","ffffffffqqqqqfffffff","ffxfffffqqqqqfffffff","ffxfffffqqqqqfffffff","ffxfffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffefffffffff"],"objects":["==+==^^===@==+==!===","=wr :       r www g_","=                  _","=          mmjmmm  _","+                  _","+ %                _","=    kok           _","=             kok  _","=  s     kok       _","=#                *_","+  s               _","=     kok     kok  _","=g                 _","__________ _________"],"entry":[10,12],"spawns":[],"npcs":[{"id":"juju","name":"쥬쥬","role":"shop","x":5,"y":2,"look":[2,13,0,14,3,5,10,11,9,9,4],"pose":"stir","goods":["food_s","food_m","food_l","inn_bread","staple","pr_milk","pr_honey"],"lines":["쥬쥬식당에 어서 와! 오늘 국물은 끝내준다구.","배고픈 모험가는 못 싸워. 든든히 먹고 가!","화덕 옆에서 쉬어 가도 돼. 요리도 직접 해 볼래?","식재료 꾸러미는 나한테 사! 화덕은 마음껏 써도 돼."]},{"id":"juju_stove","name":"쥬쥬의 화덕","role":"cook","x":4,"y":1,"look":[0,0,0,"#b8a898"],"thing":true,"lines":["보글보글 끓는 냄비가 올려진 화덕. 재료가 있으면 요리할 수 있다."]},{"id":"diner_piri","name":"떠돌이 악사 피리","role":"talk","x":17,"y":5,"look":[8,9,3,11,0,4,4,12,2,2,1],"lines":["♪ 국물 한 숟갈에 하루가 녹고, 노래 한 소절에 밤이 녹네 ♪","신청곡? 음… 동전 한 닢이면 생각해 볼게!"]},{"id":"diner_reg1","name":"단골 손님 나비","role":"talk","x":10,"y":9,"look":[0,3,10,10,2,2,3,1,3,2,4],"pose":"sip","lines":["여기 스튜 먹으려고 매일 사냥 나간다니까.","쥬쥬한테 '곱빼기'라고 하면 진짜 두 배로 줘."]},{"id":"diner_reg2","name":"단골 손님 뭉치","role":"talk","x":15,"y":10,"look":[3,3,3,11,2,7,1,2,6,1,0],"pose":"sip","lines":["건배! …아, 혼자구나. 그래도 건배!","바람초원 갔다 왔어? 토끼 머리가 둘이었지? 그치?"]}],"portals":[{"x":10,"y":13,"to":"town","tx":72,"ty":50}],"fires":[[4,2],[2,9]],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"kangkang_forge","replaces":null,"name":"캉캉대장간","theme":"interior","style":"forge","bgm":"forge","safe":true,"band":null,"w":18,"h":12,"ground":["xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxllllllx","xxxxxxxxxxxllllllx","xxxxxxxxxxxllllllx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxxxxxxxxxx","xxxxxxxxxexxxxxxxx","xxxxxxxxxexxxxxxxx"],"objects":["==!==+===+===+==!=","=] <    >>>    ]w_","=                _","=w              *_","=    &           _","+           mmmm _","=>               _","=>               _","=              ]]_","=      *        ]_","=                _","_________ ________"],"entry":[9,10],"spawns":[],"npcs":[{"id":"forge_tong","name":"견습 대장장이 통통","role":"smith","x":6,"y":3,"look":[5,2,9,8,0,0,8,10,7,10,0],"pose":"hammer","lines":["캉! 캉! 강화하실 거예요? 모루 앞으로 오세요!","볼칸 스승님만큼은 아니어도… 저도 꽤 한다고요!","화덕에 너무 가까이 오지 마세요. 꼬리털 탄다고요."]},{"id":"forge_musoe","name":"갑옷장이 무쇠","role":"shop","x":13,"y":3,"look":[2,8,7,11,3,0,9,4,2,2,0],"pose":"wipe","goods":["w_warrior_1","w_rogue_1","w_lancer_1","w_mage_1","w_book_1","w_bow_1","w_h_1","h_1","a_1","g_1","b_1","h_2","a_2","g_2","b_2","ru_ign","ru_aeg","ru_vit","ru_men","ru_cel","ru_acu","ru_san","ru_lum","ru_fos"],"lines":["튼튼한 갑옷 하나가 목숨 열 개보다 낫지.","룬도 있다네. 소켓 난 장비에 박으면 힘이 깃들지."]},{"id":"forge_anvil","name":"모루","role":"smith","x":5,"y":4,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["묵직한 모루. 장비를 강화하거나 분해할 수 있다."]},{"id":"kangkang","name":"캉캉","role":"craft","x":11,"y":6,"look":[4,5,9,8,0,0,8,10,7,10,0],"pose":"hammer","lines":["캉! 캉! 내가 이 대장간의 주인 캉캉이다! 광석이랑 목재만 가져와, 뭐든 두들겨 줄 테니.","강화석은 사지 말고 만들어 써! 구리 원석 넷에 마른 가지 하나면 충분해.","주괴 네 개에 판자 두 장이면 쓸 만한 장비가 나오지. 운이 좋으면 아주 좋은 놈이!"]}],"portals":[{"x":9,"y":11,"to":"town","tx":72,"ty":38}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
-    {"v":1,"id":"merc_office","replaces":null,"name":"늑대발 용병사무소","theme":"interior","style":"office","bgm":"town","safe":true,"band":null,"w":20,"h":14,"ground":["llllllllllllllllllll","llllllllllllllllllll","llllllllllllllllxxxl","llllllllllllllllllll","llllllllllllllllllll","llllllllllllllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","llllllllllelllllllll"],"objects":["=!=+===~~~~==+==!=+=","=   >> g    v v  # _","=>                 _","=>              s s_","+      ----        _","=      k  k        _","=*                 _","+                  _","= mmmm       *     _","=                ]]_","=  k k            w_","=                 w_","=g                 _","__________ _________"],"entry":[10,12],"spawns":[],"npcs":[{"id":"merc_grey","name":"용병단장 그레이","role":"quest","x":9,"y":2,"look":[4,8,3,14,3,1,8,2,6,9,0],"lines":["늑대발 용병사무소다. 일거리를 찾나?","북쪽 숲이 시끄럽다. 손 빌려줄 모험가는 언제나 환영이지.","의뢰는 게시판에, 동료는 파티 구인판에. 보수는 확실하다."]},{"id":"merc_mimi","name":"접수원 미미","role":"daily","x":4,"y":6,"look":[1,2,1,0,0,0,6,3,5,0,6],"pose":"write","lines":["어서 오세요! 오늘의 의뢰는 아침 6시에 새로 붙어요.","다 끝내면 보수를 챙겨 드릴게요. 꼭 살아서 오세요!"]},{"id":"merc_bawi","name":"은퇴한 용병 바위","role":"talk","x":17,"y":4,"look":[2,13,7,9,3,0,3,4,2,2,0],"pose":"doze","lines":["음… 내가 젊었을 땐 쌍두 토끼를 맨손으로… 쿨.","레이드던전에 들어갈 땐 꼭 넷이서 가게. 혼자는 무모해.","불 옆이 최고야. 무릎이 쑤시거든."]},{"id":"merc_board","name":"의뢰 게시판","role":"daily","x":12,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["빼곡한 의뢰서들. 오늘의 의뢰를 확인하자."]},{"id":"merc_party","name":"파티 구인판","role":"talk","x":14,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["【파티 모집 안내】 P 키로 파티 창을 열 수 있어요.","가까이 있는 모험가에게 초대를 보내면 함께 사냥할 수 있어요. 최대 4명!","광장의 오벨리스크에서 파티원 모두가 준비하면 레이드던전에 들어갈 수 있어요.","구석에 누가 낙서해 두었다: \"힐러 구함. 아니 그냥 친구 구함.\""]}],"portals":[{"x":10,"y":13,"to":"town","tx":85,"ty":37}],"fires":[[17,2]],"waypoint":null,"fishing":false,"boss":null},
+    {"v":1,"id":"merc_office","replaces":null,"name":"늑대발 용병사무소","theme":"interior","style":"office","bgm":"town","safe":true,"band":null,"w":20,"h":14,"ground":["llllllllllllllllllll","llllllllllllllllllll","llllllllllllllllxxxl","llllllllllllllllllll","llllllllllllllllllll","llllllllllllllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","lllllllllyyyllllllll","llllllllllelllllllll"],"objects":["=!=+===~~~~==+==!=+=","=   >> g    v v  # _","=>                 _","=>              s s_","+      ----        _","=      k  k        _","=*                 _","+                  _","= mmmm       *     _","=                ]]_","=  k k            w_","=                 w_","=g                 _","__________ _________"],"entry":[10,12],"spawns":[],"npcs":[{"id":"merc_grey","name":"용병단장 그레이","role":"quest","x":9,"y":2,"look":[4,8,3,14,3,1,8,2,6,9,0],"lines":["늑대발 용병사무소다. 일거리를 찾나?","북쪽 숲이 시끄럽다. 손 빌려줄 모험가는 언제나 환영이지.","의뢰는 게시판에, 동료는 파티 구인판에. 보수는 확실하다."]},{"id":"merc_mimi","name":"접수원 미미","role":"daily","x":4,"y":6,"look":[1,2,1,0,0,0,6,3,5,0,6],"pose":"write","lines":["어서 오세요! 오늘의 의뢰는 아침 6시에 새로 붙어요.","다 끝내면 보수를 챙겨 드릴게요. 꼭 살아서 오세요!"]},{"id":"merc_bawi","name":"은퇴한 용병 바위","role":"talk","x":17,"y":4,"look":[2,13,7,9,3,0,3,4,2,2,0],"pose":"doze","lines":["음… 내가 젊었을 땐 쌍두 토끼를 맨손으로… 쿨.","레이드던전에 들어갈 땐 꼭 넷이서 가게. 혼자는 무모해.","불 옆이 최고야. 무릎이 쑤시거든."]},{"id":"merc_raid","name":"레이드 대장 카르","role":"dim","x":15,"y":8,"look":[3,5,2,11,1,0,7,2,4,1,0],"lines":["레이드던전에 갈 텐가? 속삭임 숲부터 단풍 왕도까지, 레벨에 맞는 곳을 골라 보게.","파티장이 고르면 파티원 모두에게 입장 준비 창이 뜬다네. 넷이면 10분 남짓이지.","스마트폰의 [레이드] 앱으로도 어디서든 고를 수 있어."]},{"id":"merc_board","name":"의뢰 게시판","role":"daily","x":12,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["빼곡한 의뢰서들. 오늘의 의뢰를 확인하자."]},{"id":"merc_party","name":"파티 구인판","role":"talk","x":14,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["【파티 모집 안내】 P 키로 파티 창을 열 수 있어요.","가까이 있는 모험가에게 초대를 보내면 함께 사냥할 수 있어요. 최대 4명!","광장의 오벨리스크에서 파티원 모두가 준비하면 레이드던전에 들어갈 수 있어요.","구석에 누가 낙서해 두었다: \"힐러 구함. 아니 그냥 친구 구함.\""]}],"portals":[{"x":10,"y":13,"to":"town","tx":85,"ty":37}],"fires":[[17,2]],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"owl_library","replaces":null,"name":"올빼미 도서관","theme":"interior","style":"library","bgm":"cafe","safe":true,"band":null,"w":22,"h":16,"ground":["llllllllllllllllllllll","llllllllllllllllllllll","lllxxxxlllllllllllllll","llllllllllllllllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","lluuuuulllyyylllllllll","llllllllllyyylllllllll","llllllllllyyylllllllll","lllllllllllellllllllll"],"objects":["=+==~~=!=+=@=+=!=~~=+=","=bbb#bbb ;;;;; bbbb g_","=                    _","+  s  s            % _","=                    _","=b      |     |      _","=b                   _","+              kkk   _","+  kok         ---  t_","=              kkk   _","=b                   _","=b kok               _","=b      *     *      _","+                  | _","=g                  g_","___________ __________"],"entry":[11,14],"spawns":[],"npcs":[{"id":"lib_borum","name":"사서 보름","role":"talk","x":7,"y":3,"look":[9,12,2,1,0,0,9,9,5,2,0],"pose":"read","lines":["쉿… 도서관에서는 발소리도 살금살금.","독서대의 낡은 책들은 마을의 옛이야기예요. 천천히 읽어 보세요.","저 진열장 속 괴수가 자꾸 쳐다본다고요? …기분 탓이에요. 아마도요."]},{"id":"hall_pipi","name":"지도 제작자 피피","role":"collector","x":16,"y":4,"look":[3,1,2,"#3a6a42","#a8845c",1],"pose":"read","lines":["몬스터를 많이 만나 볼수록 지도가 정확해져. 도감을 채워 오면 그 땅의 힘을 나눠 줄게.","회관보다 여기가 조용해서 좋아. 지도 그리기엔 딱이지!"]},{"id":"hall_momo","name":"서기관 모모","role":"achieve","x":17,"y":11,"look":[0,2,0,"#d8a830","#fff0c0",0],"pose":"write","lines":["자네의 공적은 내가 빠짐없이 적어 두지. 기록의 서판에도 이름이 새겨질 걸세."]},{"id":"lib_case","name":"괴수 도감 진열장","role":"collector","x":11,"y":1,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["유리병 속 괴수가 눈을 깜빡였다…!","도감을 채우면 그 땅의 힘이 깃든다고 적혀 있다."]},{"id":"lib_tablet","name":"기록의 서판","role":"achieve","x":20,"y":8,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["모험가들의 이름과 공적이 빼곡히 새겨져 있다."]},{"id":"lib_book_1","name":"낡은 책: 정령나무","role":"talk","x":8,"y":5,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["광장의 정령나무는 마을보다 먼저 거기 있었다.","어둠이 숲을 삼키던 밤, 동물들은 그 나무 아래로 모여들었다.","나무는 잎을 떨어뜨려 빛의 울타리를 쳤고, 그 안은 따뜻했다.","그래서 우리는 지금도 해마다 그 뿌리에 물을 준다. 고맙다는 인사로."]},{"id":"lib_book_2","name":"낡은 책: 어둠에 먹힌 숲","role":"talk","x":14,"y":5,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["북쪽 숲은 원래 노래하는 숲이었다고 한다.","어느 날부터 새들이 울지 않았고, 나무들이 검게 말라 갔다.","숲에 남은 짐승들은 머리가 둘이 되거나, 눈이 셋이 되었다.","울타리 너머로 들리는 소리는… 아직 그 숲이 무언가를 부르는 소리일지도 모른다."]},{"id":"lib_book_3","name":"낡은 책: 첫 이주민들","role":"talk","x":19,"y":13,"look":[0,0,0,"#8a6a4a"],"thing":true,"lines":["첫 이주민은 다람쥐 셋, 곰 하나, 그리고 아주 겁 많은 양 한 마리였다.","곰이 통나무를 나르고, 다람쥐들이 지붕을 엮고, 양은… 모두를 위해 털실을 떴다.","울타리 한 칸, 집 한 채씩. 그렇게 버드나무광장이 생겼다.","책 끝에 삐뚤빼뚤한 글씨: \"다음 페이지는 네가 써 줘.\""]}],"portals":[{"x":11,"y":15,"to":"town","tx":36,"ty":22}],"fires":[[4,2]],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"pet_house","replaces":null,"name":"몽글 펫 돌봄집","theme":"interior","style":"inn","bgm":"cafe","safe":true,"band":null,"w":14,"h":10,"ground":["ffffffffffffff","ffffffffffffff","ffffffffffffff","ffffffffffffff","ffffffffffffff","ffuuuuffffffff","ffuuuuffffffff","ffuuuuffffffff","ffuuuuffffffff","fffffffeffffff"],"objects":["==+==~@~==+===","=g g       ]w_","=            _","+            _","=    mmmmm  *_","=            _","= %        % _","=   %        _","=           g_","_______ ______"],"entry":[7,8],"spawns":[],"npcs":[{"id":"pet_monggeul","name":"펫 돌보미 몽글","role":"shop","x":7,"y":2,"look":[9,4,2,3,4,0,3,9,5,2,0],"goods":["pet_chick","pet_bat","pet_wisp"],"lines":["몽글몽글~ 펫 친구를 찾으러 왔구나!","펫은 사냥터에서 떨어진 물건을 주워 줘요. 착하죠?","고양이들은 손님이 아니라 하숙생이에요. 깨우지 말아 주세요."]}],"portals":[{"x":7,"y":9,"to":"town","tx":29,"ty":48}],"fires":[],"waypoint":null,"fishing":false,"boss":null},
     {"v":1,"id":"starlight_inn","replaces":null,"name":"모닥별 여관","theme":"interior","style":"inn","bgm":"inn","safe":true,"band":null,"w":20,"h":16,"ground":["ffffffffffffffffffff","fffffffffffllllllllf","ffffxxxffffllllllllf","fffffffffffllllllllf","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffffffffffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffuuuuuuffffffff","ffffffffffefffffffff"],"objects":["===+==@=+==~===+=+==","=w  r#r    popop *g_","=                  _","=  s   s           _","=                  _","=                  _","+                  _","+  kkkkk           _","=  -----           _","=* kkkkk        ww _","=                 ]_","=ok          mmmmm _","=k                 _","=g                *_","=                  _","__________ _________"],"entry":[10,14],"spawns":[],"npcs":[{"id":"inn_maru","name":"여관 주인 마루","role":"shop","x":15,"y":9,"look":[2,3,1,"#8a6a3a","#e6cca4",0],"pose":"wipe","goods":["inn_stew","inn_bread","hp_s","hp_m","mp_s","mp_m","recall","camp"],"lines":["모닥별 여관에 어서 오시게! 스튜가 막 끓었다네.","벽난로 곁에 앉아 쉬면 온기가 오래 남지. 먼 길 떠나기 전엔 꼭 쉬어 가게."]},{"id":"inn_lira","name":"음유시인 리라","role":"talk","x":9,"y":5,"look":[1,2,0,"#7a3a5a","#fff0e4",0],"lines":["♪ 별이 모닥불에 내려앉은 밤, 꼬리 긴 영웅이 길을 떠났네 ♪","심연의 노래를 아나? 아직 끝까지 들은 사람이 없다지."]},{"id":"inn_toto","name":"졸린 나그네 토토","role":"talk","x":8,"y":3,"look":[1,0,3,"#5e6a88","#c8b090",3],"pose":"doze","lines":["음냐… 오 분만 더…","…아, 미안. 숲에서 사흘을 걸었더니 눈이 감기네."]}],"portals":[{"x":10,"y":15,"to":"town","tx":68,"ty":51}],"fires":[[5,2]],"waypoint":null,"fishing":false,"boss":null},
@@ -4420,10 +4420,12 @@ const HANOK_DRESS = {
   store: [["edge", "%", 0.24], ["clump", "p", 2, 2]],
   shrine: [["altar", "v", "*"], ["edge", "*", 0.16]],
 };
-const dimFloorName = (floor, hanok) => (hanok ? HANOK_FLOORS : DIM_FLOORS)[floor - 1].name;
 
-/** Floor `n`'s look, from the run's seed. */
-const dimTheme = (seed, n) => { const t = DIM_FLOORS[clamp(n | 0, 1, DIM_FLOORS.length) - 1].themes; return t[((seed >>> 3) >>> 0) % t.length]; };
+/** Floor `n`'s look, from the run's seed (`raid`: a RAID key, 31-raids-field.js; a field raid's floor has the one look it is built for). */
+const dimTheme = (seed, n, raid) => {
+  const i = clamp(n | 0, 1, DIM_FLOORS.length) - 1, row = RAID[dimRaidKey(raid)].floors[i], t = row.look ? [row.look] : DIM_FLOORS[i].themes;
+  return t[((seed >>> 3) >>> 0) % t.length];
+};
 /** Where the town's obelisk stands, its keeper, and where someone coming back from an instance lands (tiles). */
 const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
 
@@ -4431,11 +4433,13 @@ const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
  * The monsters of an instance: the theme's own kinds within [lv-3, lv+2] (DIM.poolLv), else the kinds of every
  * hunting ground nearest lv-1 (4 of them), lowest level first. Never chests or bosses.
  */
-function dimPool(theme, lv) {
+function dimPool(theme, lv, ownMap) {
   const ok = (k) => MOBS[k] && !MOBS[k].chest && !MOBS[k].boss && !MOBS[k].bonusOptional;
   const own = [];
-  for (const id of Object.keys(MAP_META)) if (MAP_META[id].theme === theme && !MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
+  for (const id of Object.keys(MAP_META)) if ((ownMap ? id === ownMap : MAP_META[id].theme === theme) && !MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !own.includes(k)) own.push(k);
   let pool = own.filter((k) => MOBS[k].lv >= lv - DIM.poolLv[0] && MOBS[k].lv <= lv + DIM.poolLv[1]);
+  // a field raid (`ownMap`: its field's map id) keeps to that ground's own kinds, the four nearest, when the party is past them
+  if (pool.length < 3 && ownMap && own.length >= 3) pool = own.slice().sort((a, b) => Math.abs(MOBS[a].lv - (lv - 1)) - Math.abs(MOBS[b].lv - (lv - 1)) || MOBS[a].lv - MOBS[b].lv || (a < b ? -1 : 1)).slice(0, 4);
   if (pool.length < 3) {
     const all = [];
     for (const id of Object.keys(MAP_META)) if (!MAP_META[id].safe && !MAP_META[id].minLv) for (const k of MAP_META[id].kinds) if (ok(k) && !all.includes(k)) all.push(k);
@@ -4471,12 +4475,13 @@ function dimension(cfg) {
 function dimBuild(cfg, seed) {
   const box = { seed };
   const W = DIM.w, H = DIM.h, lv = cfg.lv | 0 || 10, floor = clamp(cfg.floor | 0 || 1, 1, DIM_FLOORS.length);
-  const hanok = cfg.hanok === true;
-  const cc = (hanok ? HANOK_FLOORS : DIM_FLOORS)[floor - 1], style = hanok ? "halls" : cc.style;
-  const theme = DIM_THEMES[cfg.theme] ? cfg.theme : DIM_FLOORS[floor - 1].themes[0];
+  const raid = dimRaidKey(cfg.hanok === true ? "hanok" : cfg.raid), hanok = raid === "hanok", field = !!RAID[raid].field;
+  const cc = RAID[raid].floors[floor - 1], style = hanok ? "halls" : cc.style;
+  const theme = field ? cc.look : DIM_THEMES[cfg.theme] ? cfg.theme : DIM_FLOORS[floor - 1].themes[0];
   const look = hanok ? { rooms: HANOK_DRESS } : DIM_THEMES[theme];
+  const art = field ? look.theme : theme;   // the client's art set (a field look is named for its floor)
   const m = blank(cfg.id || "dim:0", `레이드던전 ${floor}단 · ${cc.name}`, W, H, "W");
-  m.theme = hanok ? "interior" : theme; m.bgm = "dim"; m.band = null; m.marks = [];
+  m.theme = hanok ? "interior" : art; m.bgm = "dim"; m.band = null; m.marks = [];
   if (hanok) m.style = "hanok_raid";
   const pick = (a) => a[ri(box, 0, a.length - 1)];
   // ── the grid; main rooms grow over a connected set of its cells
@@ -4784,6 +4789,26 @@ function dimBuild(cfg, seed) {
     }
   }
   for (const [x, y] of lost) m.g[y][x] = "W";
+  if (field) {
+    // the field's own ground and barrier: no rock "W" and no cave floor is left for the browser to draw. Walls: the look's objects
+    // against open floor (trees, palms, reef, ruin), `deep` behind them; corridors read as the field's trail, rubble as its alt ground
+    const wall = [];
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) if (m.g[y][x] === "W") {
+      let e = 0;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) { const yy = y + dy, xx = x + dx; if (yy >= 0 && xx >= 0 && yy < H && xx < W && m.g[yy][xx] !== "W") e = 1; }
+      wall.push([x, y, e]);
+    }
+    const wallCh = () => { let r = rnd(box); for (const [ch, w] of look.wall) { if (r < w) return ch; r -= w; } return look.wall[0][0]; };
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const c = m.g[y][x];
+      if (c === "c") m.g[y][x] = hall[y * W + x] ? look.road : look.ground;
+      else if (c === "d") m.g[y][x] = look.alt;
+    }
+    for (const [x, y, e] of wall) {
+      m.g[y][x] = e ? look.wallG || look.ground : look.deepG || look.wallG || look.ground;
+      m.o[y][x] = e ? wallCh() : look.deep;
+    }
+  }
   if (hanok) {
     // Walls occupy already solid tiles. Only north and west faces stand tall.
     for (let y = 1; y < H - 1; y++) for (let x = 1; x < W - 1; x++) {
@@ -4801,7 +4826,7 @@ function dimBuild(cfg, seed) {
     }
   }
   // ── who lives here
-  const pool = dimPool(theme, lv);
+  const pool = dimPool(art, lv, field ? RAID[raid].map : "");
   const tOf = (r) => dS[tileOf(r)] / Math.max(1, span);
   const spawns = [];
   const openIn = (k) => tilesOf(k).filter(([x, y]) => m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]));
@@ -4843,7 +4868,7 @@ function dimBuild(cfg, seed) {
       return;
     }
     spawns.push({ k: pool[pool.length - 1], n: 1, at: pick(spots), room: k, el: 1, guard: 1 });
-    spawns.push({ k: `chest_${theme}`, n: 1, at: [r.cx, r.cy], room: k, el: 0, chest: 1 });
+    spawns.push({ k: `chest_${field ? look.chest : theme}`, n: 1, at: [r.cx, r.cy], room: k, el: 0, chest: 1 });
     dead.push([r.cx, r.cy]);
     elites++;
   });
@@ -4851,8 +4876,8 @@ function dimBuild(cfg, seed) {
   m.dim = {
     rooms: rooms.map(({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt }) => ({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt })),
     start: [st.cx, st.cy], boss: [bs.cx, bs.cy], bossRoom: bossK, startRoom: startK, door, dead, spawns, pool,
-    bossK: dimBossKind(theme, lv, pool), path: dS[tileOf(bs)], elites, cap: DIM.cap, links: links.map(([a, b]) => [a, b]),
-    style, floor, hanok, loops: links.length - (rooms.filter((r) => r.kind !== "vault" && r.kind !== "den").length - 1),
+    bossK: dimBossKind(art, lv, pool), path: dS[tileOf(bs)], elites, cap: DIM.cap, links: links.map(([a, b]) => [a, b]),
+    style, floor, hanok, raid, loops: links.length - (rooms.filter((r) => r.kind !== "vault" && r.kind !== "den").length - 1),
   };
   finalize(m);
   return m;
@@ -4960,6 +4985,135 @@ function dimArena(cfg) {
   finalize(m);
   return m;
 }
+// ───────────────────────────── 레이드던전: the raid table and the four field raids ─────────────────────────────
+// docs/design/scale-and-rift.md (as built: field raids). Four more 3단 레이드 built on the hunting grounds' own concepts and art
+// (속삭임 숲, 산호 해안, 모래바람 오아시스, 단풍 왕도). A floor row names its layout (`style`, as DIM_FLOORS in 31-maps-dim.js) and its
+// look: a DIM_THEMES entry carrying `theme` (the client's art set), the field's own ground chars (`ground`, `alt` for the rubble
+// patches, `road` for corridors), the barrier its map draws (`wall` objects against open floor, `deep` behind them, `wallG` / `deepG`
+// the ground under them; no rock "W" is left, so the browser draws trees, palms, reef and ruin, never a cave) and the rooms'
+// dressing, all from chars that field's map already uses (steps: see DIM_THEMES). dimBuild (31-maps-dim.js) does the conversion.
+
+Object.assign(DIM_THEMES, {
+  forest_gorge: { name: "이끼 협곡", theme: "forest", chest: "forest", pool: "w", ground: ":", alt: ";", road: "p", wall: [["P", 0.55], ["T", 0.15], ["R", 0.2], ["B", 0.1]], deep: "P", rooms: {
+    glade: [["patch", '"', 0.4], ["clump", "Y", 2, 2], ["edge", "l", 0.06]],
+    mossrock: [["clump", "R", 3, 2], ["patch", ";", 0.4], ["edge", "u", 0.05]],
+    birch: [["clump", "T", 3, 2], ["edge", "B", 0.12], ["patch", '"', 0.3]],
+    stream: [["pool", "w", 2], ["edge", "e", 0.1], ["edge", "R", 0.06]],
+    fallen: [["clump", "l", 3, 2], ["clump", "u", 2, 1], ["edge", "P", 0.1]],
+  } },
+  forest_temple: { name: "잊힌 사원 뜰", theme: "forest", chest: "forest", pool: "w", ground: ":", alt: ";", road: "p", wall: [["P", 0.35], ["U", 0.35], ["R", 0.15], ["T", 0.15]], deep: "P", rooms: {
+    court: [["patch", "=", 0.4], ["altar", "z", "q"], ["edge", "U", 0.08]],
+    ruin: [["clump", "q", 3, 2], ["clump", "U", 2, 2], ["patch", "=", 0.35]],
+    henge: [["ring", "Y", 3], ["altar", "z", "U"], ["patch", "=", 0.3]],
+    overgrown: [["clump", "P", 3, 2], ["clump", "q", 1, 2], ["patch", ";", 0.4]],
+    spring: [["pool", "w", 2], ["edge", "q", 0.1], ["patch", "=", 0.3]],
+  } },
+  forest_bog: { name: "속삭임 늪", theme: "forest", chest: "forest", pool: "w", ground: ":", alt: "j", road: "p", wall: [["P", 0.5], ["A", 0.25], ["T", 0.15], ["Y", 0.1]], deep: "P", rooms: {
+    bog: [["pool", "w", 3], ["patch", "j", 0.5], ["edge", "e", 0.1]],
+    deadwood: [["clump", "A", 3, 2], ["clump", "Y", 2, 2], ["patch", "j", 0.4]],
+    shroom: [["ring", "Y", 3], ["clump", "Y", 2, 2], ["patch", ";", 0.4]],
+    hollow: [["patch", "j", 0.55], ["edge", "A", 0.08], ["clump", "u", 2, 1]],
+    fen: [["pool", "w", 4], ["edge", "P", 0.08]],
+  } },
+  coast_beach: { name: "백사장", theme: "coast", chest: "coast", pool: "w", ground: "S", alt: "z", road: "p", wall: [["Ψ", 0.45], ["Ω", 0.2], ["R", 0.15], ["T", 0.2]], deep: "Ψ", rooms: {
+    dunes: [["patch", "z", 0.45], ["clump", "Ψ", 1, 2], ["edge", "Ω", 0.06]],
+    grove: [["clump", "Ψ", 3, 2], ["patch", ".", 0.4], ["edge", "B", 0.1]],
+    driftwood: [["clump", "l", 3, 2], ["clump", "Ω", 2, 2], ["patch", "z", 0.3]],
+    lagoon: [["pool", "w", 3], ["ring", "Ψ", 4], ["patch", "z", 0.3]],
+    shells: [["edge", "Ω", 0.12], ["clump", "R", 2, 2]],
+  } },
+  coast_reef: { name: "산호 얕은 물", theme: "coast", chest: "coast", pool: "w", ground: "~", alt: "S", road: "S", wallG: "~", deepG: "w", wall: [["Ω", 0.45], ["R", 0.35], ["Ψ", 0.2]], deep: " ", rooms: {
+    reef: [["clump", "Ω", 4, 2], ["clump", "R", 2, 2], ["patch", "S", 0.3]],
+    sandbar: [["patch", "S", 0.55], ["clump", "Ψ", 1, 1], ["edge", "Ω", 0.06]],
+    islet: [["patch", "S", 0.6], ["ring", "Ψ", 3], ["altar", "O", "R"]],
+    hole: [["pool", "w", 3], ["edge", "Ω", 0.08], ["patch", "S", 0.25]],
+    shoal: [["clump", "R", 3, 2], ["patch", "S", 0.4]],
+  } },
+  coast_wreck: { name: "난파선 만", theme: "coast", chest: "coast", pool: "w", ground: "S", alt: "z", road: "p", wall: [["Ω", 0.35], ["R", 0.3], ["Ψ", 0.35]], deep: "R", rooms: {
+    hull: [["ring", "l", 3], ["clump", "q", 2, 2], ["patch", "z", 0.3]],
+    cargo: [["clump", "l", 3, 2], ["clump", "u", 2, 1], ["edge", "Ω", 0.08]],
+    cove: [["pool", "w", 3], ["edge", "Ω", 0.1], ["clump", "Ψ", 1, 2]],
+    mast: [["altar", "l", "u"], ["clump", "Ω", 2, 2], ["patch", "z", 0.3]],
+    strand: [["edge", "Ω", 0.14], ["clump", "R", 2, 2], ["patch", "z", 0.4]],
+  } },
+  oasis_dunes: { name: "모래바람 사구", theme: "desert", chest: "oasis", pool: "w", ground: "s", alt: "z", road: "p", wall: [["R", 0.55], ["A", 0.25], ["B", 0.2]], deep: "R", rooms: {
+    dunes: [["patch", "z", 0.4], ["clump", "R", 2, 2], ["edge", "A", 0.05]],
+    scrub: [["clump", "B", 3, 2], ["edge", "A", 0.08], ["patch", ",", 0.3]],
+    ridge: [["clump", "R", 4, 2], ["edge", "R", 0.1], ["patch", "r", 0.3]],
+    flat: [["edge", "B", 0.1], ["clump", "A", 1, 1], ["patch", "z", 0.3]],
+    stony: [["patch", "r", 0.4], ["clump", "R", 3, 2]],
+  } },
+  oasis_palm: { name: "야자 오아시스", theme: "desert", chest: "oasis", pool: "w", ground: "s", alt: "z", road: "p", wall: [["R", 0.45], ["Ψ", 0.35], ["B", 0.2]], deep: "R", rooms: {
+    lake: [["pool", "w", 4], ["ring", "Ψ", 4], ["patch", ",", 0.5]],
+    grove: [["clump", "Ψ", 3, 2], ["patch", ".", 0.5], ["edge", "B", 0.1]],
+    reeds: [["pool", "w", 2], ["edge", "e", 0.2], ["patch", ".", 0.4]],
+    camp: [["altar", "O", "B"], ["clump", "Ψ", 1, 2], ["patch", "t", 0.4]],
+    dry: [["patch", "z", 0.4], ["clump", "A", 1, 1], ["edge", "R", 0.06]],
+  } },
+  oasis_ruin: { name: "모래 유적", theme: "desert", chest: "oasis", pool: "w", ground: "s", alt: "z", road: "p", wall: [["R", 0.35], ["U", 0.45], ["A", 0.2]], deep: "R", rooms: {
+    hall: [["clump", "U", 2, 2], ["clump", "q", 3, 2], ["patch", "r", 0.4]],
+    court: [["altar", "z", "q"], ["patch", "=", 0.4], ["edge", "U", 0.08]],
+    henge: [["ring", "U", 3], ["altar", "z", "q"], ["patch", "r", 0.3]],
+    buried: [["patch", "z", 0.55], ["clump", "q", 2, 2], ["clump", "R", 1, 2]],
+    graves: [["rows", "J"], ["edge", "A", 0.06], ["patch", "z", 0.3]],
+  } },
+  maple_trail: { name: "단풍 숲길", theme: "autumn", chest: "maple", pool: "w", ground: ".", alt: "%", road: "p", wall: [["T", 0.55], ["P", 0.15], ["B", 0.15], ["R", 0.15]], deep: "T", rooms: {
+    crimson: [["patch", "%", 0.5], ["clump", "T", 3, 2], ["edge", "u", 0.05]],
+    gold: [["patch", ";", 0.5], ["clump", "T", 2, 2], ["edge", "B", 0.08]],
+    leafpile: [["patch", "%", 0.6], ["clump", "l", 2, 1], ["edge", "u", 0.08]],
+    clearing: [["patch", '"', 0.4], ["clump", "B", 2, 2], ["edge", "T", 0.08]],
+    hollow: [["patch", "&", 0.5], ["clump", "Y", 2, 2], ["clump", "A", 1, 2]],
+  } },
+  maple_gate: { name: "무너진 성문", theme: "autumn", chest: "maple", pool: "w", ground: ".", alt: "%", road: "=", wall: [["U", 0.4], ["T", 0.3], ["q", 0.15], ["R", 0.15]], deep: "T", rooms: {
+    gate: [["altar", "z", "q"], ["edge", "V", 0.1], ["patch", "=", 0.4]],
+    graveyard: [["rows", "J"], ["edge", "u", 0.06], ["patch", "%", 0.35]],
+    ruinhall: [["clump", "U", 3, 2], ["clump", "q", 2, 2], ["patch", "=", 0.45]],
+    banners: [["edge", "V", 0.14], ["patch", "=", 0.5], ["clump", "u", 1, 1]],
+    litter: [["patch", "%", 0.55], ["clump", "l", 2, 1], ["clump", "T", 1, 2]],
+  } },
+  maple_tomb: { name: "얼음 왕릉 앞", theme: "autumn", chest: "maple", pool: "w", ground: ":", alt: "=", road: "=", wall: [["P", 0.55], ["R", 0.2], ["q", 0.15], ["T", 0.1]], deep: "P", rooms: {
+    frost: [["patch", "=", 0.3], ["clump", "P", 3, 2], ["clump", "R", 1, 2]],
+    tomb: [["altar", "z", "J"], ["ring", "J", 3], ["patch", "=", 0.4]],
+    pond: [["pool", "w", 3], ["edge", "P", 0.1], ["patch", "=", 0.25]],
+    pines: [["clump", "P", 4, 2], ["patch", ":", 0.5]],
+    ruin: [["clump", "q", 3, 2], ["clump", "U", 2, 2], ["patch", "=", 0.4]],
+  } },
+});
+const FIELD_RAIDS = {
+  forest: { map: "forest", name: "속삭임 숲", minLv: 37, maxLv: 60, hk: 0.72, theme: "forest", floors: [
+    { name: "이끼 협곡", style: "caves", look: "forest_gorge", rooms: [17, 20], loops: [3, 6], packs: 1.4 },
+    { name: "잊힌 사원 뜰", style: "halls", look: "forest_temple", rooms: [18, 21], loops: [3, 6], packs: 1.4 },
+    { name: "속삭임 늪", style: "arena", look: "forest_bog", rooms: [16, 19], loops: [4, 8], packs: 1.1 },
+  ] },
+  coast: { map: "coast", name: "산호 해안", minLv: 95, maxLv: 125, theme: "coast", floors: [
+    { name: "백사장", style: "caves", look: "coast_beach", rooms: [17, 20], loops: [3, 6], packs: 1.4 },
+    { name: "산호 얕은 물", style: "arena", look: "coast_reef", rooms: [16, 19], loops: [4, 8], packs: 1.1 },
+    { name: "난파선 만", style: "halls", look: "coast_wreck", rooms: [18, 21], loops: [3, 6], packs: 1.4 },
+  ] },
+  oasis: { map: "oasis", name: "모래바람 오아시스", minLv: 110, maxLv: 140, theme: "desert", floors: [
+    { name: "모래바람 사구", style: "arena", look: "oasis_dunes", rooms: [16, 19], loops: [4, 8], packs: 1.1 },
+    { name: "야자 오아시스", style: "caves", look: "oasis_palm", rooms: [17, 20], loops: [3, 6], packs: 1.4 },
+    { name: "모래 유적", style: "halls", look: "oasis_ruin", rooms: [18, 21], loops: [3, 6], packs: 1.4 },
+  ] },
+  maple: { map: "maple", name: "단풍 왕도", minLv: 155, maxLv: 200, theme: "autumn", floors: [
+    { name: "단풍 숲길", style: "caves", look: "maple_trail", rooms: [17, 20], loops: [3, 6], packs: 1.4 },
+    { name: "무너진 성문", style: "halls", look: "maple_gate", rooms: [18, 21], loops: [3, 6], packs: 1.4 },
+    { name: "얼음 왕릉 앞", style: "arena", look: "maple_tomb", rooms: [16, 19], loops: [4, 8], packs: 1.1 },
+  ] },
+};
+/** Every raid, in display order: `under` (the four underground themes), `hanok`, then the four field raids. `maxLv` 0: no ceiling. */
+const RAID = {
+  under: { name: "차원의 균열", minLv: 37, maxLv: 0, floors: DIM_FLOORS },
+  hanok: { name: "달그림자 한옥", minLv: 37, maxLv: 0, floors: HANOK_FLOORS },
+  ...Object.fromEntries(Object.entries(FIELD_RAIDS).map(([k, r]) => [k, { ...r, field: 1 }])),
+};
+const dimRaidKey = (k) => (typeof k === "string" && Object.hasOwn(RAID, k) ? k : "under");
+/** Floor `floor`'s name in `raid` (an old caller's `true` is the hanok raid). */
+const dimFloorName = (floor, raid) => RAID[dimRaidKey(raid === true ? "hanok" : raid)].floors[clamp(floor | 0, 1, DIM.floors) - 1].name;
+/** Why a hero of shown level `lv` may not go into a field raid ("" when they may); the first two bar nobody (the level is clamped up). */
+const dimRaidBar = (raid, lv) => { const R = RAID[dimRaidKey(raid)]; return R.field && (lv < R.minLv || lv > R.maxLv) ? `이 레이드는 Lv.${R.minLv}~${R.maxLv} 파티만 들어갈 수 있습니다.` : ""; };
+/** A raid's toughness scale (RAID `hk`, default 1): the forest's low band (Lv.37–60) is the underground raid's steepest hp ramp, so it is eased to keep the 10-minute pace (bots: 8.2–14.4 min at 1, see tests/dimrift.mjs). */
+const dimRaidHk = (raid) => RAID[dimRaidKey(raid)].hk || 1;
 // ── underground: shared pieces
 /** Dig a floor tile (never the map's rim); `set` collects what was dug. */
 const digAt = (m, x, y, ch = "c") => { if (x > 1 && y > 1 && x < m.w - 2 && y < m.h - 2) { m.g[y][x] = ch; m.o[y][x] = " "; } };
@@ -16455,19 +16609,21 @@ function dimRec(ch, now) {
   return d;
 }
 /** What a leader asked for (`dim_open`), made safe: a boss challenge, or the rift (always from floor 1; an old client's `tier` is ignored). */
-const dimAsk = (a) => (a && a.boss ? { tier: 0, boss: a.boss, step: a.step | 0 } : { tier: 0, boss: "", step: 0, hanok: a?.hanok === true });
-/** Why `o` may not go into what was asked ("" when they may): the level short of the boss (a rift bars nobody). */
+const dimAsk = (a) => (a && a.boss ? { tier: 0, boss: a.boss, step: a.step | 0 } : { tier: 0, boss: "", step: 0, raid: dimRaidKey(a?.hanok === true ? "hanok" : a?.raid) });
+/** Why `o` may not go into what was asked ("" when they may): the level short of the boss, or outside a field raid's window (the first two raids bar nobody). */
 function dimBar(o, ask) {
-  if (!ask.boss) return "";
+  if (!ask.boss) return dimRaidBar(ask.raid, o.ch.lvl);
   const need = chalMinLv(ask.boss, ask.step | 0);
   return o.ch.lvl < need ? `보스 도전${ask.step ? ` [${DIM_CHAL.stepNames[ask.step]}]` : ""}은 Lv.${need}부터 참가할 수 있습니다.` : "";
 }
 /** What is being opened, in words. */
-const dimWhat = (ask) => (ask.boss ? `보스 도전 [${MOBS[ask.boss].name} · ${DIM_CHAL.stepNames[ask.step | 0]}]` : ask.hanok ? "달그림자 한옥" : "레이드던전");
+const dimWhat = (ask) => (ask.boss ? `보스 도전 [${MOBS[ask.boss].name} · ${DIM_CHAL.stepNames[ask.step | 0]}]` : ask.raid && ask.raid !== "under" ? RAID[ask.raid].name : "레이드던전");
 const chalOpen = (k, now) => !DIM_CHAL.bosses[k].rotation || k === chalOfWeek(now);
 const CHAL_ROTATED = "이번 주 보스가 바뀌었습니다. 균열지기에게서 다시 선택하세요.";
 
 const inDim = (p) => typeof p.map === "string" && p.map.startsWith("dim:");
+/** Free to be pulled into a raid from wherever they stand: not inside an instance, not on an alba shift, not dead. */
+const dimFree = (p) => !inDim(p) && !p.ab && !p.dead;
 const dimAt = (S, id) => (S.dims && Object.hasOwn(S.dims, id) ? S.dims[id] : null);
 const tilePx = ([x, y]) => [x * T + 8, y * T + 10];
 /** Close enough to the town's obelisk (or its keeper) to use it. */
@@ -16493,15 +16649,15 @@ function dimSpot(m, i) {
 
 // ── the ready check
 
-/** Open a rift: alone at once; with a party, ask everyone of it who is in town. */
+/** Open a rift: alone at once; with a party, ask everyone of it who is free (anywhere outside an instance). */
 function dimOpen(S, p, a) {
   const party = S.parties[p.party], ask = dimAsk(a);
   if (!party) { dimStart(S, [p], 0, ask); return; }
-  const rc = { id: S.nextId++, leader: p.pid, until: S.now + DIM.rcMs, resp: {}, tier: ask.tier, boss: ask.boss, step: ask.step, hanok: ask.hanok };
-  // 0 asked, 1 yes, 2 no (or no answer in time), 3 not in town (or barred: the tier not unlocked, the level short)
+  const rc = { id: S.nextId++, leader: p.pid, until: S.now + DIM.rcMs, resp: {}, tier: ask.tier, boss: ask.boss, step: ask.step, raid: ask.raid };
+  // 0 asked, 1 yes, 2 no (or no answer in time), 3 not free (in an instance, on a shift) or barred: the level outside the raid's window
   for (const pid of party.m) {
-    const o = S.players[pid], bar = o && pid !== p.pid && o.map === START.map ? dimBar(o, ask) : "";
-    rc.resp[pid] = pid === p.pid ? 1 : o && o.map === START.map && !bar ? 0 : 3;
+    const o = S.players[pid], bar = o && pid !== p.pid && dimFree(o) ? dimBar(o, ask) : "";
+    rc.resp[pid] = pid === p.pid ? 1 : o && dimFree(o) && !bar ? 0 : 3;
     if (bar) toast(o, bar);
   }
   party.rc = rc;
@@ -16523,15 +16679,14 @@ function rcCheck(S, party) {
   const timeUp = S.now >= rc.until;
   for (const pid of Object.keys(rc.resp)) {
     const o = S.players[pid];
-    if (rc.resp[pid] === 0 && o.map !== START.map) rc.resp[pid] = 3;
-    if (rc.resp[pid] === 1 && o.map !== START.map) rc.resp[pid] = 3;
+    if ((rc.resp[pid] === 0 || rc.resp[pid] === 1) && !dimFree(o)) rc.resp[pid] = 3;
     if (rc.resp[pid] === 0 && timeUp) { rc.resp[pid] = 2; toast(o, "레이드던전 입장 준비 시간이 지났습니다. 나중에 오벨리스크에서 합류할 수 있습니다."); }
   }
   if (Object.values(rc.resp).includes(0)) return;
   const go = Object.keys(rc.resp).filter((pid) => rc.resp[pid] === 1).map((pid) => S.players[pid]);
   party.rc = null;
   if (!go.length) return;
-  const dim = dimStart(S, go, party.id, { tier: rc.tier, boss: rc.boss, step: rc.step, hanok: rc.hanok });
+  const dim = dimStart(S, go, party.id, { tier: rc.tier, boss: rc.boss, step: rc.step, raid: rc.raid });
   if (!dim) return;
   for (const pid of party.m) {
     const o = S.players[pid];
@@ -16554,8 +16709,9 @@ function dimStart(S, ps, partyId, ask) {
   S.dimN = (S.dimN | 0) + 1;
   const id = "dim:" + S.dimN;
   const seed = (Math.imul(S.seed ^ S.nextId++, 2654435761) ^ Math.imul(partyId + 1, 40503) ^ Math.floor(S.now / 1024)) | 0;
-  const theme = boss ? DIM_CHAL.bosses[boss].theme : dimTheme(seed >>> 0, 1);
-  const map = boss ? dimArena({ id, seed, k: boss }) : dimension({ id, seed, theme, lv, floor: 1, hanok: ask?.hanok === true });
+  const raid = dimRaidKey(ask?.hanok === true ? "hanok" : ask?.raid);
+  const theme = boss ? DIM_CHAL.bosses[boss].theme : dimTheme(seed >>> 0, 1, raid);
+  const map = boss ? dimArena({ id, seed, k: boss }) : dimension({ id, seed, theme, lv, floor: 1, raid });
   const dim = registerDim(S, { id, map, party: partyId, seed, lv, theme, expire: S.now + (boss ? DIM_CHAL.limit : DIM.limit) });
   Object.assign(dim, { n: ps.length, members: {}, hit: {}, warned: false, kills: 0, opened: S.now });
   // the run: the best hero going in (the carry guard), damage dealt, who was carried, each one's result flags
@@ -16569,7 +16725,7 @@ function dimStart(S, ps, partyId, ask) {
     changeMap(S, o, id, x, y);
     dim.members[o.pid] = S.now;
     toast(o, boss ? `[보스 도전 · ${DIM_CHAL.stepNames[step]} Lv.${chalSteps(boss)[step][1]}] ${MOBS[boss].name} — ${DIM_CHAL.limit / 60000}분 안에 쓰러뜨리세요. 전멸해도 다시 도전할 수 있습니다.`
-      : `[1단 · ${dimFloorName(1, map.dim.hanok)}] 레이드던전 Lv.${shownLv(lv)} 1/${DIM.floors}단에 들어왔습니다. ${DIM.limit / 60000}분 안에 ${DIM.floors}단 끝의 최종 보스를 쓰러뜨리세요!`);
+      : `[1단 · ${dimFloorName(1, map.dim.raid)}] 레이드던전 Lv.${shownLv(lv)} 1/${DIM.floors}단에 들어왔습니다. ${DIM.limit / 60000}분 안에 ${DIM.floors}단 끝의 최종 보스를 쓰러뜨리세요!`);
     o.dirty = true;
   });
   dim.rt.ev.push(["dm", "open", ...tilePx(map.dim.start)]);
@@ -16590,7 +16746,7 @@ function dimFloor(S, dim, floor) {
       dimPlace(S, map, mob, sp.at, sp.chest ? 0 : 2);
       mob.temp = true; mob.dim = 1;
       if (sp.guard) mob.guard = 1;
-      if (!sp.chest) mob.hk = dimHk(dim.n, dim.lv, MOBS[sp.k].lv) * tk.hp;
+      if (!sp.chest) mob.hk = dimHk(dim.n, dim.lv, MOBS[sp.k].lv) * tk.hp * dimRaidHk(map.dim.raid);
       if (tk.atk > 1) mob.ak = tk.atk;
       if (mob.el === 1 && tk.traits > 1) mob.tr = rollTraits(S, tk.traits);
       dim.rt.mobs.push(mob);
@@ -16607,7 +16763,7 @@ function dimDescend(S, dim) {
   S.dimN = (S.dimN | 0) + 1;
   const id = "dim:" + S.dimN, seed = (Math.imul(dim.seed ^ Math.imul(floor, 0x5bd1e995), 2654435761) ^ floor) | 0;
   // each floor its own concept and look (31-maps-dim.js DIM_FLOORS)
-  const theme = dimTheme(seed >>> 0, floor), map = dimension({ id, seed, theme, lv: dim.lv, floor, hanok: dim.map.dim.hanok });
+  const raid = dim.map.dim.raid, theme = dimTheme(seed >>> 0, floor, raid), map = dimension({ id, seed, theme, lv: dim.lv, floor, raid });
   const next = registerDim(S, { id, map, party: dim.party, seed, lv: dim.lv, theme, expire: dim.expire });
   for (const k of ["members", "hit", "warned", "kills", "opened", "top", "dmg", "carry", "res", "chal"]) next[k] = dim[k];
   next.n = Math.max(1, inside.length);
@@ -16618,7 +16774,7 @@ function dimDescend(S, dim) {
     const [x, y] = dimSpot(map, i);
     changeMap(S, o, id, x, y);
     next.members[o.pid] = S.now;
-    const floorName = dimFloorName(floor, map.dim.hanok);
+    const floorName = dimFloorName(floor, map.dim.raid);
     toast(o, floor < DIM.floors ? `[${floor}단 · ${floorName}] 균열 ${floor}/${DIM.floors}단으로 내려왔습니다. 더 깊은 곳의 몬스터는 더 강합니다!`
       : `[${floor}단 · ${floorName}] 마지막 ${floor}단입니다! 균열을 채우면 가장 먼 방에서 최종 보스가 깨어납니다.`);
     o.dirty = true;
@@ -16695,7 +16851,7 @@ function dimBoss(S, dim) {
   mob.el = 2; mob.temp = true; mob.dim = 1;
   mob.tr = rollTraits(S, dim.tk.boss || 2);
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
-  mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp;
+  mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid);
   mob.ak = DIM.bossAtk * dim.tk.atk;
   mob.hp = mobMax(mob);
   mob.castAt = now + 4000;
@@ -17055,7 +17211,11 @@ function dimValidate(S, p, a) {
   const party = S.parties[p.party];
   switch (a.t) {
     case "dim_open": {
-      if (!obeliskNear(p)) return bad("차원의 오벨리스크 곁에서만 균열을 열 수 있습니다");
+      // a raid opens from anywhere outside an instance (the ready check pulls the party in); a boss challenge still starts at the obelisk
+      if (a.boss !== undefined && !obeliskNear(p)) return bad("차원의 오벨리스크 곁에서만 균열을 열 수 있습니다");
+      if (inDim(p)) return bad("이미 열린 레이드던전 안에서는 새로 열 수 없습니다");
+      if (p.ab) return bad("아르바이트 중에는 열 수 없습니다");
+      if (a.raid !== undefined && (typeof a.raid !== "string" || !Object.hasOwn(RAID, a.raid))) return bad("알 수 없는 레이드입니다");
       if (party && party.m[0] !== p.pid) return bad("파티장만 균열을 열 수 있습니다.");
       if (party && party.rc) return bad("이미 준비 확인 중입니다.");
       if (p.dead) return bad("쓰러진 채로는 열 수 없습니다");
@@ -17070,6 +17230,9 @@ function dimValidate(S, p, a) {
         // the party's members in town are asked in dimOpen; a member under the step's level is not asked (dimBar)
         const bar = dimBar(p, dimAsk(a));
         if (bar) return bad(bar);
+      } else {
+        const bar = dimBar(p, dimAsk(a));
+        if (bar) return bad(bar);
       }
       return OK;
     }
@@ -17077,7 +17240,7 @@ function dimValidate(S, p, a) {
       const rc = party && party.rc;
       if (!rc || rc.id !== a.id) return bad("응답할 입장 준비가 없습니다");
       if (rc.resp[p.pid] !== 0) return bad("이미 응답했습니다");
-      if (p.map !== START.map) return bad("마을에 있을 때만 입장할 수 있습니다");
+      if (!dimFree(p)) return bad("지금은 입장할 수 없습니다");
       if (a.ok !== 0 && a.ok !== 1) return bad("잘못된 요청입니다");
       return OK;
     }
@@ -17093,7 +17256,7 @@ function dimValidate(S, p, a) {
       const dim = dimJoinable(S, p);
       if (!dim) return bad("합류할 수 있는 레이드던전이 없습니다");
       if (dimInside(S, dim.id).length >= DIM.party) return bad(`레이드던전 안이 가득 찼습니다 (${DIM.party}명).`);
-      const bar = dimBar(p, { tier: 0, boss: dim.chal ? dim.chal.k : "", step: dim.chal ? dim.chal.s | 0 : 0 });
+      const bar = dimBar(p, { tier: 0, boss: dim.chal ? dim.chal.k : "", step: dim.chal ? dim.chal.s | 0 : 0, raid: dim.map.dim?.raid });
       if (bar) return bad(bar);
       return OK;
     }
@@ -17148,7 +17311,7 @@ function dimView(S, p, out) {
       // appended: the floor 1..3 (0 in a boss challenge; the old ladder's tier stood here), then the challenge — [boss index, 0 / 1 casting / 2 staggered, stagger gauge left %,
       // half-seconds left of that, enrage steps, tries, fury]
       dim.floor | 0, dim.chal ? chalView(S, dim) : 0];
-    if (dim.map.dim?.hanok) v.push(1);
+    if (dim.map.dim?.raid && dim.map.dim.raid !== "under") v.push(dim.map.dim.raid);   // appended only for a raid other than the underground one
     const key = JSON.stringify(v);
     if (key !== p.dimKey || p.sendMap) { out.dim = v; p.dimKey = key; }
   } else if (p.dimKey) { out.dim = 0; p.dimKey = null; }
@@ -17163,16 +17326,16 @@ function dimView(S, p, out) {
   const party = S.parties[p.party], rc = party && party.rc;
   if (rc && rc.resp[p.pid] !== undefined && rc.resp[p.pid] !== 3) {
     const rows = party.m.filter((pid) => S.players[pid] && rc.resp[pid] !== undefined).map((pid) => [S.players[pid].eid, S.players[pid].ch.name, rc.resp[pid]]);
-    const v = [rc.id, Math.max(0, Math.ceil((rc.until - now) / 1000)), rows, dimLvOf(party.m.map((pid) => S.players[pid]).filter((o) => o && o.map === START.map)), rc.leader === p.pid ? 1 : 0,
+    const v = [rc.id, Math.max(0, Math.ceil((rc.until - now) / 1000)), rows, dimLvOf(party.m.map((pid) => S.players[pid]).filter((o) => o && dimFree(o))), rc.leader === p.pid ? 1 : 0,
       rc.tier | 0, rc.boss ? CHAL_KEYS.indexOf(rc.boss) + 1 : 0, rc.step | 0];
-    if (rc.hanok) v.push(1);
+    if (rc.raid && rc.raid !== "under") v.push(rc.raid);
     const key = JSON.stringify(v);
     if (key !== p.rcKey) { out.rc = v; p.rcKey = key; }
   } else if (p.rcKey) { out.rc = 0; p.rcKey = null; }
   // in town: a rift to walk back into — [seconds left, inside, gauge ×10, level, floor, boss index + 1 | 0, step]
   const j = p.map === START.map ? dimJoinable(S, p) : null;
   const dj = j ? [Math.max(0, Math.ceil((j.expire - now) / 1000)), dimInside(S, j.id).length, Math.floor(j.prog * 10), j.lv, j.floor | 0, j.chal ? CHAL_KEYS.indexOf(j.chal.k) + 1 : 0, j.chal ? j.chal.s | 0 : 0] : 0;
-  if (dj && j.map.dim?.hanok) dj.push(1);
+  if (dj && j.map.dim?.raid && j.map.dim.raid !== "under") dj.push(j.map.dim.raid);
   const dk = dj ? dj.join(",") : "";
   if (dk !== (p.djKey || "")) { out.dj = dj; p.djKey = dk; }
   // a chest just opened: the result panel, once
@@ -17197,6 +17360,8 @@ function dimDefs() {
     rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near, minLv: shownLv(DIM.minTier),
     // the 3-floor raid and the boss challenge: [key, name, level needed, the marked cast, pattern names, steps [[level shown, level needed]…], weekly reward bit, rotating 0/1]
     raid: { floors: DIM.floors, daily: DIM.dailyFull, downMs: DIM.downMs, names: DIM_FLOORS.map((c) => c.name), hanokNames: HANOK_FLOORS.map((c) => c.name) },
+    // every raid in display order: [key, name, shown level window, the three floor names, the art theme of its ground]
+    raids: Object.keys(RAID).map((k) => ({ k, name: RAID[k].name, minLv: RAID[k].minLv, maxLv: RAID[k].maxLv || MAXLV, floors: RAID[k].floors.map((c) => c.name), theme: RAID[k].theme || (k === "hanok" ? "interior" : "underground") })),
     chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0]), stepNames: DIM_CHAL.stepNames,
       stepR: DIM_CHAL.stepR },
   };
@@ -23216,10 +23381,11 @@ export function validateAction(S, pid, a) {
       if (denied) return bad(denied);
       const minLv = mapLevelNeed(ch, a.to);
       if (minLv) return bad(mapLevelMessage(minLv));
-      const at = wpNear(p);
-      if (!at) return bad("이동의 돌 곁에서만 이동할 수 있습니다");
+      // owner 2026-11-18: the world map warps from anywhere, not only beside a stone; never out of an instance (raid, co-op shift)
+      if (inDim(p)) return bad("레이드던전이나 협동 알바 중에는 이동할 수 없습니다");
       if (!wpWoken(ch, a.to, i)) return bad("아직 깨우지 않은 이동의 돌입니다");
-      if (a.to === p.map && i === (at.i || 0)) return bad("이미 이곳에 있습니다");
+      const at = wpNear(p);
+      if (a.to === p.map && at && i === (at.i || 0)) return bad("이미 이곳에 있습니다");
       if (now - p.hitAt < WARP_CALM) return bad("전투 중에는 이동할 수 없습니다");
       return OK;
     }

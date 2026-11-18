@@ -25,6 +25,11 @@ for (let floor = 1; floor <= HANOK_FLOORS.length; floor++) {
   const id = "hanok-preview-" + floor;
   __all[id] = dimension({ id, seed, theme, lv: 20, floor, hanok: true });
 }
+// the field raids (maps ?map=raid-forest-1 … raid-maple-3): one preview per floor, at the middle of each window
+for (const raid of Object.keys(RAID)) if (RAID[raid].field) for (let floor = 1; floor <= DIM.floors; floor++) {
+  const seed = Math.imul(${raidSeed}, floor), theme = dimTheme(seed >>> 0, floor, raid), id = "raid-" + raid + "-" + floor;
+  __all[id] = dimension({ id, seed, theme, lv: Math.floor(toTier((RAID[raid].minLv + RAID[raid].maxLv) / 2)), floor, raid });
+}
 export const __dump = Object.fromEntries(Object.entries(__all).map(([id, m]) => [id, {
   ...mapPayload(m), fires: FIRES[id] || [], spawns: m.spawns, reach: Array.from(m.reach || []).join(""),
   zone: m.zone ? Array.from(m.zone).join("") : null,
