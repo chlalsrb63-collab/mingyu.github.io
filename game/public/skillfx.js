@@ -17,7 +17,7 @@ import { Sound } from "./audio.js";
 import { HAMMER_IMPACT } from "./swing.js";
 import { comboEvent } from "./skillfx_combo.js";
 import { fxPal, jobPal, skillPal, fxSkill, skillDef, skillOwner } from "./jobpal.js";
-import { castPfx, procPfx } from "./skillpfx.js";
+import { castPfx, procPfx, bossPfx } from "./skillpfx.js";
 
 const P = 2;                       // world unit → world pixel, as in scene2d (flat effects are drawn in these)
 /** Server units → iso pixels, lifted `up` pixels: where things in the air are drawn. */
@@ -1604,6 +1604,13 @@ function telePath(g, s, x, y, R, R0, A, H) {
 }
 /** ["bt", shape, x, y, r, ms, a, b]: red ground blinking, an orange edge, the reach filling in as the moment nears (a mark
  *  rides on its hero, eid `a`, with four countdown pips; white-edged on yourself), then the blow flashes where it lands. */
+/** The boss mob nearest (x, y) within maxD units, or null: the element of a boss attack comes from it (events carry no mob id). */
+function bossNear(G, x, y, maxD = 1e9) {
+  let best = null, bd = maxD * maxD;
+  for (const m of G.mobs.values()) { const d = G.defs.mobs[m.k]; if (!d || !d.boss) continue; const q = (m.x - x) ** 2 + (m.y - y) ** 2; if (q < bd) { bd = q; best = m; } }
+  return best && best.k !== "bloomwhale" && best.k !== "bloodhorn" ? best : null;   // those two have their own effects
+}
+const elOf = (G, m) => G.defs.mobs[m.k].element;
 function bossTele(e, entityPos, G) {
   const [, s, x0, y0, r, ms, a = 0, b = 0] = e;
   const R = r * P, R0 = s === 0 ? a * P : 0, A = s === 1 ? a / 1000 : 0, H = b / 1000, mine = s === 2 && a === G.you;
@@ -1621,6 +1628,8 @@ function bossTele(e, entityPos, G) {
     const [x, y] = where();
     S3.fx.add({ k: "custom", flat: true, dur: 240, draw: (g, k) => { g.globalAlpha = 0.7 * (1 - k); g.fillStyle = "#ffe08a"; telePath(g, s, x, y, R, R0, A, H); g.fill("evenodd"); } });
     S3.shake(4); Sound.play("slam");
+    const boss = bossNear(G, x0, y0);   // the pixelfx blow, once the mark has landed
+    if (boss && skillNear(G, x / P, y / P)) bossPfx(["donut", "cone", "mark"][s], x / P, y / P, r, elOf(G, boss), s === 0 ? a : A);
   } });
 }
 
@@ -1974,6 +1983,8 @@ export function skillEvent(e, ctx) {
     case "t": {
       if (!e[5]) {
         recentTele.push({ x: e[1], y: e[2], r: e[3], ms: e[4], at: now() });
+        const boss = bossNear(G, e[1], e[2], 260);   // a boss's blast/jet/punch ring: the pixelfx blow lands with it
+        if (boss && skillNear(G, e[1], e[2])) bossPfx("ring", e[1], e[2], e[3], elOf(G, boss), 0, e[4]);
         while (recentTele.length > 16 || (recentTele.length && now() - recentTele[0].at > 200)) recentTele.shift();
       }
       return false;
@@ -2148,6 +2159,8 @@ export function skillEvent(e, ctx) {
         bloodhornJet(m.x, m.y, pts, r, ms);
         return true;
       }
+      const bd = m && G.defs.mobs[m.k];
+      if (bd && bd.boss) bossPfx(code === 9 ? "cast" : code === 8 ? "broke" : code === 7 ? "off" : "", m.x, m.y, 0, bd.element);
       if (m && code === 8) { f.burst(m.x, m.y, 0.8, "#ffe08a", 30, 2.6); B.shake(6); Sound.play("boss_break"); }
       else if (m && code === 7) { f.ring(m.x, m.y, 90, "#ff3a2a", 420, true); B.shake(8); Sound.play("boom"); }
       else if (m && code === 6) { f.burst(m.x, m.y, 0.6, "#ff4fd8", 18, 2); Sound.play("boss_absorb"); }   // an add flew into it and healed it

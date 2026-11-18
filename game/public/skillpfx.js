@@ -30,13 +30,14 @@ const flightMs = (d) => Math.max(110, Math.min(210, Math.round(d * 1.35)));   //
 
 import * as Melee from "./skillpfx_melee.js";
 import * as Magic from "./skillpfx_magic.js";
+import { LAYERS as BOSS_LAYERS, bossPlan } from "./skillpfx_boss.js";
 
 /** Skill code → cast layers; passive proc code → layers. */
 export const PFX = { ...Melee.CAST, ...Magic.CAST };
 export const PROC = { ...Melee.PROC, ...Magic.PROC };
 
 const mods = new Map(), loads = [];
-for (const t of [PFX, PROC]) for (const layers of Object.values(t)) for (const l of layers) if (!mods.has(l.fx)) {
+for (const t of [PFX, PROC, { boss: BOSS_LAYERS }]) for (const layers of Object.values(t)) for (const l of layers) if (!mods.has(l.fx)) {
   mods.set(l.fx, null);
   loads.push(import(`./pfx/fx/${l.fx}.js`).then((m) => mods.set(l.fx, m), (e) => console.warn("pfx", l.fx, e)));
 }
@@ -64,6 +65,15 @@ export function procPfx(code, x, y, ang = 0, p = null) {
   const layers = PROC[code];
   if (!layers || lowSpec()) return;
   for (const l of layers) play(l, x + (l.dx || 0), y + (l.dy || 0), { ms: 0, delay: l.delay || 0, ang, p, r: 0 });
+}
+
+/**
+ * A boss attack lands (skillpfx_boss.js): kind donut | cone | mark | ring | cast | broke | off at (x, y), radius r (server
+ * units), a = the donut's inner radius or the cone's aim (radians), el the boss's element, delay ms.
+ */
+export function bossPfx(kind, x, y, r, el, a = 0, delay = 0) {
+  if (lowSpec()) return;
+  for (const [l, dx, dy] of bossPlan(kind, el, r, a)) play(l, x + dx, y + dy, { ms: 0, delay, ang: 0, p: null, r: 0 });
 }
 
 function play(l, wx, wy, c) {
