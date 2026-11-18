@@ -119,6 +119,7 @@ export function drawPerson(s, e, t, dt, x, y) {
   const side = (beat === 1 ? -1 : 1) * sg;             // the second stroke comes back the other way
   const bowy = hold.style === "bow";
   const P = !live ? null : hammer ? Sw.hammerPose(atk * 1000, wind) : hold.style === "float" ? Sw.bookPose(beat, k) : bowy ? Sw.bowPose(beat, k, side, e.bowUp) : Sw.pose(sk, beat, k, side);
+  const footX = x, footY = y;
   if (s.t0 !== e.atkT) {
     s.t0 = e.atkT;
     s.from = s.ang;
@@ -131,12 +132,12 @@ export function drawPerson(s, e, t, dt, x, y) {
   else s.lean = (s.lean || 0) * Math.max(0, 1 - dt * 7);
   if (s.lean) { x += Math.cos(aimS) * s.lean; y += Math.sin(aimS) * s.lean * 0.75; }
   // the weight shows in the body: crouched on the wind-up and the landing, stretched at full reach
-  if (P && P.fr && !e.moving && !e.sit) frame = P.fr === "crouch" ? F.breathe : F.stretch;
+  if (P?.fr && !e.sit && (!e.moving || Sw.MELEE_FEEL[s.wk])) frame = P.fr === "crouch" ? F.breathe : F.stretch;
   // facing the camera shows the full face; walking sideways turns it three-quarters
   const img = s.sheet[view][frame];
   s.img = img;
   g.fillStyle = "rgba(20,24,50,.26)";
-  g.beginPath(); g.ellipse(x, y, 5, 2, 0, 0, 7); g.fill();
+  g.beginPath(); g.ellipse(Sw.MELEE_FEEL[s.wk] ? footX : x, Sw.MELEE_FEEL[s.wk] ? footY : y, 5, 2, 0, 0, 7); g.fill();
   const fl = e.fl | 0;
   // walking: a 1-px hop on the stretched steps; a short squash when they stop or turn
   const hop = life && e.moving && !e.sit && frame === F.stretch ? 1 : 0;
@@ -147,7 +148,7 @@ export function drawPerson(s, e, t, dt, x, y) {
     if (e.dead) { g.rotate(sg * 1.45); g.globalAlpha = 0.6; }
     else if (fl & 64) g.globalAlpha = 0.4;             // slipped away behind a puppet
     else if (fl & 16) g.globalAlpha = 0.55 + 0.25 * Math.sin(t / 40);   // a shadow, blinking about
-    const sq = life ? life.sq : 0;
+    const sq = P && Sw.MELEE_FEEL[s.wk] ? P.squash : life?.sq || 0;
     // sitting: tucked down a little; picking herbs: crouched; at a vein or a log: a dip on each strike
     const tuck = e.sit && !e.dead ? 0.8 : gat ? (gat.k === 0 ? 0.84 : gatBeat >= 0.55 && gatBeat < 0.75 ? 0.92 : 1) : 1;
     g.scale(sg * (1 + sq * 0.9), tuck * (1 - sq));
@@ -266,17 +267,20 @@ export function drawPerson(s, e, t, dt, x, y) {
   const weapon = () => {
     // the smear: the band the blade's outer half swept through in the last few hundredths of a
     // second, sampled along the stroke itself so it bends with the arc as the view shows it
-    const thrust = hold.style === "stab";
-    if (P?.strike && !bowy && hold.style !== "cast" && (thrust ? k >= Sw.IMPACT && k < Sw.IMPACT + 0.05 / stroke : k < 0.4)) {
-      const pts = [], inner = [], span = 0.07 / stroke;
+    const thrust = hold.style === "stab" && beat !== 1;
+    const hammerFall = hammer && live && atk * 1000 >= wind - 37 && atk * 1000 <= wind + 24;
+    if (hammerFall || (P?.strike && !bowy && hold.style !== "cast" && (thrust ? k >= Sw.IMPACT && k < Sw.IMPACT + 0.044 / stroke : k < 0.37))) {
+      const pts = [], inner = [], span = thrust ? 0.035 : hammer ? 0.044 : 0.06;
       for (let j = 0; j <= 6; j++) {
-        const kk = Math.max(Sw.WIND, k - (span * j) / 6);
-        const q = Sw.pose(sk, beat, kk, side);
+        const sample = atk - span * j / 6;
+        const q = hammer ? Sw.hammerPose(Math.max(wind - 54, sample * 1000), wind)
+          : Sw.pose(sk, beat, Math.max(Sw.WIND, sample / stroke), side);
         if (!q) continue;
         const [a, , reach, height] = place(q);
         const ox = hx0 + Math.cos(a) * reach, oy = hy0 + Math.sin(a) * reach - height;
         pts.push([ox + Math.cos(a) * long, oy + Math.sin(a) * long]);
-        inner.push([ox + Math.cos(a) * long * 0.62, oy + Math.sin(a) * long * 0.62]);
+        const edge = thrust ? 0.88 : hammer ? 0.74 : 0.67 + 0.23 * (j / 6);
+        inner.push([ox + Math.cos(a) * long * edge, oy + Math.sin(a) * long * edge]);
       }
       if (pts.length > 2) {
         g.save();
@@ -284,8 +288,8 @@ export function drawPerson(s, e, t, dt, x, y) {
         pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py)));
         for (let i = inner.length - 1; i >= 0; i--) g.lineTo(inner[i][0], inner[i][1]);
         g.closePath();
-        g.globalAlpha = 0.4; g.fillStyle = glow || "#dfe8ff"; g.fill();   // faint: the burst of qi at the snap carries the stroke
-        g.globalAlpha = 0.9; g.strokeStyle = "#ffffff"; g.lineWidth = 1;
+        g.globalAlpha = 0.45; g.fillStyle = glow || "#e5edff"; g.fill();
+        g.globalAlpha = 0.8; g.strokeStyle = "#ffffff"; g.lineWidth = 1;
         g.beginPath(); pts.forEach(([px, py], i) => (i ? g.lineTo(px, py) : g.moveTo(px, py))); g.stroke();
         g.restore();
       }
