@@ -86,8 +86,7 @@ function soundscape(t) {
     if (m.el && !m.heard && d < 260 && !G.defs.mobs[m.k]?.chest) { m.heard = 1; Sound.play(m.el === 2 ? "announce" : "elite"); }
     if ((G.defs.mobs[m.k]?.boss || m.el === 2) && d < 280 && t - Math.max(m.hurtT || 0, m.atkT || 0) < 8000) snd.bossT = t + 6000;
   }
-  const e = G.evt, rift = e && (e.phase === "on" || e.phase === "boss") && e.map === G.map.id;
-  Sound.setTheme(t < snd.bossT && !me.dead ? "boss" : rift ? "rift" : null);
+  Sound.setTheme(t < snd.bossT && !me.dead ? "boss" : null);
 }
 
 export function update(dt, t) {

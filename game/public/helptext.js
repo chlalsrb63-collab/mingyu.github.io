@@ -22,7 +22,7 @@ export function topics(d) {
   const tools = (j) => j[2].map((t) => coop.tools[t]).join(" / ");
   const gK = coop.gradeK, grade = ["C", "B", "A", "S"].map((g, i) => `${g} ×${gK[i].toFixed(2)}`).join(" · ");
   const parties = Object.keys(coop.parN).map(Number), pMin = Math.min(...parties), pMax = Math.max(...parties);
-  const ach = d.achievements, titles = ach.filter((a) => a.title).length;
+  const ach = d.achievements.filter((a) => !a.gone), titles = ach.filter((a) => a.title).length;
   const lead = d.enh.filter((r) => r >= 100).length;   // the first steps of the smith that never fail
   const mapName = (m) => (d.maps.find((x) => x.id === m) || { name: m }).name;
   const mins = Object.values(coop.jobs).map((j) => j[1]), shift = Math.min(...mins) === Math.max(...mins) ? `${mins[0]}분` : `${Math.min(...mins)}~${Math.max(...mins)}분`;
@@ -190,8 +190,7 @@ export function topics(d) {
         `전체 제한 시간은 ${min(dim.limit)}분이에요.`] },
       { h: "보상과 보스 도전", l: [
         `보스의 상자에서 각자 골드 · 경험치 · 장비 · 강화석(가끔 룬)을 받아요. 보상을 받는 완전 클리어는 하루 ${dim.raid.daily}번, 매주 첫 클리어에는 주간 보너스가 있어요. 거의 싸우지 않으면 보상이 줄어요.`,
-        "**보스 도전**은 균열 지기에게서 보스 하나와 겨루는 모드예요. 보스마다 입장 레벨과 난이도 단계가 있고, 일부 보스는 주마다 바뀌어요.",
-        `**균열 침공**은 ${min(d.event.every)}분마다 한 사냥터에 열려요. 오른쪽 위에 남은 시간이 보여요.`] },
+        "**보스 도전**은 균열 지기에게서 보스 하나와 겨루는 모드예요. 보스마다 입장 레벨과 난이도 단계가 있고, 일부 보스는 주마다 바뀌어요."] },
     ] },
     { id: "fair", name: "장날과 계절", secs: [
       { h: "버드나무 장날", l: [

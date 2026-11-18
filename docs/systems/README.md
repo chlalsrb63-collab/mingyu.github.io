@@ -7,7 +7,7 @@ functions, data shapes, flow, invariants, tests. Code is the truth; file map = `
 - [`server-and-saves.md`](server-and-saves.md) — Worker routes, Room/vault DOs, accounts and keys, saves, sheet versions + `migrate`, `exportChar`
 - [`maps-and-spawning.md`](maps-and-spawning.md) — lazy map registry, generators, doors, zones, stones, wind shrines, cells/waves, instances, chunked ground bake
 - [`loot-and-economy.md`](loot-and-economy.md) — items, gear rolling, drops, enhancement, shop/sell, warehouse, bag, gold faucets and sinks
-- [`rift.md`](rift.md) — 차원 균열 party instance and the older 균열 침공 world event
+- [`rift.md`](rift.md) — 차원 균열 party instance (the 균열 침공 world event was removed)
 - [`world-life.md`](world-life.md) — day/night, weather, camps, fishing/cooking, dailies, achievements, collection, tutorial, side quests
 - [`wire-and-client.md`](wire-and-client.md) — snapshot/`defs()`, action flow, client state, windows, renderer, radar
 - [`combat-skills-jobs.md`](combat-skills-jobs.md) — six stats, levels 1–200, mastery, jobs, weapon skills, basic attacks/bow arrows, aim, hitstun, mob damage hooks, balance probe

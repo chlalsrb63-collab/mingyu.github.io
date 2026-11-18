@@ -165,7 +165,7 @@ function srcText(d) {
   return {
     shop: `의상실에서 ${d.price.toLocaleString()}G`, chest: "보물 상자를 열면 가끔", boss: "사냥터 우두머리·던전 수문장이 가끔",
     token: `의상실에서 버드나무토큰 ${d.price.toLocaleString()}개`, rareBoss: "우두머리 토벌 시 매우 낮은 확률로 미보유 희귀 외형 한 점 획득",
-    daily: "토벌 의뢰 보상 상자", rift: "균열 침공 1위 (3위 안이면 가끔)",
+    daily: "토벌 의뢰 보상 상자",
     ach: ach ? `${ach.desc} (업적 「${ach.name}」)` : `업적 「${d.ach}」 달성`,
     quest: "의뢰·퀘스트를 마치면 가끔", weekly: "주간 토벌 큰 보상에서 가끔", sew: sewText(d), fair: fairText(d),
   }[d.src] || "";

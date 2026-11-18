@@ -16,6 +16,7 @@ export function applyAction(S, pid, a) {
   const m = mapOfS(p.S, p.map);
   switch (a.t) {
     case "buddy": buddyApply(S, p, a); break;
+    case "mingyutest": devTestApply(S, p, a); break;
     case "nw": p.npcWhereAt = now + 5000; p.npcWhere = true; break;
     case "mv": {
       if (p.dance || p.ab || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; break; }

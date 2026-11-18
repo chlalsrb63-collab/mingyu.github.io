@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, DIM_FLOORS, dimTheme, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, skillHpCost, xpNeed, stats, atkRange, aimIdx, EVT_MAPS, worldEvent, ITEMS, SOLID_G, MAXLV, DIM_CHAL, CHAL_KEYS, dimFloorK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk, chalOfWeek };\n";
+  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, DIM_FLOORS, dimTheme, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, skillHpCost, xpNeed, stats, atkRange, aimIdx, ITEMS, SOLID_G, MAXLV, DIM_CHAL, CHAL_KEYS, dimFloorK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk, chalOfWeek };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, D = X.DIM;
 // tuning runs: HPB=… BOSSHP=… NOCLEAR=1 node tests/dimrift.mjs -v
@@ -102,8 +102,7 @@ const THEMES = Object.keys(X.DIM_THEMES);
 let now;
 function world() {
   const S = L.setup();
-  // between two world events (EVT: every 30 min, called 2 min ahead, 8 min long): a 16-minute rift run never shares its
-  // draws with an invasion, so which ground the event picks (the list grows with every new ground) cannot sway it
+  // a fixed clock (once chosen to fall between two of the retired world events; the runs below are tuned on it)
   now = 2_281_000;
   S.now = now; S.last = now;
   return S;
@@ -473,16 +472,6 @@ const dimIds = (S) => Object.keys(S.dims);
   const odd = L.newChar("이상", "mage", []); odd.dim = { day: "x", n: -5 };
   L.addPlayer(S, "odd", odd);
   assert.deepEqual(S.players.odd.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: X.CHAL_KEYS.map(() => 0) });
-}
-
-// ───────────── 5. the invasion never picks an instance
-{
-  assert.ok(X.EVT_MAPS.length && X.EVT_MAPS.every((id) => !id.startsWith("dim:")));
-  const S = world();
-  const p = hero(S, "e1", "침공", "warrior", 20);
-  assert.ok(act(S, "e1", { t: "dim_open" }).ok);
-  for (let k = 0; k < 6; k++) { now = (k + 300) * 1800000 + 1000; S.now = now; X.worldEvent(S, now); if (S.evt) assert.ok(!S.evt.map.startsWith("dim:")); }
-  assert.ok(Object.keys(S.dims).length === 1 || true);
 }
 
 for (const [k, v] of X_DIM_SET) D[k] = v;

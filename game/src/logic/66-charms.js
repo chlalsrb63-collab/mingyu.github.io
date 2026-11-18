@@ -337,7 +337,7 @@ function charmMarkK(S, rt, p, mob) {
 /** Does a kill of `mob` count for charms (drops, 주아나's quests) for `p`? A field monster no more than 4 tiers below. */
 function charmPrey(rt, mob, p) {
   const d = MOBS[mob.k];
-  if (mob.dim || mob.evt || d.chest || d.still || !Object.hasOwn(MAP_META, rt.id)) return false;
+  if (mob.dim || d.chest || d.still || !Object.hasOwn(MAP_META, rt.id)) return false;
   return d.lv >= toTier(p.ch.lvl) - CHARM_LOW;
 }
 /** The quest under way or next in line: its index in CHARM_QUESTS and its state (0 not taken, 1 hunting), or null when all are done. */

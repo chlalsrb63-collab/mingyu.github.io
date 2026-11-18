@@ -186,6 +186,8 @@ export class Room extends DurableObject<Env> {
     const world = logic.setup();
     world.seed = (Date.now() & 0x7fffffff) | 1;
     world.now = Date.now();
+    // local build only (wrangler.local.jsonc), as for devPlace: the /mingyutest test character (74-dev-test.js)
+    world.dev = this.env.PLAYTEST === "1" && this.env.HF_ENV !== "prod";
     this.world = world;
     this.lastSave = Date.now();
     const orphans = this.ctx.getWebSockets().filter((ws) => this.att(ws)?.live);

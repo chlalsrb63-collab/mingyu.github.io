@@ -281,7 +281,6 @@ function dealMob(S, rt, mob, p, dmg, crit, cue, parts, combat = {}) {
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
   if (mob.dim) dimDealt(S, rt, mob, p, dmg);   // the carry guard's damage share (64-dim.js)
   if (mob.cast) bsDealt(S, rt, mob, dmg);      // a scripted boss's stagger gauge (56-boss-script.js)
-  if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
   if (!mob.tgt) mob.tgt = p.pid;
   damageEvent(rt, mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0, cue, parts);
   if (mob.hp > 0) return false;
@@ -460,7 +459,7 @@ function killMob(S, rt, mob) {
   if (d.boss || el === 2) dmgBoard(S, rt, hitters);
   mob.by = {};
   const xp = d.xp * ELITE[el].xp;
-  const rareBoss = !mob.evt && !mob.story && !mob.guard
+  const rareBoss = !mob.story && !mob.guard
     && (mob.dim ? S.dims[rt.id]?.boss === mob.id : d.boss || (el === 2 && mob.temp));
   for (const p of looters) {
     const ch = p.ch;
@@ -497,9 +496,9 @@ function killMob(S, rt, mob) {
     }
     sqProgress(S, p, "kill", (g) => g.mob === mob.k);
     sqFind(S, p, mob.k);
-    if (el === 1 || (el === 2 && mob.temp && !mob.evt && !mob.story && !mob.dim)) sqProgress(S, p, el === 1 ? "elite" : "fb", (g) => (!g.map || g.map === rt.id) && (!g.mob || g.mob === mob.k));
+    if (el === 1 || (el === 2 && mob.temp && !mob.story && !mob.dim)) sqProgress(S, p, el === 1 ? "elite" : "fb", (g) => (!g.map || g.map === rt.id) && (!g.mob || g.mob === mob.k));
     if (el === 1) ch.cnt.elite++;
-    else if (el === 2) { if (mob.evt) ch.cnt.evb++; else if (mob.temp) ch.cnt.fb++; else ch.cnt.guard++; }
+    else if (el === 2) { if (mob.temp) ch.cnt.fb++; else ch.cnt.guard++; }
     if (n >= 2) ch.cnt.party++;
     dailyProg(S, p, "kill", mob.k);
     if (ch.daily.tasks[0].kind === "party" && nearby.some((o) => o !== p && looters.has(o))) dailyProg(S, p, "party");
@@ -512,15 +511,14 @@ function killMob(S, rt, mob) {
     // a field boss, a guardian or a boss may leave something to wear
     if ((el === 2 || d.boss) && cosRoll(S, p, "boss") < COS_BOSS) cosFrom(S, p, "boss", d.name);
     if (rareBoss) cosBossRare(S, p, d.name);
-    if (el === 2 && mob.temp && !mob.evt && !mob.story && !mob.dim) fbLoot(S, rt, p);   // a field boss (64-dim.js LOOT_X)
+    if (el === 2 && mob.temp && !mob.story && !mob.dim) fbLoot(S, rt, p);   // a field boss (64-dim.js LOOT_X)
   }
   if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   if (el === 2) {
-    if (mob.evt) { if (S.evt) S.evt.bossDead = true; }
-    else if (mob.story) storyClear(S, rt, mob);
+    if (mob.story) storyClear(S, rt, mob);
     // a field boss is back at its spot FB_RESP after it falls; now and then it leaves its trophy (67-trophies.js)
     else if (mob.temp) { rt.fb = 0; rt.fbAt = S.now + FB_RESP; fbTrophy(S, looters, mob.k); }
-    if (top && !mob.story) sys(S, `${top.ch.name}님의 일행이 ${mapOfS(S, rt.id).name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
+    if (top && !mob.story) sys(S, `${top.ch.name}님의 일행이 ${mapOfS(S, rt.id).name}의 ${mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   }
   // some monsters go off where they fall, and so does any elite with the trait
   if (d.burst || has(mob, "burst")) {
@@ -537,7 +535,7 @@ function killMob(S, rt, mob) {
  */
 function blameOf(mob) {
   const d = MOBS[mob.k];
-  const rank = d.boss ? "보스 " : mob.el === 2 ? (mob.evt ? "침공 우두머리 " : mob.temp ? "우두머리 " : "수문장 ") : mob.el ? "정예 " : "";
+  const rank = d.boss ? "보스 " : mob.el === 2 ? (mob.temp ? "우두머리 " : "수문장 ") : mob.el ? "정예 " : "";
   return { by: `Lv.${shownLv(d.lv)} ${rank}${d.name}`, lv: shownLv(d.lv), el: d.boss ? 3 : mob.el | 0 };
 }
 function hurtPlayer(S, rt, p, raw, mob, type) {

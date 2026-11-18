@@ -60,7 +60,7 @@ function world(Lx, name = "모험가") {
     /** Fell one `k` here (`el` 1 = as an elite, 2 = as this map's field boss). */
     kill(k, el = 0) {
       const p = W.p, rt = Lx.runtime(S, p.map);
-      const find = () => rt.mobs.find((x) => x.k === k && !x.dead && !x.evt) || rt.mobs.find((x) => x.k === k && !x.evt);
+      const find = () => rt.mobs.find((x) => x.k === k && !x.dead) || rt.mobs.find((x) => x.k === k);
       if (!find()) W.step(); // the cells around wake and fill
       const m = find();
       assert.ok(m, `a ${k} lives in ${p.map}`);
@@ -104,7 +104,7 @@ const sqOf = (self, id) => { const r = self.sq.find((x) => x[0] === id); return 
   assert.ok(maps.town.npcs.some((n) => n.id === "town_willow_guide" && n.lines.length === 2));
   const D = L.defs();
   assert.ok(D.waypoints.some((w) => w.id === "willow") && D.maps.some((x) => x.id === "willow"));
-  assert.ok(!D.event.maps.includes("willow") && !D.collection.willow, "no rift or collection in a safe village");
+  assert.ok(!D.collection.willow, "no collection in a safe village");
   assert.ok(D.side.some((q) => q.id === "sq_willow_letter") && D.side.some((q) => q.id === "sq_doran_blanket"), "the sample village keeps both errands");
 
   // walk it: down the town's south road into the village, and back out through its north door
@@ -343,7 +343,7 @@ const cloneData = () => JSON.parse(JSON.stringify(EMPTY_DATA()));
   assert.ok(R.E.MAPS.town.portals.some((p) => p.to === "meadow"), "the town's door into it still works");
   // and it plays: monsters, a rift, a collection
   const D = R.L.defs();
-  assert.ok(D.event.maps.includes("meadow") && D.collection.meadow);
+  assert.ok(D.collection.meadow);
   const S = R.L.setup();
   const crowd = R.E.MAPS.meadow.cells.spawns.flat().reduce((n, q) => n + q.n, 0) + R.E.MAPS.meadow.cells.fixed.length;
   assert.ok(crowd >= 100, "its monsters live in its cells: " + crowd);
