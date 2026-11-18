@@ -12,7 +12,7 @@ const PAR = X.ALBA.lamp.par, STEP = K.STEP;
 
 // ── unit harness
 const mkAb = (seed = 7, endAt = 1e9) => {
-  const ab = { k: "lamp", box: { seed }, runAt: 0, endAt, score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, rev: 1, g: null };
+  const ab = { k: "lamp", box: { seed }, runAt: 0, endAt, score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, rev: 1, g: null, strikes: 0, out: 0 };
   R.init(null, null, ab);
   return ab;
 };
@@ -135,7 +135,7 @@ const tile = (ab) => [ab.g.pl.x, ab.g.pl.y, ab.g.pl.tx, ab.g.pl.ty];
   assert.equal(g3.ev[1], 2, "the shadow caught him");
   assert.equal(b3.combo, 0); assert.ok(b3.score >= 100 - 30 && b3.score <= 100 + 5 * 10 * 2, `−30, the waiting bulbs paid first (${b3.score})`);
   assert.deepEqual(tile(b3), [7, 13, 7, 13], "back at the start"); assert.equal(g3.pl.dir, -1); assert.ok(g3.frz > 0, "a short pause");
-  assert.ok(g3.sh.every((s, i) => s.home === 1 && s.x === K.HOME[i][0] && s.y === K.HOME[i][1] && s.wait === K.DELAY[i]), "the shadows are at home, one by one");
+  assert.ok(g3.sh.every((s, i) => s.home === 1 && s.x === K.HOME[i][0] && s.y === K.HOME[i][1] && s.wait === K.RDELAY[i]), "the shadows are at home, one by one (later than at the start of an alley)");
   assert.ok(g3.left < left0, "the lit bulbs stay lit"); assert.equal(g3.pend, 0);
   // an alley cleared: the last bulb pays the group, +200, the next (different) alley
   const b4 = mkAb();
@@ -187,7 +187,7 @@ const tile = (ab) => [ab.g.pl.x, ab.g.pl.y, ab.g.pl.tx, ab.g.pl.ty];
   assert.equal(wim(9), wim(9), "the whimsical one is seeded"); assert.ok(new Set(wim(9)).size > 1 && wim(9).includes("3"), "whimsical: mostly at him, sometimes not");
   // a shadow slower than the courier, quicker with the alleys, slower when frightened
   const sp = (lv, fr) => { g.lv = lv; return X.lampSp(g, { fr }, 0); };
-  assert.ok(sp(0, 0) < K.PSP && sp(9, 0) < K.PSP && sp(3, 0) > sp(0, 0) && sp(0, 1) < sp(0, 0));
+  assert.ok(sp(0, 0) < K.PSP && sp(9, 0) <= K.SPMAX && K.SPMAX - K.PSP <= 2 && sp(3, 0) > sp(0, 0) && sp(0, 1) < sp(0, 0));
   // a fever makes them flee too, however the fever came
   const b2 = mkAb(), g2 = arena(b2, rowCells(13, 1, 13), { none: [[7, 13]], pl: [7, 13], dir: 1, sh: { 0: { at: [2, 13], dir: 1 } } });
   b2.feverUntil = 9000; run(b2, 100);
@@ -303,7 +303,7 @@ function play(botOf, seed, { name = `점등${seed}`, hook } = {}) {
       if (hook) hook(s, v);
     }
   }
-  return { score: ab.score, grade: X.albaGrade("lamp", ab.score), clears, lv: ab.g.lv, caught, big, eaten, maxBytes, maxCombo: ab.maxCombo, state: ab.state };
+  return { out: ab.out, runMs: ab.endAt - ab.runAt, score: ab.score, grade: X.albaGrade("lamp", ab.score), clears, lv: ab.g.lv, caught, big, eaten, maxBytes, maxCombo: ab.maxCombo, state: ab.state };
 }
 
 // (c) the bots
@@ -312,6 +312,7 @@ const BOTS = {
   strong: (rng) => pacBot(rng, { lat: [100, 220], margin: 1.5, dread: 8, err: 0.03 }),
   human: (rng) => pacBot(rng, { lat: [150, 400], margin: 1.5, dread: 6, err: 0.12 }),
   casual: (rng) => pacBot(rng, { lat: [250, 600], margin: 1.2, dread: 5, err: 0.15 }),
+  sloppy: (rng) => pacBot(rng, { lat: [600, 1400], margin: 0.3, dread: 2, err: 0.35 }),   // 2026-11-18: slow and careless; the one that strikes out
 };
 const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const avg = (a) => Math.round(a.reduce((x, y) => x + y, 0) / a.length);
@@ -339,6 +340,15 @@ assert.ok(avg(results.strong.map((r) => r.score)) > avg(results.human.map((r) =>
 assert.ok(avg(results.human.map((r) => r.score)) > avg(results.casual.map((r) => r.score)));
 assert.equal(idle.grade, 0, "an idle player gets no grade"); assert.equal(idle.score, 0, "and no points");
 assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
+
+// 2026-11-18 strikes: four catches end the shift (a heart mends every 8 s and every 4 bulbs lit). Rates over the 12 seeds.
+{
+  const rate = (nm) => { const rs = results[nm], o = rs.filter((x) => x.out); return { r: o.length / rs.length, run: o.length ? avg(o.map((x) => x.runMs / 1000)) : 0 }; };
+  const rp = rate("perfect"), rh = rate("human"), rs_ = rate("sloppy");
+  console.log(`  strike-outs over ${SEEDS.length} seeds: perfect ${Math.round(rp.r * 100)}% · human ${Math.round(rh.r * 100)}% · sloppy ${Math.round(rs_.r * 100)}% (those runs end after ${rs_.run} s)`);
+  assert.equal(rp.r, 0, "the perfect bot never strikes out"); assert.ok(rh.r <= 0.25, "the human-like bot strikes out in at most a quarter of its shifts");
+  assert.ok(rs_.r >= 0.5, "the sloppy bot strikes out in at least half of its shifts"); assert.ok(rs_.run < 75, `and its run ends before 75 s (${rs_.run} s)`);
+}
 
 // (a) determinism: the same seed and the same inputs play the same shift
 {

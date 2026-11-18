@@ -14,13 +14,14 @@
 //         bulbs left, ev]; courier = [x, y, tx, ty, pr now, sp, dir]; shadow = [x, y, tx, ty, pr now, sp, 0 normal · 1 frightened · 2 hidden]
 //         ev = [seq, 1 big bulb · 2 caught · 3 alley cleared · 4 shadow eaten, points]
 const LAMP = {
-  N: 15, STEP: 50, CATCH: 40, UNIT: 120, PSP: 40, SP: [34, 34, 36, 32], FSP: 22, PW: 8000,
+  N: 15, STEP: 50, CATCH: 40, UNIT: 120, PSP: 40, SP: [34, 34, 36, 32], FSP: 22, PW: 5500,
+  RDELAY: [60, 90, 120, 150], EL0: 2, RAMP: 4, SPMAX: 42, MEND: 8000, HEAL: 4,   // 2026-11-18: no gentle first alley (EL0 levels ahead), the shadows speed up by RAMP over the shift (up to SPMAX, a hair faster than the courier); a caught heart mends every MEND ms and every HEAL bulbs lit
   START: [7, 13], HOME: [[7, 5], [5, 3], [9, 3], [7, 1]], CORNER: [[13, 1], [1, 1], [1, 13], [13, 13]], DELAY: [0, 30, 60, 90], FREEZE: 16,
   PEL: 10, GROUP: 5, BIG: 50, CLEAR: 200, EAT: 200, PEN: 30, R2: 0.36, WANT: 40,
   CUT: [8, 5],   // a ~90 s shift: the first two alleys only light the bottom rows (from this row down), so a first alley takes about a minute
 };
-const lampEl = (lv) => 2 * lv;   // an alley is two "difficulty levels" at once (loops, scatter, shadow speed)
-Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 7300, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자를 피하고, 큰 전구를 켜면 그림자를 잡을 수 있어요!" } });
+const lampEl = (lv) => 2 * lv + LAMP.EL0;   // an alley is two "difficulty levels" at once (loops, scatter, shadow speed)
+Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 5500, lives: 4, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자에게 잡히면 ♥ 하나(4개면 퇴근)! 시간이 지나거나 전구를 켜면 ♥가 회복돼요. 큰 전구로 그림자를 잡아보세요." } });
 const LAMP_D = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 /** The alley of a level: [wall per tile (1 wall · 0 open)]. Symmetric, connected, loops, no dead ends; more loops (an easier alley) for the first levels. */
@@ -67,10 +68,10 @@ function lampLevel(g, lv) {
   lampReset(g);
 }
 /** Everybody back to their start (a new alley, or the courier was caught): the shadows wait their turn at home. */
-function lampReset(g) {
+function lampReset(g, dl = LAMP.DELAY) {
   g.pl = lampEnt(LAMP.START[0], LAMP.START[1]);
   g.want = -1; g.wantAt = 0; g.pwUntil = 0; g.on = 0; g.chain = 0;
-  g.sh = LAMP.HOME.map(([x, y], i) => ({ ...lampEnt(x, y), home: 1, wait: LAMP.DELAY[i], fr: 0 }));
+  g.sh = LAMP.HOME.map(([x, y], i) => ({ ...lampEnt(x, y), home: 1, wait: dl[i], fr: 0 }));
   g.frz = LAMP.FREEZE;
 }
 function lampFlush(ab, g, T) {
@@ -81,6 +82,7 @@ function lampEat(ab, g, T) {
   const p = g.pl, i = p.y * LAMP.N + p.x, v = g.pel[i];
   if (!v) return;
   g.pel[i] = 0; g.left--;
+  if (LAMP.HEAL && ++g.hb >= LAMP.HEAL) { g.hb = 0; if (ab.strikes > 0 && !ab.out) { ab.strikes--; albaTouch(ab); } }   // progress mends a heart
   if (v === 2) { lampFlush(ab, g, T); g.ev = [++g.seq, 1, albaGood(ab, T, LAMP.BIG)]; g.pwUntil = T + LAMP.PW; g.on = 0; }
   else if (++g.pend >= LAMP.GROUP) lampFlush(ab, g, T);
   if (!g.left) {
@@ -128,7 +130,7 @@ function lampChoose(g, s, i) {
   s.dir = d; s.tx = s.x + LAMP_D[d][0]; s.ty = s.y + LAMP_D[d][1];
 }
 /** A shadow's speed (units a step): slower when it flees, quicker alley by alley, never as quick as the courier. */
-const lampSp = (g, s, i) => (s.fr ? LAMP.FSP : Math.min(LAMP.PSP - 2, LAMP.SP[i] + 2 * Math.min(lampEl(g.lv), 3)));
+const lampSp = (g, s, i) => (s.fr ? LAMP.FSP : Math.min(LAMP.SPMAX, LAMP.SP[i] + 2 * Math.min(lampEl(g.lv), 3) + Math.min(LAMP.RAMP, ((g.tk * LAMP.RAMP) / 1800) | 0)));
 /** One entity gains `sp` units; every tile it completes runs `arrive` and picks the next (the rest of the step carries over). */
 function lampMove(g, e, sp, choose, arrive) {
   if (e.tx === e.x && e.ty === e.y) { choose(e); if (e.tx === e.x && e.ty === e.y) { e.pr = 0; return; } }
@@ -156,6 +158,7 @@ function lampFright(ab, g, T) {
 function lampTick(ab, T) {
   const g = ab.g;
   g.simAt = T; g.tk++;
+  if (LAMP.MEND && T >= g.mendAt) { g.mendAt += LAMP.MEND; if (ab.strikes > 0 && !ab.out) { ab.strikes--; albaTouch(ab); } }   // a heart mends with time
   if (g.frz > 0) { g.frz--; return; }
   lampFright(ab, g, T);
   lampMove(g, g.pl, LAMP.PSP, () => lampPick(g), () => lampEat(ab, g, T));
@@ -180,15 +183,15 @@ function lampTick(ab, T) {
   }
   if (caught) {
     lampFlush(ab, g, T);
-    albaBad(ab, LAMP.PEN);
+    albaStrike(ab, T, LAMP.PEN);   // the serious failure: caught by a shadow costs a heart
     g.ev = [++g.seq, 2, 0];
-    lampReset(g);
+    lampReset(g, LAMP.RDELAY);   // after a catch the shadows leave home later (a catch is a heart now)
   }
 }
 
 ALBA_RULES.lamp = {
   init(S, p, ab) {
-    ab.g = { seed: ri(ab.box, 1, 1e9), simAt: ab.runAt, tk: 0, lv: 0, w: null, pel: null, left: 0, pl: null, sh: null, want: -1, wantAt: 0, pwUntil: 0, on: 0, chain: 0, pend: 0, frz: 0, rb: { seed: ri(ab.box, 1, 1e9) }, df: null, dk: -1, seq: 0, ev: [0, 0, 0], sentAt: 0 };
+    ab.g = { seed: ri(ab.box, 1, 1e9), simAt: ab.runAt, tk: 0, lv: 0, w: null, pel: null, left: 0, pl: null, sh: null, want: -1, wantAt: 0, pwUntil: 0, on: 0, chain: 0, pend: 0, frz: 0, mendAt: ab.runAt + LAMP.MEND, hb: 0, rb: { seed: ri(ab.box, 1, 1e9) }, df: null, dk: -1, seq: 0, ev: [0, 0, 0], sentAt: 0 };
     lampLevel(ab.g, 0);
   },
   adv(S, p, ab, now) {
