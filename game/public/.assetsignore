@@ -1,3 +1,5 @@
 # Preview pages used while drawing (_sheet.html, _scene.html, _maps.json…)
 # are for development only and are never published.
 _*
+# pixelfx effect libraries are game code, not preview pages
+!pfx/**/_lib.js
