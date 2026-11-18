@@ -6716,6 +6716,18 @@ function buildTown() {
     else if (r < p + 0.012) o[y][x] = "R";
     else if (r < p + 0.02) o[y][x] = "u";
   }
+
+  // ── finishing touches (ground only or on free tiles, never on a kept tile): the roads' edges fray into the
+  // grass, flowering meadow and bare-earth patches break up the lawn, low hedges edge a few gardens
+  const grassAt = (x, y) => at(x, y) && ".,\"".includes(g[y][x]);
+  const nearPath = (x, y) => { for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) if (at(x + dx, y + dy) && "pr".includes(g[y + dy][x + dx]) && o[y + dy][x + dx] === " ") return true; return false; };
+  for (let y = 12; y < 70; y++) for (let x = 3; x < 96; x++) if (grassAt(x, y) && o[y][x] === " " && nearPath(x, y) && hh(x, y, 20) < 0.3) g[y][x] = "p";
+  for (const [cx, cy, rx, ry] of [[33, 64, 5, 2.5], [60, 63, 6, 3], [8, 52, 4, 3], [38, 14, 4, 2.5], [86, 50, 4, 3], [20, 31, 2.5, 2], [56, 56, 3.5, 2.5], [72, 12, 4, 1.8]])
+    ell(cx, cy, rx, ry, (x, y, d) => { if (grassAt(x, y) && o[y][x] === " " && !keep[y * W + x] && hh(x, y, 21) > d * 0.8) g[y][x] = "❋"; });
+  for (const [cx, cy, rx, ry] of [[44, 56, 2.5, 1.5], [88, 46, 2, 1.5], [26, 31, 2, 1.5]])
+    ell(cx, cy, rx, ry, (x, y, d) => { if (grassAt(x, y) && o[y][x] === " " && !keep[y * W + x] && hh(x, y, 22) > d * 0.7) g[y][x] = "j"; });
+  const hedgeRow = (x0, y0, x1, y1) => { for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (grassAt(x, y) && o[y][x] === " " && !keep[y * W + x] && (x + y) % 7 !== 0) o[y][x] = "H"; };
+  hedgeRow(31, 57, 44, 57); hedgeRow(58, 58, 68, 58); hedgeRow(3, 26, 3, 40); hedgeRow(56, 22, 56, 27); hedgeRow(84, 44, 94, 44); hedgeRow(30, 12, 38, 12);
   return m;
 }
 

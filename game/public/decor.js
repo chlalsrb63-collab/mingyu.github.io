@@ -564,8 +564,8 @@ export function townProps() {
       for (const [a, bb] of [[2, 2], [30, 2], [2, 30], [30, 30]]) post(box, a, bb, 62);
       for (let i = 0; i <= 28; i += 4) { box(2 + i, 29, 3 + i, 31, 44, 52, WOOD_L, WOOD, WOOD_D); box(29, 2 + i, 31, 3 + i, 44, 52, WOOD_L, WOOD, WOOD_D); }
       box(2, 29, 31, 31, 52, 54, "#c89a64", WOOD, WOOD_D); box(29, 2, 31, 31, 52, 54, "#c89a64", WOOD, WOOD_D);
-      quad([P(-2, -2, 62), P(34, -2, 62), P(16, 16, 80)], "#9a5a3a"); quad([P(34, -2, 62), P(34, 34, 62), P(16, 16, 80)], "#6a3a26");
-      quad([P(-2, 34, 62), P(34, 34, 62), P(16, 16, 80)], "#b8704a");
+      quad([P(0, 0, 62), P(32, 0, 62), P(16, 16, 80)], "#9a5a3a"); quad([P(32, 0, 62), P(32, 32, 62), P(16, 16, 80)], "#6a3a26");
+      quad([P(0, 32, 62), P(32, 32, 62), P(16, 16, 80)], "#b8704a");
       const [lx, ly] = P(30, 30, 58); b.r(lx - 2, ly, 5, 6, "#3a3448"); b.r(lx - 1, ly + 1, 3, 4, "#ffd870");
     }),
     // a stone well under a little roof, a bucket on the rim
@@ -579,7 +579,7 @@ export function townProps() {
       box(10, 12, 14, 15, 9, 13, "#c8945a", "#8a5a34", "#6a4226");
     }),
     // a plank bench
-    bench: isoProp(2, 1, 30, (b, P, box) => {
+    bench: isoProp(2, 1, 40, (b, P, box) => {
       for (const a of [4, 28]) box(a - 1, 5, a + 1, 11, 0, 6, W0[0], W0[1], W0[2]);
       box(1, 4, 31, 12, 6, 8, "#c8945a", "#a8743e", "#7a5030");
       box(1, 3, 31, 5, 8, 14, "#b08050", "#8a5a34", "#6a4226");
@@ -589,10 +589,10 @@ export function townProps() {
       box(2, 2, 30, 14, 8, 16, "#b8844e", "#9a6a3a", "#7a5030");
       for (const [a, c] of [[6, "#e8584a"], [12, "#f0a030"], [18, "#9ad070"], [24, "#e8c040"]]) b.oval(...P(a, 8, 19), 3, 2, c);
       for (const a of [8, 24]) { const [x, y] = P(a, 15, 6); b.oval(x, y, 3, 6, "#5a3a22"); b.oval(x, y, 1.5, 3.5, "#8a5a34"); }
-      box(30, 7, 40, 9, 9, 11, "#8a5a34", "#6a4226", "#5a3a22");
+      box(30, 9, 38, 11, 9, 11, "#8a5a34", "#6a4226", "#5a3a22");
     }),
     // a training dummy of straw on a post, a target on its chest
-    dummy: isoProp(1, 1, 40, (b, P, box) => {
+    dummy: isoProp(1, 1, 52, (b, P, box) => {
       post(box, 8, 8, 30, ["#a87a44", "#8a5a34", "#6a4226"]);
       const [x, y] = P(8, 8, 22);
       b.oval(x, y, 6, 8, "#d8b060"); b.oval(x - 1, y - 1, 4, 6, "#e8c878"); b.oval(x, y - 12, 4, 4, "#d8b060");
@@ -651,7 +651,7 @@ export function townProps() {
     }
   }));
   // Washing on a line between two posts, in three frames of wind.
-  TP.laundry = [0, 1, 2].map((f) => isoProp(2, 1, 40, (b, P, box) => {
+  TP.laundry = [0, 1, 2].map((f) => isoProp(2, 1, 48, (b, P, box) => {
     post(box, 2, 8, 24); post(box, 30, 8, 24);
     const CL = ["#f6ecd2", "#8ab4f0", "#f078a8", "#9ad070", "#f0c040"];
     for (let i = 0; i < 5; i++) {
@@ -660,8 +660,32 @@ export function townProps() {
       b.tri([[x, y], [x + 4, y], [x + 4 + sway, y + 7 + (i % 2) * 2], [x + sway, y + 7 + (i % 2) * 2]], CL[i]);
     }
   }));
-  TP.stall = sprites().stall;
-  TP.stallShut = sprites().stallShut;
+  // Market stalls in the quarter view: four posts, a counter box with goods, a sloped striped awning.
+  const stall = (v, shut) => isoProp(2, 1, 64, (b, P, box, quad) => {
+    const stripe = [["#d84c4c", "#f6ecd2"], ["#4a78c0", "#f6ecd2"], ["#4a9a58", "#f2e6b8"]][v];
+    const goods = [["#e8584a", "#f0a030", "#e8584a", "#9ad070"], ["#8ab4d8", "#e88aa8", "#8ab4d8", "#c8ccd4"], ["#b8303c", "#3058c0", "#5ab85a", "#e8c040"]][v];
+    for (const a of [3, 29]) post(box, a, 3, 40);
+    box(1, 5, 31, 15, 0, 13, "#c89a64", WOOD, WOOD_D);
+    box(1, 5, 31, 15, 11, 13, "#d8a868", WOOD_L, WOOD);
+    if (shut) {
+      box(2, 6, 30, 14, 13, 17, "#f2e8cc", "#c8b894", "#9a8a6a");
+      for (const a of [10, 22]) box(a, 6, a + 1, 14, 13, 17, "#9a8a6a", "#9a8a6a", "#6a5440");
+      box(1, 1, 31, 4, 37, 41, "#c85048", "#8a3434", "#8a3434");
+    } else {
+      for (let i = 0; i < 6; i++) b.oval(...P(4 + i * 5, 10, 16), 2.4, 2.4, goods[i % 4]);
+    }
+    for (const a of [3, 29]) post(box, a, 14, 30);
+    if (shut) return;
+    // awning: slopes from the back beam down to the front edge; stripes run front to back
+    for (let i = 0; i < 8; i++) {
+      const a0 = i * 4, a1 = a0 + 4, c = stripe[i % 2];
+      quad([P(a0, 1, 41), P(a1, 1, 41), P(a1, 16, 31), P(a0, 16, 31)], c);
+      quad([P(a0, 16, 31), P(a1, 16, 31), P(a1, 16, 27), P(a0, 16, 27)], i % 2 ? dk(c, 0.85) : dk(stripe[0], 0.85));
+    }
+    quad([P(32, 1, 41), P(32, 16, 31), P(32, 16, 27), P(32, 1, 37)], dk(stripe[0], 0.7));
+  });
+  TP.stall = [0, 1, 2].map((v) => stall(v, false));
+  TP.stallShut = stall(0, true);
   return TP;
 }
 

@@ -125,6 +125,60 @@ export function scenery() {
     const dot = [null, "#f06a7a", "#fffbe8"][v];
     if (dot) for (const [x, y] of [[6, 12], [15, 8], [23, 9], [12, 16], [20, 15]]) { b.r(x, y, 2, 2, dot); if (v === 2) b.r(x, y, 1, 1, "#f0c040"); }
   });
+  // ── town trees (버드나무광장): kinds mixed per tile by scene_map; each stands on the tile like tree()
+  const willow = (v) => prop(52, 66, (b) => {
+    const leaf = v ? "#6cb85c" : "#5aae60", d = tone(leaf, "#143a4a", 0.42), l = lt(leaf, 1.18), hl = lt(leaf, 1.38);
+    b.r(22, 38, 8, 26, WOOD); b.r(19, 61, 14, 3, WOOD); b.r(27, 38, 3, 26, WOOD_D); b.r(23, 46, 2, 3, WOOD_D);
+    b.r(16, 24, 3, 14, WOOD); b.r(34, 26, 3, 12, WOOD_D);
+    b.oval(26, 20, 24, 16, d); b.oval(24, 18, 21, 13, leaf); b.oval(18, 12, 11, 6, l); b.oval(15, 9, 5, 3, hl);
+    for (let x = 2; x <= 48; x += 4) {
+      const k = Math.abs(x - 26) / 24, top = Math.round(20 + 15 * Math.sqrt(Math.max(0, 1 - k * k))) - 2;
+      const len = Math.round(11 + hash(x, v, 61) * 8 + k * 12);
+      b.r(x, top, 3, len, x % 8 ? leaf : l); b.r(x + 2, top, 1, len, d); b.r(x, top + len, 3, 1, hl);
+      if (x % 8 === 2) b.r(x + 1, top + len - 5, 1, 4, hl);
+    }
+  });
+  const birch = (v) => prop(36, 62, (b) => {
+    const leaf = v ? "#a4cf5c" : "#8cc65a", d = tone(leaf, "#143a4a", 0.45), l = lt(leaf, 1.16);
+    b.r(15, 26, 5, 35, "#ece6d8"); b.r(19, 26, 2, 35, "#b8b2a2"); b.r(13, 59, 9, 2, "#b8b2a2");
+    for (const y of [32, 38, 45, 51, 56]) b.r(15 + (y % 3), y, 3, 1, "#3a3430");
+    b.r(21, 30, 6, 2, "#ece6d8"); b.r(10, 36, 6, 2, "#b8b2a2");
+    for (const [x, y, rx, ry] of [[18, 12, 10, 9], [9, 20, 8, 8], [27, 21, 8, 8], [18, 26, 8, 6]]) b.oval(x + 1, y + 2, rx, ry, d);
+    for (const [x, y, rx, ry] of [[18, 11, 9, 8], [9, 19, 7, 7], [27, 20, 7, 7], [18, 25, 7, 5]]) b.oval(x, y, rx, ry, leaf);
+    b.oval(14, 6, 5, 3, l); b.oval(7, 15, 3, 2, l);
+    for (const [x, y] of [[20, 7], [26, 17], [8, 24], [17, 28]]) b.r(x, y, 3, 2, d);
+  });
+  const orchard = (v) => prop(44, 52, (b) => {
+    const leaf = "#5cb04e", d = tone(leaf, "#143a4a", 0.42), fruit = ["#f2b838", "#e8584a"][v];
+    b.r(18, 34, 7, 16, WOOD); b.r(16, 48, 11, 3, WOOD); b.r(22, 34, 3, 17, WOOD_D);
+    b.oval(22, 21, 20, 17, d); b.oval(20, 19, 17, 14, leaf); b.oval(14, 12, 8, 5, lt(leaf, 1.16)); b.oval(11, 9, 4, 2, lt(leaf, 1.36));
+    for (const [x, y] of [[26, 14], [30, 26], [10, 26], [20, 32], [32, 18]]) b.r(x, y, 3, 2, d);
+    for (const [x, y] of [[12, 19], [23, 11], [29, 21], [18, 27], [34, 28], [8, 24]]) { b.r(x, y, 3, 3, fruit); b.r(x, y, 1, 1, lt(fruit, 1.5)); }
+  });
+  const blossom = (v) => prop(46, 56, (b) => {
+    const m = ["#f2a8c8", "#f8c8d8"][v], d = tone(m, "#5a2a5a", 0.4), l = lt(m, 1.14);
+    b.r(20, 34, 6, 20, "#6a4a48"); b.r(18, 51, 10, 3, "#6a4a48"); b.r(24, 34, 2, 20, "#4a3438");
+    b.tri([[21, 38], [10, 26], [12, 24], [23, 34]], "#6a4a48"); b.tri([[25, 38], [36, 26], [34, 24], [23, 34]], "#6a4a48");
+    for (const [x, y, rx, ry] of [[23, 15, 12, 10], [11, 23, 9, 8], [35, 23, 9, 8], [23, 28, 9, 6]]) b.oval(x + 1, y + 2, rx, ry, d);
+    for (const [x, y, rx, ry] of [[23, 14, 11, 9], [11, 22, 8, 7], [35, 22, 8, 7], [23, 27, 8, 5]]) b.oval(x, y, rx, ry, m);
+    b.oval(18, 9, 6, 3, l);
+    for (const [x, y] of [[14, 12], [26, 8], [31, 16], [8, 22], [22, 22], [38, 24], [18, 28]]) { b.r(x, y, 2, 2, "#fff0e4"); b.r(x + 2, y + 1, 1, 1, l); }
+    for (const [x, y] of [[10, 44], [34, 50], [38, 46]]) b.r(x, y, 2, 1, l);
+  });
+  const slim = (v) => prop(28, 68, (b) => {
+    const dk2 = v ? "#2a6a58" : "#2a6a50", lg = v ? "#4a9a86" : "#3f8c64";
+    b.r(12, 58, 5, 9, "#7a5030"); b.r(14, 58, 2, 9, "#5e3c22");
+    for (const [y, w, h] of [[40, 10, 20], [26, 8, 18], [12, 7, 16], [0, 4, 14]]) {
+      b.tri([[14 - w, y + h], [14 + w, y + h], [14, y]], dk2); b.tri([[14 - w, y + h], [14, y + h], [14, y]], lg);
+      b.r(14 - w * 0.5, y + h * 0.65, 3, 2, lt(lg, 1.25));
+    }
+  });
+  const bushtree = (v) => prop(32, 40, (b) => {
+    const leaf = ["#6ab85a", "#58b05a"][v], d = tone(leaf, "#143a4a", 0.42), dot = ["#fffbe8", "#f06a7a"][v];
+    b.r(14, 24, 5, 15, WOOD); b.r(12, 37, 9, 2, WOOD); b.r(17, 24, 2, 15, WOOD_D);
+    b.oval(16, 16, 15, 13, d); b.oval(15, 14, 13, 11, leaf); b.oval(10, 8, 6, 3, lt(leaf, 1.2)); b.r(18, 20, 3, 2, d); b.r(8, 18, 2, 2, d);
+    for (const [x, y] of [[8, 13], [16, 8], [22, 14], [13, 19], [24, 19]]) { b.r(x, y, 2, 2, dot); b.r(x, y, 1, 1, lt(dot, 1.4)); }
+  });
   const rock = (moss) => prop(30, 24, (b) => {
     b.tri([[3, 23], [1, 13], [8, 4], [19, 2], [27, 9], [29, 20], [24, 23]], "#8f93a3");
     b.tri([[8, 5], [19, 3], [25, 9], [14, 12], [5, 12]], "#b4b8c6");
@@ -352,13 +406,32 @@ export function scenery() {
     })),
     T: [tree("#4faa5a"), tree("#58b05a", "#e8584a"), tree("#7abf52"), tree("#f4a8c4")],
     P: [pine(true), pine(false)],
+    // town only: chosen by scene_map per tile (T and P glyphs)
+    TT: {
+      T: [tree("#4faa5a"), tree("#7abf52"), willow(0), willow(1), birch(0), birch(1), orchard(0), orchard(1), blossom(0), blossom(1), bushtree(0), bushtree(1)],
+      P: [pine(true), pine(false), slim(0), slim(1)],
+    },
     B: [bush(0), bush(1), bush(2)],
     R: [rock(false), rock(true)],
     // what stands where a bush would, in town: a planter, a barrel, a pair of crates
     TB: [
       prop(30, 22, (b) => { b.r(1, 10, 28, 11, "#b8844e"); b.r(1, 10, 28, 2, "#d8a868"); b.r(1, 19, 28, 2, WOOD_D); for (const x of [9, 19]) b.r(x, 12, 1, 7, WOOD_D); b.r(2, 8, 26, 2, "#5a4030"); for (let i = 0; i < 6; i++) { b.r(4 + i * 4, 4, 2, 4, "#4faa5a"); b.r(3 + i * 4, 1 + (i % 2), 4, 4, ["#f06a7a", "#fffbe8", "#f0c040", "#b48cff"][i % 4]); b.r(4 + i * 4, 2 + (i % 2), 2, 2, "#fff2c0"); } }),
       prop(22, 26, (b) => { b.r(3, 3, 16, 22, "#a8743e"); b.r(2, 6, 18, 16, "#a8743e"); b.r(15, 4, 4, 20, "#8a5a34"); b.r(6, 8, 2, 12, "#c8935a"); b.r(2, 7, 18, 2, "#5a5e6c"); b.r(2, 18, 18, 2, "#5a5e6c"); b.oval(11, 4, 8, 3, "#c8935a"); b.oval(11, 4, 5, 1.6, "#a8743e"); }),
-      prop(30, 28, (b) => { const box = (x, y, w, h) => { b.r(x, y, w, h, "#c89a5e"); b.r(x, y, w, 2, "#e0b87a"); b.r(x, y + h - 2, w, 2, "#a8743e"); b.r(x, y, 2, h, "#a8743e"); b.r(x + w - 2, y, 2, h, "#96623a"); for (let i = 0; i < w - 4; i++) b.r(x + 2 + i, y + 2 + Math.round((i * (h - 5)) / (w - 5)), 1, 1, "#a8743e"); }; box(1, 9, 20, 19); box(14, 0, 15, 13); }),
+      // a pair of crates in quarter view (owner 2026-11-19: the old front-view squares read as flat blocks)
+      prop(34, 33, (b) => {
+        const crate = (cx, by, w, h) => {
+          const e = by - w / 2, t = by - h;
+          b.tri([[cx - w - 1, e], [cx, by + 1], [cx + w + 1, e], [cx + w + 1, e - h], [cx, t - w - 1], [cx - w - 1, e - h]], "#2e2230");
+          b.tri([[cx - w, e], [cx, by], [cx, t], [cx - w, e - h]], "#b07a44");
+          b.tri([[cx, by], [cx + w, e], [cx + w, e - h], [cx, t]], "#8a5a34");
+          b.tri([[cx, t], [cx - w, e - h], [cx, t - w], [cx + w, e - h]], "#d8a868");
+          b.tri([[cx - w + 2, e - h + 1], [cx, t - w + 2], [cx + w - 2, e - h + 1], [cx, t - 1]], "#c8935a");
+          b.tri([[cx - w, e - h / 2], [cx, by - h / 2], [cx, by - h / 2 - 1], [cx - w, e - h / 2 - 1]], "#7a5030");
+          b.tri([[cx, by - h / 2], [cx + w, e - h / 2], [cx + w, e - h / 2 - 1], [cx, by - h / 2 - 1]], "#6a4226");
+          b.tri([[cx, by], [cx + 1, by], [cx + 1, t], [cx, t]], "#5a3a22");
+        };
+        crate(23, 23, 8, 8); crate(13, 31, 11, 11);
+      }),
     ],
     F: prop(32, 24, (b) => { for (const y of [7, 15]) { b.r(0, y, 32, 4, "#d8ac6e"); b.r(0, y + 3, 32, 1, "#b0844c"); b.r(0, y, 32, 1, "#ecc88c"); } for (const x of [5, 21]) { b.r(x, 2, 6, 22, "#e6c088"); b.r(x + 4, 3, 2, 21, "#b88a52"); b.r(x - 1, 0, 8, 3, "#f2d8a4"); } }),
     L: prop(18, 56, (b) => { b.r(8, 18, 2, 34, "#4a4c5a"); b.r(5, 50, 8, 4, "#4a4c5a"); b.r(3, 54, 12, 2, "#3a3c48"); b.r(3, 4, 12, 13, "#3a3c48"); b.r(5, 6, 8, 9, "#ffe690"); b.r(7, 8, 4, 5, "#fff8d0"); b.r(5, 14, 8, 1, "#f0b848"); b.r(1, 2, 16, 3, "#3a3c48"); b.r(5, 0, 8, 2, "#4a4c5a"); b.r(6, 17, 6, 2, "#4a4c5a"); }),

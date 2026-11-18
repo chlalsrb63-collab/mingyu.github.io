@@ -268,7 +268,7 @@ class Model {
 function townHouse(v, seed) {
   const FW = 64, FD = 48, HW = 30, RISE = 22, EAVE = 4;
   const roof = ROOF[v % 4], rp = roofPalette(roof);
-  const plaster = ["#f3e7ce", "#e9e5d0", "#f1ddb4", "#eaddd7"][v % 4];
+  const plaster = seed % 3 === 1 ? "#c9a070" : ["#f3e7ce", "#e9e5d0", "#f1ddb4", "#eaddd7"][v % 4];
   const wall = C(plaster), wallR = C(shade(plaster, 0.84)), beam = C("#8a5a34"), beamR = C(shade("#8a5a34", 0.8));
   const stone = C("#b8b0a4"), stoneR = C(shade("#b8b0a4", 0.82)), stoneS = C("#958d82"), stoneL = C("#d6cec2");
   const glass = C("#bfe6f4"), glassL = C("#dff4fc"), shut = C(roof), box = C("#b8844e");
@@ -415,16 +415,16 @@ function cityTower(v, seed) {
 /** wall, timber (null: stone or logs), plinth height and colour, wall height, storeys, roof colour and shape, rise, eaves, chimney. */
 const BSTYLE = {
   library: { wall: "#c9c3b3", beam: null, plinth: 5, stone: "#9a9486", HW: 32, floors: 1, roof: "#566a9a", kind: "gable", rise: 22, eave: 4, chim: 0, arch: true },
-  store: { wall: "#eed8aa", beam: "#7a5030", plinth: 5, stone: "#b0a898", HW: 28, floors: 1, roof: "#c8743a", kind: "gable", rise: 20, eave: 4, chim: 1 },
+  store: { wall: "#eed8aa", beam: "#7a5030", plinth: 5, stone: "#b0a898", HW: 28, floors: 1, roof: "#c8743a", kind: "hip", rise: 16, eave: 4, chim: 1 },
   smithy: { wall: "#a29c90", beam: null, plinth: 7, stone: "#8e887c", HW: 28, floors: 1, roof: "#4e586c", kind: "gable", rise: 18, eave: 4, chim: 2, arch: true },
   merc: { wall: "#7a5034", beam: null, logs: 1, plinth: 5, stone: "#8a8478", HW: 28, floors: 1, roof: "#4a3a30", kind: "gable", rise: 20, eave: 5, chim: 1 },
   lab: { wall: "#dcc79c", beam: "#6a4a30", plinth: 5, stone: "#a8a090", HW: 28, floors: 1, roof: "#4a9a86", kind: "hip", rise: 12, eave: 3, chim: 3 },
-  diner: { wall: "#f2d9a8", beam: "#7a4a2c", plinth: 5, stone: "#b0a898", HW: 30, floors: 1, roof: "#c8443a", kind: "gable", rise: 22, eave: 4, chim: 1 },
-  inn: { wall: "#f0e2c0", beam: "#6a4a2e", plinth: 5, stone: "#a8a090", HW: 44, floors: 2, roof: "#3a64b8", kind: "gable", rise: 22, eave: 5, chim: 1 },
+  diner: { brace: 1, wall: "#f2d9a8", beam: "#7a4a2c", plinth: 5, stone: "#b0a898", HW: 30, floors: 1, roof: "#c8443a", kind: "gable", rise: 22, eave: 4, chim: 1 },
+  inn: { brace: 1, wall: "#f0e2c0", beam: "#6a4a2e", plinth: 5, stone: "#a8a090", HW: 44, floors: 2, roof: "#3a64b8", kind: "gable", rise: 22, eave: 5, chim: 1 },
   boutique: { wall: "#f6dce2", beam: "#c88a9a", plinth: 4, stone: "#c8bcb8", HW: 28, floors: 1, roof: "#e07aa0", kind: "hip", rise: 16, eave: 4, chim: 0 },
   pet: { wall: "#f2e8c8", beam: "#8a6a3a", plinth: 4, stone: "#b0a898", HW: 20, floors: 1, roof: "#6aa84a", kind: "round", rise: 22, eave: 5, chim: 0, arch: true },
-  apt: { wall: "#e8d4aa", beam: "#6a4a2e", plinth: 5, stone: "#a8a090", HW: 58, floors: 3, roof: "#8a5a3a", kind: "gable", rise: 18, eave: 4, chim: 1 },
-  home: { wall: "#f6ecd2", beam: "#8a5a34", plinth: 5, stone: "#b8b0a4", HW: 26, floors: 1, roof: "#d8604c", kind: "gable", rise: 20, eave: 4, chim: 1 },
+  apt: { wall: "#e8d4aa", beam: "#6a4a2e", plinth: 5, stone: "#a8a090", HW: 58, floors: 3, roof: "#5a8a74", kind: "gable", rise: 18, eave: 4, chim: 1 },
+  home: { wall: "#f6ecd2", beam: "#8a5a34", plinth: 5, stone: "#b8b0a4", HW: 26, floors: 1, roof: "#8a6aa8", kind: "hip", rise: 20, eave: 4, chim: 1 },
   barn: { wall: "#a8503a", beam: "#5a2e22", plinth: 3, stone: "#8a8478", HW: 30, floors: 1, roof: "#6a4a3a", kind: "gable", rise: 26, eave: 4, chim: 0 },
 };
 const HANOK = {
@@ -462,7 +462,7 @@ function building(b) {
   const doorHalf = barn ? 18 : b.k === "hall" ? 13 : 10;
   const doorHeight = Math.min(HW - 3, barn || b.k === "hall" ? 27 : 25);
   const SH = Math.max(14, Math.floor((HW - S.plinth) / S.floors));
-  const planter = b.k === "home" || b.k === "apt" || b.k === "pet";
+  const planter = b.k === "home" || b.k === "apt" || b.k === "pet" || (["store", "diner", "inn", "boutique", "lab"].includes(b.k) && hash(b.x, b.y, 5) < 0.6);
   /** One face's colour at (s along it, z up); f 0 front (+y), 1 right (+x). */
   const face = (f, s, z) => {
     const L = f === 0 ? FW : FD, d = f;
@@ -536,6 +536,7 @@ function building(b) {
     }
     // timber framing: posts at the corners and every tile, a rail at each floor and under the eaves
     if (s < 2 || s >= L - 2 || ws === 0 || z === S.plinth || (z - S.plinth) % SH === 0) return beamC[d];
+    if (S.brace && ws > 1 && ws < 15 && wz > 1 && wz < SH - 1 && Math.abs(ws - 8 - (((ti + b.x) & 1) ? 1 : -1) * (wz - SH / 2)) < 1) return beamC[d];
     if (b.k === "barn" && (ws === 8 || (Math.abs((ws - 8) - (wz - 8)) < 1 && wz > 2 && wz < SH - 2))) return beamC[d];
     return wallC[d];
   };
@@ -653,6 +654,10 @@ function extras(b, S, M, FW, FD, HW, rise, info, at) {
     const cloth = ["#eddfbb", "#b85b4c"];
     awning(4, door - 13, 9, cloth, "#965448");
     awning(door + 13, FW - 4, 9, cloth, "#965448");
+  } else if (b.k === "diner") {
+    // a teal and cream awning over the big front window
+    awning(6, FW - 6, 8, ["#e9f0e4", "#3a8a8a"], "#2e6a6a");
+    info.steam = at(FW - 12, 6, HW + rise - 4);
   } else if (b.k === "merc") {
     // round shields on the front wall
     [[16, "#a83a3a"], [FW - 34, "#3a5a9a"], [FW - 16, "#c8a040"]].forEach(([a, c]) => { disc(a, 18, 5, c, FD + 1, "#4a3a30"); put(a, FD + 2, 18, "#d8d0c0"); });
@@ -688,7 +693,7 @@ function extras(b, S, M, FW, FD, HW, rise, info, at) {
     for (let z = 0; z < 10; z++) put(a, FD + 5, z, "#6a4226");
     for (let A = a - 2; A < a + 3; A++) for (let z = 10; z < 14; z++) put(A, FD + 5, z, z === 13 ? "#e86a5a" : "#c84a3a");
     for (let A = b.dx * 16 + 10; A < b.dx * 16 + 22; A++) for (let z = 23; z < 27; z++) put(A, FD, z, z === 23 || z === 26 ? "#6a4226" : "#f2e0b0");
-  } else if (b.k === "diner") info.steam = at(FW - 12, 6, HW + rise - 4);
+  }
   if (b.k === "lab") info.puff = at(FW * 0.35, FD / 2, HW + 24);
 }
 
