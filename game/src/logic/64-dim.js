@@ -42,7 +42,7 @@ function dimRec(ch, now) {
   return d;
 }
 /** What a leader asked for (`dim_open`), made safe: a boss challenge, or the rift (always from floor 1; an old client's `tier` is ignored). */
-const dimAsk = (a) => (a && a.boss ? { tier: 0, boss: a.boss, step: a.step | 0 } : { tier: 0, boss: "", step: 0 });
+const dimAsk = (a) => (a && a.boss ? { tier: 0, boss: a.boss, step: a.step | 0 } : { tier: 0, boss: "", step: 0, hanok: a?.hanok === true });
 /** Why `o` may not go into what was asked ("" when they may): the level short of the boss (a rift bars nobody). */
 function dimBar(o, ask) {
   if (!ask.boss) return "";
@@ -50,7 +50,7 @@ function dimBar(o, ask) {
   return o.ch.lvl < need ? `보스 도전${ask.step ? ` [${DIM_CHAL.stepNames[ask.step]}]` : ""}은 Lv.${need}부터 참가할 수 있습니다.` : "";
 }
 /** What is being opened, in words. */
-const dimWhat = (ask) => (ask.boss ? `보스 도전 [${MOBS[ask.boss].name} · ${DIM_CHAL.stepNames[ask.step | 0]}]` : "레이드던전");
+const dimWhat = (ask) => (ask.boss ? `보스 도전 [${MOBS[ask.boss].name} · ${DIM_CHAL.stepNames[ask.step | 0]}]` : ask.hanok ? "달그림자 한옥" : "레이드던전");
 const chalOpen = (k, now) => !DIM_CHAL.bosses[k].rotation || k === chalOfWeek(now);
 const CHAL_ROTATED = "이번 주 보스가 바뀌었습니다. 균열지기에게서 다시 선택하세요.";
 
@@ -84,7 +84,7 @@ function dimSpot(m, i) {
 function dimOpen(S, p, a) {
   const party = S.parties[p.party], ask = dimAsk(a);
   if (!party) { dimStart(S, [p], 0, ask); return; }
-  const rc = { id: S.nextId++, leader: p.pid, until: S.now + DIM.rcMs, resp: {}, tier: ask.tier, boss: ask.boss, step: ask.step };
+  const rc = { id: S.nextId++, leader: p.pid, until: S.now + DIM.rcMs, resp: {}, tier: ask.tier, boss: ask.boss, step: ask.step, hanok: ask.hanok };
   // 0 asked, 1 yes, 2 no (or no answer in time), 3 not in town (or barred: the tier not unlocked, the level short)
   for (const pid of party.m) {
     const o = S.players[pid], bar = o && pid !== p.pid && o.map === START.map ? dimBar(o, ask) : "";
@@ -118,7 +118,7 @@ function rcCheck(S, party) {
   const go = Object.keys(rc.resp).filter((pid) => rc.resp[pid] === 1).map((pid) => S.players[pid]);
   party.rc = null;
   if (!go.length) return;
-  const dim = dimStart(S, go, party.id, { tier: rc.tier, boss: rc.boss, step: rc.step });
+  const dim = dimStart(S, go, party.id, { tier: rc.tier, boss: rc.boss, step: rc.step, hanok: rc.hanok });
   if (!dim) return;
   for (const pid of party.m) {
     const o = S.players[pid];
@@ -142,7 +142,7 @@ function dimStart(S, ps, partyId, ask) {
   const id = "dim:" + S.dimN;
   const seed = (Math.imul(S.seed ^ S.nextId++, 2654435761) ^ Math.imul(partyId + 1, 40503) ^ Math.floor(S.now / 1024)) | 0;
   const theme = boss ? DIM_CHAL.bosses[boss].theme : dimTheme(seed >>> 0, 1);
-  const map = boss ? dimArena({ id, seed, k: boss }) : dimension({ id, seed, theme, lv, floor: 1 });
+  const map = boss ? dimArena({ id, seed, k: boss }) : dimension({ id, seed, theme, lv, floor: 1, hanok: ask?.hanok === true });
   const dim = registerDim(S, { id, map, party: partyId, seed, lv, theme, expire: S.now + (boss ? DIM_CHAL.limit : DIM.limit) });
   Object.assign(dim, { n: ps.length, members: {}, hit: {}, warned: false, kills: 0, opened: S.now });
   // the run: the best hero going in (the carry guard), damage dealt, who was carried, each one's result flags
@@ -156,7 +156,7 @@ function dimStart(S, ps, partyId, ask) {
     changeMap(S, o, id, x, y);
     dim.members[o.pid] = S.now;
     toast(o, boss ? `[보스 도전 · ${DIM_CHAL.stepNames[step]} Lv.${chalSteps(boss)[step][1]}] ${MOBS[boss].name} — ${DIM_CHAL.limit / 60000}분 안에 쓰러뜨리세요. 전멸해도 다시 도전할 수 있습니다.`
-      : `[1단 · ${DIM_FLOORS[0].name}] 레이드던전 Lv.${shownLv(lv)} 1/${DIM.floors}단에 들어왔습니다. ${DIM.limit / 60000}분 안에 ${DIM.floors}단 끝의 최종 보스를 쓰러뜨리세요!`);
+      : `[1단 · ${dimFloorName(1, map.dim.hanok)}] 레이드던전 Lv.${shownLv(lv)} 1/${DIM.floors}단에 들어왔습니다. ${DIM.limit / 60000}분 안에 ${DIM.floors}단 끝의 최종 보스를 쓰러뜨리세요!`);
     o.dirty = true;
   });
   dim.rt.ev.push(["dm", "open", ...tilePx(map.dim.start)]);
@@ -194,7 +194,7 @@ function dimDescend(S, dim) {
   S.dimN = (S.dimN | 0) + 1;
   const id = "dim:" + S.dimN, seed = (Math.imul(dim.seed ^ Math.imul(floor, 0x5bd1e995), 2654435761) ^ floor) | 0;
   // each floor its own concept and look (31-maps-dim.js DIM_FLOORS)
-  const theme = dimTheme(seed >>> 0, floor), map = dimension({ id, seed, theme, lv: dim.lv, floor });
+  const theme = dimTheme(seed >>> 0, floor), map = dimension({ id, seed, theme, lv: dim.lv, floor, hanok: dim.map.dim.hanok });
   const next = registerDim(S, { id, map, party: dim.party, seed, lv: dim.lv, theme, expire: dim.expire });
   for (const k of ["members", "hit", "warned", "kills", "opened", "top", "dmg", "carry", "res", "chal"]) next[k] = dim[k];
   next.n = Math.max(1, inside.length);
@@ -205,8 +205,9 @@ function dimDescend(S, dim) {
     const [x, y] = dimSpot(map, i);
     changeMap(S, o, id, x, y);
     next.members[o.pid] = S.now;
-    toast(o, floor < DIM.floors ? `[${floor}단 · ${DIM_FLOORS[floor - 1].name}] 균열 ${floor}/${DIM.floors}단으로 내려왔습니다. 더 깊은 곳의 몬스터는 더 강합니다!`
-      : `[${floor}단 · ${DIM_FLOORS[floor - 1].name}] 마지막 ${floor}단입니다! 균열을 채우면 가장 먼 방에서 최종 보스가 깨어납니다.`);
+    const floorName = dimFloorName(floor, map.dim.hanok);
+    toast(o, floor < DIM.floors ? `[${floor}단 · ${floorName}] 균열 ${floor}/${DIM.floors}단으로 내려왔습니다. 더 깊은 곳의 몬스터는 더 강합니다!`
+      : `[${floor}단 · ${floorName}] 마지막 ${floor}단입니다! 균열을 채우면 가장 먼 방에서 최종 보스가 깨어납니다.`);
     o.dirty = true;
   });
   closeDim(S, dim.id);
@@ -734,6 +735,7 @@ function dimView(S, p, out) {
       // appended: the floor 1..3 (0 in a boss challenge; the old ladder's tier stood here), then the challenge — [boss index, 0 / 1 casting / 2 staggered, stagger gauge left %,
       // half-seconds left of that, enrage steps, tries, fury]
       dim.floor | 0, dim.chal ? chalView(S, dim) : 0];
+    if (dim.map.dim?.hanok) v.push(1);
     const key = JSON.stringify(v);
     if (key !== p.dimKey || p.sendMap) { out.dim = v; p.dimKey = key; }
   } else if (p.dimKey) { out.dim = 0; p.dimKey = null; }
@@ -750,12 +752,14 @@ function dimView(S, p, out) {
     const rows = party.m.filter((pid) => S.players[pid] && rc.resp[pid] !== undefined).map((pid) => [S.players[pid].eid, S.players[pid].ch.name, rc.resp[pid]]);
     const v = [rc.id, Math.max(0, Math.ceil((rc.until - now) / 1000)), rows, dimLvOf(party.m.map((pid) => S.players[pid]).filter((o) => o && o.map === START.map)), rc.leader === p.pid ? 1 : 0,
       rc.tier | 0, rc.boss ? CHAL_KEYS.indexOf(rc.boss) + 1 : 0, rc.step | 0];
+    if (rc.hanok) v.push(1);
     const key = JSON.stringify(v);
     if (key !== p.rcKey) { out.rc = v; p.rcKey = key; }
   } else if (p.rcKey) { out.rc = 0; p.rcKey = null; }
   // in town: a rift to walk back into — [seconds left, inside, gauge ×10, level, floor, boss index + 1 | 0, step]
   const j = p.map === START.map ? dimJoinable(S, p) : null;
   const dj = j ? [Math.max(0, Math.ceil((j.expire - now) / 1000)), dimInside(S, j.id).length, Math.floor(j.prog * 10), j.lv, j.floor | 0, j.chal ? CHAL_KEYS.indexOf(j.chal.k) + 1 : 0, j.chal ? j.chal.s | 0 : 0] : 0;
+  if (dj && j.map.dim?.hanok) dj.push(1);
   const dk = dj ? dj.join(",") : "";
   if (dk !== (p.djKey || "")) { out.dj = dj; p.djKey = dk; }
   // a chest just opened: the result panel, once
@@ -779,7 +783,7 @@ function dimDefs() {
     themes: Object.fromEntries(Object.keys(DIM_THEMES).map((k) => [k, DIM_THEMES[k].name])), pylons: DIM.pylons, limit: DIM.limit, party: DIM.party, max: DIM.max,
     rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near, minLv: shownLv(DIM.minTier),
     // the 3-floor raid and the boss challenge: [key, name, level needed, the marked cast, pattern names, steps [[level shown, level needed]…], weekly reward bit, rotating 0/1]
-    raid: { floors: DIM.floors, daily: DIM.dailyFull, downMs: DIM.downMs, names: DIM_FLOORS.map((c) => c.name) },
+    raid: { floors: DIM.floors, daily: DIM.dailyFull, downMs: DIM.downMs, names: DIM_FLOORS.map((c) => c.name), hanokNames: HANOK_FLOORS.map((c) => c.name) },
     chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0]), stepNames: DIM_CHAL.stepNames,
       stepR: DIM_CHAL.stepR },
   };

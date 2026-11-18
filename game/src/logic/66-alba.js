@@ -177,6 +177,10 @@ function albaValidate(S, p, a) {
     if (p.ab) return bad("이미 아르바이트 중입니다");
     if (p.dead) return bad("지금은 일할 수 없습니다");
     if (inDim(p) || Object.hasOwn(DENSITY, p.map)) return bad("아르바이트는 마을에서 시작할 수 있습니다");
+    if (a.npc !== undefined) {
+      const n = mapOfS(S, p.map)?.npcs.find((n) => n.id === a.npc && n.role === "alba" && n.alba === a.k);
+      if (!n || dist(p.x, p.y, n.x * T + 8, n.y * T + 12) >= 48) return bad("아르바이트 담당자 가까이에서 말을 걸어 주세요");
+    }
     return OK;
   }
   if (!p.ab) return bad("진행 중인 아르바이트가 없습니다");
@@ -204,11 +208,14 @@ function albaView(S, p, out) {
   p.abSeen = ab.rev;
 }
 function albaDefs() {
+  const village = mapOf("willow");
   const rows = {};
   for (const k of ALBA_ORDER) {
     const r = ALBA[k];
     if (!r) continue;
-    rows[k] = { name: r.name, npc: r.npc, place: r.place, skill: r.skill, par: r.par, hint: r.hint, outfit: r.outfit, tool: r.tool };
+    const n = village?.npcs.find((n) => n.role === "alba" && n.alba === k);
+    const building = village?.big.find((b) => b.t === "bld" && b.k === "ab_" + k);
+    rows[k] = { name: r.name, npc: n?.id || r.npc, place: building?.name || r.place, skill: r.skill, par: r.par, hint: r.hint, outfit: r.outfit, tool: r.tool };
   }
   return { order: ALBA_ORDER.filter((k) => ALBA[k]), rows, runMs: ALBA_T.runMs, briefMs: ALBA_T.briefMs, cuts: ALBA_T.cuts, gradeK: ALBA_T.gradeK, perDay: JB_PAY.perDay, feverMs: ALBA_T.feverMs, rushMs: ALBA_T.rushMs, hot: ALBA_T.hot, field: Object.keys(DENSITY) };
 }

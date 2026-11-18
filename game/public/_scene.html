@@ -22,7 +22,8 @@ if (q.get("marks")) {
   put(X + 3, Y - 2, "Q"); put(X - 3, Y - 2, "G"); put(X + 6, Y + 1, "G");
 }
 if (q.get("npcs")) ["warp", "collector", "achieve", "daily"].forEach((role, i) => m.npcs.push({ id: role, name: role, role, x: +(q.get("x") || 20) - 4 + i * 2, y: +(q.get("y") || 14) + 3, look: [i, 0, 0, "#5a5a8a"] }));
-const fx = +(q.get("x") || 20), fy = +(q.get("y") || 14);
+const focus = q.get("hall") ? m.previewHall : m.previewEntry;
+const fx = +(q.get("x") || focus?.[0] || 20), fy = +(q.get("y") || focus?.[1] || 14);
 const mobKeys = (q.get("mobs") || "").split(",").filter(Boolean);
 const defs = { mobs: {} };
 mobKeys.forEach((k) => (defs.mobs[k] = { sp: k }));

@@ -16,7 +16,7 @@ const NPC_POSES = ["sip", "read", "wipe", "doze", "write", "sweep", "hammer", "s
 const NPC_ROLES = ["talk", "quest", "shop", "smith", "train", "bank", "warp", "daily", "collector", "achieve", "costume", "elder", "dim", "house", "job",
   // life skills' town people (docs/design/life-and-coop.md): 쥬쥬 the cook, 캉캉 the smith-crafter, 보글 the
   // alchemist, 포포 the 알바 broker — until L2 they only talk ("곧 문을 엽니다", public/npctalk.js)
-  "cook", "craft", "alch", "jobs",
+  "cook", "craft", "alch", "jobs", "alba",
   // 주아나 the charm appraiser (66-charms.js); 장꾼 다래's 장날 stall (63-festival.js); the 장날 merchants (64-fair-market.js)
   "charm", "fair", "fairmkt"];
 const BUILTIN_MAPS = ["town", SUNSET_BEACH, BLOSSOM_TRAIL, ...GEN_IDS];
@@ -32,6 +32,7 @@ function npcFrom(n, m) {
   const lines = Array.isArray(n.lines) ? n.lines.filter((l) => typeof l === "string" && l).slice(0, 12).map((l) => l.slice(0, 240)) : [];
   if (lines.length) { out.lines = lines; out.say = lines[0]; }
   if (n.custom) out.custom = 1;
+  if (out.role === "alba") out.alba = txt(n.alba, 12);
   // a 장날 merchant stands only while the market is open: the client hides it otherwise (64-fair-market.js)
   if (out.role === "fairmkt") out.fair = 1;
   // a shopkeeper with their own counter sells only these (items that exist and can be bought)

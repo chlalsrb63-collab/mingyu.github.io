@@ -37,7 +37,7 @@ let target = FX, px = FX, lastX = -1, lastFire = -1, lastSend = 0, auto = true, 
 function layout() {
   const hw = Math.max(240, host.clientWidth - 4), ah = Math.max(280, innerHeight * 0.96 - 330) - 50;
   const f = clamp(Math.min(hw / W, ah / H), 0.7, 3.2), k = Math.max(1, Math.floor(f));
-  if (f === fit && k === kk && cv.width) return;
+  if (g && f === fit && k === kk) return;
   fit = f; kk = k;
   cv.width = W * k; cv.height = H * k;
   cv.style.width = `${Math.round(W * f)}px`; cv.style.height = `${Math.round(H * f)}px`;

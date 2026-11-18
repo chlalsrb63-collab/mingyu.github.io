@@ -223,6 +223,11 @@ export function interact() {
     if (waterNear()) { act({ t: "fish" }); Sound.play("ui"); }
     return;
   }
+  if (n.role === "alba") {
+    Sound.play("ui");
+    act({ t: "ab_start", k: n.alba, npc: n.id });
+    return;
+  }
   if (Board.interact(n)) return;                   // the 알바 in hand: pick up / hand in here (board.js)
   Sound.play("ui");
   SideQ.onTalk(n, G.self);

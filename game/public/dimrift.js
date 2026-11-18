@@ -11,6 +11,7 @@
  *   , floor 1..3 (0: a boss challenge), challenge 0 | [boss index, 0 · 1 casting · 2 staggered, stagger gauge left %, half-secs left, enrage steps, tries, fury]]
  * rc = [id, secs, [[eid, name, 0 asked · 1 yes · 2 no · 3 away]…], lv, leader?, 0, boss index + 1 | 0, step]
  * dj = [secs, inside, gauge×10, lv, floor, boss index + 1 | 0, step]; self.dimr = [floors in a run, most floors cleared, best full clear secs, full clears left today, weekly bonus taken 0/1, weekly boss bits, best step + 1 per boss, rotation index]
+ * A Hanok run appends 1 to dim, rc and dj when applicable.
  * (dr, the chest's result, is not drawn: the server's toasts say it)
  */
 import * as Art from "./dimart.js";
@@ -51,7 +52,10 @@ export function onSnap(s) {
       st.state = st.dim[2];
     }
     if (!st.dim) { st.state = -1; st.warned = false; }
-    if (!was && st.dim) A.Sound.play("dim_open");
+    if (!was && st.dim) {
+      A.Sound.play("dim_open");
+      if (st.dim[16] && A.isOpen("dim")) A.closeWin("dim");
+    }
     syncProps();
   }
   if ("rc" in s) {
@@ -144,7 +148,8 @@ function renderHud() {
   const name = D().themes[d[10]] || "레이드던전";
   const label = ["", d[8] ? "최종 보스 출현! 균열의 문으로 보스의 방 앞까지" : "최종 보스 출현! 가장 먼 방으로", "정화 완료 — 귀환의 문까지", "균열이 닫힙니다…", "하강의 문 — 다음 단으로"][d[2]];
   // the floor's own concept (defs().dim.raid.names: 1단 무너진 지하 회랑 …), else the look's name
-  const fname = (D().raid && D().raid.names && D().raid.names[d[14] - 1]) || name;
+  const names = d[16] ? D().raid?.hanokNames : D().raid?.names;
+  const fname = names?.[d[14] - 1] || name;
   // (the wire carries the rift's world tier; players see levels as 4·tier − 3, like monsters and doors)
   const chal = d[15], bossName = chal && chalDef(chal[0]) ? `${chalDef(chal[0])[1]} · ${stepWord(chal[0], chal[7])}` : "";
   put($("#dim-title"), chal ? `보스 도전 · ${bossName}` : `레이드던전 Lv.${4 * d[4] - 3} · ${d[14]}단 · ${fname} (${d[14]}/${floors()})`);
@@ -210,7 +215,7 @@ function renderRc() {
   const me = rc[2].find((r) => r[0] === A.G.you);
   const WORD = ["대기 중", "수락", "거절", "마을 밖"];
   $("#rc-lv").textContent = rc[6] ? `보스 도전 · ${(chalDef(rc[6] - 1) || [])[1] || "?"} · ${stepWord(rc[6] - 1, rc[7])} · 최대 ${D().party}명`
-    : `레이드던전 Lv.${4 * rc[3] - 3} · ${floors()}단 레이드 · 최대 ${D().party}명`;
+    : `${rc[8] ? "달그림자 한옥" : "레이드던전"} Lv.${4 * rc[3] - 3} · ${floors()}단 레이드 · 최대 ${D().party}명`;
   $("#rc-time").textContent = `${left}초`;
   $("#rc-fill").style.width = `${(100 * left) / Math.max(1, D().rcMs / 1000)}%`;
   const rows = rc[2].map(([eid, name, s]) => `<li class="rc-${s}"><span class="rc-mark"></span><b>${esc(name)}</b><em>${WORD[s]}</em></li>`).join("");
@@ -226,6 +231,7 @@ export function bindUi() {
   $("#rc-no").addEventListener("click", () => { if (st.rc) { A.act({ t: "dim_ready", id: st.rc[0], ok: 0 }); A.Sound.play("ui"); } });
   $("#rc-cancel").addEventListener("click", () => { A.act({ t: "dim_cancel" }); A.Sound.play("ui"); });
   $("#dim-open").addEventListener("click", () => { A.act({ t: "dim_open" }); A.Sound.play("ui"); });
+  $("#dim-hanok").addEventListener("click", () => { A.act({ t: "dim_open", hanok: true }); A.Sound.play("ui"); });
   $("#dim-pick").addEventListener("click", (e) => {
     const b = e.target.closest("button[data-a=boss]");
     if (!b) return;
@@ -270,12 +276,14 @@ function renderKeeper() {
   const pick = dj ? "" : `<div class="dim-rec">최고 기록 ${r[1] >= r[0] ? mmss(r[2]) : r[1] ? `${r[1]}단까지` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음 · 주간 첫 정화 보너스 ${r[4] ? "받음" : "남음"}</div>` +
     challenges;
   if ($("#dim-pick").dataset.k !== pick) { $("#dim-pick").innerHTML = pick; $("#dim-pick").dataset.k = pick; }
+  $("#dim-hanok").hidden = !!dj || !d.raid?.hanokNames;
+  $("#dim-hanok").disabled = !lead;
   $("#dim-open").hidden = !!dj;
   $("#dim-open").disabled = !lead;
   $("#dim-open").textContent = party.length ? (lead ? "균열 열기 (파티 입장 준비)" : "파티장만 열 수 있습니다") : "혼자 균열 열기";
   $("#dim-join").hidden = !dj;
   if (dj) $("#dim-join").textContent = dj[5] ? `합류하기 — 보스 도전 · ${(chalDef(dj[5] - 1) || [])[1] || "?"} · ${stepWord(dj[5] - 1, dj[6])} · ${dj[1]}명 · ${mmss(dj[0])}`
-    : `합류하기 — Lv.${4 * dj[3] - 3} · ${dj[4]}/${floors()}단 · ${dj[1]}명 · ${(dj[2] / 10).toFixed(0)}% · ${mmss(dj[0])}`;
+    : `합류하기 — ${dj[7] ? "달그림자 한옥 · " : ""}Lv.${4 * dj[3] - 3} · ${dj[4]}/${floors()}단 · ${dj[1]}명 · ${(dj[2] / 10).toFixed(0)}% · ${mmss(dj[0])}`;
 }
 
 // ───────────────────────────── the minimap ─────────────────────────────

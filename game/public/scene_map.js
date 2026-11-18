@@ -222,7 +222,7 @@ export function loadMap(m) {
   // the pieces isotiles.js stands up, by tile; a house it draws is not drawn again here
   const art = new Map(), artHouse = new Set();
   const houseAt = (x, y) => m.big.find((b) => (b.t === "house" || b.t === "bld") && x >= b.x && x < b.x + (b.w || 4) && y >= b.y && y < b.y + (b.h || 3));
-  const isRock = (x, y) => { const r = m.g[y]; return !!r && r[x] === "W" && m.o[y][x] === " "; };
+  const isRock = (x, y) => { const r = m.g[y]; return theme !== "interior" && !!r && r[x] === "W" && m.o[y][x] === " "; };
   const blockKind = (x, y) => { const r = m.o[y]; if (!r || x < 0 || x >= m.w) return null; const ch = r[x]; return ch === " " ? (isRock(x, y) ? "W" : null) : WALL[ch] || ch === "Z" ? ch : null; };
   for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) {
     if (m.g[y][x] === "❋" && m.o[y][x] === " " && hash(x, y, 40) < 0.50) {
@@ -347,7 +347,8 @@ export function loadMap(m) {
       const sp = TP && TP[b.k];
       if (!sp) continue;
       const st = { sp: Array.isArray(sp) ? sp[0] : sp, prop: b.k };
-      if (b.k === "laundry") st.frames = sp;
+      if (b.k === "laundry" || b.k === "waterwheel") st.frames = sp;
+      if (b.k === "waterwheel") st.frameMs = 90;
       if (b.k === "stall") st.sp = sp[hash(b.x, b.y, 5) * 3 | 0];
       if (b.k === "stall") st.nightGlow = "#ffd890";
       if (b.k === "watch") st.nightGlow = "#ffd870";

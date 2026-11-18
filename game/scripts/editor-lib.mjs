@@ -25,7 +25,7 @@ import { checkNpcLife } from "../editor/validate.js";
 export { DATA_DIR, ROOT };
 
 // (MAPS: every map built — the rules build the generated ones only on first use)
-const EXTRA = "\nexport const __editor = { get MAPS() { return allMaps(); }, MAP_META, FIRES, WP, FIELD_BOSS, MOBS, ITEMS, QUESTS, SOLID_G, THEMES, CROP, NPC_ROLES, BUILTIN_MAPS, NPC_MAP, DATA, COL_MOBS, RECIPES, npcLifeProblems, SIDE: typeof SIDE === 'undefined' ? [] : SIDE, mapPayload };\n";
+const EXTRA = "\nexport const __editor = { get MAPS() { return allMaps(); }, MAP_META, FIRES, WP, FIELD_BOSS, MOBS, ITEMS, QUESTS, SOLID_G, THEMES, CROP, NPC_ROLES, BUILTIN_MAPS, NPC_MAP, DATA, COL_MOBS, RECIPES, ALBA, npcLifeProblems, SIDE: typeof SIDE === 'undefined' ? [] : SIDE, mapPayload };\n";
 const cache = new Map();
 
 /** The rules evaluated with a data set (default: data/**); cached by content. */
@@ -123,7 +123,7 @@ function toEditor(E, id) {
       if (sp.el) o.el = sp.el;
       return o;
     }),
-    npcs: m.npcs.map((n) => ({ id: n.id, name: n.name, role: n.role, x: n.x, y: n.y, look: n.look, lines: n.lines || (n.say ? [n.say] : []) })),
+    npcs: m.npcs.map((n) => ({ id: n.id, name: n.name, role: n.role, x: n.x, y: n.y, look: n.look, lines: n.lines || (n.say ? [n.say] : []), ...(n.alba ? { alba: n.alba } : {}) })),
     portals: m.portals.map((p) => ({ x: p.x, y: p.y, to: p.to, tx: p.tx, ty: p.ty })),
     fires: (E.FIRES[id] || []).map((f) => [f[0], f[1]]),
     waypoint: wp ? [wp.x, wp.y, wp.ax, wp.ay] : null,
@@ -285,6 +285,7 @@ export async function checkData(dataDir = DATA_DIR) {
     claimNpc(f, path, n, map);
     if (typeof n.name !== "string" || !n.name.trim()) err(f, `${path}.name`, "NPC 이름이 비어 있습니다");
     if (!G.NPC_ROLES.includes(n.role)) err(f, `${path}.role`, `알 수 없는 역할 "${n.role}" (${G.NPC_ROLES.join(", ")})`);
+    if (n.role === "alba" && (typeof n.alba !== "string" || !Object.hasOwn(G.ALBA, n.alba))) err(f, `${path}.alba`, "등록된 일일 아르바이트 ID가 필요합니다");
     if (n.lines !== undefined && (!Array.isArray(n.lines) || n.lines.some((l) => typeof l !== "string"))) err(f, `${path}.lines`, "lines는 문자열 배열이어야 합니다");
     if (n.role === "talk" && (!Array.isArray(n.lines) || !n.lines.length)) warn(f, `${path}.lines`, `${n.name || n.id}: 대화 NPC에게 할 말(lines)이 없습니다`);
     if (n.look !== undefined && !Array.isArray(n.look)) err(f, `${path}.look`, "look은 배열이어야 합니다");
