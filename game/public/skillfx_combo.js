@@ -58,12 +58,13 @@ export function comboEvent(e, ctx) {
     case 146: case 147: f.ring(src.x, src.y, kind === 146 ? 46 : 52, col, 220, extra === 2); f.burst(src.x, src.y, 0.3, p.l, 6, 1.6); if (near) Sound.play(kind === 146 ? "whirl_slash" : "musou_thrust", extra === 2); break;
   }
   const skId = fxSkill(kind);
-  if (near && skId) Sound.play("job_note", { job: skillOwner(skId), sig: kind >= 146 });
+  const playJobNote = (kind !== 144 && kind < 146) || extra === 2;
+  if (near && skId && playJobNote) Sound.play("job_note", { job: skillOwner(skId), sig: kind >= 146 });
   return true;
 }
 /** A combo state cashed in on monster `m` (skill-combos.md §7): each its own payoff, a shake when it is near. */
 function payoff(G, B, f, m, code, col) {
-  const x = m.x, y = m.y, near = Math.hypot(x - G.me.x, y - G.me.y) < 220;
+  const x = m.x, y = m.y, near = !!G.me && Math.hypot(x - G.me.x, y - G.me.y) < 220;
   switch (code) {
     case 2: f.flash(x, y, 8); f.burst(x, y, 1, "#ffffff", 10, 2.8); f.burst(x, y, 0.7, col, 22, 2.4); f.ring(x, y, 22, "#e8f8ff", 280, true); if (near) Sound.play("cb_shatter"); break; // 파쇄
     case 3: f.fall(x, y, col, 80); f.flash(x, y, 8); f.burst(x, y, 0.8, col, 14, 2.2); if (near) Sound.play("cb_aerial"); break;               // 추가타
