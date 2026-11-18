@@ -11,10 +11,11 @@
 //   items [x, y, kind …], [wide ms, piercing ms, slow ms, serve ms], events [[seq, type, x, y, value]…], bricks left, big ball (fever) 0|1]
 // event types: 1 brick broken (value = points of the blow) · 2 brick cracked (hits left) · 3 bomb · 4 item caught (kind) · 5 ball lost · 6 wall cleared (points) · 7 paddle bounce · 8 item dropped (kind)
 // items: 0 wide paddle · 1 three balls · 2 piercing · 3 slow ball
-const WALL = { W: 240, H: 240, STEP: 50, SUB: 4, BW: 20, BH: 8, COLS: 12, ROWS: 9, Y0: 28, PY: 222, PSPD: 10, HW: [20, 32], SERVE: 30, RESERVE: 60, FALL: 3,
+const WALL = { SP0: 50, SPL: 6, SPR: 24, HEAL: 10, W: 240, H: 240, STEP: 50, SUB: 4, BW: 20, BH: 8, COLS: 12, ROWS: 9, Y0: 28, PY: 222, PSPD: 10, HW: [20, 32], SERVE: 30, RESERVE: 60, FALL: 3,
   TAB: [[-55, 32], [-48, 43], [-38, 52], [-26, 58], [-13, 63], [0, 64], [13, 63], [26, 58], [38, 52], [48, 43], [55, 32]],   // paddle bounce directions, 12° apart (dx, up)
   FX: [240, 160, 200], PTS: { plain: 10, crack: 5, bomb: 20, box: 30, item: 30, wall: 150, lost: 50 } };
-const wallSpeed = (g) => (((40 + 6 * Math.min(g.lv, 3)) * (g.fs > 0 ? 7 : 10)) / 10) | 0;   // 1/16 px per sub-step
+// 1/16 px per sub-step: no gentle start (the old wall 3 speed from the first ball), +24 over the shift (1.5x at the end; 2026-11-18, three lost balls end it)
+const wallSpeed = (g) => (((WALL.SP0 + WALL.SPL * Math.min(g.lv, 2) + Math.min(WALL.SPR, ((g.n | 0) * WALL.SPR / 1800) | 0)) * (g.fs > 0 ? 7 : 10)) / 10) | 0;
 const wallEv = (g, type, x, y, v) => { g.ev.push([++g.seq, type, Math.round(x), Math.round(y), v | 0, g.n]); if (g.ev.length > 8) g.ev.shift(); };
 /** A brick event scores through the combo and a chain bonus (+20 % per brick hit since the paddle last touched a ball, up to +100 %; a piercing ball sweeps for the flat price). */
 function wallScore(ab, T, base, flat) {
@@ -27,7 +28,7 @@ function wallScore(ab, T, base, flat) {
 function wallBuild(ab) {
   const g = ab.g, box = ab.box, lv = g.lv, W = WALL, N = W.COLS * W.ROWS, pool = [];
   g.k = new Array(N).fill(0); g.h = new Array(N).fill(0); g.it = new Array(N).fill(0);
-  const ph = Math.min(0.55, 0.1 + 0.14 * lv), t = lv % 5, rows = Math.min(8, 3 + 2 * lv);   // a shift holds about two walls: the first is small, the next ones climb fast
+  const ph = Math.min(0.6, 0.25 + 0.14 * lv), t = lv % 5, rows = Math.min(8, 5 + 2 * lv);   // a shift holds about two walls: the first is small, the next ones climb fast
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < W.COLS; c++) {
       const on = t === 0 ? true : t === 1 ? c % 4 !== 3 : t === 2 ? c >= (r >> 1) && c <= 11 - (r >> 1) : t === 3 ? (r + c) % 2 === 0 : r === 0 || r === rows - 1 || c < 2 || c > 9 || (r % 2 === 1 && c >= 4 && c <= 7);
@@ -72,6 +73,7 @@ function wallBreak(ab, T, i0, flat) {
     else base += W.PTS.plain;
   }
   const pts = wallScore(ab, T, base, flat);
+  if ((g.hb += pops.length) >= W.HEAL) { g.hb -= W.HEAL; if (ab.strikes > 0 && !ab.out) ab.strikes--; }   // steady demolition mends a heart: every HEAL bricks
   pops.forEach(([x, y, k], j) => wallEv(g, k === 2 ? 3 : 1, x, y, j ? 0 : pts));
 }
 /** A ball touches brick `i`: a hard brick cracks, anything else (or any brick, for a piercing ball) is destroyed. */
@@ -155,7 +157,7 @@ function wallStep(ab, T) {
     for (const b of g.balls) if (wallBall(ab, T, b)) keep.push(b);
     g.balls = keep;
     if (!keep.length) {
-      albaBad(ab, W.PTS.lost);
+      albaStrike(ab, T, W.PTS.lost);   // the one serious failure: a lost ball costs a heart
       g.fw = g.fp = g.fs = 0; g.ch = 0; g.sv = W.RESERVE; g.balls = [wallHeld(g)];
       wallEv(g, 5, pad.x, W.PY, 0);
     }
@@ -176,10 +178,10 @@ function wallStep(ab, T) {
   if (!g.balls[0].held || g.I.length || pad.vx || g.ev.length) g.dirty = 1;
 }
 
-ALBA.wall = { name: "철거 알바", npc: "kangkang", place: "캉캉대장간 옆 헌 벽", skill: "craft", par: 3300, mul: 1.1, outfit: ["hat_coop_cap", "top_smith"], tool: "chain", hint: "마우스·손가락·←→로 발판을 움직여 철구를 받으세요. 벽돌을 다 부수면 새 벽! 떨어지는 상자는 발판으로 받기." };
+ALBA.wall = { name: "철거 알바", npc: "kangkang", place: "캉캉대장간 옆 헌 벽", skill: "craft", par: 2800, lives: 5, mul: 1.1, outfit: ["hat_coop_cap", "top_smith"], tool: "chain", hint: "마우스·손가락·←→로 발판을 움직여 철구를 받으세요. 벽돌을 다 부수면 새 벽! 철구를 놓치면 ♥ 하나 깎여요(5개면 퇴근), 벽돌 10개를 부술 때마다 ♥ 하나 회복!" };
 ALBA_RULES.wall = {
   init(S, p, ab) {
-    const g = ab.g = { simAt: ab.runAt, n: 0, lv: 0, k: [], h: [], it: [], left: 0, drop: 0, balls: [], pad: { x: 120, tx: 120, vx: 0, hw: WALL.HW[0] }, sv: WALL.SERVE, I: [], fw: 0, fp: 0, fs: 0, ch: 0, la: 0, hn: 0, ev: [], seq: 0, dirty: 0 };
+    const g = ab.g = { simAt: ab.runAt, n: 0, lv: 0, k: [], h: [], it: [], left: 0, drop: 0, balls: [], pad: { x: 120, tx: 120, vx: 0, hw: WALL.HW[0] }, sv: WALL.SERVE, I: [], fw: 0, fp: 0, fs: 0, ch: 0, la: 0, hn: 0, hb: 0, ev: [], seq: 0, dirty: 0 };
     wallBuild(ab);
     g.balls = [wallHeld(g)];
   },
