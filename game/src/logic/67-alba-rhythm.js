@@ -14,9 +14,9 @@
 const RHY = {
   ahead: 4000, refresh: 2500, lat: 40, perf: 45, good: 100, wide: 1.5, tailOk: 120, tailEnd: 150, lead: 2000, tail: 1500, sameLane: 240,
   perSec: 7, strayN: 5, strayMs: 2000, lockMs: 1500, missPen: 10, pts: [10, 20], holdPts: 10, ring: 8, bpm: [100, 140],
-  quarterTo: 40000, holdFrom: 50000, chordFrom: 60000, tripleFrom: 180000,
+  quarterTo: 15000, holdFrom: 20000, chordFrom: 25000, tripleFrom: 70000,
 };
-Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 21500, mul: 1.05, outfit: ["hat_beret", "top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 D F J K (← ↓ ↑ →) 또는 터치로 연주하세요. 긴 음표는 끝까지 누르세요!" } });
+Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 9300, mul: 1.05, outfit: ["hat_beret", "top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 D F J K (← ↓ ↑ →) 또는 터치로 연주하세요. 긴 음표는 끝까지 누르세요!" } });
 
 const rhyBpm = (t) => RHY.bpm[0] + (RHY.bpm[1] - RHY.bpm[0]) * clamp(t / ALBA_T.runMs, 0, 1);
 /** Fever widens every window ×1.5. */
@@ -33,7 +33,7 @@ function rhyLanes(box, ok, prev, k) {
   }
   return out;
 }
-/** Roll the whole song: quarter notes first, then eighths on a half-filled grid; chords from 60 s, a few holds from 50 s, triples only in the last minute. */
+/** Roll the whole song: quarter notes first, then eighths on a half-filled grid; chords from 25 s, a few holds from 20 s, triples only in the last 20 s. */
 function rhyBuild(box) {
   const T = ALBA_T.runMs, notes = [], free = [0, 0, 0, 0], hEnd = [0, 0, 0, 0];
   let t = RHY.lead, prev = -1;

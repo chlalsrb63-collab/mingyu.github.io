@@ -149,10 +149,10 @@ const UP = 0, RIGHT = 1, DOWN = 2, LEFT = 3;
   assert.equal(g4.n, 1); assert.equal(g4.d, 1); assert.equal(g4.goal, 0, "then the whole street");
   assert.equal(b4.score, 100 + 36 + 50, "the short budget is 12 s: a quick one earns 36");
   // a delivery in a fever and in the rush is multiplied by the engine
-  const b5 = mkAb(1, 100000), g5 = bare(b5); g5.y = 1; g5.d = 5; g5.dAt = 80000; lane(g5, 1, { k: 2, v: 0, sp: 10, len: 4, ph: 900 });
+  const b5 = mkAb(1, 100000), g5 = bare(b5); g5.y = 1; g5.d = 5; g5.dAt = 90000; lane(g5, 1, { k: 2, v: 0, sp: 10, len: 4, ph: 900 });
   b5.feverUntil = 1e9;
-  R.adv(null, null, b5, 81000); R.act(null, null, b5, { d: UP }, 81000);
-  assert.equal(b5.score, Math.round(210 * 2 * 1.5), "fever ×2 and the last 30 seconds ×1.5");
+  R.adv(null, null, b5, 91000); R.act(null, null, b5, { d: UP }, 91000);
+  assert.equal(b5.score, Math.round(210 * 2 * 1.5), "fever ×2 and the last 15 seconds ×1.5");
 }
 
 // ── gifts: +30 for the cell, or for the log that carries one
@@ -438,7 +438,7 @@ assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
     if (i % 3 === 0) s2.tick(0);
     assert.ok(g2.y >= g2.goal && g2.y <= C.SY && g2.x >= -0.5 - 1e-9 && g2.x <= C.W - 0.5 + 1e-9 && ab2.score >= 0, `sane at ${i}: ${g2.x},${g2.y}`);
   }
-  assert.ok(g2.acc > 500, "a random walk hopped a lot");
+  assert.ok(g2.acc > 190, "a random walk hopped a lot");
   // after the end nothing moves
   s.tick(T.runMs + 1000);
   assert.equal(ab.state, "end");
@@ -447,7 +447,7 @@ assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
   assert.equal(snap(), done, "after the end the street is frozen"); assert.equal(ab.score, sc);
 }
 
-// (e) the server's cost: 240 simulated seconds, 10 ticks/s, a hop every 150 ms
+// (e) the server's cost: 90 simulated seconds, 10 ticks/s, a hop every 150 ms
 {
   const s = sim("횡단부하", 7), ab = s.p.ab, rng = mulberry(5);
   let ms = 0, views = 0, bytes = 0, vmax = 0, sent = 0;
@@ -458,8 +458,8 @@ assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
     ms += performance.now() - t0; views++;
     if (v.ab && v.ab[7]) { const b = JSON.stringify(v.ab[7]).length; bytes += b; sent++; vmax = Math.max(vmax, b); }
   }
-  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 4.1).toFixed(2)} ms per simulated minute) · ${sent} views, max ${vmax} B, avg ${Math.round(bytes / Math.max(1, sent))} B`);
-  assert.ok(ms / 4.1 < 100, "far below 100 ms per simulated minute");
+  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 1.6).toFixed(2)} ms per simulated minute) · ${sent} views, max ${vmax} B, avg ${Math.round(bytes / Math.max(1, sent))} B`);
+  assert.ok(ms / 1.6 < 100, "far below 100 ms per simulated minute");
   assert.equal(ab.state, "end");
 }
 

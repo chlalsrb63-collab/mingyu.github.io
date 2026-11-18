@@ -1,13 +1,13 @@
 // 일일 아르바이트 · 파리잡기 (docs/design/daily-alba-minigames-2026-11-16.md §3.2): whack-a-mole with flies on a 3×3 grid of trash cans. Contract: 66-alba.js.
-// The whole 240 s spawn schedule is rolled at `init` from `ab.box` (a seed always gives the same flies); play only moves it when a can is hit
+// The whole 90 s spawn schedule is rolled at `init` from `ab.box` (a seed always gives the same flies); play only moves it when a can is hit
 // (that can shuts for 1 s and its later flies slide back). `ab.g` = { F: flies by id, Q: per can its fly ids in time order, H: per can the first
 // unresolved index, cd: per can the run-time (ms) its lid stays shut until, sent: how far ahead the client's last view announced }.
 // A fly = { id, c: can 0..8, t0: ms from the run start, life, k: 0 plain 1 golden 2 bee 3 poison, hp, dn: hit }. A can never holds two flies at once.
 // view = [[[id, can, ms to spawn (< 0: already out), life, kind (4 = wounded poison)]… alive or spawning within FLY.ahead ms], [[can, ms the lid stays shut]…]];
 // the view is re-sent (rev) on every hit and whenever the announced window is about to run dry, so an idle player still sees what comes.
 // The only input is {hit: fly id}: it must name a fly that is out (± FLY.grace for latency) and not hit yet; a swing at nothing is refused without a penalty.
-const FLY = { ahead: 3500, refresh: 1200, grace: 250, early: 100, close: 1000, gap: 400, pts: [10, 40, 0, 25], beePen: 30, bombs: [120000, 218000], rate: [1.2, 2.0], life: [[900, 520], [520, 380], [950, 700], [1500, 1000]] };
-Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 11200, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌은 건드리지 마세요!" } });
+const FLY = { ahead: 3500, refresh: 1200, grace: 250, early: 100, close: 1000, gap: 400, pts: [10, 40, 0, 25], beePen: 30, bombs: [45000, 78000], rate: [1.2, 2.0], life: [[900, 520], [520, 380], [950, 700], [1500, 1000]] };
+Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 4600, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌은 건드리지 마세요!" } });
 
 /** Roll the whole schedule: a spawn clock whose pace and lifetimes ramp with the time, and two 쓰레기 폭탄 (every can opens at once). */
 function flyBuild(box) {
@@ -19,9 +19,9 @@ function flyBuild(box) {
   };
   const bag = [];   // kinds come out of a shuffled bag, so every shift holds nearly the same mix
   const kind = (t) => {
-    if (t < 12000) return 0;
+    if (t < 5000) return 0;
     if (!bag.length) {
-      (t < 60000 ? [12, 1, 1, 2] : [11, 1, 3, 3]).forEach((n, k) => { for (let i = 0; i < n; i++) bag.push(k); });
+      (t < 22000 ? [12, 1, 1, 2] : [11, 1, 3, 3]).forEach((n, k) => { for (let i = 0; i < n; i++) bag.push(k); });
       for (let i = bag.length - 1; i > 0; i--) { const j = ri(box, 0, i), x = bag[i]; bag[i] = bag[j]; bag[j] = x; }
     }
     return bag.pop();

@@ -10,12 +10,12 @@
 // The one input is {d: 0..3}: a turn, queued for the next step; the same heading and the reverse of the last queued heading are ignored.
 // view = [chain cells, dir, ms to the next step, step ms, flower cells, [gold cell, ms left] | 0, thorn cells, garlands done, queued turns, ev]
 const GAR = {
-  W: 16, base: 143, min: 110, ramp: 0.96, stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
-  thornFirst: 20000, thornEvery: 9000, thornMax: 14, goldFirst: [14000, 22000], goldGap: [14000, 24000], goldLife: 6000,
+  W: 16, base: 143, min: 110, ramp: 0.92, stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
+  thornFirst: 6000, thornEvery: 3500, thornMax: 14, goldFirst: [6000, 12000], goldGap: [8000, 14000], goldLife: 6000,
   slow: 1.35, pts: [10, 50, 100], pen: 40, catchup: 40, queue: 2,
 };
 const GAR_DX = [0, 1, 0, -1], GAR_DY = [-1, 0, 1, 0];
-Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 9600, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊겨요. 12송이면 화환 완성!" } });
+Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 3150, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊겨요. 12송이면 화환 완성!" } });
 
 /** Ms between steps: faster with every garland, ×1.35 slower in a fever ("봄바람"). */
 const garInt = (g, ab, T) => Math.round(Math.max(GAR.min, GAR.base * GAR.ramp ** g.done) * (T < ab.feverUntil ? GAR.slow : 1));
@@ -86,7 +86,7 @@ function garStep(ab, T) {
   }
   if (T >= g.thAt && g.th.length < GAR.thornMax) {
     const c = garSpawn(g, g.rt, 1);
-    if (c >= 0) { g.th.push(c); g.thAt = T + GAR.thornEvery + ri(g.rt, -1500, 1500); } else g.thAt = T + 2000;
+    if (c >= 0) { g.th.push(c); g.thAt = T + GAR.thornEvery + ri(g.rt, -600, 600); } else g.thAt = T + 2000;
   }
   if (g.q.length) g.dir = g.q.shift();
   const h = garHead(g), nx = (h % W) + GAR_DX[g.dir], ny = ((h / W) | 0) + GAR_DY[g.dir], nc = ny * W + nx, inb = nx >= 0 && ny >= 0 && nx < W && ny < W;

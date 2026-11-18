@@ -97,7 +97,7 @@ const slotOf = (g, r, c) => r * g.cols + c;
   g2.B.push([e.x, e.y + 14, 0]); const before = ab2.score; step(ab2);
   assert.equal(ab2.score - before, 40, "a diver shot is worth 40"); assert.equal(g2.D.length, 0); assert.equal(g2.F[e.i], 0); assert.equal(g2.left, 11);
   // the speed and the number of divers grow with the wave
-  assert.deepEqual([1, 3, 6, 10, 20].map(X.pestSpeed), [4, 5, 6, 7, 7], "dives get faster with the wave");
+  assert.deepEqual([1, 2, 3, 4, 10].map(X.pestSpeed), [4, 5, 6, 7, 7], "dives get faster with the wave");
   // dive path: deterministic from the same start
   const run = (seed) => { const a = calm(seed), q = a.g; q.dn = 1; step(a, 40); return JSON.stringify(q.D.map((z) => [z.x, z.y])); };
   assert.equal(run(3), run(3)); assert.ok(new Set([1, 2, 3, 4, 5, 6, 7, 8].map(run)).size > 1, "other seeds pick other bugs");
@@ -144,18 +144,18 @@ const slotOf = (g, r, c) => r * g.cols + c;
   const ab4 = calm(9); ab4.g.W.push([20, 100]); step(ab4, 60); assert.equal(ab4.g.W.length, 0);
 }
 
-// ── the queen (every third wave): many hits, +100
+// ── the queen (every second wave): many hits, +100
 {
-  const ab = calm(2, 3), g = ab.g;
-  assert.ok(g.q && g.q.hp === 14, "wave 3 has a queen with hp 14"); assert.equal(g.left, g.cols * g.rows + 1);
+  const ab = calm(2, 2), g = ab.g;
+  assert.ok(g.q && g.q.hp === 14, "wave 2 has a queen with hp 14"); assert.equal(g.left, g.cols * g.rows + 1);
   const hp = g.q.hp;
   g.B.push([X.pestQx(g), X.pestQy(g) + 8, 0]); step(ab);
   assert.equal(g.q.hp, hp - 1); assert.equal(ab.score, 0, "a hit is not worth points"); assert.equal(g.ev.at(-1)[1], 7);
   g.q.hp = 1; g.B.push([X.pestQx(g) + 11, X.pestQy(g) + 8, 0]); step(ab);
   assert.equal(g.q, null); assert.equal(ab.score, 100, "the queen: +100"); assert.equal(g.ev.at(-1)[1], 8);
-  const ab2 = mkAb(); X.pestNew(ab2, 6); assert.equal(ab2.g.q.hp, 20, "wave 6: hp 20"); X.pestNew(ab2, 4); assert.equal(ab2.g.q, null);
+  const ab2 = mkAb(); X.pestNew(ab2, 4); assert.equal(ab2.g.q.hp, 22, "wave 4: hp 22"); X.pestNew(ab2, 3); assert.equal(ab2.g.q, null);
   // she spits webs at the ship
-  const ab3 = calm(2, 3), g3 = ab3.g; g3.q.wt = 1; step(ab3); assert.equal(g3.W.length, 1, "the queen spits a web"); assert.equal(g3.W[0][0], g3.sh.x); assert.equal(g3.ev.at(-1)[1], 9);
+  const ab3 = calm(2, 2), g3 = ab3.g; g3.q.wt = 1; step(ab3); assert.equal(g3.W.length, 1, "the queen spits a web"); assert.equal(g3.W[0][0], g3.sh.x); assert.equal(g3.ev.at(-1)[1], 9);
 }
 
 // ── fever: the three-way spray
@@ -177,12 +177,12 @@ const slotOf = (g, r, c) => r * g.cols + c;
   g.B.push([X.pestSx(g, 0), X.pestSy(g, 0) + 8, 0]); step(ab);
   assert.equal(ab.score, 10 + 220, "the last bug, then the wave: +100 and +100 for no hit (the combo is 1: ×1.1)"); assert.equal(g.rest, P.REST); assert.equal(g.ev.at(-1)[1], 6);
   assert.equal(R.view(ab, g.simAt)[3], 0, "no formation while resting");
-  step(ab, P.REST - 1); assert.equal(g.wv, 1); step(ab); assert.equal(g.wv, 2, "after 5 s the next wave"); assert.equal(g.left, 18); assert.equal(g.rest, 0);
+  step(ab, P.REST - 1); assert.equal(g.wv, 1); step(ab); assert.equal(g.wv, 2, "after 2.5 s the next wave"); assert.equal(g.left, 22); assert.equal(g.rest, 0);
   const ab2 = calm(), g2 = ab2.g; g2.wh = 1;
   g2.F.fill(0); g2.F[0] = 1; g2.left = 1; g2.B.push([X.pestSx(g2, 0), X.pestSy(g2, 0) + 8, 0]); step(ab2);
   assert.equal(ab2.score, 10 + 110, "a wave with a hit: +100 only (×1.1)");
   const sizes = [1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 30].map((w) => { const a = mkAb(); X.pestNew(a, w); return a.g.left; });
-  assert.deepEqual(sizes, [12, 18, 22, 28, 32, 33, 40, 40, 41, 41, 41], "12 → 40 bugs, a queen every third wave, wave 8 stays the hardest");
+  assert.deepEqual(sizes, [12, 22, 32, 41, 40, 41, 40, 41, 40, 41, 41], "12 → 40 bugs in four waves, a queen every second wave, wave 4+ stays the hardest");
   for (let w = 1; w <= 9; w++) { const a = mkAb(); X.pestNew(a, w); assert.equal(a.g.kinds.length, a.g.rows); assert.ok(a.g.kinds.every((k) => k >= 0 && k <= 2)); }
 }
 
@@ -392,7 +392,7 @@ assert.ok(viewMax < 700, `the view stays small (${viewMax} bytes)`);
   const c = play(BOTS.human, 3, { name: "방제다른" });
   assert.notDeepEqual([c.score, c.wave, c.stuns], [a.score, a.wave, a.stuns], "a different seed plays differently");
   // a fixed input script, ticked at 100 ms, 50 ms and 230 ms: the very same shift
-  const script = []; { const r = mulberry(5); for (let t = 6200; t < 6000 + 240000; t += 130) script.push([t, r() < 0.8 ? { x: Math.floor(r() * 241), fire: 1 } : { x: Math.floor(r() * 241) }]); }
+  const script = []; { const r = mulberry(5); for (let t = 6200; t < 6000 + 90000; t += 130) script.push([t, r() < 0.8 ? { x: Math.floor(r() * 241), fire: 1 } : { x: Math.floor(r() * 241) }]); }
   const run = (stepMs) => {
     const s = sim("방제스크립트", 11, stepMs), ab = s.p.ab, t0 = s.now;
     let i = 0, nextTick = t0 + stepMs;
@@ -446,7 +446,7 @@ assert.ok(viewMax < 700, `the view stays small (${viewMax} bytes)`);
   assert.equal(snap(), done, "after the end the field is frozen"); assert.equal(ab.score, sc);
 }
 
-// (e) the server's cost: 240 simulated seconds, 10 ticks/s, an input every 120 ms
+// (e) the server's cost: a 90 s shift (95 simulated seconds with the brief), 10 ticks/s, an input every 120 ms
 {
   const s = sim("방제부하", 7), ab = s.p.ab, rng = mulberry(3);
   let ms = 0, views = 0, bytes = 0, maxB = 0;
@@ -457,8 +457,8 @@ assert.ok(viewMax < 700, `the view stays small (${viewMax} bytes)`);
     ms += performance.now() - t0;
     if (v.ab && v.ab[7]) { const n = JSON.stringify(v.ab[7]).length; views++; bytes += n; maxB = Math.max(maxB, n); }
   }
-  console.log(`  server: ${(T.briefMs + T.runMs) / 100} ticks + views in ${ms.toFixed(1)} ms (${(ms / 4.1).toFixed(2)} ms per simulated minute); view avg ${Math.round(bytes / views)} B, max ${maxB} B (${views} sent)`);
-  assert.ok(ms / 4.1 < 100, "far below 100 ms per simulated minute");
+  console.log(`  server: ${(T.briefMs + T.runMs) / 100} ticks + views in ${ms.toFixed(1)} ms (${(ms / 1.6).toFixed(2)} ms per simulated minute); view avg ${Math.round(bytes / views)} B, max ${maxB} B (${views} sent)`);
+  assert.ok(ms / 1.6 < 100, "far below 100 ms per simulated minute");
   assert.equal(ab.state, "end");
 }
 

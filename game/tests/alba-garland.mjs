@@ -43,8 +43,8 @@ const head = (ab) => xy(ab.g.c.at(-1));
 {
   const g = { done: 0 };
   assert.equal(X.garInt(g, { feverUntil: 0 }, 0), 143); assert.equal(Math.round(1000 / 143), 7, "about 7 steps a second to start");
-  g.done = 1; assert.equal(X.garInt(g, { feverUntil: 0 }, 0), 137, "faster with every garland");
-  g.done = 3; assert.equal(X.garInt(g, { feverUntil: 0 }, 0), Math.round(143 * 0.96 ** 3));
+  g.done = 1; assert.equal(X.garInt(g, { feverUntil: 0 }, 0), 132, "faster with every garland");
+  g.done = 3; assert.equal(X.garInt(g, { feverUntil: 0 }, 0), Math.round(143 * 0.92 ** 3));
   g.done = 99; assert.equal(X.garInt(g, { feverUntil: 0 }, 0), 110, "never faster than 110 ms");
   g.done = 0; assert.equal(X.garInt(g, { feverUntil: 500 }, 100), 193, "a fever (봄바람) slows the chain");
   assert.equal(X.garInt(g, { feverUntil: 500 }, 600), 143, "and ends");
@@ -142,7 +142,7 @@ for (const [name, chain, dir, expDir] of [
   const t = step(ab);
   assert.equal(ab.g.done, 1); assert.equal(ab.g.c.length, GAR.stub, "the chain starts over as a stub"); assert.equal(ab.g.ev[1], 1 | 4);
   assert.equal(ab.score, 10 + Math.round(100 * 1.1), "the flower, then the garland (combo 1)"); assert.equal(ab.combo, 2);
-  assert.equal(ab.g.simAt, t + 137, "and a notch faster");
+  assert.equal(ab.g.simAt, t + 132, "and a notch faster");
   assert.deepEqual(ab.g.c, [cell(10, 8), cell(11, 8), cell(12, 8)], "the stub is the head's last links"); assert.equal(ab.g.dir, 1, "still heading on");
   const bb = setup(mkAb(), { chain: row(1, 8, 11), f: [[12, 8]] }); bb.g.th = [cell(15, 8)];
   step(bb); assert.ok(bb.g.dir !== 3, "the restarted stub never faces its own neck"); assert.equal(bb.g.hits, 0, "a garland is not a crash");
@@ -204,8 +204,8 @@ function connected(g) {   // the free cells (no thorns) are one region
     thorns += ab.g.th.length; golds += sawGold ? 1 : 0;
   }
   assert.equal(golds, 12, "a golden flower shows up in every shift");
-  const first = (seed) => { const ab = mkAb(seed); ab.g.thAt = 20000; ab.g.simAt = 20000; ab.g.dir = 1; R.adv(null, null, ab, 20000); return ab.g.th.length; };
-  assert.equal(first(5), 1, "the first thorn comes at 20 s");
+  const first = (seed) => { const ab = mkAb(seed); ab.g.thAt = 6000; ab.g.simAt = 6000; ab.g.dir = 1; R.adv(null, null, ab, 6000); return ab.g.th.length; };
+  assert.equal(first(5), 1, "the first thorn comes at 6 s");
 }
 
 // ── whole shifts through the real engine
@@ -400,7 +400,7 @@ assert.ok(viewMax < 600, `the view stays small (${viewMax} bytes)`);
   assert.equal(ab2.state, "end"); assert.ok(ab2.g.n <= GAR.catchup + 1, "an unattended stall does not run the whole shift's steps"); gardenCheck(ab2.g, ab2, "after the stall");
 }
 
-// (e) the server's cost: 240 simulated seconds, 10 ticks/s, an input every 150 ms
+// (e) the server's cost: a 90 s shift (95 simulated seconds with the brief), 10 ticks/s, an input every 150 ms
 {
   const s = sim("화환부하", 7), ab = s.p.ab;
   let ms = 0, views = 0, bytes = 0, vb = 0;
@@ -411,8 +411,8 @@ assert.ok(viewMax < 600, `the view stays small (${viewMax} bytes)`);
     ms += performance.now() - t0; views++;
     if (v.ab && v.ab[7]) { bytes += JSON.stringify(v.ab[7]).length; vb++; }
   }
-  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 4.1).toFixed(2)} ms per simulated minute), ${vb} views sent, avg ${(bytes / vb).toFixed(0)} bytes, max ${viewMax}`);
-  assert.ok(ms / 4.1 < 100, "far below 100 ms per simulated minute");
+  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 1.6).toFixed(2)} ms per simulated minute), ${vb} views sent, avg ${(bytes / vb).toFixed(0)} bytes, max ${viewMax}`);
+  assert.ok(ms / 1.6 < 100, "far below 100 ms per simulated minute");
   assert.equal(ab.state, "end");
 }
 

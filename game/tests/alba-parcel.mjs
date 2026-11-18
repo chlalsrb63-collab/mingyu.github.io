@@ -156,9 +156,9 @@ for (const rots of SH) for (const cells of rots) assert.ok(Math.min(...cells.map
   // speed: rows, rush, fever
   const g = ab.g;
   assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 800);
-  g.rows = 10; assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 660, "faster with every row shipped");
-  assert.equal(X.parcelDrop(g, { endAt: 100000, feverUntil: 0 }, 80000), Math.round(660 * 0.7), "the last 30 s rush");
-  assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 500 }, 0), 990, "a fever slows the fall");
+  g.rows = 10; assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 600, "faster with every row shipped");
+  assert.equal(X.parcelDrop(g, { endAt: 100000, feverUntil: 0 }, 90000), Math.round(600 * 0.7), "the last 15 s rush");
+  assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 500 }, 0), 900, "a fever slows the fall");
   g.rows = 1000; assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 200, "never faster than 200 ms");
 }
 
@@ -344,7 +344,7 @@ assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
   assert.equal(snap(), done, "after the end the board is frozen"); assert.equal(ab.score, sc);
 }
 
-// (e) the server's cost: 240 simulated seconds, 10 ticks/s, an input every 250 ms
+// (e) the server's cost: a 90 s shift (95 simulated seconds with the brief), 10 ticks/s, an input every 250 ms
 {
   const s = sim("택배부하", 7), ab = s.p.ab;
   let ms = 0, views = 0;
@@ -355,8 +355,8 @@ assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
     s.tick(100);
     ms += performance.now() - t0; views++;
   }
-  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 4.1).toFixed(2)} ms per simulated minute)`);
-  assert.ok(ms / 4.1 < 100, "far below 100 ms per simulated minute");
+  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 1.6).toFixed(2)} ms per simulated minute)`);
+  assert.ok(ms / 1.6 < 100, "far below 100 ms per simulated minute");
   assert.equal(ab.state, "end");
 }
 

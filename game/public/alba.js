@@ -19,6 +19,7 @@ import * as SP from "./sprites.js";
 import { G, $, el, clamp } from "./state.js";
 import { act, ws } from "./net.js";
 import * as Board from "./board.js";
+import * as Stage from "./alba_stage.js";
 
 const GAMES = {};   // k → module, loaded on first use
 const LOADERS = {
@@ -82,7 +83,7 @@ async function open(k) {
     const mod = GAMES[k] || (GAMES[k] = (await LOADERS[k]()).default);
     if (!st.ab || st.ab[0] !== k) return;   // the shift ended while the module loaded
     const d = build(), row = G.defs.alba.rows[k];
-    st.k = k; st.mod = mod; st.parts.length = 0; st.react = null; st.result = null; st.shown = "";
+    st.k = k; st.mod = mod; st.prevPhase = ""; st.act = 0; st.ph = 0; st.sAt = 0; st.parts.length = 0; st.react = null; st.result = null; st.shown = "";
     d.title.textContent = row.name; d.hint.textContent = row.hint; d.res.hidden = true; d.res.textContent = "";
     d.board.textContent = ""; d.root.hidden = false; d.quit.textContent = "그만두기"; delete d.quit.dataset.sure;
     const th = THEME[row.tool] || THEME.box; d.box.style.setProperty("--ap-acc", th[2]);
@@ -153,7 +154,7 @@ function showResult() {
   btns.append(again, ok);
   d.res.append(stamp, ...lines.map((l) => (Array.isArray(l) ? el("p", "ap-rec", l[1]) : el("p", "", l))), btns);
   d.quit.textContent = "닫기";
-  api.sfx(g ? "alba_big" : "alba_bad");
+  api.sfx(g >= 3 ? "alba_win" : g ? "alba_big" : "alba_bad");
 }
 
 // ── the stage: the hero at work
@@ -170,6 +171,7 @@ function heroFrames() {
 function react(kind, text, x, y) {
   const t = performance.now();
   st.react = { kind, at: t };
+  st.act = kind === "bad" ? 0 : Math.min(1, (st.act || 0) + (kind === "good" ? 0.3 : 0.6));
   const col = kind === "bad" ? "#ff6a5a" : kind === "big" ? "#ffd84a" : kind === "fever" ? "#ff9a3a" : "#ffffff";
   const n = kind === "big" || kind === "fever" ? 12 : kind === "bad" ? 6 : 4;
   for (let i = 0; i < n; i++) st.parts.push({ x: 150 + Math.random() * 30, y: 70, vx: (Math.random() - 0.3) * 90, vy: -30 - Math.random() * 70, life: 0.7, col });
@@ -193,31 +195,35 @@ function drawTool(g, tool, x, y, ang) {
   else { r("#aab4c0", -2, -14, 4, 24); r("#d8e0ea", -7, -18, 14, 7); r("#6a7480", -3, -17, 6, 3); r("#7a4a2a", -1, 8, 3, 12); }   // wrench
   g.restore();
 }
-function stage(t) {
-  const d = st.dom, g = d.g, row = G.defs.alba.rows[st.k], th = THEME[row.tool] || THEME.box, W = 480, H = 120;
-  g.fillStyle = th[0]; g.fillRect(0, 0, W, 78); g.fillStyle = th[1]; g.fillRect(0, 78, W, H - 78);
-  g.fillStyle = "rgba(0,0,0,.25)"; g.fillRect(0, 78, W, 2);
-  // props: a few quiet blocks in the job's accent
-  g.fillStyle = th[2]; g.globalAlpha = 0.25; for (let i = 0; i < 6; i++) g.fillRect(20 + i * 78, 18 + (i % 2) * 12, 40, 22); g.globalAlpha = 1;
-  const r = st.react, since = r ? t - r.at : 1e9, hop = since < 220 ? Math.sin((since / 220) * Math.PI) * 8 : 0;
-  const busy = since < 320, fevered = st.endAt && t < st.feverEnd, shake = r && r.kind === "bad" && since < 260 ? Math.sin(since / 18) * 3 : 0;
+function stage(t, phase) {
+  const d = st.dom, g = d.g, row = G.defs.alba.rows[st.k], W = 480, H = 120;
+  const dt = Math.min(0.05, Math.max(0, (t - (st.sAt || t)) / 1000)); st.sAt = t;
+  st.act = Math.max(0, (st.act || 0) - dt * 0.45);
+  const fevered = !!st.endAt && t < st.feverEnd, run = phase === "run";
+  st.ph = (st.ph || 0) + dt * (run ? 1.05 : 0.45) * (1 + 1.5 * st.act) * (fevered ? 1.25 : 1);
+  const r = st.react, since = r ? t - r.at : 1e9, bad = r && r.kind === "bad" && since < 420;
+  const a = { ph: st.ph, act: st.act, kind: r ? r.kind : "", since, fever: fevered, run, prog: clamp((st.ab[4] || 0) / (G.defs.alba.rows[st.k].par || 1), 0, 1) };
+  Stage.back(g, st.k, t, a);
+  const p = Stage.pose(st.k, a);
+  const hop = since < 220 && !bad ? Math.sin((since / 220) * Math.PI) * 5 : 0, shake = bad ? Math.sin(since / 18) * 3 : 0;
+  const bx = Math.round(150 + shake + p.dx), by = Math.round(20 - hop + p.dy + (fevered ? Math.sin(t / 60) * 2 : 0));
+  p.hx = bx; p.hy = by;
   const sheet = heroFrames();
-  const bx = 150 + shake, by = 20 - hop + (fevered ? Math.sin(t / 60) * 2 : 0);
   if (sheet) {
-    const fr = sheet.front, f = fr[busy ? 1 + (Math.floor(t / 90) % (fr.length - 1)) : 0] || fr[0];
-    g.fillStyle = "rgba(0,0,0,.3)"; g.beginPath(); g.ellipse(bx + 44, 100, 30, 6, 0, 0, 7); g.fill();
+    const fr = sheet.front, f = fr[p.walk ? Math.min(fr.length - 1, p.fr) : p.hit ? Math.min(1, fr.length - 1) : 0] || fr[0];
+    g.fillStyle = "rgba(40,30,60,.32)"; g.fillRect(bx + 16, 99, 56, 5); g.fillRect(bx + 22, 97, 44, 2);
     SP.drawPersonCrop(g, f, 5, 5, 22, 22, bx, by, 88, 88);
   }
-  const swing = busy ? Math.sin((since / 320) * Math.PI) * 1.1 : Math.sin(t / 500) * 0.12;
-  drawTool(g, row.tool, bx + 94, by + 52, -0.5 + swing * (r && r.kind === "bad" ? -0.5 : 1));
-  if (fevered) { g.fillStyle = "rgba(255,150,40,.25)"; g.fillRect(0, 0, W, H); }
-  // sparks and numbers
-  const dt = 1 / 60;
+  drawTool(g, row.tool, bx + p.tx, by + p.ty, bad ? p.ta * -0.4 : p.ta);
+  Stage.front(g, st.k, t, a, p);
+  if (bad) { g.fillStyle = "#7ad0ff"; g.fillRect(bx + 62, by + 14 + Math.round(since / 40), 3, 5); g.fillStyle = "#ff6a5a"; g.fillRect(bx + 70, by + 2, 3, 8); g.fillRect(bx + 70, by + 12, 3, 3); }
+  if (fevered) { g.fillStyle = "rgba(255,170,60,.18)"; g.fillRect(0, 0, W, H); }
+  const dt2 = 1 / 60;
   for (let i = st.parts.length - 1; i >= 0; i--) {
-    const p = st.parts[i]; p.life -= dt; if (p.life <= 0) { st.parts.splice(i, 1); continue; }
-    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += (p.txt ? 0 : 160) * dt;
-    g.globalAlpha = clamp(p.life * 2, 0, 1); g.fillStyle = p.col;
-    if (p.txt) { g.font = "bold 14px sans-serif"; g.fillText(p.txt, p.x, p.y); } else g.fillRect(Math.round(p.x), Math.round(p.y), 3, 3);
+    const q = st.parts[i]; q.life -= dt2; if (q.life <= 0) { st.parts.splice(i, 1); continue; }
+    q.x += q.vx * dt2; q.y += q.vy * dt2; q.vy += (q.txt ? 0 : 160) * dt2;
+    g.globalAlpha = clamp(q.life * 2, 0, 1); g.fillStyle = q.col;
+    if (q.txt) { g.font = "bold 14px sans-serif"; g.fillStyle = "#2a2236"; g.fillText(q.txt, q.x + 1, q.y + 1); g.fillStyle = q.col; g.fillText(q.txt, q.x, q.y); } else g.fillRect(Math.round(q.x), Math.round(q.y), 3, 3);
   }
   g.globalAlpha = 1;
   if (st.parts.length > 80) st.parts.splice(0, st.parts.length - 80);
@@ -245,7 +251,8 @@ export function tick(t) {
     d.combo.textContent = combo > 1 ? `콤보 ${combo}${fever > 0 ? " 🔥 피버!" : ""}${left < G.defs.alba.rushMs && !ended ? " · 막판 러시" : ""}` : (left < G.defs.alba.rushMs && !ended ? "막판 러시!" : "");
     d.root.classList.toggle("fever", fever > 0);
   }
-  stage(t);
+  if (phase !== st.prevPhase) { if (phase === "run" && st.prevPhase === "brief") api.sfx("alba_go"); if (phase === "end" && st.prevPhase === "run") api.sfx("alba_end"); st.prevPhase = phase; }
+  stage(t, phase);
   if (st.mod) st.mod.frame(t, { phase, left, toStart, score, combo, fever, rush: left < G.defs.alba.rushMs });
 }
 

@@ -677,6 +677,9 @@ const BOOST = {
 };
 /** Effects that play even when many voices are already sounding. */
 const IMPORTANT = new Set(["verdict", "steam", "overload", "supercon", "dragon_final", "meteor_cast", "crimson", "dive", "thunder", "sanctuary", "pact", "hundred", "oath_cast", "level", "achieve", "death", "rift_start", "rift_boss", "rc_ping", "dim_boss", "dim_clear", "announce", "enh_ok", "enh_fail", "warp", "loot"]);
+/** 일일 아르바이트 sounds that may come in quick bursts (a hop, a brick, a spray) and the three that frame a shift, which never get dropped. */
+Object.assign(THROTTLE, { alba_pop: 0.045, alba_snap: 0.04, alba_crunch: 0.05, alba_step: 0.05, alba_zap: 0.06, alba_sizzle: 0.1, alba_swish: 0.08, alba_thud: 0.06, alba_clang: 0.05, alba_n0: 0.04, alba_n1: 0.04, alba_n2: 0.04, alba_n3: 0.04 });
+for (const n of ["alba_go", "alba_end", "alba_win"]) IMPORTANT.add(n);
 
 /** The catalogue. `this` is Sound. */
 /** Each job's note under its skills (skills-v2.md §6): [wave, from Hz, to Hz, noise Hz, noise filter] — steel rings, shadows hiss,
@@ -689,6 +692,8 @@ const JOB_NOTE = {
   bladedancer: ["triangle", 1175, 1568, 5200, "highpass"], trickster: ["sine", 784, 1175, 3000, "bandpass"], spellspear: ["sine", 1320, 1980, 7000, "highpass"],
   runesage: ["triangle", 523, 784, 2200, "bandpass"], runearcher: ["sine", 990, 660, 3600, "bandpass"],
 };
+/** A plucky lane note for the rhythm game: a triangle with a short bright overtone and a pick click. */
+const albaNote = (s, f) => { s.tone("triangle", f, f, 0.24, 0.075); s.tone("sine", f * 2, f * 2, 0.1, 0.022); s.noise(0.015, 0.02, 4000, "highpass"); };
 const SFX = {
   job_note({ job, sig } = {}) {
     const [w, f0, f1, fc, ft] = JOB_NOTE[job] || JOB_NOTE.adventurer, v = sig ? 0.07 : 0.035, p = this.vary();
@@ -954,6 +959,28 @@ const SFX = {
   alba_bad() { this.tone("sawtooth", 210, 110, 0.14, 0.09); },
   alba_fever() { this.tone("square", 440, 880, 0.1, 0.06); this.tone("square", 660, 1320, 0.1, 0.06, 0.08); this.tone("square", 880, 1760, 0.16, 0.06, 0.16); },
   alba_tick() { this.tone("square", 880, 880, 0.05, 0.04); },
+  /** More 일일 아르바이트 effects (each under 0.4 s, quiet): what the games' hands do, then the lane notes (C E G A) and the shift's start / end / win. */
+  alba_pop() { this.tone("sine", 380, 1250, 0.06, 0.08); this.noise(0.03, 0.03, 2600, "bandpass"); },
+  alba_snap() { this.noise(0.02, 0.08, 3600, "highpass"); this.tone("square", 1800, 900, 0.025, 0.05); this.tone("square", 1200, 640, 0.03, 0.04, 0.045); },
+  alba_swish() { this.noise(0.22, 0.07, 500, "bandpass", 0, 3400); this.noise(0.1, 0.04, 3600, "highpass", 0.1); },
+  alba_thud() { this.tone("sine", 150, 45, 0.2, 0.09); this.noise(0.1, 0.05, 320, "lowpass", 0, 110); },
+  alba_coin() { this.noise(0.02, 0.06, 4500, "highpass"); this.tone("square", 988, 988, 0.06, 0.05, 0.02); this.tone("square", 1319, 1319, 0.2, 0.05, 0.07); this.tone("triangle", 2637, 2637, 0.2, 0.025, 0.07); },
+  alba_splash() { this.noise(0.3, 0.07, 700, "bandpass", 0, 2400); this.noise(0.12, 0.05, 3500, "highpass", 0.05); this.tone("sine", 600, 250, 0.1, 0.03); this.tone("sine", 350, 720, 0.08, 0.03, 0.14); },
+  alba_clang() { this.tone("square", 880, 860, 0.25, 0.05); this.tone("square", 1330, 1300, 0.2, 0.04); this.tone("triangle", 2234, 2200, 0.18, 0.03); this.noise(0.03, 0.06, 5000, "highpass"); },
+  alba_crunch() { this.noise(0.05, 0.08, 1800, "bandpass"); this.noise(0.05, 0.07, 1200, "bandpass", 0.04); this.noise(0.06, 0.06, 2400, "bandpass", 0.09); this.noise(0.08, 0.05, 900, "lowpass", 0.15); this.tone("sawtooth", 160, 60, 0.12, 0.04, 0.02); },
+  alba_sizzle() { this.noise(0.35, 0.05, 6000, "highpass"); for (const t of [0.05, 0.14, 0.23]) this.noise(0.03, 0.05, 4200, "bandpass", t); },
+  alba_ding() { this.tone("sine", 1568, 1568, 0.38, 0.07); this.tone("sine", 3136, 3136, 0.22, 0.03); this.tone("sine", 4186, 4186, 0.12, 0.015); },
+  alba_step() { this.tone("triangle", 330, 180, 0.05, 0.05); this.noise(0.025, 0.03, 1200, "bandpass"); },
+  alba_zap() { this.noise(0.14, 0.05, 3500, "bandpass", 0, 1200); this.tone("square", 1400, 500, 0.08, 0.04); },
+  alba_chime() { this.tone("sine", 784, 784, 0.18, 0.06); this.tone("triangle", 784, 784, 0.12, 0.02); this.tone("sine", 1175, 1175, 0.26, 0.06, 0.09); },
+  alba_buzz() { this.tone("sawtooth", 110, 100, 0.22, 0.07); this.tone("square", 112, 104, 0.22, 0.04); },
+  alba_n0() { albaNote(this, 523.25); },
+  alba_n1() { albaNote(this, 659.25); },
+  alba_n2() { albaNote(this, 783.99); },
+  alba_n3() { albaNote(this, 880); },
+  alba_go() { this.arp("square", [523, 659, 784], 0.08, 0.1, 0.05); },
+  alba_end() { this.tone("triangle", 784, 784, 0.14, 0.07); this.tone("triangle", 523, 523, 0.26, 0.07, 0.14); },
+  alba_win() { this.arp("square", [523, 659, 784], 0.06, 0.09, 0.05); this.tone("square", 1047, 1047, 0.2, 0.055, 0.18); this.arp("triangle", [523, 659, 784, 1047], 0.06, 0.12, 0.04); },
   /** A rallying cry: a low growl that climbs. */
   mob_howl() { this.tone("sawtooth", 150, 300, 0.38, 0.09); this.tone("sawtooth", 110, 84, 0.42, 0.06, 0.04); },
   mob_shot() { this.tone("square", 700, 300, 0.1, 0.06); this.noise(0.05, 0.08, 3000); },

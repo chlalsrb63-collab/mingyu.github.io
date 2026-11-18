@@ -65,7 +65,7 @@ const drop2 = (ab, now = 10) => R.act(null, null, ab, { drop: 2 }, now);
   assert.equal(drop2(ab), null);
   assert.equal(ab.score, 60, "50 for a wash + 10 for the fifth piece"); assert.equal(ab.combo, 1); assert.equal(ab.g.washes, 1); assert.equal(ab.g.wc, 5);
   assert.deepEqual(show(ab.g.b), EMPTY); assert.equal(ab.g.ev[1], 1); assert.equal(ab.g.ev[2].length, 5);
-  assert.equal(ab.g.cur, null, "the next pair waits for the line"); assert.equal(ab.g.spawnAt, 10 + 450);
+  assert.equal(ab.g.cur, null, "the next pair waits for the line"); assert.equal(ab.g.spawnAt, 10 + 350);
 }
 {
   const ab = mkAb();   // a chain of two: ×1 then ×2, and the combo runs through both
@@ -157,9 +157,9 @@ const drop2 = (ab, now = 10) => R.act(null, null, ab, { drop: 2 }, now);
   assert.ok(ab3.g.b.every((v) => Number.isInteger(v) && v >= 0 && v <= 7), "a huge stall ends at once and leaves a sane washer");
   const g = ab.g;
   assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 650);
-  g.washes = 10; assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 560, "faster with every chain step");
-  assert.equal(X.laundryDrop(g, { endAt: 100000, feverUntil: 0 }, 80000), Math.round(560 * 0.7), "the last 30 s rush");
-  assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 500 }, 0), 840, "a fever slows the fall (the dryer)");
+  g.washes = 10; assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 490, "faster with every chain step");
+  assert.equal(X.laundryDrop(g, { endAt: 100000, feverUntil: 0 }, 90000), Math.round(490 * 0.7), "the last 15 s rush");
+  assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 500 }, 0), 735, "a fever slows the fall (the dryer)");
   g.washes = 1e5; assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 200, "never faster than 200 ms");
 }
 
@@ -181,7 +181,7 @@ const drop2 = (ab, now = 10) => R.act(null, null, ab, { drop: 2 }, now);
     if (g.b.slice(0, 4 * W).some((v) => v)) g.b.fill(0);
   }
   assert.equal(firstStain, 7, "the first stains drop after the 7th lock");
-  assert.ok(seen6 >= 62, `no 6th colour before the 60th pair (first seen at pair ${seen6})`);
+  assert.ok(seen6 >= 26, `no 6th colour before the 24th pair (first seen at pair ${seen6})`);
   assert.ok(dets >= 20 && dets <= 45, `a detergent block every 11-15 pairs (${dets} in 420)`);
 }
 
@@ -382,7 +382,7 @@ assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
   assert.equal(snap(), done, "after the end the washer is frozen"); assert.equal(ab.score, sc);
 }
 
-// (e) the server's cost: 240 simulated seconds, 10 ticks/s, an input every 250 ms
+// (e) the server's cost: a 90 s shift (95 simulated seconds with the brief), 10 ticks/s, an input every 250 ms
 {
   const s = sim("세탁부하", 7), ab = s.p.ab;
   let ms = 0, views = 0;
@@ -393,8 +393,8 @@ assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
     s.tick(100);
     ms += performance.now() - t0; views++;
   }
-  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 4.1).toFixed(2)} ms per simulated minute)`);
-  assert.ok(ms / 4.1 < 100, "far below 100 ms per simulated minute");
+  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 1.6).toFixed(2)} ms per simulated minute)`);
+  assert.ok(ms / 1.6 < 100, "far below 100 ms per simulated minute");
   assert.equal(ab.state, "end");
 }
 

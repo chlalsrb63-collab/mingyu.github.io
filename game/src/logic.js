@@ -18217,7 +18217,7 @@ function cosBossRare(S, p, why) {
 }
 
 // ───────────────────────────── 일일 아르바이트: the solo mini-game shift engine ─────────────────────────────
-// docs/design/daily-alba-minigames-2026-11-16.md. A shift is `p.ab` (never saved): a seeded mini-game run on the SERVER for ~4 minutes,
+// docs/design/daily-alba-minigames-2026-11-16.md. A shift is `p.ab` (never saved): a seeded mini-game run on the SERVER for ~90 seconds,
 // shown in its own client window (public/alba.js + public/alba_<k>.js). The client only sends inputs (`ab_act`); the rules, the clock,
 // the score and the grade live here. One game = one part file `67-alba-<k>.js` that fills two tables:
 //   ALBA[k]       = { name, npc, place, skill, par, mul, outfit: [cosmetic ids], tool, hint }          (static; goes to defs.alba.rows)
@@ -18228,7 +18228,7 @@ function cosBossRare(S, p, why) {
 //     order with their own timestamps; keep it O(small) — it runs 10×/s per player;
 //   · `act` gets the raw client object `a` ({t:"ab_act", ...}): validate every field (Number.isInteger, ranges); return a short reason
 //     on refusal (the client is resynced, nothing is shown), or null after applying; change `ab.rev` through `albaTouch(ab)`;
-//   · points go through `albaGood(ab, now, base)` (combo, fever and the last-30-s rush multiply it) and `albaBad(ab, pen)` (combo
+//   · points go through `albaGood(ab, now, base)` (combo, fever and the last-15-s rush multiply it) and `albaBad(ab, pen)` (combo
 //     broken, `pen` taken off); never touch `ab.score` directly;
 //   · `view(ab, now)` is the full state for the client, sent only when `ab.rev` changed; every time in it is MILLISECONDS FROM NOW
 //     (`t - now`), the client rebuilds absolute times from its own clock.
@@ -18239,8 +18239,8 @@ const ALBA_RULES = {};
 const ALBA_ORDER = ["pipe", "fly", "store", "parcel", "laundry", "taiyaki",
   "pest", "wall", "cross", "lamp", "rhythm", "garland"];
 const ALBA_T = {
-  briefMs: 6000, runMs: 240000, resultMs: 90000, rushMs: 30000, actMs: 35,
-  feverMs: 15000, feverMax: 2, feverEvery: 10,   // a fever at combo 10 and 20 (at most two per shift)
+  briefMs: 5000, runMs: 90000, resultMs: 90000, rushMs: 15000, actMs: 35,
+  feverMs: 8000, feverMax: 2, feverEvery: 10,    // a fever at combo 10 and 20 (at most two per shift)
   cuts: [0.30, 0.65, 0.85, 1.0],                  // share of the game's par for C B A S
   gradeK: [0.7, 1.0, 1.3, 1.7],                   // pay multiplier per grade
   rep: [1, 2, 2, 3], stone: [0, 0, 1, 2], life: 0.5,
@@ -19147,7 +19147,7 @@ const CROSS = {
   PAY: 100, FLAWLESS: 50, GIFT: 30, HIT: 20, BONUS: 3, BONUS_MAX: 60, BUDGET: [12000, 26000],
   IN: 0.2, CIN: 0.1, SLACK: 0.2,                                   // hit-box inset of the courier and of a cart; how far past a log's end a foot still holds
 };
-Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 6800, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차와 행인을 피하고, 강에서는 통나무를 타고 건너 꾸러미를 전하세요." } });
+Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 2550, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차와 행인을 피하고, 강에서는 통나무를 타고 건너 꾸러미를 전하세요." } });
 
 const crossN = (ln) => Math.ceil((CROSS.W + ln.len) / ln.sp);
 /** Where the ring's first object is (cells, 0 ≤ phase < ring length) `T` ms. */
@@ -19194,14 +19194,14 @@ function crossHop(g, d) {
 /** A delivery's whole street: a function of (seed, delivery number, rush). Walkers and carts on the road, logs on the river; two gifts. */
 function crossBuild(seed, d, rush) {
   const box = { seed: (seed + Math.imul(d + 1, 0x9e3779b1)) | 0 };
-  const m = Math.min(1.6, 1 + 0.06 * d) * rush, ml = Math.min(1.5, 1 + 0.05 * d) * rush, flip = rnd(box) < 0.5 ? 1 : -1;
+  const m = Math.min(1.6, 1 + 0.15 * d) * rush, ml = Math.min(1.5, 1 + 0.125 * d) * rush, flip = rnd(box) < 0.5 ? 1 : -1;
   const L = new Array(CROSS.H).fill(null);
   const mk = (y, k, v, len, sp) => { L[y] = { k, v: Math.round(v * 10) * flip * (y % 2 ? 1 : -1), sp, len, ph: ri(box, 0, sp * 100 - 1) }; };
-  const logLen = Math.max(3, 5 - (d >> 2));
-  for (let y = 1; y <= 4; y++) mk(y, 2, (0.5 + 0.4 * rnd(box)) * ml, logLen, logLen + 1 + ri(box, 0, 1) + (d > 5 ? 1 : 0));
-  mk(6, 0, (1.0 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - (d >> 1)) + ri(box, 0, 1));
+  const logLen = Math.max(3, 5 - (d >> 1));
+  for (let y = 1; y <= 4; y++) mk(y, 2, (0.5 + 0.4 * rnd(box)) * ml, logLen, logLen + 1 + ri(box, 0, 1) + (d > 2 ? 1 : 0));
+  mk(6, 0, (1.0 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - d) + ri(box, 0, 1));
   mk(7, 1, (0.5 + 0.3 * rnd(box)) * m, 1, 5 + ri(box, 0, 2));
-  mk(8, 0, (0.9 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - (d >> 1)) + ri(box, 0, 1));
+  mk(8, 0, (0.9 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - d) + ri(box, 0, 1));
   mk(9, 1, (0.4 + 0.3 * rnd(box)) * m, 1, 5 + ri(box, 0, 2));
   const gifts = [{ y: 6 + ri(box, 0, 3), j: -1, a: ri(box, 1, CROSS.W - 2), got: 0 }];
   if (d > 0) { const y = 1 + ri(box, 0, 3), ln = L[y]; gifts.push({ y, j: ri(box, 0, crossN(ln) - 1), a: ri(box, 0, ln.len - 1), got: 0 }); }
@@ -19281,15 +19281,15 @@ ALBA_RULES.cross = {
   },
 };
 // 일일 아르바이트 · 파리잡기 (docs/design/daily-alba-minigames-2026-11-16.md §3.2): whack-a-mole with flies on a 3×3 grid of trash cans. Contract: 66-alba.js.
-// The whole 240 s spawn schedule is rolled at `init` from `ab.box` (a seed always gives the same flies); play only moves it when a can is hit
+// The whole 90 s spawn schedule is rolled at `init` from `ab.box` (a seed always gives the same flies); play only moves it when a can is hit
 // (that can shuts for 1 s and its later flies slide back). `ab.g` = { F: flies by id, Q: per can its fly ids in time order, H: per can the first
 // unresolved index, cd: per can the run-time (ms) its lid stays shut until, sent: how far ahead the client's last view announced }.
 // A fly = { id, c: can 0..8, t0: ms from the run start, life, k: 0 plain 1 golden 2 bee 3 poison, hp, dn: hit }. A can never holds two flies at once.
 // view = [[[id, can, ms to spawn (< 0: already out), life, kind (4 = wounded poison)]… alive or spawning within FLY.ahead ms], [[can, ms the lid stays shut]…]];
 // the view is re-sent (rev) on every hit and whenever the announced window is about to run dry, so an idle player still sees what comes.
 // The only input is {hit: fly id}: it must name a fly that is out (± FLY.grace for latency) and not hit yet; a swing at nothing is refused without a penalty.
-const FLY = { ahead: 3500, refresh: 1200, grace: 250, early: 100, close: 1000, gap: 400, pts: [10, 40, 0, 25], beePen: 30, bombs: [120000, 218000], rate: [1.2, 2.0], life: [[900, 520], [520, 380], [950, 700], [1500, 1000]] };
-Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 11200, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌은 건드리지 마세요!" } });
+const FLY = { ahead: 3500, refresh: 1200, grace: 250, early: 100, close: 1000, gap: 400, pts: [10, 40, 0, 25], beePen: 30, bombs: [45000, 78000], rate: [1.2, 2.0], life: [[900, 520], [520, 380], [950, 700], [1500, 1000]] };
+Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 4600, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌은 건드리지 마세요!" } });
 
 /** Roll the whole schedule: a spawn clock whose pace and lifetimes ramp with the time, and two 쓰레기 폭탄 (every can opens at once). */
 function flyBuild(box) {
@@ -19301,9 +19301,9 @@ function flyBuild(box) {
   };
   const bag = [];   // kinds come out of a shuffled bag, so every shift holds nearly the same mix
   const kind = (t) => {
-    if (t < 12000) return 0;
+    if (t < 5000) return 0;
     if (!bag.length) {
-      (t < 60000 ? [12, 1, 1, 2] : [11, 1, 3, 3]).forEach((n, k) => { for (let i = 0; i < n; i++) bag.push(k); });
+      (t < 22000 ? [12, 1, 1, 2] : [11, 1, 3, 3]).forEach((n, k) => { for (let i = 0; i < n; i++) bag.push(k); });
       for (let i = bag.length - 1; i > 0; i--) { const j = ri(box, 0, i), x = bag[i]; bag[i] = bag[j]; bag[j] = x; }
     }
     return bag.pop();
@@ -19382,12 +19382,12 @@ ALBA_RULES.fly = {
 // The one input is {d: 0..3}: a turn, queued for the next step; the same heading and the reverse of the last queued heading are ignored.
 // view = [chain cells, dir, ms to the next step, step ms, flower cells, [gold cell, ms left] | 0, thorn cells, garlands done, queued turns, ev]
 const GAR = {
-  W: 16, base: 143, min: 110, ramp: 0.96, stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
-  thornFirst: 20000, thornEvery: 9000, thornMax: 14, goldFirst: [14000, 22000], goldGap: [14000, 24000], goldLife: 6000,
+  W: 16, base: 143, min: 110, ramp: 0.92, stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
+  thornFirst: 6000, thornEvery: 3500, thornMax: 14, goldFirst: [6000, 12000], goldGap: [8000, 14000], goldLife: 6000,
   slow: 1.35, pts: [10, 50, 100], pen: 40, catchup: 40, queue: 2,
 };
 const GAR_DX = [0, 1, 0, -1], GAR_DY = [-1, 0, 1, 0];
-Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 9600, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊겨요. 12송이면 화환 완성!" } });
+Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 3150, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊겨요. 12송이면 화환 완성!" } });
 
 /** Ms between steps: faster with every garland, ×1.35 slower in a fever ("봄바람"). */
 const garInt = (g, ab, T) => Math.round(Math.max(GAR.min, GAR.base * GAR.ramp ** g.done) * (T < ab.feverUntil ? GAR.slow : 1));
@@ -19458,7 +19458,7 @@ function garStep(ab, T) {
   }
   if (T >= g.thAt && g.th.length < GAR.thornMax) {
     const c = garSpawn(g, g.rt, 1);
-    if (c >= 0) { g.th.push(c); g.thAt = T + GAR.thornEvery + ri(g.rt, -1500, 1500); } else g.thAt = T + 2000;
+    if (c >= 0) { g.th.push(c); g.thAt = T + GAR.thornEvery + ri(g.rt, -600, 600); } else g.thAt = T + 2000;
   }
   if (g.q.length) g.dir = g.q.shift();
   const h = garHead(g), nx = (h % W) + GAR_DX[g.dir], ny = ((h / W) | 0) + GAR_DY[g.dir], nc = ny * W + nx, inb = nx >= 0 && ny >= 0 && nx < W && ny < W;
@@ -19520,8 +19520,10 @@ const LAMP = {
   N: 15, STEP: 50, CATCH: 40, UNIT: 120, PSP: 40, SP: [34, 34, 36, 32], FSP: 22, PW: 8000,
   START: [7, 13], HOME: [[7, 5], [5, 3], [9, 3], [7, 1]], CORNER: [[13, 1], [1, 1], [1, 13], [13, 13]], DELAY: [0, 30, 60, 90], FREEZE: 16,
   PEL: 10, GROUP: 5, BIG: 50, CLEAR: 200, EAT: 200, PEN: 30, R2: 0.36, WANT: 40,
+  CUT: [8, 5],   // a ~90 s shift: the first two alleys only light the bottom rows (from this row down), so a first alley takes about a minute
 };
-Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 11000, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자를 피하고, 큰 전구를 켜면 그림자를 잡을 수 있어요!" } });
+const lampEl = (lv) => 2 * lv;   // an alley is two "difficulty levels" at once (loops, scatter, shadow speed)
+Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 7300, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자를 피하고, 큰 전구를 켜면 그림자를 잡을 수 있어요!" } });
 const LAMP_D = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 /** The alley of a level: [wall per tile (1 wall · 0 open)]. Symmetric, connected, loops, no dead ends; more loops (an easier alley) for the first levels. */
@@ -19538,7 +19540,7 @@ function lampMaze(seed, lv) {
   }
   const walls = [];
   for (let y = 1; y <= 13; y++) for (let x = 1; x <= 7; x++) if (((x + y) & 1) && w[at(x, y)]) walls.push([x, y]);
-  for (let i = Math.max(4, 14 - 2 * lv); i > 0 && walls.length; i--) { const [x, y] = walls.splice(ri(box, 0, walls.length - 1), 1)[0]; open(x, y); }   // loops
+  for (let i = Math.max(4, 14 - 2 * lampEl(lv)); i > 0 && walls.length; i--) { const [x, y] = walls.splice(ri(box, 0, walls.length - 1), 1)[0]; open(x, y); }   // loops
   const deg = (x, y) => (w[at(x, y - 1)] ? 0 : 1) + (w[at(x + 1, y)] ? 0 : 1) + (w[at(x, y + 1)] ? 0 : 1) + (w[at(x - 1, y)] ? 0 : 1);
   for (let pass = 0; pass < 40; pass++) {   // no dead ends: a room with one way out gets a second
     let fixed = 0;
@@ -19561,6 +19563,7 @@ function lampLevel(g, lv) {
   g.lv = lv; g.w = lampMaze(g.seed, lv);
   g.pel = g.w.map((v) => (v ? 0 : 1));
   for (const [x, y] of LAMP.CORNER) g.pel[y * N + x] = 2;
+  if (lv < LAMP.CUT.length) g.pel.fill(0, 0, LAMP.CUT[lv] * N);
   g.pel[LAMP.START[1] * N + LAMP.START[0]] = 0;
   g.left = g.pel.filter((v) => v).length;
   g.pwUntil = 0; g.on = 0; g.chain = 0; g.dk = -1; g.df = null;
@@ -19615,7 +19618,7 @@ function lampChoose(g, s, i) {
   for (let d = 0; d < 4; d++) if (d !== back && lampOpen(g, s.x + LAMP_D[d][0], s.y + LAMP_D[d][1])) c.push(d);
   if (!c.length && back >= 0 && lampOpen(g, s.x + LAMP_D[back][0], s.y + LAMP_D[back][1])) c.push(back);
   if (!c.length) { s.tx = s.x; s.ty = s.y; return; }
-  const p = g.pl, pt = p.pr * 2 >= LAMP.UNIT ? [p.tx, p.ty] : [p.x, p.y], sl = Math.max(20, 100 - 20 * g.lv), sc = g.tk % (sl + 300) < sl;   // scatter: the first `sl` steps of every cycle
+  const p = g.pl, pt = p.pr * 2 >= LAMP.UNIT ? [p.tx, p.ty] : [p.x, p.y], sl = Math.max(20, 100 - 20 * lampEl(g.lv)), sc = g.tk % (sl + 300) < sl;   // scatter: the first `sl` steps of every cycle
   let d = c[0];
   if (s.fr) d = c[ri(g.rb, 0, c.length - 1)];
   else if (i === 3 && rnd(g.rb) < 0.4) d = c[ri(g.rb, 0, c.length - 1)];
@@ -19628,7 +19631,7 @@ function lampChoose(g, s, i) {
   s.dir = d; s.tx = s.x + LAMP_D[d][0]; s.ty = s.y + LAMP_D[d][1];
 }
 /** A shadow's speed (units a step): slower when it flees, quicker alley by alley, never as quick as the courier. */
-const lampSp = (g, s, i) => (s.fr ? LAMP.FSP : Math.min(LAMP.PSP - 2, LAMP.SP[i] + 2 * Math.min(g.lv, 3)));
+const lampSp = (g, s, i) => (s.fr ? LAMP.FSP : Math.min(LAMP.PSP - 2, LAMP.SP[i] + 2 * Math.min(lampEl(g.lv), 3)));
 /** One entity gains `sp` units; every tile it completes runs `arrive` and picks the next (the rest of the step carries over). */
 function lampMove(g, e, sp, choose, arrive) {
   if (e.tx === e.x && e.ty === e.y) { choose(e); if (e.tx === e.x && e.ty === e.y) { e.pr = 0; return; } }
@@ -19722,7 +19725,7 @@ ALBA_RULES.lamp = {
 //          next: [a, b], fallAt, spawnAt, locks, washes (chain steps), wc (cells washed), n (pairs spawned), det, stain (locks to the next stains), sb, seq, ev }
 // ev = [seq, chain steps, washed cells (cell*8+colour, ≤48), flags 1 = the washer was emptied]
 // view = [board (72 chars: . empty · 1-6 colour · s stain), cur [x,y,v, x,y,v], next [a,b], ms to the next drop (or arrival), drop interval, chain steps so far, ev]
-const LAUNDRY_W = 6, LAUNDRY_H = 12, LAUNDRY_GAP = 450;   // the next pair comes this long after a lock
+const LAUNDRY_W = 6, LAUNDRY_H = 12, LAUNDRY_GAP = 350;   // the next pair comes this long after a lock
 const LAUNDRY_DX = [0, 1, 0, -1], LAUNDRY_DY = [-1, 0, 1, 0];
 
 const laundryCells = (c) => (c.b ? [[c.x, c.y, c.a], [c.x + LAUNDRY_DX[c.o], c.y + LAUNDRY_DY[c.o], c.b]] : [[c.x, c.y, c.a]]);
@@ -19788,11 +19791,11 @@ function laundryResolve(b, first) {
 /** The next piece off the line: a pair, or every so often a detergent block; the 6th colour joins late. */
 function laundryDraw(g, box) {
   if (--g.det <= 0) { g.det = ri(box, 11, 15); return [8, 0]; }
-  const nc = g.n >= 60 ? 6 : 5;
+  const nc = g.n >= 24 ? 6 : 5;
   return [ri(box, 1, nc), ri(box, 1, nc)];
 }
-/** Ms between drops: faster with every chain step, ×0.7 in the last 30 s, ×1.5 slower in a fever ("건조기"). */
-const laundryDrop = (g, ab, T) => Math.round(Math.max(200, 650 - 9 * g.washes) * (T >= ab.endAt - ALBA_T.rushMs ? 0.7 : 1) * (T < ab.feverUntil ? 1.5 : 1));
+/** Ms between drops: faster with every chain step, ×0.7 in the rush, ×1.5 slower in a fever ("건조기"). */
+const laundryDrop = (g, ab, T) => Math.round(Math.max(200, 650 - 16 * g.washes) * (T >= ab.endAt - ALBA_T.rushMs ? 0.7 : 1) * (T < ab.feverUntil ? 1.5 : 1));
 
 /** A pair arrives at the top; if its place is taken the stack reached the ceiling: the washer is emptied. */
 function laundrySpawn(ab, T) {
@@ -19822,8 +19825,8 @@ function laundryLock(ab, T) {
     g.ev = [++g.seq, steps.length, steps.flatMap((s) => s.cells).slice(0, 48), 0];
   }
   if (--g.stain <= 0) {
-    g.stain = Math.max(4, 8 - ((g.wc / 40) | 0));
-    for (let i = 0, m = Math.min(1 + ((g.wc / 50) | 0), 3); i < m; i++) {
+    g.stain = Math.max(4, 8 - ((g.wc / 16) | 0));
+    for (let i = 0, m = Math.min(1 + ((g.wc / 20) | 0), 3); i < m; i++) {
       const x = ri(g.sb, 0, W - 1);
       let y = LAUNDRY_H - 1;
       while (y >= 0 && b[y * W + x]) y--;
@@ -19832,7 +19835,7 @@ function laundryLock(ab, T) {
   }
 }
 
-ALBA.laundry = { name: "세탁소", npc: "costume", place: "의상실 세탁실", skill: "craft", par: 16000, mul: 1.1, outfit: ["top_apron_moka"], tool: "basket", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 같은 색 4개를 이어 세탁하세요. 얼룩은 옆에서 세탁해야 풀려요." };
+ALBA.laundry = { name: "세탁소", npc: "costume", place: "의상실 세탁실", skill: "craft", par: 6800, mul: 1.1, outfit: ["top_apron_moka"], tool: "basket", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 같은 색 4개를 이어 세탁하세요. 얼룩은 옆에서 세탁해야 풀려요." };
 ALBA_RULES.laundry = {
   init(S, p, ab) {
     const g = ab.g = { b: new Array(LAUNDRY_W * LAUNDRY_H).fill(0), cur: null, next: null, fallAt: 0, spawnAt: ab.runAt, locks: 0, washes: 0, wc: 0, n: 0, det: 12, stain: 7, sb: { seed: (ab.box.seed ^ 0x2f6b9a1d) | 0 }, seq: 0, ev: [0, 0, [], 0] };
@@ -19893,7 +19896,7 @@ ALBA_RULES.laundry = {
 //          next: {k, f}, fallAt, spawnAt, rows (shipped), n (boxes spawned), fid, seq, ev: [seq, flags 1 shipped · 2 truck swapped · 4 fragile broken, shipped-row mask] }
 // view = [board (80 chars: . empty · 1-7 box kind · f fragile), cur cells [x,y,…], cur kind (0 none), cur fragile, next cells [x,y,…], next kind, next fragile,
 //         ms to the next drop (or arrival), drop interval, rows shipped, ev]   — the client duplicates no shape table.
-const PARCEL_W = 8, PARCEL_H = 10, PARCEL_GAP = 450;   // the conveyor brings the next box this long after a lock
+const PARCEL_W = 8, PARCEL_H = 10, PARCEL_GAP = 350;   // the conveyor brings the next box this long after a lock
 const PARCEL_PAY = [0, 100, 250, 500, 900];
 /** The distinct clockwise rotations of a box (cells normalised to the top-left corner, row-major). */
 function parcelRots(cells) {
@@ -19923,13 +19926,13 @@ function parcelFits(g, k, r, x, y) {
 }
 /** The next box off the conveyor (fragile ones are the flat boxes, after the first few). */
 function parcelDraw(g, box) {
-  const big = Math.min(g.n, 80) / 80, w = PARCEL_WT.map((v, i) => v + PARCEL_WT2[i] * big);
+  const big = Math.min(g.n, 32) / 32, w = PARCEL_WT.map((v, i) => v + PARCEL_WT2[i] * big);
   let r = rnd(box) * w.reduce((a, b) => a + b, 0), k = 0;
   while (k < 6 && r >= w[k]) r -= w[k++];
   return { k, f: k <= 2 && g.n >= 4 && rnd(box) < 0.12 ? 1 : 0 };
 }
-/** Ms between drops: faster with every row shipped, ×0.7 in the last 30 s, ×1.5 slower in a fever ("지게차"). */
-const parcelDrop = (g, ab, T) => Math.round(Math.max(200, 800 - 14 * g.rows) * (T >= ab.endAt - ALBA_T.rushMs ? 0.7 : 1) * (T < ab.feverUntil ? 1.5 : 1));
+/** Ms between drops: faster with every row shipped, ×0.7 in the rush, ×1.5 slower in a fever ("지게차"). */
+const parcelDrop = (g, ab, T) => Math.round(Math.max(200, 800 - 20 * g.rows) * (T >= ab.endAt - ALBA_T.rushMs ? 0.7 : 1) * (T < ab.feverUntil ? 1.5 : 1));
 
 /** The box comes off the conveyor at the top; a blocked spawn means the stack reached the ceiling: the truck is swapped. */
 function parcelSpawn(ab, T) {
@@ -19961,7 +19964,7 @@ function parcelLock(ab, T) {
   g.cur = null; g.spawnAt = T + PARCEL_GAP;
 }
 
-ALBA.parcel = { name: "택배 상하차", npc: "shop", place: "광장 택배 집하장", skill: "deliver", par: 8000, mul: 1.15, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "box", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 한 줄을 채우면 출하! 깨짐 주의 상자 위엔 쌓지 마세요." };
+ALBA.parcel = { name: "택배 상하차", npc: "shop", place: "광장 택배 집하장", skill: "deliver", par: 4400, mul: 1.15, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "box", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 한 줄을 채우면 출하! 깨짐 주의 상자 위엔 쌓지 마세요." };
 ALBA_RULES.parcel = {
   init(S, p, ab) {
     const g = ab.g = { b: new Array(PARCEL_W * PARCEL_H).fill(0), fr: new Array(PARCEL_W * PARCEL_H).fill(0), cur: null, next: null, fallAt: 0, spawnAt: ab.runAt, rows: 0, n: 0, fid: 0, seq: 0, ev: [0, 0, 0] };
@@ -20031,12 +20034,14 @@ ALBA_RULES.parcel = {
 //   rescue [x, y, vx] | 0, queen [x, y, hp, max] | 0, events [[seq, type, x, y, points]…], bugs left]
 // event types: 1 bug shot · 2 diver shot · 3 ship rammed · 4 webbed · 5 rescued · 6 wave cleared · 7 queen hit · 8 queen shot · 9 queen spits a web
 const PEST = { W: 240, H: 300, SY: 282, STEP: 50, SPD: 4, FCD: 4, BSP: 8, MAXV: 3, FX: 120, FY: 54, SPX: 26, SPY: 20, SWAY: 80, AMP: 20, DESC: 3, MAXDROP: 54, INTRO: 25,
-  REST: 100, STUN: 40, INV: 20, WEB: 60, WEBSP: 4, COMMIT: 60,
+  REST: 50, STUN: 40, INV: 20, WEB: 60, WEBSP: 4, COMMIT: 60,
   SINT: [0, 24, 45, 59, 64, 59, 45, 24, 0, -24, -45, -59, -64, -59, -45, -24],
   COLS: [6, 6, 7, 7, 8, 8, 8, 8], ROWS: [2, 3, 3, 4, 4, 4, 5, 5], KINDS: { 2: [1, 0], 3: [2, 1, 0], 4: [2, 1, 1, 0], 5: [2, 2, 1, 0, 0] },   // 0 cockroach · 1 mosquito · 2 moth
   WIG: [6, 14, 20], FRQ: [2, 3, 2], PTS: [10, 40, 60, 100, 100] };   // PTS: a bug in place · a diver · the rescue · the wave · the wave without a hit (extra)
 
-const pestSpeed = (wv) => 4 + (wv > 2) + (wv > 4) + (wv > 6);
+// A shift is ~90 s, so a wave climbs two "difficulty levels" (size, speed, divers, queen) at once: wave 1 · 2 · 3 · 4 = level 1 · 3 · 5 · 7.
+const pestLv = (wv) => 2 * wv - 1;
+const pestSpeed = (wv) => { const l = pestLv(wv); return 4 + (l > 2) + (l > 4) + (l > 6); };
 const pestSx = (g, i) => PEST.FX + (2 * (i % g.cols) - g.cols + 1) * 13 + g.ox;
 const pestSy = (g, i) => PEST.FY + ((i / g.cols) | 0) * PEST.SPY + g.oy;
 const pestQx = (g) => PEST.FX + g.ox, pestQy = (g) => PEST.FY - 26 + g.oy;
@@ -20050,10 +20055,10 @@ function pestForm(g) {
   g.fvy = g.oy - oy;
 }
 function pestNew(ab, wv) {
-  const g = ab.g, P = PEST, i = Math.min(wv, 8) - 1, cols = P.COLS[i], rows = P.ROWS[i];
+  const g = ab.g, P = PEST, lv = pestLv(wv), i = Math.min(lv, 8) - 1, cols = P.COLS[i], rows = P.ROWS[i];
   g.wv = wv; g.cols = cols; g.rows = rows; g.kinds = P.KINDS[rows];
   g.F = new Array(cols * rows).fill(1); g.left = cols * rows;
-  g.q = wv % 3 === 0 ? { hp: 8 + 2 * wv, mx: 8 + 2 * wv, wt: 30 } : null;
+  g.q = wv % 2 === 0 ? { hp: Math.min(26, 8 + 2 * lv), mx: Math.min(26, 8 + 2 * lv), wt: 30 } : null;
   if (g.q) g.left++;
   g.sw = 0; g.dn = 40; g.wh = 0; g.D = []; g.W = []; g.rs = null; g.rest = 0; g.oy = -100; g.fvy = 4; g.ox = 0; g.fvx = 0;
 }
@@ -20123,11 +20128,12 @@ function pestFight(ab, T) {
     for (const d of g.D) away += d.st === 0 ? 1 : 0;
     const open = [];
     for (let i = 0; i < g.F.length; i++) if (g.F[i] === 1) open.push(i);
-    if (away < 1 + (g.wv > 2) + (g.wv > 4) + (g.wv > 6) && open.length) {
+    const lv = pestLv(g.wv);
+    if (away < 1 + (lv > 2) + (lv > 4) + (lv > 6) && open.length) {
       const i = open[ri(ab.box, 0, open.length - 1)], k = g.kinds[(i / g.cols) | 0], x = pestSx(g, i), y = pestSy(g, i);
       g.F[i] = 2;
       g.D.push({ i, k, x, y, y0: y, cx: x, a: 0, st: 0, vx: 0, vy: 0, web: k === 1 && g.wv >= 2 && rnd(ab.box) < 0.5 ? 1 : 0, wd: 0 });
-      g.dn = Math.max(16, 44 - 3 * g.wv) + ri(ab.box, 0, 10);
+      g.dn = Math.max(16, 44 - 3 * lv) + ri(ab.box, 0, 10);
     } else g.dn = 10;
   }
   for (let j = g.D.length - 1; j >= 0; j--) {
@@ -20193,7 +20199,7 @@ function pestStep(ab, T) {
   if (!g.rest || g.B.length || sh.vx || g.ev.length) g.dirty = 1;
 }
 
-ALBA.pest = { name: "해충 방제", npc: "bogle", place: "보글연금공방 지하 창고", skill: "alch", par: 14000, mul: 1.1, outfit: ["hat_goggles", "top_alch"], tool: "sprayer", hint: "마우스·손가락·←→로 이동, 분무는 자동! 급강하하는 놈과 거미줄을 피하세요." };
+ALBA.pest = { name: "해충 방제", npc: "bogle", place: "보글연금공방 지하 창고", skill: "alch", par: 5700, mul: 1.1, outfit: ["hat_goggles", "top_alch"], tool: "sprayer", hint: "마우스·손가락·←→로 이동, 분무는 자동! 급강하하는 놈과 거미줄을 피하세요." };
 ALBA_RULES.pest = {
   init(S, p, ab) {
     ab.g = { simAt: ab.runAt, n: 0, wv: 0, rest: 0, sw: 0, ox: 0, oy: 0, fvx: 0, fvy: 0, cols: 0, rows: 0, kinds: [], F: [], left: 0, D: [], q: null, B: [], W: [], rs: null,
@@ -20245,14 +20251,14 @@ ALBA_RULES.pest = {
 //   view: [site n, inlet row, outlet row, 144-char board ("0" empty, hex = open sides N1 E2 S4 W8, "#" rock), hand + next three (hex), ms to open, ms to end, trashed, last site's end]
 //   last site's end: 0 none · 1 cleared · 2 leak · 3 timeout · 4 skipped
 
-Object.assign(ALBA, { pipe: { name: "배관 수리", npc: "popo", place: "마을회관 배관실", skill: "craft", par: 3100, mul: 1, outfit: ["hat_coop_cap","top_coop_vest"], tool: "wrench", hint: "조각을 칸에 놓아 급수구에서 배수구까지 길을 이으세요." } });
+Object.assign(ALBA, { pipe: { name: "배관 수리", npc: "popo", place: "마을회관 배관실", skill: "craft", par: 1100, mul: 1, outfit: ["hat_coop_cap","top_coop_vest"], tool: "wrench", hint: "조각을 칸에 놓아 급수구에서 배수구까지 길을 이으세요." } });
 
 const APIPE = { gap: 800, trashMs: 3000, spare: 0.3, fit: 0.3, rock: 255 };
 const APIPE_DX = [0, 1, 0, -1], APIPE_DY = [-1, 0, 1, 0];   // direction index: 0 N · 1 E · 2 S · 3 W; a piece is the mask of its open sides (1 << dir)
 const APIPE_SPARE = [10, 5, 3, 6, 12, 9, 15];                  // straight ─ │, the four corners, the cross
-const apipeLen = (n) => Math.min(40, 16 + 2 * n);               // cells on the first route
-const apipeRocks = (n) => Math.min(30, 6 + 2 * n);
-const apipeLimit = (n) => Math.max(30, 64 - 3 * n) * 1000;
+const apipeLen = (n) => Math.min(40, 14 + 4 * n);               // cells on the first route (a ~90 s shift holds about 4-5 sites)
+const apipeRocks = (n) => Math.min(30, 6 + 4 * n);
+const apipeLimit = (n) => Math.max(28, 48 - 3 * n) * 1000;
 const apipeDir = (a, b) => { const d = b - a; return d === -12 ? 0 : d === 1 ? 1 : d === 12 ? 2 : 3; };
 
 /** A self-avoiding route of `want` cells (fewer when the board is too tight; at least the shortest) from cell `s` to cell `e` over the empty cells of `b` (`s` and `e` themselves count as empty); null when there is no way. */
@@ -20445,9 +20451,9 @@ ALBA_RULES.pipe = {
 const RHY = {
   ahead: 4000, refresh: 2500, lat: 40, perf: 45, good: 100, wide: 1.5, tailOk: 120, tailEnd: 150, lead: 2000, tail: 1500, sameLane: 240,
   perSec: 7, strayN: 5, strayMs: 2000, lockMs: 1500, missPen: 10, pts: [10, 20], holdPts: 10, ring: 8, bpm: [100, 140],
-  quarterTo: 40000, holdFrom: 50000, chordFrom: 60000, tripleFrom: 180000,
+  quarterTo: 15000, holdFrom: 20000, chordFrom: 25000, tripleFrom: 70000,
 };
-Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 21500, mul: 1.05, outfit: ["hat_beret", "top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 D F J K (← ↓ ↑ →) 또는 터치로 연주하세요. 긴 음표는 끝까지 누르세요!" } });
+Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 9300, mul: 1.05, outfit: ["hat_beret", "top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 D F J K (← ↓ ↑ →) 또는 터치로 연주하세요. 긴 음표는 끝까지 누르세요!" } });
 
 const rhyBpm = (t) => RHY.bpm[0] + (RHY.bpm[1] - RHY.bpm[0]) * clamp(t / ALBA_T.runMs, 0, 1);
 /** Fever widens every window ×1.5. */
@@ -20464,7 +20470,7 @@ function rhyLanes(box, ok, prev, k) {
   }
   return out;
 }
-/** Roll the whole song: quarter notes first, then eighths on a half-filled grid; chords from 60 s, a few holds from 50 s, triples only in the last minute. */
+/** Roll the whole song: quarter notes first, then eighths on a half-filled grid; chords from 25 s, a few holds from 20 s, triples only in the last 20 s. */
 function rhyBuild(box) {
   const T = ALBA_T.runMs, notes = [], free = [0, 0, 0, 0], hEnd = [0, 0, 0, 0];
   let t = RHY.lead, prev = -1;
@@ -20573,7 +20579,7 @@ ALBA_RULES.rhythm = {
   },
 };
 // 일일 아르바이트 · 편의점 아르바이트: a cash register, solo (contract in 66-alba.js; plan docs/design/daily-alba-minigames-2026-11-16.md §3.3).
-// Three customer lanes (a fourth opens for the last 30 s rush). A customer arrives with 1-5 items on the counter, scans nothing herself, and has a
+// Three customer lanes (a fourth opens for the last 15 s rush). A customer arrives with 1-5 items on the counter, scans nothing herself, and has a
 // patience that runs out (she leaves: albaBad(ab, 20)). The clerk taps the items to scan them (any order); when all are scanned the customer's
 // "paid" money is shown and the clerk gives EXACT change by tapping the pad (100 · 500 · 1000 · 5000 won): the change is complete the moment the
 // tray equals paid - total, a tap that overshoots empties the tray (a slip: combo broken, the accuracy bonus lost). Special customers:
@@ -20585,11 +20591,11 @@ ALBA_RULES.rhythm = {
 //   act: {s: lane, i: item} scan · {p: lane, v: 0..3} a coin or bill (pad[v]) · {cl: lane} empty the tray
 //   view: [lane ×4]; a lane is 0 (nobody) or [customer id, kind, item prices (hundreds), scanned bitmask, paid, tray, ms until she leaves, patience ms, changed-her-mind flag]
 
-Object.assign(ALBA, { store: { name: "편의점 아르바이트", npc: "store_kong", place: "다람쥐 잡화점 계산대", skill: "deliver", par: 10500, mul: 1, outfit: ["top_coop_vest"], tool: "scanner", hint: "물건을 눌러 스캔하고, 받은 돈에서 합계를 뺀 거스름돈을 정확히 내주세요." } });
+Object.assign(ALBA, { store: { name: "편의점 아르바이트", npc: "store_kong", place: "다람쥐 잡화점 계산대", skill: "deliver", par: 4000, mul: 1, outfit: ["top_coop_vest"], tool: "scanner", hint: "물건을 눌러 스캔하고, 받은 돈에서 합계를 뺀 거스름돈을 정확히 내주세요." } });
 
 const ASTORE = { pad: [1, 5, 10, 50], lanes: 4, leavePen: 20, groupItems: 12 };
-/** How hard it is at time `t`: climbs with the score (a second level per 550 points) and a little with the minutes, 0..8. */
-const astoreDiff = (ab, t) => clamp(Math.floor(ab.score / 550 + Math.max(0, t - ab.runAt) / 120000), 0, 8);
+/** How hard it is at time `t`: climbs with the score (a level per 280 points) and with the time (two levels over a shift), 0..8. */
+const astoreDiff = (ab, t) => clamp(Math.floor(ab.score / 280 + Math.max(0, t - ab.runAt) / 45000), 0, 8);
 /** The wait before the next customer comes to an empty lane (shorter as it gets harder, and 1.4× faster in the rush). */
 const astoreGap = (ab, t) => Math.round((2800 - 230 * astoreDiff(ab, t) + ri(ab.g.gb, 0, 1800)) / (t >= ab.endAt - ALBA_T.rushMs ? 1.4 : 1));
 
@@ -20675,14 +20681,14 @@ ALBA_RULES.store = {
 // Input: {slot, step, f?} — `step` is the stage the player saw (a stale tap is refused, so a double tap can't skip a step), `f` the filling at stage 1 —
 //        or {c: customer id} to serve. Everything is validated; a refusal costs nothing.
 // view = [open slots, [[stage, filling, quality, ms since the stage began (≤ 0), side ms, z0, z1, z2, z3]…8], [[id, n0, n1, n2, ms patience left, patience ms, group]…], [[filling, quality]…tray], ms to the 8th slot]
-const TAI = { more: 120000, group: 170000, queue: 5, tray: 6, burn: 10, leave: 20, leaveGroup: 40, pts: [30, 60], bonus: 12, cook: [12000, 7000], flip: [26, 14], gold: [12, 5] };
-Object.assign(ALBA, { taiyaki: { name: "붕어빵 노점", npc: "cafe_moka", place: "광장 먹거리 골목", skill: "cook", par: 13800, mul: 1, outfit: ["top_apron_juju"], tool: "spatula", hint: "알맞게 구워졌을 때 뒤집고 꺼내세요." } });
+const TAI = { more: 40000, group: 52000, queue: 5, tray: 6, burn: 10, leave: 20, leaveGroup: 40, pts: [30, 60], bonus: 12, cook: [9000, 5500], flip: [30, 18], gold: [14, 7], groupN: [3, 3, 2], groupWait: 32000 };
+Object.assign(ALBA, { taiyaki: { name: "붕어빵 노점", npc: "cafe_moka", place: "광장 먹거리 골목", skill: "cook", par: 5400, mul: 1, outfit: ["top_apron_juju"], tool: "spatula", hint: "알맞게 구워졌을 때 뒤집고 꺼내세요." } });
 
 const taiLerp = (r, rt) => r[0] + (r[1] - r[0]) * clamp(rt / ALBA_T.runMs, 0, 1);
 function taiCustomer(g, ab, bt, grp) {
   const need = [0, 0, 0], u = bt / ALBA_T.runMs;
   let tot = 1;
-  if (grp) { need[0] = 4; need[1] = 3; need[2] = 3; tot = 10; }
+  if (grp) { need[0] = TAI.groupN[0]; need[1] = TAI.groupN[1]; need[2] = TAI.groupN[2]; tot = 8; }
   else {
     if (!g.bag.length) {   // the order sizes come from a shuffled bag: every shift asks for nearly the same
       g.bag = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2];
@@ -20691,7 +20697,7 @@ function taiCustomer(g, ab, bt, grp) {
     tot = g.bag.pop(); need[ri(ab.box, 0, 2)]++;
     if (tot === 2) need[ri(ab.box, 0, 2)]++;
   }
-  const wait = Math.round(grp ? 68000 : (40000 - 24000 * u) * (tot === 2 ? 1.35 : 1) * (0.9 + 0.2 * rnd(ab.box)));
+  const wait = Math.round(grp ? TAI.groupWait : (28000 - 14000 * u) * (tot === 2 ? 1.35 : 1) * (0.9 + 0.2 * rnd(ab.box)));
   g.cu.push({ id: g.nid++, need, tot, at: bt, until: bt + wait, wait, grp: grp ? 1 : 0 });
 }
 /** The earliest thing that happens by itself: [time, kind, index] — 0 the 8th slot opens · 1 the group order comes · 2 a customer arrives · 3 a slot burns · 4 a customer leaves. */
@@ -20718,7 +20724,7 @@ ALBA_RULES.taiyaki = {
       else if (bk === 1) { g.grp = 1; taiCustomer(g, ab, bt, true); }
       else if (bk === 2) {
         if (g.cu.reduce((n, c) => n + (c.grp ? 0 : 1), 0) < TAI.queue) taiCustomer(g, ab, bt, false);
-        g.na = bt + Math.round(taiLerp([6000, 1700], bt) * (0.7 + 0.6 * rnd(ab.box)));
+        g.na = bt + Math.round(taiLerp([5000, 1600], bt) * (0.7 + 0.6 * rnd(ab.box)));
       } else if (bk === 3) { g.sl[bi].s = 5; albaBad(ab, TAI.burn); }
       else { const i = g.cu.findIndex((c) => c.id === bi); albaBad(ab, g.cu[i].grp ? TAI.leaveGroup : TAI.leave); g.cu.splice(i, 1); }
       albaTouch(ab);
@@ -20765,7 +20771,7 @@ ALBA_RULES.taiyaki = {
         }
       }
       if (!served) return "원하는 맛이 없어요";
-      if (c.tot <= 0) { albaGood(ab, now, Math.round(TAI.bonus * (c.grp ? 10 : 1) * clamp((c.until - rt) / c.wait, 0, 1))); g.cu.splice(g.cu.indexOf(c), 1); }
+      if (c.tot <= 0) { albaGood(ab, now, Math.round(TAI.bonus * (c.grp ? 8 : 1) * clamp((c.until - rt) / c.wait, 0, 1))); g.cu.splice(g.cu.indexOf(c), 1); }
       albaTouch(ab);
       return null;
     }
@@ -20782,7 +20788,7 @@ ALBA_RULES.taiyaki = {
 // `now` (at most 40 per call, a longer stall just skips ahead), so a shift is a function of the seed and of the (time, input) list only. Each step moves a
 // ball in 4 sub-steps, in INTEGER fixed point (1/16 px): a ball is a direction (dx, dy ≈ 64 long) times the level's speed, no floats, no transcendentals.
 // Input is an INTENT, validated hard: { x: 0..240 } the paddle's target (it moves ≤ 10 px per step). Balls launch by themselves.
-// Field 240 × 240; 12 × 9 brick cells of 20 × 8 from y 28 (the wall fills 8 rows, the rush drops it one row); the paddle's top is y 222.
+// Field 240 × 240; 12 × 9 brick cells of 20 × 8 from y 28 (a wall fills 3 rows, then 5, 7 and from the fourth wall 8, standing on the bottom rows; the rush drops it one row); the paddle's top is y 222.
 // ab.g = { simAt, n (steps run), lv (wall 0…), k (per cell: 0 none · 1 plain · 2 bomb · 3 bonus box), h (hits left of a plain brick), it (a bonus box's item),
 //   left (bricks standing), drop (rush: the wall came down a row), balls [{x, y (1/16 px), dx, dy, held}], pad {x, tx, vx, hw}, sv (steps until the ball is served),
 //   I (falling items {x, y, k}), fw fp fs (steps left of wide paddle · piercing · slow ball), ch (bricks hit since the paddle last touched a ball), ev, seq, dirty }
@@ -20793,7 +20799,7 @@ ALBA_RULES.taiyaki = {
 const WALL = { W: 240, H: 240, STEP: 50, SUB: 4, BW: 20, BH: 8, COLS: 12, ROWS: 9, Y0: 28, PY: 222, PSPD: 10, HW: [20, 32], SERVE: 30, RESERVE: 60, FALL: 3,
   TAB: [[-55, 32], [-48, 43], [-38, 52], [-26, 58], [-13, 63], [0, 64], [13, 63], [26, 58], [38, 52], [48, 43], [55, 32]],   // paddle bounce directions, 12° apart (dx, up)
   FX: [240, 160, 200], PTS: { plain: 10, crack: 5, bomb: 20, box: 30, item: 30, wall: 150, lost: 50 } };
-const wallSpeed = (g) => (((40 + 4 * Math.min(g.lv, 4)) * (g.fs > 0 ? 7 : 10)) / 10) | 0;   // 1/16 px per sub-step
+const wallSpeed = (g) => (((40 + 6 * Math.min(g.lv, 3)) * (g.fs > 0 ? 7 : 10)) / 10) | 0;   // 1/16 px per sub-step
 const wallEv = (g, type, x, y, v) => { g.ev.push([++g.seq, type, Math.round(x), Math.round(y), v | 0, g.n]); if (g.ev.length > 8) g.ev.shift(); };
 /** A brick event scores through the combo and a chain bonus (+20 % per brick hit since the paddle last touched a ball, up to +100 %; a piercing ball sweeps for the flat price). */
 function wallScore(ab, T, base, flat) {
@@ -20806,12 +20812,12 @@ function wallScore(ab, T, base, flat) {
 function wallBuild(ab) {
   const g = ab.g, box = ab.box, lv = g.lv, W = WALL, N = W.COLS * W.ROWS, pool = [];
   g.k = new Array(N).fill(0); g.h = new Array(N).fill(0); g.it = new Array(N).fill(0);
-  const ph = Math.min(0.55, 0.1 + 0.08 * lv), t = lv % 5;
-  for (let r = 0; r < 8; r++) {
+  const ph = Math.min(0.55, 0.1 + 0.14 * lv), t = lv % 5, rows = Math.min(8, 3 + 2 * lv);   // a shift holds about two walls: the first is small, the next ones climb fast
+  for (let r = 0; r < rows; r++) {
     for (let c = 0; c < W.COLS; c++) {
-      const on = t === 0 ? true : t === 1 ? c % 4 !== 3 : t === 2 ? c >= (r >> 1) && c <= 11 - (r >> 1) : t === 3 ? (r + c) % 2 === 0 : r === 0 || r === 7 || c < 2 || c > 9 || (r % 2 === 1 && c >= 4 && c <= 7);
+      const on = t === 0 ? true : t === 1 ? c % 4 !== 3 : t === 2 ? c >= (r >> 1) && c <= 11 - (r >> 1) : t === 3 ? (r + c) % 2 === 0 : r === 0 || r === rows - 1 || c < 2 || c > 9 || (r % 2 === 1 && c >= 4 && c <= 7);
       if (!on) continue;
-      const i = (r + g.drop) * W.COLS + c, u = rnd(box);
+      const i = (r + 8 - rows + g.drop) * W.COLS + c, u = rnd(box);   // a small wall stands on the bottom rows, close to the paddle
       g.k[i] = 1; g.h[i] = lv >= 2 && u < ph * 0.3 ? 3 : u < ph ? 2 : 1;
       pool.push(i);
     }
@@ -20823,7 +20829,7 @@ function wallBuild(ab) {
       if (kind === 3) g.it[i] = ri(box, 0, 3);
     }
   };
-  put(2, Math.min(8, 2 + lv)); put(3, lv >= 3 ? 5 : 4);
+  put(2, Math.min(8, 2 + 2 * lv)); put(3, lv >= 3 ? 5 : 4);
   g.left = g.k.reduce((n, v) => n + (v ? 1 : 0), 0);
 }
 /** The rush: the whole wall comes down one row. */
@@ -20874,7 +20880,7 @@ function wallBall(ab, T, b) {
     if (ny < R) { ny = R; b.dy = Math.abs(b.dy); }
     if (b.dy > 0 && b.y + R <= PYQ + 48 && ny + R > PYQ && Math.abs(nx - pad.x * 16) <= pad.hw * 16 + R) {   // the paddle: the angle comes from where the ball lands on it
       let idx = clamp(Math.round(5 + (5 * (nx - pad.x * 16)) / (pad.hw * 16 + R)), 0, 10);
-      if (g.n - g.hn > 160) { idx = ri(ab.box, 0, 10); g.hn = g.n; }   // 8 s without breaking a brick: this bounce goes wherever it likes (no endless loops, no unreachable last brick)
+      if (g.n - g.hn > 100) { idx = ri(ab.box, 0, 10); g.hn = g.n; }   // 5 s without breaking a brick: this bounce goes wherever it likes (no endless loops, no unreachable last brick)
       ny = PYQ - R; b.dx = W.TAB[idx][0]; b.dy = -W.TAB[idx][1]; g.ch = 0;
       wallEv(g, 7, nx / 16, W.PY, 0);
     }
@@ -20955,7 +20961,7 @@ function wallStep(ab, T) {
   if (!g.balls[0].held || g.I.length || pad.vx || g.ev.length) g.dirty = 1;
 }
 
-ALBA.wall = { name: "철거 알바", npc: "kangkang", place: "캉캉대장간 옆 헌 벽", skill: "craft", par: 7200, mul: 1.1, outfit: ["hat_coop_cap", "top_smith"], tool: "chain", hint: "마우스·손가락·←→로 발판을 움직여 철구를 받으세요. 벽돌을 다 부수면 새 벽! 떨어지는 상자는 발판으로 받기." };
+ALBA.wall = { name: "철거 알바", npc: "kangkang", place: "캉캉대장간 옆 헌 벽", skill: "craft", par: 3300, mul: 1.1, outfit: ["hat_coop_cap", "top_smith"], tool: "chain", hint: "마우스·손가락·←→로 발판을 움직여 철구를 받으세요. 벽돌을 다 부수면 새 벽! 떨어지는 상자는 발판으로 받기." };
 ALBA_RULES.wall = {
   init(S, p, ab) {
     const g = ab.g = { simAt: ab.runAt, n: 0, lv: 0, k: [], h: [], it: [], left: 0, drop: 0, balls: [], pad: { x: 120, tx: 120, vx: 0, hw: WALL.HW[0] }, sv: WALL.SERVE, I: [], fw: 0, fp: 0, fs: 0, ch: 0, la: 0, hn: 0, ev: [], seq: 0, dirty: 0 };

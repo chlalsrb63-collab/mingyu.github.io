@@ -81,10 +81,10 @@ const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   const kinds = [0, 0, 0, 0]; a.F.forEach((f) => kinds[f.k]++);
   assert.ok(kinds.every((n) => n > 3), "every kind appears: " + kinds);
   const bomb = (t) => Math.max(...a.F.filter((f) => f.t0 >= t && f.t0 < t + 4000).map((x) => a.F.filter((f) => f.t0 >= x.t0 && f.t0 < x.t0 + 700).length));
-  assert.ok(bomb(120000) >= 7 && bomb(218000) >= 7, "a trash bomb at 120 s and in the last 30 s: " + bomb(120000) + "/" + bomb(218000));
-  const early = a.F.filter((f) => f.t0 < 60000).length, late = a.F.filter((f) => f.t0 >= 180000 && f.t0 < 210000).length;
-  assert.ok(late / 30 > early / 60, "the pace ramps up");
-  assert.ok(a.F.length > 200 && a.F.length < 700, "a shift has a long schedule: " + a.F.length);
+  assert.ok(bomb(45000) >= 7 && bomb(78000) >= 7, "a trash bomb at 45 s and in the last 15 s: " + bomb(45000) + "/" + bomb(78000));
+  const early = a.F.filter((f) => f.t0 < 22500).length, late = a.F.filter((f) => f.t0 >= 60000 && f.t0 < 75000).length;
+  assert.ok(late / 15 > early / 22.5, "the pace ramps up");
+  assert.ok(a.F.length > 90 && a.F.length < 300, "a shift has a long schedule: " + a.F.length);
 }
 
 // (b) bots against the grades
@@ -156,8 +156,8 @@ assert.ok(idl.every((r) => r.score === 0 && r.grade === 0), "an idle bot scores 
     if (now >= na) { na += 250; const f = alive(ab, now - ab.runAt).find((x) => x.k !== 2); if (f && ab.state === "run") hit(f.id); n++; }
   }
   const base = (() => { const S2 = L.setup(); S2.now = now; L.addPlayer(S2, "z", L.hero("빈", { wk: "sword", lvl: 30, migrate: true })); let t = 0; for (let i = 0; i < 2400; i++) { S2.now += 100; const t0 = performance.now(); L.tick(S2, S2.now); L.endTick(S2); L.viewFor(S2, "z"); L.endTick(S2); t += performance.now() - t0; } return t; })();
-  console.log(`cost: tick ${tms.toFixed(1)} ms + viewFor ${vms.toFixed(1)} ms for 240 s (${((tms + vms) / 4).toFixed(1)} ms/min; the empty world alone ${(base / 4).toFixed(1)} ms/min); view sent ${vn}× avg ${Math.round(bytes / vn)} B, max ${vmax} B`);
-  assert.ok((tms + vms) / 4 < 100, "far below 100 ms per simulated minute");
+  console.log(`cost: tick ${tms.toFixed(1)} ms + viewFor ${vms.toFixed(1)} ms for 90 s (${((tms + vms) / 1.5).toFixed(1)} ms/min; the empty world alone ${(base / 4).toFixed(1)} ms/min); view sent ${vn}× avg ${Math.round(bytes / vn)} B, max ${vmax} B`);
+  assert.ok((tms + vms) / 1.5 < 100, "far below 100 ms per simulated minute");
   assert.ok(vmax < 900, "the view stays small: " + vmax);
 }
 

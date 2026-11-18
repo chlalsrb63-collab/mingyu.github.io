@@ -145,8 +145,8 @@ const tile = (ab) => [ab.g.pl.x, ab.g.pl.y, ab.g.pl.tx, ab.g.pl.ty];
   run(b4, 300);
   assert.equal(b4.score, 30 + Math.round(200 * 1.1), "the three waiting bulbs (30), then +200 for the alley (the combo is 1)");
   assert.deepEqual(g4.ev.slice(1, 2), [3]); assert.equal(g4.lv, 1); assert.notEqual(JSON.stringify(g4.w), w0, "the next alley");
-  assert.equal(g4.left, g4.pel.filter((v) => v).length); assert.ok(g4.left > 90); assert.deepEqual(tile(b4), [7, 13, 7, 13]); assert.ok(g4.frz > 0);
-  assert.equal(g4.pel[13 * N + 7], 0, "no bulb under the courier"); assert.equal(g4.pel.filter((v) => v === 2).length, 4, "four big bulbs");
+  assert.equal(g4.left, g4.pel.filter((v) => v).length); assert.ok(g4.left > 40 && g4.left < 100, "the second alley lights the lower rows only"); assert.deepEqual(tile(b4), [7, 13, 7, 13]); assert.ok(g4.frz > 0);
+  assert.equal(g4.pel[13 * N + 7], 0, "no bulb under the courier"); assert.equal(g4.pel.filter((v) => v === 2).length, 2, "two big bulbs (the top ones are in the dark rows)");
   // the end of the shift pays the waiting bulbs
   const b5 = mkAb(7, 1000);
   const g5 = arena(b5, rowCells(13, 1, 13), { none: [[7, 13]], pl: [7, 13], dir: 1 });
@@ -203,7 +203,7 @@ const tile = (ab) => [ab.g.pl.x, ab.g.pl.y, ab.g.pl.tx, ab.g.pl.ty];
   const a3 = mkAb(); run(a3, 1e9); assert.ok(a3.g.simAt > 1e9 - 100 && a3.g.tk < 100 && a3.score >= 0, "a stall jumps ahead");
   const v = R.view(ab, 130);
   assert.equal(v[0], 0); assert.equal(v[1].length, 60); assert.equal(v[2].length, 60); assert.ok(/^[0-9a-f]+$/.test(v[1] + v[2]));
-  assert.equal(v[3].length, 4, "four big bulbs"); assert.equal(v[4].length, 7); assert.equal(v[5].length, 4); assert.ok(v[5].every((s) => s.length === 7));
+  assert.equal(v[3].length, 2, "two big bulbs in the first alley (the top ones sit in the dark rows)"); assert.equal(v[4].length, 7); assert.equal(v[5].length, 4); assert.ok(v[5].every((s) => s.length === 7));
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v, "plain JSON"); assert.ok(JSON.stringify(v).length < 500, `compact (${JSON.stringify(v).length} bytes)`);
   // the maze in the view is the server's (symmetric, 15 rows of 15 bits)
   const rows = v[1].match(/.{4}/g).map((h) => parseInt(h, 16));
@@ -310,10 +310,10 @@ function play(botOf, seed, { name = `점등${seed}`, hook } = {}) {
 const BOTS = {
   perfect: (rng) => pacBot(rng, { margin: 0.6, dread: 7, err: 0, poll: 50 }),
   strong: (rng) => pacBot(rng, { lat: [100, 220], margin: 1.5, dread: 8, err: 0.03 }),
-  human: (rng) => pacBot(rng, { lat: [150, 400], margin: 1.5, dread: 6, err: 0.1 }),
-  casual: (rng) => pacBot(rng, { lat: [300, 700], margin: 1, dread: 4, err: 0.2 }),
+  human: (rng) => pacBot(rng, { lat: [150, 400], margin: 1.5, dread: 6, err: 0.12 }),
+  casual: (rng) => pacBot(rng, { lat: [250, 600], margin: 1.2, dread: 5, err: 0.15 }),
 };
-const SEEDS = [1, 2, 3, 4, 5];
+const SEEDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const avg = (a) => Math.round(a.reduce((x, y) => x + y, 0) / a.length);
 const results = {};
 let viewMax = 0;
@@ -387,7 +387,7 @@ assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
   assert.equal(snap(), done, "after the end the alley is frozen"); assert.equal(ab.score, sc);
 }
 
-// (e) the server's cost: 240 simulated seconds, 10 ticks/s, a turn every 150 ms
+// (e) the server's cost: 90 simulated seconds, 10 ticks/s, a turn every 150 ms
 {
   const s = sim("점등부하", 7), ab = s.p.ab, rng = mulberry(5);
   let ms = 0, views = 0, bytes = 0, vmax = 0, sent = 0;
@@ -398,8 +398,8 @@ assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
     ms += performance.now() - t0; views++;
     if (v.ab && v.ab[7]) { const b = JSON.stringify(v.ab[7]).length; bytes += b; sent++; vmax = Math.max(vmax, b); }
   }
-  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 4.1).toFixed(2)} ms per simulated minute) · ${sent} views, max ${vmax} B, avg ${Math.round(bytes / Math.max(1, sent))} B`);
-  assert.ok(ms / 4.1 < 100, "far below 100 ms per simulated minute");
+  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 1.6).toFixed(2)} ms per simulated minute) · ${sent} views, max ${vmax} B, avg ${Math.round(bytes / Math.max(1, sent))} B`);
+  assert.ok(ms / 1.6 < 100, "far below 100 ms per simulated minute");
   assert.equal(ab.state, "end");
 }
 

@@ -17,8 +17,10 @@ const LAMP = {
   N: 15, STEP: 50, CATCH: 40, UNIT: 120, PSP: 40, SP: [34, 34, 36, 32], FSP: 22, PW: 8000,
   START: [7, 13], HOME: [[7, 5], [5, 3], [9, 3], [7, 1]], CORNER: [[13, 1], [1, 1], [1, 13], [13, 13]], DELAY: [0, 30, 60, 90], FREEZE: 16,
   PEL: 10, GROUP: 5, BIG: 50, CLEAR: 200, EAT: 200, PEN: 30, R2: 0.36, WANT: 40,
+  CUT: [8, 5],   // a ~90 s shift: the first two alleys only light the bottom rows (from this row down), so a first alley takes about a minute
 };
-Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 11000, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자를 피하고, 큰 전구를 켜면 그림자를 잡을 수 있어요!" } });
+const lampEl = (lv) => 2 * lv;   // an alley is two "difficulty levels" at once (loops, scatter, shadow speed)
+Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 7300, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자를 피하고, 큰 전구를 켜면 그림자를 잡을 수 있어요!" } });
 const LAMP_D = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 /** The alley of a level: [wall per tile (1 wall · 0 open)]. Symmetric, connected, loops, no dead ends; more loops (an easier alley) for the first levels. */
@@ -35,7 +37,7 @@ function lampMaze(seed, lv) {
   }
   const walls = [];
   for (let y = 1; y <= 13; y++) for (let x = 1; x <= 7; x++) if (((x + y) & 1) && w[at(x, y)]) walls.push([x, y]);
-  for (let i = Math.max(4, 14 - 2 * lv); i > 0 && walls.length; i--) { const [x, y] = walls.splice(ri(box, 0, walls.length - 1), 1)[0]; open(x, y); }   // loops
+  for (let i = Math.max(4, 14 - 2 * lampEl(lv)); i > 0 && walls.length; i--) { const [x, y] = walls.splice(ri(box, 0, walls.length - 1), 1)[0]; open(x, y); }   // loops
   const deg = (x, y) => (w[at(x, y - 1)] ? 0 : 1) + (w[at(x + 1, y)] ? 0 : 1) + (w[at(x, y + 1)] ? 0 : 1) + (w[at(x - 1, y)] ? 0 : 1);
   for (let pass = 0; pass < 40; pass++) {   // no dead ends: a room with one way out gets a second
     let fixed = 0;
@@ -58,6 +60,7 @@ function lampLevel(g, lv) {
   g.lv = lv; g.w = lampMaze(g.seed, lv);
   g.pel = g.w.map((v) => (v ? 0 : 1));
   for (const [x, y] of LAMP.CORNER) g.pel[y * N + x] = 2;
+  if (lv < LAMP.CUT.length) g.pel.fill(0, 0, LAMP.CUT[lv] * N);
   g.pel[LAMP.START[1] * N + LAMP.START[0]] = 0;
   g.left = g.pel.filter((v) => v).length;
   g.pwUntil = 0; g.on = 0; g.chain = 0; g.dk = -1; g.df = null;
@@ -112,7 +115,7 @@ function lampChoose(g, s, i) {
   for (let d = 0; d < 4; d++) if (d !== back && lampOpen(g, s.x + LAMP_D[d][0], s.y + LAMP_D[d][1])) c.push(d);
   if (!c.length && back >= 0 && lampOpen(g, s.x + LAMP_D[back][0], s.y + LAMP_D[back][1])) c.push(back);
   if (!c.length) { s.tx = s.x; s.ty = s.y; return; }
-  const p = g.pl, pt = p.pr * 2 >= LAMP.UNIT ? [p.tx, p.ty] : [p.x, p.y], sl = Math.max(20, 100 - 20 * g.lv), sc = g.tk % (sl + 300) < sl;   // scatter: the first `sl` steps of every cycle
+  const p = g.pl, pt = p.pr * 2 >= LAMP.UNIT ? [p.tx, p.ty] : [p.x, p.y], sl = Math.max(20, 100 - 20 * lampEl(g.lv)), sc = g.tk % (sl + 300) < sl;   // scatter: the first `sl` steps of every cycle
   let d = c[0];
   if (s.fr) d = c[ri(g.rb, 0, c.length - 1)];
   else if (i === 3 && rnd(g.rb) < 0.4) d = c[ri(g.rb, 0, c.length - 1)];
@@ -125,7 +128,7 @@ function lampChoose(g, s, i) {
   s.dir = d; s.tx = s.x + LAMP_D[d][0]; s.ty = s.y + LAMP_D[d][1];
 }
 /** A shadow's speed (units a step): slower when it flees, quicker alley by alley, never as quick as the courier. */
-const lampSp = (g, s, i) => (s.fr ? LAMP.FSP : Math.min(LAMP.PSP - 2, LAMP.SP[i] + 2 * Math.min(g.lv, 3)));
+const lampSp = (g, s, i) => (s.fr ? LAMP.FSP : Math.min(LAMP.PSP - 2, LAMP.SP[i] + 2 * Math.min(lampEl(g.lv), 3)));
 /** One entity gains `sp` units; every tile it completes runs `arrive` and picks the next (the rest of the step carries over). */
 function lampMove(g, e, sp, choose, arrive) {
   if (e.tx === e.x && e.ty === e.y) { choose(e); if (e.tx === e.x && e.ty === e.y) { e.pr = 0; return; } }

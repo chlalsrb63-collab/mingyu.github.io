@@ -223,9 +223,9 @@ const human = (lo = 400, hi = 700) => (rand) => lo + rand() * (hi - lo);
   // the rush: the fourth lane
   const ab3 = fakeAb(61);
   R.adv(S, p, ab3, T.runMs - T.rushMs - 1); assert.equal(ab3.g.lanes[3].c, null);
-  R.adv(S, p, ab3, T.runMs - T.rushMs + 500); assert.ok(ab3.g.lanes[3].c, "a fourth lane opens for the last 30 s");
+  R.adv(S, p, ab3, T.runMs - T.rushMs + 500); assert.ok(ab3.g.lanes[3].c, "a fourth lane opens for the last 15 s");
   // difficulty climbs with the score and the time
-  const abD = fakeAb(1); abD.score = 0; assert.equal(X.astoreDiff(abD, 0), 0); abD.score = 1e9; assert.equal(X.astoreDiff(abD, 0), 8); abD.score = 0; assert.equal(X.astoreDiff(abD, 240000), 2);
+  const abD = fakeAb(1); abD.score = 0; assert.equal(X.astoreDiff(abD, 0), 0); abD.score = 1e9; assert.equal(X.astoreDiff(abD, 0), 8); abD.score = 0; assert.equal(X.astoreDiff(abD, 90000), 2);
 }
 
 // ── (c) the bots
@@ -310,7 +310,7 @@ const human = (lo = 400, hi = 700) => (rand) => lo + rand() * (hi - lo);
   console.log("store: hostile input ok (junk of every type, 400 random objects, spam, before the start and after the end)");
 }
 
-// ── (e) server cost and (f) wire size: 240 s at 10 ticks/s with a snapshot each tick and a tap every 300 ms
+// ── (e) server cost and (f) wire size: a 90 s shift at 10 ticks/s with a snapshot each tick and a tap every 300 ms
 {
   const run = (withShift) => {
     if (p.ab) act({ t: "ab_close" });
@@ -337,8 +337,8 @@ const human = (lo = 400, hi = 700) => (rand) => lo + rand() * (hi - lo);
   run(false);   // warm up
   const best = (w) => { const a = run(w), b = run(w); return a.ms < b.ms ? a : b; };   // the quieter of two runs
   const base = best(false), full = best(true);
-  const perMin = Math.max(0, full.ms - base.ms) / 4;
-  console.log(`store: the shift costs ${(full.ms - base.ms).toFixed(1)} ms per 240 s = ${perMin.toFixed(2)} ms per simulated minute (the world alone ${base.ms.toFixed(1)} ms); ${full.sent} taps; wire: ${full.snaps} state sends, max ${full.maxBytes} bytes, avg ${(full.bytes / full.snaps).toFixed(0)}`);
+  const perMin = Math.max(0, full.ms - base.ms) / 1.5;
+  console.log(`store: the shift costs ${(full.ms - base.ms).toFixed(1)} ms per 90 s = ${perMin.toFixed(2)} ms per simulated minute (the world alone ${base.ms.toFixed(1)} ms); ${full.sent} taps; wire: ${full.snaps} state sends, max ${full.maxBytes} bytes, avg ${(full.bytes / full.snaps).toFixed(0)}`);
   assert.ok(perMin < 20, "the shift costs far less than 100 ms per simulated minute");
   assert.ok(full.maxBytes < 700, "the game state on the wire stays small");
   assert.ok(full.snaps <= full.sent + 120, "the state is sent only when it changed (taps, arrivals, departures)");

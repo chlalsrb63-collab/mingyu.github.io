@@ -6,14 +6,14 @@
 // Input: {slot, step, f?} — `step` is the stage the player saw (a stale tap is refused, so a double tap can't skip a step), `f` the filling at stage 1 —
 //        or {c: customer id} to serve. Everything is validated; a refusal costs nothing.
 // view = [open slots, [[stage, filling, quality, ms since the stage began (≤ 0), side ms, z0, z1, z2, z3]…8], [[id, n0, n1, n2, ms patience left, patience ms, group]…], [[filling, quality]…tray], ms to the 8th slot]
-const TAI = { more: 120000, group: 170000, queue: 5, tray: 6, burn: 10, leave: 20, leaveGroup: 40, pts: [30, 60], bonus: 12, cook: [12000, 7000], flip: [26, 14], gold: [12, 5] };
-Object.assign(ALBA, { taiyaki: { name: "붕어빵 노점", npc: "cafe_moka", place: "광장 먹거리 골목", skill: "cook", par: 13800, mul: 1, outfit: ["top_apron_juju"], tool: "spatula", hint: "알맞게 구워졌을 때 뒤집고 꺼내세요." } });
+const TAI = { more: 40000, group: 52000, queue: 5, tray: 6, burn: 10, leave: 20, leaveGroup: 40, pts: [30, 60], bonus: 12, cook: [9000, 5500], flip: [30, 18], gold: [14, 7], groupN: [3, 3, 2], groupWait: 32000 };
+Object.assign(ALBA, { taiyaki: { name: "붕어빵 노점", npc: "cafe_moka", place: "광장 먹거리 골목", skill: "cook", par: 5400, mul: 1, outfit: ["top_apron_juju"], tool: "spatula", hint: "알맞게 구워졌을 때 뒤집고 꺼내세요." } });
 
 const taiLerp = (r, rt) => r[0] + (r[1] - r[0]) * clamp(rt / ALBA_T.runMs, 0, 1);
 function taiCustomer(g, ab, bt, grp) {
   const need = [0, 0, 0], u = bt / ALBA_T.runMs;
   let tot = 1;
-  if (grp) { need[0] = 4; need[1] = 3; need[2] = 3; tot = 10; }
+  if (grp) { need[0] = TAI.groupN[0]; need[1] = TAI.groupN[1]; need[2] = TAI.groupN[2]; tot = 8; }
   else {
     if (!g.bag.length) {   // the order sizes come from a shuffled bag: every shift asks for nearly the same
       g.bag = [1, 1, 1, 1, 1, 1, 1, 2, 2, 2];
@@ -22,7 +22,7 @@ function taiCustomer(g, ab, bt, grp) {
     tot = g.bag.pop(); need[ri(ab.box, 0, 2)]++;
     if (tot === 2) need[ri(ab.box, 0, 2)]++;
   }
-  const wait = Math.round(grp ? 68000 : (40000 - 24000 * u) * (tot === 2 ? 1.35 : 1) * (0.9 + 0.2 * rnd(ab.box)));
+  const wait = Math.round(grp ? TAI.groupWait : (28000 - 14000 * u) * (tot === 2 ? 1.35 : 1) * (0.9 + 0.2 * rnd(ab.box)));
   g.cu.push({ id: g.nid++, need, tot, at: bt, until: bt + wait, wait, grp: grp ? 1 : 0 });
 }
 /** The earliest thing that happens by itself: [time, kind, index] — 0 the 8th slot opens · 1 the group order comes · 2 a customer arrives · 3 a slot burns · 4 a customer leaves. */
@@ -49,7 +49,7 @@ ALBA_RULES.taiyaki = {
       else if (bk === 1) { g.grp = 1; taiCustomer(g, ab, bt, true); }
       else if (bk === 2) {
         if (g.cu.reduce((n, c) => n + (c.grp ? 0 : 1), 0) < TAI.queue) taiCustomer(g, ab, bt, false);
-        g.na = bt + Math.round(taiLerp([6000, 1700], bt) * (0.7 + 0.6 * rnd(ab.box)));
+        g.na = bt + Math.round(taiLerp([5000, 1600], bt) * (0.7 + 0.6 * rnd(ab.box)));
       } else if (bk === 3) { g.sl[bi].s = 5; albaBad(ab, TAI.burn); }
       else { const i = g.cu.findIndex((c) => c.id === bi); albaBad(ab, g.cu[i].grp ? TAI.leaveGroup : TAI.leave); g.cu.splice(i, 1); }
       albaTouch(ab);
@@ -96,7 +96,7 @@ ALBA_RULES.taiyaki = {
         }
       }
       if (!served) return "원하는 맛이 없어요";
-      if (c.tot <= 0) { albaGood(ab, now, Math.round(TAI.bonus * (c.grp ? 10 : 1) * clamp((c.until - rt) / c.wait, 0, 1))); g.cu.splice(g.cu.indexOf(c), 1); }
+      if (c.tot <= 0) { albaGood(ab, now, Math.round(TAI.bonus * (c.grp ? 8 : 1) * clamp((c.until - rt) / c.wait, 0, 1))); g.cu.splice(g.cu.indexOf(c), 1); }
       albaTouch(ab);
       return null;
     }
