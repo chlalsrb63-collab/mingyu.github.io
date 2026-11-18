@@ -166,6 +166,16 @@ function initDepth() {
     Sound.play("ui");
   });
 }
+/** 스킬 이펙트 투명도: 0–60 % see-through (scene_fx.js setFxAlpha); danger marks stay solid. */
+function initFxAlpha() {
+  const inp = $("#opt-fxa"), out = $("#opt-fxa-v");
+  if (!inp) return;
+  const apply = () => { const v = +inp.value; S3.setFxAlpha(1 - v / 100); out.textContent = v ? `${v}%` : "불투명"; };
+  inp.value = Math.max(0, Math.min(60, +localStorage.getItem("lumentale:fxa") || 0));
+  apply();
+  inp.addEventListener("input", apply);
+  inp.addEventListener("change", () => { localStorage.setItem("lumentale:fxa", inp.value); Sound.play("ui"); });
+}
 /** The small arrow at your feet that shows where your blows and skills go; on unless turned off. */
 function setAimArrow(on) {
   G.aimArrow = on;
@@ -322,6 +332,7 @@ export function setupInput() {
   setCrt(localStorage.getItem("lumentale:crt") !== "0");
   $("#btn-crt").addEventListener("click", () => { setCrt(!document.body.classList.contains("crt")); Sound.play("ui"); });
   initDepth();
+  initFxAlpha();
   PostFX.bindSetting($("#opt-gfx"), () => Sound.play("ui"));
   setAimArrow(localStorage.getItem("lumentale:aim") !== "0");
   $("#btn-aim").addEventListener("click", () => { setAimArrow(!G.aimArrow); Sound.play("ui"); });
