@@ -108,6 +108,11 @@ const THEMES = Object.keys(X.DIM_THEMES);
       const m = X.dimension(cfg);
       assert.equal(m.theme, "interior");
       assert.equal(m.style, "hanok_raid");
+      if (floor === D.floors) {
+        assert.equal(m.dim.bossK, "jaemaei", "the ritual hall has its own master");
+        assert.ok(X.MOBS[m.dim.bossScaleK], "the boss retains a level-band scale");
+      } else assert.notEqual(m.dim.bossK, "jaemaei");
+      assert.ok(!m.dim.spawns.some((sp) => sp.k === "jaemaei"), "the boss is not in the roaming packs");
       assert.ok(m.dim.loops > 0 && m.dim.path >= D.path, `floor ${floor}, seed ${seed}: loop and long route`);
       assert.ok(m.o.some((r) => r.includes("+")) && m.o.some((r) => r.includes("_")), "lattice and cutaway walls");
       assert.ok(m.g.some((r) => r.includes("e")) && m.g.some((r) => r.includes("l")), "ondol and maru");
@@ -675,7 +680,7 @@ const MONDAY = Date.UTC(2026, 10, 15, 21, 0, 0);
 const at = (S, t) => { now = t; S.now = t; S.last = t; };
 let lastDim = null, lastBoss = null;
 /** The run cleared at once: each floor filled (the way down taken), the final boss killed with `shares` of the damage, everyone at the chest. */
-function quickClear(S, _dim, shares) {
+function quickClear(S, _dim, shares, fight) {
   const pids = Object.keys(shares), by = Object.fromEntries(pids.map((pid) => [pid, 1]));
   const cur = () => S.dims[S.players[pids[0]].map];
   const kill = (dim, mob) => { mob.by = { ...by }; X.killMob(S, dim.rt, mob); };
@@ -689,6 +694,7 @@ function quickClear(S, _dim, shares) {
   assert.equal(dim.state, "boss"); assert.equal(dim.floor, D.floors);
   const boss = lastBoss = rt.mobs.find((m) => m.id === dim.boss);
   for (const pid of pids) { const o = S.players[pid]; o.x = boss.x; o.y = boss.y; o.dead = false; o.hp = X.stats(o).mhp; }
+  if (fight) fight(dim, boss);
   dim.dmg = { ...shares };
   kill(dim, boss);
   assert.equal(dim.state, "clear");
@@ -705,9 +711,35 @@ function quickClear(S, _dim, shares) {
   assert.ok(act(S, "hb", { t: "dim_ready", id: group.rc.id, ok: 1 }).ok);
   assert.equal(a.map, b.map);
   assert.equal(S.dims[a.map].map.style, "hanok_raid");
+  assert.equal(L.defs().dim.raids.find((raid) => raid.k === "hanok").master, "jaemaei");
   step(S);
   assert.equal(last("ha", "dim")[16], "hanok");
-  quickClear(S, S.dims[a.map], { ha: 1, hb: 1 });
+  quickClear(S, S.dims[a.map], { ha: 1, hb: 1 }, (dim, boss) => {
+    assert.equal(boss.k, "jaemaei");
+    assert.equal(L.defs().mobs[boss.k].name, "절망의 친칠라 재매이");
+    const max = X.mobMax(boss), turns = [];
+    const pulse = () => {
+      for (const p of [a, b]) { p.hp = 1e6; p.x = boss.x; p.y = boss.y; }
+      step(S);
+      turns.push(...(last("ha", "ev") || []).filter((e) => e[0] === "bc" && e[1] === boss.id));
+    };
+    const wait = (done) => {
+      for (let j = 0; j < 160 && !done(); j++) pulse();
+      assert.ok(done(), "the boss turn has a bounded wait");
+    };
+    wait(() => turns.some((e) => e[4] === "휘어진 촉수" && e[3] === 1150));
+    boss.hp = Math.round(max * 0.64);
+    wait(() => turns.some((e) => e[4] === "갈비뼈의 고리"));
+    assert.equal(last("ha", "M").find((m) => m[0] === boss.id)[10], 2);
+    boss.hp = Math.round(max * 0.29);
+    wait(() => !!boss.cast);
+    const row = last("ha", "M").find((m) => m[0] === boss.id);
+    assert.deepEqual(row.slice(10, 13), [3, 1, 100], "phase 3 displays the stagger cast");
+    X.dealMob(S, dim.rt, boss, a, Math.ceil(boss.cast.need * boss.hk + 1), 0);
+    assert.ok(!boss.cast && boss.stag > S.now, "the party can break the cast");
+    pulse();
+    assert.ok(turns.some((e) => e[2] === 8), "the stagger break reaches the client");
+  });
   assert.equal(lastDim.map.style, "hanok_raid", "the route remains Hanok to floor 3");
 }
 

@@ -574,10 +574,11 @@ function dimBuild(cfg, seed) {
     elites++;
   });
   const bs = rooms[bossK];
+  const bossScaleK = dimBossKind(art, lv, pool), master = floor === DIM.floors && RAID[raid].master;
   m.dim = {
     rooms: rooms.map(({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt }) => ({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt })),
     start: [st.cx, st.cy], boss: [bs.cx, bs.cy], bossRoom: bossK, startRoom: startK, door, dead, spawns, pool,
-    bossK: dimBossKind(art, lv, pool), path: dS[tileOf(bs)], elites, cap: DIM.cap, links: links.map(([a, b]) => [a, b]),
+    bossK: master || bossScaleK, ...(master ? { bossScaleK } : {}), path: dS[tileOf(bs)], elites, cap: DIM.cap, links: links.map(([a, b]) => [a, b]),
     style, floor, hanok, raid, loops: links.length - (rooms.filter((r) => r.kind !== "vault" && r.kind !== "den").length - 1),
   };
   finalize(m);

@@ -2120,6 +2120,14 @@ export function skillEvent(e, ctx) {
     case "bc": {
       // a scripted boss's turn (56-boss-script.js): 8 its marked cast broken, 7 the cast (or the hard enrage) went off
       const m = (G.mobs && G.mobs.get(e[1])) || entityPos(e[1]), code = e[2], tNow = now();
+      if (m?.k === "jaemaei") {
+        if (e[4] || code === 9) {
+          m.windT = tNow; m.windMs = e[3]; m.windAim = e[4] ? [e[5], e[6]] : null;
+          if (e[4]) text(G, e[4], m.x, m.y, (m.h3 || 1.3) + 0.55, "#f2c7ec", true);
+        } else if (code === 7 || code === 8) {
+          m.windT = 0;
+        }
+      }
       if (m && m.k === "bloomwhale") {
         const diveTele = [...recentTele].reverse().find((o) => tNow - o.at < 120 && o.r >= 55);
         const ph = m.bph || 1;

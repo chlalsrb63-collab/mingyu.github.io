@@ -188,6 +188,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `mobart_e.js` [741] · `mobart_f.js` [264] | Coast/desert/jungle/eastern mountain wildlife, and boss art with phase/dive variants. |
 | `mobart_e.js` [741] · `mobart_f.js` [355] | Coast/desert/jungle/eastern mountain wildlife, and boss art with phase/dive variants. |
 | `mobart_rift_beasts.js` [225] | Pixel models of six local variations from the meadow through the crystal cave |
+| `mobart_jaemaei.js` | Jaemaei's Hanok raid boss model, enraged form and stagger-cast pose. |
 | `mobart_rift_bosses.js` [281] | Pixel models of the six bosses in the weekly arena rotation |
 | `mobart_bosses2_adds.js` [208] | Own pixel models of the bosses-2 adds: 혈루 결정 전갈 (bloodshard), 밤장막 흡혈박쥐 (nightbat), 먹장어 머리 (hagfishhead) |
 | `mobart_named.js` [160] | Own pixel models of four named beasts that once borrowed a tinted sprite: 금 간 뿔 숫양 (meadowram), 검은 왕관 뿌리짐승 (bogcrown), 눈먼 문지기 올빼미 (hollowowl), 얼어붙은 왕릉 파수꾼 (rootwarden) |

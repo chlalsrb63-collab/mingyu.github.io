@@ -280,7 +280,8 @@ function renderKeeper() {
   // the raids by level (defs().dim.raids): the leader picks one; the server checks every member's level
   const raids = dj ? "" : (d.raids || []).map((x) => {
     const ok = !lvl || (lvl >= x.minLv && (!x.maxLv || lvl <= x.maxLv));
-    return `<div class="dim-chal"><span><b>${esc(x.name)}</b> <em>Lv.${x.minLv}${x.maxLv ? `~${x.maxLv}` : "+"} · ${esc((x.floors || []).join(" → "))}</em></span>` +
+    const master = x.master && A.G.defs?.mobs?.[x.master]?.name;
+    return `<div class="dim-chal"><span><b>${esc(x.name)}</b> <em>Lv.${x.minLv}${x.maxLv ? `~${x.maxLv}` : "+"} · ${esc((x.floors || []).join(" → "))}</em>${master ? `<br>최종 보스 <b>${esc(master)}</b>` : ""}</span>` +
       `<button class="btn small${ok ? " gold" : ""}" data-a="raid" data-k="${esc(x.k)}"${!lead || !ok ? " disabled" : ""} title="${ok ? (party.length ? "파티 입장 준비" : "혼자 입장") : "레벨이 맞지 않습니다"}">${lead ? "입장" : "파티장만"}</button></div>`;
   }).join("");
   const pick = dj ? "" : raids + `<div class="dim-rec">최고 기록 ${r[1] >= r[0] ? mmss(r[2]) : r[1] ? `${r[1]}단까지` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음 · 주간 첫 정화 보너스 ${r[4] ? "받음" : "남음"}</div>` +
