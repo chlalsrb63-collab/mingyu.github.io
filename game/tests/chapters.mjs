@@ -28,7 +28,7 @@ function world(sheet, lvl = sheet.lvl) {
     meet(id) { for (const mid of Object.keys(L.atlas().maps)) { const n = L.atlas().maps[mid].npcs.find((o) => o.id === id); if (n) { W.to(mid, n.x, n.y + 1); W.p.y -= 4; return; } } assert.fail(`no NPC ${id}`); },
     kill(k) {
       const p = W.p, rt = L.runtime(S, p.map);
-      const find = () => rt.mobs.find((x) => x.k === k && !x.dead && !x.evt) || rt.mobs.find((x) => x.k === k && !x.evt);
+      const find = () => rt.mobs.find((x) => x.k === k && !x.dead) || rt.mobs.find((x) => x.k === k);
       if (!find()) W.step();
       const m = find();
       assert.ok(m, `a ${k} lives in ${p.map}`);

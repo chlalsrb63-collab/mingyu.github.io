@@ -112,7 +112,7 @@ const WEEK = {
     ["hunt", "제 수준 사냥터의 몬스터 {need}마리 처치", 150],
     ["elite", "정예 몬스터 {need}마리 처치", 8],
     ["fb", "사냥터 우두머리 {need}마리 처치", 1],
-    ["rift", "균열 {need}번 닫기 (레이드던전 · 균열 침공)", 1],
+    ["rift", "균열 {need}번 닫기 (레이드던전)", 1],
     ["gather", "채집 {need}번 하기", 25],
     ["craft", "제작대 · 연금 솥 · 화덕에서 {need}번 만들기", 6],
     ["cook", "요리 {need}번 성공하기", 5],
@@ -131,7 +131,7 @@ function weekRaw(ch) {
   const c = ch.cnt;
   let side = ch.bn | 0;
   for (const id in ch.sq.done) side += ch.sq.done[id] | 0;
-  return { elite: c.elite, fb: c.fb, rift: c.dim + c.evt, gather: c.gat, craft: c.craft, cook: c.cook, job: c.deliver, party: c.party, side, rest: c.rest };
+  return { elite: c.elite, fb: c.fb, rift: c.dim, gather: c.gat, craft: c.craft, cook: c.cook, job: c.deliver, party: c.party, side, rest: c.rest };
 }
 const weekFresh = (ch, w) => ({ w, n: { hunt: 0, fish: 0 }, b: weekRaw(ch), got: [0, 0, 0], seen: 0 });
 /** Progress of the twelve boxes, each 0..need. */

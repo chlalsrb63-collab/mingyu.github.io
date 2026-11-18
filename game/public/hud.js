@@ -39,7 +39,7 @@ import * as Info from "./infocard.js";
 import { fireNear, countItem, talk, stoneNear } from "./actions.js";
 import { tip, showTip, hoverTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn, addChat, toast } from "./windows.js";
 import { openTree, openStats, renderInv, renderChar, renderSkills, trackNew } from "./win_char.js";
-import { renderWarp, renderDaily, renderWeek, renderAchieve, renderCollect, tutCard, eventWidget, castBar, tickDaily } from "./win_world.js";
+import { renderWarp, renderDaily, renderWeek, renderAchieve, renderCollect, tutCard, castBar, tickDaily } from "./win_world.js";
 import { renderShop, renderSmith, renderQuest } from "./win_shop.js";
 import { K } from "./keymap.js";
 import { elementInfo, enchantName, matchups, monsterElementText, statusHud, statusesAt } from "./elements.js";
@@ -356,7 +356,6 @@ function dashTick(t) {
 }
 
 export function hudTick(t) {
-  eventWidget(t);
   skyTick(t);
   castBar(t);
   Board.tick(t);                                    // a parcel's countdown (board.js)

@@ -318,8 +318,6 @@ for (const id of Object.keys(meta)) {
   assert.deepEqual(mm.kinds.slice().sort(), [...new Set(m.spawns.map((sp) => sp.k))].sort(), id + ": the monsters it lists are the ones it places");
   for (const p of m.portals) assert.ok(meta[p.to] && Number.isInteger(p.tx) && maps[p.to].reach[p.ty * maps[p.to].w + p.tx], `${id}: the door to ${p.to} lands on open ground`);
 }
-// a rift opens only where a stone stands
-for (const id of D.event.maps) assert.ok(waypoints[id], id + " (rift map) has a waypoint stone");
 
 // ── maps come alive one at a time: a fresh world has only the town; a door, a waypoint or an event wakes the rest
 {

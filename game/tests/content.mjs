@@ -1,5 +1,5 @@
 // Headless test of the long game — waypoints and the return scroll, daily tasks, achievements and
-// titles, the monster collection, the half-hourly world event, first steps, and old sheets brought
+// titles, the monster collection, the removed world event, first steps, and old sheets brought
 // up to date: node tests/content.mjs
 import assert from "node:assert/strict";
 import * as L from "../src/logic.js";
@@ -27,7 +27,7 @@ function world(name = "모험가", t0 = BASE) {
     to(id, tx, ty) { const p = W.p; L.runtime(S, p.map).n--; p.map = id; L.runtime(S, id).n++; p.x = tx * T + 8; p.y = ty * T + 10; p.mvAt = now; p.sendMap = true; },
     kill(k, el = 0) {
       const p = W.p, rt = L.runtime(S, p.map);
-      const m = rt.mobs.find((x) => x.k === k && !x.dead && !x.evt) || rt.mobs.find((x) => x.k === k && !x.evt);
+      const m = rt.mobs.find((x) => x.k === k && !x.dead) || rt.mobs.find((x) => x.k === k);
       assert.ok(m, `a ${k} lives in ${p.map}`);
       m.dead = false; m.el = el; m.tr = []; m.hp = 1; m.x = p.x + 12; m.y = p.y; m.by = {};
       // a duel: anything else standing within reach of the swing is moved off first
@@ -65,7 +65,6 @@ assert.ok(D.achievements.filter((a) => a.title).length >= 10, "a good many of th
 assert.ok(new Set(D.achievements.map((a) => a.id)).size === D.achievements.length, "achievement ids are unique");
 assert.ok(D.shop.includes("recall"), "the shop sells the return scroll");
 assert.equal(D.items.recall.type, "scroll");
-assert.equal(D.event.every, 30 * 60000); assert.equal(D.event.len, 8 * 60000); assert.equal(D.event.warn, 2 * 60000);
 assert.equal(D.daily.resetKST, 6);
 assert.equal(D.tutorial.length, 8);
 assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indices are persisted)");
@@ -348,91 +347,29 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   assert.ok(chatHas(W, "몬스터 도감을 완성"), "announced to the server");
 }
 
-// ── the world event: called out two minutes ahead, three waves of elites, a boss, rewards by share
+// ── 균열 침공 is gone (owner order): no invasion over a long day, and a sheet that earned its achievements keeps them
 {
-  const slot = Math.ceil(BASE / D.event.every) + 1;
-  const start = slot * D.event.every;
-  const W = world("수호자", start - D.event.warn - 5000);
-  const W2name = "조력자";
-  L.addPlayer(W.S, W.PID, L.newChar("수호자", "warrior", []));
-  const ch2 = L.newChar(W2name, "warrior", []);
-  L.addPlayer(W.S, "pid-" + W2name, ch2);
-  let v = W.step();
-  assert.equal(v.self.evt.phase, "idle");
-  assert.ok(Math.abs(v.self.evt.next - (start - W.now)) < 1000, "the countdown points at the next :00 or :30");
-  const evMap = v.self.evt.nextMap;
-  assert.ok(D.event.maps.includes(evMap));
-  W.now = start - D.event.warn + 100;
-  v = W.step();
-  assert.equal(v.self.evt.phase, "warn", "two minutes ahead it is called out");
-  assert.equal(v.self.evt.map, evMap, "on the map the countdown named");
-  assert.ok(chatHas(W, "2분 뒤"));
-  // rift lines carry their map, so players elsewhere get them in the 시스템 tab only
-  assert.ok((v.chat || []).some((c) => c.sys && c.ev === evMap && c.m.includes("2분 뒤")), "the warning is tagged with its map");
-  W.now = start;
-  v = W.step();
-  assert.equal(v.self.evt.phase, "on");
-  assert.equal(v.self.evt.waves, 1);
-  const rt = L.runtime(W.S, evMap);
-  const wave1 = rt.mobs.filter((m) => m.evt && !m.dead);
-  assert.ok(wave1.length >= 5 && wave1.every((m) => m.el === 1 && m.temp), "the first wave is elites");
-  // both players fight; the hero does most of the work
-  const p = W.p, p2 = W.S.players["pid-" + W2name];
-  const wp = L.runtime(W.S, evMap) && D.waypoints.find((o) => o.id === evMap);
-  assert.ok(wp);
-  for (const q of [p, p2]) { L.runtime(W.S, q.map).n--; q.map = evMap; L.runtime(W.S, evMap).n++; q.x = wave1[0].x - 12; q.y = wave1[0].y; q.sendMap = true; q.ch.lvl = 157; q.stc = null; }
-  const hitAll = (who, list) => {
-    for (const m of list) {
-      if (m.dead) continue;
-      m.x = who.x + 12; m.y = who.y; m.hp = Math.min(m.hp, 50); who.atkAt = 0; who.stag = 0; who.dir = 2; who.aim = 0; who.hp = 1e6;
-      W.S.now = W.now;
-      const a = { t: "atk" };
-      if (L.validateAction(W.S, who.pid, a).ok) L.applyAction(W.S, who.pid, a);
-      W.step(10);
-    }
-  };
-  hitAll(p, wave1.slice(1));
-  hitAll(p2, wave1.slice(0, 1));
-  assert.ok(W.S.evt.dmg[p.pid] > W.S.evt.dmg[p2.pid] && W.S.evt.dmg[p2.pid] > 0, "damage is tallied per player");
-  W.now = start + D.event.waves[1];
-  v = W.step();
-  assert.equal(v.self.evt.waves, 2, "the second wave at 2:30");
-  W.now = start + D.event.waves[2];
-  v = W.step();
-  assert.equal(v.self.evt.waves, 3, "the third at 5:00");
-  W.now = start + D.event.boss;
-  v = W.step();
-  assert.equal(v.self.evt.phase, "boss", "the boss at 6:00");
-  const boss = rt.mobs.find((m) => m.evt && m.el === 2 && !m.dead);
-  assert.ok(boss, "an event boss stands by the waypoint");
-  assert.ok(chatHas(W, "균열 침공의 우두머리"));
-  const g1 = p.ch.gold, g2 = p2.ch.gold;
-  // (the map's own monsters that wandered over step back, so the blow finds the boss)
-  for (const m of rt.mobs) if (m !== boss && !m.dead && Math.abs(m.x - p.x) < 80 && Math.abs(m.y - p.y) < 80) m.dead = true;
-  boss.hp = 1; boss.x = p.x + 12; boss.y = p.y; p.atkAt = 0; p.stag = 0; p.dir = 2; p.aim = 0; p.hp = 1e6;
-  W.S.now = W.now;
-  assert.ok(L.validateAction(W.S, W.PID, { t: "atk" }).ok);
-  L.applyAction(W.S, W.PID, { t: "atk" });
-  v = W.step();
-  assert.equal(v.self.evt.phase, "done", "killing the boss ends the event early");
-  assert.ok(rt.mobs.every((m) => !m.evt || m.dead), "what is left of the waves goes");
-  assert.ok(p.ch.gold - g1 > p2.ch.gold - g2 && p2.ch.gold > g2, "everyone who fought is paid, more for more");
-  assert.equal(p.ch.cnt.evt, 1); assert.equal(p.ch.cnt.evb, 1);
-  assert.ok(p.ch.ach.includes("evt1") && p2.ch.ach.includes("evt1"));
-  assert.ok(Array.isArray(v.self.evt.top) && v.self.evt.top[0][0] === "수호자", "the board shows the top three");
-  assert.ok(chatHas(W, "1위 수호자"));
-  // and the next one: called out before :00/:30 again, on the map the schedule names
-  W.now = start + D.event.every - D.event.warn + 10;
-  v = W.step();
-  assert.equal(v.self.evt.phase, "warn");
-  // the schedule is a pure function of the clock: another server picks the same map
-  const W3 = world("다른서버", start + D.event.every - D.event.warn + 10);
-  L.addPlayer(W3.S, W3.PID, L.newChar("다른서버", "warrior", []));
-  assert.equal(W3.step().self.evt.nextMap, v.self.evt.map);
-  // a server that wakes mid-event joins it
-  const W4 = world("늦잠", start + 60000);
-  L.addPlayer(W4.S, W4.PID, L.newChar("늦잠", "warrior", []));
-  assert.equal(W4.step().self.evt.phase, "on");
+  assert.equal(D.event, undefined, "no event table in defs");
+  const W = world("수호자");
+  const old = L.newChar("수호자", []);
+  old.ach = ["evt1", "evt10"]; old.title = "evt10"; old.cnt.evt = 12; old.cnt.evb = 3;
+  old.cos.own.push("hat_halo", "back_angel"); old.cos.on.hat = "hat_halo";
+  L.addPlayer(W.S, W.PID, old);
+  for (let i = 0; i < 6 * 60; i++) {
+    const v = W.step(60000);   // six hours, a minute at a time: twelve half-hour slots the old event would have opened
+    assert.equal(v.self && v.self.evt, undefined, "no invasion countdown on the wire");
+  }
+  for (const id of Object.keys(W.S.maps)) assert.ok(L.runtime(W.S, id).mobs.every((m) => !m.evt), id + ": no invasion monster");
+  assert.ok(!W.log.some((m) => m.includes("균열 침공")), "nobody is called to an invasion");
+  const me = W.self();
+  assert.ok(me.ach.includes("evt1") && me.ach.includes("evt10") && me.title === "evt10", "an earned invasion achievement and title stay");
+  assert.ok(me.cos.own.includes("hat_halo") && me.cos.on.hat === "hat_halo", "an owned rift cosmetic stays worn");
+  assert.equal(me.cnt.evt, 12, "the old counter is kept");
+  assert.equal(D.achievements.filter((a) => a.gone).map((a) => a.id).join(), "evt1,evt10", "the two are marked gone for the list");
+  const fresh = L.newChar("새내기", []); fresh.cnt.evt = 50;
+  L.addPlayer(W.S, "pid-new", fresh); W.step();
+  assert.ok(!W.S.players["pid-new"].ch.ach.includes("evt1"), "nobody earns them any more");
+  for (const id of ["hat_crown_silver", "hat_halo", "back_angel", "ws_star", "hat_shard"]) assert.equal(D.cos[id].src, "boss", id + " now drops from field bosses and guardians");
 }
 
 // ── first steps
@@ -706,4 +643,4 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   assert.deepEqual(sv.life[0], [1, 0, 50]);
 }
 
-console.log("content ok — waypoints", D.waypoints.length, "achievements", D.achievements.length, "event every", D.event.every / 60000, "min");
+console.log("content ok — waypoints", D.waypoints.length, "achievements", D.achievements.length);

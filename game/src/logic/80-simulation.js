@@ -455,7 +455,6 @@ export function tick(S, now) {
   const dt = clamp(now - (S.last || now), 0, 300) / 1000;
   S.last = now;
   S.now = now;
-  worldEvent(S, now);
   fairWorld(S, now);   // 버드나무 장날 opening, said once in the chat (63-festival.js)
   skyTick(S, now);
   dimTick(S, now);

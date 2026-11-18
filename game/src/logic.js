@@ -8400,7 +8400,7 @@ function newMob(S, k, r, sp) {
  * place when someone first walks in (or an event needs it). `dims` holds runtime instances.
  */
 export function setup() {
-  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, buddies: {}, maps: {}, dims: {}, parties: {}, chat: [], n: 0, evt: null };
+  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, buddies: {}, maps: {}, dims: {}, parties: {}, chat: [], n: 0 };
   runtime(S, START.map);
   return S;
 }
@@ -10127,7 +10127,6 @@ function dealMob(S, rt, mob, p, dmg, crit, cue, parts, combat = {}) {
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
   if (mob.dim) dimDealt(S, rt, mob, p, dmg);   // the carry guard's damage share (64-dim.js)
   if (mob.cast) bsDealt(S, rt, mob, dmg);      // a scripted boss's stagger gauge (56-boss-script.js)
-  if (mob.evt && S.evt && (S.evt.phase === "on" || S.evt.phase === "boss")) S.evt.dmg[p.pid] = (S.evt.dmg[p.pid] || 0) + dmg;
   if (!mob.tgt) mob.tgt = p.pid;
   damageEvent(rt, mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0, cue, parts);
   if (mob.hp > 0) return false;
@@ -10306,7 +10305,7 @@ function killMob(S, rt, mob) {
   if (d.boss || el === 2) dmgBoard(S, rt, hitters);
   mob.by = {};
   const xp = d.xp * ELITE[el].xp;
-  const rareBoss = !mob.evt && !mob.story && !mob.guard
+  const rareBoss = !mob.story && !mob.guard
     && (mob.dim ? S.dims[rt.id]?.boss === mob.id : d.boss || (el === 2 && mob.temp));
   for (const p of looters) {
     const ch = p.ch;
@@ -10343,9 +10342,9 @@ function killMob(S, rt, mob) {
     }
     sqProgress(S, p, "kill", (g) => g.mob === mob.k);
     sqFind(S, p, mob.k);
-    if (el === 1 || (el === 2 && mob.temp && !mob.evt && !mob.story && !mob.dim)) sqProgress(S, p, el === 1 ? "elite" : "fb", (g) => (!g.map || g.map === rt.id) && (!g.mob || g.mob === mob.k));
+    if (el === 1 || (el === 2 && mob.temp && !mob.story && !mob.dim)) sqProgress(S, p, el === 1 ? "elite" : "fb", (g) => (!g.map || g.map === rt.id) && (!g.mob || g.mob === mob.k));
     if (el === 1) ch.cnt.elite++;
-    else if (el === 2) { if (mob.evt) ch.cnt.evb++; else if (mob.temp) ch.cnt.fb++; else ch.cnt.guard++; }
+    else if (el === 2) { if (mob.temp) ch.cnt.fb++; else ch.cnt.guard++; }
     if (n >= 2) ch.cnt.party++;
     dailyProg(S, p, "kill", mob.k);
     if (ch.daily.tasks[0].kind === "party" && nearby.some((o) => o !== p && looters.has(o))) dailyProg(S, p, "party");
@@ -10358,15 +10357,14 @@ function killMob(S, rt, mob) {
     // a field boss, a guardian or a boss may leave something to wear
     if ((el === 2 || d.boss) && cosRoll(S, p, "boss") < COS_BOSS) cosFrom(S, p, "boss", d.name);
     if (rareBoss) cosBossRare(S, p, d.name);
-    if (el === 2 && mob.temp && !mob.evt && !mob.story && !mob.dim) fbLoot(S, rt, p);   // a field boss (64-dim.js LOOT_X)
+    if (el === 2 && mob.temp && !mob.story && !mob.dim) fbLoot(S, rt, p);   // a field boss (64-dim.js LOOT_X)
   }
   if (d.boss && top) sys(S, `${top.ch.name}님의 일행이 ${d.name}${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   if (el === 2) {
-    if (mob.evt) { if (S.evt) S.evt.bossDead = true; }
-    else if (mob.story) storyClear(S, rt, mob);
+    if (mob.story) storyClear(S, rt, mob);
     // a field boss is back at its spot FB_RESP after it falls; now and then it leaves its trophy (67-trophies.js)
     else if (mob.temp) { rt.fb = 0; rt.fbAt = S.now + FB_RESP; fbTrophy(S, looters, mob.k); }
-    if (top && !mob.story) sys(S, `${top.ch.name}님의 일행이 ${mapOfS(S, rt.id).name}의 ${mob.evt ? "침공 우두머리" : mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
+    if (top && !mob.story) sys(S, `${top.ch.name}님의 일행이 ${mapOfS(S, rt.id).name}의 ${mob.temp ? "우두머리" : "수문장"} [${d.name}]${pp(d.name, "을를")} 쓰러뜨렸습니다!`);
   }
   // some monsters go off where they fall, and so does any elite with the trait
   if (d.burst || has(mob, "burst")) {
@@ -10383,7 +10381,7 @@ function killMob(S, rt, mob) {
  */
 function blameOf(mob) {
   const d = MOBS[mob.k];
-  const rank = d.boss ? "보스 " : mob.el === 2 ? (mob.evt ? "침공 우두머리 " : mob.temp ? "우두머리 " : "수문장 ") : mob.el ? "정예 " : "";
+  const rank = d.boss ? "보스 " : mob.el === 2 ? (mob.temp ? "우두머리 " : "수문장 ") : mob.el ? "정예 " : "";
   return { by: `Lv.${shownLv(d.lv)} ${rank}${d.name}`, lv: shownLv(d.lv), el: d.boss ? 3 : mob.el | 0 };
 }
 function hurtPlayer(S, rt, p, raw, mob, type) {
@@ -14841,8 +14839,9 @@ const ACH = [
   ["cloakbat", "사냥", "장막을 걷은 자", "밤장막 박쥐군주 처치 (주간 토벌)", 40, (c) => (c.mk.cloakbat || 0) >= 1, "장막을 걷은 자", [["crit", 2]]],
   ["mvp10", "사냥", "선봉장", "보스·수문장 피해 기여도 1위 10번", 30, (c) => c.cnt.mvp >= 10, "선봉장"],
   ["bloomwhale", "사냥", "고래의 장송곡", "꽃무덤 고래 처치 (주간 토벌)", 60, (c) => (c.mk.bloomwhale || 0) >= 1, "고래의 장송곡", [["atkp", 4], ["hp", 4]]],
-  ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, (c) => c.cnt.evt >= 1],
-  ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.cnt.evt >= 10, "균열 수호자", [["def", 3]]],
+  // the retired 균열 침공 (removed by owner order): kept so holders keep the achievement and title; nobody earns them now (gone)
+  ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, () => false, null, null, 1],
+  ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, () => false, "균열 수호자", [["def", 3]], 1],
   ["dim1", "사냥", "차원의 틈", "레이드던전 정화", 10, (c) => dimCnt(c).dim >= 1],
   ["dim10", "사냥", "차원 탐험가", "레이드던전 10번 정화", 25, (c) => dimCnt(c).dim >= 10, "차원 탐험가", [["mf", 5]]],
   ["wp3", "탐험", "이동의 돌", "이동의 돌 3개 깨우기", 5, (c) => wpCount(c) >= 3],
@@ -14901,7 +14900,7 @@ const ACH = [
   ["job2", "성장", "두 갈래 길", "두 무기의 길(혼합 직업)로 전직하기", 20, (c) => !!JOBS[c.job] && JOBS[c.job].kind === "hybrid"],
   ["daily1", "성장", "성실한 하루", "토벌 의뢰 보상 상자 받기", 5, (c) => c.cnt.daily >= 1],
   ["daily30", "성장", "성실한 모험가", "토벌 의뢰 보상 상자 30번 받기", 20, (c) => c.cnt.daily >= 30, "성실한 모험가", [["gold", 10]]],
-].map(([id, cat, name, desc, pts, test, title, bonus]) => ({ id, cat, name, desc, pts, test, title: title || null, bonus: bonus || null }));
+].map(([id, cat, name, desc, pts, test, title, bonus, gone]) => ({ id, cat, name, desc, pts, test, title: title || null, bonus: bonus || null, gone: !!gone }));
 const ACH_BY = Object.fromEntries(ACH.map((a) => [a.id, a]));
 /** Every mastery star a character has earned. */
 function stars(ch) {
@@ -14959,108 +14958,6 @@ function registered(S, p, k) {
   }
 }
 const STAT_WORD = { hp: "최대 HP", xp: "경험치", def: "방어력", crit: "치명타", mf: "아이템 발견", atk: "공격력", atkp: "공격력" };
-
-// ── the world event: a rift opens in one hunting ground every half hour
-const EVT = { every: 1800000, warn: 120000, len: 480000, waves: [0, 150000, 300000], boss: 360000 };
-/** Where a rift can open: every hunting ground with a waypoint stone, a field boss and monsters of its own (never an instance). */
-const EVT_MAPS = Object.keys(MAP_META).filter((id) => !MAP_META[id].safe && MAP_META[id].wp && FIELD_BOSS[id] && COL_MOBS[id]);
-const evtMap = (slot) => EVT_MAPS[(Math.imul(slot, 2654435761) >>> 0) % EVT_MAPS.length];
-/** A rift line in the chat, tagged with its map: players elsewhere see it in the 시스템 tab only. */
-function sysEvt(S, map, m) { S.chat.push({ sys: 1, m, ev: map }); }
-const newEvt = (slot) => ({ slot, map: evtMap(slot), phase: "warn", start: slot * EVT.every, end: slot * EVT.every + EVT.len, waves: 0, boss: 0, bossDead: false, dmg: {}, top: null });
-function worldEvent(S, now) {
-  const slot = Math.floor(now / EVT.every);
-  let e = S.evt;
-  if (e && (e.phase === "on" || e.phase === "boss")) { runEvent(S, e, now); return; }
-  // the next one is called out two minutes ahead
-  const next = slot + 1;
-  if (now >= next * EVT.every - EVT.warn && (!e || e.slot !== next)) {
-    S.evt = e = newEvt(next);
-    sysEvt(S, e.map, `2분 뒤 [${MAP_META[e.map].name}]에 균열 침공이 시작됩니다! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁으로 모이세요 — 깨운 돌이라면 어느 이동의 돌에서든 건너갈 수 있습니다.`);
-    dirtyAll(S);
-    return;
-  }
-  if (e && e.phase === "warn" && now >= e.start) { beginEvent(S, e); return; }
-  // a channel that wakes in the middle of an event's window joins it late
-  if (slot > 0 && (!e || e.slot < slot) && now >= slot * EVT.every && now < slot * EVT.every + EVT.len - 60000) { S.evt = e = newEvt(slot); beginEvent(S, e); }
-}
-function beginEvent(S, e) {
-  e.phase = "on";
-  sysEvt(S, e.map, `균열 침공 시작! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁에 정예 몬스터가 몰려옵니다. (8분)`);
-  dirtyAll(S);
-  runEvent(S, e, S.now);
-}
-function runEvent(S, e, now) {
-  while (e.waves < EVT.waves.length && now >= e.start + EVT.waves[e.waves]) { e.waves++; spawnWave(S, e); }
-  if (!e.boss && now >= e.start + EVT.boss) spawnEvtBoss(S, e);
-  if (now >= e.end || e.bossDead) endEvent(S, e);
-}
-/**
- * Which stone an event gathers at: the middle one (중턱) on a big ground, so the entrance plaza
- * stays safe for newcomers; the only one elsewhere.
- */
-const evtStone = (id) => ((MAP_META[id] && MAP_META[id].wpn) >= 2 ? 1 : 0);
-/** Where an event's monsters gather: beside that stone. */
-const evtSpot = (id) => { const w = stonesOf(mapOf(id))[evtStone(id)] || wpOf(id); return [w.ax, w.ay]; };
-function spawnWave(S, e) {
-  const m = mapOf(e.map), rt = runtime(S, e.map), [cx, cy] = evtSpot(e.map);
-  const kinds = COL_MOBS[e.map].filter(k => !MOBS[k].bonusOptional).sort((a, b) => MOBS[b].lv - MOBS[a].lv).slice(0, 2);
-  const n = clamp(5 + 2 * rt.n, 5, 14);
-  for (let i = 0; i < n; i++) {
-    const mob = newMob(S, kinds[i % kinds.length], [Math.max(2, cx - 6), Math.max(2, cy - 6), Math.min(m.w - 3, cx + 6), Math.min(m.h - 3, cy + 6)]);
-    placeMob(S, m, mob);
-    if (!mob.x) { mob.x = mob.hx = mob.wx = cx * T + 8; mob.y = mob.hy = mob.wy = cy * T + 10; }
-    mob.el = 1; mob.tr = rollTraits(S, 1); mob.hp = mobMax(mob); mob.temp = true; mob.evt = true;
-    rt.mobs.push(mob);
-    rt.ev.push(["r", mob.id]);
-  }
-  sysEvt(S, e.map, `[${m.name}] 균열 침공 ${e.waves}파 — 정예 ${n}마리가 나타났습니다!`);
-  dirtyAll(S);
-}
-function spawnEvtBoss(S, e) {
-  // the rift's lord gathers by the stone too, but never on it or on a signpost
-  const m = mapOf(e.map), rt = runtime(S, e.map), [cx, cy] = bossSpot(S, m, ...evtSpot(e.map), FB_CLEAR, 0);
-  const mob = newMob(S, FIELD_BOSS[e.map], [0, 0, 0, 0]);
-  mob.el = 2; mob.temp = true; mob.evt = true; mob.tr = rollTraits(S, 2);
-  mob.x = mob.hx = mob.wx = cx * T + 8; mob.y = mob.hy = mob.wy = cy * T + 10;
-  mob.hp = mobMax(mob);
-  mob.castAt = S.now + 4000;
-  rt.mobs.push(mob);
-  rt.ev.push(["r", mob.id]);
-  e.boss = mob.id; e.phase = "boss";
-  sysEvt(S, e.map, `[${m.name}] 균열 침공의 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
-  dirtyAll(S);
-}
-function endEvent(S, e) {
-  const rt = runtime(S, e.map);
-  for (const mob of rt.mobs) if (mob.evt && !mob.dead) { mob.dead = true; rt.ev.push(["k", mob.id]); }
-  const list = Object.entries(e.dmg).filter(([pid]) => S.players[pid]).sort((a, b) => b[1] - a[1]);
-  const total = list.reduce((n, [, d]) => n + d, 0) || 1;
-  const hi = MAP_META[e.map].band ? MAP_META[e.map].band[1] : 10;
-  list.forEach(([pid, d], rank) => {
-    const p = S.players[pid], share = d / total;
-    const lv = rewardTier(p.ch);
-    payout(S, p, {
-      gold: Math.round(40 * hi * (0.5 + 2 * share)), xp: Math.round(tierXp(lv) * (0.06 + 0.3 * share)),
-      stone: 1 + (share >= 0.25 ? 1 : 0) + (rank === 0 ? 2 : 0), rune: rank < 3, gear: rank === 0 ? 1 : 0, gearQ: 2,
-    });
-    p.ch.cnt.evt++;
-    if (rank === 0 || (rank < 3 && cosRoll(S, p, "rift") < COS_RIFT_TOP3)) cosFrom(S, p, "rift", "균열 침공");
-    toast(p, `균열 침공 보상 — 기여도 ${Math.round(share * 100)}%${rank < 3 ? ` (${rank + 1}위)` : ""}`);
-    checkAch(S, p);
-  });
-  e.top = list.slice(0, 3).map(([pid, d]) => [S.players[pid].ch.name, d]);
-  e.phase = "done";
-  sysEvt(S, e.map, list.length ? `균열 침공 종료! ${e.top.map(([n], i) => `${i + 1}위 ${n}`).join(", ")}` : "균열 침공이 끝났습니다. 아무도 막지 못했습니다…");
-  dirtyAll(S);
-}
-function evtView(S, p) {
-  const e = S.evt, now = S.now, next = Math.floor(now / EVT.every) + 1;
-  // st / nextSt: the stone (index) the event gathers at, for the warp shortcut
-  const out = { phase: e ? e.phase : "idle", next: next * EVT.every - now, nextMap: evtMap(next), nextSt: evtStone(evtMap(next)) };
-  if (e) Object.assign(out, { map: e.map, st: evtStone(e.map), name: stoneName(e.map, evtStone(e.map)), in: e.start - now, left: e.end - now, waves: e.waves, mine: e.dmg[p.pid] || 0, top: e.top });
-  return out;
-}
 
 // ── first steps: a short tutorial chain beside the main quests
 const TUT = [
@@ -16274,7 +16171,7 @@ const WEEK = {
     ["hunt", "제 수준 사냥터의 몬스터 {need}마리 처치", 150],
     ["elite", "정예 몬스터 {need}마리 처치", 8],
     ["fb", "사냥터 우두머리 {need}마리 처치", 1],
-    ["rift", "균열 {need}번 닫기 (레이드던전 · 균열 침공)", 1],
+    ["rift", "균열 {need}번 닫기 (레이드던전)", 1],
     ["gather", "채집 {need}번 하기", 25],
     ["craft", "제작대 · 연금 솥 · 화덕에서 {need}번 만들기", 6],
     ["cook", "요리 {need}번 성공하기", 5],
@@ -16293,7 +16190,7 @@ function weekRaw(ch) {
   const c = ch.cnt;
   let side = ch.bn | 0;
   for (const id in ch.sq.done) side += ch.sq.done[id] | 0;
-  return { elite: c.elite, fb: c.fb, rift: c.dim + c.evt, gather: c.gat, craft: c.craft, cook: c.cook, job: c.deliver, party: c.party, side, rest: c.rest };
+  return { elite: c.elite, fb: c.fb, rift: c.dim, gather: c.gat, craft: c.craft, cook: c.cook, job: c.deliver, party: c.party, side, rest: c.rest };
 }
 const weekFresh = (ch, w) => ({ w, n: { hunt: 0, fish: 0 }, b: weekRaw(ch), got: [0, 0, 0], seen: 0 });
 /** Progress of the twelve boxes, each 0..need. */
@@ -17884,7 +17781,7 @@ function homeDefs() {
 // character looks. They are not bag items: each character keeps a wardrobe of
 // everything it owns (`ch.cos.own`) and wears one per slot (`ch.cos.on`). Some are
 // sold at the costume shop in town; the rest only come from opening chests,
-// field bosses and guardians, the daily reward box, the rift invasion and
+// field bosses and guardians, the daily reward box and
 // achievements. The art lives in the browser (public/wardrobe.js, weapons.js),
 // keyed by the same ids.
 
@@ -17893,7 +17790,7 @@ const COS_SLOTS = ["hat", "top", "back", "face", "wskin"];
 const COS_SLOT_NAME = { hat: "모자", top: "상의", back: "등", face: "얼굴", wskin: "무기 외형" };
 /**
  * id → [wire code, slot, name, rarity 0–4, source, price or achievement id, description].
- * Sources: shop (sold for `price` gold), token (Willow tokens), chest, boss, rareBoss, daily, rift, ach (earned with achievement `price`: the
+ * Sources: shop (sold for `price` gold), token (Willow tokens), chest, boss, rareBoss, daily, ach (earned with achievement `price`: the
  * Lv-50 life masters' outfits and the NPCs' 가족 gifts are these), quest (a chance on every quest hand-in) and weekly
  * (a chance with a boss challenge's weekly big reward), sew (루루 sews a story keepsake, KEEP_SEW) and fair (장꾼 다래's
  * seasonal stall for 장날 토큰; 63-festival.js FAIR_SHOP holds the price). An optional ninth
@@ -17909,7 +17806,7 @@ const COSMETICS = Object.fromEntries([
   ["hat_wizard", 6, "hat", "마법사 모자", 1, "shop", 3000, "끝이 꺾인 보랏빛 고깔모자."],
   ["hat_wizard_night", 7, "hat", "밤하늘 마법사 모자", 2, "boss", 0, "우두머리가 쓰던 별빛 고깔모자."],
   ["hat_crown", 8, "hat", "황금 왕관", 3, "ach", "boss", "균열의 군주를 쓰러뜨린 자의 왕관."],
-  ["hat_crown_silver", 9, "hat", "은빛 왕관", 2, "rift", 0, "균열 침공을 막아 낸 보답."],
+  ["hat_crown_silver", 9, "hat", "은빛 왕관", 2, "boss", 0, "균열을 막아 낸 보답."],
   ["hat_wreath_pink", 10, "hat", "벚꽃 화관", 1, "shop", 2000, "분홍 꽃을 엮은 화관."],
   ["hat_wreath_sun", 11, "hat", "해바라기 화관", 1, "daily", 0, "토벌 의뢰 보상 상자에서 나온 화관."],
   ["hat_bow_red", 12, "hat", "빨간 리본", 0, "shop", 1000, "머리 위의 커다란 리본."],
@@ -17920,7 +17817,7 @@ const COSMETICS = Object.fromEntries([
   ["hat_santa", 17, "hat", "산타 모자", 1, "daily", 0, "방울이 달랑거리는 빨간 모자."],
   ["hat_helm", 18, "hat", "기사 투구", 2, "ach", "elite100", "정예 사냥꾼에게 주어지는 깃털 투구."],
   ["hat_frog", 19, "hat", "개구리 모자", 1, "ach", "fish10", "낚시꾼들 사이에서 유행하는 모자."],
-  ["hat_halo", 20, "hat", "천사의 고리", 3, "rift", 0, "머리 위에 떠 있는 빛의 고리."],
+  ["hat_halo", 20, "hat", "천사의 고리", 3, "boss", 0, "머리 위에 떠 있는 빛의 고리."],
   ["hat_horns", 21, "hat", "꼬마 악마 뿔", 2, "boss", 0, "귀여운 척하는 작은 뿔."],
   ["hat_chef", 22, "hat", "요리사 모자", 1, "ach", "cook10", "요리를 열 번 성공한 자의 모자."],
   ["hat_beret", 23, "hat", "빨간 베레모", 0, "shop", 1500, "비스듬히 눌러 쓴 베레모."],
@@ -17941,7 +17838,7 @@ const COSMETICS = Object.fromEntries([
   ["back_cape_red", 38, "back", "붉은 망토", 1, "shop", 4000, "걸음마다 펄럭이는 망토."],
   ["back_cape_blue", 39, "back", "푸른 망토", 1, "shop", 4000, "걸음마다 펄럭이는 푸른 망토."],
   ["back_cape_black", 40, "back", "칠흑 망토", 2, "boss", 0, "수문장이 두르던 검은 망토."],
-  ["back_angel", 41, "back", "천사 날개", 3, "rift", 0, "균열을 막아 낸 자에게 돋는 날개."],
+  ["back_angel", 41, "back", "천사 날개", 3, "boss", 0, "균열을 막아 낸 자에게 돋는 날개."],
   ["back_bat", 42, "back", "박쥐 날개", 2, "chest", 0, "보물 상자에 숨어 있던 날개."],
   ["back_fairy", 43, "back", "요정 날개", 2, "daily", 0, "반짝이는 작은 날개."],
   ["back_pack", 44, "back", "모험가 배낭", 0, "shop", 1500, "뭐든 들어갈 것 같은 가죽 배낭."],
@@ -17959,7 +17856,7 @@ const COSMETICS = Object.fromEntries([
   ["ws_frost", 56, "wskin", "서리 무기 외형", 2, "boss", 0, "날 끝에 얼음 가시가 돋는다."],
   ["ws_candy", 57, "wskin", "사탕 무기 외형", 1, "daily", 0, "줄무늬 사탕 같은 무기."],
   ["ws_bone", 58, "wskin", "해골 무기 외형", 2, "chest", 0, "뼈로 깎은 듯한 무기."],
-  ["ws_star", 59, "wskin", "별빛 무기 외형", 3, "rift", 0, "밤하늘을 담은 무기."],
+  ["ws_star", 59, "wskin", "별빛 무기 외형", 3, "boss", 0, "밤하늘을 담은 무기."],
   ["ws_flame", 60, "wskin", "화염 무기 외형", 3, "ach", "enh10", "명장의 무기는 불꽃을 두른다."],
   // ── themed sets (the ninth field is the set, COS_SETS): the seaside
   ["hat_sunhat", 61, "hat", "해변 밀짚모자", 1, "shop", 2400, "챙이 축 늘어진 큰 모자. 꽃 한 송이를 꽂았다.", "sea"],
@@ -18002,7 +17899,7 @@ const COSMETICS = Object.fromEntries([
   ["top_apron_moka", 92, "top", "모카의 카페 앞치마", 2, "ach", "rep_cafe_moka", "커피 향이 밴 갈색 앞치마.", "family"],
   ["hat_nightcap", 93, "hat", "마루의 나이트캡", 2, "ach", "rep_inn_maru", "마루네 여관의 푹신한 잠자리 모자.", "family"],
   // the rift and the weekly challenge (weekly, quest: sources of systems still to come; nothing grants them yet)
-  ["hat_shard", 94, "hat", "균열 파편 고리", 3, "rift", 0, "머리 위를 맴도는 균열의 파편.", "rift"],
+  ["hat_shard", 94, "hat", "균열 파편 고리", 3, "boss", 0, "머리 위를 맴도는 균열의 파편.", "rift"],
   ["back_trophy", 95, "back", "우두머리 전리품", 3, "weekly", 0, "쓰러뜨린 우두머리의 뿔 달린 해골.", "rift"],
   ["ws_shard", 96, "wskin", "균열 파편 무기 외형", 3, "weekly", 0, "균열의 파편이 날에 박혀 빛난다.", "rift"],
   // just cute
@@ -18133,7 +18030,7 @@ const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
 const COS_ACH = {};
 for (const id of COS_IDS) if (COSMETICS[id].ach) (COS_ACH[COSMETICS[id].ach] ||= []).push(id);
 /** The chance a looted chest, or a downed field boss or guardian, holds a cosmetic. */
-const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_RIFT_TOP3 = 0.3, COS_WEEKLY = 0.35, COS_QUEST = 0.12;
+const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_WEEKLY = 0.35, COS_QUEST = 0.12;
 const COS_RARE_BOSS = 0.005, COS_TOKEN_MAX = 9999;
 const COS_RARE_BOSS_IDS = COS_IDS.filter((id) => COSMETICS[id].src === "rareBoss");
 
@@ -18781,7 +18678,7 @@ function charmMarkK(S, rt, p, mob) {
 /** Does a kill of `mob` count for charms (drops, 주아나's quests) for `p`? A field monster no more than 4 tiers below. */
 function charmPrey(rt, mob, p) {
   const d = MOBS[mob.k];
-  if (mob.dim || mob.evt || d.chest || d.still || !Object.hasOwn(MAP_META, rt.id)) return false;
+  if (mob.dim || d.chest || d.still || !Object.hasOwn(MAP_META, rt.id)) return false;
   return d.lv >= toTier(p.ch.lvl) - CHARM_LOW;
 }
 /** The quest under way or next in line: its index in CHARM_QUESTS and its state (0 not taken, 1 hunting), or null when all are done. */
@@ -24761,7 +24658,6 @@ export function tick(S, now) {
   const dt = clamp(now - (S.last || now), 0, 300) / 1000;
   S.last = now;
   S.now = now;
-  worldEvent(S, now);
   fairWorld(S, now);   // 버드나무 장날 opening, said once in the chat (63-festival.js)
   skyTick(S, now);
   dimTick(S, now);
@@ -24988,7 +24884,7 @@ function selfPayload(p) {
     warm: p.warmPct, food: p.food ? p.food.id : null, guild: ch.guild, gm: ch.gm, fishN: ch.fish,
     // waypoint stones woken: { mapId: bitmask } (bit 0 = the map's first stone)
     wp: ch.wp, seen: ch.seen, ach: ch.ach, pts: achPoints(ch), title: ch.title, col: REGIONS.filter((id) => regionDone(ch, id)), cnt: ch.cnt,
-    daily: dailyView(p), tut: { i: ch.tut.i, n: ch.tut.n }, evt: evtView(p.S, p), recall: p.recall ? Math.max(0, p.recall.at - now) : 0,
+    daily: dailyView(p), tut: { i: ch.tut.i, n: ch.tut.n }, recall: p.recall ? Math.max(0, p.recall.at - now) : 0,
     gmates: ch.guild ? Object.keys(p.S.players).map((id) => p.S.players[id]).filter((o) => o.ch.guild === ch.guild).map((o) => [o.eid, o.ch.name, o.ch.job, o.ch.lvl, mapOfS(o.S, o.map).name, o.ch.gm]) : [],
     // the bag's size (46-bag.js) and the house (64-housing.js homeSelf)
     bagCap: bagCap(ch), house: homeSelf(p),
@@ -25246,9 +25142,8 @@ export function defs() {
     cos: COSMETICS, cosSlots: COS_SLOTS, cosSlotName: COS_SLOT_NAME, cosN: COS_BY_N, cosSets: COS_SETS,
     // 염색 (P9): the dye items in self.cosDye order (1 = cosDyes[0]); a worn code ≥ cosDyeK carries a dye; keepsake → outfit piece ("" not yet)
     cosDyes: COS_DYES, cosDyeK: COS_DYE_K, keepSew: KEEP_SEW,
-    achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus }) => ({ id, cat, name, desc, pts, title, bonus })),
+    achievements: ACH.map(({ id, cat, name, desc, pts, title, bonus, gone }) => ({ id, cat, name, desc, pts, title, bonus, ...(gone ? { gone: 1 } : {}) })),
     collection: Object.fromEntries(REGIONS.map((id) => [id, { mobs: COL_MOBS[id], bonus: REGION_BONUS[id] }])), colNeed: MASTERY[0],
-    event: { every: EVT.every, warn: EVT.warn, len: EVT.len, waves: EVT.waves, boss: EVT.boss, maps: EVT_MAPS },
     daily: { resetKST: 6, text: DAILY_TEXT }, social: socialDefs(), tutorial: TUT.map(({ id, title, hint, need }) => ({ id, title, hint, need: need || 1 })), recallMs: RECALL_MS,
     // side quests from the world map editor, with who gives them and where they stand
     questTurnIn: { npc: "elder", map: NPC_MAP.elder },

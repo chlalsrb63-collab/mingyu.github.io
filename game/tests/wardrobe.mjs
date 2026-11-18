@@ -54,7 +54,8 @@ for (const id of ids) {
   if (c.slot === "wskin") assert.ok(MOTIFS.includes(skinMotif(id)), id + " is a weapon motif");
 }
 for (const id of Object.keys(ART)) assert.ok(D.cos[id], id + " (art) is in the catalogue");
-for (const src of ["shop", "chest", "boss", "daily", "rift", "ach"]) assert.ok(ids.some((id) => D.cos[id].src === src), "something comes from " + src);
+for (const src of ["shop", "chest", "boss", "daily", "ach"]) assert.ok(ids.some((id) => D.cos[id].src === src), "something comes from " + src);
+assert.ok(!ids.some((id) => D.cos[id].src === "rift"), "nothing is left waiting on the retired 균열 침공");
 // the shop's prices follow rarity (a gold sink that stays in its lane: nothing epic is for sale)
 const BAND = [[300, 1500], [1800, 4000], [6000, 8000]];
 for (const id of ids.filter((k) => D.cos[k].src === "shop")) {
@@ -155,7 +156,7 @@ for (const [kind, designs] of Object.entries(SIL)) {
   assert.equal(W.act({ t: "cos_buy", id: buy }).error, "의상실 주인이 너무 멉니다", "only at the costume shop");
   W.to("A", shopNpc.x, shopNpc.y + 1);
   assert.equal(W.act({ t: "cos_buy", id: "nope" }).error, "팔지 않는 외형입니다");
-  assert.equal(W.act({ t: "cos_buy", id: "hat_halo" }).error, "팔지 않는 외형입니다", "rift rewards are not for sale");
+  assert.equal(W.act({ t: "cos_buy", id: "hat_halo" }).error, "팔지 않는 외형입니다", "boss rewards are not for sale");
   assert.equal(W.act({ t: "cos_buy", id: "__proto__" }).error, "팔지 않는 외형입니다");
   const dear = ids.find((id) => D.cos[id].src === "shop" && D.cos[id].price > price + 5);
   assert.equal(W.act({ t: "cos_buy", id: dear }).error, "골드가 부족합니다");

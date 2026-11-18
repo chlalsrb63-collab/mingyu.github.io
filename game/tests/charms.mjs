@@ -157,7 +157,6 @@ function appraised(W, src, want) {
   const fit = Object.keys(X.MOBS).find((k) => X.MOBS[k].lv >= tier - 4 && X.MOBS[k].lv <= tier && !X.MOBS[k].boss && !X.MOBS[k].chest && !X.MOBS[k].still);
   kill(low); assert.equal(W.cs.kn, 0, "too low a monster");
   kill(fit, { dim: 1 }); assert.equal(W.cs.kn, 0, "a rift's monster");
-  kill(fit, { evt: 1 }); assert.equal(W.cs.kn, 0, "an invasion's monster");
   for (let i = 0; i < 7; i++) kill(fit);
   assert.equal(W.cs.kn, 7);
   W.npc("charm");
@@ -241,8 +240,8 @@ function appraised(W, src, want) {
   log(`field   ${N0} kills: charm ${(a.charm / N0 * 100).toFixed(3)}% (0.10)  nail ${(a.nail / N0 * 100).toFixed(4)}% (0.05)  grades ${a.g.slice(1)}`);
   log(`elite   ${N1} kills: charm ${(b.charm / N1 * 100).toFixed(3)}% (1.00)  nail ${(b.nail / N1 * 100).toFixed(4)}% (0.20)  grades ${b.g.slice(1)}`);
   log(`boss    ${N2} kills: charm ${(c.charm / N2 * 100).toFixed(3)}% (6.00)  nail ${(c.nail / N2 * 100).toFixed(4)}% (1.00)  grades ${c.g.slice(1)}`);
-  // exclusions: more than four tiers below, a rift's monster, an invasion's, a chest
-  for (const [k, more, tag] of [[low, {}, "low"], [fit, { dim: 1 }, "rift"], [fit, { evt: 1 }, "invasion"]]) {
+  // exclusions: more than four tiers below, a rift's monster, a chest
+  for (const [k, more, tag] of [[low, {}, "low"], [fit, { dim: 1 }, "rift"]]) {
     const r = hunt(3000, k, { el: 2, temp: 1, ...more });
     assert.equal(r.charm + r.nail, 0, tag + " monsters drop no charm");
   }

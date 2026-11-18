@@ -497,7 +497,7 @@ function newMob(S, k, r, sp) {
  * place when someone first walks in (or an event needs it). `dims` holds runtime instances.
  */
 export function setup() {
-  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, buddies: {}, maps: {}, dims: {}, parties: {}, chat: [], n: 0, evt: null };
+  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, buddies: {}, maps: {}, dims: {}, parties: {}, chat: [], n: 0 };
   runtime(S, START.map);
   return S;
 }

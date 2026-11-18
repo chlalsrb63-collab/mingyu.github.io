@@ -11,7 +11,7 @@ import { $, G, el, dist, T, clamp, now } from "./state.js";
 import { act } from "./net.js";
 import { stoneNear } from "./actions.js";
 import { wpWoke } from "./overlay.js";
-import { placeToasts, touch, banner, openWin, toast } from "./windows.js";
+import { placeToasts, touch } from "./windows.js";
 import { statText } from "./items.js";
 import { refreshUi, setOnce, section } from "./hud.js";
 import { K } from "./keymap.js";
@@ -162,7 +162,8 @@ export function renderWeek(s) {
 export function renderAchieve(s) {
   const box = $("#achieve-body");
   box.textContent = "";
-  const all = G.defs.achievements || [], got = new Set(s.ach || []);
+  // a retired achievement (gone) is listed only for those who hold it
+  const got = new Set(s.ach || []), all = (G.defs.achievements || []).filter((a) => !a.gone || got.has(a.id));
   const cats = [...new Set(all.map((a) => a.cat))];
   if (!G.achTab || (G.achTab !== "칭호" && !cats.includes(G.achTab))) G.achTab = cats[0];
   const head = el("div", "ach-top");
@@ -317,44 +318,7 @@ export function tutCard(s) {
   if (card.dataset.i !== String(i)) { card.dataset.i = String(i); card.classList.remove("pop"); void card.offsetWidth; card.classList.add("pop"); if (i > 0) Sound.play("ok"); }
 }
 
-// ── the world event, the return scroll's cast bar, the arrival fade ──
-export function eventWidget(t) {
-  const e = G.evt, box = $("#evt");
-  if (!e || !G.defs.maps) { if (!box.hidden) box.hidden = true; return; }
-  const name = (id) => (G.defs.maps.find((m) => m.id === id) || {}).name || id;
-  const live = e.phase === "on" || e.phase === "boss";
-  let html;
-  if (live) {
-    html = [`<b>균열 침공 진행 중</b> · ${name(e.map)}`, `남은 ${clock(G.evtLeft - t)} · ${e.phase === "boss" ? "우두머리 출현!" : `웨이브 ${e.waves}/${(G.defs.event && G.defs.event.waves.length) || 3}`}`, e.mine ? `내 피해 ${e.mine.toLocaleString()}` : "피해를 주면 보상을 받습니다"];
-  } else if (e.phase === "warn") html = [`<b>균열 침공 예고</b> · ${name(e.map)}`, `시작까지 ${clock(G.evtIn - t)}`];
-  else html = [`다음 균열 침공 ${clock(G.evtNext - t)}`, name(e.nextMap)];
-  if (e.top && e.top.length && (live || e.phase === "done")) html.push(e.top.map(([n, d], i) => `${i + 1}. ${n} ${d.toLocaleString()}`).join("  "));
-  // folded to its first line on a click of the corner mark (kept per browser); folded by default until the first steps are done
-  const fold = evtFolded();
-  if (fold) html = html.slice(0, 1);
-  const v = `<i class="fold" title="${fold ? "펼치기" : "접기"}">${fold ? "▸" : "▾"}</i>` + html.map((h) => `<span>${h}</span>`).join("");
-  if (box.dataset.v !== v) { box.dataset.v = v; box.innerHTML = v; }
-  const cls = "frame" + (live ? " live" : e.phase === "warn" ? " warn" : "");
-  if (box.className !== cls) box.className = cls;
-  box.hidden = false;
-  document.body.classList.toggle("evt-live", live);
-  if (G.evtPhase !== e.phase) {
-    if (G.evtPhase !== undefined) {
-      if (e.phase === "warn") { banner(`균열 침공 예고 · ${name(e.map)}`, true); Sound.play("rift_warn"); }
-      else if (e.phase === "on") { banner(`균열 침공 시작! · ${name(e.map)}`, true); Sound.play("rift_start"); }
-      else if (e.phase === "boss") { banner("균열의 우두머리 출현!", true); Sound.play("rift_boss"); }
-      else if (e.phase === "done") banner("균열 침공 종료", true);
-    }
-    G.evtPhase = e.phase;
-  }
-}
-/** Is the rift banner folded? The player's choice, else folded while the first steps are unfinished. */
-function evtFolded() {
-  const v = localStorage.getItem("lumentale:evtfold");
-  if (v !== null) return v === "1";
-  const s = G.self, n = (G.defs.tutorial || []).length;
-  return !!(s && s.tut && s.tut.i < n);
-}
+// ── the return scroll's cast bar, the arrival fade ──
 export function castBar(t) {
   const c = G.cast, box = $("#cast");
   if (!c || t > c.end + 200) { if (!box.hidden) box.hidden = true; if (c && t > c.end + 200) G.cast = null; return; }
@@ -378,15 +342,4 @@ export function fadeIn() {
 /** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */
 export function setupWinWorld() {
   $("#tut-x").addEventListener("click", () => { const s = G.self; if (s && s.tut) localStorage.setItem("lumentale:tuthide", String(s.tut.i + 1)); $("#tut").hidden = true; placeToasts(); Sound.play("ui"); });
-  $("#evt").addEventListener("click", (ev) => {
-    if (ev.target.closest(".fold")) { localStorage.setItem("lumentale:evtfold", evtFolded() ? "0" : "1"); delete $("#evt").dataset.v; Sound.play("ui"); return; }
-    const e = G.evt, s = G.self;
-    if (!e || !s) return;
-    // the event gathers at one stone of its ground (the middle one, 중턱, on a big ground)
-    const next = e.phase === "idle" || e.phase === "done", target = next ? e.nextMap : e.map, st = (next ? e.nextSt : e.st) | 0;
-    if (wpWoke(s, target, st)) { G.warpPick = target; G.warpPickI = st; openWin("warp"); toast("이동의 돌 곁에서 균열 침공 지역으로 이동할 수 있습니다"); }
-    else if (wpWoke(s, target)) { G.warpPick = target; G.warpPickI = 0; openWin("warp"); toast("침공이 모이는 이동의 돌을 아직 깨우지 않았습니다 — 입구 돌로 건너가 걸어가세요"); }
-    else toast("그 지역의 이동의 돌을 아직 깨우지 않았습니다");
-    Sound.play("ui");
-  });
 }

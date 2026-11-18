@@ -22,7 +22,6 @@ town redesign moves the plaza — see `docs/design/README.md`; fishing/cooking h
 | `TUT`, `tutStep(S,p,id)` (60) | first-steps chain `ch.tut={i,n}`, indices persisted (append only); each step pays gold/items; `migrate` skips it for characters with tier ≥5 or ≥20 kills |
 | `QUESTS` (10), actions `quest`, `bq` (bounty at 관리자, `BOUNTY_N` 25 kills, repeat) | main quest chain `ch.q={i,n,st}`; `data/quests.json` `main` may replace it |
 | side quests (62-side-quests): `SIDE`, `SQ_BY`, `sqClean`, `sqProgress(S,p,type,match)`, `sqPicked`, `sqValidate/sqApply`, `sqView`; client `public/sidequests.js` | editor quests `data/quests.json` `side`; goals `kill collect talk visit`; `ch.sq={on:{id:n},done:{id:times}}`; max `SQ_MAX` 10 active; actions `sq{a:take|done|drop|talk,id}`; hooks in `killMob`, pickup, talk, `changeMap` |
-| `worldEvent` (60) | the half-hourly 균열 침공: see `rift.md` |
 
 ## Flow samples
 1. Sit by a fire: `sit` → `sitDown` (nearest free stump ≤18 px) → each second `warmTick` → buff `p.warm/warmPct/warmN` → `stats()` adds XP% (`40-characters-world.js`); moving/combat calls `rouse`.

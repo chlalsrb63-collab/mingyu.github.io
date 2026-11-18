@@ -3,7 +3,7 @@
 // character looks. They are not bag items: each character keeps a wardrobe of
 // everything it owns (`ch.cos.own`) and wears one per slot (`ch.cos.on`). Some are
 // sold at the costume shop in town; the rest only come from opening chests,
-// field bosses and guardians, the daily reward box, the rift invasion and
+// field bosses and guardians, the daily reward box and
 // achievements. The art lives in the browser (public/wardrobe.js, weapons.js),
 // keyed by the same ids.
 
@@ -12,7 +12,7 @@ const COS_SLOTS = ["hat", "top", "back", "face", "wskin"];
 const COS_SLOT_NAME = { hat: "모자", top: "상의", back: "등", face: "얼굴", wskin: "무기 외형" };
 /**
  * id → [wire code, slot, name, rarity 0–4, source, price or achievement id, description].
- * Sources: shop (sold for `price` gold), token (Willow tokens), chest, boss, rareBoss, daily, rift, ach (earned with achievement `price`: the
+ * Sources: shop (sold for `price` gold), token (Willow tokens), chest, boss, rareBoss, daily, ach (earned with achievement `price`: the
  * Lv-50 life masters' outfits and the NPCs' 가족 gifts are these), quest (a chance on every quest hand-in) and weekly
  * (a chance with a boss challenge's weekly big reward), sew (루루 sews a story keepsake, KEEP_SEW) and fair (장꾼 다래's
  * seasonal stall for 장날 토큰; 63-festival.js FAIR_SHOP holds the price). An optional ninth
@@ -28,7 +28,7 @@ const COSMETICS = Object.fromEntries([
   ["hat_wizard", 6, "hat", "마법사 모자", 1, "shop", 3000, "끝이 꺾인 보랏빛 고깔모자."],
   ["hat_wizard_night", 7, "hat", "밤하늘 마법사 모자", 2, "boss", 0, "우두머리가 쓰던 별빛 고깔모자."],
   ["hat_crown", 8, "hat", "황금 왕관", 3, "ach", "boss", "균열의 군주를 쓰러뜨린 자의 왕관."],
-  ["hat_crown_silver", 9, "hat", "은빛 왕관", 2, "rift", 0, "균열 침공을 막아 낸 보답."],
+  ["hat_crown_silver", 9, "hat", "은빛 왕관", 2, "boss", 0, "균열을 막아 낸 보답."],
   ["hat_wreath_pink", 10, "hat", "벚꽃 화관", 1, "shop", 2000, "분홍 꽃을 엮은 화관."],
   ["hat_wreath_sun", 11, "hat", "해바라기 화관", 1, "daily", 0, "토벌 의뢰 보상 상자에서 나온 화관."],
   ["hat_bow_red", 12, "hat", "빨간 리본", 0, "shop", 1000, "머리 위의 커다란 리본."],
@@ -39,7 +39,7 @@ const COSMETICS = Object.fromEntries([
   ["hat_santa", 17, "hat", "산타 모자", 1, "daily", 0, "방울이 달랑거리는 빨간 모자."],
   ["hat_helm", 18, "hat", "기사 투구", 2, "ach", "elite100", "정예 사냥꾼에게 주어지는 깃털 투구."],
   ["hat_frog", 19, "hat", "개구리 모자", 1, "ach", "fish10", "낚시꾼들 사이에서 유행하는 모자."],
-  ["hat_halo", 20, "hat", "천사의 고리", 3, "rift", 0, "머리 위에 떠 있는 빛의 고리."],
+  ["hat_halo", 20, "hat", "천사의 고리", 3, "boss", 0, "머리 위에 떠 있는 빛의 고리."],
   ["hat_horns", 21, "hat", "꼬마 악마 뿔", 2, "boss", 0, "귀여운 척하는 작은 뿔."],
   ["hat_chef", 22, "hat", "요리사 모자", 1, "ach", "cook10", "요리를 열 번 성공한 자의 모자."],
   ["hat_beret", 23, "hat", "빨간 베레모", 0, "shop", 1500, "비스듬히 눌러 쓴 베레모."],
@@ -60,7 +60,7 @@ const COSMETICS = Object.fromEntries([
   ["back_cape_red", 38, "back", "붉은 망토", 1, "shop", 4000, "걸음마다 펄럭이는 망토."],
   ["back_cape_blue", 39, "back", "푸른 망토", 1, "shop", 4000, "걸음마다 펄럭이는 푸른 망토."],
   ["back_cape_black", 40, "back", "칠흑 망토", 2, "boss", 0, "수문장이 두르던 검은 망토."],
-  ["back_angel", 41, "back", "천사 날개", 3, "rift", 0, "균열을 막아 낸 자에게 돋는 날개."],
+  ["back_angel", 41, "back", "천사 날개", 3, "boss", 0, "균열을 막아 낸 자에게 돋는 날개."],
   ["back_bat", 42, "back", "박쥐 날개", 2, "chest", 0, "보물 상자에 숨어 있던 날개."],
   ["back_fairy", 43, "back", "요정 날개", 2, "daily", 0, "반짝이는 작은 날개."],
   ["back_pack", 44, "back", "모험가 배낭", 0, "shop", 1500, "뭐든 들어갈 것 같은 가죽 배낭."],
@@ -78,7 +78,7 @@ const COSMETICS = Object.fromEntries([
   ["ws_frost", 56, "wskin", "서리 무기 외형", 2, "boss", 0, "날 끝에 얼음 가시가 돋는다."],
   ["ws_candy", 57, "wskin", "사탕 무기 외형", 1, "daily", 0, "줄무늬 사탕 같은 무기."],
   ["ws_bone", 58, "wskin", "해골 무기 외형", 2, "chest", 0, "뼈로 깎은 듯한 무기."],
-  ["ws_star", 59, "wskin", "별빛 무기 외형", 3, "rift", 0, "밤하늘을 담은 무기."],
+  ["ws_star", 59, "wskin", "별빛 무기 외형", 3, "boss", 0, "밤하늘을 담은 무기."],
   ["ws_flame", 60, "wskin", "화염 무기 외형", 3, "ach", "enh10", "명장의 무기는 불꽃을 두른다."],
   // ── themed sets (the ninth field is the set, COS_SETS): the seaside
   ["hat_sunhat", 61, "hat", "해변 밀짚모자", 1, "shop", 2400, "챙이 축 늘어진 큰 모자. 꽃 한 송이를 꽂았다.", "sea"],
@@ -121,7 +121,7 @@ const COSMETICS = Object.fromEntries([
   ["top_apron_moka", 92, "top", "모카의 카페 앞치마", 2, "ach", "rep_cafe_moka", "커피 향이 밴 갈색 앞치마.", "family"],
   ["hat_nightcap", 93, "hat", "마루의 나이트캡", 2, "ach", "rep_inn_maru", "마루네 여관의 푹신한 잠자리 모자.", "family"],
   // the rift and the weekly challenge (weekly, quest: sources of systems still to come; nothing grants them yet)
-  ["hat_shard", 94, "hat", "균열 파편 고리", 3, "rift", 0, "머리 위를 맴도는 균열의 파편.", "rift"],
+  ["hat_shard", 94, "hat", "균열 파편 고리", 3, "boss", 0, "머리 위를 맴도는 균열의 파편.", "rift"],
   ["back_trophy", 95, "back", "우두머리 전리품", 3, "weekly", 0, "쓰러뜨린 우두머리의 뿔 달린 해골.", "rift"],
   ["ws_shard", 96, "wskin", "균열 파편 무기 외형", 3, "weekly", 0, "균열의 파편이 날에 박혀 빛난다.", "rift"],
   // just cute
@@ -252,7 +252,7 @@ const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
 const COS_ACH = {};
 for (const id of COS_IDS) if (COSMETICS[id].ach) (COS_ACH[COSMETICS[id].ach] ||= []).push(id);
 /** The chance a looted chest, or a downed field boss or guardian, holds a cosmetic. */
-const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_RIFT_TOP3 = 0.3, COS_WEEKLY = 0.35, COS_QUEST = 0.12;
+const COS_CHEST = 0.08, COS_BOSS = 0.15, COS_WEEKLY = 0.35, COS_QUEST = 0.12;
 const COS_RARE_BOSS = 0.005, COS_TOKEN_MAX = 9999;
 const COS_RARE_BOSS_IDS = COS_IDS.filter((id) => COSMETICS[id].src === "rareBoss");
 

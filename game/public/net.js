@@ -279,7 +279,6 @@ function onSnap(s) {
     for (const r of s.self.sk || []) G.cdEnd[r[0]] = t + r[2];
     G.streak = { n: s.self.streak[0], end: t + s.self.streak[1] };
     G.buffEnd = s.self.buffs.map((ms) => t + ms);
-    if (s.self.evt) { G.evt = s.self.evt; G.evtNext = t + s.self.evt.next; G.evtIn = t + (s.self.evt.in || 0); G.evtLeft = t + (s.self.evt.left || 0); }
     if (s.self.daily) G.dailyReset = t + s.self.daily.reset;
     if (s.self.recall > 0 && !G.cast) G.cast = { start: t - (G.defs.recallMs - s.self.recall), end: t + s.self.recall };
     refreshUi();
@@ -299,11 +298,9 @@ function onSnap(s) {
     else onEvent(e, t);
   }
   for (const [id, m] of G.gone) if (t - m.goneT > 1500) G.gone.delete(id);
-  // a rift on another map (c.ev) is news for the 시스템 tab only, not the 전체 log
-  const far = (c) => c.ev && G.map && c.ev !== G.map.id;
-  if (s.chat) for (const c of s.chat) c.w ? whisperLine(c) : c.sys ? addChat(c.m, far(c) ? "sys far" : "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`, c.it) : c.pt ? addChat(c.m, "party", `[파티] ${c.n}`, c.it) : addChat(c.m, "", c.n, c.it);   // it: linked items (windows.js chatLink)
-  // a field boss called out, or a wave of the rift breaking in
-  if (s.chat) for (const c of s.chat) if (c.sys && !far(c) && /나타났습니다/.test(c.m)) Sound.play(/균열/.test(c.m) ? "elite" : "announce");
+  if (s.chat) for (const c of s.chat) c.w ? whisperLine(c) : c.sys ? addChat(c.m, "sys") : c.g ? addChat(c.m, "guild", `[길드] ${c.n}`, c.it) : c.pt ? addChat(c.m, "party", `[파티] ${c.n}`, c.it) : addChat(c.m, "", c.n, c.it);   // it: linked items (windows.js chatLink)
+  // a field boss called out
+  if (s.chat) for (const c of s.chat) if (c.sys && /나타났습니다/.test(c.m)) Sound.play("announce");
   if (s.gain) for (const gn of s.gain) onGain(gn);
   if (s.toast) for (const m of s.toast) toast(m);
   // Keep live positions for the map. Only visible party fields redraw the cards.

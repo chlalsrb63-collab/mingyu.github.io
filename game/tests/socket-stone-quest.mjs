@@ -58,7 +58,7 @@ for (let i = 0; i < 5; i++) {
   L.endTick(S);
 }
 const forest = L.runtime(S, "forest");
-const quarry = forest.mobs.find((m) => m.k === quest.goal.mob && !m.evt);
+const quarry = forest.mobs.find((m) => m.k === quest.goal.mob);
 assert.ok(quarry, "the quarry appears in the running game");
 for (const mob of forest.mobs) if (mob !== quarry) mob.x += 4000;
 for (let i = 0; i < quest.goal.n; i++) {

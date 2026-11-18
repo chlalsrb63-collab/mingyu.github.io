@@ -1,7 +1,8 @@
-# 차원 균열 (party rift) and 균열 침공 (world event)
+# 차원 균열 (party rift)
 
-Purpose: two different systems that share the word "rift". **차원 균열** = a party's private timed
-instance dungeon opened at the town obelisk. **균열 침공** = a half-hourly open-world event on one hunting ground.
+Purpose: **차원 균열** = a party's private timed instance dungeon opened at the town obelisk. The half-hourly
+open-world 균열 침공 (`worldEvent`, `EVT`, `S.evt`) was removed by owner order (2026-11-18); old sheets keep its
+achievements `evt1`/`evt10` (ACH `gone`, hidden unless held) and counters `cnt.evt`/`cnt.evb`.
 Design doc (built, code is truth): `docs/design/scale-and-rift.md` D.
 
 ## 1. 차원 균열 — key files / functions (`game/src/logic/`)
@@ -33,15 +34,6 @@ Design doc (built, code is truth): `docs/design/scale-and-rift.md` D.
 
 ## Client (`game/public/`)
 `dimrift.js`: `onSnap` (`dim rc dj`, sounds, `body.in-dim`, death-panel text), `onEvent` (`dm dp dz`), `syncProps` (shrines/orbs/portal/chest as `S3.props`), HUD `#dim-hud`, ready-check window `#w-rc`, keeper window `#w-dim` (`openKeeper`), `miniDots` (radar). Wired in `client.js` (`Dim.init/onSnap/onEvent/tick/openKeeper`). `dimart.js`: `obelisk obeliskAnim drawPylon drawOrb drawPortal drawChest`, `PYLON` kinds. Debug: `window.__dim`.
-
-## 2. 균열 침공 (60-content.js `worldEvent`, older, different)
-Open-world event, **not** an instance: `EVT={every 30 min, warn 2 min, len 8 min, waves [0,150 s,300 s], boss at 360 s}`. Slot = `⌊now/every⌋`; map = `evtMap(slot)` (hash over `EVT_MAPS`: unsafe maps with stone + field boss + collection mobs); gathers at `evtStone` (middle stone on big grounds). `spawnWave` (5+2·players, ≤14 elite mobs of the map's two top kinds, `mob.evt`), `spawnEvtBoss` (the map's `FIELD_BOSS`), `endEvent` pays by damage share (`e.dmg`), top-3 get runes, rank 1 gear, cosmetic roll. State `S.evt` per channel (no persistence; a channel waking mid-window joins late). Wire: `self.evt` from `evtView` (`phase next nextMap nextSt map st name in left waves mine top`); client `G.evt`, HUD `#evt`.
-| | 차원 균열 | 균열 침공 |
-| --- | --- | --- |
-| scope | private party instance `dim:<n>`, ≤4 per channel | one real hunting ground, everyone there |
-| trigger | leader at obelisk | clock, every 30 min |
-| ends | gauge→master→chest; 15 min limit | 8 min or boss dead |
-| reward | own chest, daily count | damage-share payout |
 
 ## Invariants / gotchas
 - Instances are not in `MAP_META`; use `mapOfS`. `dimTick` skips `dim.prog === undefined` (registry tests register bare instances).

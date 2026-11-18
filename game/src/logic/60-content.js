@@ -167,8 +167,9 @@ const ACH = [
   ["cloakbat", "사냥", "장막을 걷은 자", "밤장막 박쥐군주 처치 (주간 토벌)", 40, (c) => (c.mk.cloakbat || 0) >= 1, "장막을 걷은 자", [["crit", 2]]],
   ["mvp10", "사냥", "선봉장", "보스·수문장 피해 기여도 1위 10번", 30, (c) => c.cnt.mvp >= 10, "선봉장"],
   ["bloomwhale", "사냥", "고래의 장송곡", "꽃무덤 고래 처치 (주간 토벌)", 60, (c) => (c.mk.bloomwhale || 0) >= 1, "고래의 장송곡", [["atkp", 4], ["hp", 4]]],
-  ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, (c) => c.cnt.evt >= 1],
-  ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, (c) => c.cnt.evt >= 10, "균열 수호자", [["def", 3]]],
+  // the retired 균열 침공 (removed by owner order): kept so holders keep the achievement and title; nobody earns them now (gone)
+  ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, () => false, null, null, 1],
+  ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, () => false, "균열 수호자", [["def", 3]], 1],
   ["dim1", "사냥", "차원의 틈", "레이드던전 정화", 10, (c) => dimCnt(c).dim >= 1],
   ["dim10", "사냥", "차원 탐험가", "레이드던전 10번 정화", 25, (c) => dimCnt(c).dim >= 10, "차원 탐험가", [["mf", 5]]],
   ["wp3", "탐험", "이동의 돌", "이동의 돌 3개 깨우기", 5, (c) => wpCount(c) >= 3],
@@ -227,7 +228,7 @@ const ACH = [
   ["job2", "성장", "두 갈래 길", "두 무기의 길(혼합 직업)로 전직하기", 20, (c) => !!JOBS[c.job] && JOBS[c.job].kind === "hybrid"],
   ["daily1", "성장", "성실한 하루", "토벌 의뢰 보상 상자 받기", 5, (c) => c.cnt.daily >= 1],
   ["daily30", "성장", "성실한 모험가", "토벌 의뢰 보상 상자 30번 받기", 20, (c) => c.cnt.daily >= 30, "성실한 모험가", [["gold", 10]]],
-].map(([id, cat, name, desc, pts, test, title, bonus]) => ({ id, cat, name, desc, pts, test, title: title || null, bonus: bonus || null }));
+].map(([id, cat, name, desc, pts, test, title, bonus, gone]) => ({ id, cat, name, desc, pts, test, title: title || null, bonus: bonus || null, gone: !!gone }));
 const ACH_BY = Object.fromEntries(ACH.map((a) => [a.id, a]));
 /** Every mastery star a character has earned. */
 function stars(ch) {
@@ -285,108 +286,6 @@ function registered(S, p, k) {
   }
 }
 const STAT_WORD = { hp: "최대 HP", xp: "경험치", def: "방어력", crit: "치명타", mf: "아이템 발견", atk: "공격력", atkp: "공격력" };
-
-// ── the world event: a rift opens in one hunting ground every half hour
-const EVT = { every: 1800000, warn: 120000, len: 480000, waves: [0, 150000, 300000], boss: 360000 };
-/** Where a rift can open: every hunting ground with a waypoint stone, a field boss and monsters of its own (never an instance). */
-const EVT_MAPS = Object.keys(MAP_META).filter((id) => !MAP_META[id].safe && MAP_META[id].wp && FIELD_BOSS[id] && COL_MOBS[id]);
-const evtMap = (slot) => EVT_MAPS[(Math.imul(slot, 2654435761) >>> 0) % EVT_MAPS.length];
-/** A rift line in the chat, tagged with its map: players elsewhere see it in the 시스템 tab only. */
-function sysEvt(S, map, m) { S.chat.push({ sys: 1, m, ev: map }); }
-const newEvt = (slot) => ({ slot, map: evtMap(slot), phase: "warn", start: slot * EVT.every, end: slot * EVT.every + EVT.len, waves: 0, boss: 0, bossDead: false, dmg: {}, top: null });
-function worldEvent(S, now) {
-  const slot = Math.floor(now / EVT.every);
-  let e = S.evt;
-  if (e && (e.phase === "on" || e.phase === "boss")) { runEvent(S, e, now); return; }
-  // the next one is called out two minutes ahead
-  const next = slot + 1;
-  if (now >= next * EVT.every - EVT.warn && (!e || e.slot !== next)) {
-    S.evt = e = newEvt(next);
-    sysEvt(S, e.map, `2분 뒤 [${MAP_META[e.map].name}]에 균열 침공이 시작됩니다! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁으로 모이세요 — 깨운 돌이라면 어느 이동의 돌에서든 건너갈 수 있습니다.`);
-    dirtyAll(S);
-    return;
-  }
-  if (e && e.phase === "warn" && now >= e.start) { beginEvent(S, e); return; }
-  // a channel that wakes in the middle of an event's window joins it late
-  if (slot > 0 && (!e || e.slot < slot) && now >= slot * EVT.every && now < slot * EVT.every + EVT.len - 60000) { S.evt = e = newEvt(slot); beginEvent(S, e); }
-}
-function beginEvent(S, e) {
-  e.phase = "on";
-  sysEvt(S, e.map, `균열 침공 시작! [${stoneName(e.map, evtStone(e.map))}] 이동의 돌 곁에 정예 몬스터가 몰려옵니다. (8분)`);
-  dirtyAll(S);
-  runEvent(S, e, S.now);
-}
-function runEvent(S, e, now) {
-  while (e.waves < EVT.waves.length && now >= e.start + EVT.waves[e.waves]) { e.waves++; spawnWave(S, e); }
-  if (!e.boss && now >= e.start + EVT.boss) spawnEvtBoss(S, e);
-  if (now >= e.end || e.bossDead) endEvent(S, e);
-}
-/**
- * Which stone an event gathers at: the middle one (중턱) on a big ground, so the entrance plaza
- * stays safe for newcomers; the only one elsewhere.
- */
-const evtStone = (id) => ((MAP_META[id] && MAP_META[id].wpn) >= 2 ? 1 : 0);
-/** Where an event's monsters gather: beside that stone. */
-const evtSpot = (id) => { const w = stonesOf(mapOf(id))[evtStone(id)] || wpOf(id); return [w.ax, w.ay]; };
-function spawnWave(S, e) {
-  const m = mapOf(e.map), rt = runtime(S, e.map), [cx, cy] = evtSpot(e.map);
-  const kinds = COL_MOBS[e.map].filter(k => !MOBS[k].bonusOptional).sort((a, b) => MOBS[b].lv - MOBS[a].lv).slice(0, 2);
-  const n = clamp(5 + 2 * rt.n, 5, 14);
-  for (let i = 0; i < n; i++) {
-    const mob = newMob(S, kinds[i % kinds.length], [Math.max(2, cx - 6), Math.max(2, cy - 6), Math.min(m.w - 3, cx + 6), Math.min(m.h - 3, cy + 6)]);
-    placeMob(S, m, mob);
-    if (!mob.x) { mob.x = mob.hx = mob.wx = cx * T + 8; mob.y = mob.hy = mob.wy = cy * T + 10; }
-    mob.el = 1; mob.tr = rollTraits(S, 1); mob.hp = mobMax(mob); mob.temp = true; mob.evt = true;
-    rt.mobs.push(mob);
-    rt.ev.push(["r", mob.id]);
-  }
-  sysEvt(S, e.map, `[${m.name}] 균열 침공 ${e.waves}파 — 정예 ${n}마리가 나타났습니다!`);
-  dirtyAll(S);
-}
-function spawnEvtBoss(S, e) {
-  // the rift's lord gathers by the stone too, but never on it or on a signpost
-  const m = mapOf(e.map), rt = runtime(S, e.map), [cx, cy] = bossSpot(S, m, ...evtSpot(e.map), FB_CLEAR, 0);
-  const mob = newMob(S, FIELD_BOSS[e.map], [0, 0, 0, 0]);
-  mob.el = 2; mob.temp = true; mob.evt = true; mob.tr = rollTraits(S, 2);
-  mob.x = mob.hx = mob.wx = cx * T + 8; mob.y = mob.hy = mob.wy = cy * T + 10;
-  mob.hp = mobMax(mob);
-  mob.castAt = S.now + 4000;
-  rt.mobs.push(mob);
-  rt.ev.push(["r", mob.id]);
-  e.boss = mob.id; e.phase = "boss";
-  sysEvt(S, e.map, `[${m.name}] 균열 침공의 우두머리 [${MOBS[mob.k].name}]${pp(MOBS[mob.k].name, "이가")} 나타났습니다!`);
-  dirtyAll(S);
-}
-function endEvent(S, e) {
-  const rt = runtime(S, e.map);
-  for (const mob of rt.mobs) if (mob.evt && !mob.dead) { mob.dead = true; rt.ev.push(["k", mob.id]); }
-  const list = Object.entries(e.dmg).filter(([pid]) => S.players[pid]).sort((a, b) => b[1] - a[1]);
-  const total = list.reduce((n, [, d]) => n + d, 0) || 1;
-  const hi = MAP_META[e.map].band ? MAP_META[e.map].band[1] : 10;
-  list.forEach(([pid, d], rank) => {
-    const p = S.players[pid], share = d / total;
-    const lv = rewardTier(p.ch);
-    payout(S, p, {
-      gold: Math.round(40 * hi * (0.5 + 2 * share)), xp: Math.round(tierXp(lv) * (0.06 + 0.3 * share)),
-      stone: 1 + (share >= 0.25 ? 1 : 0) + (rank === 0 ? 2 : 0), rune: rank < 3, gear: rank === 0 ? 1 : 0, gearQ: 2,
-    });
-    p.ch.cnt.evt++;
-    if (rank === 0 || (rank < 3 && cosRoll(S, p, "rift") < COS_RIFT_TOP3)) cosFrom(S, p, "rift", "균열 침공");
-    toast(p, `균열 침공 보상 — 기여도 ${Math.round(share * 100)}%${rank < 3 ? ` (${rank + 1}위)` : ""}`);
-    checkAch(S, p);
-  });
-  e.top = list.slice(0, 3).map(([pid, d]) => [S.players[pid].ch.name, d]);
-  e.phase = "done";
-  sysEvt(S, e.map, list.length ? `균열 침공 종료! ${e.top.map(([n], i) => `${i + 1}위 ${n}`).join(", ")}` : "균열 침공이 끝났습니다. 아무도 막지 못했습니다…");
-  dirtyAll(S);
-}
-function evtView(S, p) {
-  const e = S.evt, now = S.now, next = Math.floor(now / EVT.every) + 1;
-  // st / nextSt: the stone (index) the event gathers at, for the warp shortcut
-  const out = { phase: e ? e.phase : "idle", next: next * EVT.every - now, nextMap: evtMap(next), nextSt: evtStone(evtMap(next)) };
-  if (e) Object.assign(out, { map: e.map, st: evtStone(e.map), name: stoneName(e.map, evtStone(e.map)), in: e.start - now, left: e.end - now, waves: e.waves, mine: e.dmg[p.pid] || 0, top: e.top });
-  return out;
-}
 
 // ── first steps: a short tutorial chain beside the main quests
 const TUT = [
