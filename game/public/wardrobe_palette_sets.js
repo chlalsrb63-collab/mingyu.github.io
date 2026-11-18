@@ -13,7 +13,7 @@
  * Integration Locations:
  *   1. `game/src/logic/65-cosmetics.js`
  *      - Add `palette: "팔레트 컬렉션"` in `COSMETIC_SETS`.
- *      - Append `PALETTE_COSMETICS` (recommended wire codes 147..158, or next free codes) to `COSMETICS`.
+ *      - Append `PALETTE_COSMETICS` (recommended wire codes 199..210 — 147..158 are taken on main) to `COSMETICS`.
  *      - Run `npm run build:logic`.
  *   2. `game/public/wardrobe.js`
  *      - Merge `PALETTE_HAT` → `HAT`, `PALETTE_TOP` → `TOP`, `PALETTE_BACK` → `BACK`,
@@ -25,21 +25,21 @@
 
 export const PALETTE_COSMETICS = [
   // Set 1: Bubblegum Nebula
-  { id: "hat_pal_nebula",   code: 147, slot: "hat",  name: "네뷸라 스냅백",     set: "palette", shop: 5 },
-  { id: "top_pal_nebula",   code: 148, slot: "top",  name: "버블검 바시티",     set: "palette", shop: 5 },
-  { id: "back_pal_nebula",  code: 149, slot: "back", name: "네뷸라 메신저백",   set: "palette", shop: 5 },
+  { id: "hat_pal_nebula",   code: 199, slot: "hat",  name: "네뷸라 스냅백",     set: "palette", shop: 5 },
+  { id: "top_pal_nebula",   code: 200, slot: "top",  name: "버블검 바시티",     set: "palette", shop: 5 },
+  { id: "back_pal_nebula",  code: 201, slot: "back", name: "네뷸라 메신저백",   set: "palette", shop: 5 },
   // Set 2: Great Barrier Reef
-  { id: "hat_pal_reef",     code: 150, slot: "hat",  name: "리프 선바이저",     set: "palette", shop: 5 },
-  { id: "top_pal_reef",     code: 151, slot: "top",  name: "산호초 아노락",     set: "palette", shop: 5 },
-  { id: "back_pal_reef",    code: 152, slot: "back", name: "산호초 데이팩",     set: "palette", shop: 5 },
+  { id: "hat_pal_reef",     code: 202, slot: "hat",  name: "리프 선바이저",     set: "palette", shop: 5 },
+  { id: "top_pal_reef",     code: 203, slot: "top",  name: "산호초 아노락",     set: "palette", shop: 5 },
+  { id: "back_pal_reef",    code: 204, slot: "back", name: "산호초 데이팩",     set: "palette", shop: 5 },
   // Set 3: Fortuna
-  { id: "hat_pal_fortuna",  code: 153, slot: "hat",  name: "포르투나 베레모",   set: "palette", shop: 6 },
-  { id: "top_pal_fortuna",  code: 154, slot: "top",  name: "라벤더 코트",       set: "palette", shop: 6 },
-  { id: "back_pal_fortuna", code: 155, slot: "back", name: "성운 별빛 반망토",  set: "palette", shop: 6 },
+  { id: "hat_pal_fortuna",  code: 205, slot: "hat",  name: "포르투나 베레모",   set: "palette", shop: 6 },
+  { id: "top_pal_fortuna",  code: 206, slot: "top",  name: "라벤더 코트",       set: "palette", shop: 6 },
+  { id: "back_pal_fortuna", code: 207, slot: "back", name: "성운 별빛 반망토",  set: "palette", shop: 6 },
   // Set 4: Bonfire × Challenger Deep
-  { id: "hat_pal_bonfire",  code: 156, slot: "hat",  name: "모닥불 플랩캡",     set: "palette", shop: 6 },
-  { id: "top_pal_bonfire",  code: 157, slot: "top",  name: "본파이어 푸퍼",     set: "palette", shop: 6 },
-  { id: "back_pal_bonfire", code: 158, slot: "back", name: "본파이어 사첼",     set: "palette", shop: 6 },
+  { id: "hat_pal_bonfire",  code: 208, slot: "hat",  name: "모닥불 플랩캡",     set: "palette", shop: 6 },
+  { id: "top_pal_bonfire",  code: 209, slot: "top",  name: "본파이어 푸퍼",     set: "palette", shop: 6 },
+  { id: "back_pal_bonfire", code: 210, slot: "back", name: "본파이어 사첼",     set: "palette", shop: 6 },
 ];
 
 export const PALETTE_COLORS = {
