@@ -7,8 +7,7 @@
  * along the weapon from the hand (0) to the tip, `t` across it (negative is the
  * upper, lit edge) — with a material per shape. Two rasterisers turn that into
  * pixels: the world sprite (pointing right, the hand at sprites.js GRIP) and
- * the 32×32 named bag icon (laid corner to corner). Ordinary inventory icons
- * are composed in gear_icons.js. Every pixel gets
+ * the 32×32 bag icon (the same weapon laid corner to corner). Every pixel gets
  * exactly one palette colour: materials are shaded per output pixel (lit top
  * row, shadowed bottom row, hue-shifted), then the whole is inked with a
  * one-pixel outline in the rarity's colour.
@@ -25,7 +24,7 @@
  */
 
 import * as Assets from "./assetlib.js";
-import { EQUIP_ICON_SIZE, fitEquipmentIcon, inventoryWeaponIcon, weaponIconProjection } from "./gear_icons.js";
+import { EQUIP_ICON_SIZE, fitEquipmentIcon, weaponIconProjection } from "./gear_icons.js";
 import { porcelainWeaponSprite, porcelainWeaponIcon, PORCELAIN_MOTIF } from "./weapons_porcelain.js";
 
 const GRIP = [5, 16];
@@ -1155,7 +1154,7 @@ function sprite(kind, gear, o) {
   return c;
 }
 
-/** A hand-composed 32×32 silhouette for each weapon family, with the named motifs drawn from their own models. */
+/** The 32×32 bag icon: the same weapon laid corner to corner (a book upright), fitted to the square. */
 export function weaponIcon(kind, tier, o = {}) {
   const motif = MOTIF[o.ws] ? o.ws : MOTIF[o.wl] ? o.wl : "", we = o.we | 0;
   const key = `i:${kind}:${tier}:${motif}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}`;
@@ -1166,11 +1165,6 @@ export function weaponIcon(kind, tier, o = {}) {
   if (ext) {
     // laid corner to corner: the striking part is the upper right
     c = dressAsset(fitEquipmentIcon(ext), null, we, (x, y) => kind === "book" || x - y > 2);
-    cache.set(key, c);
-    return c;
-  }
-  if (!motif) {
-    c = inventoryWeaponIcon(kind, tier, we);
     cache.set(key, c);
     return c;
   }
