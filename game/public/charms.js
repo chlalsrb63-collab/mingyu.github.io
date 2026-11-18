@@ -484,18 +484,18 @@ export function renderBoard(s) {
   if (!ready.length) tray.append(el("small", "hint", sealed ? `미감정 참 ${sealed}개 — 주아나에게 감정받으세요.` : "감정한 참이 없습니다."));
   else if (sealed) tray.append(el("small", "hint", `미감정 ${sealed}개`));
   box.append(tray);
-  // totals against their caps
+  // applied bonuses from the board
   box.append(el("div", "section", "효과 합계"));
-  const sum = cs.sum, tot = el("div", "cm-sum"), o = d.opts;
-  const row = (label, v, cap, pct) => {
-    const r = el("div", "r" + (v >= cap ? " cap" : v ? "" : " zero") + (pct ? " wide" : ""));
-    r.append(el("span", "", label), el("b", "", `+${v}${pct ? "%" : ""}`), el("small", "", `/ ${cap}${pct ? "%" : ""}${v >= cap ? " 상한" : ""}`));
+  const sum = cs.sum, tot = el("div", "cm-sum");
+  const row = (label, v, pct = false) => {
+    const r = el("div", "r" + (v ? "" : " zero") + (pct ? " wide" : ""));
+    r.append(el("span", "", label), el("b", "", `+${v}${pct ? "%" : ""}`));
     tot.append(r);
   };
-  row("HP", sum.hp, o.hp.cap); row("MP", sum.mp, o.mp.cap); row("공격력", sum.atk, o.atk.cap);
-  ST_KEYS.forEach((k, i) => { if (sum.st[i]) row(ST_NAME[k], sum.st[i], o.st.cap); });
-  for (const id of Object.keys(sum.skd || {})) row(`[${skillName(id)}] 피해`, sum.skd[id], o.skd.cap, 1);
-  for (const id of Object.keys(sum.skh || {})) row(`[${skillName(id)}] 회복량`, sum.skh[id], o.skh.cap, 1);
+  row("HP", sum.hp); row("MP", sum.mp); row("공격력", sum.atk);
+  ST_KEYS.forEach((k, i) => { if (sum.st[i]) row(ST_NAME[k], sum.st[i]); });
+  for (const [id, value] of Object.entries(sum.skd || {})) row(`[${skillName(id)}] 피해`, value, true);
+  for (const [id, value] of Object.entries(sum.skh || {})) row(`[${skillName(id)}] 회복량`, value, true);
   box.append(tot);
   // the legendary at work
   if (cs.lgN) {

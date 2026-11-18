@@ -18,3 +18,8 @@
 - `npm run test:rules` 86/86, `node scripts/test-all.mjs charms itemlevel --no-build` 2/2, `npm run check:split` 통과.
 - 이전 봉인 2,500개를 병합 직후의 규칙과 비교했다. 감정 결과가 모두 일치했다.
 - Chromium에서 게임 UI와 샘플 캐릭터 데이터로 장비 등급색 일치, 룬 20종, 회전 중 각인 방향, 레벨 부족 장착 차단, 가로·세로 4칸 모양을 확인했다.
+
+## 효과 합계 표시
+
+- `game/public/charms.js`, 공유 파일 `game/public/hud.css`에서 분모와 상한 표시 스타일을 제거했다. 서버가 적용한 수치만 표시하며 스킬 효과의 퍼센트 단위를 유지한다.
+- `main` `1d9431f` 병합 후 참 규칙 테스트와 `check:split`을 통과했다. Chromium에서 `HP +47`, 스킬 피해 `+4.5%`, 회복량 `+3%`에 분모가 없는 것을 확인했다.
