@@ -179,11 +179,13 @@ function place() {
   const b = box(), W = VP.w, H = VP.h;
   let cx = W / 2;
   if (G.me && Number.isFinite(G.me.x)) { const p = S3.project(G.me.x, G.me.y); if (Number.isFinite(p[0])) cx = clamp(p[0], 0, W); }
-  const right = W - (cx + SAFE) - MARGIN, left = cx - SAFE - MARGIN;
+  // the minimap + quest text column (top right) stays uncovered: the phone's right bound is its left edge
+  const sd = $("#side"), sl = sd ? sd.getBoundingClientRect().left : 0, rb = sl > W / 2 ? sl : W;
+  const right = rb - (cx + SAFE) - MARGIN, left = cx - SAFE - MARGIN;
   const onLeft = right < MINW && left > right, room = onLeft ? left : right;
   const w = Math.round(clamp(room, MINW, PW)), z = room >= MINW ? 1 : clamp(room / MINW, 0.6, 1);
   const pw = Math.round(w * z);
-  const x = Math.round(clamp(onLeft ? cx - SAFE - pw : cx + SAFE, MARGIN, Math.max(MARGIN, W - pw - MARGIN)));
+  const x = Math.round(clamp(onLeft ? cx - SAFE - pw : cx + SAFE, MARGIN, Math.max(MARGIN, rb - pw - MARGIN)));
   // the first-steps box (#tut, top centre) stays readable: a phone under it starts below it
   const tut = $("#tut"), r = tut && !tut.hidden ? tut.getBoundingClientRect() : null;
   const top = r && r.right > x && r.left < x + pw ? Math.ceil(r.bottom) + MARGIN : MARGIN;

@@ -25,6 +25,7 @@ import { G, T, now, dist, $, el } from "./state.js";
 import { act } from "./net.js";
 import { toast, openWin, closeWin, addChat, shown } from "./windows.js";
 import { K } from "./keymap.js";
+import { portrait } from "./talkui.js";
 import { tutTry } from "./win_world.js";
 
 // ───────────────────────────── player actions ─────────────────────────────
@@ -304,6 +305,7 @@ function talkTo(n) {
   talk.lines = special?.length ? special : NpcTalk.allLines(n.originRole ? { ...n, role: n.originRole } : n, talkSheet());
   if (!talk.lines.length) talk.lines = ["…"];
   $("#talk-name").textContent = n.name;
+  portrait(n);
   refreshNpcTalk();
   if (person && NPC.needsWhere()) { NPC.markWhereAsked(); act({ t: "nw" }); }
   talkShow();

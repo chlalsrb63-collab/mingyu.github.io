@@ -132,7 +132,7 @@ assert.equal(ending.req.lv, 200);
 assert.match(ending.done, /변이 흑마법/);
 assert.doesNotMatch(ending.text, /변이 흑마법/);
 const tabletApproach = { x: tablet.x, y: tablet.y + 1 };
-const reader = add("비석기록", 200, "frostkeep", tabletApproach, (ch) => { ch.q.i = D.quests.length - 1; });
+const reader = add("비석기록", 200, "frostkeep", tabletApproach, (ch) => { ch.q.i = D.quests.findIndex((q) => q.mob === "crownstag"); });   // the frost king still standing: the epilogue after him does not gate the tablet
 assert.equal(state(reader, tabletId), 0);
 assert.ok(!accept(reader, tabletId));
 reader.ch.q.i++;

@@ -1,7 +1,7 @@
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
-const SHEET_VERSION = 29;
+const SHEET_VERSION = 30;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -175,6 +175,8 @@ function migrate(ch) {
   else if ((ch.v | 0) < 20) ch.q.i = questV20(ch.q.i | 0);
   // (v24) 산호 해안 and 붉은바위 황금궁 got main steps (P6)
   else if ((ch.v | 0) < 24) ch.q.i = questV24(ch.q.i | 0);
+  // (v30) main steps for the oasis, cloud temple, dunes, coast boss and ink lake
+  else if ((ch.v | 0) < 30) ch.q.i = questV30(ch.q.i | 0);
   ch.q = { i: clamp(ch.q.i | 0, 0, QUESTS.length), n: Math.max(0, ch.q.n | 0), st: ch.q.st === 1 ? 1 : 0 };
   ch.bq = isObj(ch.bq) && MOBS[ch.bq.k] ? { k: ch.bq.k, n: ch.bq.n | 0, need: BOUNTY_N } : null;
   ch.bn = ch.bn | 0;

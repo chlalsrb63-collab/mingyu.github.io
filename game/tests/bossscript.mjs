@@ -153,7 +153,8 @@ L.addPlayer(S, "p2", L.hero("동료", { wk: "sword", lvl: 120, migrate: true }))
 const q = S.players.p2;
 L.runtime(S, q.map).n--; q.map = "meadow"; rt.n++;
 const spread = (gap) => {
-  for (const o of [p, q]) { o.dead = false; o.dodge = 0; }
+  // a fresh pair each trial: an ailment the last mark left (burn, poison) would tick into this one
+  for (const o of [p, q]) { o.dead = false; o.dodge = 0; delete o.ail; delete o.dot; }
   p.x = pm.x + 80; p.y = pm.y; q.x = pm.x - 80; q.y = pm.y;
   pm.bs.pi = 2; pm.bs.q = [];
   X.MOBS.bs_pat.script.pats[2][2].n = 1;

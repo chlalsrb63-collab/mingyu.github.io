@@ -109,9 +109,11 @@ export function questMaps(defs, self, nodes, anchor = id => id) {
     else hunt(bounty.k, "반복 토벌");
   }
   const sides = new Map((defs.side || []).map(s => [s.id, s]));
+  quests.avail = new Map();   // map id -> count of side quests that can be taken there now (drawn as a blue "!")
   for (const [id, state] of self?.sq || []) {
     const side = sides.get(id);
     if (!side) continue;
+    if (state === 1 && !side.mainChapter) { const a = anchor(side.giverMapId); if (nodes.has(a)) quests.avail.set(a, (quests.avail.get(a) || 0) + 1); }
     if (side.mainChapter && state === 1) add(side.giverMapId, side.title);
     if (state === 3) add(side.giverMapId, side.title);
     else if (state === 2 && side.mainChapter && side.targetMap) add(side.targetMap, side.title);
@@ -230,6 +232,12 @@ export function paintChart(g, chart, base, cam, state) {
     if (todo.length) {
       pixel(g, x + drawW / 2 - 4, markerY, 10, 13, "#5b392d");
       text("!", x + drawW / 2 + 1, markerY + 1, 8, "#ffdf69", 10, true);
+    }
+    const avail = quests.avail?.get(id) || 0;
+    if (avail) {
+      const bw = avail > 9 ? 20 : 14;   // two-digit counts need a wider badge
+      pixel(g, x - drawW / 2 - 6, markerY - 14, bw, 13, "#1c2f5a");
+      text(`!${avail}`, x - drawW / 2 - 6 + bw / 2, markerY - 13, bw - 2, "#8ccfff", 10, true);
     }
     members.forEach(({ n: i, col }, j) => {
       const xx = x - drawW / 2 + 12 * j;

@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { QUESTS, SQ_MAIN, SQ_BY, FIELD_BOSS, changeMap };\n";
+  "\nexport const __t = { QUESTS, SQ_MAIN, SQ_BY, FIELD_BOSS, changeMap, ACH };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs(), Q = D.quests, T = 16;
 
@@ -47,9 +47,9 @@ const sqSt = (W, id) => { W.p.dirty = true; const r = W.step().self.sq.find((x) 
 const idx = (mob, fb = 0) => Q.findIndex((q) => q.mob === mob && !!q.fb === !!fb);
 
 // ── the chain: eight chapters in order, the two new bands, each beat a mainChapter quest given by 엘더윈
-assert.equal(Q.length, 43);
+assert.equal(Q.length, 52);
 const chaps = Q.map((q, i) => [i, q.chap]).filter(([, c]) => c);
-assert.equal(chaps.length, 8);
+assert.equal(chaps.length, 9);
 chaps.forEach(([i, c], k) => { assert.ok(c.startsWith(`제${k + 1}장 「`), c); assert.ok(Q[i].intro.length > 30, `${c} has an intro`); });
 assert.equal(chaps[0][0], 0, "the first step opens chapter 1");
 const v24 = Q.filter((q) => q.v24).map((q) => q.mob);
@@ -132,16 +132,61 @@ for (const [i, id] of beats) {
 
 // ── old sheets (v20–v23): the same errand after the four new rows; v24 sheets are left alone; a finished chain stays finished
 {
-  const old = Q.map((q, j) => (q.v24 ? -1 : j)).filter((j) => j >= 0);   // the v23 chain, as indexes now
-  assert.equal(old.length, 39);
+  const old = Q.map((q, j) => (q.v24 || q.v30 ? -1 : j)).filter((j) => j >= 0);   // the v23 chain, as indexes now
+  assert.equal(old.length, 42);   // 39 + the three epilogue rows: a finished old sheet lands on the first one
   for (const k of [0, 5, 22, 23, 24, 30, 31, 38, 39]) {
     const ch = { ...L.newChar("옛장", []), v: 23, lvl: 150, q: { i: k, n: 3, st: 1 } };
     const W = world(ch);
     assert.equal(W.ch.q.i, k < old.length ? old[k] : Q.length, `old step ${k}`);
-    if (k < old.length) assert.equal(Q[W.ch.q.i].title, [...Q].filter((q) => !q.v24)[k].title);
+    if (k < old.length) assert.equal(Q[W.ch.q.i].title, [...Q].filter((q) => !q.v24 && !q.v30)[k].title);
     assert.deepEqual([W.ch.q.n, W.ch.q.st, W.ch.v], [3, 1, L.newChar("현재양식", []).v], "progress kept");
   }
   const fresh = world({ ...L.newChar("새장", []), q: { i: 24, n: 2, st: 1 } });
   assert.equal(fresh.ch.q.i, 24, "a v24 sheet keeps its index");
 }
+
+// ── v30: six main steps (oasis, cloud temple, dunes, coast boss, ink lake x2) went in; v24–v29 sheets keep their errand
+{
+  const v30 = Q.filter((q) => q.v30).map((q) => q.mob);
+  assert.deepEqual(v30, ["cactushog", "wingcrane", "ribvulture_gold", "clubshrimp", "wingcrane_ash", "serpentwing_ash"]);
+  const old = Q.map((q, j) => (q.v30 ? -1 : j)).filter((j) => j >= 0);
+  assert.equal(old.length, 46);
+  for (const k of [0, 25, 26, 30, 38, 42, 43]) {
+    const W = world({ ...L.newChar("옛장", []), v: 29, lvl: 150, q: { i: k, n: 2, st: 1 } });
+    assert.equal(W.ch.q.i, k < old.length ? old[k] : Q.length, `v29 step ${k}`);
+    assert.deepEqual([W.ch.q.n, W.ch.q.st], [2, 1]);
+  }
+  const homes = (mob) => Object.keys(L.atlas().maps).filter((m) => L.atlas().maps[m].spawns.some((s) => s.k === mob) || X.FIELD_BOSS[m] === mob);
+  for (const q of Q.filter((o) => o.v30)) {
+    assert.ok(homes(q.mob).length, `${q.title}: ${q.mob} has a ground`);
+    assert.ok(q.text.length > 60 && q.items.length >= 1, `${q.title}: a story and a reward`);
+    if (q.fb) assert.ok(Object.values(X.FIELD_BOSS).includes(q.mob), `${q.title} is a field boss`);
+  }
+  for (const q of Q) for (const [id] of q.items) assert.ok(D.items[id], `${q.title}: item ${id}`);
+}
 console.log("chapters: ok");
+
+// ── epilogue (제9장): appended after crownstag so a finished sheet (q.i === 49) picks it up; its mobs live in the keep
+assert.deepEqual(Q.slice(-4).map((q) => q.mob), ["crownstag", "rimehare", "frostmoth", "rimewalrus"]);
+assert.ok(Q[49].chap.startsWith("제9장") && Q[49].intro.length > 30);
+for (const q of Q.slice(-3)) assert.ok(Object.values(L.atlas().maps).some((m) => m.spawns.some((s) => s.k === q.mob)), `${q.title}: ${q.mob} spawns somewhere`);
+
+// ── honors: every chapter finale (the row before the next chap row, and the epilogue's last) pays a unique title on hand-in
+{
+  const heads = Q.map((q, i) => (q.chap ? i : -1)).filter((i) => i >= 0);
+  const fins = [...heads.slice(1).map((i) => i - 1), Q.length - 1];
+  assert.equal(fins.length, heads.length);
+  const honors = fins.map((i) => Q[i].honor);
+  assert.ok(honors.every((h) => h && h.length <= 16), "every finale has an honor");
+  assert.equal(new Set(honors).size, honors.length, "honors are unique");
+  assert.equal(Q.filter((q) => q.honor).length, fins.length, "only finales carry one");
+  for (const h of honors) assert.equal(X.ACH.filter((a) => a.name === h || a.title === h).length, 1, `${h}: no other title uses it`);
+  for (const i of fins) {
+    const W = world({ ...at(i, 200), q: { i, n: Q[i].n, st: 1 } });
+    if (Q[i].sq) W.ch.sq.done[Q[i].sq] = 1;
+    W.meet("elder"); W.ok({ t: "quest", a: "done" });
+    assert.ok(W.ch.ach.includes(`h_${i}`), `${Q[i].honor} granted on hand-in`);
+    W.ch.title = `h_${i}`;
+  }
+}
+console.log("chapters honors: ok");

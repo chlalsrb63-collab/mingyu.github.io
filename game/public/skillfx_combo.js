@@ -40,8 +40,10 @@ export function comboEvent(e, ctx) {
       f.sparkle(src.x, src.y, 0.9, p.l, 10);
       if (near) {
         if (kind === 140) Sound.play("cleave_wind");
-        else if (kind === 145) Sound.play("snipe_wind");
         else if (kind === 144) Sound.play("soul_drain");
+        else if (kind === 145) Sound.play("snipe_wind");
+        else if (kind === 158) Sound.play("parry_stance");
+        else if (kind === 159) Sound.play("mountain_charge");
       }
     }
     castPfx(kind, src, tx, ty, 0, Math.atan2(ty - src.y, tx - src.x), p, "wind");
@@ -59,22 +61,22 @@ export function comboEvent(e, ctx) {
     case 145: f.flash(src.x, src.y, 8); f.proj(src.x, src.y, 0.75, tx, ty, 0.5, p.l, 0.03, 20); f.spark(tx, ty, p.a, 1.3); if (near) Sound.play("snipe_shot"); break;
     // 돌개바람 / 무쌍난무: a spinning ring at the caster every beat
     case 146: case 147: f.ring(src.x, src.y, kind === 146 ? 46 : 52, col, 220, extra === 2); f.burst(src.x, src.y, 0.3, p.l, 6, 1.6); if (near) Sound.play(kind === 146 ? "whirl_slash" : "musou_thrust", extra === 2); break;
-    // the first wave of new skills (skill-ideas.md §9): placeholders until Gemini draws them
-    case 148: f.ring(tx, ty, extra, col, 300, true); f.crack(tx, ty, 30, p.l, 400); B.shake(mine ? 4 : 2); Sound.play("slam"); break;      // 땅울림 발구르기
-    case 149: if (extra === 2) { f.burst(tx, ty, 0.4, col, 18, 2.2); f.ring(tx, ty, 40, p.a, 300); Sound.play("boom"); } else f.proj(src.x, src.y, 0.75, tx, ty, 0.5, p.l, 0.06, 30); break; // 곡사 폭약 화살
-    case 150: f.flash(src.x, src.y, 10); f.proj(src.x, src.y, 0.75, tx, ty, 0.5, col, 0.02, 20); f.spark(tx, ty, p.a, 1.6); B.shake(mine ? 5 : 3); Sound.play("shoot"); break; // 용뼈 관통 사격
-    case 151: if (extra === 2) { f.flash(src.x, src.y, 8); text(G, "회심!", src.x, src.y, 1.6, p.a); } Sound.play("shoot"); break;          // 구르며 쏘기
-    case 152: f.spark(tx, ty, p.l, 1.4); f.burst(tx, ty, 0.5, col, 10, 1.8); Sound.play("tip"); break;                                        // 연쇄 번개
-    case 153: f.wave(tx, ty, 22, col, 260); f.burst(tx, ty, 0.3, p.l, 10 + extra * 3, 2); B.shake(mine ? 4 : 2); Sound.play("slam"); break; // 어깨 돌파
-    case 154: f.proj(src.x, src.y, 0.75, tx, ty, 0.3, p.l, 0.04, 30); f.ring(tx, ty, 10, p.a, 300); break;                                 // 올무 화살
-    case 155: f.ring(src.x, src.y, 36, col, 260, extra >= 5); f.sparkle(src.x, src.y, 0.7, p.l, extra * 2); break;                          // 칼날 소용돌이
-    case 156: f.burst(tx, ty, 0.4, col, 16, 2.4); Sound.play("swing"); break;                                                                // 칼날 흩뿌리기
-    case 157: f.ring(tx, ty, extra, "#b8b8c0", 600, true); f.burst(tx, ty, 0.2, "#d8d8e0", 30, 1.4); Sound.play("boom"); break;               // 연막탄
-    case 158: f.flash(src.x, src.y, 10); f.ring(src.x, src.y, 40, p.a, 280, true); f.spark(src.x, src.y, "#ffffff", 1.6); B.shake(mine ? 4 : 2); Sound.play("tip"); break; // 칼등 받아치기 (막았다)
-    case 159: f.burst(tx, ty, 0.3, col, 10 + extra * 6, 1.8 + extra * 0.3); f.crack(tx, ty, 12 + extra * 8, p.l, 480); B.shake(mine ? 2 + extra * 2 : 2); Sound.play("slam"); break; // 산 가르기 (extra = 단계 + 1)
+    // the first wave of new skills (skill-ideas.md §9): dedicated SFX per skill
+    case 148: f.ring(tx, ty, extra, col, 300, true); f.crack(tx, ty, 30, p.l, 400); B.shake(mine ? 4 : 2); if (near) Sound.play("earth_stomp"); break;      // 땅울림 발구르기
+    case 149: if (extra === 2) { f.burst(tx, ty, 0.4, col, 18, 2.2); f.ring(tx, ty, 40, p.a, 300); if (near) Sound.play("mortar_blast"); } else { f.proj(src.x, src.y, 0.75, tx, ty, 0.5, p.l, 0.06, 30); if (near) Sound.play("mortar_launch"); } break; // 곡사 폭약 화살
+    case 150: f.flash(src.x, src.y, 10); f.proj(src.x, src.y, 0.75, tx, ty, 0.5, col, 0.02, 20); f.spark(tx, ty, p.a, 1.6); B.shake(mine ? 5 : 3); if (near) Sound.play("dragonbone_shot"); break; // 용뼈 관통 사격
+    case 151: if (extra === 2) { f.flash(src.x, src.y, 8); text(G, "회심!", src.x, src.y, 1.6, p.a); } if (near) Sound.play("roll_shot", extra === 2); break; // 구르며 쏘기
+    case 152: f.spark(tx, ty, p.l, 1.4); f.burst(tx, ty, 0.5, col, 10, 1.8); if (near) Sound.play("chain_zap"); break;                                       // 연쇄 번개
+    case 153: f.wave(tx, ty, 22, col, 260); f.burst(tx, ty, 0.3, p.l, 10 + extra * 3, 2); B.shake(mine ? 4 : 2); if (near) Sound.play("shoulder_bash"); break; // 어깨 돌파
+    case 154: f.proj(src.x, src.y, 0.75, tx, ty, 0.3, p.l, 0.04, 30); f.ring(tx, ty, 10, p.a, 300); if (near) Sound.play("bolas_wrap"); break;               // 올무 화살
+    case 155: f.ring(src.x, src.y, 36, col, 260, extra >= 5); f.sparkle(src.x, src.y, 0.7, p.l, extra * 2); if (near) Sound.play("blade_vortex", extra >= 5); break; // 칼날 소용돌이
+    case 156: f.burst(tx, ty, 0.4, col, 16, 2.4); if (near) Sound.play("blade_fan"); break;                                                                  // 칼날 흩뿌리기
+    case 157: f.ring(tx, ty, extra, "#b8b8c0", 600, true); f.burst(tx, ty, 0.2, "#d8d8e0", 30, 1.4); if (near) Sound.play("smoke_bomb"); break;              // 연막탄
+    case 158: f.flash(src.x, src.y, 10); f.ring(src.x, src.y, 40, p.a, 280, true); f.spark(src.x, src.y, "#ffffff", 1.6); B.shake(mine ? 4 : 2); if (near) Sound.play("parry_clang"); break; // 칼등 받아치기 (막았다)
+    case 159: f.burst(tx, ty, 0.3, col, 10 + extra * 6, 1.8 + extra * 0.3); f.crack(tx, ty, 12 + extra * 8, p.l, 480); B.shake(mine ? 2 + extra * 2 : 2); if (near) Sound.play("mountain_split", extra); break; // 산 가르기 (extra = 단계 + 1)
   }
   const skId = fxSkill(kind);
-  const playJobNote = (kind !== 144 && kind < 146) || extra === 2;
+  const playJobNote = (kind !== 144 && kind !== 146 && kind !== 147 && kind !== 155) || extra === 2 || (kind === 155 && extra >= 5);
   if (near && skId && playJobNote) Sound.play("job_note", { job: skillOwner(skId), sig: kind >= 146 });
   return true;
 }

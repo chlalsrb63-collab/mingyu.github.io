@@ -206,6 +206,7 @@ function mainTarget(s) {
 function sideTarget(s, id) {
   const q = (G.defs.side || []).find((o) => o.id === id), v = s.sq && s.sq.find((r) => r[0] === id);
   if (!q || !v || v[1] === 0 || v[1] === 4) return null;
+  if (v[1] === 1) return npc(q.giver, q.giverName);                                  // not taken yet: the giver (the sheet knows his map)
   if (v[1] !== 2) return npc(q.turnIn || q.giver, q.turnInName || q.giverName);   // ready: whoever takes it (a delivery's recipient)
   const g = q.goal;
   if (g.type === "talk") return npc(g.npc, q.target);

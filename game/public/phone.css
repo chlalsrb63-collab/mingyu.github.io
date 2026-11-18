@@ -59,6 +59,9 @@ body.phone-ui #phone-btn { display: block; }
 
 /* ── the phone ── */
 #phone { z-index: 20; pointer-events: none; }
+/* opaque inside: undo #hud's transparency variables (hud.css) so nothing behind the phone shows through its panels */
+#phone { --fr-brass: var(--frt-brass); --fr-screen: var(--frt-screen); --scr-a: var(--scr); --sf1-a: var(--sf1, #1a1622); --sf3-a: var(--sf3, #2a2433); --sf4-a: var(--sf4, #3a3146); --frame-a: var(--frame-bg, #18141f); }
+#phone .ph-screen { background-color: #1e2545; }
 #phone .ph-body {
   pointer-events: auto; position: relative; box-sizing: border-box; width: var(--ph-bw, 352px); height: var(--ph-bh, 640px); zoom: var(--ph-z, 1);
   border: solid transparent; border-width: 36px 18px 56px 18px; border-image: var(--ph-bezel) 36 18 56 18 fill / 36px 18px 56px 18px / 0 round; image-rendering: pixelated;

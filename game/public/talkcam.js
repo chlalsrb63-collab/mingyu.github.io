@@ -8,6 +8,7 @@ import * as S3 from "./scene2d.js";
 import { G, $, T } from "./state.js";
 import { isOpen } from "./windows.js";
 import { talk } from "./actions.js";
+import { Z } from "./scene_view.js";
 
 export let enabled = true;
 const MUL = [1, 1.5, 2];
@@ -26,11 +27,14 @@ export function tick(dt) {
     mode = m;
     document.body.classList.toggle("talkcam", m > 0);
     document.body.classList.toggle("talkq", m === 2);
+    if (m === 2) $("#hint")?.setAttribute("hidden", "");   // the first-time card is faded under the talk; it must not reappear over the next window
   }
   const goal = MUL[m];
   cur = calm() || Math.abs(goal - cur) < 0.01 ? goal : cur + (goal - cur) * Math.min(1, dt * 9);
   S3.setZoomMul(cur);
   if (cur === 1 || !n) return [me.x, me.y];
   const k = Math.min(1, (cur - 1) / 0.5) * 0.5;   // halfway to the NPC once the zoom is in
-  return [me.x + (n.x * T + 8 - me.x) * k, me.y + (n.y * T + 12 - me.y) * k];
+  // the big talk panel covers the lower screen: slide the pair up above it (a world step of d on both axes is d logical px down the screen)
+  const top = $("#w-talk").getBoundingClientRect().top, lift = Math.max(0, innerHeight / 2 + 16 * Z - top) / Z * (k * 2);
+  return [me.x + (n.x * T + 8 - me.x) * k + lift, me.y + (n.y * T + 12 - me.y) * k + lift];
 }
