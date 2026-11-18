@@ -284,8 +284,9 @@ function dimBoss(S, dim) {
   mob.el = 2; mob.temp = true; mob.dim = 1;
   mob.tr = rollTraits(S, dim.tk.boss || 2);
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
-  mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid);
-  mob.ak = DIM.bossAtk * dim.tk.atk;
+  const [bh, ba] = dimRaidBoss(dim.map.dim.raid);
+  mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid) * bh;
+  mob.ak = DIM.bossAtk * dim.tk.atk * ba;
   mob.hp = mobMax(mob);
   mob.castAt = now + 4000;
   mob.stun = now + FB_WARN;

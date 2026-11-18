@@ -108,7 +108,7 @@ const FIELD_RAIDS = {
     { name: "야자 오아시스", style: "caves", look: "oasis_palm", rooms: [17, 20], loops: [3, 6], packs: 1.4 },
     { name: "모래 유적", style: "halls", look: "oasis_ruin", rooms: [18, 21], loops: [3, 6], packs: 1.4 },
   ] },
-  maple: { map: "maple", name: "단풍 왕도", minLv: 155, maxLv: 200, theme: "autumn", floors: [
+  maple: { map: "maple", name: "단풍 왕도", minLv: 155, maxLv: 200, theme: "autumn", boss: [1.8, 1.35], floors: [
     { name: "단풍 숲길", style: "caves", look: "maple_trail", rooms: [17, 20], loops: [3, 6], packs: 1.4 },
     { name: "무너진 성문", style: "halls", look: "maple_gate", rooms: [18, 21], loops: [3, 6], packs: 1.4 },
     { name: "얼음 왕릉 앞", style: "arena", look: "maple_tomb", rooms: [16, 19], loops: [4, 8], packs: 1.1 },
@@ -127,3 +127,5 @@ const dimFloorName = (floor, raid) => RAID[dimRaidKey(raid === true ? "hanok" : 
 const dimRaidBar = (raid, lv) => { const R = RAID[dimRaidKey(raid)]; return R.field && (lv < R.minLv || lv > R.maxLv) ? `이 레이드는 Lv.${R.minLv}~${R.maxLv} 파티만 들어갈 수 있습니다.` : ""; };
 /** A raid's toughness scale (RAID `hk`, default 1): the forest's low band (Lv.37–60) is the underground raid's steepest hp ramp, so it is eased to keep the 10-minute pace (bots: 8.2–14.4 min at 1, see tests/dimrift.mjs). */
 const dimRaidHk = (raid) => RAID[dimRaidKey(raid)].hk || 1;
+/** A raid's final-boss scale `[hp, atk]` (RAID `boss`, default [1, 1]): the maple raid's master is the Lv.46 field boss across a Lv.155–200 window, so it is raised to its band (owner 2026-11-18; bots: boss fight ≈1 min → ≈2, like the other raids). */
+const dimRaidBoss = (raid) => RAID[dimRaidKey(raid)].boss || [1, 1];
