@@ -152,7 +152,7 @@ function pawsAndTail(pixels, fur, side) {
 }
 
 /** Ink the join between the exposed tail and the character's silhouette. */
-function tailJoin(pixels, form, tail, back) {
+function tailJoin(pixels, form, tail) {
   const on = (rows, x, y) => (rows[y] >>> x) & 1;
   const exposed = (x, y) => on(tail, x, y) && !on(form, x, y);
   const meets = (x, y, nx, ny) => (
@@ -160,15 +160,13 @@ function tailJoin(pixels, form, tail, back) {
   );
   const bottom = LOGICAL - 2;
   for (let y = 0; y <= bottom; y++) for (let x = 0; x < LOGICAL - 1; x++) {
-    // From behind, place the seam on the tail side of the edge so the rump keeps its width.
-    const offset = back && exposed(x, y) ? 1 : 2;
     if (meets(x, y, x + 1, y)) {
-      const i = at(x * 2 + offset, y * 2);
+      const i = at(x * 2 + 2, y * 2);
       if (pixels[i]) pixels[i] = INK;
       if (pixels[i + NATIVE]) pixels[i + NATIVE] = INK;
     }
     if (y < bottom && meets(x, y, x, y + 1)) {
-      const i = at(x * 2, y * 2 + offset);
+      const i = at(x * 2, y * 2 + 2);
       if (pixels[i]) pixels[i] = INK;
       if (pixels[i + 1]) pixels[i + 1] = INK;
     }
@@ -194,7 +192,12 @@ export function refinePerson(base, o = {}, view = "front", f = 0, seam) {
     }
     if (cloth) clothes(pixels, cloth, bob, view);
     pawsAndTail(pixels, fur, view === "side");
-    if (seam?.form) tailJoin(pixels, seam.form, seam.tail, view === "back");
+    if (seam?.form) tailJoin(pixels, seam.form, seam.tail);
+  }
+  if (seam?.rearTail) {
+    const behind = new Uint32Array(pixels.length);
+    contour(seed(seam.rearTail, behind), behind);
+    for (let i = 0; i < pixels.length; i++) if (!pixels[i]) pixels[i] = behind[i];
   }
   for (let i = 0, j = 0; i < pixels.length; i++, j += 4) {
     const pigment = pixels[i];

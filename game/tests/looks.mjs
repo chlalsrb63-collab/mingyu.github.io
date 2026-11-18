@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import * as L from "../src/logic.js";
 import * as SPC from "../public/species.js";
 import { WORDS, DIFF_NAME, FAR_RANGE, FALLBACK, cleanStarters } from "../public/starter.js";
+import { installCanvas } from "../scripts/pixcanvas.mjs";
 
 const D = L.defs();
 
@@ -90,21 +91,24 @@ assert.ok(SPC.LOOK_N[1] >= 14 && SPC.LOOK_N[2] >= 12 && SPC.LOOK_N[0] >= 12 && S
 // ── drawing: a recording stand-in for sprites.js's pixel tools
 const FRAME = { stand: 0, breathe: 1, stepA: 2, stretch: 3, stepB: 4, blink: 5 };
 function draw(look, view, f) {
-  const rects = [];
   const T = {
-    sheet: () => [{}, {}], brush: () => ({ r: (x, y, w, h, c) => rects.push([x, y, w, h, c]) }), finish: () => rects,
+    sheet: () => {
+      const rects = [];
+      return [rects, { rects, drawImage: (top) => rects.push(...top) }];
+    },
+    brush: ({ rects }) => ({ r: (x, y, w, h, c) => rects.push([x, y, w, h, c]) }),
+    finish: (rects) => rects,
     shade: (c, t = 0.16) => c + "~" + t, blend: (a, b, t) => a + "+" + b + t, lt: (c) => c + "^", FRAME,
   };
-  SPC.animal(SPC.lookOf(look), view, f, T);
-  return rects;
+  return SPC.animal(SPC.lookOf(look), view, f, T);
 }
 const views = ["front", "side", "back"];
 let n = 0;
-const inside = (rects, what) => {
+const inside = (rects, view, what) => {
   for (const [x, y, w, h, c] of rects) {
     assert.ok(typeof c === "string" && c, what + ": every pixel has a colour");
     // the figure stays inside its box on the sheet: the outline needs a pixel around it, the feet stand on row 27
-    assert.ok(x >= 5 && y >= 10 && x + w <= 27 && y + h <= 28 && w > 0 && h > 0, `${what}: ${[x, y, w, h]} inside the figure's box`);
+    assert.ok(x >= 5 && y >= 10 && x + w <= (view === "back" ? 29 : 27) && y + h <= 28 && w > 0 && h > 0, `${what}: ${[x, y, w, h]} inside the figure's box`);
   }
 };
 // every species with every ear, tail and marking, every view and frame
@@ -115,7 +119,7 @@ for (let sp = 0; sp < SPC.LOOK_N[7]; sp++) {
       const look = SPC.withSpecies([], sp);
       look[i] = v;
       look[SPC.LI.acc] = (sp + v) % SPC.LOOK_N[SPC.LI.acc];
-      for (const view of views) for (let f = 0; f < 6; f++) { inside(draw(look, view, f), `${SPC.SPECIES[sp].name} ${key} ${v} ${view} ${f}`); n++; }
+      for (const view of views) for (let f = 0; f < 6; f++) { inside(draw(look, view, f), view, `${SPC.SPECIES[sp].name} ${key} ${v} ${view} ${f}`); n++; }
     }
   }
 }
@@ -168,6 +172,33 @@ assert.equal(heads.size, SPC.SPECIES.length, "every animal has a face of its own
     }
   }
   assert.equal(shape.size, SPC.LOOK_N[tail] - 2, "each tail has its own rear silhouette");
+}
+
+// Check the real pixels as well: the near body's outline stays opaque across the hidden tail root.
+{
+  installCanvas();
+  const { personFrame, playerLook } = await import("../public/sprites.js");
+  const back = (look, f, density) => {
+    const frame = personFrame(playerLook("adventurer", look), "back", f, density);
+    return frame.getContext("2d").getImageData(0, 0, frame.width, frame.height).data;
+  };
+  for (const sp of [1, 14]) for (const f of [0, 2, 4]) for (const density of [1, 2]) {
+    const look = SPC.withSpecies([], sp);
+    look[SPC.LI.cloth] = 3;
+    look[SPC.LI.tail] = 1;
+    const body = back(look, f, density);
+    for (let i = 2; i < SPC.LOOK_N[SPC.LI.tail]; i++) {
+      look[SPC.LI.tail] = i;
+      const tail = back(look, f, density);
+      let exposed = 0;
+      for (let p = 0; p < body.length; p += 4) {
+        if (!body[p + 3]) { if (tail[p + 3]) exposed++; continue; }
+        assert.ok(body[p] === tail[p] && body[p + 1] === tail[p + 1] && body[p + 2] === tail[p + 2] && body[p + 3] === tail[p + 3],
+          `tail ${i} cannot overwrite the outlined body, species ${sp}, frame ${f}, scale ${density}`);
+      }
+      assert.ok(exposed > 0, `tail ${i} remains visible behind the outline`);
+    }
+  }
 }
 
 // ── presets, species defaults and the hat anchor
