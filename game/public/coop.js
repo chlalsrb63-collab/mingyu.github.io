@@ -524,10 +524,10 @@ const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&l
 
 // ───────────────────────────── events, each frame ─────────────────────────────
 
-const SND = { 4: "swing", 5: "coin", 6: "pop", 14: "quest", 15: "fail", 18: "warn", 19: "hit", 20: "pop", 22: "coin", 23: "ui",
-  30: "dish_done", 31: "pan_place", 32: "fail", 38: "coin", 40: "ui", 42: "coin", 43: "pop", 44: "warn",
+const SND = { 4: "broom_sweep", 5: "coin", 6: "pop", 14: "quest", 15: "fail", 18: "warn", 19: "lift_heave", 20: "pop", 22: "coin", 23: "ui",
+  30: "dish_done", 31: "pan_place", 32: "fail", 33: "dish_burnt", 34: "knife_chop", 35: "plate_clink", 36: "ui", 37: "ui", 38: "order_done", 39: "plate_clink", 40: "order_bell", 41: "dish_scrub", 42: "dish_clean", 43: "plate_clink", 44: "warn",
   9: "hit", 10: "hit", 11: "fail", 12: "pop", 13: "coin", 17: "swing", 50: "ui", 51: "pop", 53: "craft_ok", 54: "pop", 55: "hit", 56: "ui", 57: "pop", 58: "craft_ok",
-  61: "fail", 62: "ui", 64: "warn", 65: "ui", 66: "pop", 90: "ui", 91: "fail", 92: "book_thunk", 93: "desk_bell", 94: "book_thunk", 95: "wrong_buzz", 96: "pop", 97: "pop" };
+  61: "fail", 62: "order_bell", 64: "warn", 65: "ui", 66: "pop", 90: "ui", 91: "fail", 92: "book_thunk", 93: "desk_bell", 94: "book_thunk", 95: "wrong_buzz", 96: "pop", 97: "pop" };
 const COL = { 4: "#c8a070", 5: "#ff9a40", 6: "#8fd060", 18: "#7a5a3a", 19: "#e8d070", 20: "#6a8a6a", 22: "#60c0ff",
   32: "#e05040", 33: "#4a4a50", 34: "#8fd060", 38: "#ffd860", 41: "#a8d8ff", 42: "#e8f4ff", 12: "#a8d8ff", 13: "#ffd860", 17: "#ff9a40", 53: "#fff0a0", 58: "#ffb040" };
 /** cj and cb events; true when the event was ours. */

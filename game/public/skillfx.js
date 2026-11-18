@@ -1671,6 +1671,7 @@ const recentTele = [];
  */
 export function bloomwhaleDive(sx, sy, tx, ty, r = 70, ms = 1800) {
   const moved = Math.hypot(tx - sx, ty - sy) > 22;
+  Sound.play("whale_dive");
   // 1. Dive stage (0..ms): inward-curling spiral ripples + petals sinking into the floor,
   //    while the r=70 outer warning boundary and 8 outward dodge chevrons stay crisp and unobstructed.
   S3.fxCustom((g, k) => {
@@ -1762,6 +1763,7 @@ export function bloomwhaleDive(sx, sy, tx, ty, r = 70, ms = 1800) {
   //    splitting outward ground ripples (갈라지는 파문) + upward-splashing pixel columns & droplets (위로 튀는 픽셀)
   const delay = Math.max(0, ms - 60), rDur = 740;
   later(delay, () => {
+    Sound.play("whale_burst");
     S3.fx.wave(tx, ty, r, "#7ff6ff", 380);
     rim(tx, ty, r, "#0c1016", "#e0ffff", 460, 0.22);
     shards(tx, ty, r * 0.82, 12, 36, "#0c1016", "#7ff6ff", 460, 0);
@@ -1849,6 +1851,7 @@ export function bloodhornJet(x0, y0, pts, r = 13, ms = 900) {
   const ux = dx0 / len, uy = dy0 / len, nx = -uy, ny = ux;
   const hx = x0 + ux * 12, hy = y0 + uy * 12, ex = last[0] + ux * 6, ey = last[1] + uy * 6;
   const totalMs = ms + 420;
+  later(380, () => Sound.play("blood_jet"));
 
   S3.fxCustom((g, k) => {
     const tMs = k * totalMs, inWarn = tMs <= ms, wk = Math.min(1, tMs / ms);
@@ -2181,14 +2184,14 @@ export function skillEvent(e, ctx) {
         bloodhornJet(m.x, m.y, pts, r, ms);
         return true;
       }
-      if (m && code === 8) { f.burst(m.x, m.y, 0.8, "#ffe08a", 30, 2.6); B.shake(6); Sound.play("slam"); }
+      if (m && code === 8) { f.burst(m.x, m.y, 0.8, "#ffe08a", 30, 2.6); B.shake(6); Sound.play("boss_break"); }
       else if (m && code === 7) { f.ring(m.x, m.y, 90, "#ff3a2a", 420, true); B.shake(8); Sound.play("boom"); }
-      else if (m && code === 6) f.burst(m.x, m.y, 0.6, "#ff4fd8", 18, 2);   // an add flew into it and healed it
+      else if (m && code === 6) { f.burst(m.x, m.y, 0.6, "#ff4fd8", 18, 2); Sound.play("boss_absorb"); }   // an add flew into it and healed it
       return true;
     }
     case "dx": S3.props.delete("dc" + e[1]); f.ring(e[2], e[3], e[4], "#8a5ad8", 320, true); f.burst(e[2], e[3], 0.6, "#c890ff", 30, 3); B.shake(4); Sound.play("decoy_pop"); return true;
-    case "fz": { sign(e[1], "fz", t + e[2]); const m = G.mobs.get(e[1]); if (m) { text(G, "빙결", m.x, m.y, (m.h3 || 1.3) + 0.4, "#bfe8ff"); f.sparkle(m.x, m.y, 0.6, "#e8f8ff", 10); } return true; }
-    case "vu": sign(e[1], "vu", t + e[2]); return true;
+    case "fz": { sign(e[1], "fz", t + e[2]); const m = G.mobs.get(e[1]); if (m) { text(G, "빙결", m.x, m.y, (m.h3 || 1.3) + 0.4, "#bfe8ff"); f.sparkle(m.x, m.y, 0.6, "#e8f8ff", 10); if (skillNear(G, m.x, m.y)) Sound.play("freeze_lock"); } return true; }
+    case "vu": { sign(e[1], "vu", t + e[2]); const m = G.mobs.get(e[1]); if (m && skillNear(G, m.x, m.y)) Sound.play("armor_break"); return true; }
     case "tip": {
       const m = G.mobs.get(e[1]);
       if (m) { text(G, "창끝!", m.x + 6, m.y, (m.h3 || 1.3) + 0.55, "#c8fff0"); f.spark(m.x, m.y, "#c8fff0", 1.2); }
@@ -2497,7 +2500,7 @@ function passive(kind, src, eid, tx, ty, G) {
     case 111: f.burst(tx, ty, 0.5, p.m, 10, 1.6); f.spark(tx, ty, p.m, 0.9); if (mine) Sound.play("bleed"); break;
     case 113: f.ring(src.x, src.y, 20, p.l, 360); f.sparkle(src.x, src.y, 0.8, p.l, 14); if (mine) { text(G, "공명!", src.x, src.y, 1.9, p.l); Sound.play("reso_ready"); } break;
     case 114: f.spark(tx, ty, p.al, 1); f.ring(tx, ty, 12, p.m, 260); if (mine) Sound.play("brand"); break;
-    case 115: f.spark(tx, ty, p.m, 1.1); if (mine) text(G, "원거리!", tx, ty, 1.5, p.m); break;
+    case 115: f.spark(tx, ty, p.m, 1.1); if (mine) { text(G, "원거리!", tx, ty, 1.5, p.m); Sound.play("hawk_eye"); } break;
   }
 }
 
@@ -2786,7 +2789,12 @@ const PS = {
   148: ["staff_chant30", "증폭!"], 149: ["staff_spark40", "집중!"], 150: ["staff_flood50", ""], 151: ["book_clause30", "낙인 전염"],
   152: ["book_return50", ""], 153: ["bow_string30", ""], 154: ["bow_quill50", "약점 포착!"],
 };
-const PS_SOUND = { 140: "inertia_full", 141: "quake", 143: "reso_ready", 144: "tip", 145: "bleed", 147: "tip", 148: "reso_ready", 149: "reso_ready", 151: "brand", 152: "brand", 154: "tip" };
+const PS_SOUND = {
+  140: "inertia_full", 141: "quake", 142: "edge_cut", 143: "reso_ready",
+  144: "tip", 145: "bleed", 146: "spear_cd", 147: "tip",
+  148: "reso_ready", 149: "reso_ready", 150: "mana_surge", 151: "brand",
+  152: "brand", 153: "double_nock", 154: "hawk_eye",
+};
 function procFx(G, e) {
   const [, eid, code, x, y] = e, d = PS[code];
   if (!d) return;
