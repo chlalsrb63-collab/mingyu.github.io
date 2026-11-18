@@ -12,12 +12,13 @@
 //         ev, ms until the lanes start, hops taken, ms since the delivery began]; ev = [seq, 1 delivered · 2 delivered flawless · 3 hit · 4 water · 5 gift, points]
 const CROSS = {
   W: 13, H: 11, SX: 6, SY: 10,
+  D0: 4, VMAX: 2.4, MEND: 5000,      // 2026-11-18: the street starts as hard as the old 5th delivery (D0), the lanes speed up to VMAX x (the old top was 1.6); a heart mends every MEND ms
   STEP: 50, CATCH: 40,
   CD: 300, CD_FEVER: 150, STUN: 500, PAUSE: 400,                   // ms: a hop's cooldown (halved in a fever), the pause after a hit, after a delivery
   PAY: 100, FLAWLESS: 50, GIFT: 30, HIT: 20, BONUS: 3, BONUS_MAX: 60, BUDGET: [12000, 26000],
   IN: 0.2, CIN: 0.1, SLACK: 0.2,                                   // hit-box inset of the courier and of a cart; how far past a log's end a foot still holds
 };
-Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 2550, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차와 행인을 피하고, 강에서는 통나무를 타고 건너 꾸러미를 전하세요." } });
+Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 1300, lives: 5, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차·행인에 치이거나 강에 빠지면 ♥ 하나(5개면 퇴근), 5초마다 ♥ 하나 회복. 통나무를 타고 건너 꾸러미를 전하세요." } });
 
 const crossN = (ln) => Math.ceil((CROSS.W + ln.len) / ln.sp);
 /** Where the ring's first object is (cells, 0 ≤ phase < ring length) `T` ms. */
@@ -64,18 +65,18 @@ function crossHop(g, d) {
 /** A delivery's whole street: a function of (seed, delivery number, rush). Walkers and carts on the road, logs on the river; two gifts. */
 function crossBuild(seed, d, rush) {
   const box = { seed: (seed + Math.imul(d + 1, 0x9e3779b1)) | 0 };
-  const m = Math.min(1.6, 1 + 0.15 * d) * rush, ml = Math.min(1.5, 1 + 0.125 * d) * rush, flip = rnd(box) < 0.5 ? 1 : -1;
+  const dd = d + CROSS.D0, m = Math.min(CROSS.VMAX, 1 + 0.15 * dd) * rush, ml = Math.min(CROSS.VMAX * 0.94, 1 + 0.125 * dd) * rush, flip = rnd(box) < 0.5 ? 1 : -1;
   const L = new Array(CROSS.H).fill(null);
   const mk = (y, k, v, len, sp) => { L[y] = { k, v: Math.round(v * 10) * flip * (y % 2 ? 1 : -1), sp, len, ph: ri(box, 0, sp * 100 - 1) }; };
-  const logLen = Math.max(3, 5 - (d >> 1));
-  for (let y = 1; y <= 4; y++) mk(y, 2, (0.5 + 0.4 * rnd(box)) * ml, logLen, logLen + 1 + ri(box, 0, 1) + (d > 2 ? 1 : 0));
-  mk(6, 0, (1.0 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - d) + ri(box, 0, 1));
-  mk(7, 1, (0.5 + 0.3 * rnd(box)) * m, 1, 5 + ri(box, 0, 2));
-  mk(8, 0, (0.9 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - d) + ri(box, 0, 1));
-  mk(9, 1, (0.4 + 0.3 * rnd(box)) * m, 1, 5 + ri(box, 0, 2));
+  const logLen = Math.max(3, 5 - (dd >> 1));
+  for (let y = 1; y <= 4; y++) mk(y, 2, (0.5 + 0.4 * rnd(box)) * ml, logLen, logLen + 1 + ri(box, 0, 1) + (dd > 2 ? 1 : 0));
+  mk(6, 0, (1.0 + 0.6 * rnd(box)) * m, 2, Math.max(5, 10 - dd) + ri(box, 0, 1));
+  mk(7, 1, (0.5 + 0.3 * rnd(box)) * m, 1, 4 + ri(box, 0, 2));
+  mk(8, 0, (0.9 + 0.6 * rnd(box)) * m, 2, Math.max(5, 10 - dd) + ri(box, 0, 1));
+  mk(9, 1, (0.4 + 0.3 * rnd(box)) * m, 1, 4 + ri(box, 0, 2));
   const gifts = [{ y: 6 + ri(box, 0, 3), j: -1, a: ri(box, 1, CROSS.W - 2), got: 0 }];
-  if (d > 0) { const y = 1 + ri(box, 0, 3), ln = L[y]; gifts.push({ y, j: ri(box, 0, crossN(ln) - 1), a: ri(box, 0, ln.len - 1), got: 0 }); }
-  return { L, gifts, goal: d === 0 ? 5 : 0 };
+  { const y = 1 + ri(box, 0, 3), ln = L[y]; gifts.push({ y, j: ri(box, 0, crossN(ln) - 1), a: ri(box, 0, ln.len - 1), got: 0 }); }
+  return { L, gifts, goal: 0 };
 }
 /** A new delivery begins at `T`: the courier is at the start, the street is new. */
 function crossNew(ab, T, pause) {
@@ -85,7 +86,7 @@ function crossNew(ab, T, pause) {
   g.dAt = T; g.x = CROSS.SX; g.y = CROSS.SY; g.hit = 0; g.stepAt = T + pause;
 }
 function crossLose(ab, g, T, why) {
-  albaBad(ab, CROSS.HIT);
+  albaStrike(ab, T, CROSS.HIT);   // run over or in the river: a heart
   g.hit = 1; g.x = CROSS.SX; g.y = why === 2 && g.goal === 0 ? 5 : CROSS.SY; g.stepAt = T + CROSS.STUN;   // water: back to the median; a cart: back to the start
   g.ev = [++g.seq, why === 1 ? 3 : 4, 0];
 }
@@ -99,7 +100,7 @@ function crossLoot(ab, g, T) {
 }
 /** The courier is at the drop-off: 100 + the time left (3 a second, at most 60) + 50 for a clean run; then the next delivery. */
 function crossDeliver(ab, T) {
-  const g = ab.g, left = CROSS.BUDGET[g.d ? 1 : 0] - (T - g.dAt);
+  const g = ab.g, left = CROSS.BUDGET[1] - (T - g.dAt);
   const bonus = clamp(Math.round((left / 1000) * CROSS.BONUS), 0, CROSS.BONUS_MAX), clean = g.hit ? 0 : CROSS.FLAWLESS;
   const pts = albaGood(ab, T, CROSS.PAY + bonus + clean);
   g.n++;
@@ -108,12 +109,13 @@ function crossDeliver(ab, T) {
 }
 function crossTick(ab, T) {
   const g = ab.g, r = crossMove(g, T);
+  if (T >= g.mendAt) { g.mendAt += CROSS.MEND; if (ab.strikes > 0 && !ab.out) { ab.strikes--; albaTouch(ab); } }
   if (r) crossLose(ab, g, T, r); else crossLoot(ab, g, T);
 }
 
 ALBA_RULES.cross = {
   init(S, p, ab) {
-    ab.g = { seed: ri(ab.box, 1, 1e9), simAt: ab.runAt, d: -1, n: 0, L: null, dAt: ab.runAt, goal: 5, gifts: [], x: CROSS.SX, y: CROSS.SY, stepAt: ab.runAt, hit: 0, acc: 0, seq: 0, ev: [0, 0, 0], sentAt: 0 };
+    ab.g = { seed: ri(ab.box, 1, 1e9), simAt: ab.runAt, d: -1, n: 0, L: null, dAt: ab.runAt, goal: 5, gifts: [], x: CROSS.SX, y: CROSS.SY, stepAt: ab.runAt, hit: 0, acc: 0, mendAt: ab.runAt + CROSS.MEND, seq: 0, ev: [0, 0, 0], sentAt: 0 };
     crossNew(ab, ab.runAt, 0);
   },
   adv(S, p, ab, now) {

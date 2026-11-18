@@ -19154,12 +19154,13 @@ function airshipReturn(st) {
 //         ev, ms until the lanes start, hops taken, ms since the delivery began]; ev = [seq, 1 delivered · 2 delivered flawless · 3 hit · 4 water · 5 gift, points]
 const CROSS = {
   W: 13, H: 11, SX: 6, SY: 10,
+  D0: 4, VMAX: 2.4, MEND: 5000,      // 2026-11-18: the street starts as hard as the old 5th delivery (D0), the lanes speed up to VMAX x (the old top was 1.6); a heart mends every MEND ms
   STEP: 50, CATCH: 40,
   CD: 300, CD_FEVER: 150, STUN: 500, PAUSE: 400,                   // ms: a hop's cooldown (halved in a fever), the pause after a hit, after a delivery
   PAY: 100, FLAWLESS: 50, GIFT: 30, HIT: 20, BONUS: 3, BONUS_MAX: 60, BUDGET: [12000, 26000],
   IN: 0.2, CIN: 0.1, SLACK: 0.2,                                   // hit-box inset of the courier and of a cart; how far past a log's end a foot still holds
 };
-Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 2550, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차와 행인을 피하고, 강에서는 통나무를 타고 건너 꾸러미를 전하세요." } });
+Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 1300, lives: 5, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차·행인에 치이거나 강에 빠지면 ♥ 하나(5개면 퇴근), 5초마다 ♥ 하나 회복. 통나무를 타고 건너 꾸러미를 전하세요." } });
 
 const crossN = (ln) => Math.ceil((CROSS.W + ln.len) / ln.sp);
 /** Where the ring's first object is (cells, 0 ≤ phase < ring length) `T` ms. */
@@ -19206,18 +19207,18 @@ function crossHop(g, d) {
 /** A delivery's whole street: a function of (seed, delivery number, rush). Walkers and carts on the road, logs on the river; two gifts. */
 function crossBuild(seed, d, rush) {
   const box = { seed: (seed + Math.imul(d + 1, 0x9e3779b1)) | 0 };
-  const m = Math.min(1.6, 1 + 0.15 * d) * rush, ml = Math.min(1.5, 1 + 0.125 * d) * rush, flip = rnd(box) < 0.5 ? 1 : -1;
+  const dd = d + CROSS.D0, m = Math.min(CROSS.VMAX, 1 + 0.15 * dd) * rush, ml = Math.min(CROSS.VMAX * 0.94, 1 + 0.125 * dd) * rush, flip = rnd(box) < 0.5 ? 1 : -1;
   const L = new Array(CROSS.H).fill(null);
   const mk = (y, k, v, len, sp) => { L[y] = { k, v: Math.round(v * 10) * flip * (y % 2 ? 1 : -1), sp, len, ph: ri(box, 0, sp * 100 - 1) }; };
-  const logLen = Math.max(3, 5 - (d >> 1));
-  for (let y = 1; y <= 4; y++) mk(y, 2, (0.5 + 0.4 * rnd(box)) * ml, logLen, logLen + 1 + ri(box, 0, 1) + (d > 2 ? 1 : 0));
-  mk(6, 0, (1.0 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - d) + ri(box, 0, 1));
-  mk(7, 1, (0.5 + 0.3 * rnd(box)) * m, 1, 5 + ri(box, 0, 2));
-  mk(8, 0, (0.9 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - d) + ri(box, 0, 1));
-  mk(9, 1, (0.4 + 0.3 * rnd(box)) * m, 1, 5 + ri(box, 0, 2));
+  const logLen = Math.max(3, 5 - (dd >> 1));
+  for (let y = 1; y <= 4; y++) mk(y, 2, (0.5 + 0.4 * rnd(box)) * ml, logLen, logLen + 1 + ri(box, 0, 1) + (dd > 2 ? 1 : 0));
+  mk(6, 0, (1.0 + 0.6 * rnd(box)) * m, 2, Math.max(5, 10 - dd) + ri(box, 0, 1));
+  mk(7, 1, (0.5 + 0.3 * rnd(box)) * m, 1, 4 + ri(box, 0, 2));
+  mk(8, 0, (0.9 + 0.6 * rnd(box)) * m, 2, Math.max(5, 10 - dd) + ri(box, 0, 1));
+  mk(9, 1, (0.4 + 0.3 * rnd(box)) * m, 1, 4 + ri(box, 0, 2));
   const gifts = [{ y: 6 + ri(box, 0, 3), j: -1, a: ri(box, 1, CROSS.W - 2), got: 0 }];
-  if (d > 0) { const y = 1 + ri(box, 0, 3), ln = L[y]; gifts.push({ y, j: ri(box, 0, crossN(ln) - 1), a: ri(box, 0, ln.len - 1), got: 0 }); }
-  return { L, gifts, goal: d === 0 ? 5 : 0 };
+  { const y = 1 + ri(box, 0, 3), ln = L[y]; gifts.push({ y, j: ri(box, 0, crossN(ln) - 1), a: ri(box, 0, ln.len - 1), got: 0 }); }
+  return { L, gifts, goal: 0 };
 }
 /** A new delivery begins at `T`: the courier is at the start, the street is new. */
 function crossNew(ab, T, pause) {
@@ -19227,7 +19228,7 @@ function crossNew(ab, T, pause) {
   g.dAt = T; g.x = CROSS.SX; g.y = CROSS.SY; g.hit = 0; g.stepAt = T + pause;
 }
 function crossLose(ab, g, T, why) {
-  albaBad(ab, CROSS.HIT);
+  albaStrike(ab, T, CROSS.HIT);   // run over or in the river: a heart
   g.hit = 1; g.x = CROSS.SX; g.y = why === 2 && g.goal === 0 ? 5 : CROSS.SY; g.stepAt = T + CROSS.STUN;   // water: back to the median; a cart: back to the start
   g.ev = [++g.seq, why === 1 ? 3 : 4, 0];
 }
@@ -19241,7 +19242,7 @@ function crossLoot(ab, g, T) {
 }
 /** The courier is at the drop-off: 100 + the time left (3 a second, at most 60) + 50 for a clean run; then the next delivery. */
 function crossDeliver(ab, T) {
-  const g = ab.g, left = CROSS.BUDGET[g.d ? 1 : 0] - (T - g.dAt);
+  const g = ab.g, left = CROSS.BUDGET[1] - (T - g.dAt);
   const bonus = clamp(Math.round((left / 1000) * CROSS.BONUS), 0, CROSS.BONUS_MAX), clean = g.hit ? 0 : CROSS.FLAWLESS;
   const pts = albaGood(ab, T, CROSS.PAY + bonus + clean);
   g.n++;
@@ -19250,12 +19251,13 @@ function crossDeliver(ab, T) {
 }
 function crossTick(ab, T) {
   const g = ab.g, r = crossMove(g, T);
+  if (T >= g.mendAt) { g.mendAt += CROSS.MEND; if (ab.strikes > 0 && !ab.out) { ab.strikes--; albaTouch(ab); } }
   if (r) crossLose(ab, g, T, r); else crossLoot(ab, g, T);
 }
 
 ALBA_RULES.cross = {
   init(S, p, ab) {
-    ab.g = { seed: ri(ab.box, 1, 1e9), simAt: ab.runAt, d: -1, n: 0, L: null, dAt: ab.runAt, goal: 5, gifts: [], x: CROSS.SX, y: CROSS.SY, stepAt: ab.runAt, hit: 0, acc: 0, seq: 0, ev: [0, 0, 0], sentAt: 0 };
+    ab.g = { seed: ri(ab.box, 1, 1e9), simAt: ab.runAt, d: -1, n: 0, L: null, dAt: ab.runAt, goal: 5, gifts: [], x: CROSS.SX, y: CROSS.SY, stepAt: ab.runAt, hit: 0, acc: 0, mendAt: ab.runAt + CROSS.MEND, seq: 0, ev: [0, 0, 0], sentAt: 0 };
     crossNew(ab, ab.runAt, 0);
   },
   adv(S, p, ab, now) {
@@ -19394,13 +19396,14 @@ ALBA_RULES.fly = {
 //          simAt, done: garlands, f: flower cells, gold: {c, until} | null, th: thorn cells, thAt, goldAt, n: steps, hits, seq, ev: [seq, flags, cell] (1 flower · 2 gold · 4 garland · 8 crash) }.
 // The one input is {d: 0..3}: a turn, queued for the next step; the same heading and the reverse of the last queued heading are ignored.
 // view = [chain cells, dir, ms to the next step, step ms, flower cells, [gold cell, ms left] | 0, thorn cells, garlands done, queued turns, ev]
+// 2026-11-18: faster from the first step, thorns sooner and denser; a crash costs a heart, one mends every `mend` ms
 const GAR = {
-  W: 16, base: 143, min: 110, ramp: 0.92, stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
-  thornFirst: 6000, thornEvery: 3500, thornMax: 14, goldFirst: [6000, 12000], goldGap: [8000, 14000], goldLife: 6000,
+  W: 16, base: 120, min: 80, ramp: 0.92, mend: 7000, stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
+  thornFirst: 3000, thornEvery: 2400, thornMax: 22, goldFirst: [6000, 12000], goldGap: [8000, 14000], goldLife: 6000,
   slow: 1.35, pts: [10, 50, 100], pen: 40, catchup: 40, queue: 2,
 };
 const GAR_DX = [0, 1, 0, -1], GAR_DY = [-1, 0, 1, 0];
-Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 3150, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊겨요. 12송이면 화환 완성!" } });
+Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 3700, lives: 5, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊기고 ♥ 하나가 깎여요(5개면 퇴근, 7초마다 하나 회복). 12송이면 화환 완성!" } });
 
 /** Ms between steps: faster with every garland, ×1.35 slower in a fever ("봄바람"). */
 const garInt = (g, ab, T) => Math.round(Math.max(GAR.min, GAR.base * GAR.ramp ** g.done) * (T < ab.feverUntil ? GAR.slow : 1));
@@ -19453,7 +19456,7 @@ function garAim(g) {
 /** The head met a wall / a thorn / its own chain: it stays where it is, shortened to a stub; a pause, then it goes on. */
 function garCrash(ab, T, h) {
   const g = ab.g;
-  albaBad(ab, GAR.pen);
+  albaStrike(ab, T, GAR.pen);   // the serious failure: a crash costs a heart
   g.hits++;
   g.c = g.c.slice(-GAR.stub); g.q.length = 0;
   garAim(g);
@@ -19464,6 +19467,7 @@ function garCrash(ab, T, h) {
 function garStep(ab, T) {
   const g = ab.g, W = GAR.W;
   g.n++;
+  if (GAR.mend && T >= g.mendAt) { g.mendAt += GAR.mend; if (ab.strikes > 0 && !ab.out) { ab.strikes--; albaTouch(ab); } }   // a heart mends with time
   if (g.gold && T >= g.gold.until) g.gold = null;
   if (!g.gold && T >= g.goldAt) {
     const c = garSpawn(g, g.rg, 0);
@@ -19491,7 +19495,7 @@ ALBA_RULES.garland = {
   init(S, p, ab) {
     const W = GAR.W, sub = (x) => ({ seed: (ab.box.seed ^ x) | 0 });
     const g = ab.g = { c: [8 * W + 6, 8 * W + 7, 8 * W + 8], dir: 1, q: [], simAt: ab.runAt + GAR.lead, done: 0, f: [], gold: null, th: [], thAt: ab.runAt + GAR.thornFirst, goldAt: 0,
-      rf: sub(0x1f1f1f), rt: sub(0x2e2e2e), rg: sub(0x3d3d3d), n: 0, hits: 0, seq: 0, ev: [0, 0, 0] };
+      rf: sub(0x1f1f1f), rt: sub(0x2e2e2e), rg: sub(0x3d3d3d), mendAt: ab.runAt + GAR.mend, n: 0, hits: 0, seq: 0, ev: [0, 0, 0] };
     g.goldAt = ab.runAt + ri(g.rg, GAR.goldFirst[0], GAR.goldFirst[1]);
     for (let i = 0; i < GAR.flowers; i++) g.f.push(garSpawn(g, g.rf, 0));
   },
@@ -19530,13 +19534,14 @@ ALBA_RULES.garland = {
 //         bulbs left, ev]; courier = [x, y, tx, ty, pr now, sp, dir]; shadow = [x, y, tx, ty, pr now, sp, 0 normal · 1 frightened · 2 hidden]
 //         ev = [seq, 1 big bulb · 2 caught · 3 alley cleared · 4 shadow eaten, points]
 const LAMP = {
-  N: 15, STEP: 50, CATCH: 40, UNIT: 120, PSP: 40, SP: [34, 34, 36, 32], FSP: 22, PW: 8000,
+  N: 15, STEP: 50, CATCH: 40, UNIT: 120, PSP: 40, SP: [34, 34, 36, 32], FSP: 22, PW: 5500,
+  RDELAY: [60, 90, 120, 150], EL0: 2, RAMP: 4, SPMAX: 42, MEND: 8000, HEAL: 4,   // 2026-11-18: no gentle first alley (EL0 levels ahead), the shadows speed up by RAMP over the shift (up to SPMAX, a hair faster than the courier); a caught heart mends every MEND ms and every HEAL bulbs lit
   START: [7, 13], HOME: [[7, 5], [5, 3], [9, 3], [7, 1]], CORNER: [[13, 1], [1, 1], [1, 13], [13, 13]], DELAY: [0, 30, 60, 90], FREEZE: 16,
   PEL: 10, GROUP: 5, BIG: 50, CLEAR: 200, EAT: 200, PEN: 30, R2: 0.36, WANT: 40,
   CUT: [8, 5],   // a ~90 s shift: the first two alleys only light the bottom rows (from this row down), so a first alley takes about a minute
 };
-const lampEl = (lv) => 2 * lv;   // an alley is two "difficulty levels" at once (loops, scatter, shadow speed)
-Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 7300, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자를 피하고, 큰 전구를 켜면 그림자를 잡을 수 있어요!" } });
+const lampEl = (lv) => 2 * lv + LAMP.EL0;   // an alley is two "difficulty levels" at once (loops, scatter, shadow speed)
+Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 5500, lives: 4, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자에게 잡히면 ♥ 하나(4개면 퇴근)! 시간이 지나거나 전구를 켜면 ♥가 회복돼요. 큰 전구로 그림자를 잡아보세요." } });
 const LAMP_D = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 /** The alley of a level: [wall per tile (1 wall · 0 open)]. Symmetric, connected, loops, no dead ends; more loops (an easier alley) for the first levels. */
@@ -19583,10 +19588,10 @@ function lampLevel(g, lv) {
   lampReset(g);
 }
 /** Everybody back to their start (a new alley, or the courier was caught): the shadows wait their turn at home. */
-function lampReset(g) {
+function lampReset(g, dl = LAMP.DELAY) {
   g.pl = lampEnt(LAMP.START[0], LAMP.START[1]);
   g.want = -1; g.wantAt = 0; g.pwUntil = 0; g.on = 0; g.chain = 0;
-  g.sh = LAMP.HOME.map(([x, y], i) => ({ ...lampEnt(x, y), home: 1, wait: LAMP.DELAY[i], fr: 0 }));
+  g.sh = LAMP.HOME.map(([x, y], i) => ({ ...lampEnt(x, y), home: 1, wait: dl[i], fr: 0 }));
   g.frz = LAMP.FREEZE;
 }
 function lampFlush(ab, g, T) {
@@ -19597,6 +19602,7 @@ function lampEat(ab, g, T) {
   const p = g.pl, i = p.y * LAMP.N + p.x, v = g.pel[i];
   if (!v) return;
   g.pel[i] = 0; g.left--;
+  if (LAMP.HEAL && ++g.hb >= LAMP.HEAL) { g.hb = 0; if (ab.strikes > 0 && !ab.out) { ab.strikes--; albaTouch(ab); } }   // progress mends a heart
   if (v === 2) { lampFlush(ab, g, T); g.ev = [++g.seq, 1, albaGood(ab, T, LAMP.BIG)]; g.pwUntil = T + LAMP.PW; g.on = 0; }
   else if (++g.pend >= LAMP.GROUP) lampFlush(ab, g, T);
   if (!g.left) {
@@ -19644,7 +19650,7 @@ function lampChoose(g, s, i) {
   s.dir = d; s.tx = s.x + LAMP_D[d][0]; s.ty = s.y + LAMP_D[d][1];
 }
 /** A shadow's speed (units a step): slower when it flees, quicker alley by alley, never as quick as the courier. */
-const lampSp = (g, s, i) => (s.fr ? LAMP.FSP : Math.min(LAMP.PSP - 2, LAMP.SP[i] + 2 * Math.min(lampEl(g.lv), 3)));
+const lampSp = (g, s, i) => (s.fr ? LAMP.FSP : Math.min(LAMP.SPMAX, LAMP.SP[i] + 2 * Math.min(lampEl(g.lv), 3) + Math.min(LAMP.RAMP, ((g.tk * LAMP.RAMP) / 1800) | 0)));
 /** One entity gains `sp` units; every tile it completes runs `arrive` and picks the next (the rest of the step carries over). */
 function lampMove(g, e, sp, choose, arrive) {
   if (e.tx === e.x && e.ty === e.y) { choose(e); if (e.tx === e.x && e.ty === e.y) { e.pr = 0; return; } }
@@ -19672,6 +19678,7 @@ function lampFright(ab, g, T) {
 function lampTick(ab, T) {
   const g = ab.g;
   g.simAt = T; g.tk++;
+  if (LAMP.MEND && T >= g.mendAt) { g.mendAt += LAMP.MEND; if (ab.strikes > 0 && !ab.out) { ab.strikes--; albaTouch(ab); } }   // a heart mends with time
   if (g.frz > 0) { g.frz--; return; }
   lampFright(ab, g, T);
   lampMove(g, g.pl, LAMP.PSP, () => lampPick(g), () => lampEat(ab, g, T));
@@ -19696,15 +19703,15 @@ function lampTick(ab, T) {
   }
   if (caught) {
     lampFlush(ab, g, T);
-    albaBad(ab, LAMP.PEN);
+    albaStrike(ab, T, LAMP.PEN);   // the serious failure: caught by a shadow costs a heart
     g.ev = [++g.seq, 2, 0];
-    lampReset(g);
+    lampReset(g, LAMP.RDELAY);   // after a catch the shadows leave home later (a catch is a heart now)
   }
 }
 
 ALBA_RULES.lamp = {
   init(S, p, ab) {
-    ab.g = { seed: ri(ab.box, 1, 1e9), simAt: ab.runAt, tk: 0, lv: 0, w: null, pel: null, left: 0, pl: null, sh: null, want: -1, wantAt: 0, pwUntil: 0, on: 0, chain: 0, pend: 0, frz: 0, rb: { seed: ri(ab.box, 1, 1e9) }, df: null, dk: -1, seq: 0, ev: [0, 0, 0], sentAt: 0 };
+    ab.g = { seed: ri(ab.box, 1, 1e9), simAt: ab.runAt, tk: 0, lv: 0, w: null, pel: null, left: 0, pl: null, sh: null, want: -1, wantAt: 0, pwUntil: 0, on: 0, chain: 0, pend: 0, frz: 0, mendAt: ab.runAt + LAMP.MEND, hb: 0, rb: { seed: ri(ab.box, 1, 1e9) }, df: null, dk: -1, seq: 0, ev: [0, 0, 0], sentAt: 0 };
     lampLevel(ab.g, 0);
   },
   adv(S, p, ab, now) {
@@ -20052,9 +20059,9 @@ const PEST = { W: 240, H: 300, SY: 282, STEP: 50, SPD: 4, FCD: 4, BSP: 8, MAXV: 
   COLS: [6, 6, 7, 7, 8, 8, 8, 8], ROWS: [2, 3, 3, 4, 4, 4, 5, 5], KINDS: { 2: [1, 0], 3: [2, 1, 0], 4: [2, 1, 1, 0], 5: [2, 2, 1, 0, 0] },   // 0 cockroach · 1 mosquito · 2 moth
   WIG: [6, 14, 20], FRQ: [2, 3, 2], PTS: [10, 40, 60, 100, 100] };   // PTS: a bug in place · a diver · the rescue · the wave · the wave without a hit (extra)
 
-// A shift is ~90 s, so a wave climbs two "difficulty levels" (size, speed, divers, queen) at once: wave 1 · 2 · 3 · 4 = level 1 · 3 · 5 · 7.
-const pestLv = (wv) => 2 * wv - 1;
-const pestSpeed = (wv) => { const l = pestLv(wv); return 4 + (l > 2) + (l > 4) + (l > 6); };
+// A shift is ~90 s and ends at once after three rammed ships (2026-11-18: harder), so there is no gentle wave: wave 1 · 2 · 3 · 4 = level 3 · 5 · 7 · 9.
+const pestLv = (wv) => 2 * wv + 1;
+const pestSpeed = (wv) => { const l = pestLv(wv); return 4 + (l > 2) + (l > 4) + (l > 6) + (l > 8); };
 const pestSx = (g, i) => PEST.FX + (2 * (i % g.cols) - g.cols + 1) * 13 + g.ox;
 const pestSy = (g, i) => PEST.FY + ((i / g.cols) | 0) * PEST.SPY + g.oy;
 const pestQx = (g) => PEST.FX + g.ox, pestQy = (g) => PEST.FY - 26 + g.oy;
@@ -20142,11 +20149,11 @@ function pestFight(ab, T) {
     const open = [];
     for (let i = 0; i < g.F.length; i++) if (g.F[i] === 1) open.push(i);
     const lv = pestLv(g.wv);
-    if (away < 1 + (lv > 2) + (lv > 4) + (lv > 6) && open.length) {
+    if (away < 1 + (lv > 2) + (lv > 4) + (lv > 6) + (lv > 8) && open.length) {
       const i = open[ri(ab.box, 0, open.length - 1)], k = g.kinds[(i / g.cols) | 0], x = pestSx(g, i), y = pestSy(g, i);
       g.F[i] = 2;
       g.D.push({ i, k, x, y, y0: y, cx: x, a: 0, st: 0, vx: 0, vy: 0, web: k === 1 && g.wv >= 2 && rnd(ab.box) < 0.5 ? 1 : 0, wd: 0 });
-      g.dn = Math.max(16, 44 - 3 * lv) + ri(ab.box, 0, 10);
+      g.dn = Math.max(12, 40 - 3 * lv) + ri(ab.box, 0, 8);
     } else g.dn = 10;
   }
   for (let j = g.D.length - 1; j >= 0; j--) {
@@ -20161,7 +20168,7 @@ function pestFight(ab, T) {
     else if (w[1] >= P.SY - 8 && Math.abs(w[0] - sh.x) <= 12 && !sh.web && !sh.inv) {   // webbed: a flashing rescue bug runs across, shoot it to be free
       g.W.splice(j, 1);
       sh.web = P.WEB; sh.inv = Math.max(sh.inv, P.INV); g.wh++;
-      albaBad(ab, 0);
+      albaStrike(ab, T, 0);
       const right = sh.x >= P.W / 2;
       g.rs = { x: sh.x + (right ? -60 : 60), y: P.SY - 66, vx: right ? 3 : -3 };
       pestEv(g, 4, sh.x, P.SY, 0);
@@ -20200,7 +20207,7 @@ function pestStep(ab, T) {
     if (d.st || sh.inv || Math.abs(d.x - sh.x) >= 12 || Math.abs(d.y - P.SY) >= 10) continue;
     d.st = 1; d.x = pestSx(g, d.i); d.y = -12; d.vx = 0; d.vy = 4; g.wh++;   // it bounces off and flies back from the top (a rammed bug is not a dead bug)
     sh.stun = P.STUN; sh.inv = P.STUN + P.INV;
-    albaBad(ab, 0);
+    albaStrike(ab, T, 0);   // the serious failure: a rammed ship costs a ♥
     pestEv(g, 3, sh.x, P.SY, 0);
   }
   if (!g.rest && g.left <= 0) {
@@ -20212,7 +20219,7 @@ function pestStep(ab, T) {
   if (!g.rest || g.B.length || sh.vx || g.ev.length) g.dirty = 1;
 }
 
-ALBA.pest = { name: "해충 방제", npc: "bogle", place: "보글연금공방 지하 창고", skill: "alch", par: 5700, mul: 1.1, outfit: ["hat_goggles", "top_alch"], tool: "sprayer", hint: "마우스·손가락·←→로 이동, 분무는 자동! 급강하하는 놈과 거미줄을 피하세요." };
+ALBA.pest = { name: "해충 방제", npc: "bogle", place: "보글연금공방 지하 창고", skill: "alch", par: 5700, lives: 5, mul: 1.1, outfit: ["hat_goggles", "top_alch"], tool: "sprayer", hint: "마우스·손가락·←→로 이동, 분무는 자동! 급강하하는 놈에게 들이받히거나 거미줄에 걸리면 ♥ 하나씩, 5개가 다 깎이면 퇴근!" };
 ALBA_RULES.pest = {
   init(S, p, ab) {
     ab.g = { simAt: ab.runAt, n: 0, wv: 0, rest: 0, sw: 0, ox: 0, oy: 0, fvx: 0, fvy: 0, cols: 0, rows: 0, kinds: [], F: [], left: 0, D: [], q: null, B: [], W: [], rs: null,
@@ -20464,10 +20471,10 @@ ALBA_RULES.pipe = {
 //         3 hold done · 4 hold broken, the last RHY.ring), bpm, [perfect, good, miss]]; the notes are the waiting / held ones within RHY.ahead ms.
 const RHY = {
   ahead: 4000, refresh: 2500, lat: 40, perf: 45, good: 100, wide: 1.5, tailOk: 120, tailEnd: 150, lead: 2000, tail: 1500, sameLane: 240,
-  perSec: 7, strayN: 5, strayMs: 2000, lockMs: 1500, missPen: 10, pts: [10, 20], holdPts: 10, ring: 8, bpm: [100, 140],
-  quarterTo: 15000, holdFrom: 20000, chordFrom: 25000, tripleFrom: 70000,
+  perSec: 9, strayN: 5, strayMs: 2000, lockMs: 1500, missPen: 10, pts: [10, 20], holdPts: 10, ring: 8, bpm: [120, 170], run: 3, skip: 0.4,
+  quarterTo: 4000, holdFrom: 6000, chordFrom: 8000, tripleFrom: 45000,   // 2026-11-18: no gentle intro; `run` misses in a row cost a heart
 };
-Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 9300, mul: 1.05, outfit: ["hat_beret", "top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 D F J K (← ↓ ↑ →) 또는 터치로 연주하세요. 긴 음표는 끝까지 누르세요!" } });
+Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 14600, mul: 1.05, outfit: ["hat_beret", "top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 D F J K (← ↓ ↑ →) 또는 터치로 연주하세요. 긴 음표는 끝까지 누르세요! 음표를 3번 연속 놓치면 ♥ 하나가 깎여요(3개면 퇴근)." } });
 
 const rhyBpm = (t) => RHY.bpm[0] + (RHY.bpm[1] - RHY.bpm[0]) * clamp(t / ALBA_T.runMs, 0, 1);
 /** Fever widens every window ×1.5. */
@@ -20492,7 +20499,7 @@ function rhyBuild(box) {
     const u = t / T, beat = 60000 / rhyBpm(t), act = hEnd.filter((e) => e > t).length, cap = (t >= RHY.tripleFrom ? 3 : 2) - act;
     let busy = 0;
     for (let i = notes.length - 1; i >= 0 && notes[i].t > t - 1000; i--) busy++;   // keys already asked in the last second
-    if (cap > 0 && busy < RHY.perSec && rnd(box) >= (t < RHY.quarterTo ? 0.22 : 0.58 - 0.2 * u)) {
+    if (cap > 0 && busy < RHY.perSec && rnd(box) >= (t < RHY.quarterTo ? 0.22 : RHY.skip - 0.2 * u)) {
       let k = 1;
       if (t >= RHY.chordFrom && cap >= 2 && rnd(box) < 0.06 + 0.14 * u) k = Math.min(t >= RHY.tripleFrom && cap >= 3 && rnd(box) < 0.2 ? 3 : 2, RHY.perSec - busy);
       const lanes = rhyLanes(box, [0, 1, 2, 3].filter((l) => free[l] <= t), prev, k);
@@ -20513,7 +20520,12 @@ function rhyBuild(box) {
   notes.forEach((n, i) => { n.id = i; });
   const Q = [[], [], [], []];
   for (const n of notes) Q[n.l].push(n.id);
-  return { N: notes, Q, P: [0, 0, 0, 0], H: 0, hold: [-1, -1, -1, -1], lock: 0, stray: [], sent: 0, last: notes.length ? notes[notes.length - 1].t + notes[notes.length - 1].h : 0, seq: 0, ev: [], cnt: [0, 0, 0] };
+  return { N: notes, Q, P: [0, 0, 0, 0], H: 0, hold: [-1, -1, -1, -1], lock: 0, mr: 0, stray: [], sent: 0, last: notes.length ? notes[notes.length - 1].t + notes[notes.length - 1].h : 0, seq: 0, ev: [], cnt: [0, 0, 0] };
+}
+/** A missed note; `RHY.run` of them in a row cost a heart. */
+function rhyMiss(ab, T) {
+  const g = ab.g;
+  if (++g.mr >= RHY.run) { g.mr = 0; albaStrike(ab, T, RHY.missPen); } else albaBad(ab, RHY.missPen);
 }
 const rhyEv = (g, l, kind) => { g.ev.push([++g.seq, l, kind]); if (g.ev.length > RHY.ring) g.ev.shift(); };
 
@@ -20531,6 +20543,7 @@ function rhyPress(ab, l, tt, now) {
     const perfect = Math.abs(dt) <= wp;
     n.s = n.h ? 3 : 1;
     if (n.h) g.hold[l] = n.id;
+    g.mr = 0;
     albaGood(ab, now, RHY.pts[perfect ? 1 : 0]);
     g.cnt[perfect ? 0 : 1]++;
     rhyEv(g, l, perfect ? 2 : 1);
@@ -20546,8 +20559,8 @@ function rhyRelease(ab, l, tt, now) {
   if (id < 0) return;
   const n = g.N[id];
   g.hold[l] = -1;
-  if (tt >= n.t + n.h - RHY.tailOk) { n.s = 1; albaGood(ab, now, RHY.holdPts); rhyEv(g, l, 3); }
-  else { n.s = 2; albaBad(ab, RHY.missPen); g.cnt[2]++; rhyEv(g, l, 4); }
+  if (tt >= n.t + n.h - RHY.tailOk) { n.s = 1; g.mr = 0; albaGood(ab, now, RHY.holdPts); rhyEv(g, l, 3); }
+  else { n.s = 2; rhyMiss(ab, now); g.cnt[2]++; rhyEv(g, l, 4); }
 }
 
 ALBA_RULES.rhythm = {
@@ -20561,8 +20574,8 @@ ALBA_RULES.rhythm = {
       for (let l = 0; l < 4; l++) if (g.hold[l] >= 0) { const h = n[g.hold[l]], d = h.t + h.h + RHY.tailEnd; if (d < due) { due = d; id = h.id; tail = true; } }
       if (due >= J) break;
       const m = n[id];
-      if (tail) { m.s = 1; g.hold[m.l] = -1; albaGood(ab, ab.runAt + due + RHY.lat, RHY.holdPts); rhyEv(g, m.l, 3); }
-      else { m.s = 2; albaBad(ab, RHY.missPen); g.cnt[2]++; rhyEv(g, m.l, 0); }
+      if (tail) { m.s = 1; g.mr = 0; g.hold[m.l] = -1; albaGood(ab, ab.runAt + due + RHY.lat, RHY.holdPts); rhyEv(g, m.l, 3); }
+      else { m.s = 2; rhyMiss(ab, ab.runAt + due + RHY.lat); g.cnt[2]++; rhyEv(g, m.l, 0); }
     }
     if (g.sent < g.last && g.sent - (now - ab.runAt) <= RHY.refresh) albaTouch(ab);   // the announced window is running dry: send the next stretch
   },
@@ -20810,10 +20823,11 @@ ALBA_RULES.taiyaki = {
 //   items [x, y, kind …], [wide ms, piercing ms, slow ms, serve ms], events [[seq, type, x, y, value]…], bricks left, big ball (fever) 0|1]
 // event types: 1 brick broken (value = points of the blow) · 2 brick cracked (hits left) · 3 bomb · 4 item caught (kind) · 5 ball lost · 6 wall cleared (points) · 7 paddle bounce · 8 item dropped (kind)
 // items: 0 wide paddle · 1 three balls · 2 piercing · 3 slow ball
-const WALL = { W: 240, H: 240, STEP: 50, SUB: 4, BW: 20, BH: 8, COLS: 12, ROWS: 9, Y0: 28, PY: 222, PSPD: 10, HW: [20, 32], SERVE: 30, RESERVE: 60, FALL: 3,
+const WALL = { SP0: 50, SPL: 6, SPR: 24, HEAL: 10, W: 240, H: 240, STEP: 50, SUB: 4, BW: 20, BH: 8, COLS: 12, ROWS: 9, Y0: 28, PY: 222, PSPD: 10, HW: [20, 32], SERVE: 30, RESERVE: 60, FALL: 3,
   TAB: [[-55, 32], [-48, 43], [-38, 52], [-26, 58], [-13, 63], [0, 64], [13, 63], [26, 58], [38, 52], [48, 43], [55, 32]],   // paddle bounce directions, 12° apart (dx, up)
   FX: [240, 160, 200], PTS: { plain: 10, crack: 5, bomb: 20, box: 30, item: 30, wall: 150, lost: 50 } };
-const wallSpeed = (g) => (((40 + 6 * Math.min(g.lv, 3)) * (g.fs > 0 ? 7 : 10)) / 10) | 0;   // 1/16 px per sub-step
+// 1/16 px per sub-step: no gentle start (the old wall 3 speed from the first ball), +24 over the shift (1.5x at the end; 2026-11-18, three lost balls end it)
+const wallSpeed = (g) => (((WALL.SP0 + WALL.SPL * Math.min(g.lv, 2) + Math.min(WALL.SPR, ((g.n | 0) * WALL.SPR / 1800) | 0)) * (g.fs > 0 ? 7 : 10)) / 10) | 0;
 const wallEv = (g, type, x, y, v) => { g.ev.push([++g.seq, type, Math.round(x), Math.round(y), v | 0, g.n]); if (g.ev.length > 8) g.ev.shift(); };
 /** A brick event scores through the combo and a chain bonus (+20 % per brick hit since the paddle last touched a ball, up to +100 %; a piercing ball sweeps for the flat price). */
 function wallScore(ab, T, base, flat) {
@@ -20826,7 +20840,7 @@ function wallScore(ab, T, base, flat) {
 function wallBuild(ab) {
   const g = ab.g, box = ab.box, lv = g.lv, W = WALL, N = W.COLS * W.ROWS, pool = [];
   g.k = new Array(N).fill(0); g.h = new Array(N).fill(0); g.it = new Array(N).fill(0);
-  const ph = Math.min(0.55, 0.1 + 0.14 * lv), t = lv % 5, rows = Math.min(8, 3 + 2 * lv);   // a shift holds about two walls: the first is small, the next ones climb fast
+  const ph = Math.min(0.6, 0.25 + 0.14 * lv), t = lv % 5, rows = Math.min(8, 5 + 2 * lv);   // a shift holds about two walls: the first is small, the next ones climb fast
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < W.COLS; c++) {
       const on = t === 0 ? true : t === 1 ? c % 4 !== 3 : t === 2 ? c >= (r >> 1) && c <= 11 - (r >> 1) : t === 3 ? (r + c) % 2 === 0 : r === 0 || r === rows - 1 || c < 2 || c > 9 || (r % 2 === 1 && c >= 4 && c <= 7);
@@ -20871,6 +20885,7 @@ function wallBreak(ab, T, i0, flat) {
     else base += W.PTS.plain;
   }
   const pts = wallScore(ab, T, base, flat);
+  if ((g.hb += pops.length) >= W.HEAL) { g.hb -= W.HEAL; if (ab.strikes > 0 && !ab.out) ab.strikes--; }   // steady demolition mends a heart: every HEAL bricks
   pops.forEach(([x, y, k], j) => wallEv(g, k === 2 ? 3 : 1, x, y, j ? 0 : pts));
 }
 /** A ball touches brick `i`: a hard brick cracks, anything else (or any brick, for a piercing ball) is destroyed. */
@@ -20954,7 +20969,7 @@ function wallStep(ab, T) {
     for (const b of g.balls) if (wallBall(ab, T, b)) keep.push(b);
     g.balls = keep;
     if (!keep.length) {
-      albaBad(ab, W.PTS.lost);
+      albaStrike(ab, T, W.PTS.lost);   // the one serious failure: a lost ball costs a heart
       g.fw = g.fp = g.fs = 0; g.ch = 0; g.sv = W.RESERVE; g.balls = [wallHeld(g)];
       wallEv(g, 5, pad.x, W.PY, 0);
     }
@@ -20975,10 +20990,10 @@ function wallStep(ab, T) {
   if (!g.balls[0].held || g.I.length || pad.vx || g.ev.length) g.dirty = 1;
 }
 
-ALBA.wall = { name: "철거 알바", npc: "kangkang", place: "캉캉대장간 옆 헌 벽", skill: "craft", par: 3300, mul: 1.1, outfit: ["hat_coop_cap", "top_smith"], tool: "chain", hint: "마우스·손가락·←→로 발판을 움직여 철구를 받으세요. 벽돌을 다 부수면 새 벽! 떨어지는 상자는 발판으로 받기." };
+ALBA.wall = { name: "철거 알바", npc: "kangkang", place: "캉캉대장간 옆 헌 벽", skill: "craft", par: 2800, lives: 5, mul: 1.1, outfit: ["hat_coop_cap", "top_smith"], tool: "chain", hint: "마우스·손가락·←→로 발판을 움직여 철구를 받으세요. 벽돌을 다 부수면 새 벽! 철구를 놓치면 ♥ 하나 깎여요(5개면 퇴근), 벽돌 10개를 부술 때마다 ♥ 하나 회복!" };
 ALBA_RULES.wall = {
   init(S, p, ab) {
-    const g = ab.g = { simAt: ab.runAt, n: 0, lv: 0, k: [], h: [], it: [], left: 0, drop: 0, balls: [], pad: { x: 120, tx: 120, vx: 0, hw: WALL.HW[0] }, sv: WALL.SERVE, I: [], fw: 0, fp: 0, fs: 0, ch: 0, la: 0, hn: 0, ev: [], seq: 0, dirty: 0 };
+    const g = ab.g = { simAt: ab.runAt, n: 0, lv: 0, k: [], h: [], it: [], left: 0, drop: 0, balls: [], pad: { x: 120, tx: 120, vx: 0, hw: WALL.HW[0] }, sv: WALL.SERVE, I: [], fw: 0, fp: 0, fs: 0, ch: 0, la: 0, hn: 0, hb: 0, ev: [], seq: 0, dirty: 0 };
     wallBuild(ab);
     g.balls = [wallHeld(g)];
   },

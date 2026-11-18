@@ -12,7 +12,7 @@ const PAR = X.ALBA.cross.par, STEP = C.STEP;
 
 // ── unit harness: a bare shift object, no world
 const mkAb = (seed = 7, endAt = 1e9) => {
-  const ab = { k: "cross", box: { seed }, runAt: 0, endAt, score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, rev: 1, g: null };
+  const ab = { k: "cross", box: { seed }, runAt: 0, endAt, score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, rev: 1, g: null, strikes: 0, out: 0 };
   R.init(null, null, ab);
   return ab;
 };
@@ -49,8 +49,8 @@ const UP = 0, RIGHT = 1, DOWN = 2, LEFT = 3;
         prev = ps;
       }
     }
-    assert.equal(b.goal, d ? 0 : 5);
-    assert.ok(b.gifts.length === (d ? 2 : 1) && b.gifts[0].y >= 6 && b.gifts[0].y <= 9);
+    assert.equal(b.goal, 0, "every delivery crosses the whole street (no short first one)");
+    assert.ok(b.gifts.length === 2 && b.gifts[0].y >= 6 && b.gifts[0].y <= 9);
   }
 }
 
@@ -143,11 +143,11 @@ const UP = 0, RIGHT = 1, DOWN = 2, LEFT = 3;
   const b3 = mkAb(), g3 = bare(b3); g3.y = 1; g3.d = 5; g3.dAt = 0; lane(g3, 1, { k: 2, v: 0, sp: 10, len: 4, ph: 900 });
   R.adv(null, null, b3, 20000); R.act(null, null, b3, { d: UP }, 20000);
   assert.equal(b3.score, 100 + 18 + 50, "6 s left → +18");
-  // the first delivery is the short one: the drop-off is the median
+  // the first delivery is a full one now (no short warm-up): the same 26 s budget, the bonus capped at 60
   const b4 = mkAb(), g4 = bare(b4, 5); g4.d = 0; g4.y = 6;
   assert.equal(R.act(null, null, b4, { d: UP }, 0), null);
   assert.equal(g4.n, 1); assert.equal(g4.d, 1); assert.equal(g4.goal, 0, "then the whole street");
-  assert.equal(b4.score, 100 + 36 + 50, "the short budget is 12 s: a quick one earns 36");
+  assert.equal(b4.score, 100 + 60 + 50, "a quick one earns the capped +60");
   // a delivery in a fever and in the rush is multiplied by the engine
   const b5 = mkAb(1, 100000), g5 = bare(b5); g5.y = 1; g5.d = 5; g5.dAt = 90000; lane(g5, 1, { k: 2, v: 0, sp: 10, len: 4, ph: 900 });
   b5.feverUntil = 1e9;
@@ -216,8 +216,8 @@ const UP = 0, RIGHT = 1, DOWN = 2, LEFT = 3;
   const ab = mkAb();
   R.adv(null, null, ab, 5230);
   const v = R.view(ab, 5230);
-  assert.equal(v[1], C.SY); assert.equal(v[0], C.SX * 100); assert.equal(v[3], 5, "the first drop-off is the median"); assert.equal(v[4], 0); assert.equal(v[5], 0);
-  assert.equal(v[6].length, 8, "eight lanes"); assert.ok(v[6].every((l) => l.length === 6)); assert.ok(v[7].length === 1);
+  assert.equal(v[1], C.SY); assert.equal(v[0], C.SX * 100); assert.equal(v[3], 0, "the drop-off is across the whole street"); assert.equal(v[4], 0); assert.equal(v[5], 0);
+  assert.equal(v[6].length, 8, "eight lanes"); assert.ok(v[6].every((l) => l.length === 6)); assert.ok(v[7].length === 2);
   assert.ok(v[2] >= 0 && v[9] === 0 && v[11] >= 0);
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v, "plain JSON");
   assert.ok(JSON.stringify(v).length < 500, `compact (${JSON.stringify(v).length} bytes)`);
@@ -356,7 +356,7 @@ function play(botOf, seed, { name = `횡단${seed}`, hook } = {}) {
       if (hook) hook(s, v);
     }
   }
-  return { score: ab.score, grade: X.albaGrade("cross", ab.score), n: ab.g.n, hits, drown, gifts, maxBytes, maxCombo: ab.maxCombo, state: ab.state };
+  return { out: ab.out, runMs: ab.endAt - ab.runAt, score: ab.score, grade: X.albaGrade("cross", ab.score), n: ab.g.n, hits, drown, gifts, maxBytes, maxCombo: ab.maxCombo, state: ab.state };
 }
 
 // (c) the bots
@@ -386,13 +386,22 @@ assert.ok(results.perfect.every((r) => r.grade === 4), "the perfect bot reaches 
   const m = avg(results.human.map((r) => r.score)) / PAR;
   assert.ok(m >= 0.6 && m <= 0.9, `the human-like bot lands around B (${m.toFixed(2)} of par)`);
   const c = avg(results.casual.map((r) => r.score)) / PAR;
-  assert.ok(c >= 0.3 && c <= 0.7, `the casual bot lands around C (${c.toFixed(2)} of par)`);
+  assert.ok(c <= 0.7, `the casual bot stays below B (${c.toFixed(2)} of par; it usually strikes out early now)`);
 }
 assert.ok(avg(results.perfect.map((r) => r.score)) > avg(results.strong.map((r) => r.score)), "better play scores more");
 assert.ok(avg(results.strong.map((r) => r.score)) > avg(results.human.map((r) => r.score)));
 assert.ok(avg(results.human.map((r) => r.score)) > avg(results.casual.map((r) => r.score)));
 assert.equal(idle.grade, 0, "an idle player gets no grade"); assert.equal(idle.score, 0, "and no points");
 assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
+
+// 2026-11-18 strikes: five hits or duckings end the shift (a heart mends every 5 s). Rates over 12 seeds.
+{
+  const N = 12, rate = (mk) => { const rs = Array.from({ length: N }, (_, i) => play(mk, i + 1)); return { r: rs.filter((x) => x.out).length / N, mean: avg(rs.map((x) => x.runMs / 1000)) }; };
+  const rp = rate(BOTS.perfect), rh = rate(BOTS.human), rc = rate(BOTS.casual);
+  console.log(`  strike-outs over ${N} seeds: perfect ${Math.round(rp.r * 100)}% · human ${Math.round(rh.r * 100)}% · sloppy ${Math.round(rc.r * 100)}% (mean run ${rc.mean} s)`);
+  assert.equal(rp.r, 0, "the perfect bot never strikes out"); assert.ok(rh.r <= 0.25, "the human-like bot strikes out in at most a quarter of its shifts");
+  assert.ok(rc.r >= 0.5, "the sloppy bot strikes out in at least half of its shifts"); assert.ok(rc.mean < 75, `and its run ends before 75 s (mean ${rc.mean} s)`);
+}
 
 // (a) determinism: the same seed and the same inputs play the same shift
 {
@@ -403,7 +412,7 @@ assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
   const lay = (seed, d) => JSON.stringify(X.crossBuild(seed, d, 1));
   assert.equal(lay(5, 3), lay(5, 3)); assert.notEqual(lay(5, 3), lay(6, 3)); assert.notEqual(lay(5, 3), lay(5, 4));
   // the street of a delivery is the seed's, whoever plays
-  const streets = (bot) => { const out = []; let last = -1; play(bot, 4, { hook: (s) => { const g = s.p.ab.g; if (g.d !== last && out.length < 4) { last = g.d; out.push(JSON.stringify(g.L)); } } }); return out.slice(0, 3).join("|"); };
+  const streets = (bot) => { const out = []; let last = -1; play(bot, 4, { hook: (s) => { const g = s.p.ab.g; if (g.d !== last && out.length < 4) { last = g.d; out.push(JSON.stringify(g.L)); } } }); return out.slice(0, 1).join("|"); };   // a sloppy courier strikes out before the 3rd street
   assert.equal(streets(BOTS.perfect), streets(BOTS.casual), "the streets are the seed's, whoever plays");
 }
 
@@ -432,13 +441,14 @@ assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
   assert.equal(acc, 1, "50 inputs in the same instant: one counts");
   // a random walk of all four directions all shift long: always on the street, never a negative score, rows in range
   const rng = mulberry(99), s2 = sim("횡단술꾼", 3), ab2 = s2.p.ab, g2 = ab2.g;
+  const lives0 = X.ALBA.cross.lives; X.ALBA.cross.lives = 999;   // the drunk must not strike out: the point is the whole shift
   s2.tick(T.briefMs + 100);
   for (let i = 0; s2.now < ab2.endAt - 300; i++) {
     s2.now += 40 + Math.floor(rng() * 160); s2.act({ t: "ab_act", d: Math.floor(rng() * 4) });
     if (i % 3 === 0) s2.tick(0);
     assert.ok(g2.y >= g2.goal && g2.y <= C.SY && g2.x >= -0.5 - 1e-9 && g2.x <= C.W - 0.5 + 1e-9 && ab2.score >= 0, `sane at ${i}: ${g2.x},${g2.y}`);
   }
-  assert.ok(g2.acc > 190, "a random walk hopped a lot");
+  assert.ok(g2.acc > 190, "a random walk hopped a lot"); X.ALBA.cross.lives = lives0;
   // after the end nothing moves
   s.tick(T.runMs + 1000);
   assert.equal(ab.state, "end");
