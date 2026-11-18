@@ -117,6 +117,7 @@ Info.setup({ openTree, openStats, openWin });
 Looks.installMirror({
   act, toast, sound: (k) => Sound.play(k),
   look: () => { const w = G.who && G.who.get(G.you); return w ? w.look : []; },
+  gear: () => G.who.get(G.you)?.gear,
   gold: () => (G.self ? G.self.gold : 0), town: () => !!(G.map && G.map.safe),
   get cost() { return (G.defs && G.defs.lookCost) || 500; },
 });

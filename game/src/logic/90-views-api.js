@@ -18,6 +18,7 @@ function selfPayload(p) {
     // what the next point in each costs (0 at a cap), resets left, the starter pick taken, mastery
     // [lv, xp, need] per kind (WK_ORDER), the kinds in hand and on the back
     name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, st: ch.st, nx: nextCosts(ch), rs: ch.rs, sw: ch.sw, respecCost: statResetCost(ch),
+    buddy: buddySelf(p),
     wm: WK_ORDER.map((k) => [ch.wm[k].lv, Math.floor(ch.wm[k].xp),ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
     jp: ch.jp ? [ch.jp.lv, ch.jp.xp, ch.jp.lv >= JOB_PROGRESS.cap ? 0 : jobNeed(ch.jp.lv)] : null,
     wk2: ch.eq.weapon2 ? ITEMS[ch.eq.weapon2.id].wk : "",
@@ -118,6 +119,10 @@ export function viewFor(S, pid) {
     out.P.push(row);
     elementView(S, out, o.eid, o);
   }
+  for (const b of Object.values(S.buddies)) {
+    if (b.map === p.map && near(b)) out.P.push([b.eid, Math.round(b.x), Math.round(b.y), b.dir, 0, 1, 1, 0, 0]);
+  }
+  buddyView(p, out);
   for (const mob of rt.mobs) {
     // a field boss (or the rift invasion's lord) is shown on the radar wherever it stands on the map
     if (mob.temp && mob.el === 2 && !mob.dim && !mob.dead) (out.fb || (out.fb = [])).push([Math.round(mob.x), Math.round(mob.y)]);
@@ -166,6 +171,11 @@ export function viewFor(S, pid) {
         cosWire(o.ch), wp ? wp.lg || (ITEMS[wp.id].uniq ? wp.id : "") : "",   // a signature weapon can have its own look
         // a hybrid's second weapon, on the back
         o.ch.eq.weapon2 ? ITEMS[o.ch.eq.weapon2.id].wk : ""]);
+    }
+    for (const b of Object.values(S.buddies)) {
+      if (b.map !== p.map) continue;
+      const { name, job, lvl, look, wk } = b.ch;
+      out.who.push([b.eid, name, job, lvl, look, 0, 1, 0, 0, 0, 0, wk, "", "", [], "", "", 1]);
     }
   }
   if (p.party) {

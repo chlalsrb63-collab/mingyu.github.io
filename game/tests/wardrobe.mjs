@@ -414,7 +414,7 @@ for (const [kind, designs] of Object.entries(SIL)) {
   const old = JSON.parse(JSON.stringify(saved));
   delete old.cosDye; old.v = 24;
   const o = W.join("E", "", "warrior", old).ch;
-  assert.deepEqual(o.cosDye, {}); assert.equal(o.v, 28);
+  assert.deepEqual(o.cosDye, {}); assert.equal(o.v, L.newChar("현재양식", []).v);
   assert.deepEqual(L.newChar("새옷", "warrior", []).cosDye, {});
   // keepsake sewing: the table names every keepsake, each sews into its own piece (P11), once
   assert.deepEqual(Object.keys(D.keepSew).sort(), Object.keys(D.items).filter((id) => D.items[id].type === "keep").sort(), "every keepsake has a row");

@@ -2,6 +2,12 @@
 
 > One-page system summaries (server/saves, maps, loot, rift, world life, wire/client): [`docs/systems/README.md`](systems/README.md).
 
+| Local development reference | Purpose |
+| --- | --- |
+| [`development-status.html`](development-status.html) | Offline owner dashboard with feature IDs, implementation states, review selection, map data and source links |
+| [`ai/HANDOFF-DEV-STATUS.md`](../ai/HANDOFF-DEV-STATUS.md) | Latest local build scope, per-feature paths, verification and restoration notes for Claude and Gemini |
+| [`game/scripts/dev-status.mjs`](../game/scripts/dev-status.mjs) | Refreshes the dashboard snapshot from `defs()` and `atlas()` with local game commit metadata |
+
 Moved out of `AGENTS.md` so it is read only when needed. Open the row you need, then `grep -n` the
 banner or function it names. **When you add, move or split a file, update its row here in the same commit.**
 Bracketed counts are physical lines of tracked text files, including generated `game/src/logic.js`.
@@ -16,8 +22,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `social.js` [207] | plain JS (vault side): friends `fr:<pid>` (`class Social`: `list request answer remove op`, presence `seen gone at where` for whispers across channels); types in `social.d.ts` |
 | `accounts.d.ts` [91] · `logic.d.ts` [85] · `social.d.ts` [43] | Type declarations for the plain-JS rules, account and social modules. |
 | `env.ts` [22] | `Env` bindings: `ASSETS`, `ROOMS`, `HF_ENV`, `APP_SLUG`, `PLAYTEST` (local only: map-editor playtest join) |
-| `logic.js` [17096] | **GENERATED** — never edit; built from `src/logic/*.js` |
-| `logic.js` [17276] | **GENERATED** — never edit; built from `src/logic/*.js` |
+| `logic.js` | **GENERATED** — never edit; built from `src/logic/*.js` and `game/data/` |
 
 ### Rules — `game/src/logic/` (fragments of ONE scope, concatenated in name order; not modules)
 | part | contents |
@@ -79,6 +84,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `67-alba-<k>.js` | One part per mini-game (pipe fly store parcel laundry taiyaki; 2nd wave pest wall cross lamp rhythm garland): its `ALBA[k]` row and `ALBA_RULES[k]` {init adv act view}; deterministic, lazy time, compact view. Tests `tests/alba.mjs` (engine) + `tests/alba-<k>.mjs` (bots, hostile input, cost). |
 | `67-trophies.js` [169] | 보스전리품 and the solo story fight (docs/design/boss-trophies.md): `TROPHIES TROPHY_CAP STORY`, sums `trophySum` (read by `deriveStats`), `grantTrophy fbTrophy`, the field boss at its spot `fbTick` (spot `fbHome`, 40), story arena `storyStart storyClear storyHome storyTick` (a `dim:` instance with `dim.story`, arena `dimArena`), migrate `questV17`, wire `trophyDefs` |
 | `68-coop.js` | Shared co-op instance lifecycle, scoring, daily payouts and wire data (`coopStart coopTick coopFinish coopPay coopView`). `COOP_JOB` covers apartment pickup, diner service, paired forging, alchemy and library loans and returns. |
+| `69-buddy.js` | Saved 짝꿍 contact, summon timing, walking, tagged combat assists and the five co-op worker behaviors. |
 | `69-social-play.js` [320] | Player to player (docs/design/player-interaction.md): requests, the two-party trade (`sxSwap` runs on copies first, offers hold slot objects), `MINIGAMES` table (가위바위보). `sxValidate sxApply sxTick sxLeave sxView sxDefs`. |
 | `70-validate.js` [466] | **`validateAction`** — one `case` per action `t`: respawn opt look chat p*/g* (party/guild) qs sort emo cos_* title daily tut mv atk warp sk use eq uneq rune train sklv wh sellall buy sell enh sit fish hook reel cook salv bq quest …; life L2 → `lifeValidate` (`gat gat_tap craft_open craft jb`), `use` of elixirs/punch/whet → `lifeUseValidate`, `enh {b:1}`, `sell {pid}` / `wh {a:"put", pid}` from the pouch, `buy` at a 단골's price |
 | `75-apply.js` [672] | **`applyAction`** (same cases, mutates state), `afterGear` |
@@ -147,6 +153,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `life.js` [77] | life skills' client: the 생활 window `#w-life` (menu 생활, Shift+L) from `self.life` + `defs.life` — levels, bars, grade, 대성공/time bonus, next unlock, the water's grade here, then the 알바 card and 신뢰 list (`Board.renderLife`, via `init` `renderJobs`), the 재료 주머니 (`#life-pouch`); `lv2` events (sound, sparkle); all six skills open |
 | `station.js` [268] | life stations (L2b, life-and-coop.md H4): the station window `#w-craft` for 캉캉 `craft` · 보글 `alch` · 쥬쥬의 화덕 `cook` · a campfire `fire` (`open(kind)`, opened from actions.js `interact`; hud.js `draw("craft", key, render)`, `key` also closes it once you walk away) — `defs.life.recipes` by grade band, inputs with have/need (bag + pouch), fee, locks (level, trust 30) greyed with the server's words, odds, 만들기 → `craft_open`, `mk` → the recipe's mini-game (pan/forge/brew) → `craft {r, s}` after the minimum time, 일괄 n개 → `craft {r, n}`, `mo` → sound/float; `window.__station` |
 | `coop.js` | Shared co-op HUD, apartment and alchemy presentation, shift entities and held-item state. `#coop-card` starts a shift, `#coop-hud` reads `cj`/`C` and `#coop-res` reads `cr`. |
+| `buddy.js` | 짝꿍부르기 messenger and the owner's private NPC dialogue. |
 | `coop-briefing.js`, `coop-briefing-art.js` | Five-second illustrated role briefing, in-game instructions, F key labels and apartment props. |
 | `coop-diner.js`, `coop-forge.js`, `coop-library.js` | Job-specific contextual controls, customer movement and props. Sprite drawers in `coop-diner-art.js`, `coop-forge-art.js`, `coop-lib-art.js`. |
 | `alba.js` | 일일 아르바이트 window `#alba-play` (built in JS): header, the hero-at-work stage (outfit from `defs.alba.rows[k].outfit`, tool sprites), score bar with C/B/A/S marks, result card, key capture; game contract `mount/setState/frame/key/unmount`; also the 알바 list window (`renderList`). |

@@ -133,7 +133,7 @@ const codeOf = (D, s, id) => D.cos[id].n + (D.cosDyeK || 1000) * ((s.cosDye && s
 const SLOTS = WR.SLOTS;
 const plainLook = () => SP.playerLook("warrior", [], {});
 const iconCache = new Map();
-/** A cosmetic's icon: worn by a plain white figure, or (a weapon skin) on a sword. */
+/** A costume piece or a weapon skin shown on a sword. */
 function iconOf(id) {
   if (!iconCache.has(id)) {
     const m = WR.skinMotif(id);
@@ -213,16 +213,18 @@ function drawPreview(cv, t) {
   const codes = worn.map((id) => (id === trying ? G.defs.cos[id].n + (G.defs.cosDyeK || 1000) * dyeTry : codeOf(G.defs, s, id)));
   const gear = { ...(w.gear || {}), dye: undefined, ...wireGear(G.defs, codes, w.gear && w.gear.wl) };
   const g = cv.getContext("2d");
+  const centerX = cv.width / 2, shadowY = 128;
   g.imageSmoothingEnabled = false;
   g.fillStyle = "#5e8a50"; g.fillRect(0, 0, cv.width, cv.height);
   g.fillStyle = "#6c9a5c"; for (let i = 0; i < 7; i++) g.fillRect((i * 37 + 11) % 150, (i * 53 + 20) % 110, 6, 3);
-  g.fillStyle = "rgba(20,24,50,.28)"; g.beginPath(); g.ellipse(75, 128, 26, 7, 0, 0, 7); g.fill();
+  g.fillStyle = "rgba(20,24,50,.28)"; g.beginPath(); g.ellipse(centerX, shadowY, 26, 7, 0, 0, 7); g.fill();
   const views = ["front", "side", "back", "side"], v = views[spin % 4];
   const sheet = SP.personSheet(SP.playerLook(w.cls, w.look, gear));
   const F = SP.FRAME, fr = [F.stepA, F.stretch, F.stepB, F.stretch][Math.floor(t / 180) % 4];
+  const zoom = 4, size = SP.SIZE * zoom;
   g.save();
-  if (spin % 4 === 3) { g.translate(150, 0); g.scale(-1, 1); }
-  SP.drawPersonCrop(g, sheet[v][fr], 4, 4, 24, 26, 15, 0, 120, 130);
+  if (spin % 4 === 3) { g.translate(cv.width, 0); g.scale(-1, 1); }
+  SP.drawPersonCrop(g, sheet[v][fr], 0, 0, SP.SIZE, SP.SIZE, centerX - size / 2, shadowY - SP.FOOT[1] * zoom, size, size);
   g.restore();
   // the weapon in hand, as it is slung, with its skin
   const wk = SP.weaponKind(w.cls, gear), ws = SP.weaponSprite(wk, gear);

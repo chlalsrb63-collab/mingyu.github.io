@@ -16,7 +16,7 @@ import * as WPN from "./weapons.js";
 import * as WR from "./wardrobe.js";
 import * as SPC from "./species.js";
 import * as MobArt from "./mobart.js";
-import { refinePerson } from "./person_pixels.js";
+import { drawNativeRearTail, refinePerson } from "./person_pixels.js";
 WR.useSpecies(SPC);
 
 export const SIZE = 32;
@@ -298,19 +298,41 @@ export const PET_HOVER = { pet_chick: 0, pet_bat: 9, pet_wisp: 7, pet_hagfish: 6
 
 const cache = new Map();
 const PERSON_CACHE_LIMIT = 128;
+const personDensity = (o) => o.bone || o.mask ? 1 : PERSON_SIZE / S;
+
+/** A single portrait frame without building the other poses. */
+export function personFrame(o, view, f = FRAME.stand, density = personDensity(o)) {
+  const seam = density === 1 ? null : {};
+  const nativeBack = seam && view === "back" && o.sp !== undefined;
+  const base = person(nativeBack ? { ...o, tail: 1 } : o, view, f, seam);
+  const native = seam ? refinePerson(base, o, view, f, seam) : null;
+  const dressed = WR.dress(base, o, view, f, native);
+  if (nativeBack) drawNativeRearTail(dressed.getContext("2d"), o, SPC.tailOf(o), f);
+  return dressed;
+}
+
+/** Create only the poses that a scene or preview actually reads. */
+function poseFrames(draw) {
+  const frames = [];
+  for (const f of Object.values(FRAME)) Object.defineProperty(frames, f, {
+    configurable: true, enumerable: true,
+    get() {
+      const value = draw(f);
+      Object.defineProperty(frames, f, { value, configurable: true, enumerable: true, writable: true });
+      return value;
+    },
+  });
+  return frames;
+}
+
 /** `{ front, side, back }`, each a list of frames indexed by FRAME. Side frames face right. */
-export function personSheet(o, density = o.bone || o.mask ? 1 : PERSON_SIZE / S) {
+export function personSheet(o, density = personDensity(o)) {
   const key = JSON.stringify([density, o]);
   let s = cache.get(key);
   if (s) cache.delete(key);
   else {
-    // worn cosmetics (wardrobe.js) are layered over each plain frame
-    const frames = (view) => [0, 1, 2, 3, 4, 5].map((f) => {
-      const seam = density === 1 ? null : {};
-      const base = person(o, view, f, seam);
-      const native = seam ? refinePerson(base, o, view, f, seam) : null;
-      return WR.dress(base, o, view, f, native);
-    });
+    const look = { ...o, cos: o.cos?.slice(), dye: o.dye && { ...o.dye } };
+    const frames = (view) => poseFrames((f) => personFrame(look, view, f, density));
     s = { front: frames("front"), side: frames("side"), back: frames("back") };
   }
   cache.set(key, s);
@@ -360,9 +382,9 @@ export function juanaSheet() {
   const base = personSheet(SPC.lookOf(JUANA_LOOK));
   const scale = PERSON_SIZE / S;
   const APRON = "#8a4ab0", APRON_D = "#5e3080", BIB = "#e8d8f4", POUCH = "#f4d49a", POUCH_D = "#d8a860", BRASS = "#e8c060", BRASS_D = "#a87a2c", GLASS = "#bfeaff";
-  const dress = (view) => base[view].map((src, f) => {
+  const dress = (view) => poseFrames((f) => {
     const [c, g] = sheet(PERSON_SIZE);
-    g.drawImage(src, 0, 0);
+    g.drawImage(base[view][f], 0, 0);
     const H = f === FRAME.breathe ? 1 : f === FRAME.stretch ? -1 : 0;
     // her parts go over the inked figure; only the pixels they add get a new outline (no second ink round the rest)
     const added = [];
@@ -434,7 +456,7 @@ export function weaponKind(cls, gear = {}) {
 
 /**
  * A weapon sprite. Swords, daggers, spears and staves point right with the
- * grip at `GRIP`; a book is drawn open and upright around the sheet's centre.
+ * grip at `GRIP`; a book is drawn closed and upright around the sheet's centre.
  * `kind`: sword · dagger · spear · staff · book · bow · hammer (a class id is accepted too; a bow is
  * held square to the shot, its limbs across the sprite, its riser ahead of the grip).
  * `gear`: wt tier (1–5) · wq rarity (0–4) · we enhancement.
@@ -483,14 +505,12 @@ export function weaponSprite(kind, gear = {}) {
     b.r(22, y - 2, 5, 5, gem); b.r(23, y - 3, 3, 7, gem); b.r(27, y - 1, 1, 3, gem);
     b.r(23, y - 2, 1, 1, "#ffffff"); b.r(24, y + 1, 3, 2, shade(gem, 0.26)); b.r(23, y + 3, 3, 1, shade(gem, 0.26));
   } else {
-    // an open book, seen from the front
+    // Closed cover with a slim page block at the fore edge.
     const cover = COVER[wt], page = "#fff8e8";
-    b.r(8, 13, 16, 9, cover); b.r(8, 21, 16, 1, shade(cover, 0.3));
-    b.r(9, 12, 6, 9, page); b.r(17, 12, 6, 9, page);
-    b.r(14, 12, 1, 9, "#e2d6c0"); b.r(17, 12, 1, 9, "#e2d6c0"); b.r(15, 12, 2, 10, shade(cover, 0.3));
-    b.r(10, 14, 3, 1, "#b8a890"); b.r(10, 16, 4, 1, "#b8a890"); b.r(10, 18, 3, 1, "#b8a890");
-    b.r(19, 14, 3, 1, GEM[wt]); b.r(20, 15, 1, 2, GEM[wt]); b.r(19, 17, 3, 1, GEM[wt]); b.r(20, 18, 1, 1, GEM[wt]);
-    b.r(16, 22, 1, 3, "#e0564a");
+    b.r(11, 10, 9, 13, cover); b.r(12, 10, 8, 1, lt(cover, 1.22));
+    b.r(19, 11, 2, 11, page); b.r(20, 12, 1, 10, "#d9c4a6");
+    b.r(11, 11, 2, 11, shade(cover, 0.34)); b.r(12, 22, 9, 1, shade(cover, 0.3));
+    b.r(15, 14, 2, 4, GEM[wt]); b.r(14, 15, 4, 2, GEM[wt]); b.r(17, 22, 1, 2, "#e0564a");
   }
   // rare weapons are inked in their rarity's colour
   c = finish(cv, g, RARE_INK[wq] || INK, 1);

@@ -475,11 +475,11 @@ export function setupHud() {
   $("#wm").title = `눌러서 전직의 길 보기 (${K("skill")})`;
   // the menu: hover names the window and its key (read when shown, so a rebound key is right); the word under each glyph stays
   for (const b of document.querySelectorAll("#menu button")) {
-    const id = b.querySelector("[data-key]").dataset.key, [name, note] = b.title.replace(/\s*\((?:Shift\+)?[A-Z0-9]\)/g, "").split(" — ");
+    const id = b.querySelector("[data-key]")?.dataset.key, [name, note] = b.title.replace(/\s*\((?:Shift\+)?[A-Z0-9]\)/g, "").split(" — ");
     b.removeAttribute("title");
     b.setAttribute("aria-label", name);
     b.addEventListener("click", hideTip);
-    hoverTip(b, (h) => { h.classList.add("mn-tip"); h.append(el("div", "nm", `${name} (${K(id)})`)); if (note) h.append(el("div", "hint", note)); }, true);
+    hoverTip(b, (h) => { h.classList.add("mn-tip"); h.append(el("div", "nm", id ? `${name} (${K(id)})` : name)); if (note) h.append(el("div", "hint", note)); }, true);
   }
   // the EXP bar: a click opens the 능력치 tab
   $("#exp").addEventListener("click", () => { if (G.self) openStats(); });

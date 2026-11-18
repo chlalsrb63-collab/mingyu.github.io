@@ -24,6 +24,7 @@ Gemini CLI). `CLAUDE.md` and `GEMINI.md` only import this file. Keep it short: d
 
 Owner-facing setup (Korean, Windows): [`docs/LOCAL_SETUP.md`](docs/LOCAL_SETUP.md).
 Player-facing description (Korean): [`game/README.md`](game/README.md).
+Local build status and handoff: [`docs/development-status.html`](docs/development-status.html) and [`ai/HANDOFF-DEV-STATUS.md`](ai/HANDOFF-DEV-STATUS.md).
 
 ---
 

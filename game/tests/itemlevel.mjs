@@ -233,7 +233,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.equal(ch.wh.items[0].q, 5); assert.equal(ch.wh.items[0].il, 88); assert.equal(ch.wh.items[0].lg, uq.lg, "the warehouse keeps a unique");
   assert.equal(ch.wh.items[1].set, undefined); assert.equal(ch.wh.items[1].il, 111);
   assert.equal(ch.wh.items[1].q, 3); assert.ok(X.LEGEND[ch.wh.items[1].lg]);
-  assert.equal(ch.v, 28, "the rune migration upgraded the sheet");
+  assert.equal(ch.v, L.newChar("현재양식", []).v, "the rune migration upgraded the sheet");
   // a second pass changes nothing
   assert.equal(JSON.stringify(X.migrate(JSON.parse(JSON.stringify(ch)))), JSON.stringify(ch));
   // and it plays: the old sheet joins, wears and sorts

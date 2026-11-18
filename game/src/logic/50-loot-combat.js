@@ -263,7 +263,7 @@ function damageEvent(rt, eid, amount, crit, player, cue, parts) {
 }
 
 /** Take `dmg` off a monster on behalf of `p`; true if that killed it. */
-function dealMob(S, rt, mob, p, dmg, crit, cue, parts) {
+function dealMob(S, rt, mob, p, dmg, crit, cue, parts, combat = {}) {
   // a boss that dived out of reach is not hit at all (56-boss-script.js)
   if (mob.dead || mob.dive) return false;
   const poison = runePoisonFactor(S, mob);
@@ -274,8 +274,10 @@ function dealMob(S, rt, mob, p, dmg, crit, cue, parts) {
   if (mob.bs) dmg = bsTaken(S, rt, mob, dmg);
   // a rift's monster is made tougher for a bigger or stronger party (64-dim.js dimHk)
   if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
+  if (combat.buddyCap) dmg = Math.min(dmg, combat.buddyCap);
   dmg = elementShield(S, mob, dmg);
   mob.hp -= dmg;
+  if (combat.trackBuddy && dmg > 0 && mob.hp > 0) buddyEngage(S, p, mob, dmg);
   mob.by[p.pid] = (mob.by[p.pid] || 0) + dmg;
   if (mob.dim) dimDealt(S, rt, mob, p, dmg);   // the carry guard's damage share (64-dim.js)
   if (mob.cast) bsDealt(S, rt, mob, dmg);      // a scripted boss's stagger gauge (56-boss-script.js)
@@ -394,7 +396,8 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)) * elementHealFactor(S, p));
   const x = mob.x, y = mob.y;
   wmHit(S, p, mob);
-  const brand = mob.brand, before = mob.hp, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue, parts);
+  const trackBuddy = !o.px && p.ch.buddy?.active;
+  const brand = mob.brand, before = mob.hp, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue, parts, { trackBuddy });
   const lost = before - Math.max(0, mob.hp);
   if (!o.px && (!pure || o.forceAilment) && lost > 0) {
     elementApplyHit(S, rt, p, mob, parts, {

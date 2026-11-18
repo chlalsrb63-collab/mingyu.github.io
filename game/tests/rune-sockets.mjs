@@ -151,7 +151,7 @@ assert.equal(migrated.eq.armor.set, undefined);
 assert.deepEqual([migrated.eq.armor.il, migrated.eq.armor.enh, migrated.eq.armor.sk], [104, 6, 2]);
 assert.deepEqual(migrated.eq.armor.ru, [["ru_ign", 1], ["ru_acu", 1]]);
 assert.deepEqual(migrated.inv.find((entry) => entry.id === "ru_ign"), { id: "ru_ign", n: 4, il: 1 }, "legacy stacks and recovered runes take level 1");
-assert.equal(migrated.v, 28);
+assert.equal(migrated.v, L.newChar("현재양식", []).v);
 assert.deepEqual(migrate(structuredClone(migrated)), migrated, "loading the upgraded sheet twice is idempotent");
 const fairLegacy = L.newChar("장날기록", []);
 fairLegacy.v = 27; // the fair market and the rune migration both used v27

@@ -39,7 +39,15 @@ function coopGood(S, c, base, cred) {
 function coopFail(c, pen) { c.score = Math.max(0, c.score - pen); c.combo = 0; }
 
 /** Who goes in with `p`: the party's members in the same lobby, alive (at most 4). */
-const coopCrew = (S, p) => { const party = S.parties[p.party]; return (party ? party.m.map((pid) => S.players[pid]) : [p]).filter((o) => o && o.map === p.map && !o.dead).slice(0, 4); };
+function coopCrew(S, p) {
+  const party = S.parties[p.party];
+  const crew = (party ? party.m.map((pid) => S.players[pid]) : [p]).filter((o) => o && o.map === p.map && !o.dead).slice(0, 4);
+  const b = buddyOf(S, p);
+  if (crew.length === 1 && !buddyInParty(S, p) && !p.buddyCall && b?.map === p.map) crew.push(b);
+  return crew;
+}
+const coopWorker = (S, pid) => S.players[pid] || S.buddies[pid];
+const coopInside = (S, dim) => Object.keys(dim.coop.pl).map((pid) => coopWorker(S, pid)).filter((o) => o?.map === dim.id);
 /** The leader starts a shift: everyone of the party in the lobby goes in (2–4: co-op jobs are party-only). */
 function coopStart(S, p, k) {
   const J = COOP[k], party = S.parties[p.party], crew = coopCrew(S, p);
@@ -57,6 +65,7 @@ function coopStart(S, p, k) {
   crew.forEach((o, i) => {
     const [x, y] = tilePx(J.start[i]);
     c.pl[o.pid] = { name: o.ch.name, tool: J.tools[i % J.tools.length], hold: [], pts: 0, idleAt: t0, x, y, actAt: 0, hintAt: 0, ok: false };
+    if (o.owner) { buddyPlace(S, o, id, x, y, true); return; }
     changeMap(S, o, id, x, y);
     o.spdBuff = Math.max(o.spdBuff || 0, endAt);
     toast(o, `[${J.name}] ${crew.length}명 근무 시작! ${J.hint} (Space / F)`);
@@ -86,13 +95,15 @@ function coopFinish(S, dim, inside) {
   const avg = inside.reduce((s, o) => s + (c.pl[o.pid] ? c.pl[o.pid].pts : 0), 0) / Math.max(1, inside.length);
   const rows = [];
   for (const pid of Object.keys(c.pl)) {
-    const q = c.pl[pid], o = S.players[pid];
+    const q = c.pl[pid], o = coopWorker(S, pid);
     q.ok = !!(o && o.map === dim.id && (S.now - q.idleAt < COOP_T.idleMs && q.pts >= COOP_T.lazy * avg));
-    rows.push([q.name, Math.round(q.pts), COOP[c.k].tools.indexOf(q.tool), q.ok ? 1 : 0]);
+    const npc = !!o?.owner || pid.startsWith("buddy:");
+    rows.push([npc ? q.name + " (짝꿍)" : q.name, Math.round(q.pts), COOP[c.k].tools.indexOf(q.tool), npc ? 2 : q.ok ? 1 : 0]);
   }
   S.coopBest = S.coopBest || {};
   S.coopBest[c.k] = Math.max(S.coopBest[c.k] || 0, Math.round(c.score));
   for (const o of inside) {
+    if (o.owner) continue;
     const q = c.pl[o.pid];
     let reward = 0;
     if (q?.ok || coopSelf(o).includes(c.k)) reward = coopPay(S, o, c, q?.ok ? g : 0);
@@ -138,8 +149,8 @@ function coopTick(S, now) {
   for (const id of Object.keys(S.dims)) {
     const dim = S.dims[id], c = dim.coop;
     if (!c) continue;
-    const inside = dimInside(S, id);
-    if (!inside.length) {
+    const inside = coopInside(S, dim);
+    if (!inside.some((o) => !o.owner)) {
       if (!c.emptyAt) c.emptyAt = now;
       if (now - c.emptyAt >= COOP_T.emptyMs || now >= dim.expire) coopClose(S, dim);
       continue;
@@ -297,7 +308,7 @@ const COOP_JOB = {
       const [x, y] = tilePx(COOP.apt.st.dump);
       for (const [pid, q] of Object.entries(c.pl)) {
         if (!q.hold.length) continue;
-        const p = S.players[pid];
+        const p = coopWorker(S, pid);
         if (!p || p.map !== dim.id) {
           // The rest of the party can finish if a worker leaves with a full bin.
           c.ents.push(...q.hold);
@@ -455,12 +466,12 @@ function forgePair(S, dim, c, a, p) {
   if (!order || S.now >= order.until) return "집게 담당이 모루에 주문 주괴를 올리면 시작할 수 있어요.";
   if (a.pair) return "이 모루는 이미 단조 중이에요.";
   const workers = Object.keys(c.pl).filter((id) => {
-    const other = S.players[id], q = c.pl[id];
+    const other = coopWorker(S, id), q = c.pl[id];
     return other && other.map === dim.id && q.tool === "tongs" && !q.hold.length && forgeBeatAt(a, other) && !forgeBound(c, id);
   });
   const tongs = workers.includes(a.loader) ? a.loader : workers[0];
   if (!tongs) return "모루 곁에 집게 담당이 한 명 더 필요해요.";
-  a.pair = { ids: [tongs, p.pid], eids: [S.players[tongs].eid, p.eid], taps: 0, noteAt: S.now + COOP_FORGE.leadMs };
+  a.pair = { ids: [tongs, p.pid], eids: [coopWorker(S, tongs).eid, p.eid], taps: 0, noteAt: S.now + COOP_FORGE.leadMs };
   c.ver++;
   coopEv(S, dim, 61, a.x, a.y, order.r);
   return true;
@@ -469,7 +480,7 @@ function forgePair(S, dim, c, a, p) {
 function forgeBeat(S, dim, c, a, p) {
   const F = COOP_FORGE, order = a.order, pair = a.pair, O = F.orders[order.r];
   if (S.now >= order.until || !pair.ids.every((pid) => {
-    const other = S.players[pid];
+    const other = coopWorker(S, pid);
     return other && other.map === dim.id && forgeBeatAt(a, other);
   })) return "";
   if (Math.abs(S.now - pair.noteAt) > F.windowMs) return "";
@@ -589,7 +600,10 @@ COOP_JOB.forge = {
     }
     for (const a of c.anvils) {
       if (!a.pair) continue;
-      if (a.pair.ids.some((pid) => !S.players[pid] || S.players[pid].map !== dim.id || !forgeBeatAt(a, S.players[pid]))) {
+      if (a.pair.ids.some((pid) => {
+        const worker = coopWorker(S, pid);
+        return worker?.map !== dim.id || !forgeBeatAt(a, worker);
+      })) {
         a.pair = null;
         c.ver++;
       } else if (now > a.pair.noteAt + F.windowMs) {
@@ -853,7 +867,7 @@ COOP_JOB.lib = {
     // Release a loan or recover a return if its worker leaves or disconnects.
     for (const [pid, q] of Object.entries(c.pl)) {
       const h = q.hold[0];
-      if (!h || S.players[pid]?.map === dim.id) continue;
+      if (!h || coopWorker(S, pid)?.map === dim.id) continue;
       q.hold = [];
       if (h.kind === 1) c.returns.push(h);
       else {
@@ -943,7 +957,7 @@ function coopValidate(S, p, a) {
       if (party && party.coop && dimAt(S, party.coop)) return bad("파티가 이미 근무 중입니다");
       if (party && party.rc) return bad("레이드던전 입장 준비 중입니다");
       // the owner's rule: a co-op job is the one you do with a party of 2–4, unlike the solo 알바 board
-      if (coopCrew(S, p).length < 2) return bad(party ? "협동 알바는 2명 이상 파티로만 할 수 있어요. 파티원과 함께 이 방에 와 주세요." : "협동 알바는 2명 이상 파티로만 할 수 있어요. 파티원과 함께 와 주세요.");
+      if (coopCrew(S, p).length < 2) return bad(party?.m.length > 1 ? "파티원과 함께 이 방에 와 주세요." : "파티원과 함께 오거나 짝꿍을 불러 주세요.");
       if (coopLive(S) >= COOP_T.max) return bad(`지금은 일손이 꽉 찼습니다 (${COOP_T.max}/${COOP_T.max})`);
       if (Object.keys(S.dims).length >= DIM.max) return bad("지금은 빈 자리가 없습니다. 잠시 뒤 다시 오세요");
       return OK;
@@ -970,13 +984,19 @@ function coopValidate(S, p, a) {
 function coopApply(S, p, a) {
   if (a.t === "coop_start") { coopStart(S, p, a.k); return; }
   const c = coopOf(S, p);
-  if (a.t === "coop_leave") { toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다"); coopHome(S, p, c); return; }
+  if (a.t === "coop_leave") {
+    toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다");
+    const dim = dimAt(S, p.map);
+    if (buddyShift(dim, p)) coopClose(S, dim);
+    else coopHome(S, p, c);
+    return;
+  }
   const q = c.pl[p.pid], job = COOP_JOB[c.k];
   // a rhythm lane's notes come faster than the work key's 250 ms
   if (S.now - q.actAt < (job.lane && job.lane(S, c, p, q) ? COOP_FORGE.laneMs : COOP_T.actMs)) return;
   q.actAt = S.now;
   const r = job.act(S, dimAt(S, p.map), c, p, q, a.d === undefined ? -1 : a.d, a);
-  if (r === true) q.idleAt = S.now;
+  if (r === true) q.idleAt = q.workAt = S.now;
   else if (r && S.now >= q.hintAt) { q.hintAt = S.now + 1200; toast(p, r); }
 }
 
@@ -998,7 +1018,7 @@ function coopView(S, p, out) {
   if (c) {
     const now = S.now, g = coopGrade(c), J = COOP[c.k];
     const secs = Math.max(0, Math.ceil(((c.state === "brief" ? c.runAt : c.state === "end" ? c.doneAt : c.endAt) - now) / 1000));
-    const team = dimInside(S, dim.id).filter((o) => c.pl[o.pid]).map((o) => { const q = c.pl[o.pid]; return [o.eid, J.tools.indexOf(q.tool), q.hold.length, now - q.idleAt >= COOP_T.zzzMs ? 1 : 0, COOP_JOB[c.k].what ? COOP_JOB[c.k].what(q, now) : 0, ...(COOP_JOB[c.k].mode ? [COOP_JOB[c.k].mode(q)] : [])]; });
+    const team = coopInside(S, dim).map((o) => { const q = c.pl[o.pid]; return [o.eid, J.tools.indexOf(q.tool), q.hold.length, now - q.idleAt >= COOP_T.zzzMs ? 1 : 0, COOP_JOB[c.k].what ? COOP_JOB[c.k].what(q, now) : 0, ...(COOP_JOB[c.k].mode ? [COOP_JOB[c.k].mode(q)] : [])]; });
     const v = [COOP_KINDS.indexOf(c.k), COOP_STATE.indexOf(c.state), secs, Math.round(c.score), c.combo, Math.round(coopMult(c) * 10), g, g < 4 ? coopCut(c, g) : 0, ...COOP_JOB[c.k].sum(c), team];
     if (c.k === "lib") v.push(c.returns.length);
     const key = JSON.stringify(v);

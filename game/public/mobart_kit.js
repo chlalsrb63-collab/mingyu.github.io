@@ -41,7 +41,7 @@ export function gait(p, off = 0) {
 /** How far the body rises in a step: up on the passing frames, down a touch on a breath. */
 export const bob = (p, k = 1) => (p.walk ? ((Math.round(p.ph * 4)) % 2 === 1 ? k : 0) : p.idle ? -0.45 * k : 0);
 /** Wind-up crouches back, the strike throws forward, a flinch rocks back: [forward shift, height shift]. */
-export const lunge = (p, k = 1) => (p.wind ? [-1.2 * k, -1 * k] : p.strike ? [2.2 * k, 0.3 * k] : p.hurt ? [-1 * k, 0.4 * k] : [0, 0]);
+export const lunge = (p, k = 1) => (p.wind ? [-1.2 * k, -1 * k] : p.strike ? [2.2 * k, 0.3 * k] : p.hurt ? [-1 * k, 0.4 * k] : p.recover ? [0.8 * k, -0.45 * k] : [0, 0]);
 
 // ── the flesh palette: the opposite of the adventurers' clean whites
 export const C = {

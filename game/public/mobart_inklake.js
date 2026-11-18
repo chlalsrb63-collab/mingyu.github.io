@@ -159,7 +159,7 @@ export const INKLAKE_ART = {
   inkrose: {
     size: "m", glow: "#f4f8ff", k: 1.4,
     draw(M, p) {
-      const [lf, lu] = lunge(p, 0.8), sway = p.idle ? Math.sin(p.ph * 6.28) * 0.5 : 0, open = p.wind ? 1.3 : p.strike ? 0.6 : 1;
+      const [lf, lu] = lunge(p, 0.8), sway = p.walk ? Math.sin(p.ph * Math.PI * 2) : p.idle * 1.3, open = p.wind ? 0.55 : p.strike ? 1.5 : 1;
       both((s) => { const [sw, up] = gait(p, s < 0 ? 0 : 0.5); M.tube([[lf, 3, s * 0.8], [lf + sw * 1.2, 1.6 + up, s * 3], [lf + sw * 1.6 + s * 0.2, up * 1.1, s * 4.2]], [0.8, 0.6, 0.4], REED); });
       const base = [lf, 3 + lu, 0], top = [lf + 0.8 + sway, 10.4 + lu + bob(p, 0.3), 0];
       M.G("body");
@@ -170,7 +170,7 @@ export const INKLAKE_ART = {
       // lotus petals: an outer ring that opens when it strikes, an inner ring of red plum
       for (let i = 0; i < 6; i++) {
         const a = i * 1.047;
-        M.cone([top[0], top[1], 0], [top[0] + Math.sin(a) * 1.6 * open - 0.4, top[1] + 2.6 * (2 - open) * 0.7, Math.cos(a) * 4.6 * open], 1.9, i % 2 ? INK : INKL);
+        M.cone([top[0], top[1], 0], [top[0] + Math.sin(a) * 1.6 * open - 0.4, top[1] + 2.6 * (2 - open) * 0.7, Math.cos(a) * 4.6 * open], 1.9, i % 3 === 0 ? LOTUS : INKL);
       }
       for (let i = 0; i < 5; i++) { const a = i * 1.257; M.cone([top[0], top[1] + 0.4, 0], [top[0] + Math.sin(a) * 0.8, top[1] + 2.6, Math.cos(a) * 1.8], 0.8, PLUM); }
       M.s([top[0] + 0.4, top[1] + 1.2, 0], 1.6, EYE);

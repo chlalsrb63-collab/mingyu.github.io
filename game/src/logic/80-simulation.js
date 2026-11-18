@@ -464,6 +464,7 @@ export function tick(S, now) {
   albaTick(S, now);     // 일일 아르바이트 shifts (66-alba.js)
   sxTick(S, now);       // trades and mini-games between players (69-social-play.js)
   homeTick(S, now);
+  buddyTick(S, dt);
   const pids = Object.keys(S.players);
   for (const id of liveMapIds(S)) {
     const rt = S.maps[id];

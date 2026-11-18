@@ -172,7 +172,7 @@ function drawGame() {
     const btns = el("div", "btns");
     const again = el("button", "btn gold", "다시 하기");
     again.addEventListener("click", () => {
-      const eid = [...G.who].find(([, w]) => w.name === name);
+      const eid = [...G.who].find(([, w]) => !w.buddy && w.name === name);
       if (eid) act({ t: "sx", a: "ask", k: rps.g[0], e: eid[0] });
       hideGame();
     });

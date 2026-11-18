@@ -8,6 +8,7 @@ const TOAD = mat("#7a7048"), TOADD = mat("#4e4a30"), PIT = mat("#2e1e1e"), TOADB
 const BAT = mat("#4a3858"), BATW = mat("#5e4466"), BATL = mat("#8a6a92");
 // ── city: pigeon greys, a stray's mangy brown, sewer-rat pink, tabby black
 const PIG = mat("#8a8ea0"), PIGD = mat("#5e6274"), NECKG = mat("#4aa078", { role: "keep" }), NECKP = mat("#8a5ab0", { role: "keep" }), PFOOT = mat("#e07a84");
+const CITY_BRASS = mat("#bc9255");
 const DOG = mat("#7a5a44"), DOGD = mat("#4e3a30"), MANGE = mat("#c87a74", { drip: true });
 const SRAT = mat("#8a7a80"), PETAL = mat("#d0607a", { wet: true }), PETALD = mat("#8a2a44");
 const CAT = mat("#2e2a36"), CATL = mat("#4a4658");
@@ -19,6 +20,10 @@ export const BEASTS_B = {
     size: "m",
     draw(M, p) {
       const [lf, lu] = lunge(p, 1.2);
+      // Candle wax has set around the tail knot like a broken votive.
+      const wick = [0, 6.1 - p.wind, 0];
+      M.e([0, 4, 0], [1.8, 2.1, 1.6], C.BONE);
+      M.cone(wick, [p.idle - p.strike * 2, wick[1] + 1.8, 0], 0.85, BATL);
       // the knot: tails wound round each other
       for (let i = 0; i < 3; i++) M.tube(bez([-1.6 + i, 2, -1.6], [0.4, 4 + i * 0.6, 1.8 - i], [1.4 - i, 2.2, -0.6 + i], 6), 0.85, RATT);
       M.s([0, 2.8, 0], 1.6, C.GUT);
@@ -193,6 +198,10 @@ export const BEASTS_B = {
       for (const [a, b, c, r] of [[-2, 2, 2.2, 1.2], [1, 2.8, -2, 1], [3, 0, 3, 0.9]]) M.e([f0 + a, u0 + b, c], [r, 0.6, r], MANGE);
       legs4(M, p, { ff: f0 + 3, bf: f0 - 3.4, w: 2, hu: u0 - 1.6, r: 1, m: DOG, foot: DOGD, st: 2.6, li: 1.6 });
       M.tube(bez([f0 - 5, u0 + 1, 0], [f0 - 7, u0 + 3, 0], [f0 - 7.6, u0 + 1, p.walk ? Math.sin(p.ph * 6.28) : 0], 5), [0.8, 0.5], DOGD);
+      // A corroded brass license tag swings below the shared collar.
+      const swing = p.walk ? Math.sin(p.ph * Math.PI * 2) : p.strike - p.wind;
+      both((s) => M.e([f0 + 4.2, u0 + 1, s * 2.1], [0.85, 2.2, 1.2], DOGD));
+      M.box([f0 + 4.2 + swing, u0 - 0.9, 2.9], [1.4, 1.45, 0.45], CITY_BRASS, [0, swing * 26, 10]);
       // three heads off one thick neck
       [[-3, 0, -18], [0, 1, 0], [3, 2, 22]].forEach(([s, kind, yaw]) => {
         const lunge2 = p.strike && kind < 2 ? 1.6 : 0, droop = kind === 2 ? -2.2 : 0;

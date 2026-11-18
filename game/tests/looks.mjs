@@ -7,6 +7,7 @@ import { createHash } from "node:crypto";
 import * as L from "../src/logic.js";
 import * as SPC from "../public/species.js";
 import { WORDS, DIFF_NAME, FAR_RANGE, FALLBACK, cleanStarters } from "../public/starter.js";
+import { installCanvas } from "../scripts/pixcanvas.mjs";
 
 const D = L.defs();
 
@@ -23,6 +24,7 @@ assert.deepEqual(SPC.PARTS[4].names.slice(0, 4), ["분홍", "빨강", "주황", 
 assert.deepEqual(SPC.PARTS[5].names.slice(0, 4), ["없음", "눈 얼룩", "줄무늬", "포인트"]);
 assert.deepEqual(SPC.PARTS[6].colors.slice(0, 6), [null, "#5a8ae0", "#e0605a", "#5ab87a", "#9a78e0", "#f0c050"]);
 for (const p of SPC.PARTS) assert.equal(new Set(p.names || p.colors).size, (p.names || p.colors).length, p.key + ": no duplicate choices");
+for (const p of SPC.PARTS.filter((part) => part.colors)) assert.equal(p.labels.length, p.colors.length, p.key + ": every colour has a name");
 assert.ok(SPC.SPECIES.length >= 12, "a dozen animals or more");
 assert.ok(SPC.LOOK_N[1] >= 14 && SPC.LOOK_N[2] >= 12 && SPC.LOOK_N[0] >= 12 && SPC.LOOK_N[3] >= 20, "many eyes, mouths, ears and colours");
 
@@ -89,21 +91,24 @@ assert.ok(SPC.LOOK_N[1] >= 14 && SPC.LOOK_N[2] >= 12 && SPC.LOOK_N[0] >= 12 && S
 // ── drawing: a recording stand-in for sprites.js's pixel tools
 const FRAME = { stand: 0, breathe: 1, stepA: 2, stretch: 3, stepB: 4, blink: 5 };
 function draw(look, view, f) {
-  const rects = [];
   const T = {
-    sheet: () => [{}, {}], brush: () => ({ r: (x, y, w, h, c) => rects.push([x, y, w, h, c]) }), finish: () => rects,
+    sheet: () => {
+      const rects = [];
+      return [rects, { rects, drawImage: (top) => rects.push(...top) }];
+    },
+    brush: ({ rects }) => ({ r: (x, y, w, h, c) => rects.push([x, y, w, h, c]) }),
+    finish: (rects) => rects,
     shade: (c, t = 0.16) => c + "~" + t, blend: (a, b, t) => a + "+" + b + t, lt: (c) => c + "^", FRAME,
   };
-  SPC.animal(SPC.lookOf(look), view, f, T);
-  return rects;
+  return SPC.animal(SPC.lookOf(look), view, f, T);
 }
 const views = ["front", "side", "back"];
 let n = 0;
-const inside = (rects, what) => {
+const inside = (rects, view, what) => {
   for (const [x, y, w, h, c] of rects) {
     assert.ok(typeof c === "string" && c, what + ": every pixel has a colour");
-    // the figure stays inside its box on the sheet: the outline needs a pixel around it, the feet stand on row 27
-    assert.ok(x >= 5 && y >= 10 && x + w <= 27 && y + h <= 28 && w > 0 && h > 0, `${what}: ${[x, y, w, h]} inside the figure's box`);
+    // The feet stand on row 27. The rear tail can show just below the feet, with room for an outline.
+    assert.ok(x >= 5 && y >= 10 && x + w <= (view === "back" ? 29 : 27) && y + h <= (view === "back" ? 30 : 28) && w > 0 && h > 0, `${what}: ${[x, y, w, h]} inside the figure's box`);
   }
 };
 // every species with every ear, tail and marking, every view and frame
@@ -114,7 +119,7 @@ for (let sp = 0; sp < SPC.LOOK_N[7]; sp++) {
       const look = SPC.withSpecies([], sp);
       look[i] = v;
       look[SPC.LI.acc] = (sp + v) % SPC.LOOK_N[SPC.LI.acc];
-      for (const view of views) for (let f = 0; f < 6; f++) { inside(draw(look, view, f), `${SPC.SPECIES[sp].name} ${key} ${v} ${view} ${f}`); n++; }
+      for (const view of views) for (let f = 0; f < 6; f++) { inside(draw(look, view, f), view, `${SPC.SPECIES[sp].name} ${key} ${v} ${view} ${f}`); n++; }
     }
   }
 }
@@ -123,12 +128,110 @@ assert.ok(n > 5000);
 assert.deepEqual(draw([1, 2, 3, 4, 0, 2, 1, 5, 4, 3, 2], "side", 2), draw([1, 2, 3, 4, 0, 2, 1, 5, 4, 3, 2], "side", 2));
 const heads = new Set(SPC.SPECIES.map((_, sp) => JSON.stringify(draw(SPC.withSpecies([], sp), "front", 0))));
 assert.equal(heads.size, SPC.SPECIES.length, "every animal has a face of its own");
-// Pin the species-0 drawing for the original choices, including the redrawn automatic fox tail.
+{
+  const fox = SPC.withSpecies([], 5);
+  fox[SPC.LI.nose] = 13;
+  const mouth = draw(fox, "side", 0).find(([x, y, w, h, c]) => y === 23 && c === "#f07890");
+  assert.ok(mouth && mouth[0] + mouth[2] <= 19, "the fox's smile follows the side-view chin instead of protruding");
+}
+// Pin the original face and side geometry independently from rear-only artwork.
 {
   const h = createHash("sha1");
   for (let ear = 0; ear < 6; ear++) for (let eye = 0; eye < 6; eye++) for (let nose = 0; nose < 5; nose++)
-    for (const view of views) for (const f of [0, 1, 2, 5]) h.update(JSON.stringify(draw([ear, eye, nose, (ear + eye) % 10, nose % 4, (eye + nose) % 4, ear], view, f)));
-  assert.equal(h.digest("hex"), "3182b678216824d6f577aa729258987bed894f4f", "original look geometry includes the tapered rear fox tail");
+    for (const view of ["front", "side"]) for (const f of [0, 1, 2, 5]) h.update(JSON.stringify(draw([ear, eye, nose, (ear + eye) % 10, nose % 4, (eye + nose) % 4, ear], view, f)));
+  assert.equal(h.digest("hex"), "5b045768856c1d8a326e9a0ee5ecb549c816248a", "front and side shapes retain their original geometry");
+}
+
+// The logical 32px base retains its rear tail projections.
+{
+  const rear = (look, f) => {
+    const pixels = new Map();
+    for (const [x, y, w, h, c] of draw(look, "back", f))
+      for (let py = y; py < y + h; py++) for (let px = x; px < x + w; px++) pixels.set(py * 32 + px, c);
+    return pixels;
+  };
+  const shape = new Set(), tail = SPC.LI.tail;
+  for (const sp of [1, 5, 14, 15, 16]) {
+    const look = SPC.withSpecies([], sp);
+    for (let f = 0; f < 6; f++) {
+      look[tail] = 1;
+      const body = rear(look, f);
+      for (let i = 2; i < SPC.LOOK_N[tail]; i++) {
+        look[tail] = i;
+        const withTail = rear(look, f);
+        const visible = [...withTail.keys()].filter((pixel) => !body.has(pixel));
+        assert.ok(visible.length >= 4, `rear tail ${i} is visible, species ${sp}, frame ${f}`);
+        for (const [pixel, pigment] of body) assert.equal(withTail.get(pixel), pigment, "the logical tail stays behind the body");
+        const path = [...body.keys()], visited = new Set(path);
+        for (const pixel of path) for (const next of [pixel - 32, pixel + 32, pixel - 1, pixel + 1]) {
+          if (withTail.has(next) && !visited.has(next)) { visited.add(next); path.push(next); }
+        }
+        assert.ok(visible.every((pixel) => visited.has(pixel)), `rear tail ${i} stays attached, species ${sp}, frame ${f}`);
+        if (sp === 1 && f === 0) shape.add(visible.sort((a, b) => a - b).join());
+      }
+    }
+  }
+  assert.equal(shape.size, SPC.LOOK_N[tail] - 2, "each tail has its own rear silhouette");
+}
+
+// Native rear tails sit above the torso and garments; tall styles can overlap the back of the head.
+{
+  installCanvas();
+  const { personFrame, playerLook } = await import("../public/sprites.js");
+  const size = 64;
+  const back = (look, f, gear) => {
+    const frame = personFrame(playerLook("adventurer", look, gear), "back", f);
+    assert.equal(frame.width, size);
+    return frame.getContext("2d").getImageData(0, 0, size, size).data;
+  };
+  const clothes = [{}, { cos: ["top_robe", "back_cape_blue"] }];
+  for (const sp of [1, 5, 14, 15, 16]) for (let f = 0; f < 6; f++) for (const gear of clothes) {
+    const look = SPC.withSpecies([], sp);
+    look[SPC.LI.cloth] = 3;
+    look[SPC.LI.tail] = 1;
+    const body = back(look, f, gear);
+    for (let i = 2; i < SPC.LOOK_N[SPC.LI.tail]; i++) {
+      look[SPC.LI.tail] = i;
+      const tail = back(look, f, gear);
+      let rootVisible = false, headOverlap = false;
+      for (let p = 0; p < body.length; p += 4) {
+        if (!body[p + 3]) continue;
+        const x = (p / 4) % size, y = Math.floor(p / 4 / size);
+        const changed = body[p] !== tail[p] || body[p + 1] !== tail[p + 1] || body[p + 2] !== tail[p + 2] || body[p + 3] !== tail[p + 3];
+        const ink = tail[p] === 43 && tail[p + 1] === 34 && tail[p + 2] === 51;
+        if (!changed || ink) continue;
+        if (x >= 28 && x < 38 && y >= 50 && y < 54) rootVisible = true;
+        if (y >= 38 && y < 46) headOverlap = true;
+      }
+      assert.ok(rootVisible, `tail ${i} shows where it joins the lower back, species ${sp}, frame ${f}`);
+      if ([4, 8, 13].includes(i)) assert.ok(headOverlap, `tail ${i} is visible over the back of the head, species ${sp}, frame ${f}`);
+    }
+  }
+}
+
+// A thumbnail or the first visible pose only pays to draw the frame it needs.
+{
+  const { personFrame, personSheet, playerLook } = await import("../public/sprites.js");
+  const gear = { cos: ["top_robe", "back_cape_blue"], dye: { back_cape_blue: 2 } };
+  const look = playerLook("adventurer", SPC.withSpecies([], 14), gear);
+  const pixels = (frame) => frame.getContext("2d").getImageData(0, 0, frame.width, frame.height).data;
+  const expected = pixels(personFrame(look, "back", 2));
+  const create = document.createElement;
+  let canvases = 0;
+  document.createElement = (tag) => { if (tag === "canvas") canvases++; return create(tag); };
+  try {
+    const sheet = personSheet(look);
+    assert.equal(canvases, 0, "creating the sheet defers pixel work");
+    assert.equal(sheet.back.length, 6);
+    // Pending frames must keep the appearance used as the cache key.
+    gear.dye.back_cape_blue = 4;
+    const frame = sheet.back[2];
+    assert.deepEqual(pixels(frame), expected);
+    assert.ok(canvases > 0, "the first request draws the frame");
+    canvases = 0;
+    assert.equal(sheet.back[2], frame);
+    assert.equal(canvases, 0, "a frame is generated only once per sheet");
+  } finally { document.createElement = create; }
 }
 
 // ── presets, species defaults and the hat anchor
@@ -160,7 +263,7 @@ assert.equal(SPC.withSpecies(SPC.withSpecies([], 13), 1)[SPC.LI.pat], 0);
   L.addPlayer(S, "pid-m", ch);
   const p = S.players["pid-m"];
   const act = (a) => { S.now = now; const v = L.validateAction(S, "pid-m", a); if (v.ok) L.applyAction(S, "pid-m", a); return v; };
-  const want = [2, 12, 7, 0, 3, 12, 3, 13, 2, 9, 0];
+  const want = SPC.PRESETS.find(([name]) => name === "도토리 고슴도치")[1].slice();
   assert.equal(p.map, "town");
   const insufficientGold = D.lookCost - 1;
   ch.gold = insufficientGold;

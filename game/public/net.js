@@ -41,6 +41,7 @@ import { openStats, openTree } from "./win_char.js";
 import { doorFade } from "./win_world.js";
 import * as Charms from "./charms.js";
 import { renderRank, renderParty, renderGuild, renderPartyHud, renderInvite, partyDisplayKey } from "./win_social.js";
+import * as Buddy from "./buddy.js";
 
 // ───────────────────────────── connection ─────────────────────────────
 
@@ -170,8 +171,10 @@ export const channelName = () => Lobby.label(channel);
 /** Out of the world, back to the lobby (the socket is already closed or closing). */
 export function stopGame() {
   G.playing = false;
+  G.impactAt = 0;
   G.auto = false;
   Coop.onSnap({ cj: 0 });
+  Buddy.reset();
   hideBriefing();
   NpcLife.load(null, null);
   resetPurse(); // the next character's purse starts without a +N
@@ -201,6 +204,7 @@ function loadMap(m) {
   // through a house door (into or out of an interior): a warm fade and the door's latch and bell
   if (G.map && G.map.id !== m.id && (G.map.theme === "interior" || m.theme === "interior")) { doorFade(); Sound.play("door"); }
   G.map = m;
+  G.impactAt = 0;
   G.path = null;
   G.comboWeapon = null;
   NpcLife.load(m, G.defs);
@@ -245,9 +249,9 @@ function onSnap(s) {
 
   if (s.who) {
     G.who.clear();
-    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, pet, wk, guild, title, cos, wl] of s.who) {
+    for (const [eid, name, cls, lvl, look, at, wt, party, wq, we, pet, wk, guild, title, cos, wl, , buddy] of s.who) {
       // the outfit (cosmetic codes) and the weapon's legendary/set key ride along in `gear`
-      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk, ...Wardrobe.wireGear(G.defs, cos, wl) }, party, guild, title, pet: pet || null });
+      G.who.set(eid, { name, cls, lvl, look, gear: { at, wt, wq, we, wk, ...Wardrobe.wireGear(G.defs, cos, wl) }, party, guild, title, pet: pet || null, buddy: !!buddy });
     }
     if (isOpen("party")) renderParty();
     if (isOpen("guild")) renderGuild();
@@ -286,7 +290,12 @@ function onSnap(s) {
   if (s.fm) FairMkt.onFm(s.fm);              // a 장날 merchant's list, when asked for or after a purchase (fairmkt.js)
   if (s.ev) for (const e of s.ev) {
     const wait = G.impactAt - t;
-    if (wait > 8 && ((e[0] === "h" && !e[4] && e[2] > 0) || e[0] === "k")) setTimeout(() => onEvent(e, now()), wait);
+    if (wait > 8 && ((e[0] === "h" && !e[4] && e[2] > 0) || e[0] === "k")) {
+      const map = G.map, socket = ws;
+      setTimeout(() => {
+        if (G.playing && G.map === map && ws === socket) onEvent(e, now());
+      }, wait);
+    }
     else onEvent(e, t);
   }
   for (const [id, m] of G.gone) if (t - m.goneT > 1500) G.gone.delete(id);
@@ -316,6 +325,7 @@ function onSnap(s) {
   Coop.onSnap(s);                              // 협동 아르바이트: cj C cr (coop.js)
   renderBriefing(s, G.defs?.coop, G.you);
   Alba.onSnap(s);                              // 일일 아르바이트: ab (alba.js)
+  Buddy.onSnap(s, t);
   SX.onSnap(s);                                // sx: a request for me, the trade window, 가위바위보 (sxwin.js)
   hudBars();
 }
@@ -348,5 +358,6 @@ export function entityPos(id) {
 
 /** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */
 export function setupNet() {
+  Buddy.setup();
   setInterval(() => { if (ws && ws.readyState === WebSocket.OPEN) ws.send("__ping"); }, 30000);
 }

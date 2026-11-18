@@ -639,11 +639,12 @@ export function townProps() {
 }
 
 /** A hanging plank for a building's sign: a bracket off the wall, two chains, the trade's glyph burnt into it. */
-export function signPlank(glyph) {
+export function signPlank(glyph, trim) {
   return prop(20, 22, (b, x) => {
     b.r(0, 0, 20, 2, WOOD_D); b.r(18, 0, 2, 4, WOOD_D);
     b.r(3, 2, 1, 3, "#3a3448"); b.r(16, 2, 1, 3, "#3a3448");
     b.r(1, 5, 18, 16, "#d8b078"); b.r(1, 5, 18, 2, "#f0d098"); b.r(1, 19, 18, 2, "#a87a44"); b.r(17, 7, 2, 12, "#b8864e");
+    if (trim) { b.r(2, 6, 16, 1, trim); b.r(2, 19, 16, 1, trim); }
     if (glyph) x.drawImage(glyph, 4, 7);
   });
 }

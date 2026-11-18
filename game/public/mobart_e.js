@@ -169,7 +169,7 @@ export const BEASTS_E = {
         M.s(e, 1.15, C.EYEW); M.eye([e[0] + 0.8, e[1] - 0.1, e[2]], 2, "#2aa0a0");
       });
       // the bell: a frilled skirt, and over it the two halves of the brain
-      M.e([f0, u0 - 0.4, 0], [6 - pulse, 1.3 + pulse * 0.5, 6 - pulse], BELL);
+      M.e([f0, u0 - 0.4, 0], [6.6 - pulse * 2, 1.2 + pulse * 1.1, 6.6 - pulse * 2], BELL);
       M.G("brain");
       both((s) => M.e([f0, u0 + 2 + pulse * 0.3, s * 2.1], [4.8 - pulse * 0.4, 3.5 + pulse * 0.4, 2.7], BRAIN));
       M.G();
@@ -362,7 +362,11 @@ export const BEASTS_E = {
       }
       // the flower: petals round an eye
       const F = [B[0] - 0.4, B[1] + R[1] + 0.4, 0];
-      for (let i = 0; i < 5; i++) { const a = (i / 5) * Math.PI * 2 + 0.3; M.s([F[0] + Math.cos(a) * 1.5, F[1] + (p.wind ? 0.5 : 0), Math.sin(a) * 1.5], 1, FLOWER); }
+      const spread = p.wind ? 1 : p.strike ? 2.6 : 1.8 + p.idle * 0.35;
+      for (let i = 0; i < 5; i++) {
+        const a = i * Math.PI * 2 / 5;
+        M.e([F[0] + Math.cos(a) * spread, F[1] + p.wind, Math.sin(a) * spread], [1.55, 0.65, 0.85], FLOWER, [-i * 72, 16 + p.wind * 42, 0]);
+      }
       M.s([F[0], F[1] + 0.5, 0], 1, C.EYEW); M.eye([F[0] + 0.3, F[1] + 1, 0.3], 2, "#e02838");
       // the little face it kept
       const H = [f0 + 4 + (p.strike ? 1 : 0), u0 - 0.4, 0], open = p.strike ? 1 : p.wind ? 0.5 : 0;
@@ -538,7 +542,7 @@ export const BEASTS_E = {
       M.e(A, [4.6, 1.6, 1.9], OPET, [0, -10, 0]);
       M.s([A[0] - 4.4, A[1] + 1.2, 0], 1, OPINK);
       M.G();
-      both((s) => M.e([A[0] - 0.6, A[1] + 0.6, s * 2], [3, 0.4, 1.3], OPINK, [0, -10, s * 30]));
+      both((s) => M.e([A[0] - 0.6, A[1] + 0.6, s * 2], [3.5, 0.55, 1.7], OPINK, [0, -10, s * (28 + p.wind * 45 - p.strike * 24)]));
       M.seam([[A[0] + 3, A[1] + 1, 0], [A[0], A[1] + 1.9, 0], [A[0] - 3.4, A[1] + 2.2, 0]], "#b83a78");
       // the thorax upright, a collar of petals, the three-cornered head
       const N = [f0 + 2.6 + (p.strike ? 2 : 0) + sway * 0.4, u0 + 11 - (p.strike ? 2.4 : 0), 0];
@@ -635,7 +639,7 @@ export const BEASTS_E = {
       const fl = flapOf(p, [0.8, 0.1, -0.6, 0.1]);
       const [lf, lu] = lunge(p);
       const f0 = lf, u0 = 8 + lu - fl * 0.5;
-      both((s) => M.tube([[f0 - 2, u0 - 1.4, s * 0.8], [f0 - 5.6, u0 - 3.6, s * 0.9], [f0 - 9.4, u0 - 3.2, s * 1]], [0.5, 0.4, 0.35], WCRK));
+      both((s) => M.tube([[f0 - 2, u0 - 1.4, s * 0.8], [f0 - 5.6, u0 - 3.6, s * 0.9], [f0 - 9.4 + fl, u0 - 3.2 - fl * 1.6, s * 1]], [0.5, 0.4, 0.35], WCRK));
       M.G("body");
       M.e([f0, u0, 0], [4.4, 2.3, 2.2], WCR, [0, 10, 0]);
       M.e([f0 - 4.2, u0 - 0.2, 0], [2.6, 1.3, 1.8], WCRK, [0, -14, 0]);

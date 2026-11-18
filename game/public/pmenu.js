@@ -61,7 +61,7 @@ function item(label, why, run, extra) {
 /** Open the menu for player `eid`. */
 export function open(eid) {
   const w = who(eid);
-  if (!w) return;
+  if (!w || w.buddy) return;
   menu = { eid, name: w.name };
   render();
   hint("pmenu");   // the first time: what this menu does (hints.js)
@@ -110,7 +110,7 @@ function place() {
  */
 export function onWorldDown(e) {
   const o = S3.pickPlayer(e.clientX, e.clientY);
-  if (o) { open(o.id); Sound.play("tab"); return true; }
+  if (o && !who(o.id)?.buddy) { open(o.id); Sound.play("tab"); return true; }
   if (menu) { close(); return true; }
   return false;
 }

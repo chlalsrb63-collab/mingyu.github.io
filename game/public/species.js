@@ -24,15 +24,16 @@ const DARK = "#2b2233", INK = "#2b2233", PINK = "#f6a8a0", WHITE = "#ffffff";
 const FUR = [
   "#fbfbff", "#fff0d8", "#ffd9c2", "#ffd0dc", "#e2d6ff", "#cfe6ff", "#cff2dc", "#ffeaa0", "#b9bdca", "#b98b68",
   "#f2b27a", "#e0b46c", "#8a6450", "#5c4a48", "#8a8a9a", "#4a4654", "#e8d4ae", "#ffb8c4", "#b4ece4", "#cddca0", "#ffcf9a", "#b8c8ff",
+  "#a97961", "#c7aaa2", "#91b6ab", "#dfdcc4",
 ];
 /** The second colour (markings, muzzles, bellies); 0 works it out from the fur. */
-const ACCENT = [null, "#fbfbff", "#fff0d8", "#e8d4ae", "#f2b27a", "#c08050", "#8a6450", "#5c4a48", "#8a8a9a", "#4a4654", "#ffb8c4", "#c8b0f0", "#a8d0f0", "#a8e0b8"];
-const EYE_COL = [null, "#8a5a3a", "#4a90e0", "#4ab06a", "#e0a030", "#9a6ad8", "#e86a9a", "#5ac8e0"];
-const BLUSH = ["#f6a8a0", "#f07882", "#f8ba7c", null, "#d8b0f0", null];
+const ACCENT = [null, "#fbfbff", "#fff0d8", "#e8d4ae", "#f2b27a", "#c08050", "#8a6450", "#5c4a48", "#8a8a9a", "#4a4654", "#ffb8c4", "#c8b0f0", "#a8d0f0", "#a8e0b8", "#dfc6a5", "#714b56", "#e9a979"];
+const EYE_COL = [null, "#8a5a3a", "#4a90e0", "#4ab06a", "#e0a030", "#9a6ad8", "#e86a9a", "#5ac8e0", "#7fa69d", "#ba728c"];
+const BLUSH = ["#f6a8a0", "#f07882", "#f8ba7c", null, "#d8b0f0", null, "#eb987f", "#c18d7e"];
 const FRECKLE = 5;
 /** Every colour an eye can be drawn in (pupils on light and dark fur, glints, irises, tears, stars, hearts): wardrobe.js keeps these uncovered. */
 export const EYE_PIX = ["#2b2233", "#f8e4a0", "#ffffff", "#7ac8ff", "#f0a828", "#fff2b0", "#e8506a", ...EYE_COL.filter(Boolean)];
-const CLOTH = [null, "#5a8ae0", "#e0605a", "#5ab87a", "#9a78e0", "#f0c050", "#ec8ab4", "#46b4bc", "#8a6a4a", "#3e4e72", "#f4f0e6", "#e8843a"];
+const CLOTH = [null, "#5a8ae0", "#e0605a", "#5ab87a", "#9a78e0", "#f0c050", "#ec8ab4", "#46b4bc", "#8a6a4a", "#3e4e72", "#f4f0e6", "#e8843a", "#688c7a", "#b65f6c"];
 
 /**
  * Head shapes. `rows` are half-widths from the head's top row (`top`) down to row 23,
@@ -56,21 +57,23 @@ export const SPECIES = [
   { name: "사슴", top: 17, rows: [4, 5, 5, 5, 5, 4, 3], ew: 5, def: { ear: 8, nose: 3, tail: 2, pat: 4 } },
   { name: "판다", top: 18, rows: [5, 6, 7, 7, 7, 6], def: { ear: 2, nose: 7, tail: 2, pat: 12, acc: 9 } },
   { name: "다람쥐", top: 18, rows: [5, 6, 6, 6, 6, 5], ex: "pouch", def: { ear: 12, nose: 11, tail: 8, pat: 7 } },
+  { name: "수달", top: 18, rows: [5, 6, 6, 7, 7, 5], ex: "otter", def: { ear: 14, nose: 9, tail: 12, pat: 7, acc: 14 } },
+  { name: "고슴도치", top: 18, rows: [5, 6, 7, 7, 6, 4], ex: "spines", def: { ear: 15, nose: 14, tail: 2 } },
 ];
 
 /** Everything chosen at creation, in the order `look` stores it, and the tab each sits on. */
 export const PARTS = [
-  { key: "ear", label: "귀", tab: 2, names: ["고양이", "토끼", "곰", "여우", "강아지", "쥐", "늘어진 귀", "작은 귀", "사슴뿔", "양 귀", "뿔", "없음", "깃털 귀", "사막여우"] },
-  { key: "eye", label: "눈", tab: 1, names: ["점 눈", "긴 눈", "큰 눈", "웃는 눈", "졸린 눈", "파란 눈", "반짝 눈", "윙크", "다부진 눈", "글썽 눈", "별 눈", "하트 눈", "동글 눈", "나른한 눈", "감은 눈", "놀란 눈"] },
-  { key: "nose", label: "코·입", tab: 1, names: ["작은 코", "분홍 코", "ㅅ 입", "큰 코", "없음", "하트 코", "세모 코", "주둥이", "부리", "수염", "고양이 입", "앞니", "메롱", "활짝"] },
-  { key: "fur", label: "털색", tab: 3, colors: FUR },
-  { key: "blush", label: "볼", tab: 1, names: ["분홍", "빨강", "주황", "없음", "라벤더", "주근깨"] },
-  { key: "pat", label: "무늬", tab: 4, names: ["없음", "눈 얼룩", "줄무늬", "포인트", "점박이", "가면", "양말", "배 무늬", "이마 점", "볼 줄무늬", "얼룩소", "반반", "판다"] },
-  { key: "cloth", label: "옷", tab: 4, colors: CLOTH },
+  { key: "ear", label: "귀", tab: 2, names: ["고양이", "토끼", "곰", "여우", "강아지", "쥐", "늘어진 귀", "작은 귀", "사슴뿔", "양 귀", "뿔", "없음", "깃털 귀", "사막여우", "수달 귀", "솜털 귀"] },
+  { key: "eye", label: "눈", tab: 1, names: ["점 눈", "긴 눈", "큰 눈", "웃는 눈", "졸린 눈", "파란 눈", "반짝 눈", "윙크", "다부진 눈", "글썽 눈", "별 눈", "하트 눈", "동글 눈", "나른한 눈", "감은 눈", "놀란 눈", "눈웃음", "속눈썹"] },
+  { key: "nose", label: "코·입", tab: 1, names: ["작은 코", "분홍 코", "ㅅ 입", "큰 코", "없음", "하트 코", "세모 코", "주둥이", "부리", "수염", "고양이 입", "앞니", "메롱", "활짝", "미소", "보조개"] },
+  { key: "fur", label: "털색", tab: 3, colors: FUR, labels: ["눈빛", "바닐라", "살구", "벚꽃", "연보라", "연하늘", "민트", "노란 크림", "회색", "밀크티", "호박", "황토", "밤색", "코코아", "돌회색", "먹색", "베이지", "복숭아", "물빛", "연두", "오렌지 크림", "수국", "계피", "장밋빛 회색", "세이지", "아마빛"] },
+  { key: "blush", label: "볼", tab: 1, names: ["분홍", "빨강", "주황", "없음", "라벤더", "주근깨", "산호빛", "말린 장미"] },
+  { key: "pat", label: "무늬", tab: 4, names: ["없음", "눈 얼룩", "줄무늬", "포인트", "점박이", "가면", "양말", "배 무늬", "이마 점", "볼 줄무늬", "얼룩소", "반반", "판다", "이마 흰줄", "눈 위 점"] },
+  { key: "cloth", label: "옷", tab: 4, colors: CLOTH, labels: ["없음", "파랑", "빨강", "잎초록", "연보라", "노랑", "분홍", "청록", "밤색", "남색", "아이보리", "주황", "올리브빛", "장미빛"] },
   { key: "sp", label: "종류", tab: 0, names: SPECIES.map((s) => s.name) },
-  { key: "tail", label: "꼬리", tab: 2, names: ["자동", "없음", "짧은 꼬리", "고양이", "여우", "솜꼬리", "강아지", "쥐", "다람쥐", "줄무늬", "깃털", "돼지"] },
-  { key: "acc", label: "보조색", tab: 3, colors: ACCENT },
-  { key: "eyeC", label: "눈동자", tab: 1, colors: EYE_COL },
+  { key: "tail", label: "꼬리", tab: 2, names: ["자동", "없음", "짧은 꼬리", "고양이", "여우", "솜꼬리", "강아지", "쥐", "다람쥐", "줄무늬", "깃털", "돼지", "수달 꼬리", "부채 꼬리"] },
+  { key: "acc", label: "보조색", tab: 3, colors: ACCENT, labels: ["자동", "눈빛", "바닐라", "베이지", "호박", "황갈색", "밤색", "코코아", "돌회색", "먹색", "복숭아", "라일락", "하늘", "연초록", "모래빛", "자두빛 갈색", "꿀빛"] },
+  { key: "eyeC", label: "눈동자", tab: 1, colors: EYE_COL, labels: ["기본", "갈색", "파랑", "초록", "호박석", "보라", "분홍", "청록", "녹회색", "자두빛"] },
 ];
 /** The tabs of the creation screen. */
 export const TABS = ["종류", "얼굴", "귀·꼬리", "색", "무늬·옷"];
@@ -101,6 +104,8 @@ export const PRESETS = [
   ["다람쥐", [12, 0, 11, 10, 2, 7, 3, 14, 8, 2, 0]],
   ["민트 냥", [0, 10, 10, 18, 4, 2, 1, 1, 3, 0, 7]],
   ["라벤더 곰", [7, 11, 5, 4, 0, 8, 6, 4, 2, 0, 5]],
+  ["강가 수달", [14, 16, 9, 22, 6, 7, 12, 15, 12, 14, 8]],
+  ["도토리 고슴도치", [15, 17, 14, 23, 7, 14, 13, 16, 2, 15, 9]],
 ];
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -152,6 +157,7 @@ export const EARS = [
   { kind: "side", top: 17, inX: 12 }, { kind: "small", top: 16, inX: 11 }, { kind: "antler", top: 12, inX: 14, fixed: 1 },
   { kind: "side", top: 19, inX: 9 }, { kind: "horn", top: 15, inX: 12 }, { kind: "none", top: 18, inX: 0 },
   { kind: "small", top: 15, inX: 12 }, { kind: "tall", top: 12, inX: 13, fixed: 1 },
+  { kind: "small", top: 16, inX: 11 }, { kind: "small", top: 15, inX: 12 },
 ];
 
 /**
@@ -177,6 +183,7 @@ export function headAnchor(look) {
   const standing = E.kind !== "side" && E.kind !== "none";
   let earTop = E.top + (E.fixed ? 0 : dy);
   if (bumps) earTop = Math.min(earTop, 16);
+  if (sp.ex === "spines") earTop = Math.min(earTop, 15);
   return {
     cx: 16, top, x0: 16 - rows[0], x1: 15 + rows[0], rows, half: Math.max(...sp.rows),
     halfAt: (y) => rows[clamp(y - top, 0, rows.length - 1)],
@@ -232,16 +239,51 @@ const SQUIRREL_CURL = [
   ".FFFSS....",
   "FFSS......",
 ];
+const FAN_FEATHERS = [
+  "......F.I.",
+  ".....FF.I.",
+  "....FFFTTI",
+  "...FFFTTTS",
+  "..FFFFTSS.",
+  "FFFFSSS...",
+  "FFSS......",
+];
+const RAISED_TAILS = [4, 8, 13];
 
-// Behind the rump, only a narrow taper of the raised tail remains visible.
-const REAR_ROOT_EDGE = [24, 22, 20, 19];
+// Rear projections [left, top, rows]. The root tucks behind the center of the hips.
+// Long tails curve away from the feet before rising, leaving the cheeks clear.
+const REAR_TAILS = {
+  2: [15, 26, ["FS..", "FFS.", ".FFS", "..SS"]],
+  3: [15, 21, ["........FF", ".......FFS", "........FS", ".......FFS", ".......FS.", "FS....FFS.", "FFS..FFS..", ".FFFFFS...", "..SSSS...."]],
+  4: [14, 20, [
+    "...........II.", "..........IIII", "..........IIIT", ".........FIITS",
+    "........FFFTS.", ".......FFFFSS.", ".FS..FFFFFSS..", ".FFFFFFFFSS...",
+    "..FFFFSSS.....", "...SSSS.......",
+  ]],
+  5: [14, 26, [".FFS..", ".IFFTS", ".IIITT", "..TTS."]],
+  6: [15, 24, [".....TT.", "....TFFS", "FS..FFS.", "FF.FFS..", ".FFFS...", "..SS...."]],
+  7: [15, 24, [".........P", "........PP", "FS.....PQ.", "FPP..PPQ..", ".PPPPQ....", "..QQ......"]],
+  8: [14, 17, [
+    "...........FFF.", "..........FFFFF", ".........FFFFFS", ".........FFSFFS",
+    ".........FS.FFS", "............FFS", "...........FFSS", "..........FFFSS",
+    ".........FFFSS.", ".FS....FFFFSS..", ".FFF.FFFFSSS...", "..FFFFFFSS.....",
+    "...SSSSS.......",
+  ]],
+  9: [15, 24, ["........TF", "......FTFS", "FS..DFFSS.", "FFDDDDSS..", ".FFFDSS...", "..SSS....."]],
+  10: [15, 23, ["........II", ".......IIT", "......ITTS", "FS...ITTS.", "FF.FTTFS..", ".FFFSSS...", "..SSS....."]],
+  11: [15, 24, [".....PPP", "....PP.P", "FS..P..P", "PP...QQP", ".PPPPQQ.", "..QQQ..."]],
+  12: [15, 26, ["FS......", "FFF...FF", ".FFFFFFS", "..SSSSS."]],
+  13: [9, 23, [
+    "....I......", "..I.IT.....", "..IT.T..FS.", "I.TFTTS.FFS",
+    "ITFFTTSFFS.", ".TFFFFFFSS.", "..SSSSSSS..",
+  ]],
+};
 
-function paintTail(behind, rows, y, palette, sway, back) {
+function paintTail(behind, rows, y, palette, sway, left = 17) {
   rows.forEach((row, dy) => {
     // The brush tip ebbs with the stride while its root stays attached to the same spot.
-    const x = 17 + (dy < 5 ? sway : 0);
-    const edge = back ? REAR_ROOT_EDGE[y + dy - 23] ?? 31 : 31;
-    for (let i = 0; i < row.length && x + i <= edge; i++) {
+    const x = left + (dy < 5 ? sway : 0);
+    for (let i = 0; i < row.length; i++) {
       const ink = palette[row[i]];
       if (ink) behind(x + i, y + dy, 1, 1, ink);
     }
@@ -253,10 +295,16 @@ function markRows(rows, x, y, w, h, remove = false) {
   for (let j = y; j < y + h; j++) rows[j] = remove ? rows[j] & ~mask : rows[j] | mask;
 }
 
+export function tailOf(o) {
+  const ear = o.ear | 0;
+  const sp = SPECIES[o.sp | 0] || SPECIES[0];
+  return o.tail || (ear <= 5 ? [3, 5, 2, 4, 6, 7][ear] : sp.def.tail || 2);
+}
+
 /**
  * One frame of a player: `o` from lookOf, `view` front / side / back, `f` a FRAME
  * index, `T` the pixel tools of sprites.js { sheet, brush, finish, shade, blend, lt, FRAME }.
- * With species 0 and the original options it draws exactly what sprites.js always drew.
+ * Front and side use the original face and body drawing, with optional tail seams.
  */
 export function animal(o, view, f, T, seam) {
   const [c, g] = T.sheet(32);
@@ -271,45 +319,60 @@ export function animal(o, view, f, T, seam) {
   const darkFur = lum(fur) < 0.36;
   const EYE = darkFur ? "#f8e4a0" : DARK, NOSE = darkFur ? "#f0a8b4" : "#4a3640";
   const H = HEAD_BOB[f] || 0;
-  const tail = o.tail ? o.tail : (o.ear | 0) <= 5 ? [3, 5, 2, 4, 6, 7][o.ear | 0] : sp.def.tail || 2;
-  const raisedTail = seam && (tail === 4 || tail === 8);
-  if (raisedTail) {
-    seam.head = new Uint32Array(32);
+  const tail = tailOf(o);
+  const rear = back && REAR_TAILS[tail];
+  const rearLayer = rear ? T.sheet(32) : null;
+  const tailBrush = rearLayer ? T.brush(rearLayer[1]) : b;
+  const tailSeam = seam && !back && RAISED_TAILS.includes(tail);
+  if (tailSeam) {
+    seam.form = new Uint32Array(32);
     seam.tail = new Uint32Array(32);
   }
-  const r = (x, y, w, h, col) => {
+  let r = (x, y, w, h, col) => {
     b.r(x, y + H, w, h, col);
-    if (raisedTail) markRows(seam.head, x, y + H, w, h);
+    if (tailSeam) markRows(seam.form, x, y + H, w, h);
   };
   const both = (x, y, w, h, col, colR = col) => { r(x, y, w, h, col); r(32 - x - w, y, w, h, colR); };
   const behind = (x, y, w, h, col) => {
     const tx = side ? 32 - x - w : x;
-    b.r(tx, y, w, h, col);
-    if (raisedTail) markRows(seam.tail, tx, y, w, h);
+    tailBrush.r(tx, y, w, h, col);
+    if (tailSeam) markRows(seam.tail, tx, y, w, h);
   };
   const top = sp.top, rows = sp.rows, wAt = (y) => rows[clamp(y - top, 0, rows.length - 1)];
 
   // ── tail (0: as the ears suggest, as it always was)
   const tc = pat === 3 || pat === 12 ? deep : fur;
   const sway = f === FRAME.stepA ? -1 : 0;
-  [
+  if (rear) {
+    const [x, y, shape] = rear;
+    const base = tail === 8 ? blend(fur, "#a75b3a", 0.38) : tc;
+    const shadow = tail === 4 ? blend(fur, "#784158", 0.42) : tail === 8 ? blend(fur, "#5f3645", 0.60) : shade(base, 0.32);
+    const pink = blend(fur, "#c98986", 0.64);
+    paintTail(behind, shape, y, {
+      F: base, S: shadow, I: tail === 4 ? "#fff1db" : pale,
+      T: tail === 4 ? "#dfcbbb" : blend(fur, pale, 0.58),
+      D: acc || shade(fur, 0.58), P: pink, Q: shade(pink, 0.29),
+    }, tail === 4 || tail === 8 ? sway : 0, x);
+  } else [
     null, () => {},
     () => behind(19, 26, 1, 1, tc),
     () => { behind(19, 26, 2, 1, tc); behind(20, 24, 1, 2, tc); },
-    () => paintTail(behind, FOX_BRUSH, 16, { F: fur, S: blend(fur, "#784158", 0.42), I: "#fff1db", T: "#dfcbbb" }, sway, back),
+    () => paintTail(behind, FOX_BRUSH, 16, { F: fur, S: blend(fur, "#784158", 0.42), I: "#fff1db", T: "#dfcbbb" }, sway),
     () => behind(19, 25, 2, 2, tc),
     () => { behind(19, 25, 1, 1, tc); behind(20, 24, 1, 1, tc); },
     () => { behind(19, 26, 3, 1, tc); behind(21, 25, 1, 1, tc); },
-    () => paintTail(behind, SQUIRREL_CURL, 12, { F: blend(fur, "#a75b3a", 0.38), S: blend(fur, "#5f3645", 0.60) }, sway, back),
+    () => paintTail(behind, SQUIRREL_CURL, 12, { F: blend(fur, "#a75b3a", 0.38), S: blend(fur, "#5f3645", 0.60) }, sway),
     () => { behind(19, 24, 3, 3, fur); behind(19, 25, 3, 1, deep); behind(21, 24, 1, 1, deep); },
     () => { behind(19, 26, 3, 1, tc); behind(20, 25, 2, 1, tc); behind(21, 24, 1, 1, deep); behind(21, 26, 1, 1, deep); },
     () => { behind(19, 26, 1, 1, tc); behind(20, 25, 1, 1, tc); behind(21, 26, 1, 1, tc); behind(21, 24, 1, 1, tc); },
+    () => { behind(18, 25, 4, 2, tc); behind(21, 26, 3, 1, tc); behind(23 + sway, 25, 2, 1, soft); behind(19, 27, 4, 1, soft); },
+    () => paintTail(behind, FAN_FEATHERS, 20, { F: fur, S: soft, I: pale, T: blend(fur, pale, 0.58) }, sway),
   ][tail]();
 
   // ── body: a tiny lump on two feet; a step lifts one of them
   const bt = 24 + H, cloth = o.cloth;
   const foot = pat === 6 || pat === 12 ? deep : fur;
-  if (raisedTail) markRows(seam.tail, 13, bt, 6, 28 - bt, true);
+  if (tailSeam) markRows(seam.tail, 13, bt, 6, 28 - bt, true);
   b.r(13, bt, 6, 27 - bt, fur);
   if (f !== FRAME.stepB) b.r(13, 27, 2, 1, foot);
   if (f !== FRAME.stepA) b.r(17, 27, 2, 1, foot);
@@ -350,13 +413,27 @@ export function animal(o, view, f, T, seam) {
     () => {},
     () => { E(10, 17, 3, 1); E(10, 16, 2, 1); E(10, 15, 1, 1); },
     () => { E(9, 17, 5, 1); E(9, 16, 4, 1); E(9, 15, 4, 1); E(9, 14, 3, 1); E(9, 13, 2, 1); E(9, 12, 1, 1); pink(10, 14, 1, 3); pink(11, 15, 1, 2); },
+    () => { E(9, 17, 3, 2); E(10, 16, 2, 1); if (!back) both(10 + dx, 17 + dy, 1, 1, pale); },
+    () => { E(10, 15, 1, 1); E(10, 16, 2, 2); E(11, 17, 2, 2); pink(11, 17, 1, 1); },
   ][ear]();
 
   // ── the head
+  const quill = sp.ex === "spines" ? blend(fur, "#59363f", 0.60) : null;
+  if (sp.ex === "spines") {
+    r(13, 16, 6, 3, quill);
+    both(12, 15, 2, 2, quill);
+    both(9, 18, 2, 3, quill);
+    both(8, 20, 3, 2, quill);
+  }
   rows.forEach((w, j) => r(16 - w, top + j, w * 2, 1, fur));
   if (sp.ex === "bumps") { both(10, 17, 4, 2, fur); both(11, 16, 2, 1, fur); }
   if (sp.ex === "wool") { both(12, 17, 2, 1, fur); r(15, 17, 2, 1, fur); both(8, 20, 1, 1, fur); both(8, 22, 1, 1, fur); }
   if (sp.ex === "tufts") { both(9, 21, 1, 1, fur); both(9, 23, 1, 1, fur); }
+  if (sp.ex === "spines") {
+    r(11, 18, 10, back ? 4 : 1, quill);
+    both(10, 19, 2, back ? 3 : 1, quill);
+    if (back) { both(12, 20, 1, 2, soft); r(15, 17, 2, 2, soft); r(15, 22, 2, 1, quill); }
+  }
   if (ear === 4) {
     const d = pat === 3 || pat === 12 ? deeper : deep;
     both(10 + dx, 17 + dy, 2, 1, d, pat === 1 || pat === 11 ? deeper : d); both(9 + dx, 18 + dy, 2, 5, d, pat === 1 || pat === 11 ? deeper : d);
@@ -373,9 +450,28 @@ export function animal(o, view, f, T, seam) {
   if (pat === 10) { r(16 - wAt(top + 1), top + 1, 3, 2, deep); r(16 - wAt(top), top, 3, 1, deep); r(back ? 13 : 18, 22, 3, 2, deep); }
   if (pat === 11) for (let y = top; y <= 23; y++) r(16, y, wAt(y), 1, deep);
   if (sp.ex === "bumps" && pat === 11) { r(18, 17, 4, 2, deep); r(19, 16, 2, 1, deep); }
+  if (pat === 13) { r(15, top, 2, 1, pale); r(15 + Number(side), top + 1, 1, back ? 1 : 2, pale); }
 
-  if (back) return T.finish(c, g, INK, 1);
+  if (back) {
+    // The near layer keeps its full outline where it covers the base of the tail.
+    const body = T.finish(c, g, INK, 1);
+    if (!rearLayer) return body;
+    const rearTail = T.finish(...rearLayer, INK, 1);
+    rearLayer[1].drawImage(body, 0, 0);
+    return rearTail;
+  }
 
+  // Keep muzzle, markings and expressions inside the head's taper. Ears and quills are separate layers.
+  if (o.sp) {
+    const paint = r;
+    r = (x, y, w, h, col) => {
+      for (let row = y; row < y + h; row++) {
+        const half = wAt(row);
+        const a = Math.max(x, 16 - half), z = Math.min(x + w, 16 + half);
+        if (z > a) paint(a, row, z - a, 1, col);
+      }
+    };
+  }
   // the face turns with the body: in a three-quarter view everything slides toward the far cheek
   const ox = sp.ox | 0;
   const lx = (side ? 14 : 12) + ox, rx1 = (side ? 20 : 19) - ox, rx2 = (side ? 19 : 18) - ox, nx = side ? 17 : 15;
@@ -387,6 +483,8 @@ export function animal(o, view, f, T, seam) {
   if (sp.ex === "pouch") { both(16 - wAt(21), 21, 3, 2, pale); }
   if (sp.ex === "face") { r(12 + s2, 19, 3, 1, pale); r(17 + s2, 19, 3, 1, pale); r(11 + s2, 20, 10, 3, pale); r(12 + s2, 23, 8, 1, pale); }
   if (sp.ex === "wool") { const fc = acc || (lum(fur) > 0.6 ? blend(fur, "#d8b49c", 0.5) : blend(fur, "#fff4e8", 0.6)); r(12 + s2, 20, 8, 3, fc); r(13 + s2, 23, 6, 1, fc); r(13 + s2, 19, 6, 1, fc); }
+  if (sp.ex === "otter") { r(13 + s2, 21, 6, 1, pale); r(12 + s2, 22, 8, 1, pale); r(13 + s2, 23, 6, 1, pale); }
+  if (sp.ex === "spines") { r(13 + s2, 20, 6, 1, pale); r(12 + s2, 21, 8, 2, pale); r(13 + s2, 23, 6, 1, pale); }
 
   // ── markings on the face
   if (pat === 1) r((side ? 18 : 17) - ox, ey - 1, 4, 4, deep);
@@ -394,6 +492,7 @@ export function animal(o, view, f, T, seam) {
   if (pat === 8) { r(15 + s2, top, 2, 1, pale); r(15 + s2, top + 1, 2, 1, pale); }
   if (pat === 9) { both(16 - wAt(ey), ey, 2, 1, deep); both(16 - wAt(ny), ny, 2, 1, deep); }
   if (pat === 12) { r(lx - 1, ey - 1, 3, 3, deep); r(rx2, ey - 1, 3, 3, deep); }
+  if (pat === 14) { r(lx, ey - 2, 2, 1, deep); r(rx2, ey - 2, 2, 1, deep); }
   const onDark = pat === 12 || (pat === 5 && lum(deep) < 0.45);
 
   // ── eyes
@@ -431,6 +530,8 @@ export function animal(o, view, f, T, seam) {
     () => { for (const x of [lx - 1, rx2]) { r(x, ey, 1, 1, EYE); r(x + 1, ey + 1, 1, 1, EYE); r(x + 2, ey, 1, 1, EYE); } },
     // surprised: open rings
     () => { at2((x, s) => { const x0 = s > 0 ? x - 1 : x; r(x0, ey - 1, 3, 3, EYE); r(x0 + 1, ey, 1, 1, darkFur ? DARK : WHITE); }); },
+    () => { at2((x, s) => { r(x, ey + 1, 2, 1, EYE); r(x + (s < 0 ? 2 : -1), ey, 1, 1, EYE); }); },
+    () => { eyes(2, ey, 2, EYE); iris(1, ey + 1); r(lx - 1, ey - 1, 1, 1, EYE); r(rx2 + 2, ey - 1, 1, 1, EYE); },
   ][eye]();
   // eyes inside a dark patch keep a glint so they still read
   if (onDark && f !== FRAME.blink && ![3, 4, 13, 14].includes(eye)) { r(lx, ey, 1, 1, WHITE); r(rx2, ey, 1, 1, WHITE); }
@@ -453,6 +554,8 @@ export function animal(o, view, f, T, seam) {
     () => { r(nx, ny, 2, 1, NOSE); r(nx - 1, ny + 1, 1, 1, NOSE); r(nx, ny + 1, 2, 1, WHITE); r(nx + 2, ny + 1, 1, 1, NOSE); },
     () => { r(nx - 1, ny, 3, 1, NOSE); r(nx + 1, ny + 1, 2, 1, HEART); },
     () => { r(nx - 2, ny, 6, 1, NOSE); r(nx - 1, ny + 1, 4, 1, HEART); },
+    () => { r(nx, ny, 2, 1, NOSE); r(nx + 1, ny + 1, 1, 1, HEART); },
+    () => { r(nx - 1, ny, 1, 1, NOSE); r(nx + 2, ny, 1, 1, NOSE); r(nx, ny + 1, 2, 1, NOSE); },
   ][nose]();
 
   // ── blush or freckles, on the cheek's edge whatever the head's width

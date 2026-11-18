@@ -22,7 +22,7 @@ const CSS = `
 .lk-lab b { color: var(--cream, #f3e8cc); font-weight: 400; }
 .lk-grid { display: flex; flex-wrap: wrap; gap: 3px; }
 .lk-thumb { width: 44px; height: 38px; padding: 0 !important; border: 2px solid var(--ink); border-radius: 0; background: #5a8a50; cursor: pointer; image-rendering: pixelated; }
-.lk-thumb canvas { display: block; width: 40px; height: 34px; image-rendering: pixelated; }
+.lk-thumb canvas { display: block; width: 40px; height: 34px; image-rendering: pixelated; object-fit: contain; }
 .lk-thumb.on { outline: 2px solid var(--b-hi, #f4dfa4); outline-offset: 0; background: #7ab06a; }
 .lk-thumb.wide { width: 58px; height: 52px; }
 .lk-thumb.wide canvas { width: 40px; height: 34px; margin: 0 auto; }
@@ -35,7 +35,13 @@ const CSS = `
 #mirror .frame { width: min(420px, calc(100vw - 20px)); padding: 6px 10px 10px; font: 12px var(--pix); color: var(--cream, #f3e8cc); background: none; border: 14px solid transparent; border-image: var(--fr-brass) 14 fill / 14px / 0 stretch; image-rendering: pixelated; }
 #mirror h2 { font: 700 12px/1.4 var(--pix); color: var(--b-hi, #f4dfa4); margin: 0 0 6px; text-align: center; }
 #mirror .mr-row { display: flex; gap: 8px; align-items: flex-start; }
-#mirror .mr-stage { flex: none; width: 96px; height: 120px; background: #6cbf5e; border: 2px solid var(--ink); image-rendering: pixelated; }
+#mirror .mr-preview { flex: none; width: 128px; display: grid; gap: 4px; }
+#mirror .mr-stage { width: 100%; aspect-ratio: 1; background: #34554c; border: 2px solid var(--ink); image-rendering: pixelated; }
+#mirror .mr-directions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px; }
+#mirror .mr-preview button { padding: 3px 2px; }
+#mirror .mr-preview button[aria-pressed="true"] { color: #2a1806; background: var(--b-mid, #cf9f55); }
+#mirror .lk-tabs button { flex: 1 0 auto; font-size: 11px !important; white-space: nowrap; }
+@media (max-width: 440px) { #mirror .mr-preview { width: 94px; } }
 #mirror .mr-btns { display: flex; gap: 6px; justify-content: center; margin-top: 8px; }
 #mirror .mr-btns button, .lk-small { font: 12px/1.2 var(--pix) !important; border-radius: 0; color: var(--cream, #f3e8cc); background: #3a3146; border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 #5b4d6c, inset -2px -2px 0 #1f1a28; padding: 4px 12px; cursor: pointer; }
 #mirror .mr-btns button.gold { color: #2a1806; background: var(--b-mid, #cf9f55); box-shadow: inset 2px 2px 0 var(--b-hi, #f4dfa4), inset -2px -2px 0 var(--b-lo, #7c5326); }
@@ -60,7 +66,7 @@ export function thumb(look, view = "front", whole = false) {
   let c = thumbCache.get(key);
   if (c) return copy(c);
   c = el("canvas");
-  const fr = SP.personSheet(SP.playerLook("warrior", look))[view][0];
+  const fr = SP.personFrame(SP.playerLook("warrior", look), view);
   const d = fr.width / SP.SIZE;
   c.width = (whole ? 27 : 20) * d;
   c.height = 17 * d;
@@ -81,12 +87,15 @@ export function randomLook() {
   if (Math.random() < 0.35) return SPC.PRESETS[R(SPC.PRESETS.length)][1].slice();
   const lk = SPC.withSpecies([], 1 + R(SPC.SPECIES.length - 1));
   lk[SPC.LI.fur] = R(SPC.LOOK_N[SPC.LI.fur]);
-  lk[SPC.LI.eye] = [0, 0, 2, 2, 3, 5, 6, 6, 7, 9, 12, 13][R(12)];
-  lk[SPC.LI.blush] = [0, 0, 0, 1, 2, 3, 4, 5][R(8)];
+  const eyes = [0, 0, 2, 2, 3, 5, 6, 6, 7, 9, 12, 13, 16, 17];
+  const cheeks = [0, 0, 0, 1, 2, 3, 4, 5, 6, 7];
+  lk[SPC.LI.eye] = eyes[R(eyes.length)];
+  lk[SPC.LI.blush] = cheeks[R(cheeks.length)];
   lk[SPC.LI.cloth] = R(SPC.LOOK_N[SPC.LI.cloth]);
   if (Math.random() < 0.4) lk[SPC.LI.acc] = 1 + R(SPC.LOOK_N[SPC.LI.acc] - 1);
   if (Math.random() < 0.3) lk[SPC.LI.eyeC] = 1 + R(SPC.LOOK_N[SPC.LI.eyeC] - 1);
-  if (!lk[SPC.LI.pat] && Math.random() < 0.4) lk[SPC.LI.pat] = [1, 2, 3, 4, 7, 8, 9][R(7)];
+  const marks = [1, 2, 3, 4, 7, 8, 9, 13, 14];
+  if (!lk[SPC.LI.pat] && Math.random() < 0.4) lk[SPC.LI.pat] = marks[R(marks.length)];
   return lk;
 }
 
@@ -110,7 +119,13 @@ export function editor(box, get, set, onSound, opts = {}) {
   SPC.TABS.forEach((name, i) => {
     const b = el("button", i === tab ? "on" : "", name);
     b.type = "button";
-    b.addEventListener("click", () => { tab = i; for (const o of tabs.children) o.classList.toggle("on", o === b); if (onSound) onSound(); render(); });
+    b.setAttribute("aria-pressed", String(i === tab));
+    b.addEventListener("click", () => {
+      tab = i;
+      for (const o of tabs.children) { o.classList.toggle("on", o === b); o.setAttribute("aria-pressed", String(o === b)); }
+      if (onSound) onSound();
+      render(false);
+    });
     tabs.append(b);
   });
   /** One part as a grid of face pictures. */
@@ -122,7 +137,8 @@ export function editor(box, get, set, onSound, opts = {}) {
     for (let v = 0; v < p.names.length; v++) {
       const l = look.slice(); l[i] = v;
       const b = el("button", "lk-thumb" + (v === look[i] ? " on" : ""));
-      b.type = "button"; b.title = p.names[v];
+      b.type = "button"; b.title = p.names[v]; b.setAttribute("aria-label", p.names[v]);
+      b.setAttribute("aria-pressed", String(v === look[i]));
       b.append(thumb(l, view, whole));
       b.addEventListener("click", () => change(l));
       gr.append(b);
@@ -131,22 +147,25 @@ export function editor(box, get, set, onSound, opts = {}) {
     return wrap;
   };
   /** One part as colour swatches (the first may be "none" / "automatic"). */
-  const swatches = (key, none) => {
+  const swatches = (key) => {
     const i = SPC.LI[key], p = SPC.PARTS[i], look = SPC.cleanLook(get());
     const wrap = el("div");
-    const lab = el("div", "lk-lab"); lab.append(el("span", "", p.label), el("b", "", p.colors[look[i]] ? "" : none));
+    const lab = el("div", "lk-lab"); lab.append(el("span", "", p.label), el("b", "", p.labels[look[i]]));
     const sw = el("div", "lk-sw");
     p.colors.forEach((c, v) => {
       const b = el("button", (v === look[i] ? "on" : "") + (c ? "" : " none"));
       b.type = "button";
-      if (c) b.style.background = c; else b.title = none;
+      b.title = p.labels[v]; b.setAttribute("aria-label", p.labels[v]);
+      b.setAttribute("aria-pressed", String(v === look[i]));
+      if (c) b.style.background = c;
       b.addEventListener("click", () => { const l = look.slice(); l[i] = v; change(l); });
       sw.append(b);
     });
     wrap.append(lab, sw);
     return wrap;
   };
-  function render() {
+  function render(keepScroll = true) {
+    const scroll = keepScroll ? page.scrollTop : 0;
     page.textContent = "";
     const look = SPC.cleanLook(get());
     if (tab === 0) {
@@ -157,6 +176,7 @@ export function editor(box, get, set, onSound, opts = {}) {
         const l = SPC.withSpecies(look, v);
         const b = el("button", "lk-thumb wide" + (v === look[SPC.LI.sp] ? " on" : ""));
         b.type = "button"; b.title = s.name;
+        b.setAttribute("aria-pressed", String(v === look[SPC.LI.sp]));
         b.append(thumb(l), el("small", "", s.name));
         b.addEventListener("click", () => change(l));
         gr.append(b);
@@ -172,10 +192,11 @@ export function editor(box, get, set, onSound, opts = {}) {
       }
       page.append(lab, gr);
       if (opts.presets !== false) page.append(lab2, pr);
-    } else if (tab === 1) page.append(grid("eye"), swatches("eyeC", "기본"), grid("nose"), grid("blush"));
+    } else if (tab === 1) page.append(grid("eye"), swatches("eyeC"), grid("nose"), grid("blush"));
     else if (tab === 2) page.append(grid("ear"), grid("tail", "side", true));
-    else if (tab === 3) page.append(swatches("fur"), swatches("acc", "자동"));
-    else page.append(grid("pat"), swatches("cloth", "없음"));
+    else if (tab === 3) page.append(swatches("fur"), swatches("acc"));
+    else page.append(grid("pat", "front", true), swatches("cloth"));
+    page.scrollTop = scroll;
   }
   render();
   return { refresh: render, random: () => change(randomLook()) };
@@ -185,7 +206,7 @@ export function editor(box, get, set, onSound, opts = {}) {
 
 /**
  * The mirror: a button under the portrait in the character window opens an editor
- * with its own little turning figure. `ctx`: { act, look() (current), gold(), town(), cost, toast, sound }.
+ * with its own little turning figure. `ctx`: { act, look(), gear(), gold(), town(), cost, toast, sound }.
  */
 export function installMirror(ctx) {
   style();
@@ -208,9 +229,28 @@ function open(ctx) {
   const fr = el("div", "frame");
   fr.append(el("h2", "", `거울 — 새 모습 (${ctx.cost}G)`));
   const row = el("div", "mr-row");
-  const stage = el("canvas", "mr-stage"); stage.width = 48; stage.height = 60;
+  const preview = el("div", "mr-preview");
+  const stage = el("canvas", "mr-stage"); stage.width = SP.PERSON_SIZE; stage.height = SP.PERSON_SIZE;
+  stage.setAttribute("role", "img"); stage.setAttribute("aria-label", "캐릭터 외형 미리보기");
+  const turns = el("div", "mr-directions");
+  turns.setAttribute("role", "group"); turns.setAttribute("aria-label", "미리보기 방향");
+  let facing = "auto", avatar = true, previewAt = performance.now();
+  for (const [view, label] of [["auto", "회전"], ["front", "앞"], ["side", "옆"], ["back", "뒤"]]) {
+    const button = el("button", "lk-small", label);
+    button.type = "button";
+    button.setAttribute("aria-pressed", String(view === facing));
+    button.addEventListener("click", () => {
+      facing = view; previewAt = performance.now();
+      for (const other of turns.children) other.setAttribute("aria-pressed", String(other === button));
+    });
+    turns.append(button);
+  }
+  const showAvatar = el("button", "lk-small", "아바타 보기");
+  showAvatar.type = "button"; showAvatar.setAttribute("aria-pressed", String(avatar));
+  showAvatar.addEventListener("click", () => { avatar = !avatar; showAvatar.setAttribute("aria-pressed", String(avatar)); });
+  preview.append(stage, turns, showAvatar);
   const box = el("div"); box.style.flex = "1"; box.style.minWidth = "0";
-  row.append(stage, box);
+  row.append(preview, box);
   const msg = el("div", "mr-msg", ctx.town() ? "" : "마을에서만 바꿀 수 있습니다.");
   const btns = el("div", "mr-btns");
   const rnd = el("button", "", "무작위"), ok = el("button", "gold", `바꾸기 ${ctx.cost}G`), no = el("button", "", "닫기");
@@ -233,14 +273,16 @@ function open(ctx) {
   const g = stage.getContext("2d");
   g.imageSmoothingEnabled = false;
   const tick = (t) => {
-    const views = ["front", "side", "back", "side"], k = Math.floor(t / 1200) % 4, v = views[k];
-    const f = Math.floor(t / 300) % 4 === 1 ? 2 : Math.floor(t / 300) % 4 === 3 ? 4 : Math.floor(t / 600) % 2;
-    const sheet = SP.personSheet(SP.playerLook("warrior", look))[v][f];
-    g.clearRect(0, 0, 48, 60);
-    g.fillStyle = "rgba(20,24,50,.25)"; g.beginPath(); g.ellipse(24, 54, 12, 3, 0, 0, 7); g.fill();
+    const age = Math.max(0, t - previewAt), k = Math.floor(age / 1200) % 4;
+    const v = facing === "auto" ? ["front", "side", "back", "side"][k] : facing;
+    const frames = [0, 2, 1, 4];
+    const f = facing === "auto" ? frames[Math.floor(age / 300) % frames.length] : SP.FRAME.stand;
+    const sheet = SP.personSheet(SP.playerLook("warrior", look, avatar ? ctx.gear?.() : {}))[v][f];
+    g.clearRect(0, 0, stage.width, stage.height);
+    g.fillStyle = "rgba(16,21,30,.34)"; g.beginPath(); g.ellipse(32, 56, 13, 3, 0, 0, Math.PI * 2); g.fill();
     g.save();
-    if (k === 3) { g.translate(48, 0); g.scale(-1, 1); }
-    SP.drawPersonCrop(g, sheet, 4, 2, 24, 28, 0, 0, 48, 56);
+    if (facing === "auto" && k === 3) { g.translate(stage.width, 0); g.scale(-1, 1); }
+    g.drawImage(sheet, 0, 0);
     g.restore();
     mirrorRaf = requestAnimationFrame(tick);
   };

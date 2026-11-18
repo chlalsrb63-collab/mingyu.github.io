@@ -329,7 +329,7 @@ export function loadMap(m) {
       if (!info) continue;
       const [X0, Y0] = tI(b.x, b.y), off = ([sx, sy]) => [X0 + sx, Y0 + sy];
       if (info.sign) {
-        const [sx, sy] = off(info.sign), sp = DC.signPlank(uiIcon(b.icon, "#4a2e1a"));
+        const [sx, sy] = off(info.sign), sp = DC.signPlank(uiIcon(b.icon, "#4a2e1a"), info.signTrim);
         const st = { sp, dx: Math.round(sx - 10), dy: Math.round(sy - 3), x: sx, y: sy + 30, d: sy + 25, glow: null, glint: -1, label: b.name, near: 9, sign: true };
         statics.push(st); signs.push(st);
       }

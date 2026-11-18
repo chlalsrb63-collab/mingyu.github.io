@@ -1,7 +1,7 @@
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
-const SHEET_VERSION = 28;
+const SHEET_VERSION = 29;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -20,7 +20,7 @@ const plain = (id) => { const g = { id, q: 0, enh: 0, af: [], sk: 0, ru: [] }; g
  * animal, tail, accent colour and eye colour, where 0 means "as before", so a sheet
  * saved with the first seven alone looks exactly as it did.
  */
-const LOOK_MAX = [13, 15, 13, 21, 5, 12, 11, 14, 11, 13, 7];
+const LOOK_MAX = [15, 17, 15, 25, 7, 14, 13, 16, 13, 16, 9];
 const cleanLook = (look) => { const lk = Array.isArray(look) ? look : []; return LOOK_MAX.map((m, i) => clamp(lk[i] | 0, 0, m)); };
 /** What a new look costs at the mirror in town (거울 · 미용실). */
 const LOOK_COST = 500;
@@ -85,6 +85,7 @@ export function newChar(name, look, wk) {
     ab: albaFresh(),
     // the 장날 merchants' goods bought on the latest fair day (v27, 64-fair-market.js): { [KST day]: [product ids] }
     fairBuy: {},
+    buddy: null,
     // social and the weekly book (v14, 63-social-weekly.js): blk (blocked names), pity (enhancement gauge), wk
     ...socialFresh(),
     map: START.map, x: START.x, y: START.y, hp: -1, mp: -1, kills: 0,
@@ -99,6 +100,7 @@ export function newChar(name, look, wk) {
 const OLD_ID = { c_1: "r_2", c_2: "n_3", c_3: "r_4" };
 /** Bring a sheet saved by an older version up to the current shape. */
 function migrate(ch) {
+  ch.buddy = buddyClean(ch.buddy);
   // the four-class days (v ≤ 9): a jobless hero of level 4L−3, everything paid back (45-jobs.js)
   const fourClass = typeof ch.cls === "string" && !ch.job;
   if (fourClass) migrateV10(ch);
@@ -495,7 +497,7 @@ function newMob(S, k, r, sp) {
  * place when someone first walks in (or an event needs it). `dims` holds runtime instances.
  */
 export function setup() {
-  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, maps: {}, dims: {}, parties: {}, chat: [], n: 0, evt: null };
+  const S = { seed: 20251111, now: 0, last: 0, nextId: 1, players: {}, buddies: {}, maps: {}, dims: {}, parties: {}, chat: [], n: 0, evt: null };
   runtime(S, START.map);
   return S;
 }
@@ -723,7 +725,11 @@ function partyRejoin(S, p) {
   if (!party) { party = { id: S.nextId++, m: [alone.pid] }; S.parties[party.id] = party; alone.party = party.id; }
   party.m.push(p.pid);
   p.party = party.id;
-  for (const o of members(S, p)) { toast(o, o === p ? "파티에 다시 합류했습니다." : `${p.ch.name}님이 파티에 돌아왔습니다.`); S.maps[o.map].who = true; }
+  for (const o of members(S, p)) {
+    buddyReturnForParty(S, o);
+    toast(o, o === p ? "파티에 다시 합류했습니다." : `${p.ch.name}님이 파티에 돌아왔습니다.`);
+    S.maps[o.map].who = true;
+  }
 }
 
 /** Take a player out of the world; returns the sheet to persist. */
@@ -731,6 +737,8 @@ export function removePlayer(S, pid) {
   const p = S.players[pid];
   if (!p) return null;
   const ch = exportChar(S, pid);
+  const dim = S.dims[p.map];
+  buddyRemove(S, p);
   sxLeave(S, p);
   // remember the party for a quick return (addPlayer → partyRejoin); stale holds are dropped on the next leave
   if (S.parties[p.party]) {
@@ -743,7 +751,8 @@ export function removePlayer(S, pid) {
   S.maps[p.map].who = true;
   delete S.players[pid];
   S.n--;
-  if (S.dims[p.map]?.story?.airship) closeDim(S, p.map);
+  if (buddyShift(dim, p)) coopClose(S, dim);
+  else if (dim?.story?.airship) closeDim(S, p.map);
   return ch;
 }
 

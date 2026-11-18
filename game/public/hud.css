@@ -2097,6 +2097,21 @@ body[data-lay="full"].playing :is(#w-skill, #w-life, #w-alba, #w-charm, #w-troph
 #w-skill { --fw: 460px; } #w-life { --fw: 400px; } #w-alba { --fw: 380px; } #w-charm { --fw: 320px; } #w-trophy { --fw: 400px; } #w-rank { --fw: 340px; }
 #w-achieve { --fw: 480px; } #w-collect { --fw: 520px; } #w-dex { --fw: 600px; } #w-settings { --fw: 420px; } #w-help { --fw: 520px; }
 #w-char { --fw: 360px; } #w-quest { --fw: 580px; } #w-party { --fw: 310px; } #w-guild { --fw: 310px; } #w-daily { --fw: 360px; } #w-week { --fw: 380px; }
+#w-buddy { --fw: 340px; }
+#w-buddy .buddy-body { display: grid; align-content: start; gap: 10px; }
+.buddy-contact, .buddy-compose { display: flex; align-items: center; gap: 8px; }
+.buddy-contact { justify-content: space-between; }
+.buddy-contact small { display: block; margin-top: 4px; color: #d6bbca; }
+.buddy-contact button, .buddy-compose button { flex: 0 0 auto; }
+.buddy-messages { height: clamp(105px, 23vh, 185px); overflow-y: auto; padding: 8px; }
+.buddy-line { width: fit-content; max-width: 90%; margin-bottom: 9px; overflow-wrap: anywhere; }
+.buddy-line small { color: #d6bbca; }
+.buddy-line p { margin: 3px 0 0; padding: 7px 9px; background: #44364e; color: #fff4f7; border-radius: 7px 7px 7px 2px; }
+.buddy-line.outgoing { margin-left: auto; text-align: right; }
+.buddy-line.outgoing p { background: #773f5a; border-radius: 7px 7px 2px 7px; text-align: left; }
+.buddy-label { display: block; margin-bottom: 4px; }
+.buddy-compose input { flex: 1 1 0; min-width: 0; padding: 6px 7px; color: #fff4f7; background: #282232; border: 1px solid #8b647e; font: inherit; }
+#buddy-cooldown { margin: 6px 0 2px; }
 body[data-lay="full"].playing #w-dex:not(.docked) { height: var(--win-h); }
 
 /* ── 도움말 (help.js, helptext.js): a search box over a topic list and the text. The list is a column when the window is wide

@@ -184,7 +184,7 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   const old = JSON.parse(JSON.stringify(L.exportChar(W0.S, W0.PID)));
   delete old.jobs; delete old.lo; old.v = 17; old.jp = { lv: 9, xp: 3 };
   const W = world({ ch: old });
-  assert.equal(W.ch.v, 28);
+  assert.equal(W.ch.v, L.newChar("현재양식", []).v);
   assert.deepEqual(W.ch.jobs, { swordsman: { lv: 9, xp: 3 } }); assert.equal(W.ch.jobs.swordsman, W.ch.jp);
   assert.deepEqual(W.ch.lo, {});
   assert.deepEqual(L.newChar("새판", []).jobs, {});

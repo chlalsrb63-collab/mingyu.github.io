@@ -207,7 +207,7 @@ const toasts = (p) => p.toast.splice(0).join(" | ");
   const S = L.setup(); S.now = SUN;
   L.addPlayer(S, "o", old);
   assert.deepEqual(S.players.o.ch.fair, { t: 0, d: 0, n: 0, pan: 0 }, "an old sheet starts an empty purse");
-  assert.equal(S.players.o.ch.v, 28);
+  assert.equal(S.players.o.ch.v, L.newChar("현재양식", []).v);
   assert.deepEqual(X.fairClean({ t: 1e9, d: -3, n: 50, pan: "x" }), { t: X.FAIR.max, d: 0, n: X.FAIR.cap, pan: 0 }, "clamped");
   assert.deepEqual(X.fairClean(null), { t: 0, d: 0, n: 0, pan: 0 });
   const back = JSON.parse(JSON.stringify(L.exportChar(S, "o")));

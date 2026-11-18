@@ -76,7 +76,11 @@ export const BEASTS_D = {
       M.e([top[0], top[1] + 0.3, 0], [2.4, 0.5, 2.4], RINGD);
       M.e([top[0], top[1] + 0.5, 0], [0.9, 0.4, 0.9], RING);
       for (const [a, h] of [[0.6, 4], [2.2, 3], [3.6, 5], [5, 3.4]]) M.tube([[top[0] + Math.cos(a) * 2.8, top[1], Math.sin(a) * 2.8], [top[0] + Math.cos(a) * 4, top[1] + h, Math.sin(a) * 4]], [0.5, 0.3], BARKD);
-      for (const [a, h] of [[0.6, 4], [3.6, 5]]) M.s([top[0] + Math.cos(a) * 4, top[1] + h + 0.4, Math.sin(a) * 4], 0.9, a < 1 ? LEAF : LEAFG);
+      for (const [a, h] of [[0.6, 4], [3.6, 5]]) {
+        const tip = [top[0] + Math.cos(a) * 4, top[1] + h, Math.sin(a) * 4];
+        const curl = p.walk ? Math.sin(p.ph * Math.PI * 2 + a) : p.idle - p.wind;
+        M.e(tip, [1.85, 0.5, 1.1], a < 1 ? LEAF : LEAFG, [a * 30, curl * 35, 12]);
+      }
       // the mouth: the trunk splits down its front, ringed with splinter teeth
       const open = p.strike ? 1.4 : p.wind ? 1.1 : p.idle ? 0.75 : 0.6;
       const mc = P([f0 + 4.2, u0 + 6, 0]);
