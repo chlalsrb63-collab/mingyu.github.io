@@ -18,7 +18,8 @@ function dimHk(n, lv, mlv) {
   const [mid, width, trim] = DIM.hpMid;
   const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv), high = DIM.hpHigh[1] * Math.max(0, lv - DIM.hpHigh[0]);
   const middle = trim * Math.max(0, 1 - Math.abs(lv - mid) / width);
-  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv));
+  // ÷ MOB_HARD: the raids keep the party pace they were tuned to (bots 5–10 min) when field monsters got tougher
+  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv)) / MOB_HARD;
 }
 
 /**
@@ -180,7 +181,7 @@ function dimFloor(S, dim, floor) {
       mob.temp = true; mob.dim = 1;
       if (sp.guard) mob.guard = 1;
       if (!sp.chest) mob.hk = dimHk(dim.n, dim.lv, MOBS[sp.k].lv) * tk.hp * dimRaidHk(map.dim.raid);
-      if (tk.atk > 1) mob.ak = tk.atk;
+      mob.ak = Math.max(1, tk.atk) / MOB_HARD;
       if (mob.el === 1 && tk.traits > 1) mob.tr = rollTraits(S, tk.traits);
       dim.rt.mobs.push(mob);
     }
@@ -286,7 +287,7 @@ function dimBoss(S, dim) {
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   const [bh, ba] = dimRaidBoss(dim.map.dim.raid);
   mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid) * bh;
-  mob.ak = DIM.bossAtk * dim.tk.atk * ba;
+  mob.ak = DIM.bossAtk * dim.tk.atk * ba / MOB_HARD;
   mob.hp = mobMax(mob);
   mob.castAt = now + 4000;
   mob.stun = now + FB_WARN;

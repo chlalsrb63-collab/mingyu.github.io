@@ -24,10 +24,11 @@ const VS = { sword: ["warrior"], dagger: ["rogue"], spear: ["lancer"], staff: ["
 // Plain weapons in the preceding socket-stone build (e6ae3f0), before adding resistance and ailments.
 // Each entry is the mean of the three arena seeds used below. Include hammer in the modern control.
 const ELEMENT_BASE = {
-  sword: [38.67, 37.17, 20.00, 18.00], dagger: [36.33, 39.67, 22.67, 23.67],
-  spear: [36.83, 31.67, 16.67, 11.83], staff: [35.17, 36.67, 23.00, 21.50],
-  book: [40.50, 37.50, 24.00, 19.33], bow: [33.67, 32.83, 18.83, 18.00],
-  hammer: [39.33, 37.50, 21.33, 15.00],
+  // re-measured 2026-11-19 after the owner's MOB_HARD (monsters +20 % HP and attack; 10-tables.js): kill rates fell 10–28 %
+  sword: [34.83, 30.67, 17.17, 16.17], dagger: [32.50, 34.67, 20.33, 20.33],
+  spear: [32.17, 26.33, 14.33, 8.50], staff: [31.17, 31.67, 21.67, 19.83],
+  book: [35.00, 32.17, 20.00, 17.67], bow: [30.67, 29.00, 16.50, 17.00],
+  hammer: [33.17, 30.83, 16.83, 12.33],
 };
 
 /** A borderline single run can change when the loot stream takes different draws. On a miss,

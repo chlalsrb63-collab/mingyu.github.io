@@ -42,7 +42,7 @@ const DIM = {
   // 3-floor raid (2026-11-15), 4 bots × 4 draws at tiers 17 / 32 / 44: `hpMid` [band, width, + at it] adds 0.5 at 32 (the
   // mid band ran 7.5–9 min), `hpHigh` [above this level, − per level] trims the top band (44 took 12+ min), the final boss
   // `bossHp` 0.65 at floor 3's row (0.8 made low-band parties wipe-loop on it): clears 8.6–11.3 min, 9.7 on average.
-  hpBase: 4, hpLow: [24, 0.85], hpHigh: [38, 0.12], hpMid: [32, 8, 0.5], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
+  hpBase: 4, hpLow: [24, 0.85], hpHigh: [38, 0.12], hpMid: [32, 8, 0.35], hpN: [0.3, 0.6, 0.8, 1], lvK: 0.1, bossHp: 0.6, bossAtk: 0.7, poolLv: [3, 2],
   reviveMs: 25000,
   // the final boss's chest, per member: gold × lv, a share of a level, rare gear, stones, a rune now and then (what the old
   // ladder's tier 3 paid); a failed run's consolation is `failGold` × lv a floor reached
