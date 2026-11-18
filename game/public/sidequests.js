@@ -8,6 +8,7 @@
  */
 import * as Track from "./track.js";
 import { serverNow } from "./sky.js";
+import { iconUrl } from "./uiicons.js";
 
 let C = null;
 /** ctx: { G, act, el, Sound } */
@@ -47,6 +48,24 @@ function rewardText(r) {
 }
 // a choice may pay differently: say so instead of guessing which
 const rewardOf = (q) => (q.choice && q.choice.some((o) => o.reward) ? "보상: 대답에 따라 달라집니다" : rewardText(q.reward));
+/** A reward line with item icons: "보상" then one chip per EXP / gold / item (icon + count); `r` = { xp, gold, items:[[id,n]], keep?, title? }. */
+export function rewardRow(r, cls = "q-reward") {
+  const { el, G } = C, row = el("div", `${cls} rw-row`), items = G.defs.items, url = G.icons && G.icons.url;
+  row.append(el("span", "rw-h", "보상"));
+  const chip = (src, txt, tip) => {
+    const c = el("span", "rw-chip", txt); if (tip) c.title = tip;
+    if (src) { const im = el("img"); im.src = src; im.alt = ""; c.prepend(im); }
+    row.append(c);
+  };
+  if (r.xp) chip(iconUrl("star", "#9ad8ff"), `EXP ${r.xp.toLocaleString()}`);
+  if (r.gold) chip(url && url.gold, `${r.gold.toLocaleString()}G`);
+  for (const [id, n] of r.items || []) chip(url && url[id], `×${n}`, items[id] ? items[id].name : id);
+  if (r.keep) chip(url && url[r.keep], "기념품", items[r.keep]?.name);
+  if (r.title) chip(null, `칭호 「${r.title}」`);
+  if (row.childElementCount === 1) row.append(el("span", "rw-chip", "없음"));
+  return row;
+}
+const rewardNode = (q) => (q.choice && q.choice.some((o) => o.reward) ? C.el("div", "q-reward", rewardOf(q)) : rewardRow(q.reward));
 // a timed delivery's clock (kept fresh by the ticker below)
 function clock(t) {
   const left = t - serverNow();
@@ -155,7 +174,7 @@ export function renderTalk(box, npc, s, say) {
     else card.append(goalRow(q, v));
     if (away || v.st === 2) card.append(el("div", "q-next", nextStop(q, v)));
     extras(card, q, v);
-    card.append(el("div", "q-reward", rewardOf(q)));
+    card.append(rewardNode(q));
     const btns = el("div", "btns");
     if (v.st === 3 && here && q.choice) {
       // the answers: each its own gold button, the first is what F presses
@@ -212,7 +231,7 @@ export function detail(det, id, s) {
   }
   det.append(el("div", "q-title", `[${kindName(q)}] ${q.title}`), el("p", "say", q.text), goalRow(q, v));
   extras(det, q, v);
-  det.append(el("div", "q-reward", rewardOf(q)));
+  det.append(rewardNode(q));
   steps(det, q, st);
   det.append(el("p", "ds", v.st === 3 ? `${q.turnInMap}의 ${q.turnInName}에게 ${turnIn(q) === q.giver ? "돌아가 " : "가서 "}${q.choice ? "대답하세요" : "완료하세요"}.`
     : q.mainChapter && q.goal.type === "kill" && v.st === 2 ? `${q.giverMap}에서 승선장을 찾아 구조에 나서세요.`

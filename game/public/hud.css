@@ -2198,3 +2198,9 @@ body.talkq::before, body.talkq::after { height: 9vh; }
 body.talkcam #prompt { display: none; }
 #w-talk:not(.docked) { opacity: 1; }
 #w-talk .talk-port { align-self: center; }
+
+/* quest rewards with item icons (sidequests.js rewardRow) */
+.rw-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }
+.rw-row .rw-h { opacity: .8; }
+.rw-row .rw-chip { display: inline-flex; align-items: center; gap: 3px; background: rgba(0,0,0,.28); border: 1px solid rgba(245,216,138,.3); padding: 1px 5px; }
+.rw-row .rw-chip img { width: 16px; height: 16px; image-rendering: pixelated; }
