@@ -73,6 +73,7 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
     assert.equal(first.hp, hp);
     advance(1);
     assert.deepEqual(impact().slice(2, 6), [ox + center, oy, radius, 1]);
+    assert.deepEqual(rt.ev.find(e => e[0] === "h" && e[1] === first.id)[8], [p.eid, D.wkinds.hammer.fx, 0]);
     assert.ok(first.hp < hp);
     assert.equal(rt.ev.filter(e => e[0] === "h" && e[2] > 0 && !e[4] && e[6] === 3).length, 3, "all three hammer impacts carry the single-landing sound tag");
     // Incidental knockback must not move the next cast's fixture.

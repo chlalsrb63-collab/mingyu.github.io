@@ -25,7 +25,7 @@ function snd(n, gap = 70) { const t = performance.now(); if (api && t - (lastS[n
 function layout() {
   const hw = Math.max(240, host.clientWidth - 4), ah = Math.max(280, innerHeight * 0.96 - 330) - 60;
   const s = clamp(Math.floor(Math.min(hw / 10, ah / H)), 12, 34);
-  if (s === c && cv.width) return;
+  if (g && s === c) return;
   c = s;
   cv.width = 10 * c; cv.height = H * c;
   cv.style.width = `${cv.width}px`; cv.style.height = `${cv.height}px`;

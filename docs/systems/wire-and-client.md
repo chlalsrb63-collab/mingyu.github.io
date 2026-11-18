@@ -26,7 +26,7 @@ snapshot (`viewFor`), `defs()`, and the plain-ES-module client (`client.js`, win
 | `P` | other players near (±`VIEW_X/Y`=280 px): `[eid,x,y,dir,dead,hp,mhp,sit,flags]` |
 | `M` | mobs near: `[id,k,x,y,dir,hp,el,traits[,marks[,brand]]]`; a scripted boss (`56-boss-script.js`) always sends `marks,brand,phase,state` (state 0 · 1 marked cast · 2 dived) |
 | `D` | drops visible to you (own or past `freeAt`): `[id,it,x,y,q]` · `F` fires `[id,x,y]` · `fb` field-boss/event-lord positions for the radar `[[x,y]]` (map-wide) |
-| `ev` | events of your map this tick (`rt.ev`, shared): `a` attack, `h` hit, `k` kill, `r` spawn, `u/e` fx, `f` fishing, `wp` warp, `rc` recall, `tl` tale, `j` jam, `ac` achievement, `wd` wind, `t`/`b` telegraph/zone, skill codes 40–75, `dm dp dz` rift |
+| `ev` | events of your map this tick (`rt.ev`, shared): `a` attack, `h` hit, `k` kill, `r` spawn, `u/e` fx, `f` fishing, `wp` warp, `rc` recall, `tl` tale, `j` jam, `ac` achievement, `wd` wind, `t`/`b` telegraph/zone, skill codes 40–75, `dm dp dz` rift. Confirmed basic melee hits carry optional `h[8] = [attackerEid, weaponFx, finisher]` for local hitstop and directional recoil. `h[7]` holds damage by type when present. |
 | `chat` | `{m,n?,sys?,g?,pt?}` filtered for guild/party |
 | `party` `[eid,name,job,lvl,hp,mhp,mapName,x,y,mapId]` · `pinv`, `ginv` invites |
 | `map` | `mapPayload` — only when `p.sendMap` (arrival, map change) |

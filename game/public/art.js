@@ -10,6 +10,7 @@
  */
 
 import * as WPN from "./weapons.js";
+import { equipmentIcon, fitEquipmentIcon } from "./gear_icons.js";
 import * as Assets from "./assetlib.js";
 import { furnIcon } from "./houseart.js";
 import { matIcon } from "./gatherart.js";
@@ -420,9 +421,6 @@ export { charSprite, drawFigure, setStyle, playerLook, npcLook, HAIR, SKIN, STYL
 
 /** Item rarity colours. Green is used for set runes and wardrobe rarities. */
 export const RARITY_COL = ["#d8d4c8", "#6a9cff", "#f0d050", "#ff8a30", "#5fd47a", "#d2b48c"];
-// tier 6 운철 (meteor iron): night-blue metal; its accents are starlight gold
-const METAL = [null, ["#a8acb4", "#74787f"], ["#c8ccd4", "#8e94a0"], ["#9ab8e0", "#5a78b0"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"], ["#8a9ae0", "#3a4680"]];
-
 function potion(liquid, light, big) {
   const [c, g] = canvas(16, 16);
   const r = big ? 5.5 : 4.5;
@@ -501,209 +499,12 @@ function runeIcon(id, rune) {
   return c;
 }
 
-function weaponIcon(cls, tier) {
-  const [c, g] = canvas(16, 16);
-  const [m, md] = METAL[tier];
-  if (cls === "sword") {
-    // a greatsword: broad blade, long grip
-    for (let i = 0; i < 10; i++) { px(g, 13 - i, 2 + i, m); px(g, 14 - i, 2 + i, md); px(g, 13 - i, 1 + i, m); px(g, 12 - i, 2 + i, m); }
-    g.fillStyle = "#b08a38"; g.fillRect(1, 9, 3, 1); g.fillRect(2, 10, 3, 1); g.fillRect(3, 11, 3, 1); g.fillRect(4, 12, 3, 1);
-    px(g, 3, 12, "#5a3c22"); px(g, 2, 13, "#5a3c22"); px(g, 1, 14, "#3e2a18");
-  } else if (cls === "dagger") {
-    for (let i = 0; i < 6; i++) { px(g, 10 - i, 4 + i, m); px(g, 11 - i, 4 + i, md); }
-    g.fillStyle = "#a83242"; g.fillRect(3, 9, 3, 1); g.fillRect(4, 10, 3, 1);
-    px(g, 4, 11, "#2a2a30"); px(g, 3, 12, "#2a2a30"); px(g, 2, 13, "#2a2a30");
-  } else if (cls === "spear") {
-    // a long shaft corner to corner, a leaf-shaped head
-    for (let i = 0; i < 9; i++) { px(g, 2 + i, 13 - i, "#7a5430"); px(g, 3 + i, 13 - i, "#573a1e"); }
-    for (let i = 0; i < 4; i++) { px(g, 11 + i, 4 - i, m); px(g, 12 + i, 4 - i, md); px(g, 10 + i, 4 - i, m); }
-    px(g, 10, 5, m); px(g, 12, 5, md); px(g, 11, 6, "#b08a38"); px(g, 10, 6, "#b08a38");
-  } else if (cls === "book") {
-    const cover = ["#8a4a3a", "#3a5a9a", "#5a3a8a", "#2a7a8a", "#8a3a9a", "#2a3470"][tier - 1];
-    g.fillStyle = cover; g.fillRect(3, 3, 10, 11);
-    g.fillStyle = "#f4ecd8"; g.fillRect(5, 4, 8, 9);
-    g.fillStyle = cover; g.fillRect(3, 3, 2, 11);
-    g.fillStyle = "#cfc4a8"; g.fillRect(6, 6, 6, 1); g.fillRect(6, 8, 6, 1); g.fillRect(6, 10, 4, 1);
-    g.fillStyle = m; g.fillRect(8, 2, 2, 2);
-  } else {
-    for (let i = 0; i < 10; i++) { px(g, 4 + i, 13 - i, "#7a5430"); px(g, 5 + i, 13 - i, "#573a1e"); }
-    disc(g, 12, 4, 2.5, 2.5, md);
-    disc(g, 11.6, 3.6, 1.5, 1.5, m);
-    px(g, 11, 3, "#ffffff");
-  }
-  outline(c, g, "#111118");
-  return c;
-}
 function campIcon() {
   const [c, g] = canvas(16, 16);
   g.fillStyle = "#7a5230"; g.fillRect(2, 11, 12, 3); g.fillStyle = "#94683c"; g.fillRect(3, 10, 4, 2); g.fillStyle = "#5e3e22"; g.fillRect(9, 10, 4, 2);
   g.fillStyle = "#f0702a"; g.fillRect(5, 5, 6, 6); g.fillRect(6, 3, 4, 3); g.fillRect(7, 1, 2, 2);
   g.fillStyle = "#ffb030"; g.fillRect(6, 6, 4, 5); g.fillRect(7, 4, 2, 2);
   g.fillStyle = "#fff0a0"; g.fillRect(7, 8, 2, 3);
-  outline(c, g, "#111118");
-  return c;
-}
-const HELM_ART = [
-  // Cloth hood: a bent peak, an open face, and its draped collar.
-  { palette: { l: "#e3d4b4", m: "#b9a78d", s: "#85718a", d: "#4b3b51" }, rows: [
-    ".....ll.......", "...lllmm......", "..llmmmmms....", "..lmmmlllsm...",
-    ".lmmll.ddsm...", ".lmml...dss...", ".lmml...dss...", ".mmml..dss....",
-    "..mmmlssss....", "..mmllmmsss...", "..lmmmmmmsss..", ".mmmmmsssssss.",
-    ".mmmmssssss...", "....ss........",
-  ] },
-  // Leather cap: raised seams over a long brim and one buckled ear flap.
-  { palette: { l: "#d09a62", m: "#a16a43", s: "#6c4540", d: "#453241", a: "#eee0a4" }, rows: [
-    "..............", "..............", "....lllll.....", "...lmmmlms....",
-    "..lmmmmlmss...", "..lmmmmsmss...", "..lmmmmssss...", ".lllmmmmmmml..",
-    ".ssssssssssss.", "..smms........", "...mss........", "...sas........", "....s.........",
-  ] },
-  // Steel helm: swept horns above a ridged dome and open cheek guards.
-  { palette: { l: "#d8e1ec", m: "#91a7bf", s: "#5c6a8a", d: "#37354e", a: "#eddca1" }, rows: [
-    "..............", ".a..........a.", ".aa........aa.", ".laa.llm.aal..",
-    "..lallmmals...", "...llmmmms....", "..lmmmmmmms...", "..lllllmsms...",
-    "..lssssssms...", "..md..ld.ms...", "..ms..ms.ss...", "...s..ms.s....",
-    "......ss......",
-  ] },
-  // Tactical helmet: low armor shell, comms plate and a protruding cyan sight.
-  { palette: { l: "#9bafaa", m: "#5b716c", s: "#3e4d56", d: "#2e3445", a: "#79e9ee" }, rows: [
-    "..............", "..............", "...llll.s.....", "..lmmmmsss....",
-    ".llmmmmmmss...", ".lmmssmmmsss..", ".lmssslmmsddd.", ".lmssslmmsaaa.",
-    ".lmssslssdddd.", ".lmslmssss....", "..lmss.sss....", "..ssss..ss....",
-    "...ds...d.....",
-  ] },
-  // Rift crown: three uneven crystal blades set around an exposed jewel.
-  { palette: { l: "#e3b9fb", m: "#a16dd0", s: "#67458c", d: "#482e73", a: "#9bfff2" }, rows: [
-    "......l.......", "......ll......", ".....llm......", ".l...lmm..l...",
-    ".ll..lms.lm...", ".lmm.lmslms...", ".lmmslmllms...", "..lmslassms...",
-    "..lmsaaasmsl..", "..lmmlasmmls..", "...lllllllls..", "...lmmmmsms...",
-    "....sdddds....",
-  ] },
-  // Meteor-iron great helm (운철): a closed night-blue dome, a visor slit, a starlight-gold crest and band.
-  { palette: { l: "#b8c6f0", m: "#6a78b8", s: "#3a4680", d: "#242a52", a: "#ffe08a" }, rows: [
-    "......a.......", ".....aaa......", "......a.......", "....lllll.....",
-    "...llmmmms....", "..lmmmammss...", "..lmmmammss...", "..lmddddddss..",
-    "..lmmsmsmsss..", "..lmmmmmmsss..", "..aaaaaaaaaa..", "...lmmmmmss...",
-    "....ssddss....",
-  ] },
-];
-function paintedGear({ rows, palette }) {
-  const [c, g] = canvas(16, 16);
-  paint(g, rows, palette, 1, 1);
-  outline(c, g, "#2b2233");
-  return c;
-}
-const helmIcon = (tier) => paintedGear(HELM_ART[tier - 1]);
-
-const ARMOR_ART = {
-  2: { palette: { l: "#d4a06b", m: "#a96f46", s: "#774b3b", d: "#4b3443", a: "#ecc78c" }, rows: [
-    "..............", "..............", "...ll....ls...", "..lmmm..msss..",
-    ".llmmmlamsdss.", ".lmmssalmsdss.", "..sssmlamsdd..", "...mmsmamsd...",
-    "...lmmslmsd...", "...mmsasmsd...", "...llllmmsd...", "...mmdssssd...",
-    "....dddddd....",
-  ] },
-  3: { palette: { l: "#dbe7ee", m: "#a0adba", s: "#6b768e", d: "#46536d", a: "#e1b86c" }, rows: [
-    "..............", "..............", "..llm....mss..", ".lmmml..lmmss.",
-    ".lmssmllmssds.", ".lmmalssasmds.", "..dssallassd..", "...lmsamsmd...",
-    "...lsmmsmsd...", "...lsssmdsd...", "...llmmsmsd...", "...mssssssd...",
-    "....dddddd....",
-  ] },
-};
-const STEEL_GLOVES = { palette: { l: "#dbe7ee", m: "#a0adba", s: "#6b768e", d: "#46536d", a: "#e1b86c" }, rows: [
-  "..............", "......llll....", ".....lmmmmss..", ".....lasmdds..",
-  ".....lmmmms...", "....lmmmsds...", "....lmmmsdsm..", "...lmmmmsmsms.",
-  "...lmmmdmsmms.", "..lmmmds..ms..", "..lmmsds..s...", "..lms.s.......",
-  "..ms..........",
-] };
-const STEEL_BOOTS = { palette: { l: "#dbe7ee", m: "#a0adba", s: "#6b768e", d: "#46536d", a: "#e1b86c" }, rows: [
-  "..............", "...lllll......", "..lmmmsms.....", "..lmmmmds.....",
-  "..lasmmms.....", "...lssmds.....", "...lmmmds.....", "...lsmdss.....",
-  "...lmmms......", "...lmmmsslll..", "...lmmssmmsms.", "...mmsddsssss.",
-  "....ddddddddd.",
-] };
-const RING_ART = {
-  // Silver claw setting on a broad band, with a true opening through the shank.
-  2: { palette: { l: "#eef4ff", m: "#aeb9ce", s: "#6d7993", g: "#6a9cff", d: "#3a58ac" }, rows: [
-    "..............", "......gg......", ".....lggg.....", "....lmggdl....",
-    "...lmmlddms...", "..lmm...mss...", "..lm......ms..", "..lm......ms..",
-    "..lm......ms..", "...lm....mss..", "...lmmsmsss...", "....msssss....",
-    "......ss......",
-  ] },
-  // A gold signet set low on the diagonal shank, with a shield-cut garnet.
-  3: { palette: { l: "#fff0a4", m: "#e7b845", s: "#9e632a", g: "#f86c7d", d: "#973253" }, rows: [
-    "..............", "....llllm.....", "...lmmmmmms...", "..lmm....mms..",
-    "..lm......ms..", "..lm......ms..", "..lm......ms..", "...lm.....ms..",
-    "...lmm..lmmms.", "....mmmslgdms.", ".....sslggdms.", ".......lgdms..",
-    "........mms...",
-  ] },
-};
-const AMULET_ART = {
-  // Silver cord and a long angular blue stone in a simple cap.
-  2: { palette: { l: "#eaf2ff", m: "#aeb9ce", s: "#6d7993", g: "#649df4", d: "#3b57a5" }, rows: [
-    "..............", ".lm........sm.", "..mm......ss..", "...mm....ss...",
-    "....lm..ss....", ".....lmss.....", "......lms.....", ".....lmgs.....",
-    "....lmggds....", "....mggdds....", ".....ggds.....", ".....gdss.....",
-    "......s.......",
-  ] },
-  // A circular ward on a dark cord, its engraved rune picked out in garnet.
-  3: { palette: { l: "#fff1a2", m: "#e7b74e", s: "#a66a34", c: "#79503f", r: "#a63c55" }, rows: [
-    "..............", ".mc........cm.", "..cc......cc..", "...cc....cc...",
-    "....cm..mc....", ".....cmms.....", ".....lllms....", "....lmmrmsm...",
-    "...lmrmmmms...", "...lmrrrmsm...", "...lmmmmms....", "....msssss....",
-    ".....sss......",
-  ] },
-};
-
-function glovesIcon(tier) {
-  if (tier === 3) return paintedGear(STEEL_GLOVES);
-  const [c, g] = canvas(16, 16);
-  const [m, md] = tier === 1 ? ["#b8ac90", "#8e8468"] : tier === 2 ? ["#8a6238", "#5e4022"] : METAL[tier];
-  g.fillStyle = m; g.fillRect(4, 3, 7, 7); g.fillRect(5, 10, 6, 4); g.fillRect(11, 5, 2, 4);
-  g.fillStyle = md; g.fillRect(8, 3, 3, 7); g.fillRect(5, 12, 6, 2);
-  g.fillStyle = "#111118"; g.fillRect(6, 3, 1, 3); g.fillRect(8, 3, 1, 3);
-  outline(c, g, "#111118");
-  return c;
-}
-function bootsIcon(tier) {
-  if (tier === 3) return paintedGear(STEEL_BOOTS);
-  const [c, g] = canvas(16, 16);
-  const [m, md] = tier === 1 ? ["#c8b070", "#9a8448"] : tier === 2 ? ["#8a6238", "#5e4022"] : METAL[tier];
-  // a folded cuff, the shaft, a rounded toe pointing right, a heel and a sole
-  g.fillStyle = m; g.fillRect(4, 2, 7, 2); g.fillRect(5, 4, 5, 7); g.fillRect(5, 10, 7, 3); g.fillRect(12, 11, 2, 2);
-  g.fillStyle = md; g.fillRect(4, 3, 7, 1); g.fillRect(8, 4, 2, 6); g.fillRect(5, 7, 5, 1); g.fillRect(5, 13, 3, 1); g.fillRect(9, 13, 5, 1);
-  if (tier >= 4) { g.fillStyle = "#7af0ff"; g.fillRect(5, 12, 4, 1); }
-  outline(c, g, "#111118");
-  return c;
-}
-function ringIcon(tier) {
-  if (RING_ART[tier]) return paintedGear(RING_ART[tier]);
-  const [c, g] = canvas(16, 16);
-  const [m, md] = [["#c88a50", "#8e5a2c"], ["#c8ccd4", "#8e94a0"], ["#f0c840", "#b08a20"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"], ["#8a9ae0", "#3a4680"]][tier - 1];
-  disc(g, 8, 10, 4.5, 4.5, m);
-  g.fillStyle = md; g.fillRect(9, 12, 3, 2); g.fillRect(12, 9, 1, 3);
-  g.clearRect(6, 8, 4, 4);
-  g.fillStyle = ["#e84a5a", "#6a9cff", "#e84a5a", "#ffffff", "#ffd84a", "#ffe08a"][tier - 1]; g.fillRect(7, 3, 2, 3); g.fillRect(6, 4, 4, 1);
-  outline(c, g, "#111118");
-  return c;
-}
-function amuletIcon(tier) {
-  if (AMULET_ART[tier]) return paintedGear(AMULET_ART[tier]);
-  const [c, g] = canvas(16, 16);
-  const [m, md] = [["#8a6238", "#5e4022"], ["#c8ccd4", "#8e94a0"], ["#f0c840", "#b08a20"], ["#70e0e8", "#2a98a8"], ["#e080f0", "#9a40c0"], ["#8a9ae0", "#3a4680"]][tier - 1];
-  // a cord in a V, a pendant where it meets
-  for (let i = 0; i < 6; i++) { px(g, 3 + i, 2 + i, md); px(g, 12 - i, 2 + i, md); }
-  disc(g, 8, 10.5, 3, 3.2, m);
-  disc(g, 7.6, 10.2, 1.6, 1.8, ["#7ad08a", "#6a9cff", "#e84a5a", "#ffffff", "#ffd84a", "#ffe08a"][tier - 1]);
-  outline(c, g, "#111118");
-  return c;
-}
-function armorIcon(tier) {
-  if (ARMOR_ART[tier]) return paintedGear(ARMOR_ART[tier]);
-  const [c, g] = canvas(16, 16);
-  const cols = [null, ["#b8ac90", "#8e8468"], ["#7a5530", "#573a1e"], ["#7c8698", "#565e70"], ["#33373f", "#1f2228"], ["#3ab0c0", "#1f7888"], ["#5a6aa8", "#2c3260"]][tier];
-  g.fillStyle = cols[0]; g.fillRect(4, 4, 8, 10); g.fillRect(2, 4, 12, 4);
-  g.fillStyle = cols[1]; g.fillRect(8, 4, 4, 10); g.fillRect(12, 4, 2, 4); g.fillRect(4, 12, 8, 2);
-  g.clearRect(6, 4, 4, 2);
-  g.fillStyle = METAL[tier][0]; g.fillRect(7, 8, 2, 2);
   outline(c, g, "#111118");
   return c;
 }
@@ -760,22 +561,21 @@ export function buildIcons(items, runes = {}) {
     outline(c, g, "#2b2233");
     cv[id] = c;
   }
+  const equipment = new Set();
   for (const id of Object.keys(items)) {
     const it = items[id];
-    if (it.type === "weapon") cv[id] = WPN.DESIGNS[it.wk] ? WPN.weaponIcon(it.wk, it.tier) : weaponIcon(it.wk, it.tier);
-    else if (it.type === "armor") cv[id] = armorIcon(it.tier);
-    else if (it.type === "helm") cv[id] = helmIcon(it.tier);
-    else if (it.type === "gloves") cv[id] = glovesIcon(it.tier);
-    else if (it.type === "boots") cv[id] = bootsIcon(it.tier);
-    else if (it.type === "ring") cv[id] = ringIcon(it.tier);
-    else if (it.type === "amulet") cv[id] = amuletIcon(it.tier);
+    const gear = it.type === "weapon" ? WPN.weaponIcon(it.wk, it.tier, { wl: id }) : equipmentIcon(it.type, it.tier);
+    if (gear) { cv[id] = gear; equipment.add(id); }
     else if (it.type === "rune") cv[id] = runeIcon(id, runes[it.rune]);
     else if (it.type === "furn") cv[id] = furnIcon(id) || cv[id] || gem();   // crafted pieces (P8) draw in lifeicons.js
     // the 재료 주머니's goods: herbs, ores, woods and ingots by grade, 식재료 꾸러미, 빈 병 (gatherart.js)
     else if (it.type === "lmat" || id === "staple" || id === "flask") { const m = matIcon(id, it); if (m) cv[id] = m; }
   }
   // an approved external icon (public/assets/manifest.json "icon.item.<id>") wins over the code
-  for (const id of new Set([...Object.keys(cv), ...Object.keys(items)])) { const a = Assets.canvas("icon.item." + id); if (a) cv[id] = a; }
+  for (const id of new Set([...Object.keys(cv), ...Object.keys(items)])) {
+    const a = Assets.canvas("icon.item." + id);
+    if (a) cv[id] = equipment.has(id) ? fitEquipmentIcon(a) : a;
+  }
   const url = {}, left = {};
   for (const id of Object.keys(cv)) { url[id] = cv[id].toDataURL(); left[id] = flip(cv[id]); }
   return { cv, url, left };

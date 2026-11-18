@@ -47,7 +47,16 @@ const chatHas = (W, word) => W.log.some((m) => m.includes(word));
 // (maps from the world map editor, data/maps, may add their own stones)
 for (const id of ["abyss", "cave", "city", "crypt", "forest", "meadow", "sewer", "town"]) assert.ok(D.waypoints.some((w) => w.id === id), id + " has a waypoint");
 const BANDS = { meadow: [1, 7], forest: [8, 13], crypt: [12, 17], city: [14, 21], sewer: [22, 27], cave: [24, 32], abyss: [32, 40] };
-for (const [k, mob] of Object.entries(D.mobs)) assert.match(mob.lore, /[가-힣]/, `${k} has Korean lore`);
+const monsterNames = new Set();
+for (const [k, mob] of Object.entries(D.mobs)) {
+  assert.match(mob.lore, /[가-힣]/, `${k} has Korean lore`);
+  if (mob.chest) continue;
+  assert.match(mob.epithet, /[가-힣]/, `${k} keeps its bestiary epithet`);
+  assert.ok(!monsterNames.has(mob.name), `duplicate monster name: ${mob.name}`);
+  monsterNames.add(mob.name);
+  if (mob.tint && D.mobs[mob.sp]) assert.ok(mob.name.endsWith(" " + D.mobs[mob.sp].name), k);
+}
+assert.deepEqual([D.mobs.moleworm.name, D.mobs.moleworm.epithet, D.mobs.moleworm_gold.name], ["두굴", "눈먼 두더지", "모랫빛 두굴"]);
 for (const [id, band] of Object.entries(BANDS)) {
   const m = D.maps.find((o) => o.id === id);
   // the world keeps its tiers; players see them as levels 4·tier − 3
@@ -390,7 +399,7 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   W.p.x = elder.x * T + 8; W.p.y = elder.y * T + 30;
   assert.equal(me.q.st, 0);
   assert.ok(W.act({ t: "tut", s: "talk" }).ok, "talking to the elder");
-  assert.ok(W.p.toast.some((s) => s.includes("의뢰 수락: 초원의 쌍두 토끼")));
+  assert.ok(W.p.toast.some((s) => s.includes("의뢰 수락: 초원의 토비또")));
   me = W.self();
   assert.equal(me.q.st, 1, "the first talk also accepts the first main quest");
   assert.equal(W.act({ t: "quest", a: "accept" }).error, "이미 진행 중입니다", "nothing left to accept");

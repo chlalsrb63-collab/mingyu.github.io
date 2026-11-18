@@ -13,6 +13,8 @@
  *                                        (slot: "wskin", wk: <kind>, motif: "porcelain_<kind>").
  */
 
+import { EQUIP_ICON_SIZE, weaponIconProjection } from "./gear_icons.js";
+
 const GRIP = [5, 16];
 const INK = "#2b2233";
 const RARE_INK = [INK, "#2c4a8c", "#8a6a14", "#9a4a12", "#1f6a3a"];
@@ -522,42 +524,6 @@ export function porcelainWeaponIcon(kind, o = {}) {
   const we = o.we | 0;
   const d = design(true, kind === "bow" ? { pull: 0.4, arrow: true } : undefined);
   const glow = we >= 7 ? { blade: d.blade, col: GLOW7 } : null;
-  const pts = [];
-  for (const sh of d.sh.concat(d.post || [])) {
-    if (sh.m === null) continue;
-    if (sh.k === "p") pts.push(...sh.pts);
-    else if (sh.k === "c") pts.push([sh.s - sh.r, sh.t - sh.r], [sh.s + sh.r, sh.t + sh.r]);
-    else if (sh.k === "l") pts.push(sh.a, [sh.b[0] + 1, sh.b[1] + 1]);
-    else pts.push([sh.s, sh.t], [sh.s + 1, sh.t + 1]);
-  }
-  let xf;
-  let inv;
-  if (kind === "book") {
-    const s0 = Math.min(...pts.map((p) => p[0]));
-    const s1 = Math.max(...pts.map((p) => p[0]));
-    const t0 = Math.min(...pts.map((p) => p[1]));
-    const t1 = Math.max(...pts.map((p) => p[1]));
-    const k = Math.min(1, 13 / (s1 - s0), 13 / (t1 - t0));
-    const cx = (s0 + s1) / 2;
-    const cy = (t0 + t1) / 2;
-    xf = (s, t) => [8 + (s - cx) * k, 8 + (t - cy) * k];
-    inv = (x, y) => [cx + (x - 8) / k, cy + (y - 8) / k];
-  } else {
-    const xs = pts.map(([s, t]) => s + t);
-    const ys = pts.map(([s, t]) => t - s);
-    const x0 = Math.min(...xs);
-    const x1 = Math.max(...xs);
-    const y0 = Math.min(...ys);
-    const y1 = Math.max(...ys);
-    const u = Math.min(0.9, 13 / (x1 - x0), 13 / (y1 - y0));
-    const ox = 8 - (u * (x0 + x1)) / 2;
-    const oy = 8 - (u * (y0 + y1)) / 2;
-    xf = (s, t) => [ox + u * (s + t), oy + u * (t - s)];
-    inv = (x, y) => {
-      const a = (x - ox) / u;
-      const b = (y - oy) / u;
-      return [(a - b) / 2, (a + b) / 2];
-    };
-  }
-  return paint(d, 16, 16, xf, inv, glow, we >= 10 ? [ICON_INK, GLOW10] : [ICON_INK]);
+  const { xf, inv } = weaponIconProjection(kind, d.sh.concat(d.post || []));
+  return paint(d, EQUIP_ICON_SIZE, EQUIP_ICON_SIZE, xf, inv, glow, we >= 10 ? [ICON_INK, GLOW10] : [ICON_INK]);
 }

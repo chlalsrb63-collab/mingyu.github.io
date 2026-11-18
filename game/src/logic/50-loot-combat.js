@@ -244,7 +244,7 @@ const HIT_CUE = { oath: 1, sanctuary: 2, hammer: 3, rally: 4, binding: 5 };
 const damageTotal = (parts) => parts.reduce((n, [, amount]) => n + amount, 0);
 
 /** Send the actual damage by element after shields and encounter modifiers. */
-function damageEvent(rt, eid, amount, crit, player, cue, parts) {
+function damageEvent(rt, eid, amount, crit, player, cue, parts, melee) {
   const event = ["h", eid, amount, crit, player];
   const typed = amount > 0 && parts && (parts.length > 1 || parts[0]?.[0] !== "physical");
   if (typed) {
@@ -259,6 +259,12 @@ function damageEvent(rt, eid, amount, crit, player, cue, parts) {
     if (shown.length) event.push(0, cue || 0, shown);
   }
   if (cue && event.length === 5) event.push(0, cue);
+  if (melee) {
+    // h[8] identifies whose basic swing landed. Slots 5–7 keep their existing meaning.
+    if (event.length === 5) event.push(0, 0);
+    if (event.length === 7) event.push(null);
+    event.push(melee);
+  }
   rt.ev.push(event);
 }
 
@@ -282,7 +288,7 @@ function dealMob(S, rt, mob, p, dmg, crit, cue, parts, combat = {}) {
   if (mob.dim) dimDealt(S, rt, mob, p, dmg);   // the carry guard's damage share (64-dim.js)
   if (mob.cast) bsDealt(S, rt, mob, dmg);      // a scripted boss's stagger gauge (56-boss-script.js)
   if (!mob.tgt) mob.tgt = p.pid;
-  damageEvent(rt, mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0, cue, parts);
+  damageEvent(rt, mob.id, dmg, crit === 2 ? 2 : crit ? 1 : 0, 0, cue, parts, combat.melee);
   if (mob.hp > 0) return false;
   killMob(S, rt, mob);
   runeKillHeal(S, p, mob);
@@ -396,7 +402,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const x = mob.x, y = mob.y;
   wmHit(S, p, mob);
   const trackBuddy = !o.px && p.ch.buddy?.active;
-  const brand = mob.brand, before = mob.hp, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue, parts, { trackBuddy });
+  const brand = mob.brand, before = mob.hp, killed = dealMob(S, rt, mob, p, dmg, graze ? 2 : crit, o.cue, parts, { trackBuddy, melee: o.melee });
   const lost = before - Math.max(0, mob.hp);
   if (!o.px && (!pure || o.forceAilment) && lost > 0) {
     elementApplyHit(S, rt, p, mob, parts, {
@@ -713,7 +719,9 @@ function basicAttack(S, p) {
   // 급소 도려내기: a stab on a marked monster opens it up (bleeding, and a burst of speed); every stab marks
   const vit = c === WKIND.dagger && pasOn(p, "vitals") ? SKILL.vitals : null;
   const marked = vit && marksOf(S, mob) > 0;
-  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1) * charmMarkK(S, rt, p, mob), false, tip ? pasTip(S, rt, p) : null);
+  const melee = [p.eid, c.fx, +fin];
+  hurtMob(S, rt, mob, p, mult * (tip ? SKILL.tip.mult : 1) * charmMarkK(S, rt, p, mob), false,
+    tip ? { ...pasTip(S, rt, p), melee } : { melee });
   if (fin && c === WKIND.sword && pasHas(p, "sword_weight40")) pasQuake(S, rt, p, mob, zx, zy);
   if (vit && !mob.dead) {
     if (marked) {
@@ -723,7 +731,7 @@ function basicAttack(S, p) {
     }
     addMarks(S, mob, 1);
   }
-  for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6); }
+  for (const o of extra) if (o !== mob) { shove(o, 0.6); hurtMob(S, rt, o, p, mult * 0.6, false, { melee }); }
   chainBlow(S, rt, p, st, mob, zx, zy, fin);
 }
 /**

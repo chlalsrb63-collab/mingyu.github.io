@@ -157,6 +157,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `coop-briefing.js`, `coop-briefing-art.js` | Five-second illustrated role briefing, in-game instructions, F key labels and apartment props. |
 | `coop-diner.js`, `coop-forge.js`, `coop-library.js` | Job-specific contextual controls, customer movement and props. Sprite drawers in `coop-diner-art.js`, `coop-forge-art.js`, `coop-lib-art.js`. |
 | `alba.js` | 일일 아르바이트 window `#alba-play` (built in JS): header, the hero-at-work stage (outfit from `defs.alba.rows[k].outfit`, tool sprites), score bar with C/B/A/S marks, result card, key capture; game contract `mount/setState/frame/key/unmount`; also the 알바 list window (`renderList`). |
+| `iso_alba.js` | 건물 12종의 작업장 외관. 공통 건물 렌더러에 지붕과 벽 색, 물탱크·철구·빨랫줄 등의 전용 도안을 제공한다. |
 | `alba_<k>.js` | The mini-game boards, one per game (canvas, code-drawn; pointer, touch and keyboard); loaded on first use by `alba.js`. |
 | `pmenu.js` [190] | The menu beside a clicked player (`onWorldDown`, `S3.pickPlayer`): 파티 초대 · 거래 제안 · 친구 추가 · 귓속말 · 따라가기 · 미니게임 ▸ with greyed reasons; 따라가기 (`follow stopFollow tick`, `#follow-ind`). |
 | `sxwin.js` [230] | Snapshot `sx`: the request popup `#sx-ask`, the trade window `#w-trade` (WIN `trade`, closing cancels), the 가위바위보 card `#rps` (code-drawn hands, keys 1 2 3). |
@@ -193,6 +194,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `mobart_named.js` [160] | Own pixel models of four named beasts that once borrowed a tinted sprite: 금 간 뿔 숫양 (meadowram), 검은 왕관 뿌리짐승 (bogcrown), 눈먼 문지기 올빼미 (hollowowl), 얼어붙은 왕릉 파수꾼 (rootwarden) |
 | `mobart_inklake.js` [180] | Own bodies for the 먹빛 호수 kinds (inkleech inkfish inkcrane inkmoth plumspider inkrose, rare inkfox, boss inkserpent xl); spread into `BEASTS` in `mobart.js`. |
 | `weapons.js` [1072] | Seven weapon families (sword, dagger, spear, staff, book, bow, hammer), tier/legendary/set/skin art. `DESIGNS SIL MOTIF_SIL weaponSprite weaponIcon bowSprite`; installed manifest keys can replace code-drawn looks. |
+| `gear_icons.js` | Native 32×32 armor and jewelry icons, legacy equipment raster fitting, and the inventory projection shared by weapon models. |
 | `wardrobe.js` · `wardrobe_ui.js` | native cosmetic layers in logical positions (`ART SLOTS dress anchors`; designs `HAT TOP BACK FACE`, rules in the header); 16×16 icons, costume shop + 외형 tab; dyes `DYES dyed`, 루루's 염색 row and wire `wireGear` (dyed codes) |
 | `swing.js` [207] | Fixed-size weapon poses: alternating greatsword sweeps, repeating overhead hammer strike (`hammerPose`), and bow draw/release (`bowPose`). `WIND IMPACT SNAP` control anticipation and snap. |
 | `skillfx.js` [1321] | Dispatches server skill codes via `skillEvent`, props (`pr/pp/pe`), missiles/projectiles (`ar/ae`), marks and lines. Renders support recovery and rally pennants, hammer impact, and boss telegraphs and turns (`bt`/`bc`). Uses the effects clock for `later`. |

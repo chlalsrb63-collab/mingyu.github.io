@@ -43,6 +43,7 @@ function hammerTick(S, p, now) {
   let critical = false;
   if (primary) {
     const hitOpts = { sk: skill, cue: HIT_CUE.hammer };
+    if (!skill) hitOpts.melee = [p.eid, move.fx, 0];
     let mult = move.mult;
     const mark = cracks?.get(primary);
     const rupture = move.crackMult && mark?.n === SKILL.hammer_crack.max;

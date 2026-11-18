@@ -49,7 +49,7 @@ const ROLE = {
   shop: ["coin", "#ffd84a", "상점"], smith: ["anvil", "#cfd6e2", "대장간"], train: ["sword", "#ff9a7a", "수련관"], bank: ["bag", "#e0b070", "창고"],
   warp: ["stone", "#8ad8ff", "이동술사"], elder: ["excl", "#ffe060", "의뢰"], quest: ["excl", "#ffe060", "의뢰"], daily: ["cal", "#b0e070", "토벌 의뢰"],
   achieve: ["trophy", "#f0c050", "업적"], collector: ["paw", "#e8b888", "도감"], costume: ["shirt", "#ff9ad0", "의상실"], dim: ["rift", "#c890ff", "균열 지기"],
-  talk: ["talk", "#e8e0c8", "주민"],
+  alba: ["crate", "#e7bb70", "일일 아르바이트"], talk: ["talk", "#e8e0c8", "주민"],
 };
 const roleOf = (n) => ROLE[n.role] || ROLE.talk;
 const PARTY_COL = ["#4ad0ff", "#3fe08c", "#8ac4ff", "#9af0c8"];
