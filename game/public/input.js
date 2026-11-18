@@ -222,7 +222,7 @@ export function setupInput() {
     // Housing and Gather still speak in the old key letters: translate the bound action back for them
     const k = act1 === "interact" ? "f" : act1 === "dash" ? " " : act1 === "auto" ? "r" : e.key;
     // a talk window open: F (talkNext) is the next line / its button, C (talkEnd) closes it (actions.js talkKey)
-    const ta = isOpen("talk") && Keymap.talkActionOf(e);
+    const ta = isOpen("talk") && (Keymap.talkActionOf(e) || (e.code === "Space" ? "talkNext" : ""));
     if (ta) { e.preventDefault(); talkKey(ta); return; }
     // walking a 추적 trip: a blow, a dash or auto-hunt breaks it off (a move key or a click drops G.path: track.js)
     if (Track.active() && ["attack", "dash", "auto"].includes(act1)) Track.stop("추적을 취소했습니다");

@@ -189,9 +189,10 @@ function tracker(s) {
   const tutOn = !!(s.tut && s.tut.i < (G.defs.tutorial || []).length);
   const dl = !tutOn && s.daily && s.daily.tasks.filter((d) => !d.claimed);
   const chapter = G.defs.side?.find((q) => q.mainChapter && s.sq?.some(([id, state]) => id === q.id && state === 2));
-  const key = JSON.stringify([s.q, s.bq, dl, Board.trackKey(s), chapter?.id]);
+  const sideOn = (G.defs.side || []).filter((q) => !q.mainChapter && s.sq?.some(([id, state]) => id === q.id && (state === 2 || state === 3))).slice(0, 3);
+  const key = JSON.stringify([s.q, s.bq, dl, Board.trackKey(s), chapter?.id, s.sq]);
   setOnce($("#quest-track"), key, (qt) => {
-    if (!quest && !chapter && !s.bq && !(dl && dl.length) && !Board.active(s)) return;
+    if (!quest && !chapter && !sideOn.length && !s.bq && !(dl && dl.length) && !Board.active(s)) return;
     // no heading: each line's glyph says what kind of work it is (hover: the name, click: its card)
     const goal = (label, n, need, doneText) => {
       const done = n >= need, row = el("div", "qp");
@@ -209,7 +210,13 @@ function tracker(s) {
     if (Board.trackRows(s, qt, goal)) { const h = qt.querySelector(".qt"); h.dataset.sec = "job"; tb(h, "job", "알바"); }   // the 알바 in hand comes first: a parcel is on the clock (board.js)
     if (chapter) {
       const t = el("div", "qt"); t.dataset.sec = "sq"; t.append(Info.questMark("main"), chapter.title); tb(t, `sq:${chapter.id}`, chapter.title);
+      const cv = s.sq.find(([id]) => id === chapter.id);
       qt.append(t, el("div", "qp", chapter.goal.type === "kill" ? `${chapter.giverMap} 승선장 · 침입자 격퇴` : SideQ.goalText(chapter)));
+      if (cv && cv[1] === 3) qt.append(el("div", "qp qnext", SideQ.nextStop(chapter, { st: 3 })));
+    }
+    for (const q of sideOn) {
+      const v = s.sq.find(([id]) => id === q.id), t = el("div", "qt"); t.dataset.sec = `sq:${q.id}`; t.append(Info.questMark("side"), q.title); tb(t, `sq:${q.id}`, q.title);
+      qt.append(t, el("div", "qp qnext", SideQ.nextStop(q, { st: v[1] })));
     }
     if (quest && s.q.st === 1) {
       const t = el("div", "qt"); t.dataset.sec = "main"; t.append(Info.questMark("main"), quest.title); tb(t, `main:${s.q.i}`, quest.title);
