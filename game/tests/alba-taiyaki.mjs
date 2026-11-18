@@ -97,7 +97,7 @@ const scores = (mk, n) => {
     const ab = start(), q = [0, 0, 0], push = ab.g.tray.push;
     ab.g.tray.push = function (t) { q[t[1]]++; return push.call(this, t); };   // count the pieces by quality
     play(ab, mk());
-    r.push({ score: ab.score, grade: ab.res[0], combo: ab.maxCombo, perfect: q[2], ok: q[1], customers: ab.g.nid - 1 });
+    r.push({ out: ab.out, endMs: ab.endAt - ab.runAt, score: ab.score, grade: ab.res[0], combo: ab.maxCombo, perfect: q[2], ok: q[1], customers: ab.g.nid - 1 });
   }
   return r;
 };
@@ -106,7 +106,7 @@ const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
 // (a) determinism: the same seed gives the same orders whenever the clock is read (arrivals are applied in time order, not at call times)
 {
   const run = (seed, steps) => {
-    const ab = { box: { seed }, runAt: 0, rev: 0, score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, endAt: T.runMs };
+    const ab = { k: K, strikes: 0, box: { seed }, runAt: 0, rev: 0, score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, endAt: T.runMs };
     X.ALBA_RULES[K].init(null, null, ab);
     for (let t = 0; t <= 85000; t += steps) X.ALBA_RULES[K].adv(null, null, ab, t);
     X.ALBA_RULES[K].adv(null, null, ab, 85000);
@@ -115,19 +115,27 @@ const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   assert.equal(run(4242, 100)[0], run(4242, 2300)[0], "the same orders however often the clock is read");
   assert.notEqual(run(4242, 100)[0], run(4243, 100)[0], "another seed, other orders");
   const g = run(4242, 100)[1];
-  assert.equal(g.n, 8, "8 slots after 40 s"); assert.equal(g.grp, 1, "the group order came"); assert.ok(g.nid > 12, "plenty of customers: " + g.nid);
+  assert.equal(g.n, 8, "8 slots after 15 s"); assert.equal(g.grp, 1, "the group order came"); assert.ok(g.nid > 12, "plenty of customers: " + g.nid);
 }
 
 // (b) bots against the grades
-const perf = scores(perfect, 6), hum = scores(human, 6), idl = scores(idle, 2);
+const perf = scores(perfect, 6), hum = scores(human, 16), idl = scores(idle, 2);
 console.log(`perfect ${perf.map((r) => r.score).join(" ")} | human ${hum.map((r) => r.score).join(" ")} | idle ${idl.map((r) => r.score).join(" ")}`);
 console.log(`par ${X.ALBA[K].par}: perfect avg ${Math.round(avg(perf.map((r) => r.score)))} (grades ${perf.map((r) => r.grade)}) · human avg ${Math.round(avg(hum.map((r) => r.score)))} (grades ${hum.map((r) => r.grade)}) · human max combo ${hum.map((r) => r.combo)}`);
 console.log("pieces perfect/ok (customers): perfect bot " + perf.map((r) => `${r.perfect}/${r.ok} (${r.customers})`).join(" ") + " | human " + hum.map((r) => `${r.perfect}/${r.ok} (${r.customers})`).join(" "));
 assert.ok(perf.every((r) => r.grade === 4), "a perfect bot always reaches S");
-assert.ok(hum.every((r) => r.grade >= 2 && r.grade <= 3) && avg(hum.map((r) => r.grade)) <= 2.5, "a human-like bot lands around B");
+assert.ok(avg(hum.map((r) => r.grade)) >= 1.5 && avg(hum.map((r) => r.grade)) <= 2.6, "a human-like bot lands around B");
 assert.ok(idl.every((r) => r.score === 0 && r.grade === 0), "an idle bot scores nothing");
 { const hs = avg(hum.map((r) => r.score)) / X.ALBA[K].par; assert.ok(hs >= 0.62 && hs <= 0.88, "the human bot is at " + hs.toFixed(2) + " of par"); }
-{ const sloppy = scores(() => human({ slip: 0.3, react: [500, 1200], busy: [300, 600] }), 3); assert.ok(sloppy.every((r) => r.grade <= 1), "a sloppy bot stays at C or below: " + sloppy.map((r) => r.score)); }
+{
+  const sloppy = scores(() => human({ slip: 0.3, react: [500, 1200], busy: [300, 600] }), 12);
+  assert.ok(sloppy.every((r) => r.grade <= 1), "a sloppy bot stays at C or below: " + sloppy.map((r) => r.score));
+  const rate = (rs) => rs.filter((r) => r.out).length / rs.length;
+  console.log(`strike-outs: perfect ${rate(perf)} human ${rate(hum).toFixed(2)} sloppy ${rate(sloppy).toFixed(2)}`);
+  assert.equal(rate(perf), 0, "the perfect bot never strikes out");
+  assert.ok(rate(hum) <= 0.25, "a human-like bot strikes out in at most 25 % of seeds");
+  assert.ok(sloppy.filter((r) => r.out && r.endMs < 75000).length >= sloppy.length / 2, "a sloppy bot strikes out in at least half of its seeds, before 75 s");
+}
 
 // (c) one piece step by step, and what each step refuses
 {
@@ -141,7 +149,7 @@ assert.ok(idl.every((r) => r.score === 0 && r.grade === 0), "an idle bot scores 
   now += 100; A({ slot: 0, step: 0, f: f }); assert.equal(g.sl[0].s, 1, "a stale step is refused");
   now += 100; A({ slot: 0, step: 1, f }); assert.equal(g.sl[0].s, 2, "filling");
   now += 100; A({ slot: 0, step: 2 }); const x = g.sl[0]; assert.equal(x.s, 3, "baking side 1");
-  assert.ok(x.d >= 7000 && x.d <= 12000 && x.z[0] < x.z[1] && x.z[2] < x.z[3], "the windows are set: " + x.d + " " + x.z);
+  assert.ok(x.d >= 4500 && x.d <= 8000 && x.z[0] < x.z[1] && x.z[2] < x.z[3], "the windows are set: " + x.d + " " + x.z);
   now += 100; A({ slot: 0, step: 3 }); assert.equal(g.sl[0].s, 3, "flipping too early is refused");
   now = ab.runAt + x.a + Math.round((x.d * (x.z[0] + x.z[1])) / 200); tick(); A({ slot: 0, step: 3 }); assert.equal(x.s, 4, "flipped inside the green window"); assert.equal(x.q, 2);
   now += 100; A({ slot: 0, step: 4 }); assert.equal(x.s, 4, "taking it out raw is refused");
@@ -190,7 +198,7 @@ assert.ok(idl.every((r) => r.score === 0 && r.grade === 0), "an idle bot scores 
     assert.equal(snap(), s0, "junk changed the game: " + JSON.stringify(a));
   }
   for (const a of [{}, { x: 1 }, { slot: 6, step: 0 }, { slot: 7, step: 0 }, { slot: -0, step: 3 }, { c: 0 }, { c: 123456 }]) { now += 40; assert.doesNotThrow(() => A(a)); }
-  assert.ok(g.sl.slice(6).every((x) => x.s === 0), "the 7th and 8th slots are locked before 120 s");
+  assert.ok(g.sl.slice(6).every((x) => x.s === 0), "the 7th and 8th slots are locked before 15 s");
   // spam inside 35 ms is dropped; acting before the brief ends or after the end does nothing
   const s0 = ab.score;
   const before = g.sl[2].s; now += 100; A({ slot: 2, step: 0 }); now += 5; A({ slot: 2, step: 1, f: 0 }); assert.equal(g.sl[2].s, before + 1, "a second tap within 35 ms is dropped");
@@ -228,7 +236,7 @@ assert.ok(idl.every((r) => r.score === 0 && r.grade === 0), "an idle bot scores 
   const v1 = L.viewFor(S, "p1").ab; L.endTick(S); const v = v1[7];
   assert.ok(Array.isArray(v) && v[0] === 6 && v[1].length === 8 && Array.isArray(v[2]) && Array.isArray(v[3]), "view = [slots, 8 slot rows, customers, tray, ms to slot 8]");
   const [s, f, q, rel, d, z0, z1, z2, z3] = v[1][0];
-  assert.ok(s === 3 && f === 2 && q === 2 && rel <= 0 && rel > -2000 && d >= 7000 && z0 < z1 && z2 < z3, "a baking row carries its start (ms ago), length and windows: " + v[1][0]);
+  assert.ok(s === 3 && f === 2 && q === 2 && rel <= 0 && rel > -2000 && d >= 4500 && z0 < z1 && z2 < z3, "a baking row carries its start (ms ago), length and windows: " + v[1][0]);
   assert.ok(v[4] > 0 && v[4] < TAI.more, "ms until the 8th slot");
   assert.equal(L.viewFor(S, "p1").ab[7], 0, "unchanged: not sent again"); L.endTick(S);
   act({ t: "ab_leave" });

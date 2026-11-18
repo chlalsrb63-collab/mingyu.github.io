@@ -20695,8 +20695,8 @@ ALBA_RULES.store = {
 // Input: {slot, step, f?} — `step` is the stage the player saw (a stale tap is refused, so a double tap can't skip a step), `f` the filling at stage 1 —
 //        or {c: customer id} to serve. Everything is validated; a refusal costs nothing.
 // view = [open slots, [[stage, filling, quality, ms since the stage began (≤ 0), side ms, z0, z1, z2, z3]…8], [[id, n0, n1, n2, ms patience left, patience ms, group]…], [[filling, quality]…tray], ms to the 8th slot]
-const TAI = { more: 40000, group: 52000, queue: 5, tray: 6, burn: 10, leave: 20, leaveGroup: 40, pts: [30, 60], bonus: 12, cook: [9000, 5500], flip: [30, 18], gold: [14, 7], groupN: [3, 3, 2], groupWait: 32000 };
-Object.assign(ALBA, { taiyaki: { name: "붕어빵 노점", npc: "cafe_moka", place: "광장 먹거리 골목", skill: "cook", par: 5400, mul: 1, outfit: ["top_apron_juju"], tool: "spatula", hint: "알맞게 구워졌을 때 뒤집고 꺼내세요." } });
+const TAI = { more: 15000, group: 28000, queue: 5, tray: 6, burn: 10, leave: 20, leaveGroup: 40, pts: [30, 60], bonus: 12, cook: [6500, 4000], flip: [26, 14], gold: [12, 6], groupN: [3, 3, 2], groupWait: 24000 };
+Object.assign(ALBA, { taiyaki: { name: "붕어빵 노점", npc: "cafe_moka", place: "광장 먹거리 골목", skill: "cook", par: 5000, lives: 5, mul: 1, outfit: ["top_apron_juju"], tool: "spatula", hint: "알맞게 구워졌을 때 뒤집고 꺼내세요. 손님이 기다리다 가면 ♥ 하나." } });
 
 const taiLerp = (r, rt) => r[0] + (r[1] - r[0]) * clamp(rt / ALBA_T.runMs, 0, 1);
 function taiCustomer(g, ab, bt, grp) {
@@ -20711,7 +20711,7 @@ function taiCustomer(g, ab, bt, grp) {
     tot = g.bag.pop(); need[ri(ab.box, 0, 2)]++;
     if (tot === 2) need[ri(ab.box, 0, 2)]++;
   }
-  const wait = Math.round(grp ? TAI.groupWait : (28000 - 14000 * u) * (tot === 2 ? 1.35 : 1) * (0.9 + 0.2 * rnd(ab.box)));
+  const wait = Math.round(grp ? TAI.groupWait : (19000 - 8000 * u) * (tot === 2 ? 1.35 : 1) * (0.9 + 0.2 * rnd(ab.box)));
   g.cu.push({ id: g.nid++, need, tot, at: bt, until: bt + wait, wait, grp: grp ? 1 : 0 });
 }
 /** The earliest thing that happens by itself: [time, kind, index] — 0 the 8th slot opens · 1 the group order comes · 2 a customer arrives · 3 a slot burns · 4 a customer leaves. */
@@ -20738,9 +20738,9 @@ ALBA_RULES.taiyaki = {
       else if (bk === 1) { g.grp = 1; taiCustomer(g, ab, bt, true); }
       else if (bk === 2) {
         if (g.cu.reduce((n, c) => n + (c.grp ? 0 : 1), 0) < TAI.queue) taiCustomer(g, ab, bt, false);
-        g.na = bt + Math.round(taiLerp([5000, 1600], bt) * (0.7 + 0.6 * rnd(ab.box)));
+        g.na = bt + Math.round(taiLerp([2800, 1100], bt) * (0.7 + 0.6 * rnd(ab.box)));
       } else if (bk === 3) { g.sl[bi].s = 5; albaBad(ab, TAI.burn); }
-      else { const i = g.cu.findIndex((c) => c.id === bi); albaBad(ab, g.cu[i].grp ? TAI.leaveGroup : TAI.leave); g.cu.splice(i, 1); }
+      else { const i = g.cu.findIndex((c) => c.id === bi); albaStrike(ab, bt + ab.runAt, g.cu[i].grp ? TAI.leaveGroup : TAI.leave); g.cu.splice(i, 1); }   // a customer who gives up costs a life
       albaTouch(ab);
     }
   },
