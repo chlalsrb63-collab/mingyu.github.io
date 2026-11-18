@@ -27,6 +27,7 @@ export function tick(dt) {
     mode = m;
     document.body.classList.toggle("talkcam", m > 0);
     document.body.classList.toggle("talkq", m === 2);
+    if (m === 2) $("#hint")?.setAttribute("hidden", "");   // the first-time card is faded under the talk; it must not reappear over the next window
   }
   const goal = MUL[m];
   cur = calm() || Math.abs(goal - cur) < 0.01 ? goal : cur + (goal - cur) * Math.min(1, dt * 9);
