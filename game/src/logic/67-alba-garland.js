@@ -9,13 +9,14 @@
 //          simAt, done: garlands, f: flower cells, gold: {c, until} | null, th: thorn cells, thAt, goldAt, n: steps, hits, seq, ev: [seq, flags, cell] (1 flower · 2 gold · 4 garland · 8 crash) }.
 // The one input is {d: 0..3}: a turn, queued for the next step; the same heading and the reverse of the last queued heading are ignored.
 // view = [chain cells, dir, ms to the next step, step ms, flower cells, [gold cell, ms left] | 0, thorn cells, garlands done, queued turns, ev]
+// 2026-11-18: faster from the first step, thorns sooner and denser; a crash costs a heart, one mends every `mend` ms
 const GAR = {
-  W: 16, base: 143, min: 110, ramp: 0.92, stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
-  thornFirst: 6000, thornEvery: 3500, thornMax: 14, goldFirst: [6000, 12000], goldGap: [8000, 14000], goldLife: 6000,
+  W: 16, base: 120, min: 80, ramp: 0.92, mend: 7000, stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
+  thornFirst: 3000, thornEvery: 2400, thornMax: 22, goldFirst: [6000, 12000], goldGap: [8000, 14000], goldLife: 6000,
   slow: 1.35, pts: [10, 50, 100], pen: 40, catchup: 40, queue: 2,
 };
 const GAR_DX = [0, 1, 0, -1], GAR_DY = [-1, 0, 1, 0];
-Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 3150, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊겨요. 12송이면 화환 완성!" } });
+Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 3700, lives: 5, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊기고 ♥ 하나가 깎여요(5개면 퇴근, 7초마다 하나 회복). 12송이면 화환 완성!" } });
 
 /** Ms between steps: faster with every garland, ×1.35 slower in a fever ("봄바람"). */
 const garInt = (g, ab, T) => Math.round(Math.max(GAR.min, GAR.base * GAR.ramp ** g.done) * (T < ab.feverUntil ? GAR.slow : 1));
@@ -68,7 +69,7 @@ function garAim(g) {
 /** The head met a wall / a thorn / its own chain: it stays where it is, shortened to a stub; a pause, then it goes on. */
 function garCrash(ab, T, h) {
   const g = ab.g;
-  albaBad(ab, GAR.pen);
+  albaStrike(ab, T, GAR.pen);   // the serious failure: a crash costs a heart
   g.hits++;
   g.c = g.c.slice(-GAR.stub); g.q.length = 0;
   garAim(g);
@@ -79,6 +80,7 @@ function garCrash(ab, T, h) {
 function garStep(ab, T) {
   const g = ab.g, W = GAR.W;
   g.n++;
+  if (GAR.mend && T >= g.mendAt) { g.mendAt += GAR.mend; if (ab.strikes > 0 && !ab.out) { ab.strikes--; albaTouch(ab); } }   // a heart mends with time
   if (g.gold && T >= g.gold.until) g.gold = null;
   if (!g.gold && T >= g.goldAt) {
     const c = garSpawn(g, g.rg, 0);
@@ -106,7 +108,7 @@ ALBA_RULES.garland = {
   init(S, p, ab) {
     const W = GAR.W, sub = (x) => ({ seed: (ab.box.seed ^ x) | 0 });
     const g = ab.g = { c: [8 * W + 6, 8 * W + 7, 8 * W + 8], dir: 1, q: [], simAt: ab.runAt + GAR.lead, done: 0, f: [], gold: null, th: [], thAt: ab.runAt + GAR.thornFirst, goldAt: 0,
-      rf: sub(0x1f1f1f), rt: sub(0x2e2e2e), rg: sub(0x3d3d3d), n: 0, hits: 0, seq: 0, ev: [0, 0, 0] };
+      rf: sub(0x1f1f1f), rt: sub(0x2e2e2e), rg: sub(0x3d3d3d), mendAt: ab.runAt + GAR.mend, n: 0, hits: 0, seq: 0, ev: [0, 0, 0] };
     g.goldAt = ab.runAt + ri(g.rg, GAR.goldFirst[0], GAR.goldFirst[1]);
     for (let i = 0; i < GAR.flowers; i++) g.f.push(garSpawn(g, g.rf, 0));
   },
