@@ -9,8 +9,8 @@
 
 /** The packed dungeons whose campfires get a quiet ring like a gate's (open fields keep their measured routes: tests/hunt-routes.mjs). */
 const FIRE_QUIET = ["crypt", "sewer", "abyss"];
-/** The wide grounds that get one more campfire, laid where the walk to a fire was longest (dunesea: 64 % of its ground was over 60 tiles from one). */
-const FIRE_EXTRA = ["dunesea", "city", "maple", "inklake"];
+/** The wide grounds that get more campfires (how many), each laid where the walk to a fire was longest (dunesea: 64 % of its ground was over 60 tiles from one). */
+const FIRE_EXTRA = { dunesea: 1, city: 1, maple: 1, inklake: 1, meadow: 2, forest: 2, cave: 1, jungle: 2, coast: 2, oasis: 2 };
 const Z_SAFE = 0, Z_NORMAL = 1, Z_ELITE = 2, Z_HIDDEN = 3;
 /**
  * Zone cuts, as a share of the farthest walk D from the entrance: the safe plaza is ZONE_SAFE D deep
@@ -57,9 +57,9 @@ function zoneMap(m) {
     return d;
   };
   const d = flood([m.entry], 1e9);
-  // one more campfire on the wide grounds: the reachable tile farthest (on foot) from every fire and the entrance, with open ground all round it
+  // more campfires on the wide grounds: the reachable tile farthest (on foot) from every fire and the entrance, with open ground all round it
   const extraFire = [];
-  if (FIRE_EXTRA.includes(m.id) && (FIRES[m.id] || []).length) {
+  for (let k = 0; k < (FIRE_EXTRA[m.id] | 0) && (FIRES[m.id] || []).length; k++) {
     const df = flood(FIRES[m.id].concat([m.entry]), 1e9);
     let best = -1;
     for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {

@@ -1517,6 +1517,186 @@
       "req": { "lv": 175, "quest": null },
       "reward": { "xp": 538660, "gold": 5250, "items": [["recall", 2]] },
       "repeat": false
+    },
+    {
+      "id": "sq_meadow_flock_1", "giver": "meadow_shepherd", "title": "빈 양우리",
+      "text": "양우리가 텅 비었어. 대신 입이 둘로 갈라진 새끼 양들이 울타리를 갉고 있지. 저 여섯 마리만 쫓아 줘.",
+      "done": "고마워. 한때 저 녀석들도 내가 이름 붙여 준 양이었는데... 이건 약소하지만 받아 줘.",
+      "hint": "바람초원 모닥불의 양치기 보리",
+      "goal": { "type": "kill", "mob": "lambmaw", "n": 6 },
+      "req": { "lv": 3, "quest": null },
+      "reward": { "xp": 300, "gold": 150, "items": [["hp_s", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_meadow_flock_2", "giver": "meadow_shepherd", "title": "동쪽을 보던 양",
+      "text": "변이가 오기 전날 밤 양들이 한꺼번에 동쪽을 봤다고 했잖아. 다른 모닥불의 꽃지기 달래가 그날 꽃이 어땠는지 안대. 가서 물어봐 줘.",
+      "done": "달래가 그러던가. 꽃도 그날 한꺼번에 동쪽으로 고개를 돌렸다고... 짐승만 알았던 게 아니구나.",
+      "hint": "바람초원 모닥불의 꽃지기 달래",
+      "goal": { "type": "talk", "npc": "meadow_florist" },
+      "req": { "lv": 6, "quest": "sq_meadow_flock_1" },
+      "reward": { "xp": 500, "gold": 200, "items": [["recall", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_meadow_flock_3", "giver": "meadow_shepherd", "title": "마지막 방울",
+      "text": "우리 무리 대장 숫양 목에 방울이 걸려 있었어. 이제 뿔 달린 거대한 놈이 되어 초원을 돌아다녀. 열 마리만 눕히면 방울 소리가 한결 잦아들 거야.",
+      "done": "방울 소리가 멀어졌어. 이제 양들이 편히 잠들겠지. 초원은 네가 지켜 줘.",
+      "hint": "바람초원 모닥불의 양치기 보리",
+      "goal": { "type": "kill", "mob": "meadowram", "n": 10 },
+      "req": { "lv": 10, "quest": "sq_meadow_flock_2" },
+      "reward": { "xp": 1000, "gold": 400, "items": [["stone", 1], ["hp_m", 2]], "title": "초원의 양치기" },
+      "repeat": false
+    },
+    {
+      "id": "sq_forest_rings_1", "giver": "forest_woodcutter", "title": "두 줄 나이테",
+      "text": "베어 낸 나무 그루터기에 나이테가 두 줄이야. 가시 박힌 스라소니가 그 나무에 발톱을 갈아 대는데, 여섯 마리만 정리해 주게나.",
+      "done": "발톱 자국이 줄었군. 이제야 그루터기를 제대로 볼 수 있겠어.",
+      "hint": "속삭임 숲 모닥불의 나무꾼 느릅",
+      "goal": { "type": "kill", "mob": "burrlynx", "n": 6 },
+      "req": { "lv": 32, "quest": null },
+      "reward": { "xp": 7500, "gold": 780, "items": [["hp_m", 4]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_forest_rings_2", "giver": "forest_woodcutter", "title": "끊긴 장길",
+      "text": "옛날엔 장꾼들이 이 숲길로 단풍 왕도까지 갔다네. 다른 모닥불의 약초꾼 쑥이 그 길이 언제 끊겼는지 기억할 거야. 물어봐 주겠나?",
+      "done": "쑥이 그러던가. 길이 끊긴 날 숲 이끼가 길을 잃었다고. 그날부터 숲이 사람을 가리기 시작한 거로군.",
+      "hint": "속삭임 숲 모닥불의 약초꾼 쑥",
+      "goal": { "type": "talk", "npc": "forest_herbalist" },
+      "req": { "lv": 35, "quest": "sq_forest_rings_1" },
+      "reward": { "xp": 9500, "gold": 900, "items": [["recall", 2], ["mp_m", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_forest_rings_3", "giver": "forest_woodcutter", "title": "길 위의 세머리",
+      "text": "장길이 있던 자리에 이제 정예 세머리 뱀이 똬리를 틀었다더군. 그놈을 눕히면 숲이 다시 길을 내어 줄지도 몰라.",
+      "done": "해냈군! 나무들이 바람을 타고 이쪽으로 고개 숙이는 걸 보게. 이건 자네 몫이야.",
+      "hint": "속삭임 숲 모닥불의 나무꾼 느릅",
+      "goal": { "type": "elite", "map": "forest", "mob": "hydrasnake", "n": 1 },
+      "req": { "lv": 40, "quest": "sq_forest_rings_2" },
+      "reward": { "xp": 13000, "gold": 1100, "items": [["stone", 2], ["hp_l", 3]], "title": "숲길 개척자" },
+      "repeat": false
+    },
+    {
+      "id": "sq_cave_song_1", "giver": "cave_miner", "title": "갈라진 수정의 노래",
+      "text": "수정이 노래한다고 했지? 요즘은 프리즘 두더지가 수정을 갉아서 소리가 깨져. 여덟 마리만 잡아 줘.",
+      "done": "음이 조금 맑아졌어. 우리 할아버지들이 듣던 소리에 가까워진 것 같군.",
+      "hint": "수정 동굴 끝자락 모닥불의 광부 돌이",
+      "goal": { "type": "kill", "mob": "prismmole", "n": 8 },
+      "req": { "lv": 96, "quest": null },
+      "reward": { "xp": 55000, "gold": 2900, "items": [["hp_l", 4], ["stone", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_cave_song_2", "giver": "cave_miner", "title": "막아 둔 방",
+      "text": "안쪽 수정 방은 우리 할아버지들이 일부러 막고 나왔어. 이유는 모르지만, 그 앞을 올빼미 눈들이 지키고 있다는군. 열 마리만 쫓아 줘.",
+      "done": "눈들이 줄었으니 막힌 자리를 멀리서나마 볼 수 있겠어. 무엇을 막았는지, 할아버지들은 끝내 말 안 했지.",
+      "hint": "수정 동굴 끝자락 모닥불의 광부 돌이",
+      "goal": { "type": "kill", "mob": "owlstare", "n": 10 },
+      "req": { "lv": 100, "quest": "sq_cave_song_1" },
+      "reward": { "xp": 63000, "gold": 3200, "items": [["r_1", 1], ["mp_l", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_cave_song_3", "giver": "cave_miner", "title": "막은 자리를 지키는 것",
+      "text": "막힌 방 앞엔 정예 곰이 어슬렁거려. 마치 문지기처럼 말이야. 그놈이 쓰러지면 노래가 다시 맑아질 거라고 믿어.",
+      "done": "문지기가 쓰러졌다니... 수정이 아주 낮게 울었어. 고맙다는 건지 슬프다는 건지는 모르겠군.",
+      "hint": "수정 동굴 끝자락 모닥불의 광부 돌이",
+      "goal": { "type": "elite", "map": "cave", "mob": "bearmaw", "n": 1 },
+      "req": { "lv": 108, "quest": "sq_cave_song_2" },
+      "reward": { "xp": 74000, "gold": 3600, "items": [["stone_b", 1], ["sc_xp", 1]], "title": "수정의 귀" },
+      "repeat": false
+    },
+    {
+      "id": "sq_jungle_lamp_1", "giver": "jungle_mechanic", "title": "덩굴 감긴 가로등",
+      "text": "가로등마다 덩굴 원숭이가 매달려 기둥을 흔들어. 열 마리만 떼어 내 주면 기둥 몇 개는 다시 세울 수 있겠어.",
+      "done": "기둥이 곧게 섰군. 네온 시티까지 불을 이으려던 때가 생각나네.",
+      "hint": "정글 해안도로 모닥불의 정비공 볼트",
+      "goal": { "type": "kill", "mob": "vinemonkey", "n": 10 },
+      "req": { "lv": 80, "quest": null },
+      "reward": { "xp": 36000, "gold": 2300, "items": [["hp_l", 4]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_jungle_lamp_2", "giver": "jungle_mechanic", "title": "도망친 온실 꽃",
+      "text": "다른 모닥불의 식물학자 난초가 이 정글이 원래 온실 정원이었다고 우겨. 정말 그런지 직접 들어 보고 와 줘.",
+      "done": "온실이 열려 있던 밤에 꽃들이 도시를 빠져나왔다고? 그럼 이 도로를 삼킨 건 변이만이 아니란 말이군.",
+      "hint": "정글 해안도로 모닥불의 식물학자 난초",
+      "goal": { "type": "talk", "npc": "jungle_botanist" },
+      "req": { "lv": 84, "quest": "sq_jungle_lamp_1" },
+      "reward": { "xp": 40000, "gold": 2500, "items": [["mp_l", 3], ["recall", 2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_jungle_lamp_3", "giver": "jungle_mechanic", "title": "낫 단 난초",
+      "text": "난초가 말한 사마귀 모양 꽃이 정글 안쪽에서 길을 막고 있어. 정예 한 놈만 쓰러뜨려 줘.",
+      "done": "정말 해냈네! 정글이 한 걸음 물러난 기분이야. 이건 정비공의 감사 표시야.",
+      "hint": "정글 해안도로 모닥불의 정비공 볼트",
+      "goal": { "type": "elite", "map": "jungle", "mob": "orchidmantis", "n": 1 },
+      "req": { "lv": 92, "quest": "sq_jungle_lamp_2" },
+      "reward": { "xp": 52000, "gold": 3000, "items": [["stone", 2], ["hp_l", 5]], "title": "덩굴 길잡이" },
+      "repeat": false
+    },
+    {
+      "id": "sq_coast_pillar_1", "giver": "coast_diver", "title": "물에 잠긴 기둥",
+      "text": "물이 빠지면 옛 항구의 돌기둥이 드러나는데, 산호 거북이 등딱지로 그 기둥을 밀어 부숴. 여덟 마리만 막아 줘.",
+      "done": "기둥이 버텨 줘서 다행이야. 저게 쓰러지면 옛 항구의 자리마저 잊히거든.",
+      "hint": "산호 해안 모닥불의 해녀 산호",
+      "goal": { "type": "kill", "mob": "coralturtle", "n": 8 },
+      "req": { "lv": 102, "quest": null },
+      "reward": { "xp": 58000, "gold": 3000, "items": [["hp_l", 4], ["stone", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_coast_pillar_2", "giver": "coast_diver", "title": "꺼지지 않는 등대",
+      "text": "다른 모닥불의 등대지기 파도는 누가 볼지도 모르는 불을 매일 밤 켜는 사람이야. 왜 그러는지 물어봐 줘.",
+      "done": "배가 한 척이라도 돌아올까 봐 켠다고? ...나도 가끔 그 불을 보고 물에 들어가. 고마워, 알려 줘서.",
+      "hint": "산호 해안 모닥불의 등대지기 파도",
+      "goal": { "type": "talk", "npc": "coast_lighthouse" },
+      "req": { "lv": 106, "quest": "sq_coast_pillar_1" },
+      "reward": { "xp": 63000, "gold": 3300, "items": [["recall", 2], ["mp_l", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_coast_pillar_3", "giver": "coast_diver", "title": "마지막 입항",
+      "text": "항구 기둥 틈에 정예 소라게 해골이 눌러앉았어. 그놈이 쓰러져야 배가 닿을 자리가 열릴 텐데, 부탁해.",
+      "done": "자리가 열렸네. 오늘 밤 등대 불이 좀 더 환하게 보일 거야.",
+      "hint": "산호 해안 모닥불의 해녀 산호",
+      "goal": { "type": "elite", "map": "coast", "mob": "hermitskull", "n": 1 },
+      "req": { "lv": 112, "quest": "sq_coast_pillar_2" },
+      "reward": { "xp": 74000, "gold": 3700, "items": [["stone_b", 1], ["sc_xp", 1]], "title": "마지막 입항자" },
+      "repeat": false
+    },
+    {
+      "id": "sq_oasis_well_1", "giver": "oasis_well", "title": "마르는 물길",
+      "text": "선인장 멧돼지가 우물 둘레를 파헤쳐서 물길이 자꾸 새. 열 마리만 쫓아 주면 우물을 다시 메울 수 있어.",
+      "done": "물이 고이는 소리가 나지? 이 오아시스 마을이 한 달은 더 버티겠어.",
+      "hint": "모래바람 오아시스 모닥불의 우물지기 샘",
+      "goal": { "type": "kill", "mob": "cactushog", "n": 10 },
+      "req": { "lv": 110, "quest": null },
+      "reward": { "xp": 68000, "gold": 3500, "items": [["hp_l", 4], ["mp_l", 3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_oasis_well_2", "giver": "oasis_well", "title": "드러난 길돌",
+      "text": "다른 모닥불의 낙타 상인 모래가 바람에 드러난 길돌 이야기를 하더군. 그 길이 어디로 닿는지 물어봐 줘.",
+      "done": "동쪽 끝까지 닿는 옛 길이라니. 대상들이 우물을 줄지어 놓은 이유가 있었군.",
+      "hint": "모래바람 오아시스 모닥불의 낙타 상인 모래",
+      "goal": { "type": "talk", "npc": "oasis_trader" },
+      "req": { "lv": 114, "quest": "sq_oasis_well_1" },
+      "reward": { "xp": 75000, "gold": 3800, "items": [["recall", 2], ["stone", 1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_oasis_well_3", "giver": "oasis_well", "title": "썩은 날개의 그림자",
+      "text": "하늘의 큰 새가 오아시스 위를 돌면 낙타가 물을 안 마셔. 모래 속에 숨은 정예 미라 낙타가 같이 움직이니 그놈부터 잡아 줘.",
+      "done": "낙타가 다시 물을 마시네. 이 마을을 위해 수고했어. 우물지기가 주는 마지막 선물이야.",
+      "hint": "모래바람 오아시스 모닥불의 우물지기 샘",
+      "goal": { "type": "elite", "map": "oasis", "mob": "mummycamel", "n": 1 },
+      "req": { "lv": 120, "quest": "sq_oasis_well_2" },
+      "reward": { "xp": 88000, "gold": 4200, "items": [["stone_b", 1], ["sc_xp", 1]], "title": "마지막 우물" },
+      "repeat": false
     }
   ]
 }

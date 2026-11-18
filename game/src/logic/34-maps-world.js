@@ -856,6 +856,59 @@ function campKeeper(m, n) {
   if (n.lines) out.say = n.lines[0];
   m.npcs.push(out);
 }
+/**
+ * The camp folk: one resident beside each extra campfire a field gets (FIRE_EXTRA in 33-maps-zones.js), in fire order.
+ * They tell the ground's background in their own words (no word of the old conquest: that waits in the tablet) and the
+ * `quest` ones start the field's lore side-quest line (data/quests.json, sq_<field>_*).
+ */
+const CAMP_FOLK = {
+  meadow: [
+    { id: "meadow_shepherd", name: "양치기 보리", role: "quest", look: [1, 3, 0, "#b89a5a"],
+      lines: ["여긴 원래 마을 양들이 풀 뜯던 목장이었어. 이젠 입이 둘로 갈라진 놈들이 울타리 너머에서 풀을 뜯지.", "양들은 변이가 오기 전날 밤 한꺼번에 같은 쪽을 쳐다봤어. 동쪽 말이야."] },
+    { id: "meadow_florist", name: "꽃지기 달래", role: "talk", look: [8, 0, 0, "#c06a8a"],
+      lines: ["초원의 꽃은 바람이 데려와 심는 거야. 지금 피는 건 옛날보다 키가 작고 색이 짙지.", "토끼굴 근처 꽃은 따지 마. 뿌리가 굴 속까지 닿아 있거든."] },
+  ],
+  forest: [
+    { id: "forest_woodcutter", name: "나무꾼 느릅", role: "quest", look: [3, 2, 0, "#6a5a3a"],
+      lines: ["이 숲 나무엔 나이테가 두 줄로 나 있어. 변이가 오던 해부터 한 줄이 더 생긴 거지.", "예전엔 숲길로 장꾼들이 단풍 왕도까지 다녔다네. 지금은 멧돼지와 뱀이 길을 가지."] },
+    { id: "forest_herbalist", name: "약초꾼 쑥", role: "talk", look: [5, 1, 0, "#5a8a4a"],
+      lines: ["이끼 낀 쪽이 북쪽이라는 말은 이 숲에선 틀려. 이끼도 길을 잃었거든.", "밤에 나방이 불빛을 쫓는 건 옛날 그대로야. 얼굴만 달라졌지."] },
+  ],
+  cave: [
+    { id: "cave_miner", name: "광부 돌이", role: "quest", look: [10, 1, 0, "#7a6a9a"],
+      lines: ["이 수정은 캘 때마다 노래를 해. 예전엔 맑았는데 요즘은 갈라진 소리가 나지.", "굴을 판 건 우리 할아버지들이야. 안쪽 수정 방은 일부러 막아 두고 나왔다더군."] },
+  ],
+  jungle: [
+    { id: "jungle_mechanic", name: "정비공 볼트", role: "quest", look: [6, 3, 0, "#8a7a3a"],
+      lines: ["네온 시티에서 바다까지 닿던 해안도로야. 가로등 기둥마다 덩굴이 휘감아 올라갔지.", "도로가 끊긴 건 한밤이었어. 시내 쪽 불이 한꺼번에 꺼지고, 정글이 밀려 내려왔다네."] },
+    { id: "jungle_botanist", name: "식물학자 난초", role: "talk", look: [4, 0, 0, "#9a5a8a"],
+      lines: ["여긴 원래 온실 정원이 있던 자리야. 도시 사람들이 키우던 꽃이 도망쳐서 정글이 된 거라고.", "사마귀 모양 난초는 그때 심어 둔 품종이야. 지금은 꽃이 아니라 낫을 달았지만."] },
+  ],
+  coast: [
+    { id: "coast_diver", name: "해녀 산호", role: "quest", look: [9, 2, 0, "#3a8a8a"],
+      lines: ["이 해안 산호는 옛 항구의 돌기둥을 타고 자랐어. 물이 빠지면 그 기둥이 보이지.", "예전엔 정글 도로로 온 짐을 여기서 배에 실었다네. 배는 이제 한 척도 안 와."] },
+    { id: "coast_lighthouse", name: "등대지기 파도", role: "talk", look: [7, 1, 0, "#4a6a9a"],
+      lines: ["등대 불은 아직 내가 켜. 누가 볼진 모르겠지만, 꺼 두면 밤바다가 더 무서워서.", "물가의 거북은 옛날에도 있었어. 등껍질에 돌이 붙은 건 새로 생긴 일이지."] },
+  ],
+  oasis: [
+    { id: "oasis_well", name: "우물지기 샘", role: "quest", look: [12, 0, 0, "#b8985a"],
+      lines: ["이 오아시스 우물은 모래 아래 큰 물길 하나에서 올라와. 물길이 마르면 마을도 마르지.", "대상들이 쉬던 자리마다 우물이 있었어. 이젠 이 우물이 마지막 몇 개 중 하나야."] },
+    { id: "oasis_trader", name: "낙타 상인 모래", role: "talk", look: [12, 3, 0, "#a8683a"],
+      lines: ["바람이 불면 모래 속에서 옛 길돌이 드러나. 그 길을 따라가면 동쪽 끝까지 닿았다더군.", "하늘에 큰 새가 도는 날엔 천막을 접어. 요즘 그 새는 살이 썩어 있거든."] },
+  ],
+};
+for (const [id, a] of Object.entries(CAMP_FOLK)) GEN[id].npcs = (GEN[id].npcs || []).concat(a.map((n) => [n.id, n.name]));
+/** Stand resident j of a field beside its extra campfire j (the fires FIRE_EXTRA added come last), on open ground. */
+function campFolk(m) {
+  const folk = CAMP_FOLK[m.id];
+  if (!folk) return;
+  const fires = FIRES[m.id].slice(FIRES[m.id].length - (FIRE_EXTRA[m.id] | 0));
+  folk.forEach((n, j) => {
+    const f = fires[j];
+    const at = f && [[2, 0], [-2, 0], [0, 2], [0, -2]].map(([dx, dy]) => [f[0] + dx, f[1] + dy]).find(([x, y]) => m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]));
+    if (at) m.npcs.push({ ...n, say: n.lines[0], x: at[0], y: at[1] });
+  });
+}
 /** Every monster kind a generated map places, read from its settings alone (the map tests check it against the built map). */
 function genKinds(id) {
   const g = GEN[id], c = g.cfg();
@@ -909,6 +962,7 @@ function genMap(id) {
   gateDoors(m);
   // zones by how far in, then who lives in each (33-maps-zones.js)
   zoneMap(m);
+  campFolk(m);
   zoneSpawns(m, cfg);
   if (REGIONAL_BEASTS[id]) {
     const [kind, host] = REGIONAL_BEASTS[id];

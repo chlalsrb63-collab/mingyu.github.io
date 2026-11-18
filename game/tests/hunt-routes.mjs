@@ -81,11 +81,20 @@ for (const id of ["jungle", "coast", "dunesea", "cloudtemple", "mesa", "inklake"
   assert.ok(n.role === "shop" && n.goods.length && n.goods.every((g) => D.items[g] && D.items[g].price > 0), `${id}: the keeper sells field goods`);
   assert.equal(D.npcMap[n.id], id, `${id}: the keeper is in the NPC registry`);
 }
+// camp folk: each resident stands on reachable ground right beside an extra campfire; each lore side-quest giver exists (34-maps-world.js CAMP_FOLK)
+const folk = { meadow: ["meadow_shepherd", "meadow_florist"], forest: ["forest_woodcutter", "forest_herbalist"], cave: ["cave_miner"], jungle: ["jungle_mechanic", "jungle_botanist"], coast: ["coast_diver", "coast_lighthouse"], oasis: ["oasis_well", "oasis_trader"] };
+for (const [id, ids] of Object.entries(folk)) for (const nid of ids) {
+  const n = maps[id].npcs.find((o) => o.id === nid);
+  assert.ok(n && maps[id].reach[n.y * maps[id].w + n.x], `${id}: ${nid} stands on reachable ground`);
+  assert.ok(fires[id].some(([x, y]) => Math.abs(x - n.x) + Math.abs(y - n.y) <= 2), `${id}: ${nid} stands beside a fire`);
+  assert.equal(D.npcMap[nid], id, `${nid} is in the NPC registry`);
+}
+for (const q of D.side.filter((q) => /^sq_(meadow|forest|cave|jungle|coast|oasis)_/.test(q.id))) assert.ok(D.npcMap[q.giver], `${q.id}: giver ${q.giver} exists`);
 console.log("hunt routes: safe arrivals, adjacent bands, starter and late progression, capped arena");
 // the packed dungeons' campfires are quiet ground: no pack is laid on a place to sit (33-maps-zones.js FIRE_QUIET)
 for (const id of ["crypt", "sewer", "abyss"]) for (const [x, y] of fires[id]) assert.equal(maps[id].zone[y * maps[id].w + x], 0, `${id}: the campfire at ${x},${y} is safe ground`);
 // the wide grounds have one more campfire, on safe ground far from the others (FIRE_EXTRA)
-for (const [id, n] of [["dunesea", 4], ["city", 3], ["maple", 3], ["inklake", 3]]) {
+for (const [id, n] of [["dunesea", 4], ["city", 3], ["maple", 3], ["inklake", 3], ["meadow", 4], ["forest", 4], ["cave", 4], ["jungle", 4], ["coast", 4], ["oasis", 4]]) {
   assert.equal(fires[id].length, n, `${id}: ${n} campfires`);
   assert.ok(fires[id].some(([x, y]) => maps[id].zone[y * maps[id].w + x] === 0 && maps[id].reach[y * maps[id].w + x] === 1), `${id}: a fire on quiet, reachable ground`);
 }

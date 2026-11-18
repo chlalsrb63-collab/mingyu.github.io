@@ -47,7 +47,7 @@ const sqSt = (W, id) => { W.p.dirty = true; const r = W.step().self.sq.find((x) 
 const idx = (mob, fb = 0) => Q.findIndex((q) => q.mob === mob && !!q.fb === !!fb);
 
 // ── the chain: eight chapters in order, the two new bands, each beat a mainChapter quest given by 엘더윈
-assert.equal(Q.length, 43);
+assert.equal(Q.length, 49);
 const chaps = Q.map((q, i) => [i, q.chap]).filter(([, c]) => c);
 assert.equal(chaps.length, 8);
 chaps.forEach(([i, c], k) => { assert.ok(c.startsWith(`제${k + 1}장 「`), c); assert.ok(Q[i].intro.length > 30, `${c} has an intro`); });
@@ -132,16 +132,36 @@ for (const [i, id] of beats) {
 
 // ── old sheets (v20–v23): the same errand after the four new rows; v24 sheets are left alone; a finished chain stays finished
 {
-  const old = Q.map((q, j) => (q.v24 ? -1 : j)).filter((j) => j >= 0);   // the v23 chain, as indexes now
+  const old = Q.map((q, j) => (q.v24 || q.v30 ? -1 : j)).filter((j) => j >= 0);   // the v23 chain, as indexes now
   assert.equal(old.length, 39);
   for (const k of [0, 5, 22, 23, 24, 30, 31, 38, 39]) {
     const ch = { ...L.newChar("옛장", []), v: 23, lvl: 150, q: { i: k, n: 3, st: 1 } };
     const W = world(ch);
     assert.equal(W.ch.q.i, k < old.length ? old[k] : Q.length, `old step ${k}`);
-    if (k < old.length) assert.equal(Q[W.ch.q.i].title, [...Q].filter((q) => !q.v24)[k].title);
+    if (k < old.length) assert.equal(Q[W.ch.q.i].title, [...Q].filter((q) => !q.v24 && !q.v30)[k].title);
     assert.deepEqual([W.ch.q.n, W.ch.q.st, W.ch.v], [3, 1, L.newChar("현재양식", []).v], "progress kept");
   }
   const fresh = world({ ...L.newChar("새장", []), q: { i: 24, n: 2, st: 1 } });
   assert.equal(fresh.ch.q.i, 24, "a v24 sheet keeps its index");
+}
+
+// ── v30: six main steps (oasis, cloud temple, dunes, coast boss, ink lake x2) went in; v24–v29 sheets keep their errand
+{
+  const v30 = Q.filter((q) => q.v30).map((q) => q.mob);
+  assert.deepEqual(v30, ["cactushog", "wingcrane", "ribvulture_gold", "clubshrimp", "wingcrane_ash", "serpentwing_ash"]);
+  const old = Q.map((q, j) => (q.v30 ? -1 : j)).filter((j) => j >= 0);
+  assert.equal(old.length, 43);
+  for (const k of [0, 25, 26, 30, 38, 42, 43]) {
+    const W = world({ ...L.newChar("옛장", []), v: 29, lvl: 150, q: { i: k, n: 2, st: 1 } });
+    assert.equal(W.ch.q.i, k < old.length ? old[k] : Q.length, `v29 step ${k}`);
+    assert.deepEqual([W.ch.q.n, W.ch.q.st], [2, 1]);
+  }
+  const homes = (mob) => Object.keys(L.atlas().maps).filter((m) => L.atlas().maps[m].spawns.some((s) => s.k === mob) || X.FIELD_BOSS[m] === mob);
+  for (const q of Q.filter((o) => o.v30)) {
+    assert.ok(homes(q.mob).length, `${q.title}: ${q.mob} has a ground`);
+    assert.ok(q.text.length > 60 && q.items.length >= 1, `${q.title}: a story and a reward`);
+    if (q.fb) assert.ok(Object.values(X.FIELD_BOSS).includes(q.mob), `${q.title} is a field boss`);
+  }
+  for (const q of Q) for (const [id] of q.items) assert.ok(D.items[id], `${q.title}: item ${id}`);
 }
 console.log("chapters: ok");
