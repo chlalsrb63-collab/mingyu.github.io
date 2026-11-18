@@ -725,7 +725,11 @@ function partyRejoin(S, p) {
   if (!party) { party = { id: S.nextId++, m: [alone.pid] }; S.parties[party.id] = party; alone.party = party.id; }
   party.m.push(p.pid);
   p.party = party.id;
-  for (const o of members(S, p)) { toast(o, o === p ? "파티에 다시 합류했습니다." : `${p.ch.name}님이 파티에 돌아왔습니다.`); S.maps[o.map].who = true; }
+  for (const o of members(S, p)) {
+    buddyReturnForParty(S, o);
+    toast(o, o === p ? "파티에 다시 합류했습니다." : `${p.ch.name}님이 파티에 돌아왔습니다.`);
+    S.maps[o.map].who = true;
+  }
 }
 
 /** Take a player out of the world; returns the sheet to persist. */
@@ -733,6 +737,7 @@ export function removePlayer(S, pid) {
   const p = S.players[pid];
   if (!p) return null;
   const ch = exportChar(S, pid);
+  const dim = S.dims[p.map];
   buddyRemove(S, p);
   sxLeave(S, p);
   // remember the party for a quick return (addPlayer → partyRejoin); stale holds are dropped on the next leave
@@ -746,7 +751,8 @@ export function removePlayer(S, pid) {
   S.maps[p.map].who = true;
   delete S.players[pid];
   S.n--;
-  if (S.dims[p.map]?.story?.airship) closeDim(S, p.map);
+  if (buddyShift(dim, p)) coopClose(S, dim);
+  else if (dim?.story?.airship) closeDim(S, p.map);
   return ch;
 }
 

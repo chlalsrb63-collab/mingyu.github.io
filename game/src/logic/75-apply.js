@@ -464,7 +464,11 @@ export function applyAction(S, pid, a) {
       }
       party.m.push(pid);
       p.party = party.id;
-      for (const o of members(S, p)) { toast(o, o === p ? "파티에 참가했습니다." : `${ch.name}님이 파티에 참가했습니다.`); S.maps[o.map].who = true; }
+      for (const o of members(S, p)) {
+        buddyReturnForParty(S, o);
+        toast(o, o === p ? "파티에 참가했습니다." : `${ch.name}님이 파티에 참가했습니다.`);
+        S.maps[o.map].who = true;
+      }
       break;
     }
     case "pdec": p.pinv = null; break;

@@ -43,7 +43,7 @@ function coopCrew(S, p) {
   const party = S.parties[p.party];
   const crew = (party ? party.m.map((pid) => S.players[pid]) : [p]).filter((o) => o && o.map === p.map && !o.dead).slice(0, 4);
   const b = buddyOf(S, p);
-  if (crew.length === 1 && (!party || party.m.length === 1) && !p.buddyCall && b?.map === p.map) crew.push(b);
+  if (crew.length === 1 && !buddyInParty(S, p) && !p.buddyCall && b?.map === p.map) crew.push(b);
   return crew;
 }
 const coopWorker = (S, pid) => S.players[pid] || S.buddies[pid];
@@ -984,7 +984,13 @@ function coopValidate(S, p, a) {
 function coopApply(S, p, a) {
   if (a.t === "coop_start") { coopStart(S, p, a.k); return; }
   const c = coopOf(S, p);
-  if (a.t === "coop_leave") { toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다"); coopHome(S, p, c); return; }
+  if (a.t === "coop_leave") {
+    toast(p, c.state === "end" ? "수고하셨습니다!" : "근무를 포기했습니다");
+    const dim = dimAt(S, p.map);
+    if (buddyShift(dim, p)) coopClose(S, dim);
+    else coopHome(S, p, c);
+    return;
+  }
   const q = c.pl[p.pid], job = COOP_JOB[c.k];
   // a rhythm lane's notes come faster than the work key's 250 ms
   if (S.now - q.actAt < (job.lane && job.lane(S, c, p, q) ? COOP_FORGE.laneMs : COOP_T.actMs)) return;
