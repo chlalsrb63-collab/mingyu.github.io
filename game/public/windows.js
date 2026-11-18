@@ -641,6 +641,9 @@ export function chatAction(m) {
     addChat("답할 귓속말이 없습니다.", "sys");
     return null;
   }
+  // the owner's local test character (74-dev-test.js; the server refuses it outside the local build)
+  const mt = /^\/mingyutest(?:\s+(\S+))?\s*$/.exec(m);
+  if (mt) return mt[1] ? { t: "mingyutest", j: mt[1] } : { t: "mingyutest" };
   const bk = /^\/(차단해제|차단|unblock|block)\s+(\S+)/.exec(m);
   if (bk) return { t: "blk", a: /해제|un/.test(bk[1]) ? "del" : "add", name: bk[2] };
   const fr = /^\/(친구|friend)\s+(\S+)/.exec(m);
