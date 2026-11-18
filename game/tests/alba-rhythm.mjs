@@ -187,7 +187,7 @@ for (const [dt, kind] of [[67, 2], [-67, 2], [68, 1], [150, 1], [-150, 1]]) {
   const seeds = Array.from({ length: 60 }, (_, i) => i * 7919 + 11);
   for (const seed of seeds) {
     const g = X.rhyBuild({ seed }), N = g.N;
-    assert.ok(N.length >= 400 && N.length <= 700, `a song of a sensible length (${N.length})`);
+    assert.ok(N.length >= 150 && N.length <= 300, `a song of a sensible length (${N.length})`);
     assert.ok(N[0].t >= RHY.lead && N.at(-1).t + N.at(-1).h <= T.runMs - RHY.tail + 1, "the song fits the shift with a lead-in and a tail");
     let prevT = -1;
     const byT = new Map(), lastEnd = [-1e9, -1e9, -1e9, -1e9], prevT4 = [];
@@ -199,9 +199,9 @@ for (const [dt, kind] of [[67, 2], [-67, 2], [68, 1], [150, 1], [-150, 1]]) {
       lastEnd[n.l] = n.t + n.h;
       if (n.h) { assert.ok(n.t >= RHY.holdFrom, "holds come late"); assert.ok(n.h >= 400 && n.h <= 2 * 60000 / 100 + 1, `a hold of ${n.h} ms is short enough`); holds++; }
     }
-    // the first minute is simple: quarter notes, no chords, no holds
+    // the first 15 s are simple: quarter notes, no chords, no holds
     for (const n of N) if (n.t < RHY.quarterTo) assert.ok(byT.get(n.t).length === 1 && !n.h, "taps only at first");
-    // onsets: not too fast (an eighth at the end tempo is ~214 ms), at most 2 at once before the last minute, 3 after; holds count as pressed keys
+    // onsets: not too fast (an eighth at the end tempo is ~214 ms), at most 2 at once before the last 20 s, 3 after; holds count as pressed keys
     const times = [...byT.keys()].sort((a, b) => a - b);
     for (let i = 1; i < times.length; i++) assert.ok(times[i] - times[i - 1] >= 200, `onsets are at least 200 ms apart (${times[i] - times[i - 1]})`);
     for (const t of times) {
@@ -209,16 +209,16 @@ for (const [dt, kind] of [[67, 2], [-67, 2], [68, 1], [150, 1], [-150, 1]]) {
       const held = N.filter((n) => n.h && n.t < t && n.t + n.h > t).length;
       assert.ok(here.length + held <= cap, `at most ${cap} keys at once (t ${t}: ${here.length} new + ${held} held)`);
       if (here.length >= 2) { chords += here.length === 2 ? 1 : 0; triples += here.length === 3 ? 1 : 0; assert.ok(t >= RHY.chordFrom, "chords come late"); }
-      if (here.length === 3) assert.ok(t >= RHY.tripleFrom, "triples only in the last minute");
+      if (here.length === 3) assert.ok(t >= RHY.tripleFrom, "triples only in the last 20 s");
       assert.equal(new Set(here.map((n) => n.l)).size, here.length, "a chord uses distinct lanes");
     }
     // at most one second-long window with more than 6 notes
     for (let i = 0; i < N.length; i++) { let j = i; while (j < N.length && N[j].t < N[i].t + 1000) j++; assert.ok(j - i <= 7, `no stream above 7 notes a second (${j - i})`); }
     // tempo ramps 100 → 140 BPM
-    assert.equal(Math.round(X.rhyBpm(0)), 100); assert.equal(Math.round(X.rhyBpm(T.runMs)), 140); assert.ok(X.rhyBpm(120000) > 118 && X.rhyBpm(120000) < 122);
-    // the density grows with the shift: the last minute holds more notes than the first
+    assert.equal(Math.round(X.rhyBpm(0)), 100); assert.equal(Math.round(X.rhyBpm(T.runMs)), 140); assert.ok(X.rhyBpm(45000) > 118 && X.rhyBpm(45000) < 122);
+    // the density grows with the shift: the last 22 s hold more notes than the first 22 s
     const inRange = (a, b) => N.filter((n) => n.t >= a && n.t < b).length;
-    assert.ok(inRange(180000, 240000) > inRange(0, 60000), "the song gets busier");
+    assert.ok(inRange(67500, 90000) > inRange(0, 22500), "the song gets busier");
     notes += N.length;
   }
   console.log(`rhythm: ${seeds.length} songs, ${Math.round(notes / seeds.length)} notes each, ${(chords / seeds.length).toFixed(0)} chords, ${(triples / seeds.length).toFixed(1)} triples, ${(holds / seeds.length).toFixed(0)} holds per song`);
@@ -384,7 +384,7 @@ for (const r of results.perfect) {   // the player sees every note coming (≥ 1
   assert.equal(ab2.state, "end"); assert.equal(ab2.score, 0); assert.ok(ab2.g.N.every((n) => n.s === 2), "every note of an unplayed song is a Miss");
 }
 
-// (e) the server's cost: 240 simulated seconds, 10 ticks/s, an input every 150 ms
+// (e) the server's cost: a 90 s shift (95 simulated seconds with the brief), 10 ticks/s, an input every 150 ms
 {
   const s = sim("공연부하", 7), ab = s.p.ab;
   let ms = 0, views = 0, bytes = 0, vb = 0;
@@ -395,8 +395,8 @@ for (const r of results.perfect) {   // the player sees every note coming (≥ 1
     ms += performance.now() - t0; views++;
     if (v.ab && v.ab[7]) { bytes += JSON.stringify(v.ab[7]).length; vb++; }
   }
-  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 4.1).toFixed(2)} ms per simulated minute), view ${vb} sent, avg ${(bytes / vb).toFixed(0)} bytes, max ${viewMax}`);
-  assert.ok(ms / 4.1 < 100, "far below 100 ms per simulated minute");
+  console.log(`  server: ${views} ticks + views in ${ms.toFixed(1)} ms (${(ms / 1.6).toFixed(2)} ms per simulated minute), view ${vb} sent, avg ${(bytes / vb).toFixed(0)} bytes, max ${viewMax}`);
+  assert.ok(ms / 1.6 < 100, "far below 100 ms per simulated minute");
   assert.equal(ab.state, "end");
 }
 

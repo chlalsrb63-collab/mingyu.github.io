@@ -17,7 +17,7 @@ const CROSS = {
   PAY: 100, FLAWLESS: 50, GIFT: 30, HIT: 20, BONUS: 3, BONUS_MAX: 60, BUDGET: [12000, 26000],
   IN: 0.2, CIN: 0.1, SLACK: 0.2,                                   // hit-box inset of the courier and of a cart; how far past a log's end a foot still holds
 };
-Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 6800, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차와 행인을 피하고, 강에서는 통나무를 타고 건너 꾸러미를 전하세요." } });
+Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 2550, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차와 행인을 피하고, 강에서는 통나무를 타고 건너 꾸러미를 전하세요." } });
 
 const crossN = (ln) => Math.ceil((CROSS.W + ln.len) / ln.sp);
 /** Where the ring's first object is (cells, 0 ≤ phase < ring length) `T` ms. */
@@ -64,14 +64,14 @@ function crossHop(g, d) {
 /** A delivery's whole street: a function of (seed, delivery number, rush). Walkers and carts on the road, logs on the river; two gifts. */
 function crossBuild(seed, d, rush) {
   const box = { seed: (seed + Math.imul(d + 1, 0x9e3779b1)) | 0 };
-  const m = Math.min(1.6, 1 + 0.06 * d) * rush, ml = Math.min(1.5, 1 + 0.05 * d) * rush, flip = rnd(box) < 0.5 ? 1 : -1;
+  const m = Math.min(1.6, 1 + 0.15 * d) * rush, ml = Math.min(1.5, 1 + 0.125 * d) * rush, flip = rnd(box) < 0.5 ? 1 : -1;
   const L = new Array(CROSS.H).fill(null);
   const mk = (y, k, v, len, sp) => { L[y] = { k, v: Math.round(v * 10) * flip * (y % 2 ? 1 : -1), sp, len, ph: ri(box, 0, sp * 100 - 1) }; };
-  const logLen = Math.max(3, 5 - (d >> 2));
-  for (let y = 1; y <= 4; y++) mk(y, 2, (0.5 + 0.4 * rnd(box)) * ml, logLen, logLen + 1 + ri(box, 0, 1) + (d > 5 ? 1 : 0));
-  mk(6, 0, (1.0 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - (d >> 1)) + ri(box, 0, 1));
+  const logLen = Math.max(3, 5 - (d >> 1));
+  for (let y = 1; y <= 4; y++) mk(y, 2, (0.5 + 0.4 * rnd(box)) * ml, logLen, logLen + 1 + ri(box, 0, 1) + (d > 2 ? 1 : 0));
+  mk(6, 0, (1.0 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - d) + ri(box, 0, 1));
   mk(7, 1, (0.5 + 0.3 * rnd(box)) * m, 1, 5 + ri(box, 0, 2));
-  mk(8, 0, (0.9 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - (d >> 1)) + ri(box, 0, 1));
+  mk(8, 0, (0.9 + 0.6 * rnd(box)) * m, 2, Math.max(7, 10 - d) + ri(box, 0, 1));
   mk(9, 1, (0.4 + 0.3 * rnd(box)) * m, 1, 5 + ri(box, 0, 2));
   const gifts = [{ y: 6 + ri(box, 0, 3), j: -1, a: ri(box, 1, CROSS.W - 2), got: 0 }];
   if (d > 0) { const y = 1 + ri(box, 0, 3), ln = L[y]; gifts.push({ y, j: ri(box, 0, crossN(ln) - 1), a: ri(box, 0, ln.len - 1), got: 0 }); }

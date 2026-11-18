@@ -3,7 +3,7 @@
 // `now` (at most 40 per call, a longer stall just skips ahead), so a shift is a function of the seed and of the (time, input) list only. Each step moves a
 // ball in 4 sub-steps, in INTEGER fixed point (1/16 px): a ball is a direction (dx, dy ≈ 64 long) times the level's speed, no floats, no transcendentals.
 // Input is an INTENT, validated hard: { x: 0..240 } the paddle's target (it moves ≤ 10 px per step). Balls launch by themselves.
-// Field 240 × 240; 12 × 9 brick cells of 20 × 8 from y 28 (the wall fills 8 rows, the rush drops it one row); the paddle's top is y 222.
+// Field 240 × 240; 12 × 9 brick cells of 20 × 8 from y 28 (a wall fills 3 rows, then 5, 7 and from the fourth wall 8, standing on the bottom rows; the rush drops it one row); the paddle's top is y 222.
 // ab.g = { simAt, n (steps run), lv (wall 0…), k (per cell: 0 none · 1 plain · 2 bomb · 3 bonus box), h (hits left of a plain brick), it (a bonus box's item),
 //   left (bricks standing), drop (rush: the wall came down a row), balls [{x, y (1/16 px), dx, dy, held}], pad {x, tx, vx, hw}, sv (steps until the ball is served),
 //   I (falling items {x, y, k}), fw fp fs (steps left of wide paddle · piercing · slow ball), ch (bricks hit since the paddle last touched a ball), ev, seq, dirty }
@@ -14,7 +14,7 @@
 const WALL = { W: 240, H: 240, STEP: 50, SUB: 4, BW: 20, BH: 8, COLS: 12, ROWS: 9, Y0: 28, PY: 222, PSPD: 10, HW: [20, 32], SERVE: 30, RESERVE: 60, FALL: 3,
   TAB: [[-55, 32], [-48, 43], [-38, 52], [-26, 58], [-13, 63], [0, 64], [13, 63], [26, 58], [38, 52], [48, 43], [55, 32]],   // paddle bounce directions, 12° apart (dx, up)
   FX: [240, 160, 200], PTS: { plain: 10, crack: 5, bomb: 20, box: 30, item: 30, wall: 150, lost: 50 } };
-const wallSpeed = (g) => (((40 + 4 * Math.min(g.lv, 4)) * (g.fs > 0 ? 7 : 10)) / 10) | 0;   // 1/16 px per sub-step
+const wallSpeed = (g) => (((40 + 6 * Math.min(g.lv, 3)) * (g.fs > 0 ? 7 : 10)) / 10) | 0;   // 1/16 px per sub-step
 const wallEv = (g, type, x, y, v) => { g.ev.push([++g.seq, type, Math.round(x), Math.round(y), v | 0, g.n]); if (g.ev.length > 8) g.ev.shift(); };
 /** A brick event scores through the combo and a chain bonus (+20 % per brick hit since the paddle last touched a ball, up to +100 %; a piercing ball sweeps for the flat price). */
 function wallScore(ab, T, base, flat) {
@@ -27,12 +27,12 @@ function wallScore(ab, T, base, flat) {
 function wallBuild(ab) {
   const g = ab.g, box = ab.box, lv = g.lv, W = WALL, N = W.COLS * W.ROWS, pool = [];
   g.k = new Array(N).fill(0); g.h = new Array(N).fill(0); g.it = new Array(N).fill(0);
-  const ph = Math.min(0.55, 0.1 + 0.08 * lv), t = lv % 5;
-  for (let r = 0; r < 8; r++) {
+  const ph = Math.min(0.55, 0.1 + 0.14 * lv), t = lv % 5, rows = Math.min(8, 3 + 2 * lv);   // a shift holds about two walls: the first is small, the next ones climb fast
+  for (let r = 0; r < rows; r++) {
     for (let c = 0; c < W.COLS; c++) {
-      const on = t === 0 ? true : t === 1 ? c % 4 !== 3 : t === 2 ? c >= (r >> 1) && c <= 11 - (r >> 1) : t === 3 ? (r + c) % 2 === 0 : r === 0 || r === 7 || c < 2 || c > 9 || (r % 2 === 1 && c >= 4 && c <= 7);
+      const on = t === 0 ? true : t === 1 ? c % 4 !== 3 : t === 2 ? c >= (r >> 1) && c <= 11 - (r >> 1) : t === 3 ? (r + c) % 2 === 0 : r === 0 || r === rows - 1 || c < 2 || c > 9 || (r % 2 === 1 && c >= 4 && c <= 7);
       if (!on) continue;
-      const i = (r + g.drop) * W.COLS + c, u = rnd(box);
+      const i = (r + 8 - rows + g.drop) * W.COLS + c, u = rnd(box);   // a small wall stands on the bottom rows, close to the paddle
       g.k[i] = 1; g.h[i] = lv >= 2 && u < ph * 0.3 ? 3 : u < ph ? 2 : 1;
       pool.push(i);
     }
@@ -44,7 +44,7 @@ function wallBuild(ab) {
       if (kind === 3) g.it[i] = ri(box, 0, 3);
     }
   };
-  put(2, Math.min(8, 2 + lv)); put(3, lv >= 3 ? 5 : 4);
+  put(2, Math.min(8, 2 + 2 * lv)); put(3, lv >= 3 ? 5 : 4);
   g.left = g.k.reduce((n, v) => n + (v ? 1 : 0), 0);
 }
 /** The rush: the whole wall comes down one row. */
@@ -95,7 +95,7 @@ function wallBall(ab, T, b) {
     if (ny < R) { ny = R; b.dy = Math.abs(b.dy); }
     if (b.dy > 0 && b.y + R <= PYQ + 48 && ny + R > PYQ && Math.abs(nx - pad.x * 16) <= pad.hw * 16 + R) {   // the paddle: the angle comes from where the ball lands on it
       let idx = clamp(Math.round(5 + (5 * (nx - pad.x * 16)) / (pad.hw * 16 + R)), 0, 10);
-      if (g.n - g.hn > 160) { idx = ri(ab.box, 0, 10); g.hn = g.n; }   // 8 s without breaking a brick: this bounce goes wherever it likes (no endless loops, no unreachable last brick)
+      if (g.n - g.hn > 100) { idx = ri(ab.box, 0, 10); g.hn = g.n; }   // 5 s without breaking a brick: this bounce goes wherever it likes (no endless loops, no unreachable last brick)
       ny = PYQ - R; b.dx = W.TAB[idx][0]; b.dy = -W.TAB[idx][1]; g.ch = 0;
       wallEv(g, 7, nx / 16, W.PY, 0);
     }
@@ -176,7 +176,7 @@ function wallStep(ab, T) {
   if (!g.balls[0].held || g.I.length || pad.vx || g.ev.length) g.dirty = 1;
 }
 
-ALBA.wall = { name: "철거 알바", npc: "kangkang", place: "캉캉대장간 옆 헌 벽", skill: "craft", par: 7200, mul: 1.1, outfit: ["hat_coop_cap", "top_smith"], tool: "chain", hint: "마우스·손가락·←→로 발판을 움직여 철구를 받으세요. 벽돌을 다 부수면 새 벽! 떨어지는 상자는 발판으로 받기." };
+ALBA.wall = { name: "철거 알바", npc: "kangkang", place: "캉캉대장간 옆 헌 벽", skill: "craft", par: 3300, mul: 1.1, outfit: ["hat_coop_cap", "top_smith"], tool: "chain", hint: "마우스·손가락·←→로 발판을 움직여 철구를 받으세요. 벽돌을 다 부수면 새 벽! 떨어지는 상자는 발판으로 받기." };
 ALBA_RULES.wall = {
   init(S, p, ab) {
     const g = ab.g = { simAt: ab.runAt, n: 0, lv: 0, k: [], h: [], it: [], left: 0, drop: 0, balls: [], pad: { x: 120, tx: 120, vx: 0, hw: WALL.HW[0] }, sv: WALL.SERVE, I: [], fw: 0, fp: 0, fs: 0, ch: 0, la: 0, hn: 0, ev: [], seq: 0, dirty: 0 };

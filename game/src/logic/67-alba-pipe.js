@@ -13,14 +13,14 @@
 //   view: [site n, inlet row, outlet row, 144-char board ("0" empty, hex = open sides N1 E2 S4 W8, "#" rock), hand + next three (hex), ms to open, ms to end, trashed, last site's end]
 //   last site's end: 0 none · 1 cleared · 2 leak · 3 timeout · 4 skipped
 
-Object.assign(ALBA, { pipe: { name: "배관 수리", npc: "popo", place: "마을회관 배관실", skill: "craft", par: 3100, mul: 1, outfit: ["hat_coop_cap","top_coop_vest"], tool: "wrench", hint: "조각을 칸에 놓아 급수구에서 배수구까지 길을 이으세요." } });
+Object.assign(ALBA, { pipe: { name: "배관 수리", npc: "popo", place: "마을회관 배관실", skill: "craft", par: 1100, mul: 1, outfit: ["hat_coop_cap","top_coop_vest"], tool: "wrench", hint: "조각을 칸에 놓아 급수구에서 배수구까지 길을 이으세요." } });
 
 const APIPE = { gap: 800, trashMs: 3000, spare: 0.3, fit: 0.3, rock: 255 };
 const APIPE_DX = [0, 1, 0, -1], APIPE_DY = [-1, 0, 1, 0];   // direction index: 0 N · 1 E · 2 S · 3 W; a piece is the mask of its open sides (1 << dir)
 const APIPE_SPARE = [10, 5, 3, 6, 12, 9, 15];                  // straight ─ │, the four corners, the cross
-const apipeLen = (n) => Math.min(40, 16 + 2 * n);               // cells on the first route
-const apipeRocks = (n) => Math.min(30, 6 + 2 * n);
-const apipeLimit = (n) => Math.max(30, 64 - 3 * n) * 1000;
+const apipeLen = (n) => Math.min(40, 14 + 4 * n);               // cells on the first route (a ~90 s shift holds about 4-5 sites)
+const apipeRocks = (n) => Math.min(30, 6 + 4 * n);
+const apipeLimit = (n) => Math.max(28, 48 - 3 * n) * 1000;
 const apipeDir = (a, b) => { const d = b - a; return d === -12 ? 0 : d === 1 ? 1 : d === 12 ? 2 : 3; };
 
 /** A self-avoiding route of `want` cells (fewer when the board is too tight; at least the shortest) from cell `s` to cell `e` over the empty cells of `b` (`s` and `e` themselves count as empty); null when there is no way. */

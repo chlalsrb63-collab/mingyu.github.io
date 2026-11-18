@@ -108,14 +108,14 @@ const avg = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   const run = (seed, steps) => {
     const ab = { box: { seed }, runAt: 0, rev: 0, score: 0, combo: 0, maxCombo: 0, nextFever: 10, feverUntil: 0, feverUsed: 0, endAt: T.runMs };
     X.ALBA_RULES[K].init(null, null, ab);
-    for (let t = 0; t <= 230000; t += steps) X.ALBA_RULES[K].adv(null, null, ab, t);
-    X.ALBA_RULES[K].adv(null, null, ab, 230000);
+    for (let t = 0; t <= 85000; t += steps) X.ALBA_RULES[K].adv(null, null, ab, t);
+    X.ALBA_RULES[K].adv(null, null, ab, 85000);
     return [JSON.stringify([ab.g.cu, ab.g.na, ab.g.nid, ab.score]), ab.g];
   };
   assert.equal(run(4242, 100)[0], run(4242, 2300)[0], "the same orders however often the clock is read");
   assert.notEqual(run(4242, 100)[0], run(4243, 100)[0], "another seed, other orders");
   const g = run(4242, 100)[1];
-  assert.equal(g.n, 8, "8 slots after 120 s"); assert.equal(g.grp, 1, "the group order came"); assert.ok(g.nid > 20, "plenty of customers: " + g.nid);
+  assert.equal(g.n, 8, "8 slots after 40 s"); assert.equal(g.grp, 1, "the group order came"); assert.ok(g.nid > 12, "plenty of customers: " + g.nid);
 }
 
 // (b) bots against the grades
@@ -216,7 +216,7 @@ assert.ok(idl.every((r) => r.score === 0 && r.grade === 0), "an idle bot scores 
     if (now >= na) { na += 250; if (ab.state === "run") { now -= 0; pf(ab, now - ab.runAt); } }
   }
   const base = (() => { const S2 = L.setup(); S2.now = now; L.addPlayer(S2, "z", L.hero("빈", { wk: "sword", lvl: 30, migrate: true })); let t = 0; for (let i = 0; i < 2400; i++) { S2.now += 100; const t0 = performance.now(); L.tick(S2, S2.now); L.endTick(S2); L.viewFor(S2, "z"); L.endTick(S2); t += performance.now() - t0; } return t; })();
-  console.log(`cost: tick ${tms.toFixed(1)} ms + viewFor ${vms.toFixed(1)} ms for 240 s (${((tms + vms) / 4).toFixed(1)} ms/min; the empty world alone ${(base / 4).toFixed(1)} ms/min); view sent ${vn}× avg ${Math.round(bytes / vn)} B, max ${vmax} B; score ${ab.score}`);
+  console.log(`cost: tick ${tms.toFixed(1)} ms + viewFor ${vms.toFixed(1)} ms for 90 s (${((tms + vms) / 1.5).toFixed(1)} ms/min; the empty world alone ${(base / 4).toFixed(1)} ms/min); view sent ${vn}× avg ${Math.round(bytes / vn)} B, max ${vmax} B; score ${ab.score}`);
   assert.ok((tms + vms) / 4 < 100, "far below 100 ms per simulated minute");
   assert.ok(vmax < 900, "the view stays small: " + vmax);
 }

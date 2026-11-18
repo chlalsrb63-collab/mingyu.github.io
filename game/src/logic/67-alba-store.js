@@ -1,5 +1,5 @@
 // 일일 아르바이트 · 편의점 아르바이트: a cash register, solo (contract in 66-alba.js; plan docs/design/daily-alba-minigames-2026-11-16.md §3.3).
-// Three customer lanes (a fourth opens for the last 30 s rush). A customer arrives with 1-5 items on the counter, scans nothing herself, and has a
+// Three customer lanes (a fourth opens for the last 15 s rush). A customer arrives with 1-5 items on the counter, scans nothing herself, and has a
 // patience that runs out (she leaves: albaBad(ab, 20)). The clerk taps the items to scan them (any order); when all are scanned the customer's
 // "paid" money is shown and the clerk gives EXACT change by tapping the pad (100 · 500 · 1000 · 5000 won): the change is complete the moment the
 // tray equals paid - total, a tap that overshoots empties the tray (a slip: combo broken, the accuracy bonus lost). Special customers:
@@ -11,11 +11,11 @@
 //   act: {s: lane, i: item} scan · {p: lane, v: 0..3} a coin or bill (pad[v]) · {cl: lane} empty the tray
 //   view: [lane ×4]; a lane is 0 (nobody) or [customer id, kind, item prices (hundreds), scanned bitmask, paid, tray, ms until she leaves, patience ms, changed-her-mind flag]
 
-Object.assign(ALBA, { store: { name: "편의점 아르바이트", npc: "store_kong", place: "다람쥐 잡화점 계산대", skill: "deliver", par: 10500, mul: 1, outfit: ["top_coop_vest"], tool: "scanner", hint: "물건을 눌러 스캔하고, 받은 돈에서 합계를 뺀 거스름돈을 정확히 내주세요." } });
+Object.assign(ALBA, { store: { name: "편의점 아르바이트", npc: "store_kong", place: "다람쥐 잡화점 계산대", skill: "deliver", par: 4000, mul: 1, outfit: ["top_coop_vest"], tool: "scanner", hint: "물건을 눌러 스캔하고, 받은 돈에서 합계를 뺀 거스름돈을 정확히 내주세요." } });
 
 const ASTORE = { pad: [1, 5, 10, 50], lanes: 4, leavePen: 20, groupItems: 12 };
-/** How hard it is at time `t`: climbs with the score (a second level per 550 points) and a little with the minutes, 0..8. */
-const astoreDiff = (ab, t) => clamp(Math.floor(ab.score / 550 + Math.max(0, t - ab.runAt) / 120000), 0, 8);
+/** How hard it is at time `t`: climbs with the score (a level per 280 points) and with the time (two levels over a shift), 0..8. */
+const astoreDiff = (ab, t) => clamp(Math.floor(ab.score / 280 + Math.max(0, t - ab.runAt) / 45000), 0, 8);
 /** The wait before the next customer comes to an empty lane (shorter as it gets harder, and 1.4× faster in the rush). */
 const astoreGap = (ab, t) => Math.round((2800 - 230 * astoreDiff(ab, t) + ri(ab.g.gb, 0, 1800)) / (t >= ab.endAt - ALBA_T.rushMs ? 1.4 : 1));
 

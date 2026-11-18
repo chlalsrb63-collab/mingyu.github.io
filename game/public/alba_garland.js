@@ -3,15 +3,23 @@
  * (drawn at a whole-number scale, no smoothing). The server moves the chain one cell per step and only takes turns; this draws the state it sends and slides the
  * chain between steps (the head toward where it will go, held back before a wall / thorn / its own body), and sends turns: arrows / WASD, swipes, the four buttons → {d: 0 up · 1 right · 2 down · 3 left}.
  * view = [chain cells (y*16+x, head last), dir, ms to the next step, step ms, flower cells, [gold cell, ms left] | 0, thorn cells, garlands done, queued turns, ev [seq, flags (1 flower · 2 gold · 4 garland · 8 crash), cell]]
+ * Look: a sunny lawn inside a clipped hedge, pink blossoms bobbing, a pastel chain with a rose head, butterflies; a plank strip below holds the 12 beads and the count.
+ * Sound: a turn snips (swish), a flower pops, a gold flower chimes, a finished garland rings, a crash buzzes.
  */
 const N = 16, C = 12, W = N * C, H = 208, FULL = 12;
-const OL = "#14101a", FONT9 = "9px Galmuri9, Galmuri11, monospace", FONT11 = "11px Galmuri11, Galmuri9, monospace";
+const OL = "#26301e", FONT9 = "9px Galmuri9, Galmuri11, monospace", FONT11 = "bold 11px Galmuri11, Galmuri9, monospace";
 const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];
-const LINK = [["#ff9ac8", "#ffd0e6"], ["#fff0f6", "#ffffff"], ["#c8a0ff", "#e4d0ff"]];
+const LINK = [["#ff9ac8", "#ffd8ec"], ["#fff2f8", "#ffffff"], ["#c8a4ff", "#e8d8ff"]];
 
-let host = null, api = null, cv = null, g = null, bg = null, scale = 0, fitKey = "";
-let st = null, recvAt = 0, lq = [], lastSeq = -1, first = true, floats = [], parts = [], shake = 0, lastScore = 0, phase = "brief", outbox = [], lastSend = -1e9, lastPos = [0, 0], swipe = null, feverFx = false;
+let kk = 1, host = null, api = null, cv = null, g = null, bg = null, scale = 0, fitKey = "", boardEl = null, boardWas = "";
+let st = null, recvAt = 0, lq = [], lastSeq = -1, first = true, floats = [], parts = [], shake = 0, lastScore = 0, phase = "brief", outbox = [], lastSend = -1e9, lastPos = [0, 0], swipe = null, feverFx = false, sfxAt = {};
 
+/** A sound, but never twice within `gap` ms. */
+function sfx(name, gap = 70) {
+  const t = api.now();
+  if (t - (sfxAt[name] || -1e9) < gap) return;
+  sfxAt[name] = t; api.sfx(name);
+}
 function fit(w) {
   const key = `${w}|${innerHeight}`;
   if (key === fitKey) return;
@@ -19,11 +27,20 @@ function fit(w) {
   const box = host.closest(".ap-box"), fixed = box ? box.offsetHeight - host.parentElement.offsetHeight : 260;
   const sc = Math.min(w / W, (innerHeight * 0.96 - fixed - 70) / H), s2 = sc >= 2 ? Math.floor(sc) : Math.max(0.5, sc);
   scale = s2; cv.style.width = `${Math.round(W * s2)}px`; cv.style.height = `${Math.round(H * s2)}px`;
+  const k = Math.max(1, Math.ceil(s2 - 0.001));   // the canvas itself holds `k` pixels per art pixel, so the pixel font is rasterised at 9·k px and stays crisp
+  if (k !== kk || cv.width !== W * k) { kk = k; cv.width = W * k; cv.height = H * k; g.imageSmoothingEnabled = false; }
 }
 const px = (c, x, y, w, h) => { g.fillStyle = c; g.fillRect(x, y, w, h); };
+const dark = (c) => { const n = parseInt(c.length === 4 ? c[1] + c[1] + c[2] + c[2] + c[3] + c[3] : c.slice(1), 16); return (((n >> 16) * 3 + ((n >> 8) & 255) * 6 + (n & 255)) / 10) < 130; };   // dark text sits on a light plate: no outline
 function text(s, x, y, col, font = FONT9, align = "center") {
-  g.font = font; g.textAlign = align; g.textBaseline = "top";
-  g.fillStyle = OL; g.fillText(s, x + 1, y + 1); g.fillText(s, x - 1, y + 1); g.fillStyle = col; g.fillText(s, x, y);
+  g.font = font; g.textAlign = "left"; g.textBaseline = "top";
+  { const w = g.measureText(s).width; x = Math.round(align === "center" ? x - w / 2 : align === "right" ? x - w : x); y = Math.round(y); }   // whole-pixel origin: a pixel font stays crisp
+  if (!dark(col)) { g.fillStyle = OL; g.fillText(s, x + 1, y); g.fillText(s, x - 1, y); g.fillText(s, x, y + 1); g.fillText(s, x, y - 1); g.fillText(s, x + 1, y + 1); }
+  g.fillStyle = col; g.fillText(s, x, y);
+}
+function plate(x, y, w, h) {
+  px(OL, x, y + 1, w, h - 2); px(OL, x + 1, y, w - 2, h);
+  px("#d9a43a", x + 1, y + 1, w - 2, h - 2); px("#fff4d4", x + 2, y + 2, w - 4, h - 4); px("#ffe8b0", x + 2, y + h - 5, w - 4, 3);
 }
 const cx = (c) => (c % N) * C + C / 2, cy = (c) => ((c / N) | 0) * C + C / 2;
 
@@ -40,30 +57,35 @@ function blossom(x, y, s, p, hi, mid, midHi) {
 }
 function drawFlower(c, t, golden) {
   const x = cx(c), y = cy(c) + (Math.floor(t / 400) % 2 ? 0 : -1);
-  px(OL, x - 2, y + 4, 5, 3); px("#3f9a3a", x - 1, y + 4, 3, 2);   // a leaf under it
+  px(OL, x - 2, y + 4, 5, 3); px("#4ab048", x - 1, y + 4, 3, 2);   // a leaf under it
   if (golden) blossom(x, y, 9, "#ffd84a", "#fff2a8", "#ff9a2a", "#ffd070");
-  else blossom(x, y, 9, "#ff8ac0", "#ffd0e6", "#ffe05a", "#fff6b0");
+  else blossom(x, y, 9, "#ff7ab8", "#ffd0e6", "#ffe05a", "#fff6b0");
   if (golden) { const s = Math.floor(t / 110) % 4, o = [[-6, -6], [6, -5], [5, 6], [-6, 5]][s]; px("#ffffff", x + o[0], y + o[1], 1, 1); px("#ffe27a", x + o[0] - 1, y + o[1], 3, 1); px("#ffe27a", x + o[0], y + o[1] - 1, 1, 3); }
 }
 function drawThorn(c, t) {
   const x = cx(c), y = cy(c), sway = Math.floor(t / 500) % 2;
-  px(OL, x - 5, y - 5, 11, 11); px("#2a6a2a", x - 4, y - 4, 9, 9); px("#1b4a1f", x - 4, y + 1 + sway, 9, 4); px("#4a9a3a", x - 4, y - 4, 4, 1);
-  for (const [dx, dy] of [[-1, -7], [-1, 6], [-7, -1], [6, -1]]) { px(OL, x + dx - 1, y + dy - 1, 4, 4); px("#e0584a", x + dx, y + dy, 2, 2); }   // the four red thorns
-  px("#e0584a", x - 5, y - 5, 1, 1); px("#e0584a", x + 5, y - 5, 1, 1); px("#e0584a", x - 5, y + 5, 1, 1); px("#e0584a", x + 5, y + 5, 1, 1);
-  px("#14301a", x - 2, y - 1, 5, 1); px("#14301a", x, y - 3, 1, 5);   // the knot of the vine
+  px(OL, x - 5, y - 5, 11, 11); px("#2e8a3a", x - 4, y - 4, 9, 9); px("#1e6a2c", x - 4, y + 1 + sway, 9, 4); px("#5ac04a", x - 4, y - 4, 4, 1);
+  for (const [dx, dy] of [[-1, -7], [-1, 6], [-7, -1], [6, -1]]) { px(OL, x + dx - 1, y + dy - 1, 4, 4); px("#ff5a4a", x + dx, y + dy, 2, 2); }   // the four red thorns
+  px("#ff5a4a", x - 5, y - 5, 1, 1); px("#ff5a4a", x + 5, y - 5, 1, 1); px("#ff5a4a", x - 5, y + 5, 1, 1); px("#ff5a4a", x + 5, y + 5, 1, 1);
+  px("#14401e", x - 2, y - 1, 5, 1); px("#14401e", x, y - 3, 1, 5);   // the knot of the vine
 }
 function makeBg() {
   const b = document.createElement("canvas"); b.width = W; b.height = H;
   const q = b.getContext("2d"), r = (c, x, y, w, h) => { q.fillStyle = c; q.fillRect(x, y, w, h); };
-  r("#14121c", 0, 0, W, H);
+  r("#d8a868", 0, 0, W, H);
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-    r((x + y) % 2 ? "#3d7a38" : "#438640", x * C, y * C, C, C);
+    r((x + y) % 2 ? "#72c254" : "#86d466", x * C, y * C, C, C);
     const h = (x * 73856093 ^ y * 19349663) >>> 0;
-    if (h % 5 === 0) { const gx = x * C + 2 + (h >> 3) % 7, gy = y * C + 3 + (h >> 6) % 6; r("#2f6a2c", gx, gy, 1, 3); r("#2f6a2c", gx + 2, gy + 1, 1, 2); r("#5aa050", gx + 1, gy - 1, 1, 2); }
-    if (h % 11 === 3) r("#ffffff", x * C + 3 + (h >> 4) % 6, y * C + 4 + (h >> 8) % 5, 1, 1);
+    if (h % 5 === 0) { const gx = x * C + 2 + (h >> 3) % 7, gy = y * C + 3 + (h >> 6) % 6; r("#5eae48", gx, gy, 1, 3); r("#5eae48", gx + 2, gy + 1, 1, 2); r("#a4ee84", gx + 1, gy - 1, 1, 2); }
+    if (h % 11 === 3) r("#b4f494", x * C + 3 + (h >> 4) % 6, y * C + 4 + (h >> 8) % 5, 1, 1);
   }
-  r("#1b3a1f", 0, 0, W, 1); r("#1b3a1f", 0, W - 1, W, 1); r("#1b3a1f", 0, 0, 1, W); r("#1b3a1f", W - 1, 0, 1, W);   // the hedge edge: the wall
-  r("#2a2438", 0, W, W, H - W); r("#8a7448", 0, W, W, 1);
+  // the clipped hedge around the lawn: the wall
+  r("#2e7a3a", 0, 0, W, 3); r("#2e7a3a", 0, W - 3, W, 3); r("#2e7a3a", 0, 0, 3, W); r("#2e7a3a", W - 3, 0, 3, W);
+  for (let i = 0; i < W; i += 4) { r("#58b058", i, 0, 2, 1); r("#58b058", i + 2, W - 2, 2, 1); r("#58b058", 0, i + 2, 1, 2); r("#58b058", W - 1, i, 1, 2); }
+  r("#1e5a2a", 0, 3, W, 1); r("#1e5a2a", 0, W - 4, W, 1); r("#1e5a2a", 3, 0, 1, W); r("#1e5a2a", W - 4, 0, 1, W);
+  // the plank strip below
+  r("#d8a868", 0, W, W, H - W); r("#f4d060", 0, W, W, 1); r("#a8802a", 0, W + 1, W, 1);
+  for (let y = W + 3; y < H; y += 6) { r("#e8c088", 0, y, W, 1); r("#b88850", 0, y + 4, W, 1); }
   return b;
 }
 
@@ -74,6 +96,7 @@ function turn(d) {
   if (d === last || d === (last ^ 2) || lq.length >= 2) return;
   lq.push(d);
   outbox.push(d);
+  sfx("alba_swish", 80);   // a snip of the shears
   flush();
 }
 function flush() {
@@ -102,10 +125,10 @@ function setState(v, at) {
   if (seq === lastSeq) return;
   lastSeq = seq;
   const x = cx(c), y = cy(c);
-  if (flags & 8) { api.fx("bad"); shake = t; floats.push({ x: W / 2, y: 60, txt: "끊어졌어요!", col: "#ff7a6a", at: t }); spark(x, y, "#ff7a6a", 8); }
-  if (flags & 1) { api.fx("good"); spark(x, y, "#ffd0e6", 6); }
-  if (flags & 2) { api.fx("big", "금빛 꽃!"); spark(x, y, "#ffe27a", 10); }
-  if (flags & 4) { api.fx("big", "화환 완성!"); floats.push({ x: W / 2, y: 70, txt: "화환 완성!", col: "#ffe27a", at: t }); spark(x, y, "#ffffff", 14); }
+  if (flags & 8) { api.fx("bad"); sfx("alba_buzz", 200); shake = t; floats.push({ x: W / 2, y: 60, txt: "끊어졌어요!", col: "#ff8a7a", at: t, big: true }); spark(x, y, "#ff7a6a", 8); }
+  if (flags & 1) { sfx("alba_pop", 50); spark(x, y, "#ffd0e6", 6); }
+  if (flags & 2) { api.fx("big", "금빛 꽃!"); sfx("alba_chime", 100); spark(x, y, "#ffe27a", 10); }
+  if (flags & 4) { api.fx("big", "화환 완성!"); sfx("alba_ding", 200); sfx("alba_chime", 200); floats.push({ x: W / 2, y: 70, txt: "화환 완성!", col: "#ffe27a", at: t, big: true }); spark(x, y, "#ffffff", 14); }
 }
 function spark(x, y, col, n) {
   const t = api.now();
@@ -136,16 +159,20 @@ function drawChain(t, info) {
   for (let i = 1; i < n; i++) {   // the vine between the links
     const [ax, ay] = pos[i - 1], [bx, by] = pos[i], k = Math.max(Math.abs(bx - ax), Math.abs(by - ay), 1);
     for (let s = 0; s <= k; s += 2) { const x = Math.round(ax + ((bx - ax) * s) / k), y = Math.round(ay + ((by - ay) * s) / k); px(OL, x - 2, y - 2, 4, 4); }
-    for (let s = 0; s <= k; s += 2) { const x = Math.round(ax + ((bx - ax) * s) / k), y = Math.round(ay + ((by - ay) * s) / k); px("#3f9a3a", x - 1, y - 1, 2, 2); }
+    for (let s = 0; s <= k; s += 2) { const x = Math.round(ax + ((bx - ax) * s) / k), y = Math.round(ay + ((by - ay) * s) / k); px("#4ab048", x - 1, y - 1, 2, 2); }
   }
   for (let i = 0; i < n - 1; i++) { const L = LINK[(n - 1 - i) % 3]; blossom(pos[i][0], pos[i][1], 7, L[0], L[1], "#ffe05a", "#fff6b0"); }
   // the head: a bigger rose blossom with dot eyes looking where it goes
   const [hx, hy] = pos[n - 1];
-  blossom(hx, hy, 9, "#ff6a9a", "#ffb4cc", "#ffe05a", "#fff6b0");
+  blossom(hx, hy, 9, "#ff5a8c", "#ffb0c8", "#ffe05a", "#fff6b0");
   const ex = DX[eff], ey = DY[eff], X = Math.round(hx), Y = Math.round(hy);
   const eye = (a, b) => { px(OL, X + a, Y + b, 2, 2); };
   if (ex) { eye(ex * 2 - 1 + (ex > 0 ? 1 : 0), -3); eye(ex * 2 - 1 + (ex > 0 ? 1 : 0), 1); }
   else { eye(-3, ey * 2 - 1 + (ey > 0 ? 1 : 0)); eye(1, ey * 2 - 1 + (ey > 0 ? 1 : 0)); }
+}
+function butterfly(i, t) {   // an idle flutterer over the lawn (blue-white, so it never reads as a flower)
+  const x = Math.round(W / 2 + Math.sin(t / 2300 + i * 2.4) * 78 + Math.sin(t / 700 + i) * 4), y = Math.round(88 + Math.cos(t / 1900 + i * 1.7) * 66), fl = Math.floor(t / 110 + i) % 2;
+  px("#ffffff", x - 3, y - 1 - fl, 3, 2 + fl); px("#ffffff", x + 1, y - 1 - fl, 3, 2 + fl); px("#8ac4ff", x - 3, y + 1, 2, 1); px("#8ac4ff", x + 2, y + 1, 2, 1); px(OL, x, y - 1, 1, 3);
 }
 function frame(t, info) {
   fit(host.clientWidth || W);
@@ -154,56 +181,62 @@ function frame(t, info) {
   if (prev !== "run" && phase === "run") { lq = []; outbox = []; }
   if (info.fever > 0 && !feverFx) { feverFx = true; api.fx("fever"); } else if (info.fever <= 0) feverFx = false;
   flush();
-  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.setTransform(kk, 0, 0, kk, 0, 0);
   px(OL, 0, 0, W, H);
   if (t - shake < 260) g.translate(Math.round(Math.sin(t / 22) * 2), 0);
   g.drawImage(bg, 0, 0);
   if (info.score !== lastScore) {   // the real score change, floating at the head
     const d = info.score - lastScore;
-    if (lastScore || d > 0) floats.push({ x: Math.round(lastPos[0]), y: Math.round(lastPos[1]) - 12, txt: d > 0 ? `+${d}` : `${d}`, col: d > 0 ? "#fff2a8" : "#ff7a6a", at: t });
+    if (lastScore || d > 0) floats.push({ x: Math.round(lastPos[0]), y: Math.round(lastPos[1]) - 12, txt: d > 0 ? `+${d}` : `${d}`, col: d > 0 ? "#fff2a8" : "#ff8a7a", at: t });
     lastScore = info.score;
   }
   if (st) {
+    butterfly(0, t); butterfly(1, t);
     for (const c of st.th) drawThorn(c, t);
     for (const c of st.f) drawFlower(c, t, false);
     if (st.gold && st.gold.end > t) { const left = st.gold.end - t; if (left > 1500 || Math.floor(t / 120) % 2) drawFlower(st.gold.c, t, true); }
     drawChain(t, info);
-  } else text("꽃밭을 가꾸는 중…", W / 2, 90, "#f3ead2", FONT9);
+  } else text("꽃밭을 가꾸는 중…", W / 2, 90, "#fff4d4", FONT9);
   for (let i = parts.length - 1; i >= 0; i--) {
     const p = parts[i], a = (t - p.at) / 1000;
     if (a > 0.45) { parts.splice(i, 1); continue; }
-    px(p.col, Math.round(p.x + p.vx * a), Math.round(p.y + p.vy * a + 60 * a * a), 2, 2);
+    const x = Math.round(p.x + p.vx * a), y = Math.round(p.y + p.vy * a + 60 * a * a);
+    px(OL, x - 1, y - 1, 4, 4); px(p.col, x, y, 2, 2);
   }
   for (let i = floats.length - 1; i >= 0; i--) {
     const f = floats[i], a = t - f.at;
     if (a > 800) { floats.splice(i, 1); continue; }
-    text(f.txt, Math.round(f.x), Math.round(f.y - a / 40), f.col, FONT9);
+    text(f.txt, Math.round(f.x), Math.round(f.y - a / 40), f.col, f.big ? FONT11 : FONT9);
   }
   if (info.fever > 0) { const c = Math.floor(t / 90) % 2 ? "#ffb4d8" : "#fff2a8"; px(c, 0, 0, W, 2); px(c, 0, W - 2, W, 2); px(c, 0, 0, 2, W); px(c, W - 2, 0, 2, W); }
-  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.setTransform(kk, 0, 0, kk, 0, 0);
   // the strip: the garland being woven (12 beads) and the garlands finished
   const n = st ? st.c.length : 3;
-  for (let i = 0; i < FULL; i++) { const on = i < n, L = LINK[i % 3]; px(OL, 6 + i * 11, W + 6, 10, 10); px(on ? L[0] : "#3a344a", 7 + i * 11, W + 7, 8, 8); if (on) px(L[1], 7 + i * 11, W + 7, 3, 1); }
-  text(st ? `완성한 화환 ${st.done}` : "", W / 2, W + 20, "#e2c486", FONT9);
+  for (let i = 0; i < FULL; i++) { const on = i < n, L = LINK[i % 3]; px(OL, 5 + i * 11, W + 3, 10, 10); px(on ? L[0] : "#a07040", 6 + i * 11, W + 4, 8, 8); if (on) px(L[1], 6 + i * 11, W + 4, 3, 1); }
+  if (st) { text(`화환 ${st.done}`, W - 4, W + 3, "#fff4d4", FONT9, "right"); }
   if (info.phase === "brief") {
-    px("rgba(10,8,16,.6)", 0, 0, W, W);
-    text(info.toStart > 0 ? `${Math.ceil(info.toStart / 1000)}` : "시작!", W / 2, 62, "#fff2a8", FONT11);
-    text("방향키 · WASD · 스와이프", W / 2, 88, "#ffffff", FONT9);
-    text("꽃을 먹으면 줄이 길어져요", W / 2, 102, "#ffd0e6", FONT9);
-    text("12송이면 화환 완성!", W / 2, 116, "#ffe27a", FONT9);
+    px("rgba(38,48,30,.34)", 0, 0, W, W);
+    plate(14, 46, W - 28, 100);
+    text(info.toStart > 0 ? `${Math.ceil(info.toStart / 1000)}` : "시작!", W / 2, 54, "#c8462a", FONT11);
+    text("방향키 · WASD · 스와이프", W / 2, 80, "#6a4424", FONT9);
+    text("꽃을 먹으면 줄이 길어져요", W / 2, 96, "#d03a7a", FONT9);
+    text("12송이면 화환 완성!", W / 2, 112, "#c8641a", FONT9);
+    text("가시와 벽, 내 몸은 피하세요", W / 2, 126, "#8a6a44", FONT9);
   }
-  if (info.phase === "run" && st && st.at - t > st.ms * 1.8 && t - shake < 1500) text("다시 엮는 중…", W / 2, 84, "#ffffff", FONT9);
-  if (info.phase === "end") { px("rgba(10,8,16,.6)", 0, 0, W, W); text("수고하셨어요!", W / 2, 84, "#fff2a8", FONT11); }
+  if (info.phase === "run" && st && st.at - t > st.ms * 1.8 && t - shake < 1500) { plate(52, 78, 88, 18); text("다시 엮는 중…", W / 2, 83, "#6a4424", FONT9); }
+  if (info.phase === "end") { px("rgba(38,48,30,.34)", 0, 0, W, W); plate(36, 76, W - 72, 34); text("수고하셨어요!", W / 2, 88, "#c8462a", FONT11); }
 }
 
 // ── mount: the board, the swipe, the four buttons
 function mount(h, a) {
-  host = h; api = a; st = null; lq = []; outbox = []; parts = []; floats = []; lastSeq = -1; first = true; phase = "brief"; scale = 0; fitKey = ""; shake = 0; lastScore = 0; lastSend = -1e9; swipe = null; feverFx = false;
+  kk = 1; host = h; api = a; st = null; lq = []; outbox = []; parts = []; floats = []; lastSeq = -1; first = true; phase = "brief"; scale = 0; fitKey = ""; shake = 0; lastScore = 0; lastSend = -1e9; swipe = null; feverFx = false; sfxAt = {};
   host.textContent = "";
+  boardEl = host.closest(".ap-board");
+  if (boardEl) { boardWas = boardEl.style.background; boardEl.style.background = "#5aa04a"; }   // the frame around the garden is lawn green, not black
   const wrap = document.createElement("div");
   wrap.style.cssText = "display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;padding:4px 0;";
   cv = document.createElement("canvas"); cv.width = W; cv.height = H;
-  cv.style.cssText = "touch-action:none;image-rendering:pixelated;user-select:none;-webkit-user-select:none;";
+  cv.style.cssText = "touch-action:none;image-rendering:pixelated;user-select:none;-webkit-user-select:none;outline:3px solid #26301e;box-shadow:0 3px 0 #18200f;";
   g = cv.getContext("2d"); g.imageSmoothingEnabled = false;
   bg = makeBg();
   cv.addEventListener("pointerdown", (e) => { e.preventDefault(); swipe = { id: e.pointerId, x: e.clientX, y: e.clientY }; try { cv.setPointerCapture(e.pointerId); } catch { /* fine */ } });
@@ -217,11 +250,11 @@ function mount(h, a) {
   for (const ev of ["pointerup", "pointercancel"]) cv.addEventListener(ev, () => { swipe = null; });
   cv.addEventListener("contextmenu", (e) => e.preventDefault());
   const pad = document.createElement("div");
-  pad.style.cssText = "display:flex;gap:6px;width:min(100%,320px);";
+  pad.style.cssText = "display:flex;gap:6px;width:min(100%,420px);";
   for (const [label, d] of [["◀", 3], ["▲", 0], ["▼", 2], ["▶", 1]]) {
     const b = document.createElement("button");
     b.type = "button"; b.className = "btn"; b.textContent = label;
-    b.style.cssText = "flex:1;min-height:44px;font-size:16px;touch-action:none;user-select:none;";
+    b.style.cssText = "flex:1;min-height:44px;font-size:18px;touch-action:none;user-select:none;";
     b.addEventListener("pointerdown", (e) => { e.preventDefault(); turn(d); });
     b.addEventListener("contextmenu", (e) => e.preventDefault());
     pad.append(b);
@@ -230,8 +263,9 @@ function mount(h, a) {
   host.append(wrap);
 }
 function unmount() {
+  if (boardEl) boardEl.style.background = boardWas;
   if (host) host.textContent = "";
-  host = api = cv = g = bg = st = null; outbox = []; lq = []; swipe = null;
+  host = api = cv = g = bg = st = boardEl = null; outbox = []; lq = []; swipe = null;
 }
 
 export default { mount, setState, frame, key, unmount };

@@ -154,7 +154,7 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
         assert.ok(d === 12 || (d === 1 && ((g.path[i] / 12) | 0) === ((g.path[i - 1] / 12) | 0)), "steps are neighbours");
       }
       for (const c of g.path) assert.notEqual(g.b[c], 255, "no rock on the route");
-      assert.equal(g.b.filter((m) => m === 255).length, Math.min(30, 6 + 2 * n), "rocks grow with the site number");
+      assert.equal(g.b.filter((m) => m === 255).length, Math.min(30, 6 + 4 * n), "rocks grow with the site number");
       assert.ok(g.deck.length >= g.path.length, "the deck holds the route"); spare += g.deck.length - g.path.length; cells += g.path.length;
       assert.ok(g.deck[0] === g.pm[0], "the first piece is the inlet's");
       if (g.path.length < X.apipeLen(n)) short++;
@@ -262,9 +262,12 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   advanceTo(g.goAt + 60); const n3 = g.n;
   assert.ok(act({ t: "ab_act", sk: 1 }).ok); assert.equal(g.n, n3 + 1); assert.equal(g.lr, 4);
   // idle for a long stretch: sites time out one after another, in order, each with its own number
-  advanceTo(now + 100_000);
-  assert.ok(g.n >= n3 + 3, "sites keep timing out while nobody plays");
-  assert.equal(ab.score, sc2, "and score nothing");
+  act({ t: "ab_leave" });
+  const ab2 = startShift(), g2 = ab2.g;
+  advanceTo(ab2.runAt + 1); const m0 = g2.n;
+  advanceTo(ab2.runAt + 89_000);
+  assert.ok(g2.n >= m0 + 2, "sites keep timing out while nobody plays");
+  assert.equal(ab2.score, 0, "and score nothing");
   act({ t: "ab_leave" });
 }
 
@@ -359,7 +362,7 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   console.log("pipe: hostile input ok (junk of every type, 1000 random objects, spam, before the start and after the end)");
 }
 
-// ── (e) server cost and (f) wire size: 240 s at 10 ticks/s with a snapshot each tick and a move every 300 ms
+// ── (e) server cost and (f) wire size: a 90 s shift at 10 ticks/s with a snapshot each tick and a move every 300 ms
 {
   const run = (withShift) => {
     if (p.ab) act({ t: "ab_close" });
@@ -386,8 +389,8 @@ const mean = (a) => a.reduce((x, y) => x + y, 0) / a.length;
   run(false);   // warm up
   const best = (w) => { const a = run(w), b = run(w); return a.ms < b.ms ? a : b; };   // the quieter of two runs
   const base = best(false), full = best(true);
-  const perMin = Math.max(0, full.ms - base.ms) / 4;
-  console.log(`pipe: the shift costs ${(full.ms - base.ms).toFixed(1)} ms per 240 s = ${perMin.toFixed(2)} ms per simulated minute (the world alone ${base.ms.toFixed(1)} ms); ${full.sent} moves; wire: ${full.snaps} state sends, max ${full.maxBytes} bytes, avg ${(full.bytes / full.snaps).toFixed(0)}`);
+  const perMin = Math.max(0, full.ms - base.ms) / 1.5;
+  console.log(`pipe: the shift costs ${(full.ms - base.ms).toFixed(1)} ms per 90 s = ${perMin.toFixed(2)} ms per simulated minute (the world alone ${base.ms.toFixed(1)} ms); ${full.sent} moves; wire: ${full.snaps} state sends, max ${full.maxBytes} bytes, avg ${(full.bytes / full.snaps).toFixed(0)}`);
   assert.ok(perMin < 20, "the shift costs far less than 100 ms per simulated minute");
   assert.ok(full.maxBytes < 700, "the game state on the wire stays small");
   assert.ok(full.snaps <= full.sent + 80, "the state is sent only when it changed");

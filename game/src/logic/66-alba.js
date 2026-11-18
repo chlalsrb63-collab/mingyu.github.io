@@ -1,5 +1,5 @@
 // ───────────────────────────── 일일 아르바이트: the solo mini-game shift engine ─────────────────────────────
-// docs/design/daily-alba-minigames-2026-11-16.md. A shift is `p.ab` (never saved): a seeded mini-game run on the SERVER for ~4 minutes,
+// docs/design/daily-alba-minigames-2026-11-16.md. A shift is `p.ab` (never saved): a seeded mini-game run on the SERVER for ~90 seconds,
 // shown in its own client window (public/alba.js + public/alba_<k>.js). The client only sends inputs (`ab_act`); the rules, the clock,
 // the score and the grade live here. One game = one part file `67-alba-<k>.js` that fills two tables:
 //   ALBA[k]       = { name, npc, place, skill, par, mul, outfit: [cosmetic ids], tool, hint }          (static; goes to defs.alba.rows)
@@ -10,7 +10,7 @@
 //     order with their own timestamps; keep it O(small) — it runs 10×/s per player;
 //   · `act` gets the raw client object `a` ({t:"ab_act", ...}): validate every field (Number.isInteger, ranges); return a short reason
 //     on refusal (the client is resynced, nothing is shown), or null after applying; change `ab.rev` through `albaTouch(ab)`;
-//   · points go through `albaGood(ab, now, base)` (combo, fever and the last-30-s rush multiply it) and `albaBad(ab, pen)` (combo
+//   · points go through `albaGood(ab, now, base)` (combo, fever and the last-15-s rush multiply it) and `albaBad(ab, pen)` (combo
 //     broken, `pen` taken off); never touch `ab.score` directly;
 //   · `view(ab, now)` is the full state for the client, sent only when `ab.rev` changed; every time in it is MILLISECONDS FROM NOW
 //     (`t - now`), the client rebuilds absolute times from its own clock.
@@ -21,8 +21,8 @@ const ALBA_RULES = {};
 const ALBA_ORDER = ["pipe", "fly", "store", "parcel", "laundry", "taiyaki",
   "pest", "wall", "cross", "lamp", "rhythm", "garland"];
 const ALBA_T = {
-  briefMs: 6000, runMs: 240000, resultMs: 90000, rushMs: 30000, actMs: 35,
-  feverMs: 15000, feverMax: 2, feverEvery: 10,   // a fever at combo 10 and 20 (at most two per shift)
+  briefMs: 5000, runMs: 90000, resultMs: 90000, rushMs: 15000, actMs: 35,
+  feverMs: 8000, feverMax: 2, feverEvery: 10,    // a fever at combo 10 and 20 (at most two per shift)
   cuts: [0.30, 0.65, 0.85, 1.0],                  // share of the game's par for C B A S
   gradeK: [0.7, 1.0, 1.3, 1.7],                   // pay multiplier per grade
   rep: [1, 2, 2, 3], stone: [0, 0, 1, 2], life: 0.5,

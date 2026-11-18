@@ -34,7 +34,7 @@ const gone = (ab, r, c) => ab.g.k[r * C + c] === 0;
 // ── the wall: shapes, hard bricks, bombs and bonus boxes by wall number
 {
   const ab = mkAb(), g = ab.g;
-  assert.equal(g.lv, 0); assert.equal(g.left, 96, "the first wall is the full 12 × 8");
+  assert.equal(g.lv, 0); assert.equal(g.left, 36, "the first wall is the full 12 × 3");
   const kinds = (a) => [1, 2, 3].map((k) => a.g.k.filter((v) => v === k).length);
   assert.deepEqual(kinds(ab).slice(1), [2, 4], "two bombs and four bonus boxes in the first wall");
   assert.ok(g.k.slice(96).every((v) => v === 0), "the ninth row is empty until the rush");
@@ -43,12 +43,13 @@ const gone = (ab, r, c) => ab.g.k[r * C + c] === 0;
   const items = g.it.filter((v, i) => g.k[i] === 3);
   assert.ok(items.every((v) => v >= 0 && v <= 3));
   const counts = [], hards = [];
-  for (let lv = 0; lv < 12; lv++) { const a = mkAb(3); a.g.lv = lv; X.wallBuild(a); counts.push(a.g.left); hards.push(hard(a)); assert.ok(a.g.left > 20, "every wall has bricks"); assert.equal(a.g.left, a.g.k.filter((v) => v).length); }
-  assert.deepEqual(counts.slice(0, 5).map((n, i) => n === counts[i + 5]), [true, true, true, true, true], "the shapes repeat every five walls");
-  assert.ok(new Set(counts.slice(0, 5)).size >= 4, "five different shapes");
+  for (let lv = 0; lv < 14; lv++) { const a = mkAb(3); a.g.lv = lv; X.wallBuild(a); counts.push(a.g.left); hards.push(hard(a)); assert.ok(a.g.left > 20, "every wall has bricks"); assert.equal(a.g.left, a.g.k.filter((v) => v).length); }
+  assert.deepEqual(counts.slice(3, 8).map((n, i) => n === counts[i + 8]), [true, true, true, true, true], "the shapes repeat every five walls (from the 4th: the full 8 rows)");
+  assert.ok(new Set(counts.slice(3, 8)).size >= 4, "five different shapes");
+  assert.deepEqual(counts.slice(0, 2).map((n, i) => n < counts[i + 5]), [true, true], "the first walls are smaller");
   assert.ok(hards.slice(8).reduce((a, b) => a + b, 0) > hards.slice(0, 4).reduce((a, b) => a + b, 0), "later walls are harder");
   const a6 = mkAb(3); a6.g.lv = 6; X.wallBuild(a6); assert.equal(a6.g.k.filter((v) => v === 2).length, 8, "bombs grow to eight");
-  assert.equal(X.wallSpeed({ lv: 0, fs: 0 }), 40); assert.equal(X.wallSpeed({ lv: 4, fs: 0 }), 56); assert.equal(X.wallSpeed({ lv: 99, fs: 0 }), 56, "the speed stops at wall 5"); assert.equal(X.wallSpeed({ lv: 0, fs: 5 }), 28, "slow ball ×0.7");
+  assert.equal(X.wallSpeed({ lv: 0, fs: 0 }), 40); assert.equal(X.wallSpeed({ lv: 3, fs: 0 }), 58); assert.equal(X.wallSpeed({ lv: 99, fs: 0 }), 58, "the speed stops at wall 4"); assert.equal(X.wallSpeed({ lv: 0, fs: 5 }), 28, "slow ball ×0.7");
   const same = (s) => { const a = mkAb(s); return a.g.k.join("") + a.g.h.join("") + a.g.it.join(""); };
   assert.equal(same(5), same(5)); assert.notEqual(same(5), same(6), "a seed makes a wall");
   // the served ball rides the paddle and goes off after 1.5 s at one of four angles
@@ -203,7 +204,7 @@ const gone = (ab, r, c) => ab.g.k[r * C + c] === 0;
   assert.equal(g.lv, 1, "the next wall"); assert.equal(ab.score, 10 + Math.round(150 * 1.1), "10 for the brick, 150 for the wall at combo 1 (x1.1)");
   assert.ok(g.left > 20 && g.left === g.k.filter((v) => v).length); assert.equal(g.I.length, 0); assert.equal(g.fw, 0);
   assert.equal(g.balls.length, 1); assert.equal(g.balls[0].held, 1); assert.ok(g.sv > 0 && g.sv <= W.SERVE, "served again after 1.5 s");
-  assert.ok(g.ev.some((e) => e[1] === 6)); assert.equal(X.wallSpeed(g), 44);
+  assert.ok(g.ev.some((e) => e[1] === 6)); assert.equal(X.wallSpeed(g), 46);
 }
 {
   const ab = bare(); ab.g.k.fill(0); ab.g.left = 0; brick(ab, 3, 5); ab.g.balls = [ball(110, 70, 0, -64)]; step(ab, 4);
@@ -220,7 +221,7 @@ const gone = (ab, r, c) => ab.g.k[r * C + c] === 0;
   step(ab); assert.equal(g.drop, 1, "the rush has begun: the wall drops");
   assert.deepEqual(g.k.slice(12, 108), before, "every brick one row lower"); assert.ok(g.k.slice(0, 12).every((v) => v === 0));
   const left = g.left; step(ab, 5); assert.equal(g.left, left, "once");
-  g.lv = 1; X.wallBuild(ab); assert.ok(g.k.slice(0, 12).every((v) => v === 0), "the next wall is built low too");
+  g.lv = 3; X.wallBuild(ab); assert.ok(g.k.slice(0, 12).every((v) => v === 0), "the next wall is built low too");
   assert.ok(g.k.slice(96).some((v) => v), "its last row is on the ninth line"); assert.equal(g.k.length, 108);
 }
 
@@ -238,7 +239,7 @@ const gone = (ab, r, c) => ab.g.k[r * C + c] === 0;
   const ab = mkAb(), g = ab.g; step(ab, 3);
   const v = R.view(ab, g.simAt + 20);
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v, "plain JSON");
-  assert.equal(v[0], 1); assert.equal(v[2].length, 108); assert.ok(/^[.123bwmps]+$/.test(v[2])); assert.equal(v[7], 96);
+  assert.equal(v[0], 1); assert.equal(v[2].length, 108); assert.ok(/^[.123bwmps]+$/.test(v[2])); assert.equal(v[7], 36);
   assert.equal(v[3].length, 5, "one ball: x y vx vy held"); assert.equal(v[3][4], 1); assert.equal(v[5][3], (W.SERVE - 3) * 50 - 20, "serve ms, from now");
   assert.deepEqual(v[1], [120, 0, 20]);
   g.sv = 0; g.balls = [ball(100.4, 150.6, 20, -60)]; assert.deepEqual(R.view(ab, g.simAt).slice(3, 4)[0].slice(0, 2), [100, 151], "positions are whole pixels");
@@ -381,7 +382,7 @@ function play(botOpts, seed, { name = `철거${seed}`, hook, stepMs = 100 } = {}
 const BOTS = {
   perfect: { gap: [50, 50], oracle: true, aim: "rand" },
   strong: { gap: [100, 200], err: 2, miss: 0.02, items: 0.95, edge: true },
-  human: { gap: [150, 400], err: 6, miss: 0.1, items: 0.7, edge: true },
+  human: { gap: [170, 420], err: 7, miss: 0.13, items: 0.7, edge: true },
   casual: { gap: [350, 800], err: 9, miss: 0.2, items: 0.35, edge: true },
   slow: { gap: [700, 1400], err: 14, miss: 0.3, items: 0.2, edge: true },
 };
@@ -392,7 +393,7 @@ if (process.env.WALL_EXP) {   // tuning aid: WALL_EXP='{"gap":[150,400],...};{..
 const results = {};
 let viewMax = 0, viewAvg = 0;
 for (const [nm, o] of Object.entries(BOTS)) {
-  results[nm] = [1, 2, 3, 4, 5].map((seed) => play(o, seed));
+  results[nm] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((seed) => play(o, seed));
   for (const r of results[nm]) { assert.equal(r.state, "end"); viewMax = Math.max(viewMax, r.maxBytes); viewAvg = Math.max(viewAvg, r.avgBytes); }
 }
 const idle = play({ idle: true }, 9);
@@ -419,7 +420,7 @@ assert.ok(viewMax < 700, `the view stays small (${viewMax} bytes)`);
   assert.deepEqual(a, b, "same seed and same inputs: the same shift");
   const c = play(BOTS.human, 3, { name: "철거다른" });
   assert.notDeepEqual([c.score, c.walls, c.lost], [a.score, a.walls, a.lost], "a different seed plays differently");
-  const script = []; { const r = mulberry(5); for (let t = 6200; t < 6000 + 240000; t += 130) script.push([t, { x: Math.floor(r() * 241) }]); }
+  const script = []; { const r = mulberry(5); for (let t = 6200; t < 6000 + 90000; t += 130) script.push([t, { x: Math.floor(r() * 241) }]); }
   const run = (stepMs) => {
     const s = sim("철거스크립트", 11, stepMs), ab = s.p.ab, t0 = s.now;
     let i = 0, nextTick = t0 + stepMs;
@@ -429,7 +430,7 @@ assert.ok(viewMax < 700, `the view stays small (${viewMax} bytes)`);
     }
     return [ab.score, ab.g.lv, ab.g.n, JSON.stringify({ ...ab.g, simAt: 0 })];
   };
-  const r100 = run(100); assert.ok(r100[0] > 0, "the script scores");
+  const r100 = run(100); assert.ok(r100[2] > 1000 && JSON.parse(r100[3]).left < 36, "the script plays (a final score of 0 is possible: every lost ball costs 50)");
   assert.deepEqual(run(50), r100, "ticked at 50 ms: the same"); assert.deepEqual(run(230), r100, "ticked at 230 ms: the same");
   // the physics alone: the same ball, the same walls, the same path, step for step
   const path = (seed) => { const ab = mkAb(seed); ab.g.sv = 0; ab.g.balls = [ball(120, 270, 17, -61)]; ab.g.pad.x = 120; const out = []; for (let i = 0; i < 300; i++) { ab.g.pad.tx = ab.g.balls[0].held ? 120 : clamp(Math.round(ab.g.balls[0].x / 16), 20, 220); step(ab); out.push(ab.g.balls.map((b) => `${b.x},${b.y}`).join("/")); } return out.join("|") + ab.score; };
@@ -474,7 +475,7 @@ assert.ok(viewMax < 700, `the view stays small (${viewMax} bytes)`);
   assert.equal(snap(), done, "after the end the field is frozen"); assert.equal(ab.score, sc);
 }
 
-// (e) the server's cost: 240 simulated seconds, 10 ticks/s, an input every 120 ms
+// (e) the server's cost: a 90 s shift (95 simulated seconds with the brief), 10 ticks/s, an input every 120 ms
 {
   const s = sim("철거부하", 7), ab = s.p.ab, rng = mulberry(3);
   let ms = 0, views = 0, bytes = 0, maxB = 0;
@@ -485,8 +486,8 @@ assert.ok(viewMax < 700, `the view stays small (${viewMax} bytes)`);
     ms += performance.now() - t0;
     if (v.ab && v.ab[7]) { const n = JSON.stringify(v.ab[7]).length; views++; bytes += n; maxB = Math.max(maxB, n); }
   }
-  console.log(`  server: ${(T.briefMs + T.runMs) / 100} ticks + views in ${ms.toFixed(1)} ms (${(ms / 4.1).toFixed(2)} ms per simulated minute); view avg ${Math.round(bytes / views)} B, max ${maxB} B (${views} sent)`);
-  assert.ok(ms / 4.1 < 100, "far below 100 ms per simulated minute");
+  console.log(`  server: ${(T.briefMs + T.runMs) / 100} ticks + views in ${ms.toFixed(1)} ms (${(ms / 1.6).toFixed(2)} ms per simulated minute); view avg ${Math.round(bytes / views)} B, max ${maxB} B (${views} sent)`);
+  assert.ok(ms / 1.6 < 100, "far below 100 ms per simulated minute");
   assert.equal(ab.state, "end");
 }
 

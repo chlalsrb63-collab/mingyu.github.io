@@ -5,7 +5,7 @@
 //          next: {k, f}, fallAt, spawnAt, rows (shipped), n (boxes spawned), fid, seq, ev: [seq, flags 1 shipped · 2 truck swapped · 4 fragile broken, shipped-row mask] }
 // view = [board (80 chars: . empty · 1-7 box kind · f fragile), cur cells [x,y,…], cur kind (0 none), cur fragile, next cells [x,y,…], next kind, next fragile,
 //         ms to the next drop (or arrival), drop interval, rows shipped, ev]   — the client duplicates no shape table.
-const PARCEL_W = 8, PARCEL_H = 10, PARCEL_GAP = 450;   // the conveyor brings the next box this long after a lock
+const PARCEL_W = 8, PARCEL_H = 10, PARCEL_GAP = 350;   // the conveyor brings the next box this long after a lock
 const PARCEL_PAY = [0, 100, 250, 500, 900];
 /** The distinct clockwise rotations of a box (cells normalised to the top-left corner, row-major). */
 function parcelRots(cells) {
@@ -35,13 +35,13 @@ function parcelFits(g, k, r, x, y) {
 }
 /** The next box off the conveyor (fragile ones are the flat boxes, after the first few). */
 function parcelDraw(g, box) {
-  const big = Math.min(g.n, 80) / 80, w = PARCEL_WT.map((v, i) => v + PARCEL_WT2[i] * big);
+  const big = Math.min(g.n, 32) / 32, w = PARCEL_WT.map((v, i) => v + PARCEL_WT2[i] * big);
   let r = rnd(box) * w.reduce((a, b) => a + b, 0), k = 0;
   while (k < 6 && r >= w[k]) r -= w[k++];
   return { k, f: k <= 2 && g.n >= 4 && rnd(box) < 0.12 ? 1 : 0 };
 }
-/** Ms between drops: faster with every row shipped, ×0.7 in the last 30 s, ×1.5 slower in a fever ("지게차"). */
-const parcelDrop = (g, ab, T) => Math.round(Math.max(200, 800 - 14 * g.rows) * (T >= ab.endAt - ALBA_T.rushMs ? 0.7 : 1) * (T < ab.feverUntil ? 1.5 : 1));
+/** Ms between drops: faster with every row shipped, ×0.7 in the rush, ×1.5 slower in a fever ("지게차"). */
+const parcelDrop = (g, ab, T) => Math.round(Math.max(200, 800 - 20 * g.rows) * (T >= ab.endAt - ALBA_T.rushMs ? 0.7 : 1) * (T < ab.feverUntil ? 1.5 : 1));
 
 /** The box comes off the conveyor at the top; a blocked spawn means the stack reached the ceiling: the truck is swapped. */
 function parcelSpawn(ab, T) {
@@ -73,7 +73,7 @@ function parcelLock(ab, T) {
   g.cur = null; g.spawnAt = T + PARCEL_GAP;
 }
 
-ALBA.parcel = { name: "택배 상하차", npc: "shop", place: "광장 택배 집하장", skill: "deliver", par: 8000, mul: 1.15, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "box", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 한 줄을 채우면 출하! 깨짐 주의 상자 위엔 쌓지 마세요." };
+ALBA.parcel = { name: "택배 상하차", npc: "shop", place: "광장 택배 집하장", skill: "deliver", par: 4400, mul: 1.15, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "box", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 한 줄을 채우면 출하! 깨짐 주의 상자 위엔 쌓지 마세요." };
 ALBA_RULES.parcel = {
   init(S, p, ab) {
     const g = ab.g = { b: new Array(PARCEL_W * PARCEL_H).fill(0), fr: new Array(PARCEL_W * PARCEL_H).fill(0), cur: null, next: null, fallAt: 0, spawnAt: ab.runAt, rows: 0, n: 0, fid: 0, seq: 0, ev: [0, 0, 0] };
