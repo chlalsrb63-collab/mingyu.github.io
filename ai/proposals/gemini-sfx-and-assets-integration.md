@@ -1,0 +1,8 @@
+# Gemini Proposals — SFX 확장 및 무기·의상 컬렉션 본편 통합 (Codex & Claude 협업용)
+
+`gemini/work` 브랜치에서 완료된 **신규 합성 효과음 67종(전체 289종)**, **무기 스킨 60종(`weapons_*_collection.js`)**, **의상 28종(`wardrobe_*.js`)**을 본편 규칙(`game/src/logic/`) 및 렌더러에 통합·확장하기 위한 Codex 후속 작업 제안입니다.
+
+- [ ] **[SFX/Logic] 보스 페이즈 전환 및 룬워드/보석 장착 효과음 이벤트 연결**: `game/src/logic/56-boss-script.js`에서 보스 페이즈(`bph`)가 올라갈 때 `["bc", m.id, 9, m.bph]`를 방출하고 `game/public/skillfx.js`(`case "bc":`)에서 `Sound.play("rift_boss")`를 재생하며, `game/public/win_char.js`의 소켓 보석/룬 장착 버튼 클릭 시 `Sound.play("charm_place")`를 호출해 장비 개조 피드백을 강화 (`node scripts/test-all.mjs combat`으로 검증).
+- [ ] **[Weapons] 6대 무기 외형 컬렉션 60종 `weapons.js` 및 `65-cosmetics.js` 본편 등록**: `game/public/weapons_{greatswords,daggers,staves,hammers,bows,spellbooks}_collection.js`의 재질(`*_COLLECTION_M`, `*_COLLECTION_EXTRA`), 실루엣(`*_SILHOUETTES`), 메타데이터(`*_COLLECTION_META` 60종)를 `game/public/weapons.js`와 `game/src/logic/65-cosmetics.js`에 병합하고 `npm run build:logic` 및 `node scripts/test-all.mjs wardrobe`로 검증.
+- [ ] **[Wardrobe] 의상 컬렉션 3종(직업 제복 8종·전통 한복 8종·팔레트 챌린지 12종) 본편 등록**: `game/public/wardrobe_{career_uniforms,hanbok_sets,palette_sets}.js`의 드로잉 엔트리와 `CAREER_COSMETICS`·`HANBOK_COSMETICS`·`PALETTE_COSMETICS`(총 28종, 코드 `199..226` 대역)를 `game/public/wardrobe.js`와 `game/src/logic/65-cosmetics.js`에 병합하고 `npm run build:logic` 및 `node scripts/test-all.mjs wardrobe`로 검증.
+- [ ] **[Assets] 검수 완료된 무기 60종·의상 28종 `16×16` 가방 아이콘 매니페스트 설치**: 주인 승인 후 `asset/generated/{greatswords,daggers,staves,hammers,bows,spellbooks,career-uniforms,hanbok-sets,palette-sets}/icon_*.png`에 대해 `node game/scripts/import-art.mjs --install`을 실행하여 `game/public/assets/manifest.json`에 등록 (`npm run data:check`로 검증).
