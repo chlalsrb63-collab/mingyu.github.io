@@ -32,7 +32,7 @@ export const CAST = {
     { fx: "shadow/shadow-flames", at: "tgt", ms: 1000, pal: "shadow" }],
   93: [{ fx: "shadow/dark-explosion", speed: 1.6, cut: 3 }, { fx: "shadow/grasping-hands", speed: 1.5, cut: 2.2 },
     { fx: "shadow/necro-skulls", up: 14, ms: 900, pal: "shadow" }],
-  114: [{ fx: "shadow/hex-sigil", at: "tgt", up: 10, speed: 2.2, cut: 3.4 }, { fx: "shadow/curse", at: "tgt", up: 20, speed: 2, cut: 1.6 }],
+  114: [{ fx: "shadow/hex-sigil", at: "tgt", up: 10, speed: 2.2, cut: 3.4 }, { fx: "shadow/shadow-flames", at: "tgt", up: 4, speed: 1.6, cut: 1.2 }],
   136: [{ fx: "holy/holy-pillar", speed: 1.4, cut: 3 }, { fx: "nature/healing-bloom", speed: 1.5, cut: 2.4 },
     { fx: "holy/feather-burst", up: 8, speed: 1.6, cut: 2.2 }],
   144: [spark("blood"), { fx: "explosions/implosion", at: "tgt", up: 10, pal: "blood", speed: 1.2 },

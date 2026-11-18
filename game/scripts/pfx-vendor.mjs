@@ -5,6 +5,7 @@
 import { readFile, writeFile, mkdir, rm, copyFile, readdir } from "node:fs/promises";
 import { dirname, join, resolve, relative } from "node:path";
 import { homedir } from "node:os";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const GAME = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -12,7 +13,8 @@ const SRC = resolve(process.argv[2] || join(homedir(), "pixelfx"), "src");
 const OUT = join(GAME, "public", "pfx");
 const tables = (await readdir(join(GAME, "public"))).filter((f) => /^skillpfx.*\.js$/.test(f));
 const table = (await Promise.all(tables.map((f) => readFile(join(GAME, "public", f), "utf8")))).join("\n");
-const ids = [...new Set([...table.matchAll(/fx: "([a-z]+\/[a-z0-9-]+)"/g)].map((m) => m[1]))];
+// any "category/name" string that names a pixelfx effect (tables may build layers through helpers, not only `fx: "…"`)
+const ids = [...new Set([...table.matchAll(/"([a-z]+\/[a-z0-9-]+)"/g)].map((m) => m[1]))].filter((id) => existsSync(join(SRC, "fx", id + ".js")));
 if (!ids.length) throw new Error("no effect ids found in public/skillpfx*.js");
 
 const seen = new Set();

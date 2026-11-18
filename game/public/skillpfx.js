@@ -97,6 +97,8 @@ function play(l, wx, wy, c) {
   const W = l.aim ? side : Math.ceil(mw * grow), H = l.aim ? side : Math.ceil(mh * grow);
   const ox = l.aim ? side / 2 : meta.origin[0] * grow, oy = l.aim ? side / 2 : meta.origin[1] * grow;
   const isoAng = Math.atan2((Math.sin(ang) + Math.cos(ang)) / 2, Math.cos(ang) - Math.sin(ang));   // the aim on the ground, as seen
+  // effects that paint the wrapped character's body (curse, life-steal, divine-shield…) are left out of the tables: given
+  // no actor, pixelfx wraps its stock 24×38 one, and the melee effects only use it to find the hands
   const inst = createFx(mod, { ...opts, x: ox, y: oy, angle: ang ? isoAng : 0, flip: false });
   const frame = createFrame(W, H), img = new ImageData(W, H);
   const cv = document.createElement("canvas");
