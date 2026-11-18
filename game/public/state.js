@@ -97,6 +97,8 @@ export function resize() {
   layout();
   const W = VP.w, H = VP.h;
   dpr = Math.min(2, window.devicePixelRatio || 1);
+  // 9-slice frame borders: whole device pixels per source pixel (1 at dpr 1 and 2, so unchanged there)
+  document.documentElement.style.setProperty("--fs", String(Math.max(1, Math.round(dpr)) / dpr));
   text.width = Math.round(W * dpr); text.height = Math.round(H * dpr);
   text.style.width = W + "px"; text.style.height = H + "px";
   S3.resize(W, H);

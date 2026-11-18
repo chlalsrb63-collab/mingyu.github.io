@@ -32,7 +32,7 @@ html, body {
   font: 13px/1.5 var(--font); letter-spacing: -.1px; user-select: none; -webkit-user-select: none; touch-action: none;
 }
 [hidden] { display: none !important; }
-canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+canvas, img { image-rendering: pixelated; image-rendering: crisp-edges; }
 #world, #text { position: fixed; left: 0; top: 0; }
 #text { pointer-events: none; }
 button, input { font: inherit; color: inherit; }

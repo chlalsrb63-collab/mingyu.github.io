@@ -66,12 +66,16 @@ export function setWorldTransform(a = 1, b = 0, c = 0, d = 1, x = 0, y = 0) {
 export function resize(W = innerWidth, H = innerHeight, zoom = 0) {
   if (!cv) return;
   // about 440×256 world pixels on screen, so the small sprites stay readable
+  // pick the zoom in whole DEVICE pixels (Z may be fractional in CSS px): at browser zoom / dpr 1.25 or 1.5 an integer
+  // CSS zoom gives uneven 2/3-pixel columns, which shows as broken pixel art
+  const D = window.devicePixelRatio || 1;
   Z = Math.max(1, Math.round(Math.min(W / 440, H / 256)));
   if (W < 560) Z = Math.max(2, Math.round(W / 220));
+  Z = Math.max(1, Math.round(Z * D)) / D;
   if (zoom) Z = zoom;                    // preview pages ask for a fixed zoom (1 = the whole map at world size)
   vw = Math.ceil(W / Z); vh = Math.ceil(H / Z);
   // Keep camera, tile and pointer coordinates logical. Use the denser backing only where visible.
-  worldDensity = Z * devicePixelRatio >= FIGURE_DENSITY ? FIGURE_DENSITY : 1;
+  worldDensity = Z * (window.devicePixelRatio || 1) >= FIGURE_DENSITY ? FIGURE_DENSITY : 1;
   cv.width = vw * worldDensity; cv.height = vh * worldDensity;
   cv.style.width = vw * Z + "px"; cv.style.height = vh * Z + "px";
   g.imageSmoothingEnabled = false;

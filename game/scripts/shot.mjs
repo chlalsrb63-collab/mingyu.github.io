@@ -107,7 +107,7 @@ const errors = [];
 let srv = null;
 const browser = await launch();
 try {
-  const ctx = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: 1 });
+  const ctx = await browser.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: Number(process.env.SHOT_DPR) || 1 });
   // --hour <0..24>: a fixed sky hour for the shot (sky.js reads __skyHour), e.g. 12 for noon light
   if (opt.hour !== undefined) await ctx.addInitScript((h) => { globalThis.__skyHour = h; }, Number(opt.hour));
   const pg = await ctx.newPage();
