@@ -140,6 +140,29 @@ assert.deepEqual(readSelf().runeSets, [four, twos[0]], "highest threshold, then 
 assert.equal(act({ t: "uneq", k: "helm" }).ok, true);
 assert.deepEqual(readSelf().runeSets, [four, twos[1]], "the four matching two-piece runes activate their power once");
 
+// Fill each set through the real socket action. Removing a supporting piece invalidates derived stats.
+{
+  const priorGear = ch.eq, priorBag = ch.inv;
+  for (const [id, set] of Object.entries(D.runeSets)) {
+    const rune = runeId(id);
+    ch.eq = {
+      weapon: { ...plain(bases.weapon), sk: 2, ru: [null, null] },
+      armor: { ...plain(bases.armor), sk: 2, ru: [null, null] },
+    };
+    ch.inv = [{ id: rune, n: set.need, il: 1 }];
+    p.stc = null;
+    for (let i = 0; i < set.need; i++) {
+      assert.ok(insert(rune, i < 2 ? "weapon" : "armor", i % 2).ok, id);
+      const view = readSelf();
+      assert.equal(view.runeCounts[id], i + 1, id);
+      assert.deepEqual(view.runeSets, i + 1 === set.need ? [id] : [], id);
+    }
+    assert.ok(act({ t: "uneq", k: "weapon" }).ok, id);
+    assert.deepEqual(readSelf().runeSets, [], id);
+  }
+  ch.eq = priorGear; ch.inv = priorBag; p.stc = null;
+}
+
 const old = L.newChar("옛날룬", []);
 old.v = 26;
 old.eq.armor = { ...plain("veil_a"), q: 4, set: "nightveil", il: 104, enh: 6, sk: 3, ru: ["ign", "acu", "ign"] };

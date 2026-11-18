@@ -20,7 +20,7 @@
 
 /** The appraisal rules' version: part of every seal's hash. */
 const CHARM_V = 1;
-const CHARM_SIZE = 5, CHARM_REC_MAX = 60;
+const CHARM_SIZE = 5;
 /** Monsters more than this many tiers below the hunter give neither charms nor quest kills. */
 const CHARM_LOW = 4;
 /** The cells bought one at a time after the inner (1,1)–(3,3), in this order. */
@@ -252,7 +252,7 @@ function charmsClean(ch) {
   for (const c of stray) {
     if (seen.has(c.uid)) c.uid = cs.nextUid++;
     seen.add(c.uid);
-    if (cs.rec.length < CHARM_REC_MAX) cs.rec.push(c);
+    cs.rec.push(c);
   }
   ch.charms = cs;
 }
@@ -310,10 +310,7 @@ function charmEchoHit(S, rt, p, mob, dmg) {
   if (mob.dead || !(dmg > 0)) return;
   charmUsed(S, p, "echo");
   rt.ev.push(["cm", p.eid, 0, Math.round(mob.x), Math.round(mob.y - 6)]);
-  // (`dmg` is what reached the monster: a rift's toughness is already in it)
-  const hk = mob.hk; mob.hk = 0;
-  dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * CHARM_LEGEND.echo.k)), 0);
-  mob.hk = hk;
+  dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * CHARM_LEGEND.echo.k)), 0, 0, null, { copied: true });
 }
 /** 길별의 렌즈참: a 관통 화살 has struck its second target, which lives: it is marked for 4 s. */
 function charmLens(S, rt, p, mob) {

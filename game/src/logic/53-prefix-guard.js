@@ -99,7 +99,7 @@ Object.assign(LEGEND, { root: ["뿌리내린", pfxText("root", "{ms:s}초 이상
 Object.assign(PFX_FN, { root: { miti(S, rt, p, st, mob, dmg, raw, r) { if (S.now - p.mvAt >= PFX.root.ms) r.f *= PFX.root.k; } } });
 
 // 올빼미의
-Object.assign(PFX, { owl: { on: 1, k: 0.9 } });
+Object.assign(PFX, { owl: { on: 1, k: 0.8 } });
 Object.assign(LEGEND, { owl: ["올빼미의", pfxText("owl", "밤에 받는 피해 -{k:-%}%"), "NH", "D", "S", "mit"] });
 Object.assign(PFX_FN, { owl: { miti(S, rt, p, st, mob, dmg, raw, r) { if (isNight(S.now)) r.f *= PFX.owl.k; } } });
 
@@ -175,7 +175,7 @@ Object.assign(PFX_FN, {
 });
 
 // 되받는: the attacker is struck back for k × attack (a prefix blow: it starts no other power)
-Object.assign(PFX, { counter: { on: 1, p: 0.15, k: 1.5, icd: 2000 } });
+Object.assign(PFX, { counter: { on: 1, p: 0.25, k: 1.5, icd: 2000 } });
 Object.assign(LEGEND, { counter: ["되받는", pfxText("counter", "피격 시 {p:%}% 확률로 공격한 적에게 공격력의 {k:%}% 반격 ({icd:s}초 간격)"), "AB", "D", "M", "mit"] });
 Object.assign(PFX_FN, {
   counter: {

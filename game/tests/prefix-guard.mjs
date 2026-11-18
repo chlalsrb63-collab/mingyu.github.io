@@ -16,13 +16,13 @@ const DOC = {
   smoke: ["BN", "M", "mit", { p: 0.08, ms: 1200, icd: 10000 }, 1], foresee: ["ABH", "M", "mit", { k: 0.7 }, 1], manawall: ["AN", "M", "mit", { k: 0.25 }, 1],
   root: ["BH", "S", "mit", { ms: 1500, k: 0.85 }, 1], heavy: ["ABH", "S", "mit", { k: 0.5 }, 1], purge: ["ABNH", "S", "mit", { k: 0.5 }, 1],
   cure: ["BNH", "S", "mit", { ms: 3000, imm: 8000, icd: 30000 }, 1], rime: ["AB", "S", "mit", { p: 0.3, ms: 2000, icd: 1000 }, 1],
-  counter: ["AB", "M", "mit", { p: 0.15, k: 1.5, icd: 2000 }, 1], fate: ["AN", "L", "mit", { ms: 3000, icd: 360000 }, 1],
+  counter: ["AB", "M", "mit", { p: 0.25, k: 1.5, icd: 2000 }, 1], fate: ["AN", "L", "mit", { ms: 3000, icd: 360000 }, 1],
   panic: ["AB", "M", "mob", { hp: 0.35, ms: 5000, spd: 1.3, k: 0.85, icd: 60000 }, 1], wisp: ["B", "M", "mob", { k: 0.75 }, 1],
   dust: ["B", "S", "mob", { r: 40, ms: 600, icd: 6000, n: 4 }, 1], after: ["B", "S", "mob", { ms: 1500, spd: 1.25 }, 1], nimble: ["BN", "S", "sus", { k: 0.02, icd: 1000 }, 1],
   reflex: ["B", "S", "mob", { ms: 2000, k: 1.15 }, 1], relax: ["B", "S", "mob", { ms: 5000, spd: 1.15 }, 1], chase: ["B", "S", "mob", { ms: 3000, spd: 1.2 }, 1],
   slick: ["B", "S", "mob", { ms: 1000, spd: 1.3 }, 1], share: ["NH", "S", "sus", { r: 160, k: 0.03 }, 1], spring: ["AN", "M", "sus", { hp: 0.5, k: 0.012 }, 1],
   pot: ["NH", "M", "sus", { k: 1.35 }, 1], elixir: ["N", "S", "sus", { ms: 6000, k: 0.01 }, 1], med: ["NH", "S", "sus", { ms: 2000, k: 0.02 }, 1],
-  moss: ["AN", "S", "sus", { k: 0.015 }, 1], emerg: ["ABNH", "M", "sus", { hp: 0.3, k: 0.2, icd: 90000 }, 1], owl: ["NH", "S", "mit", { k: 0.9 }, 1],
+  moss: ["AN", "S", "sus", { k: 0.015 }, 1], emerg: ["ABNH", "M", "sus", { hp: 0.3, k: 0.2, icd: 90000 }, 1], owl: ["NH", "S", "mit", { k: 0.8 }, 1],
 };
 const KEYS = Object.keys(DOC);
 assert.equal(KEYS.length, 33, "33 defense powers of phase 1 beyond thorn and feast");

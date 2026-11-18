@@ -266,14 +266,15 @@ function damageEvent(rt, eid, amount, crit, player, cue, parts) {
 function dealMob(S, rt, mob, p, dmg, crit, cue, parts, combat = {}) {
   // a boss that dived out of reach is not hit at all (56-boss-script.js)
   if (mob.dead || mob.dive) return false;
-  const poison = runePoisonFactor(S, mob);
-  if (poison !== 1) dmg = Math.max(1, Math.round(dmg * poison));
-  const taken = elementTaken(S, mob);
-  if (taken !== 1) dmg = Math.max(1, Math.round(dmg * taken));
-  // a scripted boss stunned by a broken cast takes more (its script's vuln), half behind its shielding adds
-  if (mob.bs) dmg = bsTaken(S, rt, mob, dmg);
-  // a rift's monster is made tougher for a bigger or stronger party (64-dim.js dimHk)
-  if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
+  // A charm that copies a fraction of an actual hit inherits its target modifiers.
+  if (!combat.copied) {
+    const poison = runePoisonFactor(S, mob);
+    if (poison !== 1) dmg = Math.max(1, Math.round(dmg * poison));
+    const taken = elementTaken(S, mob);
+    if (taken !== 1) dmg = Math.max(1, Math.round(dmg * taken));
+    if (mob.bs) dmg = bsTaken(S, rt, mob, dmg);
+    if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
+  }
   if (combat.buddyCap) dmg = Math.min(dmg, combat.buddyCap);
   dmg = elementShield(S, mob, dmg);
   mob.hp -= dmg;

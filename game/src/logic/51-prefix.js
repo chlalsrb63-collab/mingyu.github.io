@@ -55,8 +55,8 @@ function pfxBuild(lg, runeSets = []) {
   for (const key of runeSets) {
     const f = RUNE_SET_FN[key];
     for (const n of PFX_HOOKS) if (typeof f[n] === "function") {
-      // A set's full revive is preferred over the legendary fallback at HP 1.
-      if (n === "lethal") h[n].unshift(f[n]);
+      // Resolve a set's instant reset or full revive before trying the equipment fallback.
+      if (n === "lethal" || n === "skill") h[n].unshift(f[n]);
       else h[n].push(f[n]);
     }
   }
@@ -252,11 +252,15 @@ const PFX_FN = {
   // 폭렬의: a kill bursts and hurts what stands near (a burst's own kills do not burst again)
   nova: {
     kill(S, rt, p, st, mob, x, y) {
-      if (p.chainKill) return;
       const c = PFX.nova, opt = { ...PX, elem: "fire", typedOnly: true };
+      if (p.chainKill || S.now < (p.pc?.cd.nova || 0)) return;
+      const targets = mobsWithin(rt, x, y, c.r)
+        .sort((a, b) => dist(x, y, a.x, a.y) - dist(x, y, b.x, b.y) || a.id - b.id)
+        .slice(0, c.n);
+      if (!targets.length || !pfxIcd(S, p, "nova", c.icd)) return;
       p.chainKill = true;
       rt.ev.push(["b", Math.round(x), Math.round(y), c.r, 1]);
-      for (const o of mobsWithin(rt, x, y, c.r)) hurtMob(S, rt, o, p, c.k, false, opt);
+      for (const o of targets) if (!o.dead) hurtMob(S, rt, o, p, c.k, false, opt);
       p.chainKill = false;
     },
   },
@@ -268,13 +272,15 @@ const PFX_FN = {
   // 메아리의: a skill's wait may vanish
   echo: {
     skill(S, rt, p, st, sk, id) {
-      if (!(rnd(S) < PFX.echo.p * st.proc)) return;
-      p.cds[id] = S.now + PFX.echo.ms;
-      toast(p, `메아리! [${sk.name}] 재사용 대기 초기화`);
+      const c = PFX.echo, reset = S.now + c.ms;
+      if (!(p.cds[id] > reset) || S.now < (p.pc?.cd.echo || 0) || !pfxChance(S, st, c.p)) return;
+      if (!pfxIcd(S, p, "echo", c.icd)) return;
+      p.cds[id] = reset;
+      toast(p, `메아리! [${sk.name}] 재사용 대기시간 감소`);
     },
   },
   // 가시의: part of what p takes goes back to the one who struck
   thorn: { hurt(S, rt, p, st, mob, dmg) { if (mob) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * PFX.thorn.k)), 0); } },
-  // 포식자의: a kill heals (not through pfxHeal: as it always was)
-  feast: { kill(S, rt, p, st) { if (!p.dead) p.hp = Math.min(st.mhp, p.hp + st.mhp * PFX.feast.k * elementHealFactor(S, p)); } },
+  // 포식자의 shares the sustain budget with the other repeatable kill and hit heals.
+  feast: { kill(S, rt, p, st) { if (!p.dead) pfxHeal(S, p, st, st.mhp * PFX.feast.k); } },
 };
