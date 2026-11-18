@@ -2164,7 +2164,9 @@ body.talkcam #w-talk { z-index: 60; }
 body.talkcam #hud > * { transition: opacity .3s ease-out; }
 body.talkq #hud > * { opacity: 0 !important; pointer-events: none !important; }
 body.talkq #windows > .window:not(#w-talk), body.talkq #tip { opacity: 0; pointer-events: none; }
-body.talkq #w-talk { left: 50% !important; top: auto !important; bottom: 14vh; transform: translateX(-50%); }
+body.talkq #w-talk { left: 50% !important; top: auto !important; bottom: 11vh; transform: translateX(-50%); width: min(94vw, 1180px) !important; max-height: 76vh !important; }
+body.talkq #w-talk .talk-main { max-height: calc(76vh - 64px); }
+body.talkq #w-talk .talk-vn { gap: 12px; }
 body::before, body::after { content: ""; position: fixed; left: 0; right: 0; height: 0; background: #000; z-index: 50; pointer-events: none; transition: height .35s ease-out; }
 body::before { top: 0; } body::after { bottom: 0; }
 body.talkq::before, body.talkq::after { height: 9vh; }
@@ -2194,10 +2196,13 @@ body.talkq::before, body.talkq::after { height: 9vh; }
 #w-talk .sq-choice .btn { width: 100%; padding: 10px 14px; }
 #w-talk .section { font-size: calc(var(--t12) * 1.2); }
 #quest-track .qnext { color: #9ad8ff; }
-@media (max-width: 640px), (max-height: 420px) { #w-talk { width: 97vw !important; bottom: 2vh; } #w-talk .talk-port { display: none; } #w-talk .say { font-size: calc(var(--t12) * 1.25); } }
+@media (max-width: 640px), (max-height: 420px) { #w-talk { width: 97vw !important; bottom: 2vh; } #w-talk .talk-port, #w-talk .talk-me { display: none !important; } #w-talk .say { font-size: calc(var(--t12) * 1.25); } }
 body.talkcam #prompt { display: none; }
 #w-talk:not(.docked) { opacity: 1; }
 #w-talk .talk-port { align-self: center; }
+#w-talk .talk-me { display: none; text-align: center; }
+body.talkq #w-talk .talk-me[data-ok="1"] { display: block; }
+#w-talk .talk-mn { margin-top: 4px; font-size: calc(var(--t12) * 1.1); color: #e2c486; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* quest rewards with item icons (sidequests.js rewardRow) */
 .rw-row { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; }

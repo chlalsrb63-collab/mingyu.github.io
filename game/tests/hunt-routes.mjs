@@ -101,7 +101,7 @@ for (const q of D.side.filter((q) => /^sq_(meadow|forest|cave|jungle|coast|oasis
     if (pre) assert.ok(q.req.lv >= pre.req.lv, `${q.id}: level does not drop below its prerequisite`);
     const t = q.reward && q.reward.title;
     if (t) { assert.ok(!titles.has(t), `${q.id}: title "${t}" is unique (also ${titles.get(t)})`); titles.set(t, q.id); }
-    const g = q.goal || {}, home = D.npcMap[q.giver], m = /^sq_(city|dunesea|cloudtemple|mesa|inklake|maple|meadow|forest|cave|jungle|coast|oasis)_/.exec(q.id);
+    const g = q.goal || {}, home = D.npcMap[q.giver], m = /^sq_(city|dunesea|cloudtemple|mesa|inklake|maple|meadow|forest|cave|jungle|coast|oasis|crypt|sewer|abyss)_/.exec(q.id);
     if (m && (g.type === "kill" || g.type === "elite")) assert.ok(maps[m[1]].spawns.some((sp) => sp.k === g.mob), `${q.id}: ${g.mob} lives in ${m[1]}`);
     if (m && g.type === "elite") assert.equal(g.map, m[1], `${q.id}: elite goal on its own field`);
     if (m) assert.equal(home, m[1], `${q.id}: giver stands in ${m[1]}`);

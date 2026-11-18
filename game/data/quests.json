@@ -1579,6 +1579,96 @@
       "repeat": false
     },
     {
+      "id": "sq_crypt_ledger_1", "giver": "trail_crown", "title": "깎여 나간 이름",
+      "text": "묘비마다 이름이 깎여 있는 건 알지? 깎인 가루를 딸로뇽이 핥아 먹고 다니더군. 여덟 마리만 걷어 주면 탁본을 제대로 뜰 수 있겠어.",
+      "done": "가루가 줄었어. 이제 글자 깊이가 보이네. 이름이 칼이 아니라 무언가 갉아낸 자국이었어.",
+      "hint": "지하묘지 입구의 탁본쟁이 오로",
+      "goal": { "type": "kill", "mob": "bellnewt", "n": 8 },
+      "req": { "lv": 54, "quest": null },
+      "reward": { "xp": 7000, "gold": 700, "items": [["hp_m",4]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_crypt_ledger_2", "giver": "trail_crown", "title": "뒷장을 지키는 사냥개",
+      "text": "장부의 뒷장은 안쪽 회랑에 있는데, 가죽 벗겨진 하울본 떼가 그 앞을 지켜. 누가 그 개들을 묻어 두었는지는 몰라도 아직 문지기 노릇을 하는 셈이지. 열 마리를 눕혀 줘.",
+      "done": "뒷장이 보여. 묘실 주인 이름 옆마다 등불 값이 적혀 있어. 죽은 이들이 불을 빌려 쓴 장부였던 거야.",
+      "hint": "지하묘지 입구의 탁본쟁이 오로",
+      "goal": { "type": "kill", "mob": "bonehound", "n": 10 },
+      "req": { "lv": 56, "quest": "sq_crypt_ledger_1" },
+      "reward": { "xp": 9000, "gold": 850, "items": [["mp_m",4],["stone",1]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_crypt_ledger_3", "giver": "trail_crown", "title": "장부를 쥔 정예",
+      "text": "마지막 쪽은 묘실 깊은 곳 정예 놈이 깔고 앉아 있어. 그놈을 눕히면 장부가 한 권으로 맞춰져. 이름을 되찾아 주는 일이니, 부탁할게.",
+      "done": "이름들이 제자리로 돌아왔어. 탁본을 전부 맞춰 보니 이 묘지는 무덤이 아니라 한 마을의 등불 창고였군. 이건 네 몫이야.",
+      "hint": "지하묘지 입구의 탁본쟁이 오로",
+      "goal": { "type": "elite", "map": "crypt", "mob": "toadbrood", "n": 1 },
+      "req": { "lv": 58, "quest": "sq_crypt_ledger_2" },
+      "reward": { "xp": 12000, "gold": 1100, "items": [["stone",2],["food_m",3]], "title": "이름을 되찾은 자" },
+      "repeat": false
+    },
+    {
+      "id": "sq_sewer_ebb_1", "giver": "trail_drain", "title": "거꾸로 도는 물레",
+      "text": "배수관 물이 위로 흐르는 걸 막으려면 먼저 입구 둠벙부터 치워야 해. 쭈아귀가 물을 쪽쪽 빨아들이거든. 여덟 마리만 잡아 줘.",
+      "done": "물이 조금 가라앉았어. 아직 거품은 거꾸로 오르지만 숨 쉬는 간격은 보여.",
+      "hint": "하수도 입구의 물때지기 토룩",
+      "goal": { "type": "kill", "mob": "leechmaw", "n": 8 },
+      "req": { "lv": 94, "quest": null },
+      "reward": { "xp": 22000, "gold": 2000, "items": [["hp_l",3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_sewer_ebb_2", "giver": "trail_drain", "title": "두개골 속 맥박",
+      "text": "골그락 머리 속을 깨 보면 작은 맥박이 뛴대. 물을 끌어올리는 박자와 똑같다고. 열 마리를 깨 보면 알 거야. 껍질이 단단하니 돌진은 옆으로 피해.",
+      "done": "맥박이 하나같이 같은 박자였어. 하수도 아래 어딘가에서 커다란 무언가가 한 번 숨 쉴 때마다 물이 따라 올라오는 거야.",
+      "hint": "하수도 입구의 물때지기 토룩",
+      "goal": { "type": "kill", "mob": "crabskull", "n": 10 },
+      "req": { "lv": 96, "quest": "sq_sewer_ebb_1" },
+      "reward": { "xp": 28000, "gold": 2500, "items": [["mp_l",3],["stone",2]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_sewer_ebb_3", "giver": "trail_drain", "title": "배수문 위의 정예",
+      "text": "숨의 박자를 맞춰 주는 놈이 배수문 위 정예 무리에 섞여 있어. 그놈 하나만 잡으면 물결이 풀려. 번지는 전기 조심하고.",
+      "done": "물결이 풀렸어. 이제 물은 내려가고 거품만 남네. 이건 하수도를 지켜 준 값이야.",
+      "hint": "하수도 입구의 물때지기 토룩",
+      "goal": { "type": "elite", "map": "sewer", "mob": "eelknot", "n": 1 },
+      "req": { "lv": 98, "quest": "sq_sewer_ebb_2" },
+      "reward": { "xp": 36000, "gold": 3000, "items": [["stone",3],["food_m",4]], "title": "배수문 지킴이" },
+      "repeat": false
+    },
+    {
+      "id": "sq_abyss_wick_1", "giver": "trail_abyss", "title": "꺼지지 않는 심지",
+      "text": "여기 심지가 꺼지지 않는 건 어미 탓만은 아니야. 야메르 뿔에 불이 붙어 돌아다니거든. 열 마리를 눕혀야 길표시가 번지지 않아.",
+      "done": "뿔의 불이 줄었네. 실로 맨 표시가 이제 푸른 불로 안 번져. 심지가 어디서 왔는지 한 줄 더 보여.",
+      "hint": "피의 심연 입구의 마지막 등불지기 유리",
+      "goal": { "type": "kill", "mob": "twingoat", "n": 10 },
+      "req": { "lv": 138, "quest": null },
+      "reward": { "xp": 80000, "gold": 3800, "items": [["hp_l",5]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_abyss_wick_2", "giver": "trail_abyss", "title": "손에 쥔 불씨",
+      "text": "심연 사자 움켜온은 손으로 된 갈기로 불씨를 쥐고 다녀. 그 불씨가 우리 마을 집집마다의 등불이야. 열두 마리를 쓰러뜨려 하나씩 돌려받아 줘.",
+      "done": "불씨 몇 개가 손에서 풀려났어. 집 문양이 새겨진 걸 보니 틀림없이 우리 마을 거야.",
+      "hint": "피의 심연 입구의 마지막 등불지기 유리",
+      "goal": { "type": "kill", "mob": "lionhand", "n": 12 },
+      "req": { "lv": 140, "quest": "sq_abyss_wick_1" },
+      "reward": { "xp": 95000, "gold": 4300, "items": [["ske_stone",2],["stone",3]] },
+      "repeat": false
+    },
+    {
+      "id": "sq_abyss_wick_3", "giver": "trail_abyss", "title": "어미에게 가는 마지막 불",
+      "text": "불씨를 어미 곁으로 끌고 가는 심연 정예가 있어. 그놈이 마지막이야. 쓰러뜨리면 불씨가 마을로 돌아갈 길을 찾을 테니까.",
+      "done": "불씨가 모두 돌아갈 길을 찾았어. 마을 불이 꺼진 날의 심지가 마침내 타 버렸군. 이 불씨는 네가 가져가.",
+      "hint": "피의 심연 입구의 마지막 등불지기 유리",
+      "goal": { "type": "elite", "map": "abyss", "mob": "sowseer", "n": 1 },
+      "req": { "lv": 142, "quest": "sq_abyss_wick_2" },
+      "reward": { "xp": 120000, "gold": 5200, "items": [["stone",4],["hp_l",6]], "title": "심지를 이은 자" },
+      "repeat": false
+    },
+    {
       "id": "sq_cave_song_1", "giver": "cave_miner", "title": "갈라진 수정의 노래",
       "text": "수정이 노래한다고 했지? 요즘은 프리즘 두더지가 수정을 갉아서 소리가 깨져. 여덟 마리만 잡아 줘.",
       "done": "음이 조금 맑아졌어. 우리 할아버지들이 듣던 소리에 가까워진 것 같군.",
