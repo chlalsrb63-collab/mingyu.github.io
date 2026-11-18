@@ -8,6 +8,7 @@ const CRAB = mat("#c85a3a"), CRABD = mat("#8a3426"), SKULL = mat("#e2d6b8");
 const EEL = mat("#34404e", { wet: true }), EELB = mat("#5e6a50", { wet: true }), BIGEYE = mat("#f0e8c8", { role: "keep", wet: true });
 // ── cave: blind-pale skin, velvet greys, bark brown
 const SKIN = mat("#dcbcaa"), SKIND = mat("#b48c7c");
+const QUARTZ = mat("#ada4ce");
 const MOLE = mat("#5a5266"), MOLED = mat("#3a3444"), NOSE = mat("#e89aa4", { wet: true });
 const BEAR = mat("#5a4236"), BEARD = mat("#3a2a24");
 const OWL = mat("#8a6a50"), OWLL = mat("#d8c4a0"), OWLD = mat("#5a4434");
@@ -44,7 +45,12 @@ export const BEASTS_C = {
       for (let i = 0; i < 7; i++) {
         const w = p.walk ? Math.sin((p.ph - i * 0.14) * Math.PI * 2) : 0;
         const f = lf + 3.6 - i * 2 + (p.walk ? Math.max(0, w) * 0.5 : 0), r = 3.1 - Math.abs(i - 2) * 0.3 - (i > 4 ? (i - 4) * 0.3 : 0);
-        M.s([f, r + Math.max(0, w) * 1.2 + (i < 2 ? rear * (3 - i) * 1.2 : 0), 0], r, i % 2 ? LEECH : LEECHB);
+        const u = r + Math.max(0, w) * 1.2 + (i < 2 ? rear * (3 - i) * 1.2 : 0);
+        M.s([f, u, 0], r, i % 2 ? LEECH : LEECHB);
+        if (i === 2 || i === 4) {
+          // Paired bile bladders swell in sequence as the segment contracts.
+          both((s) => M.e([f, u + r * 0.55, s * r * 0.65], [1.15, 1.4 + w * 0.45, 1.2], GATORB));
+        }
       }
       M.G();
       for (const [a, b, c] of [[1, 5.4, -1], [-2, 5, 1.2], [-5, 4, -0.6], [-8, 3, 0.8], [2.4, 4.8, 1.6]]) M.dot([lf + a, b, c], "#b4cc3c");
@@ -213,6 +219,10 @@ export const BEASTS_C = {
       M.G();
       for (const [a, b, c] of [[-3, 4.4, -2], [0, 5, 1.4], [-5.4, 3, 2.4], [2, 4.2, -3]]) M.dot([f0 + a, u0 + b, c], "#7a7088");
       M.tube([[f0 - 6.6, u0, 0], [f0 - 8.6, u0 - 2.6, 0]], [0.9, 0.4], NOSE);
+      // A broken seam of purple quartz grows out of the digging shoulder.
+      for (const [f, h] of [[-3, 3.3], [-1, 4.8]]) {
+        M.cone([f0 + f, u0 + 3.6, -2.3], [f0 + f - 1.5, u0 + 3.6 + h, -3.4], 1.35, QUARTZ);
+      }
       // the hands it digs with: wide, pale, every nail a spade
       both((s) => {
         const [sw, up] = gait(p, s < 0 ? 0 : 0.5);
@@ -379,6 +389,8 @@ export const BEASTS_C = {
       M.cone([f0 - 5, u0 + 1.4, 0], [f0 - 6.6, u0 + 3, 0], 1, GOATD);
       both((s) => {
         const low = p.wind || p.strike ? 1 : 0;
+        // A coal-red throat shows as each head cranes out of its ash coat.
+        M.e([f0 + 4.7, u0 + 1.2 - low, s * 1.7], [2, 1.1 + p.wind * 0.7, 1.35], CINDER);
         const H = [f0 + 6.6 + (p.strike ? 1.6 : 0), u0 + 3.4 - low * 2.6, s * 2], HR = [1.8, 2, 1.6];
         M.tube([[f0 + 4, u0 + 1.6, s * 0.8], [H[0] - 1, H[1] - 0.4, H[2]]], [1.6, 1.2], GOAT);
         M.e(H, HR, GOAT, [s * 14, -20 - low * 30, 0]);
@@ -724,7 +736,8 @@ export const BEASTS_C = {
         M.e([f - 1.6 - hop, 0.8 + hop, 2.5 * s], [2.2, 0.7, 0.9], RIME_D);
         M.tube([[f + 2.5, u - 1, 1.7 * s], [f + 3.4 + hop, 0.7 + hop, 1.8 * s]], [0.85, 0.65], RIME_D);
         const ear = [head[0] - 0.7, head[1] + 1.1, 0.95 * s];
-        const lean = p.wind ? -3 : p.strike ? 2.8 : -1.6;
+        const lean = p.wind ? -3.8 : p.strike ? 3.5 : -1.6 - hop + p.idle * s;
+        M.cone(ear, [ear[0] + lean - 1.7, ear[1] + 3.4, 2.7 * s], 1.1, FROST_D);
         M.cone(ear, [ear[0] + lean, ear[1] + (s === 1 ? 6.1 : 5.1), 2.1 * s], 1, s === 1 ? FROST : FROST_D);
         M.eye(surf(head, hr, [0.67, 0.22, 0.72 * s]), 2, "#f0b45d");
       });

@@ -13,7 +13,7 @@
  * whole silhouette a one-pixel outline, and the small things that carry a
  * face — eyes, teeth, stitches — are placed as hand-picked pixels on top.
  *
- * Frames (FR): two breaths, four steps, a wind-up, a strike, a flinch and three
+ * Frames (FR): two breaths, four steps, a wind-up, a strike and recovery, a flinch and three
  * of falling over. Sheets are drawn the first time a frame is asked for and kept.
  *
  * The creatures themselves live in mobart_*.js; this file is the renderer, the
@@ -93,8 +93,20 @@ function tintRgb(rgb, T) {
   return fromHsl(turn(h, dark ? T.lo : T.hi, 0.86), Math.min(1, T.sat * (0.6 + 0.5 * Math.min(1, s))), Math.max(0.08, Math.min(0.92, T.l(l))));
 }
 
-function rampOf(m, tint) {
-  const key = tint || "";
+// Reflected ground light on hide, bark and shell. Keep teeth, eyes and wound accents legible.
+const GROUND_LIGHT = {
+  meadow: "#e1c179", forest: "#72975c", crypt: "#9480ac", city: "#98a4b6",
+  sewer: "#8c9952", cave: "#8486bb", abyss: "#b35b68", autumn: "#da9757",
+  coast: "#73b9af", desert: "#e0b279", jungle: "#69a368", mist: "#abb7ce",
+  mesa: "#cd855b", frostkeep: "#a4cadb", inklake: "#848dab",
+};
+const reflected = Object.fromEntries(Object.entries(GROUND_LIGHT).map(([region, color]) => [region, hex(color)]));
+function habitatOf(map) {
+  if (map?.id === "frostkeep" || map?.id === "inklake") return map.id;
+  return Object.hasOwn(reflected, map?.theme) ? map.theme : "";
+}
+function rampOf(m, tint, habitat) {
+  const key = (tint || "") + "/" + habitat;
   if (m.r[key]) return m.r[key];
   const T = TINT[tint];
   let r;
@@ -102,6 +114,11 @@ function rampOf(m, tint) {
   else if (m.role === "blood") r = T.accent ? ramp4(hex(T.accent)) : ramp4(m.base);
   else { r = ramp4(tintRgb(m.base, T)); if (T.rim) r[0] = hex(T.rim); }
   if (m.role === "glow") r = [r[0], r[0], r[1], r[2]];
+  if (habitat && m.role === "body") {
+    const light = reflected[habitat];
+    const mix = (rgb, amount) => rgb.map((channel, i) => Math.round(channel + (light[i] - channel) * amount));
+    r = [mix(r[0], 0.18), mix(r[1], 0.11), mix(r[2], 0.24), r[3]];
+  }
   return (m.r[key] = r);
 }
 
@@ -160,15 +177,16 @@ class Model {
 // ───────────────────────────── poses ─────────────────────────────
 
 /** The frames every monster has. */
-export const FR = { idle0: 0, idle1: 1, walk0: 2, walk1: 3, walk2: 4, walk3: 5, wind: 6, strike: 7, hurt: 8, die0: 9, die1: 10, die2: 11 };
-const NFR = 12;
+export const FR = { idle0: 0, idle1: 1, walk0: 2, walk1: 3, walk2: 4, walk3: 5, wind: 6, strike: 7, hurt: 8, die0: 9, die1: 10, die2: 11, recover: 12 };
+const NFR = Object.keys(FR).length;
 function pose(fr) {
-  const p = { fr, walk: false, ph: 0, idle: 0, wind: 0, strike: 0, hurt: 0, dead: 0, t: fr };
+  const p = { fr, walk: false, ph: 0, idle: 0, wind: 0, strike: 0, hurt: 0, dead: 0, recover: 0, turn: 0, t: fr };
   if (fr === 1) p.idle = 1;
   else if (fr >= 2 && fr <= 5) { p.walk = true; p.ph = (fr - 2) / 4; }
   else if (fr === 6) p.wind = 1;
   else if (fr === 7) p.strike = 1;
   else if (fr === 8) p.hurt = 1;
+  else if (fr === FR.recover) { p.recover = 1; p.turn = 9; }
   else if (fr >= 9) p.dead = [0.35, 0.75, 1][fr - 9];
   return p;
 }
@@ -198,8 +216,9 @@ const YAW = [135, 45, 225, 315];
  * Rasterise one pose of a model. `N` the canvas, foot at (N/2, N − pad),
  * `dir` a facing, `k` a size factor, `tint` one of MOB_TINTS or "".
  */
-function raster(model, N, foot, dir, k, tint, p, rollK = 1) {
-  const phi = YAW[dir] * D2R, F = [Math.cos(phi), 0, Math.sin(phi)], R = [-F[2], 0, F[0]];
+function raster(model, N, foot, dir, k, tint, p, rollK = 1, habitat = "") {
+  // The shoulder follows through after contact before the feet turn again.
+  const phi = (YAW[dir] + p.turn) * D2R, F = [Math.cos(phi), 0, Math.sin(phi)], R = [-F[2], 0, F[0]];
   const B = [[F[0], 0, R[0]], [0, 1, 0], [F[2], 0, R[2]]];
   const roll = p.dead * 88 * rollK * D2R, cr = Math.cos(roll), sr = Math.sin(roll);
   const Mr = [[1, 0, 0], [0, cr, -sr], [0, sr, cr]];
@@ -298,7 +317,7 @@ function raster(model, N, foot, dir, k, tint, p, rollK = 1) {
     for (const d of nb) { const j = i + d; if (mi[j] >= 0 && gi[j] !== gi[i] && zb[j] < zb[i] - thr) { line[i] = 1; break; } }
   }
   const img = new ImageData(N, N), D = img.data;
-  const ramps = mats.map((m) => rampOf(m, tint));
+  const ramps = mats.map((m) => rampOf(m, tint, habitat));
   for (let i = 0; i < NN; i++) {
     if (mi[i] < 0) continue;
     const rm = ramps[mi[i]];
@@ -371,17 +390,22 @@ const PAD = 8;
 /** Everything is built a third bigger than its model's pixel numbers: the cast reads at about one and a half adventurers. */
 const GK = 1.3;
 const rigs = new Map();
+const fieldRigs = new Map();
+let fieldHabitat = "";
 const canvasSize = (def, sc) => Math.ceil((def.n || CANVAS[def.size] || 48) * sc * GK / 2) * 2;
 
 /**
  * One monster's frames, drawn when first asked for. `sc` enlarges it (elites
  * and guardians are drawn bigger, not scaled up, so their pixels stay crisp).
  */
-export function rig(kind, tint, sc = 1) {
+export function rig(kind, tint, sc = 1, habitat = "") {
+  if (!Object.hasOwn(reflected, habitat)) habitat = "";
+  if (habitat && fieldHabitat !== habitat) { fieldRigs.clear(); fieldHabitat = habitat; }
+  const cache = habitat ? fieldRigs : rigs;
   kind = ALIAS[kind] || kind;
   if (!TINT[tint]) tint = "";
   const key = kind + ":" + tint + ":" + sc;
-  let R = rigs.get(key);
+  let R = cache.get(key);
   if (R) return R;
   const def = BEASTS[kind] || BEASTS.chest;
   const N = canvasSize(def, sc), foot = [N / 2, N - Math.round(Math.max(PAD * sc, N * 0.14))];
@@ -392,13 +416,14 @@ export function rig(kind, tint, sc = 1) {
       let c = frames[dir][fr];
       if (!c) {
         const M = new Model();
-        def.draw(M, pose(fr));
-        c = frames[dir][fr] = raster(M, N, foot, dir, sc * GK * (def.k || 1), tint, pose(fr), def.hover ? 0.25 : 1);
+        const posture = pose(fr);
+        def.draw(M, posture);
+        c = frames[dir][fr] = raster(M, N, foot, dir, sc * GK * (def.k || 1), tint, posture, def.hover ? 0.25 : 1, habitat);
       }
       return c;
     },
   };
-  rigs.set(key, R);
+  cache.set(key, R);
   return R;
 }
 /** Everything a page needs to know about a kind: size class, hover, glow, how it dies. */
@@ -438,6 +463,9 @@ const SCALE = [1, 1.15, 1.6];
 export const encounterScale = (boss, rank) => boss ? 1.5 : rank === 2 ? 2.16 : SCALE[rank] || 1;
 /** The colour of an elite's aura, and a guardian's. */
 const AURA = ["", "255,196,64", "255,110,214"];
+// Small wings beat quickly. Broad wings and pulsing bells take longer between keyframes.
+const BREATH_MS = { s: 330, m: 465, l: 600, xl: 710, boss: 810 };
+const WING_MS = { batcluster: 76, frostmoth: 88, brainjelly: 205, wingcrane: 165, ribvulture: 175, inkcrane: 165 };
 const nearest = (G, m) => {
   let best = null, bd = 1e9;
   const test = (p) => { if (!p || p.dead) return; const d = (p.x - m.x) ** 2 + (p.y - m.y) ** 2; if (d < bd) { bd = d; best = p; } };
@@ -466,7 +494,8 @@ export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
   const el = m.el | 0, boss = d.boss || el === 2;
   const sc = encounterScale(d.boss, el), baseScale = d.boss ? 1 : SCALE[el] || 1;
   const kind = artKind(d.sp, m);
-  const R = rig(kind, tint, sc), def = R.def;
+  const habitat = habitatOf(G.map);
+  const R = rig(kind, tint, sc, habitat), def = R.def;
   if (s.px === undefined) { s.px = m.x; s.py = m.y; s.fx = (m.id & 1); s.back = 0; s.dist = 0; s.mvT = -1e9; }
   const mx = m.x - s.px, my = m.y - s.py, step = Math.hypot(mx, my);
   if (step > 0.04) { s.mvT = t; s.dist += step; facing(s, mx, my); }
@@ -485,14 +514,22 @@ export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
   if (h < 170 && h >= 0) fr = FR.hurt;
   else if (lp < 200) { fr = FR.strike; lunge = -Math.sin((lp / 200) * Math.PI) * 6 * baseScale; }
   else if (w < windMs) { fr = FR.wind; shake = Math.sin(t / 28) * Math.min(1, w / windMs) * 1.2; }
-  else if (a >= 0 && a < 240) { fr = FR.strike; lunge = Math.sin((a / 240) * Math.PI) * 5 * baseScale; }
-  else if (w >= windMs && w < windMs + 260) { fr = FR.strike; lunge = Math.sin(((w - windMs) / 260) * Math.PI) * 3 * baseScale; }
-  else if (flyer) fr = FR.walk0 + (Math.floor(t / (moving ? 95 : 140) + m.id) % 4);
+  else if ((a >= 0 && a < 240) || (w >= windMs && w < windMs + 260)) {
+    const melee = a >= 0 && a < 240;
+    const progress = melee ? a / 240 : (w - windMs) / 260;
+    const hold = def.size === "s" ? 0.42 : boss ? 0.72 : 0.58;
+    fr = progress < hold ? FR.strike : FR.recover;
+    lunge = Math.sin(progress * Math.PI) * (melee ? 5 : 3) * baseScale;
+  }
+  else if (flyer) {
+    const beat = (WING_MS[kind] || (def.size === "s" ? 100 : 138)) * (moving ? 0.76 : 1);
+    fr = FR.walk0 + (Math.floor(t / beat + m.id) % 4);
+  }
   else if (moving) fr = FR.walk0 + (Math.floor(s.dist / (2.4 * sc * (def.k || 1) * (def.size === "l" || def.size === "boss" ? 1.4 : 1))) % 4);
-  else fr = Math.floor((t + m.id * 137) / 560) % 2 ? FR.idle1 : FR.idle0;
+  else fr = Math.floor((t + m.id * 137) / BREATH_MS[def.size]) % 2 ? FR.idle1 : FR.idle0;
   const img = R.frame(dir, fr);
   if (!R.h) { R.h = height(img); }
-  m._mob = { kind, tint, sc, dir, death: def.death || "fall", hover: def.hover || 0, col: def.glow };
+  m._mob = { kind, tint, sc, habitat, dir, death: def.death || "fall", hover: def.hover || 0, col: def.glow };
   // the ground: a shadow, and an elite's ring
   const span = canvasSize(def, baseScale) * (flyer ? 0.16 : 0.24), hover = (def.hover || 0) * sc;
   const shadowSpan = span * Math.sqrt(sc / baseScale);
@@ -580,7 +617,7 @@ export function onEvent(e, G, S3, t) {
 
 /** What a monster leaves behind for a moment: it falls, bursts or melts where it died. */
 function corpse(m, t0) {
-  const o = m._mob, R = rig(o.kind, o.tint, o.sc), style = o.death;
+  const o = m._mob, R = rig(o.kind, o.tint, o.sc, o.habitat), style = o.death;
   const dur = style === "burst" ? 800 : style === "melt" ? 1300 : 1400;
   const chunks = [];
   if (style === "burst") for (let i = 0; i < 14; i++) chunks.push([Math.cos(i * 2.4) * (30 + (i * 7) % 30), 40 + (i * 13) % 50, i % 3]);

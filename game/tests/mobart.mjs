@@ -46,7 +46,7 @@ for (const [kind, def] of Object.entries(BEASTS)) {
       if (p.dead) continue;                     // a fallen body is laid flat by the renderer
       // in each of the four facings, the shape's projection stays on the canvas
       for (const yaw of [135, 45, 225, 315]) {
-        const a = (yaw * Math.PI) / 180, F = [Math.cos(a), Math.sin(a)], R = [-F[1], F[0]];
+        const a = ((yaw + p.turn) * Math.PI) / 180, F = [Math.cos(a), Math.sin(a)], R = [-F[1], F[0]];
         const x = (q.c[0] * F[0] + q.c[2] * R[0]) * k, z = (q.c[0] * F[1] + q.c[2] * R[1]) * k, y = q.c[1] * k;
         const sx = N / 2 + x, sy = N - Math.round(Math.max(PAD * scale, N * 0.14)) - y * CE + z * SE, rr = r * k;
         // one pixel of margin for the outline

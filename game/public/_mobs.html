@@ -5,13 +5,14 @@ import * as MA from "./mobart.js";
 import * as SP from "./sprites.js";
 const q = new URLSearchParams(location.search);
 const mode = q.get("m") || "frames", z = +(q.get("z") || 3);
-const ZONE = { meadow: "#6aa864", forest: "#3f6a48", crypt: "#4a4658", city: "#565a68", sewer: "#3c4a46", cave: "#39406a", abyss: "#2a1c2c", maple: "#6a5a2c", frostkeep: "#708299", coast: "#c8b88a", desert: "#c89a5a", jungle: "#3a6a4a", east: "#8a6a6a" };
+const ZONE = { meadow: "#6aa864", forest: "#3f6a48", crypt: "#4a4658", city: "#565a68", sewer: "#3c4a46", cave: "#39406a", abyss: "#2a1c2c", maple: "#6a5a2c", frostkeep: "#708299", coast: "#c8b88a", desert: "#c89a5a", jungle: "#3a6a4a", east: "#8a6a6a", inklake: "#464f69" };
 const ZK = {
   meadow: ["twinhare", "gutfrog", "eyecrow", "lambmaw", "wickhare", "wickregent"], forest: ["splitboar", "ribdeer", "hydrasnake", "foxtwine", "mothface", "burrlynx", "knotwidow"],
   crypt: ["ratking", "bonehound", "toadbrood", "batcluster", "bellnewt", "knellkeeper"], city: ["pigeonmass", "doghead", "squidrat", "catsplit", "fishwalker", "spoolsnipe", "loomcolossus"],
   sewer: ["leechmaw", "gatorhalf", "crabskull", "eelknot", "sluiceeel", "sluiceleviathan"], cave: ["spiderhand", "moleworm", "bearmaw", "owlstare", "boss", "prismmole", "prismcantor"],
   abyss: ["twingoat", "horsehalf", "lionhand", "serpentwing", "sowseer", "abyssboss", "chest"],
   maple: ["blightsquirrel", "stumpmaw", "crowscare", "shroomboar", "gravrose", "rotstag"],
+  inklake: ["inkleech", "inkfish", "inkcrane", "inkmoth", "plumspider", "inkrose", "inkfox", "inkserpent"],
   frostkeep: ["rimehare", "frostmoth", "crownstag"],
   coast: ["hermitskull", "eyegull", "brainjelly", "barnacleseal", "coralturtle"], desert: ["spinescorp", "ribvulture", "cactushog", "sandmaw", "mummycamel"],
   jungle: ["vinemonkey", "dartbrood", "orchidmantis", "loggator"], east: ["beadmonkey", "wingcrane", "mistiger", "crownpeacock"],
@@ -26,8 +27,8 @@ if (mode === "frames") {
   // every frame of every facing at z×, and the same at 1× to its right
   const sc = +(q.get("sc") || 1), tint = q.get("t") || "";
   const DS = q.get("d") ? q.get("d").split(",").map(Number) : [0, 1, 2, 3];
-  const FS = q.get("f") ? q.get("f").split(",").map(Number) : [...Array(12).keys()];
-  const rows = kinds.map((k) => MA.rig(k, tint, sc));
+  const FS = q.get("f") ? q.get("f").split(",").map(Number) : Object.values(MA.FR);
+  const rows = kinds.map((k) => MA.rig(k, tint, sc, q.get("habitat") || ""));
   const H = rows.reduce((a, r) => a + r.N * z * DS.length + 6, 0);
   cv.width = Math.max(...rows.map((r) => r.N * z * FS.length + r.N * FS.length + 20)); cv.height = H;
   g.imageSmoothingEnabled = false;
@@ -62,7 +63,8 @@ if (mode === "frames") {
   const bosses = new Set(["boss", "abyssboss", "wickregent", "knotwidow", "knellkeeper", "loomcolossus", "sluiceleviathan", "prismcantor"]);
   const defs = {}; for (const k of kinds) defs[k] = { sp: k, boss: bosses.has(k), tint };
   const props = new Map(), S3 = { props };
-  const G = { me: { x: 0, y: 200, dead: false }, players: new Map(), mobs: new Map(), gone: new Map(), defs: { mobs: defs } };
+  const zone = q.get("habitat") || zoneOf(kinds[0]);
+  const G = { map: { id: zone, theme: ({ maple: "autumn", east: "mist" })[zone] || zone }, me: { x: 0, y: 200, dead: false }, players: new Map(), mobs: new Map(), gone: new Map(), defs: { mobs: defs } };
   const cols = Math.min(kinds.length, +(q.get("cols") || 4));
   kinds.forEach((k, i) => G.mobs.set(i + 1, { id: i + 1, k, x: 0, y: 0, hx: 70 + (i % cols) * ((W - 80) / cols), hy: 70 + Math.floor(i / cols) * 90, el, tr: [], atkT: -1e9, hurtT: -1e9 }));
   const states = new Map(), parts = [];

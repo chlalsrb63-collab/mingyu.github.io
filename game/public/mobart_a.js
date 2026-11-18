@@ -6,7 +6,7 @@
 import { mat, C, bez, gait, bob, lunge, legs4, teeth, ribs, tentacle, surf, both, rollPt, pitchPt, hand } from "./mobart_kit.js";
 
 // ── meadow: bruised greys and pink meat against the bright grass
-const HARE = mat("#b4a8b2"), HARED = mat("#9aa4b8"), SCUT = mat("#f0eaf0");
+const AWN = mat("#cbb56e"), HARE = mat("#bca98d"), HARED = mat("#9aa4b8"), SCUT = mat("#f0eaf0");
 const FROG = mat("#7a9448"), FROGB = mat("#d0d4a0"), FROGD = mat("#566c34");
 const CROW = mat("#3e3654"), CROWD = mat("#2c2640"), BEAK = mat("#c8bea0"), TALON = mat("#8a7a58");
 const LAMB = mat("#b83444", { drip: true, wet: true }), LAMBL = mat("#a83848"), WOOL = mat("#efe6d6"), HOOF = mat("#3a2a30");
@@ -35,6 +35,12 @@ export const BEASTS_A = {
       M.seam([[f0 + 3, u0 + 2.9, -1.2], [f0 - 4.2, u0 + 2.2, -1.2]]);
       M.seam([[f0 + 3, u0 + 2.9, 1.2], [f0 - 4.2, u0 + 2.2, 1.2]]);
       M.s([f0 - 5.6, u0 + 1.2, 0], 1.3, SCUT);
+      // Grass awns have rooted in the seam and sweep back as the hare lands.
+      for (const side of [-1, 1]) {
+        const bend = hop * 1.5 + p.wind;
+        const root = [f0 - 2, u0 + 2, side * 1.5];
+        M.cone(root, [f0 - 4.8 - bend, u0 + 5.5 - bend, side * 2.3], 1, AWN);
+      }
       // haunches and long feet: both kick at once
       both((s) => {
         M.tube([[f0 - 2.4, u0 - 2.4, s * 3], [f0 - 3.8 - hop * 1.6, 0.9 + hop * 1.2, s * 3], [f0 - 0.6 - hop * 2.4, 0.5 + hop * 1.4, s * 3.1]], [1.1, 0.8, 0.7], HARE);
@@ -45,7 +51,7 @@ export const BEASTS_A = {
       const H = [hf, hu, -2.8], HR = [2.5, 2.2, 2.1];
       M.e(H, HR, HARE);
       M.e([hf + 2, hu - 0.8, -2.8], [1.5, 1.2, 1.3], HARE);
-      both((s) => M.e([hf - 0.8, hu + 3.6 - (p.hurt ? 1 : 0), -2.8 + s * 0.9], [0.8, 3.2, 0.55], HARE, [0, -14 - (p.wind ? 30 : 0), s * 10]));
+      both((s) => M.e([hf - 0.8, hu + 3.6 - (p.hurt ? 1 : 0), -2.8 + s * 0.9], [0.8, 3.2, 0.55], HARE, [0, -14 - (p.wind ? 30 : 0), s * (10 + p.idle * 20 + hop * 12)]));
       M.eye(surf(H, HR, [0.55, 0.25, -0.8]), 3, "#ff2a2a");
       M.eye(surf(H, HR, [0.6, 0.25, 0.75]), 1, "#e02838");
       const mz = surf([hf + 2, hu - 0.8, -2.8], [1.5, 1.2, 1.3], [0.7, -0.6, 0]);
@@ -182,6 +188,11 @@ export const BEASTS_A = {
       M.e([f0 - 3.6, u0, 0], [1.2, 4, 3.8], C.RAW);
       M.s([f0 - 4.4, u0 + 2, 0], 1, C.BONE);
       M.s([f0 - 4.6, u0 - 1, 1.6], 0.8, C.BONE);
+      // Bracket fungi fan out of the stump of the severed spine.
+      both((s) => {
+        M.e([f0 - 2.6, u0 + 2.4, s * 2.9], [2.2, 0.65, 1.9], DEERL, [0, 8, s * (18 + p.wind * 18)]);
+        M.e([f0 - 2.8, u0 + 1.1, s * 3.3], [1.6, 0.55, 1.5], BOARD);
+      });
       // a ridge of bristles down the neck
       for (let i = 0; i < 5; i++) M.cone([f0 + 4 - i * 1.6, u0 + 4.2 - i * 0.3, 0], [f0 + 3.4 - i * 1.6, u0 + 6.4 - i * 0.2, 0], 0.9, BOARD);
       // the head, low and armed
