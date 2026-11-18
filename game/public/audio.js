@@ -681,6 +681,9 @@ const THROTTLE = { job_note: 0.06, gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06
   dark_beam: 0.08, wind_shrine: 0.2, knife_throw: 0.06, pet_fetch: 0.12, pet_poof: 0.12, job_change: 0.4,
   water_fill: 0.2, water_pour: 0.2, milk_clink: 0.15, weed_pull: 0.15, flyer_slap: 0.15, dog_sniff: 0.2,
   broom_sweep: 0.1, lift_heave: 0.12, knife_chop: 0.07, plate_clink: 0.08, order_bell: 0.15, dish_scrub: 0.1, dish_clean: 0.1,
+  earth_stomp: 0.12, mortar_launch: 0.12, mortar_blast: 0.12, dragonbone_shot: 0.12, roll_shot: 0.1, chain_zap: 0.07,
+  shoulder_bash: 0.12, bolas_wrap: 0.12, blade_vortex: 0.09, blade_fan: 0.1, smoke_bomb: 0.15, parry_stance: 0.15, parry_clang: 0.1,
+  mountain_charge: 0.15, mountain_split: 0.15,
 };
 /** Level trims by name, from rendering each effect offline against the music: combat sits forward. */
 const BOOST = {
@@ -700,9 +703,12 @@ const BOOST = {
   dark_beam: 1.6, wind_shrine: 1.6, knife_throw: 1.7, pet_fetch: 1.6, pet_poof: 1.5, job_change: 1.6,
   water_fill: 1.6, water_pour: 1.6, milk_clink: 1.6, weed_pull: 1.6, flyer_slap: 1.6, dog_sniff: 1.6,
   broom_sweep: 1.6, lift_heave: 1.6, knife_chop: 1.7, plate_clink: 1.6, order_bell: 1.6, dish_scrub: 1.6, dish_clean: 1.6,
+  earth_stomp: 1.9, mortar_launch: 1.7, mortar_blast: 1.9, dragonbone_shot: 2, roll_shot: 1.8, chain_zap: 1.7,
+  shoulder_bash: 1.8, bolas_wrap: 1.7, blade_vortex: 1.6, blade_fan: 1.8, smoke_bomb: 1.7, parry_stance: 1.6, parry_clang: 2,
+  mountain_charge: 1.6, mountain_split: 2,
 };
 /** Effects that play even when many voices are already sounding. */
-const IMPORTANT = new Set(["verdict", "steam", "overload", "supercon", "dragon_final", "meteor_cast", "crimson", "dive", "thunder", "sanctuary", "pact", "hundred", "oath_cast", "level", "achieve", "job_change", "death", "rift_start", "rift_boss", "rc_ping", "dim_boss", "dim_clear", "announce", "enh_ok", "enh_fail", "warp", "loot", "whale_burst", "boss_break", "cleave_hit", "ignite_burst", "soul_drain_fin", "snipe_shot"]);
+const IMPORTANT = new Set(["verdict", "steam", "overload", "supercon", "dragon_final", "meteor_cast", "crimson", "dive", "thunder", "sanctuary", "pact", "hundred", "oath_cast", "level", "achieve", "job_change", "death", "rift_start", "rift_boss", "rc_ping", "dim_boss", "dim_clear", "announce", "enh_ok", "enh_fail", "warp", "loot", "whale_burst", "boss_break", "cleave_hit", "ignite_burst", "soul_drain_fin", "snipe_shot", "parry_clang", "mountain_split", "dragonbone_shot"]);
 /** 일일 아르바이트 sounds that may come in quick bursts (a hop, a brick, a spray) and the three that frame a shift, which never get dropped. */
 Object.assign(THROTTLE, { alba_pop: 0.045, alba_snap: 0.04, alba_crunch: 0.05, alba_step: 0.05, alba_zap: 0.06, alba_sizzle: 0.1, alba_swish: 0.08, alba_thud: 0.06, alba_clang: 0.05, alba_n0: 0.04, alba_n1: 0.04, alba_n2: 0.04, alba_n3: 0.04 });
 for (const n of ["alba_go", "alba_end", "alba_win"]) IMPORTANT.add(n);
@@ -1525,5 +1531,89 @@ const SFX = {
   dish_clean() {
     const p = this.vary();
     this.arp("sine", [1319 * p, 1760 * p, 2093 * p], 0.04, 0.12, 0.055);
+  },
+  // ── first wave of 11 new weapon skills (fx 148–159 in skillfx_combo.js) ──
+  earth_stomp() {
+    const p = this.vary();
+    this.punch(p, 240, 82, 0, 0.95);
+    this.tone("sine", 92 * p, 38 * p, 0.24, 0.16, 0.02);
+    this.noise(0.22, 0.18, 950 * p, "lowpass", 0.02, 140 * p);
+  },
+  mortar_launch() {
+    const p = this.vary();
+    this.tone("triangle", 210 * p, 480 * p, 0.12, 0.09);
+    this.noise(0.14, 0.12, 1200 * p, "bandpass", 0, 3200 * p);
+  },
+  mortar_blast() {
+    const p = this.vary();
+    this.punch(p, 320, 95, 1400, 0.92);
+    this.noise(0.28, 0.24, 1800 * p, "lowpass", 0.02, 130 * p);
+    this.tone("sawtooth", 145 * p, 44 * p, 0.26, 0.13, 0.02);
+  },
+  dragonbone_shot() {
+    const p = this.vary();
+    this.punch(p, 480, 118, 2800, 0.95);
+    this.noise(0.22, 0.2, 1500 * p, "bandpass", 0, 5400 * p);
+    this.tone("sawtooth", 330 * p, 110 * p, 0.2, 0.1);
+  },
+  roll_shot(crit = false) {
+    const p = this.vary();
+    this.noise(0.12, 0.12, 850 * p, "bandpass", 0, 2600 * p);
+    this.tone("triangle", 260 * p, 130 * p, 0.1, 0.09, 0.03);
+    if (crit) this.arp("sine", [1047 * p, 1568 * p], 0.035, 0.11, 0.065, 0.04);
+  },
+  chain_zap() {
+    const p = this.vary();
+    this.noise(0.09, 0.18, 3600 * p, "highpass");
+    this.tone("square", 1480 * p, 280 * p, 0.1, 0.075);
+    this.tone("sine", 2200 * p, 1100 * p, 0.08, 0.045, 0.02);
+  },
+  shoulder_bash() {
+    const p = this.vary();
+    this.punch(p, 260, 98, 900, 0.9);
+    this.noise(0.14, 0.15, 780 * p, "bandpass", 0, 1900 * p);
+  },
+  bolas_wrap() {
+    const p = this.vary();
+    for (let i = 0; i < 3; i++) this.noise(0.05, 0.11, (1600 + i * 500) * p, "bandpass", i * 0.05);
+    this.tone("triangle", 380 * p, 220 * p, 0.14, 0.07, 0.04);
+  },
+  blade_vortex(full = false) {
+    const p = this.vary();
+    this.noise(0.12, full ? 0.18 : 0.13, 2400 * p, "bandpass", 0, 4800 * p);
+    this.tone("sine", (full ? 1568 : 1175) * p, 880 * p, 0.1, 0.055);
+  },
+  blade_fan() {
+    const p = this.vary();
+    for (let i = 0; i < 3; i++) this.noise(0.055, 0.14, (3200 + i * 600) * p, "bandpass", i * 0.03, 1600 * p);
+    this.tone("triangle", 1320 * p, 660 * p, 0.11, 0.06);
+  },
+  smoke_bomb() {
+    const p = this.vary();
+    this.tone("sine", 240 * p, 95 * p, 0.09, 0.11);
+    this.noise(0.32, 0.16, 1800 * p, "bandpass", 0.02, 420 * p);
+    this.noise(0.22, 0.08, 4200 * p, "highpass", 0.04, 1400 * p);
+  },
+  parry_stance() {
+    const p = this.vary();
+    this.tone("triangle", 520 * p, 780 * p, 0.09, 0.065);
+    this.noise(0.06, 0.08, 2800 * p, "bandpass");
+  },
+  parry_clang() {
+    const p = this.vary();
+    this.punch(p, 580, 145, 3600, 1.0);
+    this.tone("sine", 1760 * p, 1680 * p, 0.24, 0.085, 0.005);
+    this.tone("sine", 2637 * p, 2520 * p, 0.18, 0.055, 0.01);
+  },
+  mountain_charge() {
+    const p = this.vary();
+    this.tone("sawtooth", 98 * p, 196 * p, 0.24, 0.07);
+    this.noise(0.22, 0.09, 480 * p, "bandpass", 0, 1800 * p);
+  },
+  mountain_split(stage = 1) {
+    const p = this.vary(), w = 0.8 + Math.min(3, stage) * 0.12;
+    this.punch(p, 320 + stage * 40, 88, 1800 + stage * 300, w);
+    this.noise(0.22 + stage * 0.05, 0.2 * w, 1600 * p, "lowpass", 0.02, 110 * p);
+    this.tone("sawtooth", (130 + stage * 20) * p, 40 * p, 0.26 + stage * 0.04, 0.13 * w, 0.02);
   },
 };
