@@ -461,3 +461,11 @@ watch posts, blight); `--page over --map town` (whole layout). T-B: one per new 
 - **Rift retune** (integrator's call): one more permanent fire shifts `S.nextId`, which seeds rifts; two draws wiped the
   bot party. `DIM.hpBase` 5.4 → 4.9, `hpLow` step 0.85; `dimrift.mjs` runs three draws a level (scale-and-rift H.5).
   `skills.mjs` mastery check divides out the weapon attack mastery adds, 200 casts (it passed by luck on 40).
+
+## M. Visual pass (buildings and terrain variety)
+
+Footprints, doors, interiors, NPC tiles unchanged. `iso_tall.js`: store, home now hip roofs; home roof violet, apt
+teal; diner gets a teal/cream awning and diagonal timber bracing (also the inn); window boxes on store/diner/inn/
+boutique/lab chosen per building by `hash(x, y)`; doorless cottages with `seed % 3 === 1` get log-brown walls.
+`34-maps-world.js buildTown` (end): roads fray into the grass (ground only), flowering-meadow (`❋`) and bare-earth
+(`j`) patches, short gapped hedge rows (`H`) on free non-kept tiles only.

@@ -511,7 +511,7 @@ export function render(focusX, focusY, dt, t, snap) {
 /** The local player's last drawn look, for the ghost shown through walls. */
 const ghost = { s: null, gz: 1 };
 
-export { iso, sAng, PARTS, playerLook, init, resize, sync, project, pick, pickPlayer, FIGURE_DENSITY } from "./scene_view.js";
+export { iso, sAng, PARTS, playerLook, init, resize, setZoomMul, sync, project, pick, pickPlayer, FIGURE_DENSITY } from "./scene_view.js";
 export { loadMap, labels } from "./scene_map.js";
 export { tintWhite, petFetch, npcOut, npcService } from "./scene_people.js";
 export { props, hooks, personFrame, FOOT, fxCustom, glows, qiBurst, arrowSprite, fx, big, shake } from "./scene_fx.js";

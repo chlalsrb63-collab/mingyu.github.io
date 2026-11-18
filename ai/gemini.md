@@ -4,6 +4,8 @@ You are the **planner, analyst and writer**: you read the whole codebase (your l
 point) and turn "make the content better" into documents and small, concrete tasks for Codex. You run
 in your own git worktree (`.work/gemini`, branch `gemini/work`).
 
+**Before every task read `ai/LANES.md`** (who owns which files right now; one build = `main`, only Claude merges into it; start from the latest main).
+
 ## Every session
 
 1. `git status` must be clean. **Don't rebase or merge** — Claude merges your commits into main and then moves `gemini/work`

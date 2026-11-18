@@ -2152,3 +2152,15 @@ body[data-lay="full"].playing #w-dex:not(.docked) { height: var(--win-h); }
 #alba-play .ap-stamp { font: 900 56px/1 var(--pix); margin: 4px 0 8px; color: #8a8a96; text-shadow: 0 2px 0 #fff4cf; }
 #alba-play .ap-stamp.g1 { color: #b4783a; } #alba-play .ap-stamp.g2 { color: #3a8ad0; } #alba-play .ap-stamp.g3 { color: #2ea85a; } #alba-play .ap-stamp.g4 { color: #e8a010; text-shadow: 0 0 10px #ffd060, 0 2px 0 #fff4cf; }
 body.alba-open #game { pointer-events: none; }
+
+/* ─────────────────── talk close-up (talkcam.js): the HUD steps back, slim letterbox bars, no vignette ─────────────────── */
+body.talkcam #talk-name { font-size: calc(var(--t12) * 1.25); }
+body.talkcam #w-talk { z-index: 60; }
+body.talkcam #hud > * { transition: opacity .3s ease-out; }
+body.talkq #hud > * { opacity: 0 !important; pointer-events: none !important; }
+body.talkq #windows > .window:not(#w-talk), body.talkq #tip { opacity: 0; pointer-events: none; }
+body.talkq #w-talk { left: 50% !important; top: auto !important; bottom: 14vh; transform: translateX(-50%); }
+body::before, body::after { content: ""; position: fixed; left: 0; right: 0; height: 0; background: #000; z-index: 50; pointer-events: none; transition: height .35s ease-out; }
+body::before { top: 0; } body::after { bottom: 0; }
+body.talkq::before, body.talkq::after { height: 9vh; }
+@media (prefers-reduced-motion: reduce) { body.talkcam #hud > *, body::before, body::after { transition: none; } }
