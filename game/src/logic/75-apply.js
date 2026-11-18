@@ -409,6 +409,7 @@ export function applyAction(S, pid, a) {
         for (const [id, n] of quest.items) if (addItem(ch, id, n)) foundItem(S, p, id, n);
         ch.q = { i: ch.q.i + 1, n: 0, st: 0 };
         toast(p, `의뢰 완료: ${quest.title}`);
+        if (quest.honor) { checkAch(S, p); toast(p, `칭호 「${quest.honor}」 획득!`); }
         if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "의뢰 보상");
         gainXp(S, p, quest.xp);
       }

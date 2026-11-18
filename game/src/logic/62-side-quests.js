@@ -86,6 +86,13 @@ for (const q of SIDE) for (const [pick, rw] of [[-1, q.reward], ...(q.choice || 
   ACH.push(a); ACH_BY[id] = a; rw.ach = id;
 }
 
+// main-chain honors (QUESTS[i].honor): an achievement earned once ch.q.i is past that row (a sheet already past it gets it at its next achievement check)
+QUESTS.forEach((q, i) => {
+  if (!q.honor) return;
+  const a = { id: `h_${i}`, cat: "이야기", name: q.honor, desc: `[${q.title}] 의뢰 완료`, pts: 5, test: (c) => c.q.i > i, title: q.honor, bonus: null };
+  ACH.push(a); ACH_BY[a.id] = a;
+});
+
 const sqEmpty = () => ({ on: {}, done: {}, flags: {}, t: {} });
 /** A saved ch.sq, cleaned: active quests that no longer exist are dropped; finished ones are remembered. */
 function sqClean(v) {

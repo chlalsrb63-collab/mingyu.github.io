@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { QUESTS, SQ_MAIN, SQ_BY, FIELD_BOSS, changeMap };\n";
+  "\nexport const __t = { QUESTS, SQ_MAIN, SQ_BY, FIELD_BOSS, changeMap, ACH };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs(), Q = D.quests, T = 16;
 
@@ -170,3 +170,23 @@ console.log("chapters: ok");
 assert.deepEqual(Q.slice(-4).map((q) => q.mob), ["crownstag", "rimehare", "frostmoth", "rimewalrus"]);
 assert.ok(Q[49].chap.startsWith("제9장") && Q[49].intro.length > 30);
 for (const q of Q.slice(-3)) assert.ok(Object.values(L.atlas().maps).some((m) => m.spawns.some((s) => s.k === q.mob)), `${q.title}: ${q.mob} spawns somewhere`);
+
+// ── honors: every chapter finale (the row before the next chap row, and the epilogue's last) pays a unique title on hand-in
+{
+  const heads = Q.map((q, i) => (q.chap ? i : -1)).filter((i) => i >= 0);
+  const fins = [...heads.slice(1).map((i) => i - 1), Q.length - 1];
+  assert.equal(fins.length, heads.length);
+  const honors = fins.map((i) => Q[i].honor);
+  assert.ok(honors.every((h) => h && h.length <= 16), "every finale has an honor");
+  assert.equal(new Set(honors).size, honors.length, "honors are unique");
+  assert.equal(Q.filter((q) => q.honor).length, fins.length, "only finales carry one");
+  for (const h of honors) assert.equal(X.ACH.filter((a) => a.name === h || a.title === h).length, 1, `${h}: no other title uses it`);
+  for (const i of fins) {
+    const W = world({ ...at(i, 200), q: { i, n: Q[i].n, st: 1 } });
+    if (Q[i].sq) W.ch.sq.done[Q[i].sq] = 1;
+    W.meet("elder"); W.ok({ t: "quest", a: "done" });
+    assert.ok(W.ch.ach.includes(`h_${i}`), `${Q[i].honor} granted on hand-in`);
+    W.ch.title = `h_${i}`;
+  }
+}
+console.log("chapters honors: ok");

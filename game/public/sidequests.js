@@ -62,6 +62,7 @@ export function rewardRow(r, cls = "q-reward") {
   for (const [id, n] of r.items || []) chip(url && url[id], `×${n}`, items[id] ? items[id].name : id);
   if (r.keep) chip(url && url[r.keep], "기념품", items[r.keep]?.name);
   if (r.title) chip(null, `칭호 「${r.title}」`);
+  if (r.honor) chip(null, `칭호 「${r.honor}」`);
   if (row.childElementCount === 1) row.append(el("span", "rw-chip", "없음"));
   return row;
 }
