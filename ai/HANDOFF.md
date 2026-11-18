@@ -1,6 +1,8 @@
-# 인계 — 여기서 시작 (2026-11-16 정리판)
+# 이전 통합 인계 (2026-11-16 정리판)
 
-새 세션은 **이 파일만 읽고** 시작하세요. 지난 기록 전부(§0~§0.12, 설계 결정 이력)는 `ai/HANDOFF-archive-2026-11-16.md` — 필요할 때 `grep -n`으로 해당 절만.
+2026-11-18 로컬 빌드·폴더 정리·Claude/Gemini 경로는 [최신 개발 현황 인수인계](HANDOFF-DEV-STATUS.md)와 [현황판](../docs/development-status.html)을 먼저 확인하세요. 아래에는 이전 통합 세션의 이력을 유지합니다.
+
+설계 결정 이력과 이전 기록(§0~§0.12)은 `ai/HANDOFF-archive-2026-11-16.md`에서 해당 절만 찾아 읽으세요.
 프로젝트 규칙: `AGENTS.md`. 파일 지도: `docs/FILEMAP.md`. 작업 보드: `ai/TASKS.md`. 이번 아이템 개편 명세: `docs/design/item-system-spec-2026-11-16.md`.
 
 ## 1. 지금 상태

@@ -2,6 +2,12 @@
 
 > One-page system summaries (server/saves, maps, loot, rift, world life, wire/client): [`docs/systems/README.md`](systems/README.md).
 
+| Local development reference | Purpose |
+| --- | --- |
+| [`development-status.html`](development-status.html) | Offline owner dashboard with feature IDs, implementation states, review selection, map data and source links |
+| [`ai/HANDOFF-DEV-STATUS.md`](../ai/HANDOFF-DEV-STATUS.md) | Latest local build scope, per-feature paths, verification and restoration notes for Claude and Gemini |
+| [`game/scripts/dev-status.mjs`](../game/scripts/dev-status.mjs) | Refreshes the dashboard snapshot from `defs()` and `atlas()` with local game commit metadata |
+
 Moved out of `AGENTS.md` so it is read only when needed. Open the row you need, then `grep -n` the
 banner or function it names. **When you add, move or split a file, update its row here in the same commit.**
 Bracketed counts are physical lines of tracked text files, including generated `game/src/logic.js`.
@@ -16,8 +22,7 @@ Bracketed counts are physical lines of tracked text files, including generated `
 | `social.js` [207] | plain JS (vault side): friends `fr:<pid>` (`class Social`: `list request answer remove op`, presence `seen gone at where` for whispers across channels); types in `social.d.ts` |
 | `accounts.d.ts` [91] · `logic.d.ts` [85] · `social.d.ts` [43] | Type declarations for the plain-JS rules, account and social modules. |
 | `env.ts` [22] | `Env` bindings: `ASSETS`, `ROOMS`, `HF_ENV`, `APP_SLUG`, `PLAYTEST` (local only: map-editor playtest join) |
-| `logic.js` [17096] | **GENERATED** — never edit; built from `src/logic/*.js` |
-| `logic.js` [17276] | **GENERATED** — never edit; built from `src/logic/*.js` |
+| `logic.js` | **GENERATED** — never edit; built from `src/logic/*.js` and `game/data/` |
 
 ### Rules — `game/src/logic/` (fragments of ONE scope, concatenated in name order; not modules)
 | part | contents |
