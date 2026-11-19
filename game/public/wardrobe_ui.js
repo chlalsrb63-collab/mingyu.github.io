@@ -143,10 +143,10 @@ function iconOf(id) {
 }
 export function iconCanvas(id) {
   const c = document.createElement("canvas");
-  c.width = c.height = 16;
+  c.width = c.height = 32;
   const g = c.getContext("2d");
   g.imageSmoothingEnabled = false;
-  if (id) g.drawImage(iconOf(id), 0, 0);
+  if (id) g.drawImage(iconOf(id), 0, 0, 32, 32);
   return c;
 }
 /** A sewn piece's source: the keepsake 루루 sews it from (defs.keepSew). */

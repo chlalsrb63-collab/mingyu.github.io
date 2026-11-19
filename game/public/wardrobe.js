@@ -31,6 +31,7 @@
  *     twice — the motif never flickers. Capes and wings move with the walk.
  */
 
+import * as Assets from "./assetlib.js";
 import { HANBOK_HAT, HANBOK_TOP, HANBOK_ART } from "./wardrobe_hanbok_sets.js";
 import { CAREER_HAT, CAREER_TOP, CAREER_ART } from "./wardrobe_career_uniforms.js";
 
@@ -2213,6 +2214,18 @@ function fitIcon(g, frame) {
  * `sheetOf(o)` is sprites.js personSheet (passed in to avoid a circular import).
  */
 export function cosIcon(id, sheetOf, lookOf) {
+  const ext = Assets.canvas("icon.cos." + id);
+  if (ext) {
+    const key = "ext:" + id;
+    if (icons.has(key)) return icons.get(key);
+    const c = document.createElement("canvas");
+    c.width = c.height = 32;
+    const g = c.getContext("2d");
+    g.imageSmoothingEnabled = false;
+    g.drawImage(ext, 0, 0, 32, 32);
+    icons.set(key, c);
+    return c;
+  }
   if (icons.has(id)) return icons.get(id);
   const a = ART[id];
   const [c, g] = canvas(16);
