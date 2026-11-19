@@ -1090,6 +1090,166 @@
       "src": "assets/gear/amulet/n_10.png?v=c02882cd",
       "w": 32,
       "h": 32
+    },
+    "icon.cos.hat_hanbok_seonbi": {
+      "src": "assets/cosmetics/hat_hanbok_seonbi.png?v=4360df75",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_hanbok_assi": {
+      "src": "assets/cosmetics/hat_hanbok_assi.png?v=f3e9f2df",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_hanbok_king": {
+      "src": "assets/cosmetics/hat_hanbok_king.png?v=19fc2c45",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_hanbok_musa": {
+      "src": "assets/cosmetics/hat_hanbok_musa.png?v=25f65a6a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_hanbok_seonbi": {
+      "src": "assets/cosmetics/top_hanbok_seonbi.png?v=b0c30ce1",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_hanbok_assi": {
+      "src": "assets/cosmetics/top_hanbok_assi.png?v=6038f031",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_hanbok_king": {
+      "src": "assets/cosmetics/top_hanbok_king.png?v=05a0bede",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_hanbok_musa": {
+      "src": "assets/cosmetics/top_hanbok_musa.png?v=4b960179",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_career_police": {
+      "src": "assets/cosmetics/hat_career_police.png?v=994cbb18",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_career_nurse": {
+      "src": "assets/cosmetics/hat_career_nurse.png?v=8e96e180",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_career_fire": {
+      "src": "assets/cosmetics/hat_career_fire.png?v=ba8dc8f9",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_career_pilot": {
+      "src": "assets/cosmetics/hat_career_pilot.png?v=d9999cf1",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_career_police": {
+      "src": "assets/cosmetics/top_career_police.png?v=a0116c36",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_career_nurse": {
+      "src": "assets/cosmetics/top_career_nurse.png?v=bb141656",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_career_fire": {
+      "src": "assets/cosmetics/top_career_fire.png?v=d04d90ad",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_career_pilot": {
+      "src": "assets/cosmetics/top_career_pilot.png?v=c7ab4255",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_wizard": {
+      "src": "assets/cosmetics/hat_wizard.png?v=267518c3",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_straw": {
+      "src": "assets/cosmetics/hat_straw.png?v=11046f73",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_wreath_pink": {
+      "src": "assets/cosmetics/hat_wreath_pink.png?v=959f2f50",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_beret": {
+      "src": "assets/cosmetics/hat_beret.png?v=7ec56cb3",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_robe": {
+      "src": "assets/cosmetics/top_robe.png?v=6e31ecd0",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_sailor": {
+      "src": "assets/cosmetics/top_sailor.png?v=fa8e97a6",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_hanbok": {
+      "src": "assets/cosmetics/top_hanbok.png?v=6c511f0c",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_dopo": {
+      "src": "assets/cosmetics/top_dopo.png?v=1876c760",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_cape_red": {
+      "src": "assets/cosmetics/back_cape_red.png?v=27400b9a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_cape_blue": {
+      "src": "assets/cosmetics/back_cape_blue.png?v=da40ae95",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_pack": {
+      "src": "assets/cosmetics/back_pack.png?v=d1aa0d20",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_plush": {
+      "src": "assets/cosmetics/back_plush.png?v=88bec066",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.face_glasses": {
+      "src": "assets/cosmetics/face_glasses.png?v=e2a62f75",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.face_shades": {
+      "src": "assets/cosmetics/face_shades.png?v=c8a5a83a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.face_moon_glasses": {
+      "src": "assets/cosmetics/face_moon_glasses.png?v=8c525229",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_bamboo": {
+      "src": "assets/cosmetics/hat_bamboo.png?v=b0196c2d",
+      "w": 32,
+      "h": 32
     }
   },
   "audio": {},
