@@ -301,7 +301,7 @@ export function refreshUi() {
     ? ["stat", s.st, s.lvl, s.ap, s.dv, s.atk, s.mhp, s.mmp, s.def, s.crit, s.critd, s.mf, s.job, s.wk, s.eq.weapon && s.eq.weapon.id, s.dead, StatWin.key()]
     : ["gear", s.ap, s.eq, s.atk, s.def, s.mhp, s.mmp, s.crit, s.critd, s.ls, s.xpb, s.mf, s.goldb, s.acd, s.kills, s.st, s.dv, s.skLv, s.job, s.lg, s.runeSets, s.runeCounts, s.element, s.lvl, s.name, s.guild], renderChar);
   // K: 무기 · 스킬 or 전직의 길
-  draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.jp?.join(), s.qs, s.gold, JSON.stringify(s.sk), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey(), G.skTab === "lo" && [Loadout.key(), G.near && G.near.role]], renderSkills);
+  draw("skill", () => [G.skTab, s.lvl, s.job, s.wk, s.wk2, s.acd, s.range, s.eq.weapon && s.eq.weapon.id, s.wm, s.jp?.join(), s.qs, s.gold, JSON.stringify(s.sk), JSON.stringify(s.ske), near, JobTree.key(), JobTree.weaponKey(), JobTree.treeKey(), G.skTab === "lo" && [Loadout.key(), G.near && G.near.role]], renderSkills);
   draw("trophy", Trophies.key, Trophies.render);   // 보스 전리품 (trophies.js)
   draw("dex", Dex.key, Dex.render);               // 아이템도감: the prefixes (dex.js)
   draw("shop", () => [s.gold, s.cls, s.lvl, s.inv, G.near, s.rep], renderShop);

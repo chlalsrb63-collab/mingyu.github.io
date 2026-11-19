@@ -292,6 +292,7 @@ function renderElementStats(host, totals) {
 }
 
 // ── K: 무기 · 스킬 and 전직의 길 (jobtree.js draws the weapon rows and the tree; the skill rows are here, with the quick-slot drag) ──
+const expandedSk = new Set();
 export function renderSkills(s) {
   const tab = G.skTab === "tree" || G.skTab === "lo" ? G.skTab : "wpn";
   for (const b of $$("#skill-tabs button")) b.classList.toggle("on", b.dataset.tab === tab);
@@ -300,33 +301,55 @@ export function renderSkills(s) {
   else if (tab === "tree") JobTree.renderTree(box, s, { atJob: G.near && G.near.role === "job" });
   else JobTree.renderWeapons(box, s, { skills: (host, k) => skillRows(host, s, k) });
 }
-/** Weapon `k`'s skills (L1, L10, the passive), then the job signatures it carries; the hand's basic attack first. */
+/** Weapon `k`'s skills sorted by required mastery level (lowest first), compact key stats + "상세보기" toggle. */
 function skillRows(box, s, k) {
-  const SK = G.defs.skills, jobs = G.defs.jobs;
+  const SK = G.defs.skills, jobs = G.defs.jobs, skePct = G.defs.ske?.pct || 2.5;
   if (k === s.wk && s.eq.weapon) {
     const wk = G.defs.wkinds[s.wk] || {};
     const basic = el("div", "skill basic");
     const bi = el("img", "ic"); bi.alt = ""; bi.src = G.icons.url[s.eq.weapon.id] || iconUrl("sword");
     const bh = el("div", "hd");
     const basicType = { damageType: G.defs.elements?.basic?.[s.wk] };
-    bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), skillElements(basicType), el("kbd", "", K("attack")), el("small", "", `간격 ${(s.acd / 1000).toFixed(2)}초 · 사거리 ${Math.round(s.range)}`));
+    bh.append(el("b", "", `기본 공격 · ${wk.name || "공격"}`), skillElements(basicType), el("kbd", "", K("attack")));
+    const bMeta = el("div", "sk-meta");
+    bMeta.append(el("span", "", `공격 간격 ${(s.acd / 1000).toFixed(2)}초`), el("span", "", `사거리 ${Math.round(s.range)}`));
     const description = {
       hammer: `해머를 머리 위로 들어 올려 앞쪽 ${wk.center}px 지점을 내려찍습니다. 반경 ${wk.r}px의 적을 최대 세 마리까지 맞힙니다.`,
       sword: "대검을 좌우로 번갈아 휘둘러 두 번 이어 벱니다.",
     }[s.wk] || "가장 가까운 적을 겨냥합니다. 이어 치면 세 번째 타격이 마무리 일격이 됩니다.";
-    basic.append(bi, bh, el("p", "", description));
+    const bKey = `basic:${s.wk}`, bOpen = expandedSk.has(bKey);
+    const bDesc = el("p", "sk-desc", description);
+    bDesc.hidden = !bOpen;
+    const bFoot = el("div", "sk-foot");
+    const bBtn = el("button", "btn small sk-more", bOpen ? "접기" : "상세보기");
+    bBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = !expandedSk.has(bKey);
+      if (open) expandedSk.add(bKey); else expandedSk.delete(bKey);
+      bDesc.hidden = !open; bBtn.textContent = open ? "접기" : "상세보기";
+    });
+    bFoot.append(bBtn);
+    basic.append(bi, bh, bMeta, bDesc, bFoot);
     hoverTip(basic, (n) => { n.append(el("div", "nm", `기본 공격 · ${wk.name || "공격"}`), skillElements(basicType), el("div", "", description)); });
     box.append(basic);
   }
-  // the single job of this weapon, and a two-weapon job that carries it once it is yours
+  // the single job of this weapon, and a two-weapon job that carries it once it is yours — sorted by mastery level ascending (lowest at top)
+  const orderIdx = new Map(G.defs.skillOrder.map((id, i) => [id, i]));
   const ids = G.defs.skillOrder.filter((id) => {
     const sk = SK[id];
     if (!sk.job) return sk.wk === k;
     const j = jobs[sk.job];
     return j.kind === "single" ? j.wk[0] === k : sk.job === s.job && j.wk.includes(k);
+  }).sort((a, b) => {
+    const sa = SK[a], sb = SK[b];
+    const na = sa.job ? (sa.need || 25) : (sa.need || 0);
+    const nb = sb.job ? (sb.need || 25) : (sb.need || 0);
+    if (na !== nb) return na - nb;
+    return (orderIdx.get(a) ?? 0) - (orderIdx.get(b) ?? 0);
   });
   for (const id of ids) {
     const sk = SK[id], w = G.skw && G.skw.get(id), pas = sk.kind === "p";
+    const enh = (s.ske && s.ske[id]) | 0;
     const rank = sk.job === s.job ? JobTree.signatureProgress(G.defs, s.jp?.[0]) : null;
     const why = pas ? (w ? (w[3] ? "" : "이 무기를 들면 켜집니다") : `숙련 ${sk.need}에 배웁니다`) : sk.job && s.job !== sk.job ? `[${jobs[sk.job].name}] 전직 기술` : QS.skillWhy(id);
     const row = el("div", "skill" + (why ? " locked" : "") + (sk.job ? " ult" : ""));
@@ -334,32 +357,54 @@ function skillRows(box, s, k) {
     const hd = el("div", "hd");
     const at = pas ? "" : QS.keysOf(["s", id]);
     const armorPen = skillArmorPenetration(sk);
-    hd.append(el("b", "", sk.name), skillElements(sk), at ? el("kbd", "", at) : "");
-    if (armorPen) hd.append(el("small", "skill-armor-pen", armorPen));
-    if (pas) hd.append(el("small", "", "패시브"));
-    else hd.append(el("small", "mp", `MP ${w?.[1] ?? sk.mp}${w?.[4] ? ` · HP ${w[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : ""}`), el("small", "", `재사용 ${(w?.[5] ?? sk.cd) / 1000}초`));
+    // Learned skills always display enhancement badge (+0, +1, +2 ...) beside the skill name
+    const enhEl = w ? el("span", "sk-enh" + (enh > 0 ? " up" : ""), `+${enh}`) : "";
+    hd.append(el("b", "", sk.name), enhEl, skillElements(sk), at ? el("kbd", "", at) : "");
+    // Compact structured key stats only (resource cost, cooldown, attack multiplier, armor pen, mastery req)
+    const meta = el("div", "sk-meta");
+    if (pas) {
+      meta.append(el("span", "sk-tag", "패시브"));
+    } else {
+      const mpTxt = `MP ${w?.[1] ?? sk.mp}${w?.[4] ? ` · HP ${w[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : ""}`;
+      meta.append(el("span", "mp", mpTxt), el("span", "", `쿨 ${((w?.[5] ?? sk.cd) / 1000).toFixed(1).replace(/\.0$/, "")}초`));
+      if (sk.mult) {
+        const effPct = Math.round(sk.mult * 100 * (1 + (skePct / 100) * enh));
+        meta.append(el("span", "sk-pow" + (enh > 0 ? " up" : ""), `위력 ${effPct}%${sk.hits > 1 ? `×${sk.hits}` : ""}`));
+      }
+    }
+    if (armorPen) meta.append(el("span", "skill-armor-pen", armorPen));
     const detail = [rank?.current, why].filter(Boolean).join(" · ");
-    hd.append(el("small", "", detail || (sk.job ? "전직 기술" : `숙련 ${sk.need} 습득`)));
-    // one line here (css ellipsis); the whole text is the hover card
-    const desc = el("p", "", sk.desc);
-    row.append(ic, hd, desc);
-    if (!pas && w && w[3] === 0) { row.classList.add("off"); hd.append(el("small", "", "스킬 칸에 없음")); }   // learned but not in the loadout (loadout.js)
+    meta.append(el("span", "sk-req", detail || (sk.job ? "전직 기술" : `숙련 ${sk.need}`)));
+    if (!pas && w && w[3] === 0) { row.classList.add("off"); meta.append(el("span", "sk-req", "스킬 칸에 없음")); }
+    // Long description is hidden by default and toggled via "상세보기"
+    const isOpen = expandedSk.has(id);
+    const desc = el("p", "sk-desc", sk.desc);
+    desc.hidden = !isOpen;
+    const foot = el("div", "sk-foot");
+    const more = el("button", "btn small sk-more", isOpen ? "접기" : "상세보기");
+    more.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const open = !expandedSk.has(id);
+      if (open) expandedSk.add(id); else expandedSk.delete(id);
+      desc.hidden = !open; more.textContent = open ? "접기" : "상세보기";
+    });
+    foot.append(more);
+    if (!pas) {
+      const put = el("button", "btn small qs-put", "단축칸");
+      put.title = `누른 뒤 아래 단축칸(${K("slot1")}~${K("slot9")})을 누르면 거기에 놓입니다`;
+      if (!w) { put.disabled = true; put.title = why; }
+      put.addEventListener("click", (e) => { e.stopPropagation(); QS.pick(["s", id]); });
+      foot.append(put);
+      QS.dragSource(row, ["s", id]);
+    }
+    row.append(ic, hd, meta, desc, foot);
     hoverTip(row, (n) => {
-      n.append(el("div", "nm", sk.name), skillElements(sk));
+      n.append(el("div", "nm", w ? `${sk.name} +${enh}` : sk.name), skillElements(sk));
       if (armorPen) n.append(el("div", "", `물리 피해를 계산할 때 대상의 물리 방어력 ${sk.armorPenPct}%를 무시합니다.`));
       n.append(el("div", "", sk.desc));
       if (rank?.current && rank.next) n.append(el("small", "", `다음 · ${rank.next}`));
       if (why) n.append(el("div", "hint", why));
     });
-    if (!pas) {
-      // drag the icon (or the whole row) onto the quick slots; or tap the button, then a slot
-      const put = el("button", "btn small qs-put", "단축칸");
-      put.title = `누른 뒤 아래 단축칸(${K("slot1")}~${K("slot9")})을 누르면 거기에 놓입니다`;
-      if (!w) { put.disabled = true; put.title = why; }   // not learned yet: nothing to put on a slot
-      put.addEventListener("click", () => QS.pick(["s", id]));
-      row.append(put);
-      QS.dragSource(row, ["s", id]);
-    }
     box.append(row);
   }
 }
