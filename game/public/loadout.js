@@ -112,14 +112,14 @@ export function renderLoadout(box, s) {
       const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(id);
       c.append(ic, el("span", "", bonus ? `${SK[id].name} · ${bonus}` : SK[id].name));
       tip(c, id, bonus, cross);
-      c.addEventListener("click", () => { Sound.play("ok"); setSlot(pick, id); pick = ""; refreshUi(); });
+      c.addEventListener("click", () => { Sound.play("skill_equip"); setSlot(pick, id); pick = ""; refreshUi(); });
       pool.append(c);
     }
     box.append(pool);
   }
   const go = el("button", "btn small gold", "적용"), rs = el("button", "btn small", "되돌리기");
   go.addEventListener("click", () => {
-    Sound.play("ok");
+    Sound.play("skill_equip");
     const m = { t: "lo", a: draft.a, p: draft.p };
     if (lo[4]) m.x = draft.x;
     if (lo[4] && twoCross) m.y = draft.y;
@@ -143,7 +143,7 @@ function skeSection(box, s, actives) {
     else {
       const b = el("button", "btn small", `강화 ${D.rate[n]}%`);
       b.disabled = have < 1;
-      b.addEventListener("click", () => { Sound.play("ok"); act({ t: "ske", id }); });
+      b.addEventListener("click", () => { Sound.play("skill_rankup"); act({ t: "ske", id }); });
       r.append(b);
     }
     box.append(r);

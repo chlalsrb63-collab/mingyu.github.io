@@ -230,7 +230,7 @@ function loadMap(m) {
 function whisperLine(c) {
   const p = addChat(c.m, "whisper", c.w === 1 ? `[귓속말] ${c.n}` : `[귓속말 → ${c.n}]`, c.it);
   p.addEventListener("click", () => chatTo(`/w ${c.n} `));
-  if (c.w === 1) { G.lastWhisper = c.n; Sound.play("ui"); chatHint(); }
+  if (c.w === 1) { G.lastWhisper = c.n; Sound.play("whisper_in"); chatHint(); }
 }
 function onSnap(s) {
   const t = now();

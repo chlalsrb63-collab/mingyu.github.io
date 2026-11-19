@@ -216,7 +216,7 @@ function close() {
 /** The phone key / the pocket button. */
 export function toggle() {
   if (!VP.phone || !G.playing) return;
-  if (out) { close(); Sound.play("close"); } else { open(); Sound.play("open"); }
+  if (out) { close(); Sound.play("phone_close"); } else { open(); Sound.play("phone_open"); }
 }
 export const isOut = () => out;
 
@@ -230,7 +230,7 @@ function showApp(id) {
   $("#ph-alias").textContent = app && app.game.replace(/\s/g, "") !== app.name.replace(/\s/g, "") ? app.game : "";   // the game's own word when it differs (인벤토리 · 가방)
 }
 function launch(a) {
-  Sound.play("ui");
+  Sound.play("phone_tap");
   hideTip();
   if (a.kind === "act") { close(); a.run(); return; }
   if (a.kind === "float") { close(); openWin(a.win); return; }
@@ -238,7 +238,7 @@ function launch(a) {
   if (a.tab) openCharTab(a.tab); else openWin(a.win);
 }
 function home() {
-  Sound.play("ui");
+  Sound.play("phone_tap");
   if (panelWin()) closeWin(panelWin()); else $("#ph-grid").scrollTop = 0;
 }
 
@@ -287,7 +287,7 @@ export function setup() {
   hoverTip(btn, (h) => { h.classList.add("mn-tip"); h.append(el("div", "nm", `스마트폰 (${K("phone")})`)); h.append(el("div", "hint", "메뉴 — 가방 · 스킬 · 퀘스트 같은 앱이 들어 있습니다")); }, true);
   $("#ph-back").addEventListener("click", home);
   // the round button: out of an app to the home screen; on the home screen already, it puts the phone away (as Esc does)
-  $("#ph-hbtn").addEventListener("click", () => { if (panelWin()) home(); else { close(); Sound.play("close"); } });
+  $("#ph-hbtn").addEventListener("click", () => { if (panelWin()) home(); else { close(); Sound.play("phone_close"); } });
   hoverTip($("#ph-hbtn"), (h) => { h.classList.add("mn-tip"); h.append(el("div", "nm", "홈")); h.append(el("div", "hint", "앱을 닫고 앱 목록으로")); }, true);
   Object.assign(phoneHook, { open, close, out: () => out, app: showApp, edge: () => edge });
   // 설정 → 화면 → 메뉴 방식: 스마트폰 / 기존 패널, remembered; the layout pass moves every window (windows.js dockPanel)

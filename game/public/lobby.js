@@ -337,7 +337,7 @@ function portrait(cls, look) {
 }
 /** Connect to a channel: to play, or to make a character there first. */
 function enter(ch, why) {
-  Sound.unlock(); Sound.play("ok");
+  Sound.unlock(); Sound.play("world_enter");
   pending = { ch, why, tries: 0 };
   clearTimeout(retryT);
   setMsg(`${label(ch)} 접속 중…`, "info");
@@ -537,21 +537,21 @@ function wireCreate() {
   card.append(steps);
   box.append(card);
   // the look editor (looks.js), without its presets: they get a row of their own
-  lookEd = Looks.editor($("#c-parts"), () => draft.look, (l) => { remember(); draft.look = l; markPresets(); }, () => { Sound.unlock(); Sound.play("ui"); }, { presets: false });
+  lookEd = Looks.editor($("#c-parts"), () => draft.look, (l) => { remember(); draft.look = l; markPresets(); }, () => { Sound.unlock(); Sound.play("char_part"); }, { presets: false });
   const pr = $("#c-presets");
   pr.textContent = "";
   for (const [name, l] of SPC.PRESETS) {
     const b = el("button", "pr");
     b.type = "button"; b.title = name; b.dataset.k = SPC.cleanLook(l).join();
     b.append(Looks.thumb(SPC.cleanLook(l)), el("small", "", name));
-    b.addEventListener("click", () => { remember(); draft.look = SPC.cleanLook(l); Sound.play("ui"); lookEd.refresh(); markPresets(); });
+    b.addEventListener("click", () => { remember(); draft.look = SPC.cleanLook(l); Sound.play("char_part"); lookEd.refresh(); markPresets(); });
     pr.append(b);
   }
   markPresets(); setStarters(starters);
-  $("#c-rand").addEventListener("click", () => { remember(); draft.look = SPC.cleanLook(Looks.randomLook()); Sound.play("ui"); lookEd.refresh(); markPresets(); });
+  $("#c-rand").addEventListener("click", () => { remember(); draft.look = SPC.cleanLook(Looks.randomLook()); Sound.play("char_dice"); lookEd.refresh(); markPresets(); });
   $("#c-undo").addEventListener("click", undo);
   $("#c-undo").disabled = true;
-  $("#c-dice").addEventListener("click", () => { $("#c-name").value = randomName(); nameCheck(); Sound.play("ui"); });
+  $("#c-dice").addEventListener("click", () => { $("#c-name").value = randomName(); nameCheck(); Sound.play("char_dice"); });
   $("#c-name").addEventListener("input", nameCheck);
   $("#c-name").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); $("#b-create").click(); } });
   $("#b-create").addEventListener("click", create);
@@ -592,7 +592,7 @@ function setStarters(list) {
     w.addEventListener("click", () => {
       Sound.unlock();
       if (draft.wk !== k) { remember(); draft.wk = k; markWeapon(); }
-      Sound.play("ui");
+      Sound.play("char_weapon");
       swingNow();
     });
     box.append(w);
@@ -633,7 +633,7 @@ function create() {
   if (!C.isOpen()) { $("#create-msg").textContent = "서버에 연결되기를 기다리는 중입니다…"; $("#create-msg").className = "info"; return; }
   $("#create-msg").textContent = "";
   $("#b-create").disabled = true; $("#b-create").classList.add("busy"); $("#b-create").textContent = "만드는 중…";
-  Sound.play("ok");
+  Sound.play("world_enter");
   C.act({ t: "create", name: $("#c-name").value.trim(), look: draft.look.slice(), wk: draft.wk });
 }
 

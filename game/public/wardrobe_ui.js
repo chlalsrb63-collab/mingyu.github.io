@@ -277,7 +277,7 @@ function renderShop(s) {
       row.append(C.el("span", "own", "보유"));
       const b = C.el("button", "", s.cos.on[d.slot] === id ? "입는 중" : "입기");
       b.disabled = s.cos.on[d.slot] === id;
-      b.addEventListener("click", (e) => { e.stopPropagation(); C.act({ t: "cos_eq", id }); Sound.play("ui"); });
+      b.addEventListener("click", (e) => { e.stopPropagation(); C.act({ t: "cos_eq", id }); Sound.play("cloth_equip"); });
       row.append(b);
     } else {
       const byToken = d.src === "token";
@@ -286,7 +286,7 @@ function renderShop(s) {
       b.addEventListener("click", (e) => { e.stopPropagation(); C.act({ t: "cos_buy", id }); Sound.play("coin"); tried = null; });
       row.append(b);
     }
-    row.addEventListener("click", () => { tried = tried === id ? null : id; key.shop = ""; Sound.play("ui"); refresh(C.G.self); });
+    row.addEventListener("click", () => { tried = tried === id ? null : id; key.shop = ""; Sound.play("cloth_try"); refresh(C.G.self); });
     C.hoverTip(ic, (h) => tipFor(id, h, own ? "" : "눌러서 입어 보기"));
     list.append(row);
    }
@@ -331,10 +331,10 @@ function renderDye(s) {
     const reset = C.el("button", "tx", "원래대로");
     reset.disabled = !now;
     reset.title = now ? "원래 색으로 되돌립니다 (무료)" : "이미 원래 색이에요";
-    reset.addEventListener("click", () => { C.act({ t: "cos_dye", id, d: 0 }); dyeTry = null; Sound.play("ui"); });
+    reset.addEventListener("click", () => { C.act({ t: "cos_dye", id, d: 0 }); dyeTry = null; Sound.play("dye_wash"); });
     const go = C.el("button", "tx", dyeTry ? `물들이기 (${D.items[dyes[dyeTry - 1]].name} 1개)` : "물들이기");
     go.disabled = !dyeTry;
-    go.addEventListener("click", () => { if (!dyeTry) return; C.act({ t: "cos_dye", id, d: dyeTry }); dyeTry = null; Sound.play("coin"); });
+    go.addEventListener("click", () => { if (!dyeTry) return; C.act({ t: "cos_dye", id, d: dyeTry }); dyeTry = null; Sound.play("dye_splash"); });
     row.append(reset, go);
     host.append(row);
   }
@@ -346,7 +346,7 @@ function renderDye(s) {
     row.append(C.el("span", "lb", "재봉"));
     for (const k of sewable) {
       const b = C.el("button", "tx", `${D.items[k].name} → ${D.cos[D.keepSew[k]].name}`);
-      b.addEventListener("click", () => { C.act({ t: "cos_sew", k }); Sound.play("ui"); });
+      b.addEventListener("click", () => { C.act({ t: "cos_sew", k }); Sound.play("sew_stitch"); });
       row.append(b);
     }
     host.append(row);

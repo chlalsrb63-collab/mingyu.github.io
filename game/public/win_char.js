@@ -87,7 +87,7 @@ export function renderInv(s) {
     });
     // a usable thing can be dragged onto the quick slots; the slot it sits in shows in the corner
     // with the warehouse open, anything can be dragged into it (a whole stack, like a click on its 가방 pane)
-    const bank = isOpen("bank") ? (hit) => { if (hit && hit.closest("#w-bank")) { act({ t: "wh", a: "put", s: i, n: entry.n || 1 }); Sound.play("item"); } } : null;
+    const bank = isOpen("bank") ? (hit) => { if (hit && hit.closest("#w-bank")) { act({ t: "wh", a: "put", s: i, n: entry.n || 1 }); Sound.play("bank_move"); } } : null;
     if (usable || bank) QS.dragSource(node, ["i", entry.id], { qs: usable, drop: bank });
     if (at) node.append(el("span", "qk", at));
     if (free) node.append(el("span", "qk equip-ready", "▲"));
@@ -223,7 +223,7 @@ export function renderDoll(s) {
     // the swap weapon has no slot of its own (owner): it lives behind the Ⅱ button
     if (!host || k === "weapon2") continue;
     const g = s.eq[k];
-    const slot = itemSlot(g, g ? { worn: true, onClick: () => { hideTip(); act({ t: "uneq", k }); Sound.play("ui"); }, hint: `${SLOT_NAME[k]} · 클릭하면 벗습니다` } : {});
+    const slot = itemSlot(g, g ? { worn: true, onClick: () => { hideTip(); act({ t: "uneq", k }); Sound.play("gear_unequip"); }, hint: `${SLOT_NAME[k]} · 클릭하면 벗습니다` } : {});
     slot.id = `eq-${k}`;
     if (!g) {
       // an empty slot: the silhouette of what goes there and a tiny caption with the slot's name
@@ -241,7 +241,7 @@ export function renderDoll(s) {
   one.title = "Ⅰ 손에 든 무기";
   two.title = s.eq.weapon2 ? `Ⅱ ${itemName(s.eq.weapon2)} — 눌러서 바꿔 듭니다 (${K("swap")})` : "Ⅱ 비어 있음 — 가방에서 무기를 골라 [Ⅱ에 장착]";
   two.disabled = !s.eq.weapon2;
-  two.onclick = () => { act({ t: "wsw" }); Sound.play("ui"); };
+  two.onclick = () => { act({ t: "wsw" }); Sound.play("weapon_swap"); };
   for (const b of [one, two]) b.style.cssText = "padding:0 4px;min-width:0;line-height:1.2";
   wsw.append(one, two);
   $("#eq-weapon").before(wsw);

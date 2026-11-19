@@ -41,7 +41,7 @@ export function renderWarp(s) {
     if (!cur) {
       const b = el("button", open ? "btn gold small" : "btn small", "이동");
       b.disabled = !open || !can;
-      b.addEventListener("click", () => { act(i ? { t: "warp", to: w.id, i } : { t: "warp", to: w.id }); Sound.play("ui"); G.warpPick = null; });
+      b.addEventListener("click", () => { act(i ? { t: "warp", to: w.id, i } : { t: "warp", to: w.id }); Sound.play("warp_click"); G.warpPick = null; });
       row.append(b);
     }
     list.append(row);
@@ -188,7 +188,7 @@ export function renderAchieve(s) {
       row.append(tx);
       const b = el("button", on ? "btn small" : "btn gold small", on ? "떼기" : "달기");
       b.disabled = !have;
-      b.addEventListener("click", () => { act({ t: "title", id: on ? "" : a.id }); Sound.play("ui"); });
+      b.addEventListener("click", () => { act({ t: "title", id: on ? "" : a.id }); Sound.play(on ? "ui" : "title_equip"); });
       row.append(b);
       list.append(row);
     }

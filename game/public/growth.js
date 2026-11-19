@@ -324,7 +324,7 @@ export function shopTop(list, s) {
   tx.append(el("small", "", items.length ? `가방의 일반 등급 장비 ${items.length}개 · ${gold.toLocaleString()}G (강화·룬·마법 이상은 남깁니다)` : "팔 일반 장비가 없습니다"));
   const b = el("button", "", "모두 팔기");
   b.disabled = !items.length;
-  b.addEventListener("click", () => { C.act({ t: "sellall" }); Sound.play("coin"); });
+  b.addEventListener("click", () => { C.act({ t: "sellall" }); Sound.play("gold_stash"); });
   row.append(tx, b);
   list.append(row);
 }
@@ -349,7 +349,7 @@ export function renderBank(s) {
     for (let i = 0; i < Math.max(size, list.length); i++) {
       const e = list[i];
       if (!e) { grid.append(itemSlot(null)); continue; }
-      const move = (n) => { act({ t: "wh", a, s: i, n }); Sound.play("item"); };
+      const move = (n) => { act({ t: "wh", a, s: i, n }); Sound.play("bank_move"); };
       const node = itemSlot(e, {
         onClick: (ev) => move(ev.shiftKey ? 1 : e.n || 1),
         hint: a === "put" ? "클릭: 맡기기 (Shift+클릭: 1개) · 창고 칸으로 끌어 놓아도 됩니다" : "클릭: 찾기 (Shift+클릭: 1개) · 가방 칸으로 끌어 놓아도 됩니다",
@@ -367,7 +367,7 @@ export function renderBank(s) {
   inp.type = "number"; inp.min = "1"; inp.step = "1"; inp.placeholder = "골드"; inp.id = "bank-amt";
   const btn = (label, sign) => {
     const b = el("button", "btn small", label);
-    b.addEventListener("click", () => { const n = Math.floor(+inp.value || 0); if (n > 0) { act({ t: "wh", a: "gold", n: n * sign }); Sound.play("coin"); } });
+    b.addEventListener("click", () => { const n = Math.floor(+inp.value || 0); if (n > 0) { act({ t: "wh", a: "gold", n: n * sign }); Sound.play("gold_stash"); } });
     return b;
   };
   gl.append(inp, btn("맡기기", 1), btn("찾기", -1));

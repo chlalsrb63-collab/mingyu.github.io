@@ -388,7 +388,7 @@ function resetSection(box, s, atJob) {
       cf.append(el("p", "", `${label}: ${name} 1개 + ${fmt(gold)}G가 듭니다. ${keep} 계속할까요?`));
       const yes = el("button", "btn small gold", label), no = el("button", "btn small", "취소");
       yes.disabled = !atJob || s.gold < gold || have < 1;
-      yes.addEventListener("click", () => { rask = ""; C.act({ t }); C.Sound.play("ok"); C.redraw(); });
+      yes.addEventListener("click", () => { rask = ""; C.act({ t }); C.Sound.play("stat_respec"); C.redraw(); });
       no.addEventListener("click", () => { rask = ""; C.Sound.play("close"); C.redraw(); });
       cf.append(yes, no);
       if (have < 1) cf.append(el("small", "", `${name}가 없습니다.`));

@@ -213,7 +213,7 @@ export function detail(det, id, s) {
   const action = q.mainChapter && v.st === 1 ? "take" : q.mainChapter && v.st === 3 ? "done" : "drop";
   const btns = el("div", "btns"), b = el("button", action === "drop" ? "btn" : "btn gold", { take: "수락", done: "완료", drop: "포기" }[action]);
   if (action !== "drop") b.disabled = C.G.near?.id !== q.giver;
-  b.addEventListener("click", () => { act({ t: "sq", a: action, id }); Sound.play("ui"); });
+  b.addEventListener("click", () => { act({ t: "sq", a: action, id }); Sound.play(action === "take" ? "board_take" : action === "done" ? "quest" : "close"); });
   btns.append(b);
   det.append(btns);
 }

@@ -222,7 +222,7 @@ export function render(s, into) {
       const btns = el("div", "btns"), b = el("button", "btn gold", "수락");
       b.disabled = !!why;
       if (why) b.title = why;
-      b.addEventListener("click", () => { act({ t: "jb", a: "take", id }); Sound.play("ui"); });
+      b.addEventListener("click", () => { act({ t: "jb", a: "take", id }); Sound.play("board_take"); });
       btns.append(b);
       if (why) btns.append(el("small", "why", why));
       // away from the board: [추적] walks to 포포 to take it (track.js)
@@ -278,7 +278,7 @@ function fairCard(box, s) {
     const b = el("button", "btn gold small", !onSale ? "준비 중" : own ? "보유" : "사기");
     b.type = "button"; b.disabled = !!why;
     if (why) b.title = why;
-    b.addEventListener("click", () => { act({ t: "fair_buy", id }); Sound.play("ui"); });
+    b.addEventListener("click", () => { act({ t: "fair_buy", id }); Sound.play("fair_buy"); });
     row.append(b);
     card.append(row);
   }

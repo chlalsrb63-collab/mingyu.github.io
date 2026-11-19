@@ -171,7 +171,7 @@ export function render(box, s, { here, atTrainer }) {
   clear.addEventListener("click", () => { pend.fill(0); C.Sound.play("close"); C.redraw(); });
   const ok = el("button", "btn small gold", "확정");
   ok.disabled = !n || !here || total > s.xp;
-  ok.addEventListener("click", () => { C.act({ t: "train", a: pend.slice() }); C.Sound.play("ok"); });
+  ok.addEventListener("click", () => { C.act({ t: "train", a: pend.slice() }); C.Sound.play("stat_train"); });
   ft.append(info, clear, ok);
   box.append(ft);
 
@@ -223,7 +223,7 @@ export function renderTrainer(box, s, { atTrainer }) {
       b.type = "button";
       const ic = el("img", "wi"); ic.alt = ""; ic.src = kindIcon(k);
       b.append(ic, el("b", "", D.wkName[k]), el("small", "st", feelStats(k)), el("small", "fl", FEEL[k] || ""));
-      b.addEventListener("click", () => { pick = k; C.Sound.play("ui"); C.redraw(); });
+      b.addEventListener("click", () => { pick = k; C.Sound.play("char_weapon"); C.redraw(); });
       grid.append(b);
     }
     box.append(grid);
@@ -274,7 +274,7 @@ export function renderTrainer(box, s, { atTrainer }) {
     const yes = el("button", "btn small gold", "되돌리기"), no = el("button", "btn small", "취소");
     yes.disabled = !!why;
     yes.title = why;
-    yes.addEventListener("click", () => { sure = false; C.act({ t: "respec" }); C.Sound.play("ok"); C.redraw(); });
+    yes.addEventListener("click", () => { sure = false; C.act({ t: "respec" }); C.Sound.play("stat_respec"); C.redraw(); });
     no.addEventListener("click", () => { sure = false; C.Sound.play("close"); C.redraw(); });
     cf.append(yes, no);
     rs.append(cf);

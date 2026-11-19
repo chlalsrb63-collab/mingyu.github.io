@@ -1616,4 +1616,183 @@ const SFX = {
     this.noise(0.22 + stage * 0.05, 0.2 * w, 1600 * p, "lowpass", 0.02, 110 * p);
     this.tone("sawtooth", (130 + stage * 20) * p, 40 * p, 0.26 + stage * 0.04, 0.13 * w, 0.02);
   },
+  // ── wave-2 tactile UI, gear, wardrobe, lobby, pocket phone & social SFX ──
+  gear_equip() {
+    const p = this.vary();
+    this.noise(0.035, 0.09, 2600 * p, "bandpass", 0, 1200 * p);
+    this.tone("triangle", 320 * p, 560 * p, 0.06, 0.08, 0.008);
+    this.tone("sine", 1480 * p, 1320 * p, 0.09, 0.05, 0.032);
+  },
+  gear_unequip() {
+    const p = this.vary();
+    this.noise(0.04, 0.075, 1600 * p, "bandpass", 0, 720 * p);
+    this.tone("triangle", 460 * p, 240 * p, 0.065, 0.065, 0.006);
+  },
+  weapon_swap() {
+    const p = this.vary();
+    this.noise(0.075, 0.11, 2200 * p, "bandpass", 0, 5200 * p);
+    this.tone("sine", 1320 * p, 1760 * p, 0.07, 0.055, 0.02);
+  },
+  bag_sort() {
+    const p = this.vary();
+    for (let i = 0; i < 3; i++) {
+      this.noise(0.028, 0.055, (1400 + i * 500) * p, "bandpass", i * 0.045);
+      this.tone("triangle", (440 + i * 110) * p, (520 + i * 120) * p, 0.035, 0.045, i * 0.045);
+    }
+  },
+  food_eat() {
+    const p = this.vary();
+    this.noise(0.045, 0.095, 1800 * p, "bandpass", 0, 900 * p);
+    this.noise(0.05, 0.085, 2100 * p, "bandpass", 0.085, 1000 * p);
+    this.tone("triangle", 280 * p, 420 * p, 0.07, 0.055, 0.14);
+  },
+  scroll_read() {
+    const p = this.vary();
+    this.noise(0.09, 0.08, 2800 * p, "bandpass", 0, 1400 * p);
+    this.arp("sine", [659 * p, 880 * p, 1175 * p], 0.035, 0.12, 0.045, 0.04);
+  },
+  camp_light() {
+    const p = this.vary();
+    this.noise(0.03, 0.11, 4600 * p, "highpass");
+    this.noise(0.22, 0.095, 620 * p, "lowpass", 0.035, 1800 * p);
+    this.tone("triangle", 190 * p, 340 * p, 0.14, 0.06, 0.035);
+  },
+  pet_call() {
+    const p = this.vary();
+    this.tone("sine", 784 * p, 1175 * p, 0.075, 0.06);
+    this.tone("sine", 1047 * p, 1568 * p, 0.1, 0.055, 0.08);
+  },
+  qs_bind() {
+    const p = this.vary();
+    this.tone("triangle", 523 * p, 784 * p, 0.055, 0.065);
+    this.tone("sine", 1047 * p, 1047 * p, 0.06, 0.04, 0.04);
+  },
+  qs_pick() {
+    const p = this.vary();
+    this.tone("triangle", 620 * p, 820 * p, 0.045, 0.055);
+  },
+  bank_move() {
+    const p = this.vary();
+    this.tone("sine", 165 * p, 105 * p, 0.07, 0.09);
+    this.noise(0.035, 0.065, 1100 * p, "bandpass", 0.01);
+    this.tone("triangle", 540 * p, 660 * p, 0.05, 0.045, 0.035);
+  },
+  gold_stash() {
+    const p = this.vary();
+    this.arp("sine", [1568 * p, 2093 * p, 2637 * p], 0.035, 0.11, 0.05);
+    this.noise(0.04, 0.05, 4200 * p, "highpass", 0.01);
+  },
+  cloth_equip() {
+    const p = this.vary();
+    this.noise(0.11, 0.08, 1900 * p, "bandpass", 0, 3400 * p);
+    this.arp("sine", [880 * p, 1175 * p, 1568 * p], 0.035, 0.11, 0.04, 0.04);
+  },
+  cloth_try() {
+    const p = this.vary();
+    this.noise(0.075, 0.065, 2200 * p, "bandpass", 0, 1200 * p);
+    this.tone("sine", 784 * p, 988 * p, 0.055, 0.035, 0.02);
+  },
+  dye_splash() {
+    const p = this.vary();
+    this.noise(0.09, 0.085, 1400 * p, "bandpass", 0, 3200 * p);
+    this.tone("sine", 420 * p, 880 * p, 0.08, 0.055, 0.015);
+    this.arp("sine", [1047 * p, 1319 * p, 1760 * p], 0.035, 0.12, 0.045, 0.055);
+  },
+  dye_wash() {
+    const p = this.vary();
+    this.noise(0.13, 0.08, 2600 * p, "bandpass", 0, 900 * p);
+    this.tone("sine", 740 * p, 420 * p, 0.1, 0.045, 0.02);
+  },
+  sew_stitch() {
+    const p = this.vary();
+    this.noise(0.03, 0.075, 4200 * p, "highpass");
+    this.tone("triangle", 980 * p, 1320 * p, 0.04, 0.045, 0.01);
+    this.noise(0.03, 0.07, 4600 * p, "highpass", 0.07);
+    this.tone("triangle", 1175 * p, 1568 * p, 0.045, 0.045, 0.08);
+  },
+  char_part() {
+    const p = this.vary();
+    this.tone("triangle", 520 * p, 780 * p, 0.05, 0.055);
+    this.noise(0.022, 0.04, 3000 * p, "bandpass", 0.008);
+  },
+  char_dice() {
+    const p = this.vary();
+    for (let i = 0; i < 3; i++) {
+      this.tone("triangle", (340 + i * 95) * p, (260 + i * 70) * p, 0.032, 0.055, i * 0.048);
+      this.noise(0.02, 0.045, (1800 + i * 400) * p, "bandpass", i * 0.048);
+    }
+  },
+  char_weapon() {
+    const p = this.vary();
+    this.noise(0.085, 0.1, 1800 * p, "bandpass", 0, 4600 * p);
+    this.tone("triangle", 290 * p, 480 * p, 0.07, 0.065, 0.01);
+    this.tone("sine", 1480 * p, 1280 * p, 0.11, 0.045, 0.04);
+  },
+  world_enter() {
+    this.tone("triangle", 262, 262, 0.34, 0.065);
+    this.arp("sine", [392, 523, 659, 784, 1047], 0.048, 0.24, 0.055, 0.02);
+  },
+  phone_open() {
+    this.tone("sine", 587, 880, 0.055, 0.055);
+    this.tone("triangle", 880, 1175, 0.075, 0.05, 0.045);
+  },
+  phone_close() {
+    this.tone("triangle", 988, 659, 0.055, 0.05);
+    this.tone("sine", 659, 440, 0.065, 0.045, 0.04);
+  },
+  phone_tap() {
+    const p = this.vary();
+    this.tone("sine", 980 * p, 1180 * p, 0.032, 0.045);
+  },
+  stat_train() {
+    this.arp("triangle", [392, 523, 659, 784], 0.042, 0.16, 0.06);
+    this.tone("sine", 1047, 1047, 0.18, 0.04, 0.12);
+  },
+  stat_respec() {
+    this.arp("sine", [880, 659, 523, 659, 988], 0.045, 0.15, 0.05);
+    this.noise(0.16, 0.05, 3200, "bandpass", 0, 1200);
+  },
+  skill_equip() {
+    const p = this.vary();
+    this.tone("triangle", 523 * p, 784 * p, 0.06, 0.065);
+    this.tone("sine", 1319 * p, 1568 * p, 0.09, 0.05, 0.035);
+  },
+  skill_rankup() {
+    this.arp("sine", [523, 659, 784, 1047, 1319], 0.04, 0.18, 0.055);
+    this.tone("triangle", 262, 523, 0.2, 0.045);
+  },
+  whisper_in() {
+    this.tone("sine", 1047, 1047, 0.07, 0.055);
+    this.tone("sine", 1319, 1319, 0.12, 0.055, 0.075);
+  },
+  buddy_msg() {
+    this.tone("triangle", 784, 988, 0.055, 0.05);
+    this.tone("sine", 1175, 1175, 0.09, 0.045, 0.055);
+  },
+  invite_send() {
+    this.noise(0.055, 0.055, 2400, "bandpass", 0, 1400);
+    this.arp("sine", [659, 880], 0.045, 0.1, 0.045, 0.02);
+  },
+  guild_found() {
+    this.tone("triangle", 196, 196, 0.4, 0.07);
+    this.arp("triangle", [392, 494, 587, 784], 0.06, 0.28, 0.065, 0.03);
+    this.tone("sine", 1175, 1175, 0.25, 0.04, 0.2);
+  },
+  board_take() {
+    const p = this.vary();
+    this.noise(0.065, 0.08, 2200 * p, "bandpass", 0, 1100 * p);
+    this.tone("triangle", 360 * p, 540 * p, 0.06, 0.06, 0.03);
+  },
+  fair_buy() {
+    const p = this.vary();
+    this.tone("sine", 1319 * p, 1319 * p, 0.09, 0.05);
+    this.arp("sine", [1760 * p, 2349 * p], 0.04, 0.12, 0.05, 0.045);
+  },
+  title_equip() {
+    this.arp("sine", [659, 880, 1319], 0.045, 0.16, 0.05);
+  },
+  warp_click() {
+    this.tone("sine", 330, 660, 0.14, 0.06);
+    this.noise(0.12, 0.05, 2400, "bandpass", 0.02, 4200);
+  },
 };

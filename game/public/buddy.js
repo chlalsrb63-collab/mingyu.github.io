@@ -60,7 +60,7 @@ export function onSnap(s, t) {
     const [from, msg] = s.bm;
     if (from === 2) line("system", msg, "안내");
     else line(from ? "incoming" : "outgoing", msg, from ? contact?.[0] || "짝꿍" : "나");
-    if (from === 1) Sound.play("blip");
+    if (from === 1) Sound.play("buddy_msg");
   }
   if (s.bs) {
     const [eid, msg] = s.bs;

@@ -82,7 +82,7 @@ export function render(s) {
     else if (!bought && !why && s.gold < price) why = "골드가 부족합니다";
     b.disabled = bought || !!why;
     if (!bought && why) b.title = why;
-    b.addEventListener("click", () => { act({ t: "fair_shop", v: st.v, i, d: fm[1] }); Sound.play("ui"); });
+    b.addEventListener("click", () => { act({ t: "fair_shop", v: st.v, i, d: fm[1] }); Sound.play("fair_buy"); });
     row.append(icon, tx, b);
     list.append(row);
   });

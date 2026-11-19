@@ -93,7 +93,7 @@ export function renderParty() {
     row.append(classMark(w.cls), tx);
     const b = el("button", "", w.party ? "다른 파티" : "초대");
     b.disabled = !!w.party || G.party.length >= G.defs.partyMax;
-    b.addEventListener("click", () => { act({ t: "pinv", e: eid }); Sound.play("ui"); });
+    b.addEventListener("click", () => { act({ t: "pinv", e: eid }); Sound.play("invite_send"); });
     row.append(b);
     list.append(row);
   }
@@ -159,7 +159,7 @@ function friendBox(box, s) {
   add.addEventListener("submit", (e) => {
     e.preventDefault();
     const name = inp.value.trim();
-    if (name) { act({ t: "fr", a: "add", name }); Sound.play("ui"); }
+    if (name) { act({ t: "fr", a: "add", name }); Sound.play("invite_send"); }
     inp.value = "";
   });
   box.append(add);
@@ -201,7 +201,7 @@ export function renderGuild() {
     const input = el("input"); input.maxLength = 10; input.placeholder = "길드 이름 (2~10자)"; input.autocomplete = "off"; input.value = typed;
     const b = el("button", "btn gold", `창설 ${G.defs.guildCost.toLocaleString()}G`);
     b.disabled = s.gold < G.defs.guildCost;
-    b.addEventListener("click", () => { if (input.value.trim()) act({ t: "gcreate", name: input.value.trim() }); Sound.play("ui"); });
+    b.addEventListener("click", () => { if (input.value.trim()) act({ t: "gcreate", name: input.value.trim() }); Sound.play("guild_found"); });
     input.addEventListener("keydown", (e) => { if (e.key === "Enter") b.click(); });
     row.append(input, b);
     box.append(row, el("p", "hint", "다른 길드에 들어가려면 그 길드원에게 초대를 받으세요."));
@@ -222,7 +222,7 @@ export function renderGuild() {
     const tx = el("div", "tx", w.name);
     tx.append(el("small", "", `Lv.${w.lvl}`));
     const b = el("button", "", "초대");
-    b.addEventListener("click", () => { act({ t: "ginv", e: eid }); Sound.play("ui"); });
+    b.addEventListener("click", () => { act({ t: "ginv", e: eid }); Sound.play("invite_send"); });
     row.append(classMark(w.cls), tx, b);
     list.append(row);
   }

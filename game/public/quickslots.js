@@ -96,7 +96,7 @@ function set(i, v) {
   if (same(cur[i], v)) return;
   C.act({ t: "qs", i, v });
   if (C.G.self) C.G.self.qs = cur.map((s, k) => (k === i ? v : s));     // show it at once; the server's copy follows
-  Sound.play("ui");
+  Sound.play("qs_bind");
   render();
 }
 function swap(i, j) {
@@ -105,7 +105,7 @@ function swap(i, j) {
   C.act({ t: "qs", i, j });
   [cur[i], cur[j]] = [cur[j], cur[i]];
   if (C.G.self) C.G.self.qs = cur;
-  Sound.play("ui");
+  Sound.play("qs_bind");
   render();
 }
 function clear(i) {
@@ -118,7 +118,7 @@ function setPicked(v) {
   if (v) C.toast(C.touch() ? "놓을 단축칸을 누르세요 · 같은 버튼을 다시 누르면 취소" : `놓을 단축칸(${K("slot1")}~${K("slot9")})을 누르세요 · Esc 취소`);
 }
 /** "단축칸" buttons in the skill window and the bag: pick this up and tap a slot. */
-export function pick(v) { setPicked(same(picked, v) ? null : v); Sound.play("ui"); }
+export function pick(v) { setPicked(same(picked, v) ? null : v); Sound.play("qs_pick"); }
 
 // ── using a slot ──
 export function press(i) {

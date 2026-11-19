@@ -286,7 +286,13 @@ export function useSlot(i) {
     return;
   }
   else return;
-  Sound.play("ui");
+  const sfx = isGear(entry.id) ? "gear_equip"
+    : d.type === "food" ? "food_eat"
+    : d.type === "scroll" ? "scroll_read"
+    : d.type === "camp" ? "camp_light"
+    : d.type === "pet" ? "pet_call"
+    : "ui";
+  Sound.play(sfx);
 }
 
 /** The tidy button asks the server to sort the bag for real: by kind, best first, stacks merged. */
@@ -302,6 +308,6 @@ export function setupItems() {
     if (G.invNew) G.invNew.clear();
     G.sel = -1;
     hideTip();
-    Sound.play("ui");
+    Sound.play("bag_sort");
   });
 }
