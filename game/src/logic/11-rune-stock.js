@@ -8,7 +8,7 @@ ITEMS[SOCK_ITEM] = {
   desc: "대장장이 볼칸에게 골드와 함께 건네면 장착한 장비의 룬 소켓 하나를 엽니다. 볼칸의 의뢰 보상과 희귀 사냥 전리품으로 얻으며 거래할 수 있습니다.",
 };
 const sockCap = (g) => SOCK_CAPS[ITEMS[g.id].type];
-const RUNE_RARITY = { 1: "마법", 2: "희귀", 3: "전설", 4: "세트" };
+const RUNE_RARITY = { 1: "고급", 2: "희귀", 3: "전설", 4: "세트" };
 const RUNE_PRICE = { 1: 500, 2: 900, 3: 1650, 4: 850 };
 const RUNES = {};
 const RUNE_KEYS = [];

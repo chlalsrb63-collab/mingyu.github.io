@@ -10,7 +10,7 @@ const runeId = (set) => Object.keys(D.runes).find((id) => D.runes[id].set === se
 
 assert.equal(D.sets, undefined);
 assert.equal(D.runewords, undefined);
-assert.deepEqual(D.rarity.filter(Boolean), ["일반", "마법", "희귀", "전설", "유니크"]);
+assert.deepEqual(D.rarity.filter(Boolean), ["일반", "고급", "희귀", "전설", "유니크"]);
 assert.deepEqual(Object.values(D.runeSets).map((set) => set.need).sort(), [2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4]);
 const gearWords = new Set(Object.values(D.legend).map(([name]) => name.replace(/의$/, "")));
 for (const [id, r] of Object.entries(D.runes)) {

@@ -321,7 +321,7 @@ export function shopTop(list, s) {
   const gold = items.reduce((a, e) => a + C.sellPrice(e), 0);
   const row = el("div", "it sellall");
   const tx = el("div", "tx", "일반 장비 모두 팔기");
-  tx.append(el("small", "", items.length ? `가방의 일반 등급 장비 ${items.length}개 · ${gold.toLocaleString()}G (강화·룬·마법 이상은 남깁니다)` : "팔 일반 장비가 없습니다"));
+  tx.append(el("small", "", items.length ? `가방의 일반 등급 장비 ${items.length}개 · ${gold.toLocaleString()}G (강화·룬·고급 이상은 남깁니다)` : "팔 일반 장비가 없습니다"));
   const b = el("button", "", "모두 팔기");
   b.disabled = !items.length;
   b.addEventListener("click", () => { C.act({ t: "sellall" }); Sound.play("gold_stash"); });

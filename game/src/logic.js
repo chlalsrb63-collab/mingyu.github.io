@@ -664,7 +664,7 @@ const AFFIX = [
   ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
 ];
 // Gear reserved index 4 in its saved format. The green rarity belongs to runes.
-const RARITY = ["일반", "마법", "희귀", "전설", null, "유니크"];
+const RARITY = ["일반", "고급", "희귀", "전설", null, "유니크"];
 /**
  * How many ordinary affix lines each rarity rolls: [min, max] (owner 2026-11-16: 마법 exactly 2, 희귀 3, 전설 4, 유니크 4).
  * Rarities are told apart by the NUMBER of lines only; just an item with a separate strong effect (`lg`, see LEGEND) gets a name prefix.
@@ -1452,7 +1452,7 @@ ITEMS[SOCK_ITEM] = {
   desc: "대장장이 볼칸에게 골드와 함께 건네면 장착한 장비의 룬 소켓 하나를 엽니다. 볼칸의 의뢰 보상과 희귀 사냥 전리품으로 얻으며 거래할 수 있습니다.",
 };
 const sockCap = (g) => SOCK_CAPS[ITEMS[g.id].type];
-const RUNE_RARITY = { 1: "마법", 2: "희귀", 3: "전설", 4: "세트" };
+const RUNE_RARITY = { 1: "고급", 2: "희귀", 3: "전설", 4: "세트" };
 const RUNE_PRICE = { 1: 500, 2: 900, 3: 1650, 4: 850 };
 const RUNES = {};
 const RUNE_KEYS = [];
@@ -25746,7 +25746,7 @@ export function defs() {
     rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     fieldParty: { tiles: FIELD_PARTY_RANGE / T, share: PARTY_SHARE },
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, mastery: MASTERY, bounty: BOUNTY_N, fbResp: FB_RESP,
-    traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], dash: [DASH.px, DASH.ms, DASH.cd, DASH.inv], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
+    traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], dash: [DASH.px, DASH.ms, DASH.cd, DASH.inv], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "고급 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
     waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: stoneNames(id), minLv: MAP_META[id].minLv || undefined })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code

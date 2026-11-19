@@ -162,7 +162,7 @@ const AFFIX = [
   ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
 ];
 // Gear reserved index 4 in its saved format. The green rarity belongs to runes.
-const RARITY = ["일반", "마법", "희귀", "전설", null, "유니크"];
+const RARITY = ["일반", "고급", "희귀", "전설", null, "유니크"];
 /**
  * How many ordinary affix lines each rarity rolls: [min, max] (owner 2026-11-16: 마법 exactly 2, 희귀 3, 전설 4, 유니크 4).
  * Rarities are told apart by the NUMBER of lines only; just an item with a separate strong effect (`lg`, see LEGEND) gets a name prefix.

@@ -180,7 +180,7 @@ function detail(s, r, K) {
   else {
     const [ok, great] = odds(L, r);
     lines.push(`성공 ${ok}% · 대성공 ${great}% (미니게임 점수에 따라 최대 ±10%p)`);
-    lines.push(r.gear ? "마법~희귀 장비가 나옵니다 (대성공이면 한 단계 위)." : r.out[0] === "rune*" ? "가장 많은 룬 세 개로 무작위 룬 하나를 만듭니다." : r.sk === "cook" ? "대성공이면 두 접시가 나옵니다." : "대성공이면 결과물이 두 배입니다.");
+    lines.push(r.gear ? "고급~희귀 장비가 나옵니다 (대성공이면 한 단계 위)." : r.out[0] === "rune*" ? "가장 많은 룬 세 개로 무작위 룬 하나를 만듭니다." : r.sk === "cook" ? "대성공이면 두 접시가 나옵니다." : "대성공이면 결과물이 두 배입니다.");
     lines.push(`실패하면 재료의 절반을 돌려받고 수수료는 내지 않습니다${r.fee ? ` · 수수료 ${r.fee.toLocaleString()}G` : ""}`);
   }
   const mg = r.mg === "forge" ? "망치질" : r.mg === "brew" ? "가마 젓기" : "팬 채우기";

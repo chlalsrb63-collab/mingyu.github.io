@@ -23,9 +23,9 @@ document.getElementById("shop-junk")?.addEventListener("click", (ev) => {
   if (!b || !G.self) return;
   const q = +b.dataset.junk, it = G.defs.items;
   const junk = G.self.inv.filter((g) => g && isGear(g.id) && g.id !== "charm" && (g.q | 0) <= q && !(g.enh > 0) && !g.lg && !(g.ru || []).some(Boolean));
-  if (!junk.length) { b.textContent = "팔 만한 장비가 없어요"; setTimeout(() => { b.textContent = q ? "마법 이하 일괄 판매" : "일반 장비 일괄 판매"; }, 1400); return; }
+  if (!junk.length) { b.textContent = "팔 만한 장비가 없어요"; setTimeout(() => { b.textContent = q ? "고급 이하 일괄 판매" : "일반 장비 일괄 판매"; }, 1400); return; }
   const gold = junk.reduce((n, g) => n + sellPrice(g), 0);
-  ask(`${q ? "일반·마법" : "일반"} 등급 장비 ${junk.length}개를 모두 팔까요?
+  ask(`${q ? "일반·고급" : "일반"} 등급 장비 ${junk.length}개를 모두 팔까요?
 (강화했거나 룬·접두사가 있는 장비는 남깁니다) · ${gold.toLocaleString()}G`, "판매", () => act({ t: "sell", junk: q }), "sell");
 });
 

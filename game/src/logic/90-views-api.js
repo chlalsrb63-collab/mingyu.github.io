@@ -306,7 +306,7 @@ export function defs() {
     rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     fieldParty: { tiles: FIELD_PARTY_RANGE / T, share: PARTY_SHARE },
     slots: SLOTS, wkinds: WKIND, legend: LEGEND, mastery: MASTERY, bounty: BOUNTY_N, fbResp: FB_RESP,
-    traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], dash: [DASH.px, DASH.ms, DASH.cd, DASH.inv], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "마법 이상", "희귀 이상"], petMs: PET_MS,
+    traits: TRAITS, slow: SLOW, aim: [AIM_N, AIM_CONE], dash: [DASH.px, DASH.ms, DASH.cd, DASH.inv], mech: { marks: MARK_MAX, tip: SKILL.tip.at, tipMult: SKILL.tip.mult, react: REACT, elem: ELEM, weaveMs: WEAVE_MS }, whSlots: WH, filters: ["모두", "고급 이상", "희귀 이상"], petMs: PET_MS,
     // n: how many stones the map has (woken as "<id>" for the first, "<id>#<i>" for the others), names: what each is called
     waypoints: Object.keys(MAP_META).filter(hasWp).map((id) => ({ id, name: MAP_META[id].name, band: MAP_META[id].band && MAP_META[id].band.map(shownLv), n: MAP_META[id].wpn || 1, names: stoneNames(id), minLv: MAP_META[id].minLv || undefined })),
     // the wardrobe: id → { n wire code, slot, name, q rarity, src, price, ach, desc }; `cosN[n]` the id of a code

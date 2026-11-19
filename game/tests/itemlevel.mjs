@@ -82,7 +82,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
 
 // ── the contract the client reads: rarity names, the gap, the power words; a 유니크 has no words of its own (owner 2026-11-16)
 {
-  assert.deepEqual(D.rarity.filter(Boolean), ["일반", "마법", "희귀", "전설", "유니크"]);
+  assert.deepEqual(D.rarity.filter(Boolean), ["일반", "고급", "희귀", "전설", "유니크"]);
   assert.equal(D.ilGap, 10);
   assert.equal(D.uniq, undefined, "no defs.uniq: no suffix words");
   assert.ok(!/\bUNIQ(_MUL)?\b/.test(src),"the suffix table and its multiplier are gone from the rules");
