@@ -113,7 +113,7 @@ export const BGM_KEYS = [...TRACK_NAMES, ...Object.keys(ALIAS)];
 // ───────────────────────────── the engine ─────────────────────────────
 
 const STORE = "lumentale:audio";
-const LOOKAHEAD = 0.3, FADE = 1.6, MAX_SFX = 22;
+const LOOKAHEAD = 0.3, FADE = 1.6, MAX_SFX = 34;
 
 export const Sound = {
   ctx: null, master: null, music: null, sfx: null, drive: null, verb: null,
@@ -148,17 +148,20 @@ export const Sound = {
   /** Set up the same mix graph for live audio and offline score previews. */
   init(c) {
     this.ctx = c;
-    // master → a gentle limiter → speakers; music and effects each have a bus
+    // master → punch-preserving limiter (12 ms attack lets initial combat cracks smash through cleanly)
     const comp = c.createDynamicsCompressor();
-    comp.threshold.value = -14; comp.knee.value = 12; comp.ratio.value = 4; comp.attack.value = 0.004; comp.release.value = 0.2;
+    comp.threshold.value = -9; comp.knee.value = 10; comp.ratio.value = 3.5; comp.attack.value = 0.012; comp.release.value = 0.14;
     this.master = c.createGain(); this.master.connect(comp); comp.connect(c.destination);
     this.music = c.createGain(); this.music.connect(this.master);
     this.sfx = c.createGain(); this.sfx.connect(this.master);
-    // warm soft-clipping saturator bus for punchy combat transients & sub-bass weight
+    // aggressive asymmetric punch saturator bus for visceral "찰진" combat transients & seismic sub-bass
     const drive = c.createWaveShaper(), driveOut = c.createGain();
     const curve = new Float32Array(1024);
-    for (let i = 0; i < 1024; i++) { const x = (i * 2) / 1023 - 1; curve[i] = Math.tanh(2.4 * x); }
-    drive.curve = curve; drive.oversample = "2x"; driveOut.gain.value = 0.8;
+    for (let i = 0; i < 1024; i++) {
+      const x = (i * 2) / 1023 - 1;
+      curve[i] = Math.tanh(4.0 * x + 0.35 * x * x);
+    }
+    drive.curve = curve; drive.oversample = "2x"; driveOut.gain.value = 0.92;
     drive.connect(driveOut); driveOut.connect(this.sfx);
     this.drive = drive;
     // a shared echo the music sends into (more in caves, less in the plaza)
@@ -665,10 +668,33 @@ export const Sound = {
    * saturated sub-bass chest thump + inharmonic metallic steel ring (`metal` Hz, 0 for none).
    */
   punch(p, drop, thud, metal, w = 1, when = 0) {
-    this.tone(0.5, drop * p, drop * p * 0.28, 0.044, 0.15 * w, when, true);
-    this.tone("sine", thud * p, thud * p * 0.42, 0.12 + 0.05 * w, 0.30 * w, when, true);
-    this.noise(0.020, 0.24 * w, 4800 * p, "highpass", when, 0, 1.3, true);
-    if (metal) this.steel(metal * p, 0.08 + 0.025 * w, 0.072 * w, when + 0.003, true);
+    this.tone(0.5, drop * p, drop * p * 0.24, 0.048, 0.19 * w, when, true);
+    this.tone("sine", thud * p, thud * p * 0.36, 0.14 + 0.06 * w, 0.36 * w, when, true);
+    this.noise(0.022, 0.28 * w, 4600 * p, "highpass", when, 0, 1.5, true);
+    if (metal) this.steel(metal * p, 0.095 + 0.03 * w, 0.095 * w, when + 0.002, true);
+  },
+  /** Searing multi-burst steel rend ("츄-쟈-쟈-작!") for greatsword / blade VFX impacts. */
+  slash(p, w = 1, stages = 3, when = 0) {
+    // Stage 0 ("츄-"): razor high-Q metallic entry bite
+    this.noise(0.032, 0.30 * w, 4800 * p, "bandpass", when, 1750 * p, 4.2, true);
+    this.tone("sawtooth", 560 * p, 145 * p, 0.075, 0.16 * w, when, true);
+    // Staggered micro-bursts ("-쟈-쟈-작!"): stepping down in resonance as the blade tears through
+    const steps = [[0.016, 0.042, 3500, 1050, 3.4, 0.28], [0.034, 0.052, 2600, 680, 3.0, 0.26], [0.054, 0.068, 1950, 420, 2.5, 0.23]];
+    for (let i = 0; i < Math.min(stages, steps.length); i++) {
+      const [dt, dur, f0, f1, q, v] = steps[i];
+      this.noise(dur, v * w, f0 * p, "bandpass", when + dt, f1 * p, q, true);
+    }
+  },
+  /** Earth-shattering blunt shockwave ("콰-광!!") for heavy hammer VFX impacts. */
+  boomSlam(p, w = 1, when = 0) {
+    // "콰-" violent crushing impact crack
+    this.noise(0.075, 0.34 * w, 2400 * p, "bandpass", when, 320 * p, 1.9, true);
+    this.tone("triangle", 290 * p, 48 * p, 0.11, 0.28 * w, when, true);
+    // "-광!!" delayed seismic shockwave + heavy metallic anvil roar + rock rumble
+    this.tone("sine", 104 * p, 28 * p, 0.27, 0.42 * w, when + 0.016, true);
+    this.tone("sawtooth", 128 * p, 36 * p, 0.18, 0.18 * w, when + 0.018, true);
+    this.steel(540 * p, 0.22, 0.11 * w, when + 0.014, true);
+    this.noise(0.24, 0.26 * w, 1350 * p, "lowpass", when + 0.024, 110 * p, 1.5, true);
   },
 
   /** Play a named effect. `arg` refines a few: item rarity for "loot", power for swings. */
@@ -779,91 +805,103 @@ const SFX = {
   // the dash (Space): a rush of air rising, a scuff of the feet; a blow slipped: a quick bright flick
   dash() { const p = this.vary(); this.noise(0.18, 0.2, 700 * p, "bandpass", 0, 3400 * p); this.tone("triangle", 220 * p, 480 * p, 0.1, 0.04); this.noise(0.05, 0.1, 500, "lowpass", 0.12); },
   dodge() { this.tone("sine", 1400, 2200, 0.08, 0.05); this.noise(0.06, 0.08, 4200, "highpass"); },
-  // swings: swell-shaped resonant air displacement + weapon-specific edge/mass (tales-tales-sfx skill)
+  // swings: visceral VFX air-rip + weapon-specific edge/mass (tales-tales-sfx skill)
   swing_sword(fin) {
     const p = this.vary();
-    this.whoosh(fin ? 0.22 : 0.16, fin ? 0.28 : 0.22, 230 * p, 660 * p, 0.36, 1.8, 0, true);
-    this.whoosh(fin ? 0.19 : 0.14, fin ? 0.24 : 0.19, 640 * p, 3200 * p, 0.42, 3.6, 0.012, true);
-    this.tone("triangle", (fin ? 155 : 175) * p, (fin ? 52 : 64) * p, fin ? 0.14 : 0.11, fin ? 0.13 : 0.095, 0.01, true);
-    if (fin) this.steel(1480 * p, 0.10, 0.045, 0.032, false);
+    // "슈우-촥!" / fin: "슈와아악!" — heavy wind pressure + piercing metallic blade-edge tear
+    this.whoosh(fin ? 0.24 : 0.175, fin ? 0.34 : 0.27, 210 * p, 740 * p, 0.34, 1.9, 0, true);
+    this.whoosh(fin ? 0.21 : 0.15, fin ? 0.32 : 0.25, 860 * p, 4400 * p, 0.38, 4.2, 0.010, true);
+    this.tone("triangle", (fin ? 165 : 185) * p, (fin ? 48 : 60) * p, fin ? 0.155 : 0.12, fin ? 0.17 : 0.13, 0.008, true);
+    this.steel((fin ? 1620 : 1950) * p, fin ? 0.13 : 0.075, fin ? 0.075 : 0.04, 0.022, true);
   },
   swing_dagger() {
     const p = this.vary();
-    this.whoosh(0.062, 0.19, 3100 * p, 6800 * p, 0.28, 4.4, 0, true);
-    this.noise(0.032, 0.09, 1500 * p, "bandpass", 0.01, 2800 * p, 2.2, false);
+    // "쉭-촥!" — razor-fast high-Q metallic whistle + snapping flick
+    this.whoosh(0.068, 0.24, 3200 * p, 7400 * p, 0.26, 4.8, 0, true);
+    this.noise(0.036, 0.13, 1750 * p, "bandpass", 0.008, 3400 * p, 2.8, true);
   },
   swing_spear(fin) {
     const p = this.vary();
-    this.whoosh(fin ? 0.135 : 0.10, fin ? 0.24 : 0.19, 920 * p, 3900 * p, 0.30, 3.6, 0, true);
-    this.tone("triangle", 260 * p, (fin ? 520 : 430) * p, 0.068, 0.075, 0.01, true);
+    // "쉭-파악!" — directional piercing lance whip + taut shaft snap
+    this.whoosh(fin ? 0.145 : 0.105, fin ? 0.29 : 0.23, 980 * p, 4400 * p, 0.28, 4.0, 0, true);
+    this.tone("triangle", 270 * p, (fin ? 560 : 450) * p, 0.072, 0.10, 0.008, true);
   },
   swing_hammer() {
     const p = this.vary();
-    this.whoosh(0.115, 0.19, 220 * p, 720 * p, 0.45, 1.8, 0, true);
-    this.tone("triangle", 165 * p, 76 * p, 0.085, 0.09, 0.01, true);
+    // Heavy wind-up iron groan before the "콰광!" slam
+    this.whoosh(0.14, 0.25, 190 * p, 780 * p, 0.48, 2.0, 0, true);
+    this.tone("triangle", 155 * p, 64 * p, 0.10, 0.13, 0.01, true);
   },
   hammer_land({ hit, crit, kind = 7, final } = {}) {
     const p = this.vary();
     if (final) kind = 132;
-    const strength = crit ? 1.15 : 0.85;
-    if (kind === 130) { // A pointed wedge rings briefly as it bites.
-      if (hit) this.punch(p, 360, 118, 2050, strength);
-      this.noise(0.055, hit ? 0.14 : 0.09, 2300 * p, "bandpass", 0.008, 620 * p, 2.4, true);
-      this.tone("triangle", 520 * p, 240 * p, 0.068, hit ? 0.095 : 0.05, 0, true);
-    } else if (kind === 131) { // Stone splits after the initial strike.
-      if (hit) this.punch(p, 260, 96, 0, strength * 1.05);
-      this.noise(0.13, hit ? 0.18 : 0.09, 1500 * p, "bandpass", 0.025, 360 * p, 2.2, true);
-      this.noise(0.095, 0.085, 760 * p, "lowpass", 0.08, 220 * p, 1.4, true);
-      this.tone("triangle", 165 * p, 74 * p, 0.14, 0.09, 0.04, true);
-    } else if (kind === 132) { // The ram lands, then the ground answers.
-      if (hit) this.punch(p, 290, 86, 1380, crit ? 1.24 : 1.05);
-      this.tone("sine", 92 * p, 36 * p, 0.25, hit ? 0.22 : 0.12, 0.025, true);
-      this.noise(0.24, hit ? 0.20 : 0.10, 1280 * p, "lowpass", 0.04, 150 * p, 1.6, true);
-      this.tone("triangle", 210 * p, 78 * p, 0.11, 0.085, 0.085, true);
-      if (crit) { this.steel(2550 * p, 0.14, 0.085, 0.014, false); this.duckImpact(); }
-    } else { // The ordinary hammer has a heavy driven blunt crunch.
-      if (hit) this.punch(p, crit ? 305 : 240, 96, 0, strength);
-      this.noise(hit ? 0.055 : 0.07, hit ? 0.18 : 0.085, 920 * p, "bandpass", 0, 320 * p, 2.2, true);
-      if (!hit) this.tone("sine", 86 * p, 54 * p, 0.075, 0.09, 0, true);
+    const strength = crit ? 1.28 : 1.0;
+    if (kind === 130) { // Pointed wedge: crunch + metallic bite + shockwave
+      if (hit) this.boomSlam(p * 1.12, strength * 0.92);
+      else this.noise(0.065, 0.12, 1800 * p, "bandpass", 0, 520 * p, 2.2, true);
+      this.steel(1920 * p, 0.11, hit ? 0.095 : 0.045, 0.004, true);
+    } else if (kind === 131) { // Stone split: "콰-광!" + shattering rock cascade
+      if (hit) this.boomSlam(p * 0.96, strength * 1.08);
+      else this.tone("sine", 95 * p, 42 * p, 0.15, 0.14, 0, true);
+      this.noise(0.15, hit ? 0.24 : 0.12, 1700 * p, "bandpass", 0.032, 340 * p, 2.4, true);
+      this.noise(0.11, 0.14, 820 * p, "lowpass", 0.09, 180 * p, 1.5, true);
+    } else if (kind === 132) { // Final ram: cataclysmic "콰과광!!" earthquake
+      this.boomSlam(p * 0.88, hit ? (crit ? 1.38 : 1.22) : 0.72);
+      if (hit) {
+        this.noise(0.28, 0.26, 1500 * p, "lowpass", 0.055, 120 * p, 1.8, true);
+        this.duckImpact();
+      }
+      if (crit) this.steel(2650 * p, 0.16, 0.11, 0.012, false);
+    } else { // Ordinary hammer strike: unmistakable heavy "콰광!" slam even on normal hits
+      if (hit) {
+        this.boomSlam(p, strength * 0.96);
+        if (crit) { this.steel(2550 * p, 0.15, 0.10, 0.012, false); this.duckImpact(); }
+      } else {
+        this.tone("sine", 94 * p, 44 * p, 0.11, 0.13, 0, true);
+        this.noise(0.08, 0.11, 880 * p, "bandpass", 0, 280 * p, 2.0, true);
+      }
     }
   },
   swing_staff() {
     const p = this.vary();
-    this.tone("sine", 440 * p, 840 * p, 0.14, 0.085);
-    this.tone("triangle", 660 * p, 1260 * p, 0.12, 0.045, 0.015);
-    this.whoosh(0.11, 0.08, 2600 * p, 5200 * p, 0.35, 3.0);
+    this.tone("sine", 440 * p, 880 * p, 0.13, 0.085);
+    this.tone("triangle", 660 * p, 1320 * p, 0.11, 0.05, 0.012);
+    this.whoosh(0.11, 0.095, 2600 * p, 5600 * p, 0.34, 3.2);
   },
   swing_book() {
     const p = this.vary();
-    this.noise(0.065, 0.13, 2500 * p, "bandpass", 0, 1150 * p, 2.4);
-    this.noise(0.055, 0.10, 3200 * p, "bandpass", 0.055, 1500 * p, 2.4);
-    this.tone("sine", 820 * p, 1240 * p, 0.12, 0.06, 0.03);
+    this.noise(0.062, 0.14, 2550 * p, "bandpass", 0, 1150 * p, 2.6, true);
+    this.noise(0.052, 0.11, 3300 * p, "bandpass", 0.052, 1500 * p, 2.6, false);
+    this.tone("sine", 820 * p, 1280 * p, 0.12, 0.065, 0.028);
   },
-  shoot() { this.noise(0.06, 0.16, 2500); this.tone(0.5, 900, 400, 0.08, 0.07); },
-  // the bow (all ±6%): a short creak as it is drawn; taut bowstring twang + feathered arrow zip; crisp arrowhead thunk
-  bow_draw() { const p = this.vary(); this.noise(0.08, 0.07, 700 * p, "bandpass", 0, 1500 * p, 2.0); this.tone("triangle", 180 * p, 240 * p, 0.07, 0.03); },
+  shoot() { this.noise(0.06, 0.18, 2600, "highpass", 0, 0, 1.5, true); this.tone(0.5, 920, 380, 0.08, 0.09, 0, true); },
+  // the bow: taut bowstring twang + high-speed arrow zip + wickedly crisp "팍-짝!" broadhead impact
+  bow_draw() { const p = this.vary(); this.noise(0.08, 0.08, 700 * p, "bandpass", 0, 1600 * p, 2.2); this.tone("triangle", 180 * p, 250 * p, 0.07, 0.035); },
   bow_shot(fin) {
     const p = this.vary();
-    this.tone("triangle", 225 * p, 102 * p, 0.13, 0.14, 0, true);
-    this.tone(0.5, 450 * p, 195 * p, 0.045, 0.055, 0, true);
-    this.noise(0.020, 0.16, 3600 * p, "highpass", 0, 0, 1.4, true);
-    this.whoosh(fin ? 0.18 : 0.12, fin ? 0.22 : 0.16, 1350 * p, 4600 * p, 0.25, 3.4, 0.01, false);
+    this.tone("triangle", 235 * p, 96 * p, 0.13, 0.16, 0, true);
+    this.tone(0.5, 470 * p, 190 * p, 0.048, 0.07, 0, true);
+    this.noise(0.020, 0.18, 3800 * p, "highpass", 0, 0, 1.6, true);
+    this.whoosh(fin ? 0.18 : 0.125, fin ? 0.24 : 0.18, 1450 * p, 5200 * p, 0.24, 3.8, 0.008, true);
   },
   release(fin) { SFX.bow_shot.call(this, fin); },
   arrow_hit() {
     const p = this.vary();
-    this.noise(0.026, 0.25, 3200 * p, "bandpass", 0, 1100 * p, 2.6, true);
-    this.tone("triangle", 820 * p, 310 * p, 0.036, 0.13, 0, true);
-    this.tone("sine", 162 * p, 64 * p, 0.095, 0.23, 0.003, true);
-    this.steel(2450 * p, 0.045, 0.05, 0.002, true);
+    // "팍-짝!" — razor broadhead bite + secondary fletching/flesh snap + punchy thunk
+    this.noise(0.026, 0.30, 3800 * p, "bandpass", 0, 1050 * p, 3.0, true);
+    this.noise(0.022, 0.20, 2600 * p, "bandpass", 0.015, 780 * p, 2.8, true);
+    this.tone("triangle", 860 * p, 280 * p, 0.038, 0.16, 0, true);
+    this.tone("sine", 172 * p, 56 * p, 0.11, 0.28, 0.003, true);
+    this.steel(2550 * p, 0.055, 0.065, 0.002, true);
   },
-  // a staff's missile or a book's orb bursting: 4-layer arcane crystal shatter + driven mana bloom (`big`: finisher)
+  // staff / book missile burst: "파지직-펑!" explosive arcane crystal shatter + shockwave bloom
   magic_hit(big) {
     const p = this.vary();
-    this.tone("triangle", 1380 * p, 480 * p, big ? 0.095 : 0.065, 0.12, 0, true);
-    this.noise(big ? 0.095 : 0.050, big ? 0.22 : 0.17, 3600 * p, "bandpass", 0, 980 * p, 2.6, true);
-    this.tone("sine", (big ? 172 : 192) * p, (big ? 54 : 74) * p, big ? 0.19 : 0.115, big ? 0.25 : 0.20, 0.005, true);
-    this.steel((big ? 1480 : 1720) * p, big ? 0.12 : 0.08, big ? 0.085 : 0.065, 0.002, true);
+    this.tone("triangle", 1480 * p, 420 * p, big ? 0.10 : 0.07, 0.16, 0, true);
+    this.noise(big ? 0.095 : 0.052, big ? 0.28 : 0.22, 4200 * p, "bandpass", 0, 880 * p, 3.0, true);
+    this.noise(big ? 0.065 : 0.035, big ? 0.20 : 0.14, 3000 * p, "bandpass", 0.018, 620 * p, 2.8, true);
+    this.tone("sine", (big ? 178 : 196) * p, (big ? 44 : 64) * p, big ? 0.22 : 0.13, big ? 0.32 : 0.25, 0.004, true);
+    this.steel((big ? 1480 : 1760) * p, big ? 0.14 : 0.09, big ? 0.105 : 0.08, 0.002, true);
   },
   arrow_wall() { const p = this.vary(); this.tone("square", 330 * p, 260 * p, 0.035, 0.06); this.noise(0.05, 0.12, 2400 * p, "bandpass"); this.tone("triangle", 190 * p, 182 * p, 0.14, 0.05, 0.02); this.tone("triangle", 196 * p, 188 * p, 0.1, 0.03, 0.06); },
   magic() { this.tone("sine", 500, 1300, 0.16, 0.14); this.tone("triangle", 750, 1700, 0.14, 0.07, 0.03); },
@@ -1028,28 +1066,33 @@ const SFX = {
   supercon() { this.tone("square", 2400, 600, 0.2, 0.06); this.tone("triangle", 1800, 2600, 0.2, 0.06); this.noise(0.2, 0.1, 6000, "highpass"); },
   overload() { this.noise(0.45, 0.38, 2000, "lowpass", 0, 90); this.tone("square", 220, 40, 0.35, 0.18); this.noise(0.1, 0.2, 4000, "highpass"); },
   // ── hits ──
-  // 4-layer foley impacts by weapon (tales-tales-sfx skill): transient snap + material body + driven sub + tail
+  // Visceral action-RPG VFX impacts by weapon (tales-tales-sfx skill):
+  // sword: "츄-쟈-쟈-작!" multi-stage steel rend · hammer: "콰-광!" seismic slam · dagger: "촥-찟!" twin razor cut · spear: "파각-칭!" pierce
   hit(wk) {
     const p = this.vary();
     if (wk === "sword") {
-      this.punch(p, 350, 114, 1950, 1.08);
-      this.noise(0.056, 0.24, 2150 * p, "bandpass", 0.003, 520 * p, 2.5, true);
-      this.tone("sine", 94 * p, 36 * p, 0.125, 0.24, 0.006, true);
+      this.slash(p, 1.05, 3);
+      this.tone("sine", 118 * p, 34 * p, 0.155, 0.34, 0, true);
+      this.steel(2250 * p, 0.12, 0.10, 0.004, true);
+    } else if (wk === "hammer") {
+      this.boomSlam(p, 1.02);
     } else if (wk === "dagger") {
-      this.noise(0.024, 0.26, 5200 * p, "bandpass", 0, 1900 * p, 3.0, true);
-      this.tone("triangle", 820 * p, 290 * p, 0.034, 0.14, 0, true);
-      this.tone("sine", 168 * p, 74 * p, 0.072, 0.21, 0.003, true);
-      this.steel(3150 * p, 0.055, 0.065, 0.004, true);
+      this.noise(0.022, 0.30, 5600 * p, "bandpass", 0, 2100 * p, 3.6, true);
+      this.noise(0.024, 0.24, 4200 * p, "bandpass", 0.018, 1450 * p, 3.4, true);
+      this.tone("triangle", 880 * p, 260 * p, 0.036, 0.17, 0, true);
+      this.tone("sine", 182 * p, 68 * p, 0.082, 0.25, 0.002, true);
+      this.steel(3350 * p, 0.068, 0.085, 0.003, true);
     } else if (wk === "spear") {
-      this.noise(0.034, 0.22, 3100 * p, "highpass", 0, 0, 1.5, true);
-      this.tone("triangle", 340 * p, 110 * p, 0.056, 0.16, 0, true);
-      this.tone("sine", 112 * p, 48 * p, 0.12, 0.26, 0.003, true);
-      this.steel(2020 * p, 0.095, 0.08, 0.004, true);
+      this.noise(0.026, 0.28, 3400 * p, "highpass", 0, 0, 1.8, true);
+      this.noise(0.044, 0.24, 3800 * p, "bandpass", 0.006, 920 * p, 2.8, true);
+      this.tone("triangle", 360 * p, 95 * p, 0.064, 0.20, 0, true);
+      this.tone("sine", 118 * p, 42 * p, 0.135, 0.30, 0.002, true);
+      this.steel(2150 * p, 0.115, 0.10, 0.004, true);
     } else {
       const [d, th, m, cr] = IMPACT[wk] || IMPACT0;
-      this.punch(p, d, th, m, 1);
-      this.tone("sine", 96 * p, 42 * p, 0.095, 0.20, 0.006, true);
-      this.noise(0.042, 0.18, cr * p, "bandpass", 0, 680 * p, 2.2, true);
+      this.punch(p, d, th, m, 1.05);
+      this.tone("sine", 98 * p, 38 * p, 0.11, 0.24, 0.005, true);
+      this.noise(0.048, 0.22, cr * p, "bandpass", 0, 620 * p, 2.4, true);
     }
   },
   graze() {
@@ -1057,23 +1100,41 @@ const SFX = {
     this.noise(0.038, 0.14, 2600 * p, "bandpass", 0, 1050 * p, 2.8, false);
     this.tone("triangle", 540 * p, 290 * p, 0.048, 0.055);
   },
-  // a crit: unmistakable peak — heavier driven snap, deep seismic sub-drop, bright steel glint + BGM breath
+  // a crit: explosive VFX climax — weapon-tailored rend/slam + piercing golden steel flash + seismic sub + BGM breath
   crit(wk) {
     const p = this.vary(), [drop, thud, metal, crack] = IMPACT[wk] || IMPACT0;
-    this.punch(p, drop * 1.38, thud * 1.06, metal ? metal * 1.15 : 2400, 1.30);
-    this.noise(0.034, 0.26, Math.max(3400, crack * 1.45) * p, "bandpass", 0, 1450 * p, 2.6, true);
-    this.tone("sine", 86 * p, 32 * p, 0.165, 0.28, 0.010, true);
-    this.steel(2750 * p, 0.145, 0.095, 0.012, false);
+    if (wk === "sword") {
+      this.slash(p * 1.06, 1.32, 3);
+      this.tone("sine", 104 * p, 28 * p, 0.19, 0.38, 0, true);
+    } else if (wk === "hammer") {
+      this.boomSlam(p * 0.92, 1.32);
+    } else {
+      this.punch(p, drop * 1.42, thud * 1.05, metal ? metal * 1.18 : 2500, 1.32);
+      this.noise(0.040, 0.30, Math.max(3600, crack * 1.5) * p, "bandpass", 0, 1350 * p, 2.8, true);
+      this.noise(0.036, 0.22, Math.max(2800, crack * 1.2) * p, "bandpass", 0.020, 820 * p, 2.8, true);
+      this.tone("sine", 88 * p, 28 * p, 0.18, 0.34, 0.008, true);
+    }
+    this.steel(2950 * p, 0.17, 0.115, 0.010, false);
+    this.tone("sine", 4186 * p, 3950 * p, 0.12, 0.055, 0.016);
     this.duckImpact();
   },
-  // a combo finisher: heavier body cleave/crush + extended tail + secondary impact crack at +22ms
+  // a combo finisher: decisive heavy VFX closer tailored per weapon + BGM breath
   finisher(wk) {
     const p = this.vary(), [drop, thud, metal, crack] = IMPACT[wk] || IMPACT0;
-    this.punch(p, drop * 0.94, thud * 0.88, metal ? metal * 0.85 : 0, 1.22);
-    const quick = wk === "dagger" || wk === "bow";
-    this.noise(quick ? 0.058 : 0.125, 0.24, crack * 1.15 * p, "bandpass", 0.005, 360 * p, 2.4, true);
-    this.noise(quick ? 0.032 : 0.065, 0.15, crack * 1.55 * p, "bandpass", 0.022, 620 * p, 2.8, true);
-    this.tone("sine", thud * 0.86 * p, (quick ? 56 : 34) * p, quick ? 0.105 : 0.18, 0.24, 0.014, true);
+    if (wk === "sword") {
+      this.slash(p * 0.92, 1.25, 3);
+      this.tone("sine", 98 * p, 30 * p, 0.19, 0.36, 0, true);
+      this.steel(1880 * p, 0.16, 0.11, 0.008, true);
+    } else if (wk === "hammer") {
+      this.boomSlam(p * 0.88, 1.26);
+    } else {
+      this.punch(p, drop * 0.96, thud * 0.88, metal ? metal * 0.88 : 0, 1.24);
+      const quick = wk === "dagger" || wk === "bow";
+      this.noise(quick ? 0.062 : 0.135, 0.28, crack * 1.2 * p, "bandpass", 0.005, 340 * p, 2.6, true);
+      this.noise(quick ? 0.038 : 0.075, 0.20, crack * 1.6 * p, "bandpass", 0.022, 580 * p, 3.0, true);
+      this.tone("sine", thud * 0.84 * p, (quick ? 52 : 30) * p, quick ? 0.12 : 0.20, 0.30, 0.012, true);
+    }
+    this.duckImpact();
   },
   hurt() { this.tone("sawtooth", 190, 70, 0.16, 0.17); this.noise(0.08, 0.1, 900, "bandpass"); },
   // ── monsters ──
