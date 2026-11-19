@@ -60,7 +60,7 @@ const acd0 = self().acd;
 ch.eq.helm = gear("h_3", { q: 3, lg: "haste" }); ch.eq.armor = gear("a_3", { q: 3, lg: "greed" });
 S.players[PID].stc = null;
 me = self();
-assert.ok(Math.abs(me.acd - acd0 * 0.85) <= 1, "haste shortens the attack");
+assert.ok(Math.abs(me.acd - acd0 * 0.88) <= 1, "haste shortens the attack by 12 percent");
 assert.ok(acd0 < D.wkinds.spear.cd, "DEX already quickens it a little");
 assert.equal(me.goldb, 60);
 assert.deepEqual(me.lg.sort(), ["greed", "haste"]);

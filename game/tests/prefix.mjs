@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { LEGEND, PFX, PFX_FN, PFX_W, SLOT_L, PFX_HOOKS, PFX_CAP, PX, SLOTS, ITEMS, MOBS, SKILL, plain, rollGear, gearBonus, gearIl, stats, deriveStats, newMob, hurtMob, hurtPlayer, wound, afflict, evadeBlow, dodged, chainBlow, lootFor, skMp, deathLoss, migrate, pfxPick, pfxPc, pfxIcd, pfxStack, pfxHeal, pfxChance, pfxReset, pfxMul, pfxMiti, pfxPre, pfxLoot, pfxNum, aimIdx, atkRange };\n";
+  "\nexport const __t = { LEGEND, PFX, PFX_FN, PFX_W, SLOT_L, PFX_HOOKS, PFX_CAP, PX, SLOTS, ITEMS, MOBS, SKILL, plain, rollGear, gearBonus, gearIl, stats, deriveStats, newMob, hurtMob, hurtPlayer, wound, afflict, evadeBlow, dodged, chainBlow, lootFor, skMp, deathLoss, migrate, pfxPick, pfxPc, pfxIcd, pfxStack, pfxHeal, pfxChance, pfxReset, pfxMul, pfxMiti, pfxPre, pfxLoot, pfxNum, pfxBuild, pfxSkill, aimIdx, atkRange };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs();
 const T = 16;
@@ -37,13 +37,61 @@ function world(name, wk = "sword") {
   return W;
 }
 
+// Crowds still feed kill powers, but one death cannot multiply into an unlimited blast or heal.
+{
+  const W = world("폭발한도");
+  W.wear("weapon", "w_warrior_3", "nova");
+  W.wear("armor", "a_3", "feast");
+  const { S, p, rt } = W, st = X.stats(p);
+  const cluster = Array.from({ length: 7 }, (_, i) => W.mob("twinhare", 205 + 4 * i, 200));
+  p.hp = st.mhp * 0.5;
+  X.hurtMob(S, rt, W.mob("twinhare", 200, 200, { hp: 1 }), p, 1, true);
+  assert.equal(cluster.filter((mob) => mob.by[p.pid] > 0).length, 4);
+  const total = () => cluster.reduce((n, mob) => n + (mob.by[p.pid] || 0), 0);
+  const afterNova = total();
+  for (let i = 0; i < 6; i++) X.hurtMob(S, rt, W.mob("twinhare", 200, 200, { hp: 1 }), p, 1, true);
+  assert.equal(total(), afterNova, "additional kills do not bypass the blast cooldown");
+  assert.ok(Math.abs(p.hp - st.mhp * 0.55) < 0.01, "one burst of kills respects the shared heal budget");
+}
+
+// The four-rune reset wins and consumes its own cooldown, with the gear refund still available later.
+{
+  const W = world("메아리시험"), { S, p, rt } = W;
+  const st = X.stats(p), id = "rend", sk = X.SKILL[id];
+  const probability = X.PFX.echo.p;
+  X.PFX.echo.p = 1;
+  try {
+    st.pfx = X.pfxBuild({ echo: 1 }, ["astrolabe"]);
+    for (let i = 0; i < 1000; i++) {
+      p.pc = null;
+      p.cds[id] = S.now + 12000;
+      S.seed = i * 7919;
+      X.pfxSkill(S, rt, p, st, sk, id, 10);
+      if (p.pc.cd.astrolabe) break;
+    }
+    assert.equal(p.cds[id], S.now);
+    assert.equal(p.pc.cd.echo, undefined, "the longer instant reset never spends the fallback");
+    p.cds[id] = S.now + 12000;
+    X.pfxSkill(S, rt, p, st, sk, id, 10);
+    assert.equal(p.cds[id], S.now + X.PFX.echo.ms);
+    assert.equal(p.pc.cd.echo, S.now + X.PFX.echo.icd);
+    p.cds[id] = S.now + 12000;
+    X.pfxSkill(S, rt, p, st, sk, id, 10);
+    assert.equal(p.cds[id], S.now + 12000, "the two refunds cannot chain without a wait");
+  } finally {
+    X.PFX.echo.p = probability;
+  }
+}
+
 // ── 1. the tables, row by row (a part that adds powers later is checked by the same loop)
 const OLD_DESC = {
-  chain: "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)", nova: "적을 처치하면 폭발해 주변에 피해를 준다 (80%)", greed: "골드 획득 +60%", haste: "공격 속도 +15%",
-  thorn: "받은 피해의 40%를 공격한 적에게 되돌려 준다", feast: "적을 처치할 때마다 최대 HP의 4% 회복", echo: "스킬 사용 시 20% 확률로 재사용 대기시간이 사라진다", giant: "정예와 우두머리에게 주는 피해 +30%",
+  chain: "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (50%)", nova: "적을 처치하면 주변 최대 4명에게 공격력의 68% 화염 피해 (1.2초 간격)", greed: "골드 획득 +60%", haste: "기본 공격 간격 -12%",
+  thorn: "받은 피해의 30%를 공격한 적에게 되돌려 준다", feast: "적을 처치할 때마다 최대 HP의 3% 회복 (접두사·룬 회복 상한 적용)", echo: "스킬 사용 시 16% 확률로 남은 재사용 대기시간이 0.4초로 줄어든다 (8초 간격)", giant: "정예와 우두머리에게 주는 피해 +20%",
 };
 const FAMS = ["blow", "kill", "pass", "crit", "skill", "mit", "sus", "mob", "eco", "xp", "util"], ALLOWED = { O: "WRG", D: "ABNH", U: "H" };
 function checkTables() {
+  const { dmg, miti, abs, heal } = X.PFX_CAP;
+  assert.deepEqual([dmg, miti, abs, heal], [1.36, 0.68, 0.14, 0.05]);
   const keys = Object.keys(X.LEGEND), words = new Set();
   for (const k of keys) {
     const row = X.LEGEND[k];
@@ -110,7 +158,7 @@ assert.deepEqual(X.PFX_W, { S: 1, M: 2, L: 1 }); assert.equal(X.SLOT_L.ring1, "R
   const ch = L.hero("쌍반지", { wk: "sword", lvl: 157, migrate: true });
   const piece = (id, lg, il, af = []) => ({ ...X.plain(id), q: 3, il, lg, af });
   const bonus = (eq) => X.gearBonus({ ...ch, eq });
-  const none = bonus({ ring1: piece("r_3", undefined, 100), ring2: piece("r_3", undefined, 90) });
+  const none = bonus({ ring1: piece("r_3", undefined, 90), ring2: piece("r_3", undefined, 120) });
   // two greed rings: +60 gold once, the lower item level is off
   let b = bonus({ ring1: piece("r_3", "greed", 90), ring2: piece("r_3", "greed", 120) });
   assert.deepEqual(b.lg, { greed: 1 }); assert.deepEqual(b.lgOff, ["ring1"], "the 120 wins, the 90 is off"); assert.equal(b.gold - none.gold, 60, "60 once, not 120");
@@ -121,7 +169,7 @@ assert.deepEqual(X.PFX_W, { S: 1, M: 2, L: 1 }); assert.equal(X.SLOT_L.ring1, "R
   assert.deepEqual(b.lgOff, ["weapon"], "item level first");
   // the off piece still gives its plain lines and base
   const lines = bonus({ ring1: piece("r_3", "greed", 90, [["atk", 7]]), ring2: piece("r_3", "greed", 120, [["atk", 5]]) });
-  assert.equal(lines.atk - none.atk, 12, "both pieces' ordinary lines count");
+  assert.ok(Math.abs(lines.atk - none.atk - 12) < 1e-8, "both pieces' ordinary lines count");
   // different keys: both, in slot order; three of a kind: the two losers, listed in slot order
   b = bonus({ ring1: piece("r_3", "giant", 100), helm: piece("h_3", "nova", 100), weapon: piece("w_warrior_3", "chain", 100) });
   assert.deepEqual(Object.keys(b.lg), ["chain", "nova", "giant"], "powers run in slot order"); assert.deepEqual(b.lgOff, []);
@@ -292,7 +340,7 @@ const seenCalls = () => { const c = calls.splice(0); return c; };
   const mob = W.mob("twinhare", 230, 200, { el: 1 });
   const dm = (opt) => { const hp = mob.hp; W.S.seed = 11; X.hurtMob(W.S, W.rt, mob, p, 40, true, opt); return hp - mob.hp; };
   const withGiant = dm(); delete p.ch.eq.helm.lg; delete p.ch.eq.ring1.lg; p.stc = null; const without = dm();
-  assert.ok(Math.abs(withGiant / without - 1.3) < 0.01, `giant on an elite: +30 % (${withGiant / without})`);
+  assert.ok(Math.abs(withGiant / without - 1.2) < 0.01, `giant on an elite: +20 % (${withGiant / without})`);
 }
 
 // ── 6. determinism and cost: four players, eight powers each, sixty monsters, 600 ticks

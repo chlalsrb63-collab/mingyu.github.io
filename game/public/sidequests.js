@@ -8,6 +8,7 @@
  */
 import * as Track from "./track.js";
 import { serverNow } from "./sky.js";
+import { iconUrl } from "./uiicons.js";
 
 let C = null;
 /** ctx: { G, act, el, Sound } */
@@ -30,6 +31,12 @@ export function goalText(q) {
     : g.type === "make" ? `${q.target} ${g.n}개 만들기` : g.type === "deliver" ? `${q.target}${g.n > 1 ? ` ${g.n}개` : ""} → ${q.turnInName}에게 전하기`
       : g.type === "talk" ? `${q.target}에게 말 걸기` : g.type === "choice" ? `${q.target}에게 대답하기` : `[${q.target}]에 가 보기`;
 }
+/** "다음: …" — the one thing to do next for a quest in state `v` (offered: go to the giver; under way: the goal; done: the turn-in NPC). */
+export function nextStop(q, v) {
+  if (v.st === 1) return `다음: ${q.giverName} · ${q.giverMap} (의뢰 받기)`;
+  if (v.st === 3) return `다음: ${q.turnInName || q.giverName} · ${q.turnInMap || q.giverMap} (${q.choice ? "대답하기" : "완료하기"})`;
+  return `다음: ${goalText(q)}`;
+}
 function rewardText(r) {
   const items = C.G.defs.items, out = [];
   if (r.xp) out.push(`EXP ${r.xp.toLocaleString()}`);
@@ -41,6 +48,25 @@ function rewardText(r) {
 }
 // a choice may pay differently: say so instead of guessing which
 const rewardOf = (q) => (q.choice && q.choice.some((o) => o.reward) ? "보상: 대답에 따라 달라집니다" : rewardText(q.reward));
+/** A reward line with item icons: "보상" then one chip per EXP / gold / item (icon + count); `r` = { xp, gold, items:[[id,n]], keep?, title? }. */
+export function rewardRow(r, cls = "q-reward") {
+  const { el, G } = C, row = el("div", `${cls} rw-row`), items = G.defs.items, url = G.icons && G.icons.url;
+  row.append(el("span", "rw-h", "보상"));
+  const chip = (src, txt, tip) => {
+    const c = el("span", "rw-chip", txt); if (tip) c.title = tip;
+    if (src) { const im = el("img"); im.src = src; im.alt = ""; c.prepend(im); }
+    row.append(c);
+  };
+  if (r.xp) chip(iconUrl("star", "#9ad8ff"), `EXP ${r.xp.toLocaleString()}`);
+  if (r.gold) chip(url && url.gold, `${r.gold.toLocaleString()}G`);
+  for (const [id, n] of r.items || []) chip(url && url[id], `×${n}`, items[id] ? items[id].name : id);
+  if (r.keep) chip(url && url[r.keep], "기념품", items[r.keep]?.name);
+  if (r.title) chip(null, `칭호 「${r.title}」`);
+  if (r.honor) chip(null, `칭호 「${r.honor}」`);
+  if (row.childElementCount === 1) row.append(el("span", "rw-chip", "없음"));
+  return row;
+}
+const rewardNode = (q) => (q.choice && q.choice.some((o) => o.reward) ? C.el("div", "q-reward", rewardOf(q)) : rewardRow(q.reward));
 // a timed delivery's clock (kept fresh by the ticker below)
 function clock(t) {
   const left = t - serverNow();
@@ -108,9 +134,9 @@ export const gives = (npc) => side().some((q) => q.giver === npc.id || turnIn(q)
 
 // 1–3 answer a choice while the talk window shows one (input.js has the number keys for the quick slots)
 addEventListener("keydown", (e) => {
-  const i = ["Digit1", "Digit2", "Digit3"].indexOf(e.code);
+  const i = ["Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6"].indexOf(e.code);
   const w = document.getElementById("w-talk");
-  if (i < 0 || e.repeat || !w || w.hidden) return;
+  if (i < 0 || e.repeat || !w || w.hidden || w.dataset.mode !== "quest") return;
   const b = w.querySelectorAll(".sq-choice .btn")[i];
   if (!b) return;
   e.preventDefault(); e.stopImmediatePropagation();
@@ -147,8 +173,9 @@ export function renderTalk(box, npc, s, say) {
     card.append(el("p", "say", here && v.st === 3 && q.giver !== npc.id ? `${q.giverName}의 부탁으로 왔다.` : q.text));
     if (v.st === 1) card.append(el("div", "q-goal", `목표: ${goalText(q)}`));
     else card.append(goalRow(q, v));
+    if (away || v.st === 2) card.append(el("div", "q-next", nextStop(q, v)));
     extras(card, q, v);
-    card.append(el("div", "q-reward", rewardOf(q)));
+    card.append(rewardNode(q));
     const btns = el("div", "btns");
     if (v.st === 3 && here && q.choice) {
       // the answers: each its own gold button, the first is what F presses
@@ -179,6 +206,11 @@ export function renderTalk(box, npc, s, say) {
   if (!shown && !box.querySelector(".ds")) box.append(el("p", "ds", "지금은 부탁할 일이 없습니다."));
 }
 
+/** Side quests the player can take right now (server state 1), closest to the player's level first. */
+export function available(s) {
+  const st = states(s);
+  return side().filter((q) => !q.mainChapter && st.get(q.id)?.st === 1).sort((a, b) => (b.req?.lv || 0) - (a.req?.lv || 0));
+}
 /** Entries for the quest window's list: the side quests under way (and ready to hand in). */
 export function listEntries(s, entry, group, chapters = false) {
   const st = states(s);
@@ -194,6 +226,13 @@ export function listEntries(s, entry, group, chapters = false) {
     entry(`sq:${q.id}`, `[${kindName(q)}] ${q.title}`, sub, v.st === 3 ? "done" : v.st === 4 ? "past" : "");
   }
 }
+/** The "받을 수 있는 의뢰" group (capped so the list stays short): where each giver stands is the sub line. */
+export function listAvailable(s, entry, group, cap = 8) {
+  const all = available(s);
+  if (!all.length) return;
+  group(`받을 수 있는 의뢰 (${all.length})`);
+  for (const q of all.slice(0, cap)) entry(`sq:${q.id}`, `[${kindName(q)}] ${q.title}`, `${q.giverMap} · ${q.giverName}`, "offer");
+}
 /** The quest window's detail for a side quest. */
 export function detail(det, id, s) {
   const { el, act, Sound } = C;
@@ -205,11 +244,13 @@ export function detail(det, id, s) {
   }
   det.append(el("div", "q-title", `[${kindName(q)}] ${q.title}`), el("p", "say", q.text), goalRow(q, v));
   extras(det, q, v);
-  det.append(el("div", "q-reward", rewardOf(q)));
+  det.append(rewardNode(q));
   steps(det, q, st);
   det.append(el("p", "ds", v.st === 3 ? `${q.turnInMap}의 ${q.turnInName}에게 ${turnIn(q) === q.giver ? "돌아가 " : "가서 "}${q.choice ? "대답하세요" : "완료하세요"}.`
     : q.mainChapter && q.goal.type === "kill" && v.st === 2 ? `${q.giverMap}에서 승선장을 찾아 구조에 나서세요.`
+    : v.st === 1 ? `${q.giverMap}의 ${q.giverName}에게 말을 걸어 의뢰를 받으세요.`
     : `의뢰인: ${q.giverName} (${q.giverMap})`));
+  if (v.st === 1 && !q.mainChapter) return;   // not taken yet: nothing to give up; [추적] is added by the window
   const action = q.mainChapter && v.st === 1 ? "take" : q.mainChapter && v.st === 3 ? "done" : "drop";
   const btns = el("div", "btns"), b = el("button", action === "drop" ? "btn" : "btn gold", { take: "수락", done: "완료", drop: "포기" }[action]);
   if (action !== "drop") b.disabled = C.G.near?.id !== q.giver;

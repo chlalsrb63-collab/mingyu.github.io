@@ -103,10 +103,27 @@ assert.equal(act({ t: "rune", s: 0, k: "weapon", i: 0 }).ok, true);
 assert.equal(gearBonus(ch).atk - emptyAttack, 2, "the item-level 1 amber rune grants +2 attack");
 assert.equal(act({ t: "rune", s: 0, k: "weapon", i: 0, r: 1 }).ok, true, "Lv.1 can insert a different level of the same rune at item level 11");
 assert.deepEqual(ch.eq.weapon.ru[0], [amber, 11]);
-assert.ok(gearBonus(ch).atk - emptyAttack > 2, "the higher rune grants more attack");
+assert.equal(gearBonus(ch).atk - emptyAttack, 2, "nearby rune levels can round to the same flat bonus");
 ch.eq.weapon.ru[0] = [amber, 12];
 assert.equal(gearBonus(ch).atk, emptyAttack, "a rune already socketed by another character still has a level gate");
+ch.lvl = 190;
+ch.eq.weapon.ru[0] = [amber, 200];
+const amberAttack = D.runes[amber].af.find(([key]) => key === "atk")[1];
+assert.equal(gearBonus(ch).atk - emptyAttack, Math.round(amberAttack * 0.65), "a Lv.200 rune uses the endgame support coefficient");
+ch.lvl = 1;
 ch.eq.weapon.ru[0] = null;
+
+// Runes stack up to their own cap, including backup sockets. Ordinary gear bonuses remain additive.
+{
+  const stack = (id, slots) => ({ ...plain(id), sk: slots, ru: Array.from({ length: slots }, () => [amber, 200]) });
+  const eq = { weapon: stack("w_warrior_1", 2), weapon2: stack("w_warrior_1", 2), armor: stack("a_1", 2), gloves: stack("g_1", 1) };
+  const hero = { ...ch, lvl: 200, eq };
+  assert.ok(7 * Math.round(amberAttack * 0.65) > D.runeStatCaps.atk, "fixture does exceed the socket attack cap");
+  const base = gearBonus({ ...hero, eq: { weapon: plain("w_warrior_1"), armor: plain("a_1"), gloves: plain("g_1") } }).atk;
+  assert.equal(gearBonus(hero).atk - base, D.runeStatCaps.atk);
+  eq.weapon.af = [["atk", 19]];
+  assert.equal(gearBonus(hero).atk - base, D.runeStatCaps.atk + 19);
+}
 
 const twos = Object.keys(D.runeSets).filter((id) => D.runeSets[id].need === 2);
 const four = Object.keys(D.runeSets).find((id) => D.runeSets[id].need === 4);
@@ -139,6 +156,29 @@ assert.equal(gearBonus(ch).runeCounts[twos[1]], 4, "stowed weapon sockets count"
 assert.deepEqual(readSelf().runeSets, [four, twos[0]], "highest threshold, then stable priority; maximum two");
 assert.equal(act({ t: "uneq", k: "helm" }).ok, true);
 assert.deepEqual(readSelf().runeSets, [four, twos[1]], "the four matching two-piece runes activate their power once");
+
+// Fill each set through the real socket action. Removing a supporting piece invalidates derived stats.
+{
+  const priorGear = ch.eq, priorBag = ch.inv;
+  for (const [id, set] of Object.entries(D.runeSets)) {
+    const rune = runeId(id);
+    ch.eq = {
+      weapon: { ...plain(bases.weapon), sk: 2, ru: [null, null] },
+      armor: { ...plain(bases.armor), sk: 2, ru: [null, null] },
+    };
+    ch.inv = [{ id: rune, n: set.need, il: 1 }];
+    p.stc = null;
+    for (let i = 0; i < set.need; i++) {
+      assert.ok(insert(rune, i < 2 ? "weapon" : "armor", i % 2).ok, id);
+      const view = readSelf();
+      assert.equal(view.runeCounts[id], i + 1, id);
+      assert.deepEqual(view.runeSets, i + 1 === set.need ? [id] : [], id);
+    }
+    assert.ok(act({ t: "uneq", k: "weapon" }).ok, id);
+    assert.deepEqual(readSelf().runeSets, [], id);
+  }
+  ch.eq = priorGear; ch.inv = priorBag; p.stc = null;
+}
 
 const old = L.newChar("옛날룬", []);
 old.v = 26;

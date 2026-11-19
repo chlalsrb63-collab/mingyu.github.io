@@ -108,6 +108,13 @@ function gearIl(g) {
 }
 /** The player level a piece can be worn from: its item level minus IL_GAP (at least 1). */
 const gearReq = (g) => Math.max(1, gearIl(g) - IL_GAP);
+/** Item level and enhancement strengthen flat stats. The authored speed and critical chance stay fixed. */
+function gearBaseValue(g, stat) {
+  const value = ITEMS[g.id].base[stat] || 0;
+  if (stat === "spd" || stat === "crit") return value;
+  const scale = GEAR_BASE_SCALE[clamp(gearIl(g), 1, MAXLV) - 1] / 1000;
+  return value * scale * enhMul(g.enh);
+}
 /** A piece's name word comes from a legendary or unique power. */
 function gearWord(g) {
   return g.lg ? `${LEGEND[g.lg][0]} ` : "";
@@ -128,26 +135,32 @@ function sellPrice(s) {
   return Math.floor(it.price * 0.05 * (1 + 0.8 * (s.q | 0)) * (1 + 0.3 * (s.enh | 0)));
 }
 /** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`. */
-function rollLine(S, key, ilvl, mul) {
+function rollLine(S, key, tier, mul) {
   const [, , , min, max, grow] = AFFIX_BY_KEY[key];
-  return [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * ilvl) * mul))];
+  return [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * tier) * mul))];
 }
+const rollGearLine = (S, key, g) => rollLine(S, key, Math.min(TIER_MAX, toTier(gearIl(g))), AFFIX_MUL[g.q | 0]);
 /**
  * Roll one piece of gear: rarity decides how many affixes, `ilvl` (a monster's tier, 1–50) how big and, shown, its item
  * level `il` (+ IL_RANK[rank] for an elite or boss). A 전설 or 유니크 also rolls one `lg` power of its item type's pool (a 유니크: 4 stronger lines, AFFIX_MUL[5]).
  */
 function rollGear(S, id, q, ilvl, rank = 0) {
+  const il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(ITEMS[id].tier | 0) - 1] || 1), 1, MAXLV);
+  return rollGearAtLevel(S, id, q, il);
+}
+/** Drop and craft use the same ordinary affix budget for the level printed on the item. */
+function rollGearAtLevel(S, id, q, il) {
   const it = ITEMS[id];
   if (q === 4) q = 3;
   const g = plain(id);
   g.q = q;
-  g.il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(it.tier | 0) - 1] || 1), 1, 200);
+  g.il = il;
   const [lo, hi] = RARITY_AFFIX[q];
   const used = new Set();
   for (let n = ri(S, lo, hi); n > 0; n--) {
     const key = rollAffixKey(S, it.type, used);
     used.add(key);
-    g.af.push(rollLine(S, key, ilvl, AFFIX_MUL[q]));
+    g.af.push(rollGearLine(S, key, g));
   }
   if (q === 3 || q === 5) g.lg = pfxPick(S, it.type);   // the power comes from the item type's pool (51-prefix.js)
   g.sk = ri(S, 0, sockCap(g));
@@ -272,14 +285,15 @@ function damageEvent(rt, eid, amount, crit, player, cue, parts, melee) {
 function dealMob(S, rt, mob, p, dmg, crit, cue, parts, combat = {}) {
   // a boss that dived out of reach is not hit at all (56-boss-script.js)
   if (mob.dead || mob.dive) return false;
-  const poison = runePoisonFactor(S, mob);
-  if (poison !== 1) dmg = Math.max(1, Math.round(dmg * poison));
-  const taken = elementTaken(S, mob);
-  if (taken !== 1) dmg = Math.max(1, Math.round(dmg * taken));
-  // a scripted boss stunned by a broken cast takes more (its script's vuln), half behind its shielding adds
-  if (mob.bs) dmg = bsTaken(S, rt, mob, dmg);
-  // a rift's monster is made tougher for a bigger or stronger party (64-dim.js dimHk)
-  if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
+  // A charm that copies a fraction of an actual hit inherits its target modifiers.
+  if (!combat.copied) {
+    const poison = runePoisonFactor(S, mob);
+    if (poison !== 1) dmg = Math.max(1, Math.round(dmg * poison));
+    const taken = elementTaken(S, mob);
+    if (taken !== 1) dmg = Math.max(1, Math.round(dmg * taken));
+    if (mob.bs) dmg = bsTaken(S, rt, mob, dmg);
+    if (mob.hk) dmg = Math.max(1, Math.round(dmg / mob.hk));
+  }
   if (combat.buddyCap) dmg = Math.min(dmg, combat.buddyCap);
   dmg = elementShield(S, mob, dmg);
   mob.hp -= dmg;
@@ -374,7 +388,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   // a dagger in a back that is not watching you
   if (st.wk === "dagger" && mob.tgt !== p.pid) dmg *= 1 + st.sneak;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
-  dmg *= pfxMul(S, p, st, mob, d, o, crit);   // the powers that raise the blow (giant: +30% on elites and bosses), one product capped ×1.6
+  dmg *= pfxMul(S, p, st, mob, d, o, crit);   // combine active rune and prefix damage factors within their shared cap
   if (!pure && has(mob, "tough")) dmg *= 0.6;
   if (mob.vuln > S.now) dmg *= 1.3;
   // 금서의 낙인: a branded monster takes more from everyone

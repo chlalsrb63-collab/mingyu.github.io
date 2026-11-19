@@ -26,7 +26,7 @@ for (let y = 200; y < m.h * 16 - 200 && !spot; y += 16) for (let x = 200; x < m.
 }
 assert.ok(spot, "an open spot on the meadow");
 
-const base = { ...X.MOBS.lambmaw, name: "시험 짐승", hp: 5000, atk: 20, spd: 0, aggro: 150, range: 18, cd: 1300, charge: 0 };
+const base = { ...X.MOBS.meadowram, name: "시험 짐승", hp: 5000, atk: 20, spd: 0, aggro: 150, range: 18, cd: 1300, charge: 0 };
 let mob = null, evs = [], view = null, stand = [0, 0];
 const keep = new Set();
 const place = (o, x, y) => { o.x = o.hx = o.wx = x; o.y = o.hy = o.wy = y; o.hp = X.mobMax(o); o.stun = 0; o.tr = []; o.temp = true; rt.mobs.push(o); keep.add(o); return o; };

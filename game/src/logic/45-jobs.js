@@ -98,8 +98,8 @@ function deriveStats(p) {
   const tf = trophySum(ch);
   const perk = loPerks(ch), plus = (n) => 1 + n / 100;
   for (const k of ST_ORDER) E[k] = eff(ch.st[k]) + cm.st[k];
-  const wAtk = w ? (ITEMS[w.id].base.atk || 0) * enhMul(w.enh) : 0;
-  const sc = scaleOf(ch, wk);
+  const wAtk = w ? gearBaseValue(w, "atk") : 0;
+  const sc = scaleOf(ch, wk), hk = (JOBS[ch.job] && JOBS[ch.job].handK && JOBS[ch.job].handK[wk]) || 1;
   let core = SFX.atk[0] + SFX.atk[1] * lv;
   for (const k of Object.keys(sc)) core += sc[k] * E[k];
   const wm = w ? ch.wm[wk].lv : 0;
@@ -110,7 +110,7 @@ function deriveStats(p) {
   p.stc = {
     mhp: Math.round((SFX.hp[0] + SFX.hp[1] * lv + SFX.hp[2] * wil + b.hp + cm.hp) * (1 + JOB_PROGRESS.hp * jl) * (1 + tf.hp / 100) * plus(perk.hp)),
     mmp: Math.round((SFX.mp[0] + SFX.mp[1] * lv + SFX.mp[2] * wis + SFX.mp[3] * E.int + b.mp + cm.mp) * (1 + JOB_PROGRESS.mp * jl) * plus(perk.mp)),
-    atk0: ((core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk) * (1 + JOB_PROGRESS.atk * jl) * plus(perk.atk),
+    atk0: ((core + wAtk * (1 + SFX.wmAtk * wm) + (b.atk - wAtk)) * (1 + b.atkp / 100) + cm.atk) * (1 + JOB_PROGRESS.atk * jl) * plus(perk.atk) * hk,
     core, cm,
     def: Math.round((Math.round(SFX.def[0] * lv + SFX.def[1] * wil) + Math.round(b.def)) * (1 + JOB_PROGRESS.def * jl) * plus(perk.def)),
     crit: Math.min(SFX.critCap, SFX.crit[0] + (arm.crit || 0) + SFX.crit[1] * luk + (w ? w.enh * ENH_CRIT : 0) + b.crit + tf.crit + perk.crit),

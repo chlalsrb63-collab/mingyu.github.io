@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { killMob, dimChest, charmAppraise, charmOwn, charmSeal, charmCells, charmFit, charmSum, charmChest, charmMarkK, charmsEmpty, charmExpandCost, charmIdCost, charmWire, migrate, stats, MOBS, CHARM_SRC, CHARM_LEGEND, CHARM_OPT, CHARM_SHAPES, CHARM_EXPAND, CHARM_V };\n";
+  "\nexport const __t = { killMob, dimChest, charmAppraise, charmOption, charmOwn, charmSeal, charmCells, charmFit, charmSum, charmChest, charmMarkK, charmsEmpty, charmExpandCost, charmIdCost, charmWire, migrate, stats, MOBS, CHARM_SRC, CHARM_LEGEND, CHARM_OPT, CHARM_SHAPES, CHARM_EXPAND, CHARM_V };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, D = L.defs(), C = D.charms;
 const VERBOSE = process.argv.includes("-v");
@@ -83,15 +83,16 @@ function give(W, src = 0, tier = 8, seal) {
   return c;
 }
 /** A seal that appraises to what `want(result)` asks for, from source `src`. */
-function sealFor(src, want) {
-  for (let s = 1; s < 400000; s++) { const r = X.charmAppraise({ seal: s, rv: X.CHARM_V, src }); if (want(r)) return s; }
+function sealFor(src, want, rv = X.CHARM_V, tier = 8) {
+  for (let s = 1; s < 400000; s++) { const r = X.charmAppraise({ seal: s, rv, src, tier }); if (want(r)) return s; }
   throw new Error("no such seal");
 }
 /** Unlock the board the short way (the quest is tested on its own below). */
 function unlock(W, openN = 0) { W.cs.unlocked = true; W.cs.intro = 2; W.cs.openN = openN; }
 /** An appraised charm of a given kind in the bag. */
-function appraised(W, src, want) {
-  const c = give(W, src, 8, sealFor(src, want));
+function appraised(W, src, want, rv = X.CHARM_V, tier = 8) {
+  const c = give(W, src, tier, sealFor(src, want, rv, tier));
+  c.rv = rv;
   W.npc("charm"); W.ch.gold += 5000;
   assert.ok(W.act({ t: "charm_id", uid: c.uid }).ok);
   return c;
@@ -106,11 +107,11 @@ function appraised(W, src, want) {
   assert.deepEqual(C.expandCost, Array.from({ length: 16 }, (_, k) => X.charmExpandCost(k)));
   assert.deepEqual(C.expand, [[4, 1], [4, 2], [4, 3], [1, 4], [2, 4], [3, 4], [4, 4], [0, 1], [0, 2], [0, 3], [0, 4], [1, 0], [2, 0], [3, 0], [4, 0], [0, 0]]);
   assert.equal(X.charmIdCost(8), Math.round(200 + 12 * 8)); assert.deepEqual(C.idCost, [200, 12]);
-  assert.deepEqual(Object.keys(C.shapes), ["pin", "bar2", "bar3", "elbow", "tile2"]);
-  assert.deepEqual(Object.values(C.shapes).map((s) => s.k), [1, 1.7, 2.3, 2.3, 2.9]);
+  assert.deepEqual(C.levels, [30, 50, 70, 90, 110, 130, 150, 170, 190, 200]);
+  for (const s of Object.values(C.shapes)) assert.equal(s.k, [1, 1.7, 2.3, 2.9][s.cells.length - 1]);
   assert.deepEqual(C.shapes.elbow.cells, [[0, 0], [0, 1], [1, 1]]);
   for (const id of Object.keys(C.shapes)) assert.equal(C.shapes[id].rot.length, 4);
-  assert.deepEqual(Object.fromEntries(Object.entries(C.opts).map(([k, o]) => [k, o.cap])), { st: 8, hp: 120, mp: 60, atk: 30, skd: 12, skh: 12 });
+  assert.deepEqual(Object.fromEntries(Object.entries(C.opts).map(([k, o]) => [k, o.cap])), { st: 8, hp: 160, mp: 60, atk: 44, skd: 6, skh: 8 });
   assert.equal(C.legend.echo.shape, "bar3"); assert.equal(C.legend.knot.shape, "elbow"); assert.equal(C.legend.lens.shape, "tile2");
   assert.equal(C.legend.knot.off, 1, "수호의 매듭참 waits for a party heal");
   assert.equal(C.legend.echo.sk, "rend"); assert.equal(C.legend.lens.sk, "pierce");
@@ -186,7 +187,8 @@ function appraised(W, src, want) {
   const gold = W.ch.gold;
   assert.ok(W.act({ t: "charm_id", uid: mine[0].uid }).ok);
   assert.equal(W.ch.gold, gold); assert.equal(W.cs.freeId, 0);
-  assert.equal(mine[0].g, 1); assert.equal(mine[0].sh, "pin"); assert.equal(mine[0].op.length, 1);
+  assert.equal(mine[0].g, 1); assert.equal(mine[0].sh, "bar2"); assert.equal(mine[0].op.length, 1);
+  assert.equal(X.charmWire(mine[0]).il, 30, "the first reward is a Lv.30 charm");
   assert.equal(W.act({ t: "charm_id", uid: mine[0].uid }).error, "이미 감정한 참입니다");
   // the follow-ups: Lv.50 and Lv.90, a 확장못 each, once
   assert.equal(W.act({ t: "charm_quest", a: "accept" }).error, "Lv.50부터 받을 수 있는 의뢰입니다");
@@ -277,7 +279,7 @@ function appraised(W, src, want) {
   const row = seen.flatMap((v) => v.D).find((d) => d[0] === got.id);
   if (row) assert.deepEqual(row.slice(1), ["charm", Math.round(got.x), Math.round(got.y), 0]);
   const wire = seen[seen.length - 1].self.inv.find((x) => x.id === "charm");
-  assert.deepEqual(wire, { id: "charm", n: 1, uid: inst.uid, src: 2, tier: X.MOBS[fit].lv, rev: 0, cost: X.charmIdCost(X.MOBS[fit].lv) });
+  assert.deepEqual(wire, { id: "charm", n: 1, uid: inst.uid, src: 2, tier: X.MOBS[fit].lv, il: 30, req: 20, rev: 0, cost: X.charmIdCost(X.MOBS[fit].lv) });
   const text = JSON.stringify(seen);
   assert.ok(!text.includes("seal") && !text.includes(String(inst.seal)), "the seal never leaves the server");
   // a full bag: it stays on the ground
@@ -346,7 +348,8 @@ function appraised(W, src, want) {
   // what the owner is told once it is open — and still no seal
   const s = W.self();
   const w = s.inv.find((x) => x.uid === c.uid);
-  assert.deepEqual(w, { id: "charm", n: 1, uid: c.uid, src: 1, tier: 12, rev: 1, g: c.g, sh: c.sh, op: c.op, ...(c.lg ? { lg: c.lg } : {}) });
+  assert.deepEqual(w, { id: "charm", n: 1, uid: c.uid, src: 1, tier: 12, il: 30, req: 20, rev: 1, g: c.g, sh: c.sh, op: c.op, runes: w.runes, ...(c.lg ? { lg: c.lg } : {}) });
+  assert.deepEqual(w.runes, X.charmWire(vc).runes, "engraving survives appraisal after reconnect");
   assert.ok(!JSON.stringify(s).includes("seal"));
   // options: one for a 매직, two different ones for a 레어, a power and one for a 전설; values by the shape
   for (let i = 1; i <= 30000; i++) {
@@ -366,6 +369,76 @@ function appraised(W, src, want) {
   }
 }
 
+// ═════════ progression: source tiers, modern shapes, scaling and stable per-cell engravings
+{
+  const W = world({ lvl: 190, wk: "sword" });
+  const levels = new Set();
+  for (const src of [0, 1, 2, 3]) for (let tier = 1; tier <= 50; tier++) {
+    const wire = X.charmWire(X.charmSeal(W.S, W.p, src, tier));
+    levels.add(wire.il);
+    assert.equal(wire.req, wire.il - 10);
+    assert.ok(!("runes" in wire) && !("seal" in wire) && !("sh" in wire), "sealed drops conceal the result");
+  }
+  assert.deepEqual([...levels], C.levels, "all ten levels occur, including Lv.200 at tier 50");
+  const shapes = new Set(), glyphs = new Set();
+  let scaled = 0;
+  for (let seal = 1; seal <= 1500; seal++) {
+    const c = { seal, rv: X.CHARM_V, src: 3, tier: 8, rev: 1 };
+    const low = X.charmAppraise(c), high = X.charmAppraise({ ...c, tier: 50 });
+    shapes.add(low.sh);
+    const size = C.shapes[low.sh].cells.length;
+    assert.ok(size >= 2 && size <= 4);
+    assert.equal(high.sh, low.sh);
+    assert.equal(high.g, low.g);
+    low.op.forEach(([kind, value, arg], i) => {
+      const [highKind, highValue, highArg] = high.op[i];
+      assert.equal(highKind, kind); assert.equal(highArg, arg);
+      assert.ok(highValue >= value);
+      if (highValue > value) scaled++;
+    });
+    const { runes } = X.charmWire({ ...c, ...low });
+    assert.equal(runes.length, size);
+    assert.equal(new Set(runes).size, size);
+    for (const rune of runes) { assert.ok(rune >= 0 && rune < 20); glyphs.add(rune); }
+  }
+  assert.ok(scaled > 1000, "progression increases most rolled options");
+  assert.equal(glyphs.size, 20);
+  assert.deepEqual([...shapes].sort(), Object.keys(C.shapes).filter((id) => id !== "pin").sort());
+  const endgameAttack = new Set();
+  for (const il of C.levels) for (let seed = 1; seed <= 250; seed++) {
+    const a = X.charmOption({ seed }, "bar2", [], il);
+    const b = X.charmOption({ seed }, "bar3", [], il);
+    const c = X.charmOption({ seed }, "bar4", [], il);
+    assert.equal(a[0], b[0]); assert.equal(b[0], c[0]);
+    assert.ok(a[1] < b[1] && b[1] < c[1], "the same roll rewards each extra cell");
+    if (il === 200 && c[0] === "atk") endgameAttack.add(c[1]);
+  }
+  assert.deepEqual([...endgameAttack].sort((a, b) => a - b), [15, 20], "four-cell Lv.200 attack range");
+
+  const strip = appraised(W, 3, (r) => r.sh === "bar4" && r.op.some(([kind]) => kind === "hp"), X.CHARM_V, 50);
+  unlock(W);
+  W.ch.lvl = 189;
+  const place = { t: "charm_place", uid: strip.uid, x: 1, y: 1, r: 0 };
+  assert.equal(W.act(place).error, "Lv.190부터 장착할 수 있는 참입니다");
+  assert.ok(W.ch.inv.includes(strip));
+  W.ch.lvl = 190; W.p.stc = null;
+  assert.equal(W.act(place).error, "잠긴 칸입니다", "a long piece needs an expanded board");
+  W.cs.openN = 4;
+  assert.ok(W.act(place).ok);
+  assert.ok(W.act({ ...place, t: "charm_move", r: 1 }).ok);
+  const before = W.self().charms;
+  assert.ok(before.sum.hp > 0);
+  const V = world({ ch: clone(L.exportChar(W.S, W.PID)) });
+  assert.deepEqual(V.self().charms.placed, before.placed, "a four-cell piece keeps its rotation and glyphs on reload");
+  V.ch.rs = 1;
+  V.npc("train");
+  assert.ok(V.act({ t: "respec" }).ok);
+  assert.deepEqual(V.self().charms.placed, before.placed, "a reset preserves the layout");
+  assert.equal(V.self().charms.sum.hp, 0, "underlevel charms grant no bonus");
+  assert.equal(V.act({ ...place, t: "charm_move" }).error, "Lv.190부터 장착할 수 있는 참입니다");
+  assert.ok(V.act({ t: "charm_remove", uid: strip.uid }).ok);
+}
+
 // ═════════ shapes: every shape × turn, overlap, locked cells, off the board, a move that ignores its own cells
 {
   const cells = (sh, r) => X.charmCells(sh, r).map((c) => c.join(",")).join(" ");
@@ -378,8 +451,9 @@ function appraised(W, src, want) {
     const cs = X.charmCells(sh, r);
     assert.equal(cs.length, X.CHARM_SHAPES[sh].cells.length);
     assert.equal(Math.min(...cs.map((c) => c[0])), 0); assert.equal(Math.min(...cs.map((c) => c[1])), 0);
-    assert.ok(Math.max(...cs.map((c) => Math.max(c[0], c[1]))) <= 2, "no side longer than three");
+    assert.ok(Math.max(...cs.map((c) => Math.max(c[0], c[1]))) <= 3, "no side longer than four");
     assert.deepEqual(C.shapes[sh].rot[r], cs, "defs carry the same turns");
+    assert.deepEqual(C.shapes[sh].order[r].map((i) => X.charmCells(sh, r, false)[i]), cs, "engraving indices follow the rotated cells");
   }
   // every shape, turn and anchor on a fully open and on a fresh board against a brute-force reading
   for (const openN of [0, 7, 16]) {
@@ -393,7 +467,7 @@ function appraised(W, src, want) {
   }
   const W = world({ lvl: 40, wk: "sword" });
   unlock(W);
-  const el = appraised(W, 3, (r) => r.sh === "elbow"), pin = appraised(W, 3, (r) => r.sh === "pin"), bar = appraised(W, 3, (r) => r.sh === "bar3" && !r.lg), til = appraised(W, 3, (r) => r.sh === "tile2" && !r.lg);
+  const el = appraised(W, 3, (r) => r.sh === "elbow"), pin = appraised(W, 3, (r) => r.sh === "pin", 1), bar = appraised(W, 3, (r) => r.sh === "bar3" && !r.lg), til = appraised(W, 3, (r) => r.sh === "tile2" && !r.lg);
   const sealed = give(W);
   assert.equal(W.act({ t: "charm_place", uid: sealed.uid, x: 1, y: 1, r: 0 }).error, "감정하지 않은 참은 놓을 수 없습니다");
   assert.equal(W.act({ t: "charm_place", uid: el.uid, x: 1, y: 1, r: 4 }).error, "잘못된 자리입니다");
@@ -496,26 +570,26 @@ function appraised(W, src, want) {
   W.p.hp = base.mhp + 14;
   assert.ok(W.act({ t: "charm_remove", uid: hp.uid }).ok);
   assert.equal(X.stats(W.p).mhp, base.mhp); assert.equal(W.p.hp, base.mhp, "HP held to the new maximum");
-  // caps: stats +8 each, attack +30 after gear, HP +120, MP +60, a skill's damage and healing +12% each
+  // The board limits stacking without altering the character's trained stats.
   W.cs.placed = [];
   const put = (c, x, y) => W.cs.placed.push({ c, x, y, r: 0 });
   for (let i = 0; i < 5; i++) put(mk("pin", [["st", 5, "str"]]), i, 0);
   for (let i = 0; i < 5; i++) put(mk("pin", [["hp", 40, ""]]), i, 1);
   for (let i = 0; i < 5; i++) put(mk("pin", [["mp", 20, ""]]), i, 2);
-  for (let i = 0; i < 5; i++) put(mk("pin", [["atk", 9, ""]]), i, 3);
+  for (let i = 0; i < 5; i++) put(mk("pin", [["atk", 12, ""]]), i, 3);
   for (let i = 0; i < 3; i++) put(mk("pin", [["skd", 8.7, "rend"]]), i, 4);
   for (let i = 3; i < 5; i++) put(mk("pin", [["skh", 8.7, "soulbolt"]]), i, 4);
   W.p.stc = null;
   const sum = X.charmSum(W.ch);
   assert.deepEqual(sum.st, { str: 8, wil: 0, dex: 0, int: 0, wis: 0, luk: 0 });
-  assert.deepEqual([sum.hp, sum.mp, sum.atk, sum.skd.rend, sum.skh.soulbolt], [120, 60, 30, 12, 12]);
+  assert.deepEqual([sum.hp, sum.mp, sum.atk, sum.skd.rend, sum.skh.soulbolt], [160, 60, 44, 6, 8]);
   const st = X.stats(W.p);
-  assert.equal(st.mhp, base.mhp + 120); assert.equal(st.mmp, base.mmp + 60);
-  assert.ok(st.atk > base.atk + 30 && st.atk < base.atk + 30 + 8 * 1.2, `attack: +30 after gear, and eight points of strength (${base.atk} → ${st.atk})`);
+  assert.equal(st.mhp, base.mhp + 160); assert.equal(st.mmp, base.mmp + 60);
+  assert.ok(st.atk > base.atk + 44 && st.atk < base.atk + 44 + 8 * 1.2, `attack: +44 after gear, and eight points of strength (${base.atk} → ${st.atk})`);
   assert.equal(W.ch.st.str, clone(L.hero("기준", { lvl: 60, wk: "sword" })).st.str, "the sheet's own stats are untouched");
   assert.equal(W.ch.lvl, 60);
   const sv = W.self().charms.sum;
-  assert.deepEqual(sv, { st: [8, 0, 0, 0, 0, 0], hp: 120, mp: 60, atk: 30, skd: { rend: 12 }, skh: { soulbolt: 12 } });
+  assert.deepEqual(sv, { st: [8, 0, 0, 0, 0, 0], hp: 160, mp: 60, atk: 44, skd: { rend: 6 }, skh: { soulbolt: 8 } });
   // one legendary power at work: the first placed
   W.cs.placed = [];
   put(mk("bar3", [["hp", 20, ""]], "echo"), 0, 0); put(mk("tile2", [["mp", 10, ""]], "lens"), 0, 1);
@@ -572,7 +646,7 @@ function appraised(W, src, want) {
   assert.equal(dim.got[W.PID], 1);
   // the wire shows the box without what is in it
   const s = W.self().charms;
-  assert.deepEqual(s.pending, { id: "charm", n: 1, uid: W.cs.pending.uid, src: 3, tier: 20, rev: 0, cost: 440 });
+  assert.deepEqual(s.pending, { id: "charm", n: 1, uid: W.cs.pending.uid, src: 3, tier: 20, il: 70, req: 60, rev: 0, cost: 440 });
   // claiming: next to 주아나, with room; once
   full();
   W.go("town", 5, 40);
@@ -605,7 +679,7 @@ function appraised(W, src, want) {
   }
   // a broken board
   const mk = (uid, seal, src = 3) => ({ id: "charm", n: 1, uid, seal, rv: 1, tier: 10, src, rev: 1, ...X.charmAppraise({ seal, rv: 1, src }) });
-  const pinS = sealFor(3, (r) => r.sh === "pin"), barS = sealFor(3, (r) => r.sh === "bar3" && !r.lg), tilS = sealFor(3, (r) => r.sh === "tile2" && !r.lg);
+  const pinS = sealFor(3, (r) => r.sh === "pin", 1), barS = sealFor(3, (r) => r.sh === "bar3" && !r.lg, 1), tilS = sealFor(3, (r) => r.sh === "tile2" && !r.lg, 1);
   const ch = L.hero("복구", { lvl: 45, wk: "sword" });
   ch.charms = { unlocked: true, openN: 0, intro: 2, fu: [0, 0], kn: 0, freeId: 0, nextUid: 3, pending: null, rec: [],
     placed: [
@@ -649,6 +723,14 @@ function appraised(W, src, want) {
   const saved = clone(L.exportChar(V.S, V.PID));
   const U = world({ ch: clone(saved) });
   assert.deepEqual(clone(U.cs), saved.charms); assert.deepEqual(clone(U.ch.inv), saved.inv);
+
+  const backlog = L.hero("보류참", { lvl: 45 });
+  backlog.charms = { ...X.charmsEmpty(), placed: Array.from({ length: 64 }, (_, i) => ({
+    c: mk(i + 1, pinS), x: 1, y: 1, r: 0,
+  })) };
+  const recovered = X.migrate(backlog);
+  assert.equal(recovered.charms.placed.length, 0, "locked board stays empty");
+  assert.equal(new Set(recovered.charms.rec.map((c) => c.uid)).size, 64, "every owned charm remains recoverable");
 }
 
 // ═════════ 메아리 뿔참: the end of a 대지 가르기 wave, 18% again on the first monster there, 12 s apart
@@ -668,7 +750,7 @@ function appraised(W, src, want) {
   assert.equal(cm.length, 1); assert.deepEqual(cm[0].slice(0, 3), ["cm", W.p.eid, 0]);
   const [near, first, last] = ms.map((m) => hits(v, m));
   assert.equal(near.length, 1, "not in the last 30%"); assert.equal(last.length, 1, "only the first there");
-  assert.equal(first.length, 2); assert.equal(first[1], Math.max(1, Math.round(first[0] * 0.18)), `18% of that hit: ${first}`);
+  assert.equal(first.length, 2); assert.equal(first[1], Math.max(1, Math.round(first[0] * 0.14)), `14% of that hit: ${first}`);
   assert.equal(ms[1].by[W.PID], first[0] + first[1]);
   // again at once (the skill's wait put aside): the 12 s inner wait holds — also through a weapon swap of state
   [v, ms] = cast();
@@ -677,8 +759,22 @@ function appraised(W, src, want) {
   [v] = cast();
   assert.equal(evts(v, "cm").length, 0, "still inside 12 s");
   run(W, 60, 100);
-  [v, ms] = cast();
+  // A teammate's debuff and a raid modifier already affected the hit being copied.
+  const ink = Object.keys(D.runes).find(id => D.runes[id].set === "inkthorn");
+  W.ch.eq.weapon.sk = 2;
+  W.ch.eq.weapon.ru = [ink, ink];
+  W.ch.eq.armor = { id: "a_1", n: 1, q: 0, af: [], enh: 0, sk: 1, ru: [ink] };
+  W.p.stc = null;
+  W.ready();
+  ms = W.mobs([[60 + 95, 0]], 5e6);
+  ms[0].hk = 1.75;
+  ms[0].runePoison = { pid: W.PID, map: "meadow", until: W.S.now + 3000, stacks: 5 };
+  assert.ok(W.act({ t: "sk", id: "rend", a: 0 }).ok);
+  v = W.step();
   assert.equal(evts(v, "cm").length, 1, "12 s on, it answers again");
+  const damage = hits(v, ms[0]);
+  assert.equal(damage.length, 2);
+  assert.equal(damage[1], Math.max(1, Math.round(damage[0] * 0.14)), "copied damage reuses the original hit's target modifiers");
   // nothing in the wave's end: nothing happens, and the wait is not spent
   run(W, 125, 100);
   W.ready(); const only = W.mobs([[60 + 40, 0]], 5e6);
@@ -739,7 +835,7 @@ function appraised(W, src, want) {
   assert.equal(run(W, 5).flatMap((v) => evts(v, "cm")).length, 0, "one attack only");
   // +15% exactly, and a mark that ran out gives nothing
   ms[1].cmk = { pid: W.PID, until: W.now + 1000 };
-  assert.equal(X.charmMarkK(W.S, W.rt, W.p, ms[1]), 1.15); assert.equal(X.charmMarkK(W.S, W.rt, W.p, ms[1]), 1);
+  assert.equal(X.charmMarkK(W.S, W.rt, W.p, ms[1]), 1.12); assert.equal(X.charmMarkK(W.S, W.rt, W.p, ms[1]), 1);
   ms[1].cmk = { pid: W.PID, until: W.now - 1 };
   assert.equal(X.charmMarkK(W.S, W.rt, W.p, ms[1]), 1);
   ms[1].cmk = { pid: "someone-else", until: W.now + 1000 };
@@ -779,16 +875,18 @@ function appraised(W, src, want) {
     W.field("meadow");
     let a = 0, b = 0;
     for (let i = 0; i < 800; i++) {
-      W.ready(); const [m] = W.mobs([[24, 0]], 5e7);
+      W.ready(); const [m] = W.mobs([[24, 0]], 5e7, { k: "twinhare" });
+      W.S.seed = i * 18181 + 7;
       W.act({ t: "sk", id: "slash", a: 0 }); W.step(); a += m.by[W.PID] || 0;
-      W.ready(); const [q] = W.mobs([[70, 0]], 5e7);
+      W.ready(); const [q] = W.mobs([[70, 0]], 5e7, { k: "twinhare" });
+      W.S.seed = i * 37373 + 11;
       W.act({ t: "sk", id: "rend", a: 0 }); W.step(); b += q.by[W.PID] || 0;
     }
     return [a, b];
   };
   const [a0, b0] = dmg(false), [a1, b1] = dmg(true);
-  assert.ok(a1 / a0 > 1.06 && a1 / a0 < 1.18, `파워 슬래쉬 +12%: ×${(a1 / a0).toFixed(3)}`);
-  assert.ok(b1 / b0 > 0.95 && b1 / b0 < 1.05, `대지 가르기 as before: ×${(b1 / b0).toFixed(3)}`);
+  assert.ok(Math.abs(a1 / a0 - 1.06) < 0.01, `파워 슬래쉬 caps at +6%: ×${(a1 / a0).toFixed(3)}`);
+  assert.equal(b1, b0, "the option adds no damage to 대지 가르기");
 }
 
 console.log("charms: ok");

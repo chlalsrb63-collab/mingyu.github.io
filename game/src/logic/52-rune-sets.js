@@ -2,21 +2,21 @@
 
 const RUNE_SET_MAX = 2;
 const RUNE_POWER = {
-  willowwind: { move: 1.18, iv: 0.84, ms: 2800 },
-  duskfang: { kill: 0.035, chance: 0.25, leech: 0.15, icd: 1200 },
-  lantern: { shield: 0.16, ms: 5500, icd: 14000 },
-  brassscale: { gold: 22, mf: 16, per: 180, atk: 0.12, ms: 30000 },
-  azureknot: { cdr: 0.12, mp: 0.8 },
-  ashbloom: { chance: 0.2, hit: 1.3, dot: 0.22, ms: 4000, radius: 64, targets: 5, icd: 4300 },
-  silverlake: { slow: 1800, crit: 1.5 },
-  stormsail: { chance: 0.22, first: 1.35, fall: 0.78, radius: 94, targets: 5, icd: 3300 },
-  inkthorn: { dot: 0.09, vuln: 0.055, stacks: 5, ms: 6000, hitGap: 500 },
-  lastbell: { hp: 0.3, hit: 1.48, execute: 0.09 },
-  redanvil: { atk: 1.08, iv: 0.45, hp: 0.25, miti: 0.72 },
-  astrolabe: { chance: 0.18, cap: 0.8, ratio: 4, ms: 20000, icd: 10000 },
-  dawnpillar: { heal: 0.55, ms: 3200, icd: 360000 },
-  moonveil: { ms: 1700, ign: 0.82, icd: 6300 },
-  blackstar: { chance: 0.30, damage: 1.35, splash: 0.85, radius: 84, targets: 6, icd: 2800 },
+  willowwind: { move: 1.14, iv: 0.90, ms: 2800 },
+  duskfang: { kill: 0.025, chance: 0.25, leech: 0.10, icd: 1200 },
+  lantern: { shield: 0.12, ms: 5500, icd: 14000 },
+  brassscale: { gold: 22, mf: 16, per: 180, atk: 0.07, ms: 30000 },
+  azureknot: { cdr: 0.08, mp: 0.82 },
+  ashbloom: { chance: 0.2, hit: 0.85, dot: 0.12, ms: 4000, radius: 64, targets: 5, icd: 5500 },
+  silverlake: { slow: 1800, crit: 1.25 },
+  stormsail: { chance: 0.18, first: 0.93, fall: 0.74, radius: 94, targets: 5, icd: 4400 },
+  inkthorn: { dot: 0.04, vuln: 0.015, stacks: 4, ms: 6000, hitGap: 500 },
+  lastbell: { hp: 0.3, hit: 1.20, execute: 0.04 },
+  redanvil: { atk: 0.24, iv: 0.12, hp: 0.25, miti: 0.86 },
+  astrolabe: { chance: 0.10, cap: 0.22, ratio: 2, ms: 20000, icd: 15000 },
+  dawnpillar: { heal: 0.35, ms: 2400, icd: 360000 },
+  moonveil: { ms: 1700, ign: 0.38, icd: 8500 },
+  blackstar: { chance: 0.16, damage: 1.08, splash: 0.40, radius: 84, targets: 5, icd: 4500 },
 };
 
 const runePct = (n) => +(n * 100).toFixed(1);

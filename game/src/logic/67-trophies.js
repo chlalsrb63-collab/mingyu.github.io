@@ -159,11 +159,13 @@ function storyTick(S, now) {
 }
 /** defs().trophies: the table, the caps, the field chance, the duplicate's gold per boss level, the story's numbers. */
 /** (migrate, sheets before v17) an old main-chain index → the same errand's index now (the boss quests went in between). */
-const questV17 = (i) => questOld(i, (q) => q.fb || q.v24);
+const questV17 = (i) => questOld(i, (q) => q.fb || q.v24 || q.v30);
 /** (migrate, sheets v17–v19) an old index → now: the four field-boss steps marked `v20` went in between. */
-const questV20 = (i) => questOld(i, (q) => q.v20 || q.v24);
+const questV20 = (i) => questOld(i, (q) => q.v20 || q.v24 || q.v30);
 /** (migrate, sheets v20–v23) an old index → now: the coast and mesa steps marked `v24` went in between. */
-const questV24 = (i) => questOld(i, (q) => q.v24);
+const questV24 = (i) => questOld(i, (q) => q.v24 || q.v30);
+/** (migrate, sheets v24–v29) an old index → now: the oasis, cloud temple, dunes, coast boss and ink lake steps marked `v30` went in. */
+const questV30 = (i) => questOld(i, (q) => q.v30);
 /** Index `i` of the chain without the rows `added` later → the same row's index now (past the end stays finished). */
 function questOld(i, added) {
   const old = QUESTS.map((q, j) => (added(q) ? -1 : j)).filter((j) => j >= 0);

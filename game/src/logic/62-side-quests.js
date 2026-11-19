@@ -67,6 +67,8 @@ for (const q of SIDE) {
 // main-chain chapters (P6): a QUESTS row's `sq` is its story beat, a mainChapter quest that opens once the chain reaches
 // that row and must be done before the row can be accepted (70-validate.js); a row naming none, or a missing one, has no beat
 const SQ_MAIN = {};
+/** `req.main` quests open once the frost king (the chain's last boss) is down; the epilogue after him does not gate them. */
+const kingDown = (ch) => ch.q.i > QUESTS.findIndex((q) => q.mob === "crownstag");
 for (const [i, Q] of QUESTS.entries()) {
   if (Q.sq && SQ_BY[Q.sq]?.mainChapter && !Object.hasOwn(SQ_MAIN, Q.sq)) SQ_MAIN[Q.sq] = i;
   else delete Q.sq;
@@ -83,6 +85,13 @@ for (const q of SIDE) for (const [pick, rw] of [[-1, q.reward], ...(q.choice || 
     test: (c) => !!c.sq.done[q.id] && (pick < 0 || (c.sq.flags[q.id] | 0) === pick), title: rw.title, bonus: null };
   ACH.push(a); ACH_BY[id] = a; rw.ach = id;
 }
+
+// main-chain honors (QUESTS[i].honor): an achievement earned once ch.q.i is past that row (a sheet already past it gets it at its next achievement check)
+QUESTS.forEach((q, i) => {
+  if (!q.honor) return;
+  const a = { id: `h_${i}`, cat: "이야기", name: q.honor, desc: `[${q.title}] 의뢰 완료`, pts: 5, test: (c) => c.q.i > i, title: q.honor, bonus: null };
+  ACH.push(a); ACH_BY[a.id] = a;
+});
 
 const sqEmpty = () => ({ on: {}, done: {}, flags: {}, t: {} });
 /** A saved ch.sq, cleaned: active quests that no longer exist are dropped; finished ones are remembered. */
@@ -128,7 +137,7 @@ function sqState(ch, q, now) {
   if (ch.sq.done[q.id] && !q.repeat) return 4;
   const f = q.req.flag;
   if ((f && ch.sq.done[f[0]] && (ch.sq.flags[f[0]] | 0) !== f[1]) || (q.req.until && ch.sq.done[q.req.until])) return -1;
-  if (ch.lvl < q.req.lv || (q.req.main && ch.q.i < QUESTS.length) || (Object.hasOwn(SQ_MAIN, q.id) && ch.q.i < SQ_MAIN[q.id]) || (q.req.quest && !ch.sq.done[q.req.quest]) || (f && !ch.sq.done[f[0]])) return 0;
+  if (ch.lvl < q.req.lv || (q.req.main && !kingDown(ch)) || (Object.hasOwn(SQ_MAIN, q.id) && ch.q.i < SQ_MAIN[q.id]) || (q.req.quest && !ch.sq.done[q.req.quest]) || (f && !ch.sq.done[f[0]])) return 0;
   return q.repeat === "week" && sqWeekDone(ch, q, now) ? 4 : 1;
 }
 const npcName = (id) => (Object.hasOwn(NPC_NAME, id) ? NPC_NAME[id] : id);
@@ -189,7 +198,7 @@ function sqValidate(S, p, a) {
     if (st === 4) return bad(q.repeat === "week" ? "이번 주에는 이미 마쳤습니다. 월요일 아침 6시에 다시 받을 수 있습니다" : "이미 마친 퀘스트입니다");
     if (st === -1) return bad("다른 길을 골랐습니다");
     if (ch.lvl < q.req.lv) return bad(`레벨 ${q.req.lv} 이상이어야 합니다`);
-    if (q.req.main && ch.q.i < QUESTS.length) return bad("앞선 주요 의뢰를 모두 마쳐야 합니다");
+    if (q.req.main && !kingDown(ch)) return bad("성에왕을 쓰러뜨리는 주요 의뢰까지 마쳐야 합니다");
     if (Object.hasOwn(SQ_MAIN, q.id) && ch.q.i < SQ_MAIN[q.id]) return bad("주요 의뢰를 더 진행해야 합니다");
     if (st === 0) { const pre = SQ_BY[q.req.quest || q.req.flag[0]]; return bad(`먼저 [${pre.title}]${pp(pre.title, "을를")} 마쳐야 합니다`); }
     if (!q.mainChapter && Object.keys(ch.sq.on).filter((id) => !SQ_BY[id]?.mainChapter).length >= SQ_MAX) return bad(`퀘스트는 ${SQ_MAX}개까지 받을 수 있습니다`);

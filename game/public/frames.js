@@ -20,6 +20,8 @@ const S = 2;   // every art pixel is S×S screen pixels
 
 const INK = "#0d0b12";
 export const FACE = "#211c2a";
+/** The talk and quest windows' face opacity (hud.css "see-through talk"). */
+const SEE_A = 0.74;
 
 /** The frame colours of an element's theme; each fallback is the original brass look. */
 function palette(cs) {
@@ -72,9 +74,17 @@ function brass(P) {
   // a domed rivet sits in each corner on the brass band
   const RIV = ["._hm.", "_hwmL", "hwhmL", "mmmLs", ".LLs."];
   const C = { _: P.mid, h: P.hi, w: P.shine, m: P.warm, L: P.lo, s: P.sh };
-  for (const [ox, oy] of [[1, 1], [n - 6, 1], [1, n - 6], [n - 6, n - 6]]) {
-    RIV.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== ".") G.set(ox + x, oy + y, C[ch]); }));
-  }
+  // top-left and bottom-right carry a leaf sprout, top-right a little flower, bottom-left keeps its rivet;
+  // the greens are a fixed ramp (dark outline keeps them readable on every HUD theme)
+  const LEAF = [".dd..", "dgld.", "dlggd", ".dgd.", "..d.."], FLOWER = [".ppp.", "ppypp", ".ppp.", "..d..", "..d.."];
+  const LC = { d: "#1e4a22", g: "#4f9a35", l: "#9fd45a", p: "#f08aa8", y: "#ffe27a" };
+  const put = (rows, ox, oy, C, flip) => rows.forEach((row, y) => [...row].forEach((ch, x) => {
+    if (ch !== ".") G.set(ox + (flip ? 4 - x : x), oy + y, C[ch]);
+  }));
+  put(RIV, 1, n - 6, C);
+  put(LEAF, 1, 1, LC);
+  put(FLOWER, n - 6, 1, LC);
+  put(LEAF, n - 6, n - 6, LC, true);
   // a faint line just inside, so the face reads as a raised board
   for (let i = 6; i < n - 6; i++) { G.set(i, 6, P.line); G.set(6, i, P.line); }
   return toUrl(G);
@@ -111,5 +121,10 @@ export function installFrames() {
   const P = palette(getComputedStyle(hud || root)), a = parseFloat(getComputedStyle(root).getPropertyValue("--hud-a")) || 1;
   r.setProperty("--frt-brass-a", brass({ ...P, face: fade(P.face, a) }));
   r.setProperty("--frt-screen-a", screen({ ...P, scr: fade(P.scr, a) }));
+  // the talk and quest windows always see through a little (owner 2026-11-19): at most SEE_A, less when the HUD is set lower
+  const see = Math.min(a, SEE_A);
+  r.setProperty("--frt-brass-see", brass({ ...P, face: fade(P.face, see) }));
+  r.setProperty("--frt-screen-see", screen({ ...P, scr: fade(P.scr, see) }));
+  r.setProperty("--see-a", String(see));
   dispatchEvent(new Event("hud-skin"));   // the smartphone's bezel (phone.js) is drawn in the same theme colours
 }

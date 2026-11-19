@@ -82,10 +82,16 @@ const LINES = {
 };
 
 const said = new Map();
+/** Own lines; "@sq_id|text" entries show only after that side quest is finished (self.sq state 4). */
+function ownLines(npc, s) {
+  if (!Array.isArray(npc.lines) || !npc.lines.length) return null;
+  const done = new Set(((s && s.sq) || []).filter((r) => r[1] === 4).map((r) => r[0]));
+  return npc.lines.flatMap((l) => { const m = /^@([^|]+)\|(.*)$/.exec(l); return !m ? [l] : done.has(m[1]) ? [m[2]] : []; });
+}
 /** The next line for this NPC, or null if they have nothing to add. */
 export function lineFor(npc, s) {
   // a service NPC from the map editor (the cafe, the inn, the town hall) speaks its own lines in turn
-  const list = Array.isArray(npc.lines) && npc.lines.length ? npc.lines : LINES[npc.role];
+  const list = ownLines(npc, s) || LINES[npc.role];
   if (!list || !s) return null;
   // the elder opens with the quest line (what to do next); everyone else starts anywhere
   const i = (said.get(npc.name) ?? (npc.role === "elder" ? 1 : Math.floor(Math.random() * list.length))) % list.length;
@@ -96,7 +102,8 @@ export function lineFor(npc, s) {
 /** Every line for a talking NPC, the server's greeting first. */
 export function allLines(npc, s) {
   // an NPC from the map editor says exactly what it was given
-  if (Array.isArray(npc.lines) && npc.lines.length) return npc.lines.map((l) => (s ? l.replaceAll("{n}", s.name) : l));
+  const own = ownLines(npc, s);
+  if (own) return own.map((l) => (s ? l.replaceAll("{n}", s.name) : l));
   const out = npc.say ? [npc.say] : [];
   for (let k = 0; k < (LINES[npc.role] || []).length; k++) { const l = lineFor(npc, s); if (l && !out.includes(l)) out.push(l); }
   return out;

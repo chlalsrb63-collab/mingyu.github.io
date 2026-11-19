@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, DIM_FLOORS, dimTheme, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, skillHpCost, xpNeed, stats, atkRange, aimIdx, ITEMS, SOLID_G, MAXLV, DIM_CHAL, CHAL_KEYS, dimFloorK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk, chalOfWeek, RAID, MAP_META, FIELD_BOSS, dimRaidKey };\n";
+  "\nexport const __t = { DIM, DIM_TOWN, DIM_THEMES, DIM_FLOORS, dimTheme, dimension, dimPool, killMob, changeMap, closeDim, rollGear, tierFor, GEAR, WK_ID, MOBS, SKILL, SKILL_ORDER, skillHpCost, xpNeed, stats, atkRange, aimIdx, ITEMS, SOLID_G, MAXLV, DIM_CHAL, CHAL_KEYS, dimFloorK, dimReward, weekOf, dayOf, dimArena, chalMinLv, chalSteps, TIER_MAX, dimClean, dealMob, mobMax, dimHk, dimAtkK, chalGearHp, chalGearAtk, chalOfWeek, RAID, MAP_META, FIELD_BOSS, dimRaidKey };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16, D = X.DIM;
 // tuning runs: HPB=… BOSSHP=… NOCLEAR=1 node tests/dimrift.mjs -v
@@ -353,7 +353,7 @@ const dimIds = (S) => Object.keys(S.dims);
   assert.equal(dim.theme, "cave"); assert.equal(dim.map.dim.style, "caves", "floor 2 is the crystal caves");
   assert.equal(p.ch.dim.best, 1, "a floor cleared is on the sheet");
   const k2 = X.dimFloorK(2);
-  for (const m of rt.mobs) if (!X.MOBS[m.k].chest) assert.ok(Math.abs(m.hk - X.dimHk(1, dim.lv, X.MOBS[m.k].lv) * k2.hp) < 1e-9 && Math.abs(m.ak - k2.atk) < 1e-9, "floor 2: health and blows × its row");
+  for (const m of rt.mobs) if (!X.MOBS[m.k].chest) assert.ok(Math.abs(m.hk - X.dimHk(1, dim.lv, X.MOBS[m.k].lv) * k2.hp) < 1e-9 && Math.abs(m.ak - Math.max(1, k2.atk) * X.dimAtkK(X.MOBS[m.k].lv)) < 1e-9, "floor 2: health and blows × its row");
   step(S);
   assert.equal(last("g1", "dim")[14], 2, "floor 2 on the wire");
   // floor 2 → 3 without stepping in: the countdown takes the party, the fallen on their feet
@@ -850,11 +850,11 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   assert.ok(act(S, "t2", { t: "dim_ready", id: S.parties[a.party].rc.id, ok: 1 }).ok);
   const dim = S.dims[a.map];
   assert.equal(dim.floor, 1); assert.equal(b.map, dim.id);
-  for (const mob of dim.rt.mobs) if (!X.MOBS[mob.k].chest) assert.ok(Math.abs(mob.hk - X.dimHk(2, dim.lv, X.MOBS[mob.k].lv)) < 1e-9 && !mob.ak, "floor 1: health for two, no extra blows");
+  for (const mob of dim.rt.mobs) if (!X.MOBS[mob.k].chest) assert.ok(Math.abs(mob.hk - X.dimHk(2, dim.lv, X.MOBS[mob.k].lv)) < 1e-9 && Math.abs(mob.ak - X.dimAtkK(X.MOBS[mob.k].lv)) < 1e-9, "floor 1: health for two, tier attack scaling");
   a.ch.dim.best = 3; a.ch.dim.ms = 1000;
   const res = quickClear(S, dim, { t1: 1, t2: 1 });
   const boss = lastBoss, k3 = X.dimFloorK(3);
-  assert.ok(Math.abs(boss.hk - X.dimHk(2, lastDim.lv, X.MOBS[boss.k].lv) * D.bossHp * k3.hp) < 1e-9 && Math.abs(boss.ak - D.bossAtk * k3.atk) < 1e-9, "the final boss at floor 3's row");
+  assert.ok(Math.abs(boss.hk - X.dimHk(2, lastDim.lv, X.MOBS[boss.k].lv) * D.bossHp * k3.hp) < 1e-9 && Math.abs(boss.ak - D.bossAtk * k3.atk * X.dimAtkK(X.MOBS[boss.k].lv)) < 1e-9, "the final boss at floor 3's row");
   assert.ok(lastDim.opened === dim.opened && lastDim.floor === 3);
   assert.equal(b.ch.dim.best, 3); assert.ok(b.ch.dim.ms > 0 && b.ch.dim.ms < 60000);
   assert.deepEqual([a.ch.dim.best, a.ch.dim.ms], [3, 1000], "a slower run never lowers a record");
@@ -1087,7 +1087,8 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
     assert.ok(act(S, "s1", { t: "dim_open", boss: "cloakbat", step: st }).ok);
     const d = S.dims[a.map], m = d.rt.mobs.find((q) => q.id === d.boss), up = d.lv - X.MOBS.cloakbat.lv;
     assert.equal(d.lv, X.chalSteps("cloakbat")[st][0], "the boss stands at the step's level");
-    assert.ok(Math.abs(m.hk - CH.hp * X.DIM.hpN[0] * (1 + CH.lvK * up)) < 1e-9 && Math.abs(m.ak - (1 + CH.atkLv * up)) < 1e-9, "the old per-tier scaling");
+    const tier = X.MOBS[m.k].lv;
+    assert.ok(Math.abs(m.hk - CH.hp * X.DIM.hpN[0] * (1 + CH.lvK * up) * X.chalGearHp(tier)) < 1e-9 && Math.abs(m.ak - (1 + CH.atkLv * up) * X.chalGearAtk(tier)) < 1e-9, "the challenge uses level and raid pressure");
     step(S); assert.equal(last("s1", "dim")[15][7], st, "the step on the wire");
     m.by = { s1: 1 }; a.x = m.x; a.y = m.y; X.killMob(S, d.rt, m); step(S);
     const r = { lv: d.lv, gold: last("s1", "dr")[4], stone: stone() - s0, got: a.ch.gold - g };

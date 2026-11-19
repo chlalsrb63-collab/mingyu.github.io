@@ -1,7 +1,7 @@
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
-const SHEET_VERSION = 29;
+const SHEET_VERSION = 30;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -150,6 +150,8 @@ function migrate(ch) {
       const p = Array.isArray(g.un) && g.un.length > 1 ? g.un[0] : -1, lg = Number.isInteger(p) ? UNIQ_OLD_LG[p] : "";
       if (lg) out.lg = lg; else out.q = 2;
     }
+    const maxAttackPct = Math.round(AFFIX_BY_KEY.atkp[4] * (AFFIX_MUL[out.q] || 1));
+    out.af = out.af.map((line) => line?.[0] === "atkp" && line[1] > maxAttackPct ? ["atkp", maxAttackPct] : line);
     // cu: 1 cursed by a failed enhancement (no more tries until lifted), 2 lifted (the next try +ENH_UNCURSE %p) — v19
     if ((g.cu | 0) > 0) out.cu = clamp(g.cu | 0, 1, 2);
     return out;
@@ -175,6 +177,8 @@ function migrate(ch) {
   else if ((ch.v | 0) < 20) ch.q.i = questV20(ch.q.i | 0);
   // (v24) 산호 해안 and 붉은바위 황금궁 got main steps (P6)
   else if ((ch.v | 0) < 24) ch.q.i = questV24(ch.q.i | 0);
+  // (v30) main steps for the oasis, cloud temple, dunes, coast boss and ink lake
+  else if ((ch.v | 0) < 30) ch.q.i = questV30(ch.q.i | 0);
   ch.q = { i: clamp(ch.q.i | 0, 0, QUESTS.length), n: Math.max(0, ch.q.n | 0), st: ch.q.st === 1 ? 1 : 0 };
   ch.bq = isObj(ch.bq) && MOBS[ch.bq.k] ? { k: ch.bq.k, n: ch.bq.n | 0, need: BOUNTY_N } : null;
   ch.bn = ch.bn | 0;
@@ -346,6 +350,7 @@ function masteryRank(ch, k) {
 function gearBonus(ch) {
   const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
   const lg = {}, runeCounts = {}, win = {}, off = [], element = emptyElementStats();
+  const runeStats = {};
   const add = (s, v) => {
     if (Object.hasOwn(b, s)) b[s] += v;
     else addElementAffix(element, s, v);
@@ -357,13 +362,12 @@ function gearBonus(ch) {
     for (let i = 0; i < Math.min(g.sk, sockCap(g)); i++) {
       const socket = g.ru?.[i], rune = RUNES[runeSocketId(socket)], il = runeSocketLevel(socket);
       if (!rune || ch.lvl < runeReq(il)) continue;
-      for (const [stat, n] of rune.af) add(stat, runeStat(n, il));
+      for (const [stat, n] of rune.af) runeStats[stat] = (runeStats[stat] || 0) + runeStat(n, il);
       if (rune.set) runeCounts[rune.set] = (runeCounts[rune.set] || 0) + 1;
     }
     if (k === "weapon2") continue;
     const item = ITEMS[g.id], base = item.base;
-    // enhancement raises the piece's own stats along ENH_PCT
-    for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : enhMul(g.enh)));
+    for (const s of Object.keys(base)) add(s, gearBaseValue(g, s));
     for (const [s, v] of g.af) add(s, v);
     if (item.elementAf) for (const [s, v] of item.elementAf) add(s, v);
     // one power counts once however many pieces carry it: the higher item level wins, a tie goes to the earlier slot (SLOTS order)
@@ -374,6 +378,7 @@ function gearBonus(ch) {
       else off.push(k);
     }
   }
+  for (const [stat, total] of Object.entries(runeStats)) add(stat, Math.min(total, runeStatCap(stat)));
   // a worn title and every finished region of the monster collection add their bit
   const ttl = ch.title && ACH_BY[ch.title];
   if (ttl && ttl.bonus) for (const [s, v] of ttl.bonus) add(s, v);

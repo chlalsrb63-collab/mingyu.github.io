@@ -211,6 +211,11 @@ function bsCast(S, rt, mob, tgt) {
         const tx = Math.floor(x / T), ty = Math.floor(y / T), add = newMob(S, o.kind, [tx, ty, tx, ty], { elite: 0 });
         add.x = add.hx = x; add.y = add.hy = y; readyMob(S, add);
         add.temp = true; add.add = mob.id; add.shield = o.shield; add.feedAt = o.feed ? now + o.feed : 0; add.heal = o.heal;
+        if (mob.dim) {
+          const tier = MOBS[add.k].lv;
+          add.hk = dimGearHp(tier) / MOB_HARD;
+          add.ak = dimAtkK(tier);
+        }
         rt.mobs.push(add); rt.ev.push(["r", add.id]);
       }
       dur = 800; break;

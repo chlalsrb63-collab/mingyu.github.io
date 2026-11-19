@@ -46,6 +46,22 @@ export function fxCustom(draw, dur, flat = false, delay = 0) { fx.add({ k: "cust
 /** The effects' clock: the time of the frame being drawn (so previews that step time by hand animate them too). */
 let fxClock = null;
 export function setFxClock(t) { fxClock = t; }
+// 설정 → 스킬 이펙트 투명도 (input.js): effects and sparks are drawn at fxA; the danger marks (KEEP, f.keep) never fade.
+// Every globalAlpha the effect code sets is scaled by `mul` (its reads give back the unscaled value, so `*=` stays right).
+let fxA = 1, mul = 1;
+const KEEP = new Set(["tele", "mark", "lane", "pool"]);
+export function setFxAlpha(a) { fxA = clamp(+a || 1, 0.4, 1); }
+export function fxFade(on) {
+  const m = on ? fxA : 1;
+  if (m === mul) return;
+  if (!Object.hasOwn(g, "globalAlpha")) {
+    let p = Object.getPrototypeOf(g), d;
+    while (p && !(d = Object.getOwnPropertyDescriptor(p, "globalAlpha"))) p = Object.getPrototypeOf(p);
+    Object.defineProperty(g, "globalAlpha", { configurable: true, get() { return d.get.call(this) / mul; }, set(v) { d.set.call(this, v * mul); } });
+  }
+  mul = m;
+  g.globalAlpha = 1;
+}
 const fxNow = () => fxClock ?? performance.now();
 
 // ── sword-qi: the burst each basic blow throws off at the snap (drawPerson calls qiBurst once a
@@ -508,6 +524,7 @@ export function drawFx(now, ground2) {
     if (k >= 1) { fx.list.splice(i, 1); if (f.done) f.done(); continue; }
     const flat = f.k === "ring" || f.k === "wave" || f.k === "tele" || f.k === "lane" || f.k === "pool" || f.k === "mark" || f.k === "crack" || f.k === "snow" || (f.k === "custom" && f.flat);
     if (flat !== ground2) continue;
+    fxFade(!KEEP.has(f.k) && !f.keep);
     if (f.k === "custom") { g.save(); f.draw(g, k, f); g.restore(); continue; }
     if (f.k === "qi") { g.globalAlpha = 1; drawQi(f, k); continue; }
     if (f.k === "arrow") { g.globalAlpha = 1; drawArrow(f, k); continue; }

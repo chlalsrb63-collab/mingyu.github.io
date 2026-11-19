@@ -13,7 +13,11 @@ const RUNE_PRICE = { 1: 500, 2: 900, 3: 1650, 4: 850 };
 const RUNES = {};
 const RUNE_KEYS = [];
 const RUNE_POOLS = { 1: [], 2: [], 3: [], 4: { 2: [], 3: [], 4: [] } };
-const RUNE_SCALE = Array.from({ length: 200 }, (_, i) => 18 + Math.floor(i * 82 / 199));
+// Runes complement the host item. Keep low-level bonuses and bring endgame lines to 65% of face value.
+const RUNE_SCALE = Array.from({ length: 200 }, (_, i) => 18 + Math.floor(i * 47 / 199));
+// Combat limits apply only to the sum of socket lines; base gear, prefixes and set powers have their own rules.
+const RUNE_STAT_CAP = { atk: 32, atkp: 6, def: 20, hp: 220, mp: 100, crit: 6, critd: 16, ls: 3, spd: 8, dmg: 8, pen: 8, res: 12, dur: 10, proc: 8 };
+const runeStatCap = (key) => RUNE_STAT_CAP[key] ?? RUNE_STAT_CAP[key.split("_", 1)[0]] ?? Infinity;
 const runeIl = (il) => Number.isInteger(il) ? clamp(il, 1, RUNE_SCALE.length) : 1;
 const runeReq = (il) => Math.max(1, runeIl(il) - IL_GAP);
 const runeSocketId = (socket) => Array.isArray(socket) ? socket[0] : socket;

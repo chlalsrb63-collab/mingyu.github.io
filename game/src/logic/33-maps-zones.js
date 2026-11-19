@@ -9,8 +9,10 @@
 
 /** The packed dungeons whose campfires get a quiet ring like a gate's (open fields keep their measured routes: tests/hunt-routes.mjs). */
 const FIRE_QUIET = ["crypt", "sewer", "abyss"];
-/** The wide grounds that get one more campfire, laid where the walk to a fire was longest (dunesea: 64 % of its ground was over 60 tiles from one). */
-const FIRE_EXTRA = ["dunesea", "city", "maple", "inklake"];
+/** The wide grounds that get more campfires (how many), each laid where the walk to a fire was longest (dunesea: 64 % of its ground was over 60 tiles from one). */
+const FIRE_EXTRA = { dunesea: 1, city: 1, maple: 1, inklake: 1, cloudtemple: 1, mesa: 1, meadow: 2, forest: 2, cave: 1, jungle: 2, coast: 2, oasis: 2 };
+/** Open ground wanted all round an extra fire (default 2; a tighter ground needs more so the walk to it stays three tiles wide: tests/mapflow). */
+const FIRE_ROOM = { cloudtemple: 4, mesa: 4 };
 const Z_SAFE = 0, Z_NORMAL = 1, Z_ELITE = 2, Z_HIDDEN = 3;
 /**
  * Zone cuts, as a share of the farthest walk D from the entrance: the safe plaza is ZONE_SAFE D deep
@@ -57,16 +59,18 @@ function zoneMap(m) {
     return d;
   };
   const d = flood([m.entry], 1e9);
-  // one more campfire on the wide grounds: the reachable tile farthest (on foot) from every fire and the entrance, with open ground all round it
+  // more campfires on the wide grounds: the reachable tile farthest (on foot) from every fire and the entrance, with open ground all round it
   const extraFire = [];
-  if (FIRE_EXTRA.includes(m.id) && (FIRES[m.id] || []).length) {
+  for (let k = 0; k < (FIRE_EXTRA[m.id] | 0) && (FIRES[m.id] || []).length; k++) {
     const df = flood(FIRES[m.id].concat([m.entry]), 1e9);
     let best = -1;
     for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
       const i = y * W + x;
       if (d[i] < 0 || df[i] <= (best < 0 ? 0 : df[best])) continue;
       let roomy = true;
-      for (let dy = -2; dy <= 2 && roomy; dy++) for (let dx = -2; dx <= 2 && roomy; dx++) roomy = open[i + dy * W + dx] === 1;
+      const R = FIRE_ROOM[m.id] || 2;
+      if (x < R || y < R || x >= W - R || y >= H - R) continue;
+      for (let dy = -R; dy <= R && roomy; dy++) for (let dx = -R; dx <= R && roomy; dx++) roomy = open[i + dy * W + dx] === 1;
       if (roomy) best = i;
     }
     if (best >= 0) { const at = [best % W, (best - best % W) / W]; FIRES[m.id].push(at); extraFire.push(at); }
