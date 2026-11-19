@@ -20,6 +20,8 @@ const S = 2;   // every art pixel is S×S screen pixels
 
 const INK = "#0d0b12";
 export const FACE = "#211c2a";
+/** The talk and quest windows' face opacity (hud.css "see-through talk"). */
+const SEE_A = 0.74;
 
 /** The frame colours of an element's theme; each fallback is the original brass look. */
 function palette(cs) {
@@ -111,5 +113,10 @@ export function installFrames() {
   const P = palette(getComputedStyle(hud || root)), a = parseFloat(getComputedStyle(root).getPropertyValue("--hud-a")) || 1;
   r.setProperty("--frt-brass-a", brass({ ...P, face: fade(P.face, a) }));
   r.setProperty("--frt-screen-a", screen({ ...P, scr: fade(P.scr, a) }));
+  // the talk and quest windows always see through a little (owner 2026-11-19): at most SEE_A, less when the HUD is set lower
+  const see = Math.min(a, SEE_A);
+  r.setProperty("--frt-brass-see", brass({ ...P, face: fade(P.face, see) }));
+  r.setProperty("--frt-screen-see", screen({ ...P, scr: fade(P.scr, see) }));
+  r.setProperty("--see-a", String(see));
   dispatchEvent(new Event("hud-skin"));   // the smartphone's bezel (phone.js) is drawn in the same theme colours
 }

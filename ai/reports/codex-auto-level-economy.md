@@ -17,3 +17,4 @@
 - 성장·경제 규칙은 `game/src/logic/00-header.js`, `02-jobs-stats.js`, `10-tables.js`, `20-helpers-mapkit.js`, `40-characters-world.js`, `45-jobs.js`, `47-job-freedom.js`, `50-loot-combat.js`, `60-content.js`, `70-validate.js`, `74-dev-test.js`, `75-apply.js`, `90-views-api.js`에 반영했다. `game/src/logic.js`를 빌드로 재생성했다.
 - 성장 UI와 안내를 `game/public/{guide,helptext,hud,infocard,lobby,statwin,win_char}.js` 및 `game/README.md`에 반영했다. `game/scripts/balance-probe.mjs`와 관련 규칙 테스트에서 고정 레벨 표본과 새 성장 동작을 구분했다.
 - `npm.cmd run test:rules` 87/87, `npm.cmd run data:check`, `npm.cmd run check:split` 통과. 독립 로컬 서버에서 브라우저로 Lv.1 `0 / 74` 경험치 표시와 6개 능력치, 남은 포인트 0일 때 배분 버튼 상태를 확인했다.
+- 로컬 `main`의 대화·퀘스트창 UI 변경 `8c08493`을 작업 브랜치에 병합했다. 로직 생성 파일 검사와 `growth jobs itemlevel npclife-client` 4/4가 통과했다.
