@@ -14,6 +14,7 @@
  */
 
 import { Sound } from "./audio.js";
+import { showTopic } from "./help.js";
 import * as S3 from "./scene2d.js";
 import * as Emo from "./emoticons.js";
 import { gaugeTip } from "./weapongauge.js";
@@ -43,6 +44,8 @@ import { renderParty, renderGuild } from "./win_social.js";
 export const touch = () => document.body.classList.contains("touch");
 const WIN = ["inv", "char", "skill", "shop", "smith", "quest", "rank", "talk", "help", "settings", "train", "party", "buddy", "guild", "warp", "daily", "achieve", "collect", "dex", "bank", "costume", "dim", "rc", "map", "house", "deco", "hstore", "life", "job", "craft", "board", "charm", "juana", "week", "trophy", "alba", "trade", "fairmkt"];
 export const winEl = (id) => $(`#w-${id}`);
+/** Content windows whose how-to lives in the 도움말 window (helptext.js topic ids): a "?" in the title bar opens it there. */
+const HELP = { dim: "raid", smith: "gear", charm: "gear", quest: "quest", daily: "quest", alba: "alba", board: "coop", life: "life", craft: "life", job: "jobs", skill: "combat", train: "stats", party: "social", guild: "social", buddy: "social", trade: "social", achieve: "book", collect: "book", dex: "book", warp: "town", fairmkt: "fair" };
 /** On a phone the bag lives in the drawer, so it always counts as open; on a desktop it opens in the side panel. */
 export const isOpen = (id) => (id === "inv" && compact()) || !winEl(id).hidden;
 const compact = () => VP.lay !== "full";
@@ -700,6 +703,12 @@ export function setupWindows({ walkToDoor }) {
     w.addEventListener("pointerdown", () => front(id), true);
     const x = w.querySelector(".x");
     x.addEventListener("click", () => { closeWin(id); Sound.play("close"); });
+    if (HELP[id]) {
+      const h = el("button", "hlp", "?");
+      h.type = "button"; h.title = "도움말";
+      h.addEventListener("click", () => { showTopic(HELP[id]); openWin("help"); Sound.play("open"); });
+      x.before(h);
+    }
     if (DOCKABLE.includes(id) && id !== "inv") {
       // 분리 / 붙이기: this window in the side panel or floating over the world (a desktop only; hud.css hides it on a phone)
       const pop = el("button", "pop");
@@ -710,7 +719,7 @@ export function setupWindows({ walkToDoor }) {
     }
     // dragged by the title bar, kept in the safe zone, remembered; a folded window's tab unfolds on a press
     head.addEventListener("pointerdown", (e) => {
-      if (e.target.closest(".x, .pop") || e.button !== 0 || paned(id)) return;
+      if (e.target.closest(".x, .pop, .hlp") || e.button !== 0 || paned(id)) return;
       e.preventDefault();
       if (folded(id)) { Sound.play("open"); unfold(id); syncMenu(); return; }
       const r = w.getBoundingClientRect(), ox = e.clientX - r.left, oy = e.clientY - r.top;

@@ -52,6 +52,8 @@ function build(box) {
   box.append(q, main);
   ui = { q, nav, text, btns: new Map() };
 }
+/** The 도움말 window opened at one topic (a window's "?" button: windows.js HELP). */
+export function showTopic(id) { F.t = id; F.q = ""; if (ui) ui.q.value = ""; }
 export function render() {
   const box = $("#help-body"), d = G.defs;
   if (!d || !d.jobs) { box.textContent = "불러오는 중…"; ui = null; return; }

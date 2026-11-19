@@ -530,6 +530,11 @@ body.hud-peek .window:not(.docked) { opacity: var(--hud-a) !important; }
 /* 분리 / 붙이기 (windows.js setDock): docked = two overlapping squares (pop out), floating = a frame with a bar on its right (dock); a desktop only */
 .window > header .pop { margin-left: auto; flex: none; position: relative; box-sizing: border-box; width: 20px; height: 20px; padding: 0; cursor: pointer; border: 2px solid var(--ink); border-radius: 0; background: var(--sf4, #3a3146); box-shadow: inset 2px 2px 0 var(--sf5, #5b4d6c), inset -2px -2px 0 var(--sf2, #1f1a28); }
 .window > header .pop + .x { margin-left: 0; }
+/* "?" = this content's page in 도움말 (windows.js HELP) */
+.window > header .hlp { margin-left: auto; flex: none; box-sizing: border-box; width: 20px; height: 20px; padding: 0; cursor: pointer; font: 700 var(--t12)/16px var(--pix); color: var(--cream); text-align: center;
+  border: 2px solid var(--ink); border-radius: 0; background: var(--sf4, #3a3146); box-shadow: inset 2px 2px 0 var(--sf5, #5b4d6c), inset -2px -2px 0 var(--sf2, #1f1a28); }
+.window > header .hlp:hover { color: var(--b-hi); }
+.window > header .hlp + :is(.pop, .x) { margin-left: 0; }
 .window > header .pop::before, .window > header .pop::after { content: ""; position: absolute; box-sizing: border-box; }
 .window > header .pop[data-dock="1"]::before { left: 7px; top: 3px; width: 8px; height: 8px; border: 2px solid var(--cream); }
 .window > header .pop[data-dock="1"]::after { left: 3px; top: 7px; width: 8px; height: 8px; border: 2px solid var(--cream); background: var(--sf4, #3a3146); }
@@ -661,6 +666,9 @@ body:not([data-lay="full"]) .window > header .pop, body.playing .window.mini > h
 #dim-pick .dim-rec { text-align: center; color: var(--tx2, #a898b8); margin-bottom: 6px; }
 #dim-pick .dim-chal { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 2px 0; }
 #dim-pick .dim-step { color: var(--tx2, #a898b8); font-size: 11px; }
+#dim-pick .dim-rw { margin-top: 6px; padding: 4px 6px; border-top: 2px solid var(--sf4, #3a3146); font-size: var(--t11); line-height: 1.5; }
+#dim-pick .dim-rw em { font-style: normal; color: var(--tx2, #a898b8); }
+#dim-pick .dim-rw .got { opacity: .55; }
 #dim-pick .dim-chal span { flex: 1; }
 #dim-pick .dim-chal em { font-style: normal; color: var(--tx2, #a898b8); }
 #dim-stag { margin-top: 3px; }

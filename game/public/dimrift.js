@@ -257,30 +257,27 @@ export function openKeeper() { A.openWin("dim"); renderKeeper(); }
 function renderKeeper() {
   const d = D(), s = A.G.self, party = A.G.party || [], dj = st.dj;
   const lead = !party.length || party[0][0] === A.G.you;
-  const pyl = Object.values(d.pylons || {}).map(([n]) => n).join(" · ");
   const n = floors();
-  $("#dim-info").innerHTML = `<b>${n}단 레이드 · 약 10분 · 파티 최대 ${d.party}명</b><br>` +
-    `파티장이 균열을 열면 마을에 있는 파티원 모두에게 입장 준비 창이 뜹니다. 수락한 사람만 함께 들어갑니다.<br>` +
-    `단마다 몬스터를 쓰러뜨려 균열 게이지를 채우면 <b>하강의 문</b>이 열리고, ${n}단 끝의 가장 먼 방에서 <b>최종 보스</b>가 깨어납니다. ` +
-    `전체 <b>${Math.round(d.limit / 60000)}분</b> 제한. 정예가 남긴 <b>균열의 구슬</b>과 기둥(${pyl})을 놓치지 마세요.<br>` +
-    `최종 보스를 쓰러뜨리면 파티원마다 보상 상자가 열립니다. 하루 첫 ${(d.raid && d.raid.daily) || 3}번은 경험치를 모두 받고, 주마다 첫 정화에 보너스가 붙습니다.` + (s && s.st ? `<br><span class="dim-n">정화한 균열: ${s.st.dim | 0}번</span>` : "");
+  // the how-to is 도움말 → 레이드던전 (the "?" in the title bar)
+  $("#dim-info").innerHTML = `<b>${n}단 레이드 · 파티 최대 ${d.party}명 · ${Math.round(d.limit / 60000)}분 제한</b>` + (s && s.st ? `<br><span class="dim-n">정화한 균열 ${s.st.dim | 0}번</span>` : "");
   // the record and the weekly boss challenge
   const r = (s && s.dimr) || [n, 0, 0, 0, 0, 0], ch = d.chal || { bosses: [] }, lvl = (s && s.lvl) || 0;
   // dimr[6]: best step + 1 per boss; dimr[7]: this week's rotating boss. Row: [k, name, need, cast, pats, steps, reward bit, rotating]
-  const challenges = ch.bosses.map(([k, name, need, cast, , steps, bit, rotating], i) => {
-    if (rotating && i !== r[7]) return "";
-    const label = rotating ? "이번 주 순환 보스" : "주간 토벌";
-    const claimed = r[5] & (bit ?? (1 << i));
-    return `<div class="dim-chal"><span>${label} · <b>${esc(name)}</b> <em>${claimed ? "이번 주 큰 보상 받음" : "큰 보상 남음"}${r[6] && r[6][i] ? ` · 최고 ${esc((ch.stepNames || [])[r[6][i] - 1] || "")}` : ""}</em></span>` +
+  const shown = ch.bosses.map((b, i) => [b, i]).filter(([b, i]) => !b[7] || i === r[7]);
+  const challenges = shown.map(([[k, name, need, cast, , steps, bit, rotating], i]) => {
+    return `<div class="dim-chal"><span>${rotating ? "순환" : "주간"} · <b>${esc(name)}</b>${r[6] && r[6][i] ? ` <em>최고 ${esc((ch.stepNames || [])[r[6][i] - 1] || "")}</em>` : ""}</span>` +
       // one button a difficulty step: its level, what it adds; greyed under the step's level (the server checks every member)
       (steps || [[0, need]]).map(([L, min], s) => `<button class="btn small" data-a="boss" data-k="${esc(k)}" data-s="${s}"${!lead || (lvl && lvl < min) ? " disabled" : ""} ` +
         `title="Lv.${min}부터 · 골드·경험치 Lv.${L} 기준${s && ch.stepR ? ` · 큰 보상 강화석 +${Math.floor(ch.stepR.stone * s)}${Math.floor(ch.stepR.rune * s) ? ` · 룬 +${Math.floor(ch.stepR.rune * s)}` : ""}${Math.floor(ch.stepR.gear * s) ? ` · 장비 +${Math.floor(ch.stepR.gear * s)}` : ""}` : ""} · [${esc(cast)}]을(를) 무력화하세요">${esc((ch.stepNames || [])[s] || "도전")} ${L ? `Lv.${L}` : ""}</button>`).join("") + `</div>`;
   }).join("") +
-    (ch.stepR ? `<div class="dim-step">난이도가 오를수록 보스가 강해지고 골드·경험치는 그 레벨 기준 · 큰 보상에 단계마다 강화석 +${ch.stepR.stone}</div>` : "");
+    (shown.length ? `<div class="dim-rw"><b>주간 토벌 보상</b> <em>(보스마다 주 1회 · 월요일 06:00 초기화)</em>` + shown.map(([[, name, , , , , bit, , big], i]) => {
+      const done = r[5] & (bit ?? (1 << i)), [st, ru, ge] = big || [];
+      return `<div class="${done ? "got" : ""}"><b>${esc(name)}</b> 강화석 ${st} · 룬 ${ru} · 장비 ${ge} · 참 상자 <em>${done ? "받음" : "남음"}</em></div>`;
+    }).join("") + (ch.stepR ? `<div><em>난이도 한 단계마다 강화석 +${ch.stepR.stone}</em></div>` : "") + `</div>` : "");
   // the raids by level (defs().dim.raids): the leader picks one; the server checks every member's level
   const raids = dj ? "" : (d.raids || []).map((x) => {
     const ok = !lvl || (lvl >= x.minLv && (!x.maxLv || lvl <= x.maxLv));
-    return `<div class="dim-chal"><span><b>${esc(x.name)}</b> <em>Lv.${x.minLv}${x.maxLv ? `~${x.maxLv}` : "+"} · ${esc((x.floors || []).join(" → "))}</em></span>` +
+    return `<div class="dim-chal"><span><b>${esc(x.name)}</b> <em>Lv.${x.minLv}${x.maxLv ? `~${x.maxLv}` : "+"}</em></span>` +
       `<button class="btn small${ok ? " gold" : ""}" data-a="raid" data-k="${esc(x.k)}"${!lead || !ok ? " disabled" : ""} title="${ok ? (party.length ? "파티 입장 준비" : "혼자 입장") : "레벨이 맞지 않습니다"}">${lead ? "입장" : "파티장만"}</button></div>`;
   }).join("");
   const pick = dj ? "" : raids + `<div class="dim-rec">최고 기록 ${r[1] >= r[0] ? mmss(r[2]) : r[1] ? `${r[1]}단까지` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음 · 주간 첫 정화 보너스 ${r[4] ? "받음" : "남음"}</div>` +

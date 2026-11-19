@@ -808,7 +808,7 @@ function dimDefs() {
     raid: { floors: DIM.floors, daily: DIM.dailyFull, downMs: DIM.downMs, names: DIM_FLOORS.map((c) => c.name), hanokNames: HANOK_FLOORS.map((c) => c.name) },
     // every raid in display order: [key, name, shown level window, the three floor names, the art theme of its ground]
     raids: Object.keys(RAID).map((k) => ({ k, name: RAID[k].name, minLv: RAID[k].minLv, maxLv: RAID[k].maxLv || MAXLV, floors: RAID[k].floors.map((c) => c.name), theme: RAID[k].theme || (k === "hanok" ? "interior" : "underground") })),
-    chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0]), stepNames: DIM_CHAL.stepNames,
+    chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0, ((R) => [R.stone, R.rune | 0, R.gear | 0])(DIM_CHAL.bosses[k].rotation ? DIM_CHAL.rotationBig : DIM_CHAL.bosses[k].big || DIM_CHAL.big)]), stepNames: DIM_CHAL.stepNames,
       stepR: DIM_CHAL.stepR },
   };
 }

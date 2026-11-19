@@ -104,8 +104,8 @@ body.phone-ui #phone-btn { display: block; }
 #ph-app { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; padding: 6px 6px 4px; }
 #ph-app > #panel { flex: 1 1 0; min-height: 0; }
 /* the app's own title bar is the phone's: keep a window's extra header controls (the bag's gold, count and sort), drop its name, key and buttons */
-body.phone-ui #ph-app .window.docked > header > :is(.t, kbd, .pop, .x) { display: none; }
-body.phone-ui #ph-app .window.docked > header:not(:has(> :not(.t, kbd, .pop, .x))) { display: none; }
+body.phone-ui #ph-app .window.docked > header > :is(.t, kbd, .pop, .x, .hlp) { display: none; }
+body.phone-ui #ph-app .window.docked > header:not(:has(> :not(.t, kbd, .pop, .x, .hlp))) { display: none; }
 /* windows inside #hud pick up `#hud .btn` (hud.css), which outranks the windows' own selected-button looks: say them again here */
 #ph-app :is(.seg, .deco-style) .btn.on { color: #2a1806; background: var(--b-mid); box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px -2px 0 var(--b-lo); }
 /* the wardrobe tab: the preview and the worn slots side by side need ~320 px: a smaller preview and slots fit the phone's 304 */
