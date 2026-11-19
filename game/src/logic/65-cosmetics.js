@@ -140,23 +140,23 @@ const COSMETICS = Object.fromEntries([
   ["back_cauldron", 108, "back", "보글 꼬마 가마솥", 2, "ach", "coopS_alch", "등에 멘 꼬마 가마솥. 초록 거품이 보글보글.", "coop"],
   ["back_booksatchel", 130, "back", "올빼미 사서 책가방", 2, "ach", "coopS_lib", "장르별 색띠를 두른 보라색 책가방. 반납 도서가 늘 한 권쯤 들어 있다.", "coop"],
   // Willow patrol, coastal traders and brass survey crew
-  ["hat_willow_patrol", 109, "hat", "버들잎 순찰모", 0, "chest", 0, "가지 사이를 지날 때 귀가 걸리지 않도록 챙을 짧게 댔다.", "willowpatrol"],
-  ["top_willow_patrol", 110, "top", "버들 순찰 조끼", 1, "chest", 0, "등에는 버들잎을 수놓고 앞에는 호루라기를 매달았다.", "willowpatrol"],
+  ["hat_willow_patrol", 109, "hat", "버들잎 순찰모", 0, "shop", 1400, "가지 사이를 지날 때 귀가 걸리지 않도록 챙을 짧게 댔다.", "willowpatrol"],
+  ["top_willow_patrol", 110, "top", "버들 순찰 조끼", 1, "shop", 2100, "등에는 버들잎을 수놓고 앞에는 호루라기를 매달았다.", "willowpatrol"],
   ["back_willow_mapcase", 111, "back", "버들길 지도통", 1, "ach", "wp3", "이동의 돌 셋을 깨운 순찰대원이 갈림길 지도를 넣어 다니는 통.", "willowpatrol"],
-  ["face_willow_leaf", 112, "face", "버들잎 뺨 매듭", 0, "chest", 0, "순찰 짝이 멀리서도 알아보도록 볼 옆에 달아 둔 잎 매듭.", "willowpatrol"],
-  ["hat_coral_merchant", 113, "hat", "물결챙 항구 모자", 1, "chest", 0, "물보라를 흘려보내는 비스듬한 챙과 산호빛 매듭.", "coraltrade"],
-  ["top_coral_merchant", 114, "top", "산호 상단 교역복", 1, "chest", 0, "아이보리 천 위에 파도빛 옷깃과 산호빛 허리띠를 댔다.", "coraltrade"],
+  ["face_willow_leaf", 112, "face", "버들잎 뺨 매듭", 0, "shop", 650, "순찰 짝이 멀리서도 알아보도록 볼 옆에 달아 둔 잎 매듭.", "willowpatrol"],
+  ["hat_coral_merchant", 113, "hat", "물결챙 항구 모자", 1, "shop", 1800, "물보라를 흘려보내는 비스듬한 챙과 산호빛 매듭.", "coraltrade"],
+  ["top_coral_merchant", 114, "top", "산호 상단 교역복", 1, "shop", 2600, "아이보리 천 위에 파도빛 옷깃과 산호빛 허리띠를 댔다.", "coraltrade"],
   ["back_coral_jar", 115, "back", "해무 도자기 망태", 2, "ach", "deliver20", "배달 스무 번을 마친 상단원의 등에 묶어 주는 유약 항아리.", "coraltrade"],
-  ["face_coral_pearl", 116, "face", "물빛 진주 귀장식", 0, "chest", 0, "청록 고리에 매달려 파도빛을 머금은 조개 진주.", "coraltrade"],
+  ["face_coral_pearl", 116, "face", "물빛 진주 귀장식", 0, "shop", 800, "청록 고리에 매달려 파도빛을 머금은 조개 진주.", "coraltrade"],
   ["hat_brass_survey", 117, "hat", "황동 탐사 비행모", 1, "shop", 2200, "정찰 비공정의 탐사대가 쓰는 귀덮개 모자. 앞에 황동 계기가 달려 있다.", "brasssurvey"],
   ["top_brass_survey", 118, "top", "황동 탐사 외투", 1, "shop", 3000, "갑판 바람을 막는 남색 외투와 이중 황동 잠금쇠.", "brasssurvey"],
   ["back_brass_tanks", 119, "back", "쌍식 황동 압력통", 2, "ach", "dim1", "레이드던전 첫 정화를 마친 탐사대원에게 지급하는 쌍통형 장비.", "brasssurvey"],
-  ["face_brass_filter", 120, "face", "황동 방진 호흡기", 0, "chest", 0, "포자와 분진을 막는 작은 여과통 두 개와 가죽 끈.", "brasssurvey"],
+  ["face_brass_filter", 120, "face", "황동 방진 호흡기", 0, "shop", 1100, "포자와 분진을 막는 작은 여과통 두 개와 가죽 끈.", "brasssurvey"],
   ["hat_moon_archive", 121, "hat", "달빛 기록원 각모", 1, "token", 14, "쪽빛 각모 위로 책갈피처럼 짧은 깃촉이 솟았다.", "moonarchive"],
   ["top_moon_archive", 122, "top", "달빛 기록원 서고복", 1, "token", 18, "서고를 지나는 기록원의 겹옷. 앞깃을 은실로 여몄다.", "moonarchive"],
   ["back_moon_cape", 123, "back", "초승달 갈래 망토", 3, "rareBoss", 0, "밤하늘빛 직물에 초승달을 수놓고 밑단을 두 갈래로 갈랐다.", "moonarchive"],
   ["face_moon_glasses", 124, "face", "은반달 반무테 안경", 0, "shop", 1100, "가느다란 은테가 눈 아래에서 반달 모양을 그린다.", "moonarchive"],
-  ["hat_maple_ramblers", 125, "hat", "단풍깃 챙모자", 0, "chest", 0, "비탈에 오를 때 쓰는 짧은 챙모자. 옆에 단풍깃을 꽂았다.", "mapleramblers"],
+  ["hat_maple_ramblers", 125, "hat", "단풍깃 챙모자", 0, "shop", 1500, "비탈에 오를 때 쓰는 짧은 챙모자. 옆에 단풍깃을 꽂았다.", "mapleramblers"],
   ["top_maple_ramblers", 126, "top", "단풍길 행장 조끼", 1, "token", 16, "바람이 드는 틈을 막아 주는 높은 깃과 깊은 주머니.", "mapleramblers"],
   ["back_maple_cape", 127, "back", "단풍바람 어깨 망토", 3, "rareBoss", 0, "한쪽 어깨에 둘러 잠그고 뒤쪽 잎 모양 밑단을 길게 내렸다.", "mapleramblers"],
   // 백자 청화 어전무구: one skin, drawn per weapon kind by public/weapons_porcelain.js
@@ -244,13 +244,55 @@ const COSMETICS = Object.fromEntries([
   ["ws_dragonflame", 200, "wskin", "화룡 태양 무기 외형", 2, "shop", 8000, "황금 용의 머리 장식과 태양염이 타오르는 프리미엄 외형 무기."],
   ["ws_seraphwing", 201, "wskin", "천사 성익 무기 외형", 2, "shop", 8000, "순백 백금 날에 천사의 날개와 보석이 어우러진 프리미엄 외형 무기."],
   ["ws_prismacrown", 202, "wskin", "태초 왕관 무기 외형", 2, "shop", 8000, "황금 왕관과 무지개빛 성운 결정이 빛나는 최상위 프리미엄 외형 무기."],
+  // 현대 스트리트 & 카페 데일리 4세트 (8종)
+  ["hat_mod_cyber", 203, "hat", "사이버 테크 캡", 2, "shop", 6000, "네온 시안 스트랩이 포인트인 매트 블랙 테크웨어 캡.", "modern_daily"],
+  ["top_mod_cyber", 204, "top", "사이버 테크 재킷", 2, "shop", 7000, "시안 지퍼와 크로스 스트랩이 돋보이는 블랙 테크웨어 재킷.", "modern_daily"],
+  ["hat_mod_varsity", 205, "hat", "캠퍼스 볼캡", 1, "shop", 3200, "황금 월계수 자수가 새겨진 네이비·크림 볼캡.", "modern_daily"],
+  ["top_mod_varsity", 206, "top", "캠퍼스 바시티 점퍼", 2, "shop", 6500, "네이비 울 바디와 크림 소매가 어우러진 클래식 야구점퍼.", "modern_daily"],
+  ["hat_mod_barista", 207, "hat", "바리스타 헌팅캡", 1, "shop", 3000, "따뜻한 브라운 트위드 원단의 클래식 뉴스보이캡.", "modern_daily"],
+  ["top_mod_barista", 208, "top", "바리스타 앞치마 셔츠", 1, "shop", 3800, "깔끔한 흰 셔츠 위에 가죽 바리스타 앞치마를 걸쳤다.", "modern_daily"],
+  ["hat_mod_knit", 209, "hat", "겨울 폼폼 비니", 1, "shop", 3000, "폭신한 방울과 버건디 밴드가 따뜻한 케이블 니트 비니.", "modern_daily"],
+  ["top_mod_knit", 210, "top", "아가일 니트 카디건", 1, "shop", 3800, "버건디·크림 아가일 패턴과 리본 칼라가 포근한 카디건.", "modern_daily"],
+  // 유니크 프리미엄 등(Back) 아바타 4종
+  ["back_cat_plush", 211, "back", "삼색 고양이 배낭", 2, "shop", 7500, "방울 목걸이를 단 삼색 고양이 인형이 등에 쏙 안겨 있다."],
+  ["back_guitar", 212, "back", "어쿠스틱 기타", 2, "shop", 7500, "어디서든 선율을 들려줄 것 같은 따뜻한 원목 어쿠스틱 기타."],
+  ["back_clockkey", 213, "back", "황금 시계태엽", 2, "shop", 8000, "등 뒤에서 천천히 감겨 돌아가는 고풍스러운 황금 태엽."],
+  ["back_starhalo", 214, "back", "별빛 성운 고리", 2, "shop", 8000, "작은 별들이 궤도를 따라 반짝이는 황금 천구 고리."],
+  // 귀여운 파자마 & 마스코트 4세트 (8종)
+  ["hat_cute_bee", 215, "hat", "꿀벌 더듬이 후드", 1, "shop", 3500, "통통 튀는 더듬이와 작은 날개가 달린 폭신한 꿀벌 후드.", "cute_pajama"],
+  ["top_cute_bee", 216, "top", "꿀벌 줄무늬 잠옷", 2, "shop", 6000, "노랑·검정 줄무늬에 미니 날개가 달린 포근한 꿀벌 잠옷.", "cute_pajama"],
+  ["hat_cute_berry", 217, "hat", "딸기 크림 베레모", 1, "shop", 3500, "생크림 위에 윤기 흐르는 딸기를 얹은 파티시에 베레모.", "cute_pajama"],
+  ["top_cute_berry", 218, "top", "딸기 파티시에 원피스", 2, "shop", 6500, "프릴 앞치마와 딸기 주머니가 사랑스러운 파스텔 핑크 원피스.", "cute_pajama"],
+  ["hat_cute_frog", 219, "hat", "개구리 우비 후드", 1, "shop", 3200, "동그란 개구리 눈이 달린 산뜻한 연두빛 우비 후드.", "cute_pajama"],
+  ["top_cute_frog", 220, "top", "개구리 우비 판초", 1, "shop", 3800, "빗방울을 톡톡 튕겨 내는 귀여운 개구리 주머니 판초.", "cute_pajama"],
+  ["hat_cute_panda", 221, "hat", "판다 귀 후드", 1, "shop", 3500, "동글동글 까만 판다 귀가 솟은 포근한 플리스 후드.", "cute_pajama"],
+  ["top_cute_panda", 222, "top", "판다 플리스 점퍼", 2, "shop", 6000, "대나무 잎 브로치와 판다 얼굴 주머니가 달린 푹신한 점퍼.", "cute_pajama"],
+  // K-스트리트 & 바이커 4세트 (8종)
+  ["hat_str_denim", 223, "hat", "워싱 데님 버킷햇", 1, "shop", 3000, "자연스럽게 물 빠진 데님 원단의 캐주얼 버킷햇.", "kstreet"],
+  ["top_str_denim", 224, "top", "레이어드 데님 청재킷", 2, "shop", 6200, "흰 후드 위에 워싱 데님 재킷을 겹쳐 입은 스트리트 룩.", "kstreet"],
+  ["hat_str_skater", 225, "hat", "네온 스케이터 비니", 1, "shop", 2800, "라임색 스트리트 패치가 포인트인 차콜 골지 비니.", "kstreet"],
+  ["top_str_skater", 226, "top", "네온 라임 집업 후드", 2, "shop", 6200, "매트 블랙 바디에 네온 라임 라인이 살아 있는 오버핏 후드.", "kstreet"],
+  ["hat_str_biker", 227, "hat", "실버 체인 볼캡", 1, "shop", 3400, "챙에 실버 링과 체인을 장식한 시크한 블랙 볼캡.", "kstreet"],
+  ["top_str_biker", 228, "top", "블랙 가죽 라이더 재킷", 2, "shop", 7200, "실버 지퍼와 벨트 디테일이 강렬한 블랙 가죽 라이더 재킷.", "kstreet"],
+  ["hat_str_y2k", 229, "hat", "레트로 메탈 헤드폰", 2, "shop", 6000, "별빛 로고가 빛나는 실버·네이비 Y2K 오버이어 헤드폰.", "kstreet"],
+  ["top_str_y2k", 230, "top", "Y2K 트랙 재킷", 1, "shop", 3800, "네이비와 화이트 배색이 산뜻한 레트로 스포티 트랙 재킷.", "kstreet"],
+  // 고프코어 · 숏패딩 · 테니스 · 아이돌 4세트 (8종)
+  ["hat_out_puffer", 231, "hat", "겨울 귀달이 비니", 1, "shop", 3200, "노르딕 패턴과 폭신한 귀달이 방울이 귀여운 겨울 비니.", "gorp_idol"],
+  ["top_out_puffer", 232, "top", "컬러블록 숏패딩", 2, "shop", 6800, "크림과 웜 오렌지 배색이 따뜻한 알파인 다운 숏패딩.", "gorp_idol"],
+  ["hat_out_gorp", 233, "hat", "올리브 캠프캡", 1, "shop", 3000, "번지 스트링 디테일이 살아 있는 경량 나일론 캠프캡.", "gorp_idol"],
+  ["top_out_gorp", 234, "top", "올리브 고프코어 아노락", 2, "shop", 6500, "올리브·차콜 투톤 배색의 아웃도어 바람막이 아노락.", "gorp_idol"],
+  ["hat_out_tennis", 235, "hat", "테니스 선바이저", 1, "shop", 2800, "에메랄드 그린 라인과 라켓 자수가 깔끔한 화이트 선바이저.", "gorp_idol"],
+  ["top_out_tennis", 236, "top", "테니스 케이블 베스트", 1, "shop", 3800, "그린 스트라이프가 산뜻한 화이트 브이넥 케이블 니트 베스트.", "gorp_idol"],
+  ["hat_out_idol", 237, "hat", "아이돌 체인 베레모", 2, "shop", 6500, "별빛 실버 핀과 체인이 반짝이는 블랙 무대 베레모.", "gorp_idol"],
+  ["top_out_idol", 238, "top", "아이돌 무대 블레이저", 2, "shop", 7800, "실버 체인과 스타 브로치가 화려한 블랙 테일러드 무대 재킷.", "gorp_idol"],
 
 
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" || src === "token" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));
 /** The themed sets (a label in the wardrobe; wearing one whole gives nothing but the look). */
 const COS_SETS = { sea: "바닷가", desert: "사막 여행자", jungle: "밀림 탐험가", temple: "동방 사원", delver: "던전 탐험가", master: "생활 명인", family: "가족의 선물", rift: "균열", cute: "포근포근", coop: "협동 알바", willowpatrol: "버들 순찰대", coraltrade: "산호 항구 상단", brasssurvey: "황동 탐사대", moonarchive: "달빛 기록원", mapleramblers: "단풍길 탐험대",
   willow: "버드나무 마을", coopking: "협동 알바 왕", fishlog: "낚시 기록가",
-  spring: "봄 장날 · 벚꽃", summer: "여름 장날 · 한여름 바다", autumn: "가을 장날 · 단풍", winter: "겨울 장날 · 눈꽃", story: "이야기 기념품", career: "직업 제복", hanbok: "전통 한복" };
+  spring: "봄 장날 · 벚꽃", summer: "여름 장날 · 한여름 바다", autumn: "가을 장날 · 단풍", winter: "겨울 장날 · 눈꽃", story: "이야기 기념품", career: "직업 제복", hanbok: "전통 한복",
+  modern_daily: "모던 데일리", cute_pajama: "포근 파자마", kstreet: "K-스트리트", gorp_idol: "트렌디 컬렉션" };
 const COS_IDS = Object.keys(COSMETICS);
 const COS_BY_N = Object.fromEntries(COS_IDS.map((id) => [COSMETICS[id].n, id]));
 /** achievement id → the cosmetic ids it pays. */

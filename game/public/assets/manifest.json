@@ -1250,6 +1250,206 @@
       "src": "assets/cosmetics/hat_bamboo.png?v=b0196c2d",
       "w": 32,
       "h": 32
+    },
+    "icon.cos.hat_mod_cyber": {
+      "src": "assets/cosmetics/hat_mod_cyber.png?v=4f192be2",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_mod_varsity": {
+      "src": "assets/cosmetics/hat_mod_varsity.png?v=034f4663",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_mod_barista": {
+      "src": "assets/cosmetics/hat_mod_barista.png?v=d061be70",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_mod_knit": {
+      "src": "assets/cosmetics/hat_mod_knit.png?v=e96db474",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_mod_cyber": {
+      "src": "assets/cosmetics/top_mod_cyber.png?v=15e1f5c1",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_mod_varsity": {
+      "src": "assets/cosmetics/top_mod_varsity.png?v=c51cc548",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_mod_barista": {
+      "src": "assets/cosmetics/top_mod_barista.png?v=c56bcdd3",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_mod_knit": {
+      "src": "assets/cosmetics/top_mod_knit.png?v=fbcb1cfa",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_angel": {
+      "src": "assets/cosmetics/back_angel.png?v=d9736eca",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_bat": {
+      "src": "assets/cosmetics/back_bat.png?v=06641fe1",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_fairy": {
+      "src": "assets/cosmetics/back_fairy.png?v=ffbb502f",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_dragon": {
+      "src": "assets/cosmetics/back_dragon.png?v=f36e40c6",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_cat_plush": {
+      "src": "assets/cosmetics/back_cat_plush.png?v=94e5cff5",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_guitar": {
+      "src": "assets/cosmetics/back_guitar.png?v=c5e7754d",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_clockkey": {
+      "src": "assets/cosmetics/back_clockkey.png?v=fece39e5",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.back_starhalo": {
+      "src": "assets/cosmetics/back_starhalo.png?v=05005ca9",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_cute_bee": {
+      "src": "assets/cosmetics/hat_cute_bee.png?v=ac91bd20",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_cute_berry": {
+      "src": "assets/cosmetics/hat_cute_berry.png?v=8c09b37a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_cute_frog": {
+      "src": "assets/cosmetics/hat_cute_frog.png?v=bf754692",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_cute_panda": {
+      "src": "assets/cosmetics/hat_cute_panda.png?v=24ebc4ac",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_cute_bee": {
+      "src": "assets/cosmetics/top_cute_bee.png?v=d0844a80",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_cute_berry": {
+      "src": "assets/cosmetics/top_cute_berry.png?v=1ec5cee1",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_cute_frog": {
+      "src": "assets/cosmetics/top_cute_frog.png?v=efb6ad89",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_cute_panda": {
+      "src": "assets/cosmetics/top_cute_panda.png?v=24b8874e",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_str_denim": {
+      "src": "assets/cosmetics/hat_str_denim.png?v=b539da4d",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_str_skater": {
+      "src": "assets/cosmetics/hat_str_skater.png?v=36718d67",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_str_biker": {
+      "src": "assets/cosmetics/hat_str_biker.png?v=92d7b144",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_str_y2k": {
+      "src": "assets/cosmetics/hat_str_y2k.png?v=26e02e28",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_str_denim": {
+      "src": "assets/cosmetics/top_str_denim.png?v=4f698405",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_str_skater": {
+      "src": "assets/cosmetics/top_str_skater.png?v=58aef975",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_str_biker": {
+      "src": "assets/cosmetics/top_str_biker.png?v=ef850148",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_str_y2k": {
+      "src": "assets/cosmetics/top_str_y2k.png?v=e621a206",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_out_puffer": {
+      "src": "assets/cosmetics/hat_out_puffer.png?v=a503247c",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_out_gorp": {
+      "src": "assets/cosmetics/hat_out_gorp.png?v=bf4265cc",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_out_tennis": {
+      "src": "assets/cosmetics/hat_out_tennis.png?v=1e8694bd",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.hat_out_idol": {
+      "src": "assets/cosmetics/hat_out_idol.png?v=23284985",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_out_puffer": {
+      "src": "assets/cosmetics/top_out_puffer.png?v=4b58f746",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_out_gorp": {
+      "src": "assets/cosmetics/top_out_gorp.png?v=e2da97fd",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_out_tennis": {
+      "src": "assets/cosmetics/top_out_tennis.png?v=d5490e74",
+      "w": 32,
+      "h": 32
+    },
+    "icon.cos.top_out_idol": {
+      "src": "assets/cosmetics/top_out_idol.png?v=52144ec7",
+      "w": 32,
+      "h": 32
     }
   },
   "audio": {},
