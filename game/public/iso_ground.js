@@ -721,6 +721,25 @@ const spot = (S, x, y, fa, fb) => {
 const FLOWER = ["#fffbe8", "#ffd84a", "#ff9ac0", "#9ac8ff", "#f06a7a", "#c8a0ff"].map(C);
 const TUFT = ["..1../.1.1./1.1.1", "1.1/.1."];
 
+// These small plants are baked into the grass. Keep them lower than an interactable gathering node.
+const WILD_PLANTS = {
+  blossom: [".4..4..", "444454.", ".4.44..", "..21...", ".2122..", "..111.."],
+  bells: [".....4.", "....44.", "..5.1..", ".55.12.", "..1122.", ".2111..", "..111.."],
+  fern: ["2......", "22..2..", ".22.22.", "..212..", "22.12..", ".22122.", "...11.."],
+  broadleaf: ["...2...", "..232..", "2.232.2", "2231322", ".23132.", "..212..", "...1..."],
+  berry: ["..22...", ".2332..", "234332.", ".33432.", "233231.", ".22112.", "..111.."],
+  scrub: [".....2.", "....22.", ".2..12.", ".2212..", "..1122.", "...11.."],
+};
+const WILD_BY_THEME = {
+  town: ["blossom", "bells"], meadow: ["blossom", "bells", "fern"],
+  forest: ["fern", "berry"], jungle: ["broadleaf", "berry"],
+  coast: ["scrub", "blossom"], desert: ["scrub"], mist: ["fern", "bells"],
+};
+const WILD_COLOR = {
+  town: ["#f4c0be", "#fff5dd"], meadow: ["#f2c76d", "#fff3cd"], forest: ["#b27d9c", "#e8b1b3"],
+  jungle: ["#f58b63", "#ffdca2"], coast: ["#f5a395", "#fff0b6"], desert: ["#dab968", "#fff0ad"], mist: ["#bbaddf", "#f9e4fc"],
+};
+
 function details(S) {
   const { m, theme } = S;
   const MT = S.MT, G = MT._grass, gm = [G.id];
@@ -730,6 +749,8 @@ function details(S) {
   const TG = theme === "autumn" ? "#b89a44" : G.hex;          // the old kingdom's tall grass has gone to straw
   const tgD = C(shade(TG, 0.66)), tgL = C(shade(TG, 0.84)), tgR = C(light(TG, 1.22)), tgT = C(light(TG, 1.42));
   const fleaf = C(shade(G.hex, 0.62));
+  const wild = WILD_BY_THEME[theme];
+  const wildPalette = wild && [0, fleaf, gd, gl, ...WILD_COLOR[theme].map(C)];
   // flower drifts change colour every few squares, smoothly enough to read as planted swathes
   const flowerFam = (x, y) => {
     const n = Math.sin(x * 0.23 + y * 0.11) * 1.3 + Math.sin(x * 0.07 - y * 0.29) + hash(x >> 2, y >> 2, 140) * 0.6;
@@ -777,6 +798,9 @@ function details(S) {
         else if (theme === "forest" && k < 0.13) {
           const cap = h(73) > 0.5 ? C("#d05a4e") : C("#e8b060");
           stamp(S, X - 2, Y - 4, [".11.", "1121", ".33.", ".33."], [0, cap, C("#fff4e0"), C("#f2e6cc")], gm);
+        } else if (wild && k < (theme === "jungle" ? 0.23 : theme === "forest" ? 0.21 : 0.15)) {
+          const plant = WILD_PLANTS[wild[Math.floor(h(73) * wild.length)]];
+          stamp(S, X - 3, Y - plant.length + 1, plant, wildPalette, gm);
         }
       }
       // drifts of flowers where the meadow grass is undisturbed
