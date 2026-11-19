@@ -5,16 +5,16 @@
 import { mat, gait, bob, lunge, both, surf } from "./mobart_kit.js";
 import { BOSSES2_ADD_ART } from "./mobart_bosses2_adds.js";
 
-const MASK = mat("#dfd2bd", { role: "keep", flat: true });
-const MASKD = mat("#978b7f", { role: "keep", flat: true });
+const MASK = mat("#dfd2bd", { role: "keep" });
+const MASKD = mat("#978b7f", { role: "keep" });
 const CAVITY = mat("#180e1a", { role: "keep", flat: true });
-const HIDE = mat("#44252e", { flat: true }), HIDED = mat("#281a24", { flat: true });
-const REDPLATE = mat("#70353d", { flat: true }), REDROCK = mat("#9e414c", { flat: true });
+const HIDE = mat("#44252e"), HIDED = mat("#281a24");
+const REDPLATE = mat("#70353d"), REDROCK = mat("#9e414c");
 const SEAM = mat("#e8494e", { role: "glow" }), SEAMC = mat("#ffab99", { role: "glow" });
-const BRONZE = mat("#9f7351", { role: "keep", flat: true }), BRONZED = mat("#604641", { role: "keep", flat: true });
-const RIBSTONE = mat("#c7ac7e", { role: "keep", flat: true });
-const SHELL = mat("#36525e", { flat: true }), SHELLD = mat("#20313d", { flat: true });
-const CLUB = mat("#9fac9c", { role: "keep", flat: true }), CLUBD = mat("#576978", { flat: true });
+const BRONZE = mat("#9f7351", { role: "keep" }), BRONZED = mat("#604641", { role: "keep" });
+const RIBSTONE = mat("#c7ac7e", { role: "keep" });
+const SHELL = mat("#36525e"), SHELLD = mat("#20313d");
+const CLUB = mat("#9fac9c", { role: "keep" }), CLUBD = mat("#576978");
 const ICE = mat("#55dcef", { role: "glow" }), ICEC = mat("#cbffff", { role: "glow" });
 
 /** A bronze-ribbed battering beast, with red crystals splitting its carapace. */
@@ -68,15 +68,15 @@ const bloodhorn = (p2) => ({
       M.G();
     }));
 
-    // Warm seams show the inward fracture; in phase two the wedge-shaped crystals spread out of it.
-    for (const [x, y, height, width] of [[6, 7.9, 3.7, 1.05], [1.2, 8.3, 6.7, 2.38], [-3.9, 7.4, 4.8, 1.55], [-8.35, 5.6, 3.8, 1.18], [-12.7, 4.15, 2.75, 0.85]]) {
-      const z = u + y, growth = p2 ? 2.25 : 0;
-      M.e([f + x, z - 0.42, 0], [2.2, 1.2, 2.65], REDPLATE, [0, 6, 0]);
-      M.box([f + x - 0.63, z + height * 0.37, 0.16], [width, height * 0.49, width * 0.88], REDROCK, [0, 29, -13]);
-      const tip = [f + x - 2.55 - p2 * 0.78, z + height + growth + brace * 0.63, 0.45];
+    // Warm seams show the inward fracture; towering blood-crystal spires erupt along the spine.
+    for (const [x, y, height, width] of [[6, 7.9, 5.2, 1.35], [1.2, 8.3, 9.2, 2.8], [-3.9, 7.4, 6.8, 1.9], [-8.35, 5.6, 5.2, 1.4], [-12.7, 4.15, 3.6, 1.0]]) {
+      const z = u + y, growth = p2 ? 2.4 : 0;
+      M.e([f + x, z - 0.42, 0], [2.4, 1.3, 2.9], REDPLATE, [0, 6, 0]);
+      M.box([f + x - 0.63, z + height * 0.37, 0.16], [width, height * 0.52, width * 0.9], REDROCK, [0, 29, -13]);
+      const tip = [f + x - 2.8 - p2 * 0.78, z + height + growth + brace * 0.63, 0.45];
       M.cone([f + x, z + 0.54, 0.25], tip, width, REDROCK);
-      M.tube([[f + x + 0.27, z + 0.6, 0.73], [f + x - 0.85, z + height * 0.51, 1], [tip[0] + 0.52, tip[1] - 1.1, 0.62]], [0.60, 0.47, 0.28], fire);
-      if (p2 && width > 1.5) both((s) => M.cone([f + x - 1, z + 0.15, s * 1.7], [f + x - 4.5, z + height * 0.85, s * 3.5], 1.0, SEAM));
+      M.tube([[f + x + 0.27, z + 0.6, 0.78], [f + x - 0.85, z + height * 0.51, 1.05], [tip[0] + 0.52, tip[1] - 1.1, 0.62]], [0.68, 0.52, 0.32], fire);
+      if (width > 1.8) both((s) => M.cone([f + x - 0.8, z + 0.2, s * 2.1], [f + x - 3.8, z + height * (p2 ? 0.88 : 0.66), s * 4.2], p2 ? 1.15 : 0.85, SEAM));
     }
 
     const hx = f + 11.9 + bite * 2.5, hy = u + 2.45 + brace * 2.1 - bite * 1.36;
@@ -158,8 +158,8 @@ const clubshrimp = (p2) => ({
   },
 });
 
-const CLK = mat("#312341", { flat: true }), CLKD = mat("#211729", { flat: true });
-const WEB = mat("#523657", { flat: true }), WEBD = mat("#3a2948", { flat: true });
+const CLK = mat("#342448"), CLKD = mat("#1f152b");
+const WEB = mat("#54365e"), WEBD = mat("#382648");
 const VIO = mat("#d43cff", { role: "glow" }), HEART = mat("#ff4fd8", { role: "glow" }), HEARTC = mat("#ffd0f4", { role: "glow" });
 
 /** Fill a taut membrane with narrow strips along the edge between two spars. */
@@ -210,7 +210,13 @@ const cloakbat = (ph) => ({
       for (const i of [4, 6, 8]) M.tube([root, fringe[i]], [1.08, 0.34], CLK);
       M.cone(elbow, [elbow[0] + 1.8, elbow[1] + 3.2, elbow[2] - s * 0.8], 1.15, MASKD);
       M.G();
-      if (fly || wind) M.tube([[elbow[0] + 0.2, elbow[1] + 1, elbow[2]], [tip[0] + 0.3, tip[1] + 0.6, tip[2] + s * 0.2]], 0.42, VIO);
+      M.tube([[elbow[0] + 0.2, elbow[1] + 1, elbow[2]], [tip[0] + 0.3, tip[1] + 0.6, tip[2] + s * 0.2]], fly || wind ? 0.52 : 0.34, ph > 1 ? HEART : VIO);
+    });
+    // towering gothic spiked mantle collar & floating dark rift shards behind the shoulders
+    both((s) => {
+      M.box([f - 2.4, u + 12.2, s * 6.8], [2.2, 5.2, 1.6], CLK, [s * -24, 14, s * 18]);
+      M.cone([f - 2.6, u + 16.5, s * 7.6], [f - 4.6, u + 22.8, s * 9.8], 1.45, CLKD);
+      M.tube([[f - 2.2, u + 15.6, s * 7.5], [f - 3.9, u + 20.8, s * 9.2]], 0.38, ph > 1 ? HEART : VIO);
     });
     const chest = [f + 5.7, u + 1.5, 0], open = channel || wind;
     M.e([chest[0], chest[1], 0], [2.2, 4.5, 4.2], CAVITY);
@@ -221,25 +227,27 @@ const cloakbat = (ph) => ({
     if (open) {
       M.e([chest[0] + 0.6, chest[1] - 0.1, 0], [1.95, 2.95, 2.4], HEART);
       M.e([chest[0] + 1.99, chest[1] + 0.75, 0], [0.75, 1.2, 1.15], HEARTC);
-    } else M.tube([[chest[0] + 0.55, chest[1] + 3.4, 0], [chest[0] + 0.75, chest[1] - 3.3, 0]], 0.37, VIO);
-    const hx = f + 5.1 + strike * 2.1, hy = u + 12 - strike * 1.6 + wind * 1.3;
+    } else M.tube([[chest[0] + 0.55, chest[1] + 3.4, 0], [chest[0] + 0.75, chest[1] - 3.3, 0]], 0.48, VIO);
+    const hx = f + 5.1 + strike * 2.1, hy = u + 12.6 - strike * 1.6 + wind * 1.3;
     M.G("skull");
-    M.e([hx - 0.85, hy, 0], [5, 4.4, 4.8], CLKD);
-    M.e([hx + 1.05, hy + 0.25, 0], [3.9, 3.75, 4.0], MASK);
-    M.box([hx + 3.65, hy - 1.65, 0], [1.45, 1.3, 2.25], MASKD, [0, -18, 0]);
+    M.e([hx - 0.85, hy, 0], [5.2, 4.6, 5.0], CLKD);
+    M.e([hx + 1.05, hy + 0.25, 0], [4.1, 3.95, 4.2], MASK);
+    M.box([hx + 3.85, hy - 1.75, 0], [1.6, 1.35, 2.35], MASKD, [0, -18, 0]);
     M.G();
+    // central obsidian-violet crown spire
+    M.cone([hx + 0.4, hy + 3.8, 0], [hx - 1.2, hy + 11.2, 0], 1.35, ph > 1 ? HEART : VIO);
     both((s) => {
-      M.tube([[hx - 1, hy + 2.35, s * 3.45], [hx - 1.7, hy + 6.9, s * 6.4], [hx + 0.5, hy + 10.3, s * 8.4]], [1.65, 1.1, 0.32], MASKD);
-      M.cone([hx - 0.2, hy + 3.35, s * 3.5], [hx - 1.6, hy + 8.3, s * 5.4], 1.1, MASK);
+      M.tube([[hx - 1, hy + 2.35, s * 3.45], [hx - 2.2, hy + 8.4, s * 7.2], [hx + 0.8, hy + 13.6, s * 9.8]], [1.85, 1.25, 0.36], MASKD);
+      M.cone([hx - 0.2, hy + 3.35, s * 3.5], [hx - 1.8, hy + 10.2, s * 6.0], 1.25, MASK);
       M.tube([[hx + 2.3, hy + 1.3, s * 3.25], [hx + 3.5, hy + 0.55, s * 2.1], [hx + 3.85, hy + 0.3, s * 1.22]], [1.05, 0.76, 0.32], CAVITY);
-      if (!death) M.tube([[hx + 3.15, hy + 0.83, s * 3.15], [hx + 3.98, hy + 0.29, s * 1.95]], 0.45, ph > 1 ? HEART : VIO);
-      M.cone([hx + 4.02, hy - 2, s * 1.85], [hx + 4.35, hy - 4.65 - strike, s * 2.05], 0.72, MASK);
+      if (!death) M.tube([[hx + 3.15, hy + 0.83, s * 3.15], [hx + 3.98, hy + 0.29, s * 1.95]], 0.52, ph > 1 ? HEART : VIO);
+      M.cone([hx + 4.02, hy - 2, s * 1.85], [hx + 4.35, hy - 5.1 - strike, s * 2.05], 0.78, MASK);
     });
   },
 });
 
-const WH = mat("#344550", { flat: true }), WHD = mat("#22313c", { flat: true });
-const WPLATE = mat("#7c9a9c", { role: "keep", flat: true });
+const WH = mat("#344550"), WHD = mat("#22313c");
+const WPLATE = mat("#7c9a9c", { role: "keep" });
 const CYN = mat("#7ff6ff", { role: "glow" }), CYNC = mat("#e0ffff", { role: "glow" });
 const FLW = mat("#ff5ad8", { role: "glow" }), FLWC = mat("#ffd0f4", { role: "glow" });
 

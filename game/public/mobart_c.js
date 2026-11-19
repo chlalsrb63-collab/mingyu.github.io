@@ -23,7 +23,8 @@ const MANE_EYE = mat("#ffc584", { role: "glow" });
 const SERP = mat("#8a3048"), SERPB = mat("#e0c070"), SERPW = mat("#5a2234");
 const SOW = mat("#b07880"), SOWD = mat("#8a5866"), SORE = mat("#b83a4a", { wet: true, drip: true });
 // ── the great ones
-const RIFT = mat("#ff72d6", { role: "glow" }), VOID = mat("#1a0a2a", { role: "keep", flat: true }), HIDE = mat("#4a3a4e"), MANE = mat("#6a2a3a"), BULL = mat("#7a5040");
+const RIFT = mat("#ff68dc", { role: "glow" }), RIFT_CORE = mat("#ffe0fa", { role: "glow" }), VOID = mat("#140822", { role: "keep", flat: true });
+const HIDE = mat("#2c2038"), MANE = mat("#5a2042"), BULL = mat("#3a2844"), KRION_PL = mat("#4e3a62"), KRION_DK = mat("#1c1428");
 const MOTHER = mat("#483746"), MOTHERD = mat("#2a202e", { flat: true }), BROOD = mat("#552a32", { flat: true });
 const GLASS = mat("#7b606d"), CINDER = mat("#ba4845", { role: "keep", flat: true });
 const EMBER = mat("#ff7946", { role: "glow" }), LANTERN = mat("#ffe298", { role: "glow" });
@@ -319,57 +320,103 @@ export const BEASTS_C = {
     },
   },
 
-  /** 균열의 군주 크리온 — a beast-king stitched from four animals around a hole in the world: a bull's back, a lion's front, a ram's skull, and the rift where its heart was. */
+  /** 균열의 군주 크리온 — towering obsidian-armored Rift Overlord with a blazing dimensional vortex in its ribcage, bone demon-ram crown, dorsal crystal ridge, and orbiting rift shards. */
   boss: {
     size: "boss", n: 162, glow: "#ff72d6",
     draw(M, p) {
-      const [lf, lu] = lunge(p, 2);
-      const rear = p.wind ? 1 : 0;
-      const f0 = lf, u0 = 20 + lu + bob(p, 1.2) + rear * 3;
-      const pit = rear * 14 + (p.strike ? -8 : 0), P = (c) => pitchPt(c, pit, [f0 - 8, 4, 0]);
-      // hind legs of a bull, front legs of a lion
+      const [lf, lu] = lunge(p, 2.2);
+      const rear = p.wind ? 1 : 0, strike = p.strike ? 1 : 0;
+      const f0 = lf, u0 = 22 + lu + bob(p, 1.3) + rear * 3.5;
+      const pit = rear * 15 + (strike ? -9 : 0), P = (c) => pitchPt(c, pit, [f0 - 8, 5, 0]);
+      // heavy armored hind & fore legs with obsidian greaves and bone claws
       both((s) => {
         const [sw, up] = gait(p, s < 0 ? 0.5 : 0);
-        M.tube([P([f0 - 9, u0 - 4, s * 6]), [f0 - 11 + sw * 2, u0 * 0.45 + up, s * 6.4], [f0 - 9 + sw * 4, up * 2.4 + 1, s * 6.6]], [4, 2.6, 2], BULL);
-        M.e([f0 - 8.6 + sw * 4, up * 2.4 + 1.2, s * 6.6], [2.4, 1.2, 2], HIDE);
+        const hFoot = [f0 - 11 + sw * 4, up * 2.4 + 1.2, s * 7.8];
+        M.tube([P([f0 - 10, u0 - 3, s * 6.8]), [f0 - 13 + sw * 2, u0 * 0.48 + up, s * 8], hFoot], [4.6, 3.2, 2.3], KRION_DK);
+        M.box([f0 - 12 + sw * 2, u0 * 0.52 + up, s * 8.6], [2.4, 2.8, 1.8], KRION_PL, [s * 12, -16, s * 10]);
+        M.e([hFoot[0] + 0.8, hFoot[1], hFoot[2]], [2.8, 1.4, 2.4], HIDE);
         const [sw2, up2] = gait(p, s < 0 ? 0 : 0.5);
-        const a = rear ? 3 : p.strike ? 3 : sw2 * 3.6;
-        const ft = rear ? [f0 + 13, u0 - 2, s * 7] : [f0 + 9 + a, up2 * 2.4 + 1, s * 7.4];
-        M.tube([P([f0 + 7, u0 - 3, s * 7]), [f0 + 9 + a * 0.5, u0 * 0.5 + up2 + rear * 6, s * 7.6], ft], [4, 3, 2.6], LION);
-        for (let i = 0; i < 4; i++) M.cone([ft[0] + 2, ft[1], ft[2] + (i - 1.5) * 1.2], [ft[0] + 4.4, ft[1] - 1.2, ft[2] + (i - 1.5) * 1.4], 0.7, C.NAIL);
+        const a = rear ? 4 : strike ? 5.5 : sw2 * 3.8;
+        const ft = rear ? [f0 + 15, u0 - 1, s * 9.5] : [f0 + 10 + a, up2 * 2.4 + 1.2, s * 9.2];
+        const elbow = [f0 + 10 + a * 0.5, u0 * 0.52 + up2 + rear * 6.5, s * 9.6];
+        M.tube([P([f0 + 7.5, u0 - 1, s * 8.4]), elbow, ft], [4.8, 3.6, 2.8], HIDE);
+        M.box([elbow[0] + 0.6, elbow[1] + 0.5, elbow[2] + s * 0.8], [2.8, 3.2, 2.2], KRION_PL, [s * 15, -22, s * 14]);
+        M.tube([[elbow[0], elbow[1] + 2.2, elbow[2] + s * 1.8], [elbow[0] + 1.6, elbow[1] - 1.4, elbow[2] + s * 2.0]], 0.55, RIFT);
+        for (let i = 0; i < 4; i++) M.cone([ft[0] + 2.2, ft[1] + 0.2, ft[2] + (i - 1.5) * 1.3], [ft[0] + 5.2, ft[1] - 1.1, ft[2] + (i - 1.5) * 1.5], 0.85, C.BONE);
       });
+      // broad, heavy-shouldered obsidian torso
       M.G("body");
-      M.e(P([f0 - 6, u0 + 1, 0]), [9, 8, 9], BULL);
-      M.e(P([f0 + 6, u0 + 3, 0]), [9, 10, 10], HIDE);
+      M.e(P([f0 - 7, u0 + 1.5, 0]), [10.5, 9, 10.2], KRION_DK);
+      M.e(P([f0 + 6.5, u0 + 4.5, 0]), [10.8, 11.8, 12.2], HIDE);
       M.G();
-      M.seam([P([f0, u0 + 12, -4]), P([f0 - 1, u0 + 6, -9]), P([f0 - 1, u0 - 4, -8])]);
-      M.seam([P([f0, u0 + 12, 4]), P([f0 - 1, u0 + 6, 9]), P([f0 - 1, u0 - 4, 8])]);
-      // the mane, a dark red ruff of spikes
-      for (let i = 0; i < 14; i++) {
-        const a = (i / 14) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
-        M.cone(P([f0 + 9, u0 + 6 + ca * 7, sa * 8]), P([f0 + 6, u0 + 6 + ca * 13, sa * 14]), 2.2, MANE);
-      }
-      // the rift in its chest: a ring of torn light around nothing
-      const rc = P([f0 + 13.4, u0 + 1, 0]), pulse = p.idle ? 1.1 : 1;
-      M.e(rc, [1.6, 6 * pulse, 4.4 * pulse], RIFT, [0, pit, 0]);
-      M.e([rc[0] + 0.6, rc[1], rc[2]], [1.2, 4.4 * pulse, 3 * pulse], VOID, [0, pit, 0]);
-      for (const [a, b] of [[-1.6, 1], [1.2, -0.6], [2, 2.6], [-0.4, -2.6], [0.8, 0.4]]) M.dot([rc[0] + 1.8, rc[1] + b, rc[2] + a], "#ffd0f4");
-      M.seam([P([f0 + 11, u0 + 8, -4]), P([f0 + 13, u0 + 1, -5.4]), P([f0 + 11, u0 - 6, -4])], "#ff9ae6");
-      // a ram's skull for a head, crowned with its own horns
-      const H = P([f0 + 17 + (p.strike ? 3 : 0), u0 + 12 - (p.wind ? 0 : 0), 0]), HR = [4, 4.4, 3.8];
-      M.e(H, HR, C.BONE, [0, -14, 0]);
-      M.e([H[0] + 4, H[1] - 2.6, 0], [3, 2.4, 2.4], C.BONE, [0, -24, 0]);
-      const open = p.strike ? 1.4 : p.wind ? 1 : 0.3;
-      M.e([H[0] + 4.4, H[1] - 4.6 - open, 0], [2.6, 1, 2], C.BONE, [0, -10 - open * 20, 0]);
-      teeth(M, [H[0] + 2.4, H[1] - 4.4, -1.6], [H[0] + 6.4, H[1] - 4.4, -1], 4, 1, 1.2);
-      teeth(M, [H[0] + 2.4, H[1] - 4.4, 1.6], [H[0] + 6.4, H[1] - 4.4, 1], 4, 1, 1.2);
+      // massive layered shoulder pauldrons with jagged spikes & glowing rift veins
       both((s) => {
-        M.e(surf(H, HR, [0.55, 0.15, s * 0.8]), [1.4, 1.4, 0.8], C.MAW);
-        M.eye(surf(H, HR, [0.6, 0.2, s * 0.85]), 2, "#ff72d6");
-        M.tube(bez([H[0] - 1, H[1] + 3, s * 2.4], [H[0] - 7, H[1] + 7, s * 8], [H[0] - 2, H[1] - 1, s * 9], 10), [2, 0.8], C.HORN);
-        M.cone([H[0] - 1, H[1] + 4, s * 1], [H[0] - 2, H[1] + 10, s * 1.6], 1.1, C.HORN);
+        const sh = P([f0 + 6.5, u0 + 10.5, s * 11.4]);
+        M.G("pauldron" + s);
+        M.box(sh, [6.2, 3.6, 4.4], KRION_PL, [s * 18, -14, -s * 24]);
+        M.box([sh[0] - 2.4, sh[1] - 3.6, sh[2] + s * 1.4], [5.4, 2.8, 3.2], BULL, [s * 14, -8, -s * 30]);
+        M.cone([sh[0] - 1, sh[1] + 2.4, sh[2] + s * 1.2], [sh[0] - 5.5, sh[1] + 10.5, sh[2] + s * 4.8], 2.2, KRION_DK);
+        M.cone([sh[0] + 1.8, sh[1] + 1.6, sh[2] + s * 1.8], [sh[0] + 0.2, sh[1] + 7.2, sh[2] + s * 5.2], 1.5, KRION_PL);
+        M.G();
+        M.tube([[sh[0] + 2.6, sh[1] + 1.6, sh[2] + s * 2.2], [sh[0] - 1.8, sh[1] - 1.2, sh[2] + s * 2.6]], 0.65, RIFT);
       });
-      M.tube(bez(P([f0 - 14, u0 + 4, 0]), [f0 - 22, u0 + 8, 0], [f0 - 22, u0 - 6, p.walk ? Math.sin(p.ph * 6.28) * 4 : 2], 8), [2, 1], BULL);
+      // jagged dorsal obsidian crystal spine glowing magenta
+      for (const [dx, dy, h, w] of [[2, 14.5, 11, 2.2], [-4.5, 12.2, 9.5, 2.0], [-10.5, 9.2, 7.5, 1.7], [-15.5, 5.8, 5.5, 1.3]]) {
+        const base = P([f0 + dx, u0 + dy, 0]);
+        const tip = P([f0 + dx - 3.5, u0 + dy + h + rear * 1.5, 0]);
+        M.cone(base, tip, w, KRION_DK);
+        M.tube([[base[0] + 0.8, base[1] + 0.5, 0.9], [tip[0] + 0.8, tip[1] - 1.6, 0.6]], [0.75, 0.35], RIFT);
+      }
+      // dark crimson-violet spiked mane collar around the neck
+      for (let i = 0; i < 12; i++) {
+        const a = (i / 12) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
+        M.cone(P([f0 + 10, u0 + 7.5 + ca * 7.2, sa * 8.2]), P([f0 + 6.5, u0 + 8.5 + ca * 13.5, sa * 13.5]), 2.1, i % 2 ? MANE : KRION_DK);
+      }
+      // blazing dimensional rift vortex torn open in the chest, caged by bone ribs
+      const rc = P([f0 + 15.8, u0 + 2.5, 0]), pulse = p.idle || rear ? 1.16 : 1;
+      M.e(rc, [2.2, 7.6 * pulse, 5.8 * pulse], RIFT, [0, pit, 0]);
+      M.e([rc[0] + 0.8, rc[1], rc[2]], [1.6, 5.4 * pulse, 3.8 * pulse], VOID, [0, pit, 0]);
+      M.e([rc[0] + 1.4, rc[1], rc[2]], [1.1, 2.6 * pulse, 1.8 * pulse], RIFT_CORE, [0, pit, 0]);
+      for (let i = 0; i < 3; i++) both((s) => {
+        const ry = rc[1] + 4.8 - i * 4.4;
+        M.tube([[rc[0] - 2.4, ry + 0.8, s * 6.8], [rc[0] + 0.8, ry, s * 4.4], [rc[0] + 1.4, ry - 0.8, s * 2.2]], [0.95, 0.78, 0.45], C.BONE);
+      });
+      // towering horned bone demon-ram skull with blazing eyes and crown
+      const H = P([f0 + 18.5 + strike * 3.5, u0 + 15.2 + rear * 1.2, 0]), HR = [4.8, 5.2, 4.5];
+      M.G("skull");
+      M.e(H, HR, C.BONE, [0, -14, 0]);
+      M.box([H[0] + 3.8, H[1] - 2.2, 0], [3.6, 2.5, 2.8], C.BONE, [0, -22, 0]);
+      M.G();
+      const open = strike ? 2.2 : rear ? 1.5 : 0.45;
+      M.e([H[0] + 4.8, H[1] - 4.8 - open, 0], [3.1, 1.1, 2.4], C.BONE, [0, -10 - open * 18, 0]);
+      M.e([H[0] + 4.2, H[1] - 3.6 - open * 0.5, 0], [2.4, 1.1 + open * 0.6, 2.1], VOID);
+      teeth(M, [H[0] + 2.4, H[1] - 4.2, -1.9], [H[0] + 7.2, H[1] - 4.2, -1.1], 4, 1.2, 1.5);
+      teeth(M, [H[0] + 2.4, H[1] - 4.2, 1.9], [H[0] + 7.2, H[1] - 4.2, 1.1], 4, 1.2, 1.5);
+      both((s) => {
+        M.e(surf(H, HR, [0.55, 0.16, s * 0.8]), [1.7, 1.7, 0.9], VOID);
+        M.eye(surf(H, HR, [0.62, 0.2, s * 0.86]), 2, "#ff72d6");
+        // colossal sweeping demon-ram horns
+        M.tube(bez([H[0] - 1, H[1] + 3.4, s * 2.8], [H[0] - 9, H[1] + 10.5, s * 10.5], [H[0] - 2, H[1] - 1.5, s * 12.2], 10), [2.5, 0.9], C.HORN);
+        // tall crown spikes framing the brow
+        M.cone([H[0] - 0.5, H[1] + 4.4, s * 1.6], [H[0] - 3.2, H[1] + 13.5, s * 3.4], 1.4, KRION_PL);
+        M.tube([[H[0] - 0.5, H[1] + 4.8, s * 1.9], [H[0] - 2.6, H[1] + 11.2, s * 3.1]], 0.45, RIFT);
+      });
+      M.cone([H[0] + 0.5, H[1] + 4.8, 0], [H[0] - 1.2, H[1] + 14.8, 0], 1.5, RIFT);
+      // 4 floating obsidian rift shards orbiting its shoulders & back
+      const fl = p.walk ? Math.sin(p.ph * 6.28) * 2.2 : p.idle ? 1.6 : 0;
+      const flare = rear ? 3.5 : strike ? 2.5 : 0;
+      both((s) => {
+        const s1 = P([f0 - 4, u0 + 21 + fl + flare * 0.6, s * (16 + flare)]);
+        M.box(s1, [1.5, 4.4, 1.5], KRION_DK, [s * 24, 18, s * 16]);
+        M.cone([s1[0], s1[1] + 3.2, s1[2]], [s1[0] - 1, s1[1] + 7.2, s1[2] + s * 0.8], 1.2, RIFT);
+        const s2 = P([f0 - 16, u0 + 15 - fl + flare * 0.4, s * (13 + flare * 0.8)]);
+        M.box(s2, [1.3, 3.2, 1.3], KRION_PL, [s * -18, -14, s * 20]);
+        M.dot([s2[0] + 0.8, s2[1] + 1.2, s2[2]], "#ffd0f4", 2, 2);
+      });
+      // armored bladed tail
+      const tw = p.walk ? Math.sin(p.ph * 6.28) * 4.5 : 2.5;
+      M.tube(bez(P([f0 - 15, u0 + 4.5, 0]), [f0 - 24, u0 + 10, tw * 0.5], [f0 - 26, u0 - 3, tw], 8), [2.6, 1.1], KRION_DK);
+      M.cone([f0 - 25, u0 - 2, tw], [f0 - 29, u0 - 6, tw * 1.2], 1.8, RIFT);
     },
   },
 
