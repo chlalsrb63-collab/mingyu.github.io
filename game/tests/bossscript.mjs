@@ -18,7 +18,7 @@ X.MOBS.bs_test = {
     phases: [{ at: 0.5, pats: [["깊은 잠수", "dive"]], cast: 1, steps: [{ f: "pool", dt: 300 }] }] },
 };
 const B = X.bsDef({ k: "bs_test" });
-assert.equal(B.vuln, B0.vuln); assert.equal(B.castMs, B0.castMs); assert.equal(X.bsDef({ k: "lambmaw" }), null, "no script, no runner");
+assert.equal(B.vuln, B0.vuln); assert.equal(B.castMs, B0.castMs); assert.equal(X.bsDef({ k: "meadowram" }), null, "no script, no runner");
 
 const S = L.setup();
 let now = 1_000_000;
