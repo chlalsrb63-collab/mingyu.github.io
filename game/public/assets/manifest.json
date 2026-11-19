@@ -1060,6 +1060,36 @@
       "src": "assets/gear/amulet/n_8.png?v=ba7fe3f8",
       "w": 32,
       "h": 32
+    },
+    "icon.item.h_10": {
+      "src": "assets/gear/helm/h_10.png?v=7d6d8823",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.a_10": {
+      "src": "assets/gear/armor/a_10.png?v=cae8eeef",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.g_10": {
+      "src": "assets/gear/gloves/g_10.png?v=5c3037e5",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.b_10": {
+      "src": "assets/gear/boots/b_10.png?v=7e70e32f",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.r_10": {
+      "src": "assets/gear/ring/r_10.png?v=9174f396",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.n_10": {
+      "src": "assets/gear/amulet/n_10.png?v=c02882cd",
+      "w": 32,
+      "h": 32
     }
   },
   "audio": {},
