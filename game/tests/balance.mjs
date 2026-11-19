@@ -22,11 +22,14 @@ export const BASE = {
 const VS = { sword: ["warrior"], dagger: ["rogue"], spear: ["lancer"], staff: ["mage"], book: ["mage"], bow: ["warrior", "rogue", "lancer", "mage"] };
 
 // Plain equipment after the gear level and monster pressure curves, averaged across the three arena seeds below.
+// Re-measured 2026-11-19 after the owner's wider item-level gap (GEAR_BASE_SCALE ×11.6, mobItemHp/Atk): the probe's shop
+// gear sits below its band's item level, so T25 (Lv.97 in Lv.50-ish gear) fell 15–35 % — out-of-date gear is meant to hurt.
+// (dagger T40 keeps its old 18.33: it measures 20.0 before and after, and the dagger hybrids sit at ×0.64–0.68 of it either way)
 const ELEMENT_BASE = {
-  sword: [30.33, 29.50, 15.50, 14.83], dagger: [29.83, 31.50, 17.50, 18.33],
-  spear: [30.67, 23.83, 12.00, 9.50], staff: [28.00, 29.83, 18.50, 18.83],
-  book: [32.67, 30.50, 17.17, 15.67], bow: [25.83, 26.17, 13.33, 14.17],
-  hammer: [30.17, 27.67, 14.50, 11.50],
+  sword: [31.00, 27.67, 12.50, 14.33], dagger: [28.17, 29.33, 13.33, 18.33],
+  spear: [29.17, 23.17, 10.33, 9.17], staff: [27.33, 27.17, 15.17, 18.50],
+  book: [30.50, 28.67, 11.33, 16.50], bow: [25.00, 25.50, 9.83, 15.17],
+  hammer: [30.17, 25.33, 9.50, 11.67],
 };
 
 /** A borderline single run can change when the loot stream takes different draws. On a miss,

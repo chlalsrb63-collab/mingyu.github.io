@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { MOBS, ITEMS, FIELD_BOSS, TROPHIES, ELITE, MOB_HARD, mobGearHp, mobLevelHp, mobMax, dealMob, killMob, bsHit, DIM_CHAL, CHAL_KEYS, DIM_TOWN, T, SKILL, SKILL_ORDER, stats, atkRange, aimIdx, tierFor, rollGear, GEAR, WK_ID, checkAch, dmgBoard };\n";
+  "\nexport const __t = { MOBS, ITEMS, FIELD_BOSS, TROPHIES, ELITE, MOB_HARD, mobGearHp, mobLevelHp, mobItemHp, mobMax, dealMob, killMob, bsHit, DIM_CHAL, CHAL_KEYS, DIM_TOWN, T, SKILL, SKILL_ORDER, stats, atkRange, aimIdx, tierFor, rollGear, GEAR, WK_ID, checkAch, dmgBoard };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t;
 // gear tier 6 (운철, req. Lv.181) drops from tier-46+ monsters (Lv.181+), bosses included; a tier-45 elite may roll one up
@@ -42,7 +42,7 @@ let rt = L.runtime(S, "coast");
 for (let i = 0; i < 5 && !rt.fb; i++) { now += 100; L.tick(S, now); L.endTick(S); }
 let mob = rt.mobs.find((o) => o.id === rt.fb);
 assert.ok(mob && mob.k === "clubshrimp" && mob.el === 2, "it walks in as the field boss");
-assert.equal(X.mobMax(mob), Math.round(Math.round(4400 * X.MOB_HARD * X.mobGearHp(39) * X.mobLevelHp(39)) * X.ELITE[2].hp), "its health includes world pressure and boss rank");
+assert.equal(X.mobMax(mob), Math.round(Math.round(4400 * X.MOB_HARD * X.mobGearHp(39) * X.mobLevelHp(39) * X.mobItemHp(39)) * X.ELITE[2].hp), "its health includes world pressure and boss rank");
 for (const o of rt.mobs) if (o !== mob) { o.dead = true; o.respAt = now + 1e12; }
 evs = [];
 const P1 = X.MOBS.clubshrimp.script.pats.length;
@@ -76,7 +76,7 @@ rt = L.runtime(S, "mesa");
 now += 100; L.tick(S, now); L.endTick(S);
 mob = rt.mobs.find((o) => o.k === "bloodhorn");
 assert.ok(mob && !mob.temp && X.MOBS.bloodhorn.boss, "it stands in its lair");
-assert.equal(X.mobMax(mob), Math.round(67200 * X.MOB_HARD * X.mobGearHp(41) * X.mobLevelHp(41)), "the lair boss includes world pressure");
+assert.equal(X.mobMax(mob), Math.round(67200 * X.MOB_HARD * X.mobGearHp(41) * X.mobLevelHp(41) * X.mobItemHp(41)), "the lair boss includes world pressure");
 assert.equal(X.FIELD_BOSS.mesa, "crownpeacock", "mesa keeps its own field boss");
 for (const o of rt.mobs) if (o !== mob) { o.dead = true; o.respAt = now + 1e12; }
 evs = [];
@@ -134,7 +134,7 @@ function raidParty(t, gear = true, n = 4) {
     if (gear) {
       const tier = X.tierFor(t);
       ch.eq.weapon = X.rollGear(W, `w_${X.WK_ID[WKS[i]]}_${tier}`, 1, t);
-      for (const s of ["helm", "armor", "gloves", "boots"]) ch.eq[s] = X.rollGear(W, `${X.GEAR[s].pre}_${tier}`, 1, t);
+      for (const s of ["helm", "armor", "gloves", "boots", "ring", "amulet"]) ch.eq[s === "ring" ? "ring1" : s] = X.rollGear(W, `${X.GEAR[s].pre}_${tier}`, 1, t);
       ch.inv.push({ id: "hp_l", n: 80 }, { id: "mp_l", n: 50 });
     }
     ch.map = "town"; ch.x = OBX; ch.y = OBY;

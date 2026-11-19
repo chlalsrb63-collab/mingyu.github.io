@@ -687,9 +687,10 @@ const UNIQ_P = [0.001, 0.004, 0.01];
  */
 const IL_RANK = [0, 4, 8];
 const IL_GAP = 10;
-// Flat equipment stats gain up to 232% from item level. Preserve the gentler opening of the curve.
-// Per-mille values also drive item comparisons in the client.
-const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(2320 * (i / (MAXLV - 1)) ** 1.55));
+// Flat equipment stats gain up to ×11.6 from item level (owner 2026-11-19: the Lv.1 → Lv.200 weapon gap 3–4× wider,
+// 6 → ~1,050 attack, so new gear and levels are felt and runes/charms stay a side dish). The gentle opening is kept.
+// Per-mille values also drive item comparisons in the client. Field monsters follow it (mobItemHp/mobItemAtk).
+const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(10620 * (i / (MAXLV - 1)) ** 1.55));
 /**
  * 접두사 고유 효과 (docs/design/prefix-effects.md): a 전설 or 유니크 piece carries ONE power `lg` no affix can give. Three tables per power,
  * all keyed by `lg`; the later parts 52+ extend them with Object.assign and never edit this file (the recipe is in 51-prefix.js):
@@ -824,6 +825,10 @@ const mobGearAtk = (tier) => 1.05 + 0.31 * mobGearPressure(tier);
 // Fixed to the monster's tier. Replacing a piece never makes its current enemies scale up.
 const mobLevelHp = (tier) => 1 + 0.72 * mobGearPressure(tier, 1.63);
 const mobLevelAtk = (tier) => 1 + 0.48 * mobGearPressure(tier, 1.63);
+// What a band hero of that tier gains from GEAR_BASE_SCALE's ×11.6 top (fitted: attack ×1.3 at Lv.33 → ×3.1 at Lv.197,
+// HP ×1.1 → ×2.7): monsters take its attack as HP and armour and its HP as attack, so in-band pace stays where it was.
+const mobItemHp = (tier) => 1 + 2.4 * mobGearPressure(tier, 1.5);
+const mobItemAtk = (tier) => 1 + 1.95 * mobGearPressure(tier, 1.7);
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
  * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
@@ -1092,8 +1097,9 @@ for (const k of Object.keys(MOBS)) {
   if (!d.sp) d.sp = k;
   for (const mv in TRICKS) if (d[mv] === undefined && MOBS[d.sp] && MOBS[d.sp][mv]) d[mv] = MOBS[d.sp][mv];
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
-  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv));
-  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv) * mobLevelHp(d.lv));
+  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv) * mobItemAtk(d.lv));
+  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv) * mobLevelHp(d.lv) * mobItemHp(d.lv));
+  if (d.def) d.def = Math.round(d.def * mobItemHp(d.lv));
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;
@@ -16867,7 +16873,8 @@ const dimGearHp = (tier, share = 0.60) => share + (1 - share) / mobGearHp(tier);
 const dimGearAtk = (tier, share = 0.20, levelShare = 0.65) =>
   (share + (1 - share) / mobGearAtk(tier)) * (levelShare + (1 - levelShare) / mobLevelAtk(tier));
 const dimAtkK = (tier) => dimGearAtk(tier) / MOB_HARD;
-const chalGearHp = (tier) => dimGearHp(tier, 0.25 + 0.15 * clamp((tier - 25) / 25, 0, 1));
+// (an eighth of the item-level push, mobItemHp, is taken back: a weekly boss meets a party in raid-rolled gear and must still be staggered in time)
+const chalGearHp = (tier) => dimGearHp(tier, 0.25 + 0.15 * clamp((tier - 25) / 25, 0, 1)) * (0.88 + 0.12 / mobItemHp(tier));
 const chalGearAtk = (tier) => dimGearAtk(tier, 0.10, 0.45);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 function dimHk(n, lv, mlv) {

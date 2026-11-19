@@ -21,8 +21,8 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
 {
   const scale = D.gearBaseScale;
   assert.equal(scale.length, 200);
-  assert.deepEqual([scale[0], scale[199]], [1000, 3320]);
-  assert.ok(scale.every((n, i) => i === 0 || n - scale[i - 1] >= 0 && n - scale[i - 1] <= 19), "no jumps between adjacent levels");
+  assert.deepEqual([scale[0], scale[199]], [1000, 11620]);
+  assert.ok(scale.every((n, i) => i === 0 || n - scale[i - 1] >= 0 && n - scale[i - 1] <= 83), "no jumps between adjacent levels");
   assert.deepEqual([D.runeScale[0], D.runeScale[199]], [18, 65], "rune lines remain supplementary");
   for (const [curve, start, end] of [[X.mobGearHp, 1.08, 1.48], [X.mobGearAtk, 1.05, 1.36], [X.mobLevelHp, 1, 1.72], [X.mobLevelAtk, 1, 1.48]]) {
     near(curve(1), start, 1e-8, "starter monsters get a gentler increase");
@@ -39,7 +39,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
         const prev = X.gearBaseValue(variants[i - 1], stat), next = X.gearBaseValue(variants[i], stat);
         assert.ok(fixed ? next === prev : next > prev, `${id} ${stat}`);
       }
-      near(X.gearBaseValue({ ...old, il: 200, enh: 4 }, stat), value * (fixed ? 1 : 3.32 * (1 + D.enhPct[4] / 100)), 1e-8, "level and enhancement share the base");
+      near(X.gearBaseValue({ ...old, il: 200, enh: 4 }, stat), value * (fixed ? 1 : 11.62 * (1 + D.enhPct[4] / 100)), 1e-8, "level and enhancement share the base");
       assert.equal(X.gearBaseValue({ ...old, il: undefined }, stat), X.gearBaseValue(old, stat), "old equipment uses its old level");
     }
   }
@@ -48,7 +48,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   const p = W.players.hero;
   const g = { ...X.plain("w_warrior_6"), enh: 4 };
   const lateBase = [181, 200].map((il) => Math.round(X.gearBaseValue({ ...g, il, enh: 0 }, "atk")));
-  assert.deepEqual(lateBase, [269, 299], "upgrading the drop within the final base adds 30 displayed attack");
+  assert.deepEqual(lateBase, [908, 1046], "upgrading the drop within the final base adds 138 displayed attack");
   p.ch.eq.weapon = { ...g, il: 160 };
   p.stc = null;
   const low = X.stats(p).atk;
