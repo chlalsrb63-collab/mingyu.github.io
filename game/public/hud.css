@@ -1920,6 +1920,9 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.wm-tip .
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.jt-need .no, .window .jb-card .why, .window .jb-card .late, .window .alba-clock.late, #quest-track .jb-clock.late) { color: var(--tx-bad); }
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.wm-tip .wm-next, .jt-wpn.ready b, .jt-h.half b, .jt-h.ready b, .jt-sig b, .window .jb-card .where, #quest-track .jb-clock,
   #w-talk > header .talk-role, #w-talk .talk-mn, #w-talk .sq-card .q-title, #w-talk .sq-card .q-reward) { color: var(--tx-gold); }
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.window .mp, #tip .mp, .jt-sig small) { color: var(--tx-info); }
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) .doll .slot.empty .cap { color: var(--tx3); opacity: 1; }
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.wm-tip .wm-job b, .jt-card .hd b, .jt-top .hd b, .window .jb-card .df .pay) { color: var(--tx-hd); }
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.jt-wpn b, .jt-h b, .jt-sig small, #w-talk .sq-card .q-next, #quest-track .qnext) { color: var(--tx-info); }
 
 /* ── UX pass 2026-11-15 (docs/design/ux-audit-2026-11-15.md) ── */
