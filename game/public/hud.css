@@ -1924,6 +1924,9 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.window .
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) .doll .slot.empty .cap { color: var(--tx3); opacity: 1; }
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.wm-tip .wm-job b, .jt-card .hd b, .jt-top .hd b, .window .jb-card .df .pay) { color: var(--tx-hd); }
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.jt-wpn b, .jt-h b, .jt-sig small, #w-talk .sq-card .q-next, #quest-track .qnext) { color: var(--tx-info); }
+/* key letters on the light slots, the phone button's key and the tracker's buttons (the dark Spc / X buttons keep theirs) */
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.act:not(#b-dash, #b-atk) kbd, #phone-btn kbd) { color: var(--tx); text-shadow: none; }
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) #quest-track .btn { color: #3b2a1a; }   /* #quest-track sets a pale --tx for its text over the world */
 
 /* ── UX pass 2026-11-15 (docs/design/ux-audit-2026-11-15.md) ── */
 /* notices and prompts draw over the windows (21–35, windows.js front), under the minigame (40) and the tooltip (80) */
