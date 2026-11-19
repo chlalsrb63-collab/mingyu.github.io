@@ -2209,3 +2209,13 @@ body.talkq #w-talk .talk-me[data-ok="1"] { display: block; }
 #w-talk[data-mode="home"] .talk-sq, #w-talk[data-mode="home"] .talk-jb, #w-talk[data-mode="home"] #talk-more { display: none; }
 #w-talk[data-mode="chat"] .talk-menu, #w-talk[data-mode="chat"] .talk-sq, #w-talk[data-mode="chat"] .talk-jb { display: none; }
 #w-talk[data-mode="quest"] .talk-menu, #w-talk[data-mode="quest"] #talk-more, #w-talk[data-mode="quest"] #talk-rep, #w-talk[data-mode="quest"] #talk-where { display: none; }
+
+/* see-through talk (owner 2026-11-19): the talk and quest windows show the world through their faces and inner boxes
+   (frames.js --frt-brass-see, --see-a), the text and buttons stay solid; they never fade as a whole */
+#windows :is(#w-talk, #w-quest) {
+  --fr-brass: var(--frt-brass-see); --fr-screen: var(--frt-screen-see);
+  --scr-a: color-mix(in srgb, var(--scr, #120f18) calc(var(--see-a, .74) * 100%), transparent);
+  --sf1-see: color-mix(in srgb, var(--sf1, #1c1824) calc(var(--see-a, .74) * 100%), transparent);
+}
+#windows :is(#w-talk, #w-quest):not(.docked) { opacity: 1; }
+#w-talk .sq-card { background: var(--sf1-see); }
