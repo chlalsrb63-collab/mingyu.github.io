@@ -2256,16 +2256,22 @@ body.talkq #w-talk .talk-me[data-ok="1"] { display: block; }
 #windows :is(#w-talk, #w-quest):not(.docked) { opacity: 1; }
 #w-talk .sq-card { background: var(--sf1-see); }
 
-/* window ornaments (owner 2026-11-19: borders less plain): a meadow flower in leaves over the top-left corner and a sprout
-   over the top-right one of every floating window (frames.js --orn-flower / --orn-sprout, drawn at 3 screen px per art px) */
+/* window ornaments (owner 2026-11-20: woodland ivy vines hugging HUD & window borders, phone UI untouched):
+   crisp pixel-art ivy vines (assets/ui/vine_*.png) draped tastefully over corners & edges */
 .window:not(.docked)::before, .window:not(.docked)::after {
   content: ""; position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated; background: no-repeat 0 0 / 100% 100%;
 }
-.window:not(.docked)::before { left: -18px; top: -20px; width: 48px; height: 42px; background-image: var(--orn-flower); }
-.window:not(.docked)::after { right: -12px; top: -16px; width: 36px; height: 27px; background-image: var(--orn-sprout); }
-/* the same ornaments on the bottom HUD bar (not in the landscape layout, where #dock is display: contents) */
+.window:not(.docked)::before { left: -20px; top: -20px; width: 84px; height: 51px; background-image: url("assets/ui/vine_tl.png"); }
+.window:not(.docked)::after { right: -20px; top: -20px; width: 72px; height: 51px; background-image: url("assets/ui/vine_tr.png"); }
+/* bottom HUD bar: left corner vine + slim centered top garland (not in landscape phone layout, where #dock is display: contents) */
 body:not([data-lay="land"]) #dock::before, body:not([data-lay="land"]) #dock::after {
   content: ""; position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated; background: no-repeat 0 0 / 100% 100%;
 }
-body:not([data-lay="land"]) #dock::before { left: 2px; top: -37px; width: 48px; height: 42px; background-image: var(--orn-flower); }
-body:not([data-lay="land"]) #dock::after { right: 4px; top: -25px; width: 36px; height: 27px; background-image: var(--orn-sprout); }
+body:not([data-lay="land"]) #dock::before { left: -6px; top: -22px; width: 84px; height: 51px; background-image: url("assets/ui/vine_tl.png"); }
+body:not([data-lay="land"]) #dock::after { left: 50%; top: -21px; width: 136px; height: 18px; transform: translateX(-50%); background-image: url("assets/ui/vine_top.png"); }
+/* desktop right side panel: delicate hanging ivy tendril along the top-right edge (phone drawer untouched) */
+body[data-lay="full"] #side::after {
+  content: ""; position: absolute; right: -2px; top: 2px; width: 26px; height: 60px;
+  pointer-events: none; z-index: 4; image-rendering: pixelated;
+  background: url("assets/ui/vine_hang.png") no-repeat 0 0 / 100% 100%;
+}
