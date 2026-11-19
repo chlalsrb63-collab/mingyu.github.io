@@ -23,9 +23,10 @@ const MANE_EYE = mat("#ffc584", { role: "glow" });
 const SERP = mat("#8a3048"), SERPB = mat("#e0c070"), SERPW = mat("#5a2234");
 const SOW = mat("#b07880"), SOWD = mat("#8a5866"), SORE = mat("#b83a4a", { wet: true, drip: true });
 // ── the great ones
-const RIFT = mat("#ff68dc", { role: "glow" }), RIFT_CORE = mat("#ffe0fa", { role: "glow" }), VOID = mat("#140822", { role: "keep", flat: true });
-const HIDE = mat("#2c2038"), MANE = mat("#5a2042"), BULL = mat("#3a2844"), KRION_PL = mat("#4e3a62"), KRION_DK = mat("#1c1428");
-const MOTHER = mat("#483746"), MOTHERD = mat("#2a202e", { flat: true }), BROOD = mat("#552a32", { flat: true });
+const RIFT = mat("#e848ff", { role: "glow" }), RIFT_CORE = mat("#ffe8ff", { role: "glow" }), VOID = mat("#120620", { role: "keep", flat: true });
+const HIDE = mat("#2a1e3a"), MANE = mat("#582048"), BULL = mat("#3a2844"), KRION_PL = mat("#422e5c"), KRION_DK = mat("#1a1228"), KRION_GOLD = mat("#cfa04c", { role: "keep" });
+const MOTHER = mat("#3e2038"), MOTHERD = mat("#221022"), BROOD = mat("#7a1c34");
+const MORMA_PALE = mat("#ddd4e2", { role: "keep" }), MORMA_HAIR = mat("#c4b8d0", { role: "keep" }), MORMA_EYE = mat("#ff2838", { role: "glow" }), MORMA_EYEC = mat("#ffd870", { role: "glow" });
 const GLASS = mat("#7b606d"), CINDER = mat("#ba4845", { role: "keep", flat: true });
 const EMBER = mat("#ff7946", { role: "glow" }), LANTERN = mat("#ffe298", { role: "glow" });
 const WOOD = mat("#8a5a3a"), WOODD = mat("#5e3a26"), IRON = mat("#6a6a7a"), GOLD = mat("#f0c050", { role: "keep" });
@@ -320,103 +321,101 @@ export const BEASTS_C = {
     },
   },
 
-  /** 균열의 군주 크리온 — towering obsidian-armored Rift Overlord with a blazing dimensional vortex in its ribcage, bone demon-ram crown, dorsal crystal ridge, and orbiting rift shards. */
+  /** 균열의 군주 크리온 — towering bipedal obsidian-and-gold Rift Overlord with colossal crystal pauldrons, tattered violet cape, blazing chest vortex, clawed gauntlets, and orbiting rift crystals. */
   boss: {
-    size: "boss", n: 162, glow: "#ff72d6",
+    size: "boss", n: 204, glow: "#e848ff",
     draw(M, p) {
-      const [lf, lu] = lunge(p, 2.2);
+      const [lf, lu] = lunge(p, 2.4);
       const rear = p.wind ? 1 : 0, strike = p.strike ? 1 : 0;
-      const f0 = lf, u0 = 22 + lu + bob(p, 1.3) + rear * 3.5;
-      const pit = rear * 15 + (strike ? -9 : 0), P = (c) => pitchPt(c, pit, [f0 - 8, 5, 0]);
-      // heavy armored hind & fore legs with obsidian greaves and bone claws
+      const f0 = lf, u0 = 26 + lu + bob(p, 1.4) + rear * 3.5;
+      const pit = rear * 12 + (strike ? -10 : 0), P = (c) => pitchPt(c, pit, [f0, 8, 0]);
+      // armored bipedal legs & tattered obsidian-violet war skirt
       both((s) => {
         const [sw, up] = gait(p, s < 0 ? 0.5 : 0);
-        const hFoot = [f0 - 11 + sw * 4, up * 2.4 + 1.2, s * 7.8];
-        M.tube([P([f0 - 10, u0 - 3, s * 6.8]), [f0 - 13 + sw * 2, u0 * 0.48 + up, s * 8], hFoot], [4.6, 3.2, 2.3], KRION_DK);
-        M.box([f0 - 12 + sw * 2, u0 * 0.52 + up, s * 8.6], [2.4, 2.8, 1.8], KRION_PL, [s * 12, -16, s * 10]);
-        M.e([hFoot[0] + 0.8, hFoot[1], hFoot[2]], [2.8, 1.4, 2.4], HIDE);
-        const [sw2, up2] = gait(p, s < 0 ? 0 : 0.5);
-        const a = rear ? 4 : strike ? 5.5 : sw2 * 3.8;
-        const ft = rear ? [f0 + 15, u0 - 1, s * 9.5] : [f0 + 10 + a, up2 * 2.4 + 1.2, s * 9.2];
-        const elbow = [f0 + 10 + a * 0.5, u0 * 0.52 + up2 + rear * 6.5, s * 9.6];
-        M.tube([P([f0 + 7.5, u0 - 1, s * 8.4]), elbow, ft], [4.8, 3.6, 2.8], HIDE);
-        M.box([elbow[0] + 0.6, elbow[1] + 0.5, elbow[2] + s * 0.8], [2.8, 3.2, 2.2], KRION_PL, [s * 15, -22, s * 14]);
-        M.tube([[elbow[0], elbow[1] + 2.2, elbow[2] + s * 1.8], [elbow[0] + 1.6, elbow[1] - 1.4, elbow[2] + s * 2.0]], 0.55, RIFT);
-        for (let i = 0; i < 4; i++) M.cone([ft[0] + 2.2, ft[1] + 0.2, ft[2] + (i - 1.5) * 1.3], [ft[0] + 5.2, ft[1] - 1.1, ft[2] + (i - 1.5) * 1.5], 0.85, C.BONE);
+        const ft = [f0 + sw * 4.5, 1.5 + up * 2.5, s * 7.2];
+        const knee = [f0 + 2 + sw * 2, u0 * 0.44 + up, s * 7.6];
+        M.tube([P([f0 - 1, u0 - 6, s * 5.8]), knee, ft], [4.6, 3.6, 2.8], KRION_DK);
+        M.box([knee[0] + 1.4, knee[1] + 0.6, knee[2] + s * 0.6], [2.4, 3.6, 2.4], KRION_PL, [s * 12, -12, s * 10]);
+        M.tube([[knee[0] + 2.4, knee[1] + 2.4, knee[2] + s * 1.4], [ft[0] + 1.6, ft[1] + 1.4, ft[2] + s * 1.2]], 0.55, KRION_GOLD);
+        M.e([ft[0] + 1.6, ft[1], ft[2]], [3.6, 1.6, 2.8], KRION_DK);
       });
-      // broad, heavy-shouldered obsidian torso
-      M.G("body");
-      M.e(P([f0 - 7, u0 + 1.5, 0]), [10.5, 9, 10.2], KRION_DK);
-      M.e(P([f0 + 6.5, u0 + 4.5, 0]), [10.8, 11.8, 12.2], HIDE);
+      // billowing tattered shadow-violet cape streaming behind
+      const wave = p.walk ? Math.sin(p.ph * 6.28) * 3.5 : p.idle ? 1.8 : 0;
+      for (const [s, len, drop, w] of [[-13, 24, 14, 2.8], [-6, 28, 18, 3.4], [0, 30, 19, 3.8], [6, 28, 18, 3.4], [13, 24, 14, 2.8]]) {
+        const c1 = P([f0 - 6, u0 + 13, s * 0.7]);
+        const c2 = [f0 - 15 - rear * 3, u0 + 7 - drop * 0.35, s * 1.15 + wave * 0.5];
+        const c3 = [f0 - len - rear * 4, Math.max(3, u0 + 4 - drop), s * 1.35 + wave];
+        M.tube([c1, c2, c3], [w, w * 0.85, 0.5], Math.abs(s) === 6 ? MANE : KRION_DK);
+      }
+      // heavy V-tapered obsidian-and-gold armored torso
+      M.G("torso");
+      M.e(P([f0, u0 - 2, 0]), [7.2, 8.5, 7.6], KRION_DK);
+      M.e(P([f0 + 1.5, u0 + 9.5, 0]), [9.8, 10.2, 12.6], HIDE);
+      M.box(P([f0 + 2.5, u0 + 11, 0]), [7.5, 7.2, 11.4], KRION_PL, [0, -8, 0]);
       M.G();
-      // massive layered shoulder pauldrons with jagged spikes & glowing rift veins
+      // gold chest-plate trim & glowing rift cracks across waist/flanks
       both((s) => {
-        const sh = P([f0 + 6.5, u0 + 10.5, s * 11.4]);
+        M.tube([P([f0 + 5.5, u0 + 17, s * 8.5]), P([f0 + 8.5, u0 + 10, s * 6.2]), P([f0 + 6.5, u0 + 2, s * 4.5])], [0.9, 0.75, 0.55], KRION_GOLD);
+        M.tube([P([f0 + 4, u0 + 3, s * 6.2]), P([f0 + 1, u0 - 3, s * 6.8]), P([f0 + 3, u0 - 8, s * 5.6])], 0.65, RIFT);
+      });
+      // blazing diamond dimensional Rift Core in the center of the chest
+      const rc = P([f0 + 9.8, u0 + 10.5, 0]), pulse = p.idle || rear ? 1.18 : 1;
+      M.box(rc, [1.8, 5.8 * pulse, 4.4 * pulse], RIFT, [0, pit, 45]);
+      M.box([rc[0] + 0.7, rc[1], rc[2]], [1.4, 3.8 * pulse, 2.8 * pulse], VOID, [0, pit, 45]);
+      M.e([rc[0] + 1.2, rc[1], rc[2]], [1.1, 2.2 * pulse, 1.5 * pulse], RIFT_CORE);
+      // colossal jagged crystal-encrusted shoulder pauldrons & huge clawed gauntlet arms
+      both((s) => {
+        const sh = P([f0 + 1, u0 + 16.5, s * 14.5]);
         M.G("pauldron" + s);
-        M.box(sh, [6.2, 3.6, 4.4], KRION_PL, [s * 18, -14, -s * 24]);
-        M.box([sh[0] - 2.4, sh[1] - 3.6, sh[2] + s * 1.4], [5.4, 2.8, 3.2], BULL, [s * 14, -8, -s * 30]);
-        M.cone([sh[0] - 1, sh[1] + 2.4, sh[2] + s * 1.2], [sh[0] - 5.5, sh[1] + 10.5, sh[2] + s * 4.8], 2.2, KRION_DK);
-        M.cone([sh[0] + 1.8, sh[1] + 1.6, sh[2] + s * 1.8], [sh[0] + 0.2, sh[1] + 7.2, sh[2] + s * 5.2], 1.5, KRION_PL);
+        M.box(sh, [6.4, 4.2, 5.8], KRION_DK, [s * 18, -10, -s * 24]);
+        M.box([sh[0] + 1.2, sh[1] + 2.2, sh[2] + s * 1.6], [5.2, 2.4, 4.8], KRION_PL, [s * 20, -12, -s * 28]);
+        M.tube([[sh[0] + 5.2, sh[1] + 1.5, sh[2] + s * 3.8], [sh[0] - 2.4, sh[1] + 3.2, sh[2] + s * 5.2], [sh[0] - 4.8, sh[1] - 1.2, sh[2] + s * 3.2]], 0.85, KRION_GOLD);
+        // twin giant amethyst-obsidian crystals erupting upward from each pauldron
+        M.cone([sh[0] - 1, sh[1] + 3, sh[2] + s * 1.5], [sh[0] - 6, sh[1] + 14.5, sh[2] + s * 7.5], 2.8, KRION_PL);
+        M.cone([sh[0] - 0.4, sh[1] + 3.4, sh[2] + s * 2.2], [sh[0] - 4.6, sh[1] + 12.2, sh[2] + s * 6.5], 1.4, RIFT);
+        M.cone([sh[0] + 1.8, sh[1] + 2.5, sh[2] + s * 2.8], [sh[0] + 0.5, sh[1] + 10.5, sh[2] + s * 8.5], 1.9, KRION_DK);
         M.G();
-        M.tube([[sh[0] + 2.6, sh[1] + 1.6, sh[2] + s * 2.2], [sh[0] - 1.8, sh[1] - 1.2, sh[2] + s * 2.6]], 0.65, RIFT);
+        // massive armored arms & huge clawed demon gauntlets
+        const reach = strike * 9 - rear * 4;
+        const liftA = rear * 9 - strike * 5 + (p.walk ? Math.sin(p.ph * 6.28 + s) * 2.5 : 0);
+        const elb = P([f0 + 4 + reach * 0.4, u0 + 7.5 + liftA * 0.5, s * 18.5]);
+        const handC = P([f0 + 13.5 + reach, u0 + 5.5 + liftA, s * (16.5 - strike * 4)]);
+        M.tube([sh, elb, handC], [4.2, 3.6, 3.4], KRION_DK);
+        M.box(elb, [3.2, 3.4, 3.2], KRION_PL, [s * 16, -20, 0]);
+        M.tube([[elb[0] + 1, elb[1] + 1, elb[2] + s * 2.4], [handC[0], handC[1] + 1, handC[2] + s * 2.2]], 0.75, RIFT);
+        M.e(handC, [3.8, 3.6, 3.8], KRION_PL);
+        M.tube([[handC[0] - 1.5, handC[1] + 2.2, handC[2] - s * 1.5], [handC[0] + 1.5, handC[1] + 2.2, handC[2] + s * 2.2]], 0.75, KRION_GOLD);
+        for (let i = 0; i < 4; i++) {
+          const cf = [handC[0] + 2.8, handC[1] + (i - 1.5) * 1.4, handC[2] + s * (i - 1.5) * 1.2];
+          M.cone(cf, [cf[0] + 5.2, cf[1] - 1.6 + (i === 0 ? 2 : 0), cf[2] + s * 1.4], 1.15, KRION_DK);
+        }
       });
-      // jagged dorsal obsidian crystal spine glowing magenta
-      for (const [dx, dy, h, w] of [[2, 14.5, 11, 2.2], [-4.5, 12.2, 9.5, 2.0], [-10.5, 9.2, 7.5, 1.7], [-15.5, 5.8, 5.5, 1.3]]) {
-        const base = P([f0 + dx, u0 + dy, 0]);
-        const tip = P([f0 + dx - 3.5, u0 + dy + h + rear * 1.5, 0]);
-        M.cone(base, tip, w, KRION_DK);
-        M.tube([[base[0] + 0.8, base[1] + 0.5, 0.9], [tip[0] + 0.8, tip[1] - 1.6, 0.6]], [0.75, 0.35], RIFT);
-      }
-      // dark crimson-violet spiked mane collar around the neck
-      for (let i = 0; i < 12; i++) {
-        const a = (i / 12) * Math.PI * 2, ca = Math.cos(a), sa = Math.sin(a);
-        M.cone(P([f0 + 10, u0 + 7.5 + ca * 7.2, sa * 8.2]), P([f0 + 6.5, u0 + 8.5 + ca * 13.5, sa * 13.5]), 2.1, i % 2 ? MANE : KRION_DK);
-      }
-      // blazing dimensional rift vortex torn open in the chest, caged by bone ribs
-      const rc = P([f0 + 15.8, u0 + 2.5, 0]), pulse = p.idle || rear ? 1.16 : 1;
-      M.e(rc, [2.2, 7.6 * pulse, 5.8 * pulse], RIFT, [0, pit, 0]);
-      M.e([rc[0] + 0.8, rc[1], rc[2]], [1.6, 5.4 * pulse, 3.8 * pulse], VOID, [0, pit, 0]);
-      M.e([rc[0] + 1.4, rc[1], rc[2]], [1.1, 2.6 * pulse, 1.8 * pulse], RIFT_CORE, [0, pit, 0]);
-      for (let i = 0; i < 3; i++) both((s) => {
-        const ry = rc[1] + 4.8 - i * 4.4;
-        M.tube([[rc[0] - 2.4, ry + 0.8, s * 6.8], [rc[0] + 0.8, ry, s * 4.4], [rc[0] + 1.4, ry - 0.8, s * 2.2]], [0.95, 0.78, 0.45], C.BONE);
-      });
-      // towering horned bone demon-ram skull with blazing eyes and crown
-      const H = P([f0 + 18.5 + strike * 3.5, u0 + 15.2 + rear * 1.2, 0]), HR = [4.8, 5.2, 4.5];
-      M.G("skull");
-      M.e(H, HR, C.BONE, [0, -14, 0]);
-      M.box([H[0] + 3.8, H[1] - 2.2, 0], [3.6, 2.5, 2.8], C.BONE, [0, -22, 0]);
+      // dark horned obsidian crown-helm with blazing vertical visor slit
+      const H = P([f0 + 3.5 + strike * 2.5, u0 + 23.5 + rear * 1.5, 0]);
+      M.G("helm");
+      M.e(H, [4.6, 5.4, 4.4], KRION_DK);
+      M.box([H[0] + 2.4, H[1] - 0.6, 0], [3.2, 4.6, 3.2], KRION_PL, [0, -10, 0]);
       M.G();
-      const open = strike ? 2.2 : rear ? 1.5 : 0.45;
-      M.e([H[0] + 4.8, H[1] - 4.8 - open, 0], [3.1, 1.1, 2.4], C.BONE, [0, -10 - open * 18, 0]);
-      M.e([H[0] + 4.2, H[1] - 3.6 - open * 0.5, 0], [2.4, 1.1 + open * 0.6, 2.1], VOID);
-      teeth(M, [H[0] + 2.4, H[1] - 4.2, -1.9], [H[0] + 7.2, H[1] - 4.2, -1.1], 4, 1.2, 1.5);
-      teeth(M, [H[0] + 2.4, H[1] - 4.2, 1.9], [H[0] + 7.2, H[1] - 4.2, 1.1], 4, 1.2, 1.5);
+      M.box([H[0] + 4.8, H[1] - 0.4, 0], [1.2, 3.6, 1.5], VOID);
+      M.tube([[H[0] + 5.2, H[1] + 1.4, 0], [H[0] + 5.2, H[1] - 2.0, 0]], 0.65, RIFT_CORE);
+      // tall royal crown spikes & huge sweeping crescent demon horns
+      M.cone([H[0] + 1.4, H[1] + 4.6, 0], [H[0] + 0.5, H[1] + 14.5, 0], 1.5, KRION_GOLD);
       both((s) => {
-        M.e(surf(H, HR, [0.55, 0.16, s * 0.8]), [1.7, 1.7, 0.9], VOID);
-        M.eye(surf(H, HR, [0.62, 0.2, s * 0.86]), 2, "#ff72d6");
-        // colossal sweeping demon-ram horns
-        M.tube(bez([H[0] - 1, H[1] + 3.4, s * 2.8], [H[0] - 9, H[1] + 10.5, s * 10.5], [H[0] - 2, H[1] - 1.5, s * 12.2], 10), [2.5, 0.9], C.HORN);
-        // tall crown spikes framing the brow
-        M.cone([H[0] - 0.5, H[1] + 4.4, s * 1.6], [H[0] - 3.2, H[1] + 13.5, s * 3.4], 1.4, KRION_PL);
-        M.tube([[H[0] - 0.5, H[1] + 4.8, s * 1.9], [H[0] - 2.6, H[1] + 11.2, s * 3.1]], 0.45, RIFT);
+        M.cone([H[0] + 0.6, H[1] + 4.2, s * 2.2], [H[0] - 0.5, H[1] + 11.2, s * 4.5], 1.2, KRION_GOLD);
+        M.tube(bez([H[0] - 0.5, H[1] + 3.8, s * 3.4], [H[0] - 5, H[1] + 13.5, s * 12.5], [H[0] + 2, H[1] + 18.5, s * 15.5], 9), [2.4, 0.7], KRION_DK);
+        M.tube(bez([H[0] - 0.2, H[1] + 4.2, s * 3.8], [H[0] - 4.2, H[1] + 12.5, s * 11.8], [H[0] + 1.5, H[1] + 16.5, s * 14.2], 6), [0.85, 0.3], RIFT);
       });
-      M.cone([H[0] + 0.5, H[1] + 4.8, 0], [H[0] - 1.2, H[1] + 14.8, 0], 1.5, RIFT);
-      // 4 floating obsidian rift shards orbiting its shoulders & back
-      const fl = p.walk ? Math.sin(p.ph * 6.28) * 2.2 : p.idle ? 1.6 : 0;
-      const flare = rear ? 3.5 : strike ? 2.5 : 0;
+      // 4 large floating faceted rift crystals orbiting behind shoulders
+      const fl = p.walk ? Math.sin(p.ph * 6.28) * 2.5 : p.idle ? 2 : 0;
+      const flare = rear ? 4 : strike ? 3 : 0;
       both((s) => {
-        const s1 = P([f0 - 4, u0 + 21 + fl + flare * 0.6, s * (16 + flare)]);
-        M.box(s1, [1.5, 4.4, 1.5], KRION_DK, [s * 24, 18, s * 16]);
-        M.cone([s1[0], s1[1] + 3.2, s1[2]], [s1[0] - 1, s1[1] + 7.2, s1[2] + s * 0.8], 1.2, RIFT);
-        const s2 = P([f0 - 16, u0 + 15 - fl + flare * 0.4, s * (13 + flare * 0.8)]);
-        M.box(s2, [1.3, 3.2, 1.3], KRION_PL, [s * -18, -14, s * 20]);
-        M.dot([s2[0] + 0.8, s2[1] + 1.2, s2[2]], "#ffd0f4", 2, 2);
+        const c1 = P([f0 - 4, u0 + 27 + fl + flare * 0.5, s * (24 + flare)]);
+        M.cone([c1[0], c1[1], c1[2]], [c1[0], c1[1] + 6.5, c1[2]], 2.4, RIFT);
+        M.cone([c1[0], c1[1], c1[2]], [c1[0], c1[1] - 5.2, c1[2]], 2.4, KRION_PL);
+        const c2 = P([f0 - 15, u0 + 20 - fl, s * (20 + flare * 0.8)]);
+        M.cone([c2[0], c2[1], c2[2]], [c2[0], c2[1] + 4.8, c2[2]], 1.8, RIFT_CORE);
+        M.cone([c2[0], c2[1], c2[2]], [c2[0], c2[1] - 3.8, c2[2]], 1.8, KRION_DK);
       });
-      // armored bladed tail
-      const tw = p.walk ? Math.sin(p.ph * 6.28) * 4.5 : 2.5;
-      M.tube(bez(P([f0 - 15, u0 + 4.5, 0]), [f0 - 24, u0 + 10, tw * 0.5], [f0 - 26, u0 - 3, tw], 8), [2.6, 1.1], KRION_DK);
-      M.cone([f0 - 25, u0 - 2, tw], [f0 - 29, u0 - 6, tw * 1.2], 1.8, RIFT);
     },
   },
 
@@ -660,105 +659,106 @@ export const BEASTS_C = {
     },
   },
 
-  /** 심연의 어미 — five necks under a cracked obsidian mantle, with the stolen lanterns still burning inside. */
+  /** 심연의 어미 모르마 — eldritch brood-horror: pale bone-crowned maiden emerging from a colossal eye-studded abyssal mass, surrounded by 10 wildly writhing tentacles. */
   abyssboss: {
-    size: "boss", n: 160, glow: "#ff974e",
+    size: "boss", n: 210, glow: "#ff3850",
     draw(M, p) {
       const [lf, lu] = lunge(p, 2.2), wind = p.wind ? 1 : 0, strike = p.strike ? 1 : 0;
-      const f = lf * 0.73, u = 15 + lu + bob(p, 0.65) - (p.dead || 0) * 4.5;
-      const phase = p.walk ? p.ph : p.idle ? 0.15 : 0;
-      both((s) => {
-        for (let i = 0; i < 3; i++) {
-          const [sw, step] = gait(p, (i + Number(s > 0)) * 0.5);
-          const x = f - i * 6.2, foot = [x + sw * 3, 1 + step * 1.6, s * (14.2 + i * 0.45)];
-          M.tube([[x, u - 3, s * 9.0], [x - 1.5, u - 3.2, s * 13.3], foot], [3.0, 2.9, 1.6], MOTHERD);
-          M.e([foot[0] + 0.5, foot[1], foot[2]], [2.2, 1.12, 1.5], GLASS);
-        }
-        const reach = strike * 6.5 - wind * 3.8;
-        const claw = [f + 13.3 + reach, 2 + wind * 2.3, s * (15.8 + wind * 1.6)];
-        M.tube([[f + 7, u + 0.4, s * 9.4], [f + 10 + reach * 0.55, u - 1.5 + wind * 1.8, s * 14.6], claw], [4.2, 3.6, 2.1], MOTHERD);
-        M.box([claw[0] - 1.7, u * 0.54 + wind * 1.1, claw[2]], [2.45, 2.15, 2.05], GLASS, [s * 14, -20, 0]);
-        for (const dw of [-1.5, 1.4]) M.cone([claw[0] + 1.0, claw[1], claw[2] + dw], [claw[0] + 4.2, claw[1] - 1.6, claw[2] + dw + s * 0.6], 1.18, C.HORN);
+      const f = lf * 0.75, u = 16 + lu + bob(p, 0.9) - (p.dead || 0) * 5;
+      const ph = p.walk ? p.ph : p.idle ? 0.25 : 0;
+      // 10 thick, wildly curling eldritch tentacles erupting from the brood-mass in all directions
+      const tents = [
+        // [side, rootF, rootU, midF, midU, midS, tipF, tipU, tipS, r0]
+        [-1, -14, 14, -26, 26, -18, -32, 34, -10, 3.2],
+        [1, -14, 14, -26, 26, 18, -32, 34, 10, 3.2],
+        [-1, -16, 4, -28, 12, -26, -24, 24, -30, 3.4],
+        [1, -16, 4, -28, 12, 26, -24, 24, 30, 3.4],
+        [-1, -10, -2, -16, 2, -27, -6, 10, -32, 3.0],
+        [1, -10, -2, -16, 2, 27, -6, 10, 32, 3.0],
+        [-1, -20, -4, -32, -2, -18, -34, 8, -22, 2.8],
+        [1, -20, -4, -32, -2, 18, -34, 8, 22, 2.8],
+        [-1, -2, -6, 6, -8, -20, 16, 2, -24, 2.6],
+        [1, -2, -6, 6, -8, 20, 16, 2, 24, 2.6],
+      ];
+      tents.forEach(([s, rf, ru, mf, mu, ms, tf, tu, ts, r0], i) => {
+        const wv = Math.sin((ph + i * 0.17) * Math.PI * 2) * (p.walk ? 4.2 : 2.0);
+        const flare = wind * 4.5 + strike * 3.5;
+        const p0 = [f + rf, Math.max(2, u + ru), s * 10];
+        const p1 = [f + mf + strike * 3, Math.max(2, u + mu + wv + wind * 2), ms + s * flare * 0.4];
+        const p2 = [f + tf + strike * 6, Math.max(3, u + tu - wv * 1.2 + wind * 3.5), ts + s * flare * 0.7];
+        const pts = bez(p0, p1, p2, 8);
+        M.tube(pts, [r0, 0.55], i % 2 ? MOTHERD : MOTHER);
+        // crimson underside ridge / sucker beads
+        M.tube([pts[2], pts[4], pts[6]], [r0 * 0.42, r0 * 0.28], BROOD);
+        if (!p.dead && i < 6) M.dot(pts[6], "#ff5a6a", 2, 2);
       });
-
-      const body = [f - 3.1, u, 0], bodyR = [16.6, 11.2, 14.2];
-      M.G("body");
-      M.e(body, bodyR, MOTHER);
-      M.e([f - 3.8, u - 2.6, 0], [15.0, 8.2, 13.4], MOTHERD);
+      // colossal swollen dark-plum eldritch brood-mass behind the maiden
+      const mass = [f - 10, u + 5, 0], massR = [16.5, 14.5, 16.5];
+      M.G("mass");
+      M.e(mass, massR, MOTHER);
+      M.e([f - 13, u - 1, 0], [15.2, 10.5, 15.5], MOTHERD);
+      M.e([f - 8, u + 14.5, 0], [11.5, 8.2, 11.8], MOTHERD);
       M.G();
-      const plates = [
-        [-13.7, 6.6, 3.4, 3.9, 14], [-8.4, 10.0, 4.8, 4.1, 12],
-        [-1.9, 10.8, 5.1, 4.0, -8], [4.8, 9.6, 5.1, 3.1, -15], [9.0, 5.2, 3.7, 2.7, -21],
+      // 7 huge glowing crimson slit-pupil eldritch eyes staring out of the brood-mass
+      const eyeDirs = [
+        [0.45, 0.35, -0.82, 4.2], [0.45, 0.35, 0.82, 4.2],
+        [-0.15, 0.65, -0.72, 3.6], [-0.15, 0.65, 0.72, 3.6],
+        [0.15, -0.15, -0.95, 3.2], [0.15, -0.15, 0.95, 3.2],
+        [-0.75, 0.45, 0.0, 4.0],
       ];
-      for (const [i, [x, y, w, run, tilt]] of plates.entries()) both((s) => {
-        const z = s * (w + 0.8 + (i % 2) * 0.85);
-        M.box([f + x, u + y, z], [run, 1.68, w * 1.02], i % 2 ? GLASS : MOTHER, [s * 10, tilt, -s * 20]);
-        M.cone([f + x - 0.32, u + y + 0.1, s * (w + 3.1)], [f + x - 3.3, u + y + 3.9, s * (w + 5.0)], 1.65, MOTHERD);
-        if (i < plates.length - 1) {
-          const root = [f + x + run - 0.45, u + y + 1.44, s * (w * 0.72)];
-          M.tube([root, [root[0] - 1.05, root[1] - 0.95, root[2] + s * 2.0], [root[0] + 0.3, root[1] - 2.2, root[2] + s * 4.1]], wind ? 0.85 : 0.59, CINDER);
-          M.tube([root, [root[0] - 0.6, root[1] - 0.35, root[2] + s * 1.2]], 0.42, EMBER);
-        }
-      });
-
-      // Broad flank facets face outward, so the hot cracks survive the low quarter-view angle.
-      both((s) => {
-        for (const [i, [axis, lift]] of [[-1.05, 0.44], [-0.42, 0.23], [0.28, 0.45]].entries()) {
-          const [x, y, z] = surf(body, bodyR, [axis, lift, s]);
-          const edge = z + s * 1.1;
-          M.box([x, y, z], [2.75, 1.95, 1.35], GLASS, [-s * axis * 26, 18 - i * 13, s * 13]);
-          const scar = [[x - 2.4, y + 0.75, edge], [x - 0.7, y - 0.15, edge + s * 0.38],
-            [x + 0.15, y + 0.45, edge + s * 0.52], [x + 2.08, y - 0.74, edge + s * 0.15]];
-          M.tube(scar, wind ? 1.02 : 0.69, CINDER);
-          M.tube(scar.slice(1, 3), wind ? 0.62 : 0.49, EMBER);
-        }
-      });
-
-      // The swollen body carries four brood marks and one larger stolen lantern under the throat.
-      const brood = [[-0.36, 0.45, -0.81], [-0.45, 0.22, 0.86], [0.5, 0.21, 0.81], [0.59, 0.31, -0.79]];
-      for (const [i, d] of brood.entries()) {
-        const q = surf(body, bodyR, d);
-        M.e(q, [2.9, 1.74, 1.8], MOTHERD, [Math.sign(d[2]) * 35, 10, 0]);
-        const [x, y, s] = q;
-        M.tube([[x - 1.25, y, s], [x + 0.4, y + 0.4, s + Math.sign(s) * 0.6], [x + 1.72, y, s]], [0.67, 0.61, 0.32], BROOD);
-        if (!p.dead) M.dot([x + 0.6, y + 0.45, s + Math.sign(s) * 1.15], i % 2 ? "#ffad65" : "#ffd584", 1, 1);
+      for (const [dx, dy, dz, sz] of eyeDirs) {
+        const ep = surf(mass, massR, [dx, dy, dz]);
+        M.s(ep, sz * 0.95, BROOD);
+        M.s([ep[0] + dx * 0.9, ep[1] + dy * 0.9, ep[2] + dz * 0.9], sz * 0.72, MORMA_EYE);
+        if (!p.dead) M.stare([ep[0] + dx * 1.1, ep[1] + dy * 1.1, ep[2] + dz * 1.1], sz * 0.75, "#ffd060", Math.round(sz * 0.9));
       }
-      M.e([f + 11.8, u + 1.7, 0], [4.4, 5.3, 6.3], MOTHERD);
-      M.e([f + 14.9, u + 2.0, 0], [1.85, 3.35 + wind * 0.8, 4.7], BROOD);
-      M.e([f + 16.42, u + 2.25, 0], [0.9, 2.2 + wind * 0.5, 2.85], EMBER, [0, 14, 0]);
-      M.box([f + 17.05, u + 2.9, 0], [0.55, 1.05, 1.5], LANTERN, [0, -17, 18]);
-
-      // The five necks hold different heights and come from offset roots; the central bite leads a strike.
-      const necks = [
-        [-15.1, 8.0, 15.1, 1.8], [-8.9, 17.5, 12.6, 2.09], [0.8, 25.4, 16.7, 2.6],
-        [8.9, 14.4, 19.9, 2.28], [15.8, 5.1, 17.0, 1.91],
-      ];
-      for (const [i, [side, rise, front, girth]] of necks.entries()) {
-        const wave = Math.sin((phase + i * 0.16) * Math.PI * 2) * (p.walk ? 1.55 : 0.62);
-        const lean = strike * (i === 2 ? 7 : 4.4) - wind * (i === 2 ? 5.2 : 3.4);
-        const h = [f + front + lean, u + rise + wave + wind * 2.6 - strike * (i === 2 ? 2.8 : 1.4), side];
-        const root = [f + (i < 2 ? 3.9 : 8.3), u + (i === 2 ? 9 : 5), side * 0.43];
-        const bow = [f + 9.4 + lean * 0.45 - rise * 0.23, u + rise + 2 + wind * 1.5, side * 0.91];
-        M.G("neck" + i);
-        M.tube([root, bow, [h[0] - 3.5, h[1] - 0.2, side], h], [girth * 1.75, girth * 1.22, girth, girth * 0.83], MOTHER);
-        M.box([bow[0] + 0.25, bow[1] - 0.4, bow[2]], [1.9, 1.35, girth], GLASS, [side * 1.1, 20, 0]);
-        both((s) => {
-          M.tube([[bow[0] - 0.65, bow[1] + 0.05, bow[2] + s * girth], [bow[0] - 1.55, bow[1] - 1.45, bow[2] + s * girth * 1.16]], 0.5, CINDER);
-        });
-        M.G();
-        const [x, y, z] = h, jaw = 0.9 + wind * 0.85 + strike * 2.0;
-        M.G("head" + i);
-        M.e(h, [girth + 0.95, 2.44, girth + 0.35], MOTHERD, [side * 1.1, -10, 0]);
-        M.box([x + 1.55, y + 0.66, z], [2.85, 1.25, girth - 0.14], GLASS, [side * 1.08, -9, 0]);
-        M.e([x + 2.4, y - 1.25, z], [2.15, 0.9 + jaw * 0.53, girth - 0.6], C.MAW);
-        M.e([x + 2.1, y - 1.75 - jaw * 0.55, z], [2.4, 0.65, girth - 0.65], MOTHERD);
-        M.G();
-        both((s) => {
-          M.cone([x - 1.05, y + 1.4, z + s * girth * 0.72], [x - 3.9, y + 3.1, z + s * girth * 1.22], 0.8, MOTHERD);
-          M.cone([x + 3.2, y - 0.61, z + s * girth * 0.56], [x + 3.72, y - 1.73 - jaw * 0.58, z + s * girth * 0.54], 0.6, C.HORN);
-          if (!p.dead) M.tube([[x + 2.02, y + 1.0, z + s * girth], [x + 3.35, y + 0.73, z + s * (girth + 0.12)]], 0.52, wind ? LANTERN : EMBER);
-        });
-        if (wind || strike) M.e([x + 3.9, y - 1.15, z], [0.56, 0.53 + strike * 0.22, 1.05], EMBER);
+      // tattered dark-violet abyssal mantle skirt draping down from the front maiden
+      for (const [s, len] of [[-10, 14], [-4, 16], [4, 16], [10, 14]]) {
+        M.tube([[f + 4, u + 6, s * 0.6], [f + 8, u - 3, s * 0.95], [f + 6, 1.5, s * 1.25]], [3.4, 2.8, 1.0], MOTHERD);
+      }
+      // pale ghostly-white maiden upper torso emerging from the front of the brood-mass
+      const mx = f + 8.5 + strike * 2.5, my = u + 8.5 + wind * 2.2;
+      M.G("maiden");
+      M.e([mx - 1.5, my - 5.5, 0], [4.6, 7.2, 5.2], MORMA_PALE, [0, -10, 0]);
+      M.e([mx + 0.5, my + 2.5, 0], [4.2, 5.2, 5.4], MORMA_PALE);
+      M.G();
+      // crimson vein scars across her pale torso
+      both((s) => M.tube([[mx + 3.2, my + 4.5, s * 2.2], [mx + 2.6, my - 2.5, s * 3.2]], 0.52, BROOD));
+      // long skeletal clawed arms lunging wildly forward
+      both((s) => {
+        const reach = strike * 9.5 - wind * 4.5;
+        const sh = [mx + 0.5, my + 5.8, s * 5.6];
+        const elb = [mx + 6.5 + reach * 0.45, my + 2.5 + wind * 4.5, s * 11.2];
+        const wrist = [mx + 14.5 + reach, my - 1.2 + wind * 6.5 - strike * 2.5, s * (10.5 - strike * 2.5)];
+        M.tube([sh, elb, wrist], [1.9, 1.4, 1.15], MORMA_PALE);
+        M.tube([[elb[0], elb[1] - 0.5, elb[2]], [wrist[0], wrist[1] - 0.4, wrist[2]]], 0.48, BROOD);
+        for (let i = 0; i < 4; i++) {
+          M.cone([wrist[0] + 0.8, wrist[1] + (i - 1.5) * 0.7, wrist[2] + s * (i - 1.5) * 0.9], [wrist[0] + 5.8, wrist[1] - 2.8 + (i - 1.5) * 0.8, wrist[2] + s * (i - 1.5) * 1.4], 0.55, i % 2 ? BROOD : MORMA_PALE);
+        }
+      });
+      // pale head with flowing ghostly hair & glowing crimson eyes
+      const H = [mx + 1.5, my + 10.8, 0], HR = [3.6, 4.2, 3.6];
+      M.e(H, HR, MORMA_PALE);
+      both((s) => {
+        // streaming pale-violet hair tendrils billowing back and down
+        M.tube(bez([H[0] - 0.5, H[1] + 3.2, s * 2.2], [H[0] - 5, H[1] - 2, s * 8.5], [H[0] - 11, H[1] - 12, s * 11.5], 7), [1.9, 0.55], MORMA_HAIR);
+        M.tube(bez([H[0] - 1.5, H[1] + 2.4, s * 3.0], [H[0] - 8, H[1] + 1, s * 11], [H[0] - 15, H[1] - 7, s * 14], 7), [1.5, 0.45], MORMA_HAIR);
+        if (!p.dead) M.eye(surf(H, HR, [0.7, 0.15, s * 0.6]), 2, "#ff2838");
+      });
+      // tall spiked bone-and-crimson sun-halo crown framing her head
+      const haloR = 9.2;
+      const haloPts = [];
+      for (let i = 0; i <= 10; i++) {
+        const a = -0.25 + (i / 10) * (Math.PI + 0.5);
+        haloPts.push([H[0] - 2.6, H[1] + 1.2 + Math.sin(a) * haloR, Math.cos(a) * haloR]);
+      }
+      M.tube(haloPts, 1.05, C.BONE);
+      for (let i = 1; i <= 9; i++) {
+        const a = -0.15 + (i / 10) * (Math.PI + 0.3);
+        const root = [H[0] - 2.6, H[1] + 1.2 + Math.sin(a) * haloR, Math.cos(a) * haloR];
+        const tip = [H[0] - 3.2, H[1] + 1.2 + Math.sin(a) * (haloR + 5.8), Math.cos(a) * (haloR + 5.8)];
+        M.cone(root, tip, 1.05, C.BONE);
+        M.s(root, 1.15, i % 2 ? MORMA_EYE : BROOD);
       }
     },
   },

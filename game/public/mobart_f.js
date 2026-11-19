@@ -158,9 +158,10 @@ const clubshrimp = (p2) => ({
   },
 });
 
-const CLK = mat("#342448"), CLKD = mat("#1f152b");
-const WEB = mat("#54365e"), WEBD = mat("#382648");
-const VIO = mat("#d43cff", { role: "glow" }), HEART = mat("#ff4fd8", { role: "glow" }), HEARTC = mat("#ffd0f4", { role: "glow" });
+const CLK = mat("#26162c"), CLKD = mat("#160c1c");
+const WEB = mat("#a81e36"), WEBD = mat("#6e1026");
+const VAMP_FUR = mat("#ebe4f0", { role: "keep" }), VAMP_GOLD = mat("#d8a84e", { role: "keep" });
+const VIO = mat("#ff3858", { role: "glow" }), HEART = mat("#ff4fd8", { role: "glow" }), HEARTC = mat("#ffd0f4", { role: "glow" });
 
 /** Fill a taut membrane with narrow strips along the edge between two spars. */
 function web(M, root, a, b, ink) {
@@ -174,135 +175,198 @@ function web(M, root, a, b, ink) {
   }
 }
 
-/** The bat lord carries a cathedral arch on its shoulders, even when it closes its wings. */
+/** 밤장막 박쥐군주 벨모라 — feral crimson-winged vampire-bat demon lord in a gold-trimmed gothic cloak with huge sweeping crimson bat wings, white-furred beast head, and clawed forelimbs. */
 const cloakbat = (ph) => ({
-  size: "boss", n: 160, glow: ph > 1 ? "#ff4fd8" : "#d43cff", k: 1.2,
+  size: "boss", n: 198, glow: ph > 1 ? "#ff4fd8" : "#ff3858", k: 1.18,
   draw(M, p) {
-    const [lf, lift] = lunge(p, 1.7);
+    const [lf, lift] = lunge(p, 1.9);
     const fly = ph === 2, channel = ph === 3, wind = p.wind ? 1 : 0, strike = p.strike ? 1 : 0, death = p.dead || 0;
-    const f = lf * 0.8, u = (fly ? 23 : 16) + lift + bob(p, 0.9) - death * 8;
-    const flap = fly && p.walk ? Math.sin(p.ph * Math.PI * 2) * 4.5 : p.idle ? -0.9 : 0;
+    const f = lf * 0.8, u = (fly ? 22 : 14) + lift + bob(p, 0.9) - death * 7;
+    const flap = fly && p.walk ? Math.sin(p.ph * Math.PI * 2) * 5.0 : p.idle ? -1.1 : 0;
+    // crouched beast hind legs
     both((s) => {
       const [sw, up] = gait(p, s < 0 ? 0 : 0.5);
-      const foot = fly ? [f - 8, u - 18, s * 4] : [f - 3.4 + sw * 2.6, 1 + up * 1.45, s * 5.0];
-      M.tube([[f - 0.2, u - 4, s * 3.1], [f - 5.3, u - 8, s * 6.2], foot], [2.8, 2.3, 1.4], CLKD);
-      M.cone(foot, [foot[0] + 2.5, foot[1] - 0.7, foot[2]], 0.8, MASKD);
+      const foot = fly ? [f - 7, u - 16, s * 5.5] : [f - 4 + sw * 2.8, 1.2 + up * 1.6, s * 7.2];
+      M.tube([[f - 1, u - 3, s * 4.5], [f - 6, u - 7, s * 8], foot], [3.2, 2.5, 1.8], CLKD);
+      M.e([foot[0] + 1, foot[1], foot[2]], [2.4, 1.2, 2.2], VAMP_FUR);
+      for (const t of [-1.2, 0, 1.2]) M.cone([foot[0] + 2, foot[1], foot[2] + t], [foot[0] + 4.4, foot[1] - 0.6, foot[2] + t * 1.2], 0.55, WEB);
     });
+    // billowing tattered crimson-lined & gold-trimmed gothic cloak trailing behind
+    const cw = p.walk ? Math.sin(p.ph * 6.28) * 3.2 : 1.5;
+    for (const [s, len, drop] of [[-15, 24, 11], [-8, 29, 13], [0, 31, 13.5], [8, 29, 13], [15, 24, 11]]) {
+      const c0 = [f - 2, u + 9, s * 0.6];
+      const c1 = [f - 14 - wind * 2, u + 3, s * 1.15 + cw * 0.4];
+      const c2 = [f - len - wind * 3, Math.max(1.5, u - drop), s * 1.4 + cw];
+      M.tube([c0, c1, c2], [3.6, 3.0, 0.85], Math.abs(s) === 8 ? WEB : CLKD);
+      if (Math.abs(s) === 15) M.tube([c0, c1, c2], [0.7, 0.45], VAMP_GOLD);
+    }
+    // aristocratic hunched torso + ruffled white cravat & crimson-ruby brooch
     M.G("body");
-    M.e([f - 1.5, u + 0.6, 0], [6.6, 10.1, 5.2], CLKD, [0, 13, 0]);
-    M.e([f + 0.6, u + 6.9, 0], [7.0, 5.9, 8.5], CLK);
+    M.e([f - 1, u + 1.5, 0], [7.2, 9.8, 6.4], CLKD, [0, 14, 0]);
+    M.e([f + 1.5, u + 7.8, 0], [7.6, 6.8, 9.8], CLK);
     M.G();
+    // high upturned crimson & gold gothic collar framing the head
     both((s) => {
-      // A broad notch between each finger remains readable as the body turns.
-      const flare = fly ? 1.05 : channel || wind ? 0.98 : 0.79;
-      const lean = s < 0 ? -0.9 : 1.1;
-      const root = [f - 0.6, u + 7.8, s * 6.3];
-      const wing = (x, h, span) => [f + x + strike * span * 0.12, u + h + (wind * 3.4 + flap) * span / 36, s * (span * flare + lean)];
-      const elbow = wing(2.8, 16, 14.7), tip = wing(-5, 13, 36), claw = wing(-9, 10.5, 39);
+      M.box([f - 1.5, u + 13.5, s * 7.8], [3.2, 5.8, 1.8], WEB, [s * -24, 14, s * 18]);
+      M.tube([[f + 1.2, u + 17.5, s * 8.6], [f - 4.2, u + 19.2, s * 9.5], [f - 5.2, u + 12.2, s * 8.2]], 0.72, VAMP_GOLD);
+    });
+    // colossal sweeping crimson-membrane black-rimmed vampire bat wings
+    both((s) => {
+      const flare = fly ? 1.08 : channel || wind ? 1.02 : 0.90;
+      const root = [f - 0.5, u + 9.2, s * 7.2];
+      const wing = (x, h, span) => [f + x + strike * span * 0.14, u + h + (wind * 3.8 + flap) * span / 36, s * (span * flare)];
+      const elbow = wing(3.5, 19.5, 17.5), tip = wing(-5.5, 16.5, 40), claw = wing(-10, 13.5, 43.5);
       const fringe = [
-        elbow, tip, claw, wing(-9, 6.5, 29.5),
-        wing(-15.6, -1, 30), wing(-11.9, 0.3, 22), wing(-15.5, -8.4, 21.5),
-        wing(-9.6, -4, 15), wing(-12.2, -13, 12.8), wing(-5.5, -5.7, 8),
+        elbow, tip, claw, wing(-9.5, 7.5, 34),
+        wing(-17, -0.5, 34), wing(-12.5, 0.8, 25.5), wing(-17, -9.5, 25),
+        wing(-10, -4.5, 17.5), wing(-13.5, -13.5, 14.5), wing(-6, -6, 9),
       ];
       M.G(s < 0 ? "leftWing" : "rightWing");
-      for (let i = 0; i + 1 < fringe.length; i++) web(M, root, fringe[i], fringe[i + 1], i === 2 || i === 4 || i === 6 ? WEB : WEBD);
-      M.tube([root, elbow, tip, claw], [2.25, 1.75, 0.85, 0.3], CLK);
-      for (const i of [4, 6, 8]) M.tube([root, fringe[i]], [1.08, 0.34], CLK);
-      M.cone(elbow, [elbow[0] + 1.8, elbow[1] + 3.2, elbow[2] - s * 0.8], 1.15, MASKD);
+      for (let i = 0; i + 1 < fringe.length; i++) web(M, root, fringe[i], fringe[i + 1], i % 2 === 0 ? WEB : WEBD);
+      M.tube([root, elbow, tip, claw], [2.6, 2.0, 0.95, 0.35], CLKD);
+      for (const i of [4, 6, 8]) M.tube([root, fringe[i]], [1.25, 0.38], CLKD);
+      M.cone(elbow, [elbow[0] + 2.4, elbow[1] + 4.4, elbow[2] - s * 0.8], 1.4, MASK);
       M.G();
-      M.tube([[elbow[0] + 0.2, elbow[1] + 1, elbow[2]], [tip[0] + 0.3, tip[1] + 0.6, tip[2] + s * 0.2]], fly || wind ? 0.52 : 0.34, ph > 1 ? HEART : VIO);
+      if (ph > 1 || wind) M.tube([[elbow[0] + 0.2, elbow[1] + 1, elbow[2]], [tip[0] + 0.3, tip[1] + 0.6, tip[2] + s * 0.2]], 0.48, HEART);
     });
-    // towering gothic spiked mantle collar & floating dark rift shards behind the shoulders
-    both((s) => {
-      M.box([f - 2.4, u + 12.2, s * 6.8], [2.2, 5.2, 1.6], CLK, [s * -24, 14, s * 18]);
-      M.cone([f - 2.6, u + 16.5, s * 7.6], [f - 4.6, u + 22.8, s * 9.8], 1.45, CLKD);
-      M.tube([[f - 2.2, u + 15.6, s * 7.5], [f - 3.9, u + 20.8, s * 9.2]], 0.38, ph > 1 ? HEART : VIO);
-    });
-    const chest = [f + 5.7, u + 1.5, 0], open = channel || wind;
-    M.e([chest[0], chest[1], 0], [2.2, 4.5, 4.2], CAVITY);
-    for (let i = 0; i < 4; i++) both((s) => {
-      const rib = chest[1] + 4.3 - i * 2.2, part = open ? 1.7 : 0.35;
-      M.tube([[chest[0] - 1.1, rib + 0.6, s * (5 - i * 0.55)], [chest[0] + 0.7, rib, s * 3], [chest[0] + 0.85, rib - 0.95, s * part]], [0.78, 0.7, 0.4], i % 2 ? MASKD : MASK);
-    });
+    // chest cravat / open glowing heart ribcage in channel phase
+    const chest = [f + 6.5, u + 4.5, 0], open = channel || wind;
     if (open) {
-      M.e([chest[0] + 0.6, chest[1] - 0.1, 0], [1.95, 2.95, 2.4], HEART);
-      M.e([chest[0] + 1.99, chest[1] + 0.75, 0], [0.75, 1.2, 1.15], HEARTC);
-    } else M.tube([[chest[0] + 0.55, chest[1] + 3.4, 0], [chest[0] + 0.75, chest[1] - 3.3, 0]], 0.48, VIO);
-    const hx = f + 5.1 + strike * 2.1, hy = u + 12.6 - strike * 1.6 + wind * 1.3;
-    M.G("skull");
-    M.e([hx - 0.85, hy, 0], [5.2, 4.6, 5.0], CLKD);
-    M.e([hx + 1.05, hy + 0.25, 0], [4.1, 3.95, 4.2], MASK);
-    M.box([hx + 3.85, hy - 1.75, 0], [1.6, 1.35, 2.35], MASKD, [0, -18, 0]);
-    M.G();
-    // central obsidian-violet crown spire
-    M.cone([hx + 0.4, hy + 3.8, 0], [hx - 1.2, hy + 11.2, 0], 1.35, ph > 1 ? HEART : VIO);
+      M.e(chest, [2.4, 4.8, 4.4], CAVITY);
+      M.e([chest[0] + 0.8, chest[1], 0], [2.1, 3.2, 2.6], HEART);
+      M.e([chest[0] + 2.0, chest[1] + 0.6, 0], [0.85, 1.3, 1.2], HEARTC);
+    } else {
+      M.e([chest[0] + 0.8, chest[1] + 2.2, 0], [2.2, 4.2, 3.2], VAMP_FUR);
+      M.s([chest[0] + 2.4, chest[1] + 4.4, 0], 1.3, VIO);
+    }
+    // massive hunched clawed forelimbs with broad gothic cloak sleeves
     both((s) => {
-      M.tube([[hx - 1, hy + 2.35, s * 3.45], [hx - 2.2, hy + 8.4, s * 7.2], [hx + 0.8, hy + 13.6, s * 9.8]], [1.85, 1.25, 0.36], MASKD);
-      M.cone([hx - 0.2, hy + 3.35, s * 3.5], [hx - 1.8, hy + 10.2, s * 6.0], 1.25, MASK);
-      M.tube([[hx + 2.3, hy + 1.3, s * 3.25], [hx + 3.5, hy + 0.55, s * 2.1], [hx + 3.85, hy + 0.3, s * 1.22]], [1.05, 0.76, 0.32], CAVITY);
-      if (!death) M.tube([[hx + 3.15, hy + 0.83, s * 3.15], [hx + 3.98, hy + 0.29, s * 1.95]], 0.52, ph > 1 ? HEART : VIO);
-      M.cone([hx + 4.02, hy - 2, s * 1.85], [hx + 4.35, hy - 5.1 - strike, s * 2.05], 0.78, MASK);
+      const reach = strike * 8.5 - wind * 3.5;
+      const sh = [f + 3.5, u + 8.5, s * 9.8];
+      const elb = [f + 4.5 + reach * 0.35, u + 3.5 + wind * 5.0, s * 16.5];
+      const hand = [f + 12.5 + reach, fly ? u - 4 : 2.2 + wind * 7.5 - strike * 1.5, s * (11.5 - strike * 2.5)];
+      M.tube([sh, elb, hand], [4.2, 3.5, 2.8], CLK);
+      M.box([sh[0] - 0.5, sh[1] + 1.4, sh[2] + s * 1.6], [4.6, 3.0, 3.6], CLKD, [s * 18, -14, -s * 24]);
+      M.tube([[sh[0] + 1.5, sh[1] + 2.0, sh[2] + s * 2.2], [elb[0] - 0.5, elb[1] + 1.4, elb[2] + s * 1.4]], 0.78, VAMP_GOLD);
+      // crimson cloak cuff draping from the elbow
+      M.tube([elb, [elb[0] - 4.5, Math.max(2, elb[1] - 6.5), elb[2] + s * 1.8]], [3.0, 1.1], WEB);
+      M.e(hand, [3.6, 2.5, 3.4], VAMP_FUR);
+      for (let i = 0; i < 4; i++) {
+        M.cone([hand[0] + 2.4, hand[1] + 0.2, hand[2] + s * (i - 1.5) * 1.1], [hand[0] + 6.6, hand[1] - 1.5, hand[2] + s * (i - 1.5) * 1.4], 0.8, WEB);
+      }
+    });
+    // feral pale-white-furred bat-wolf beast head with tall pointed ears & snarling fanged jaw
+    const hx = f + 6.8 + strike * 3.0, hy = u + 13.8 - strike * 1.5 + wind * 1.8;
+    M.G("head");
+    M.e([hx - 1.2, hy, 0], [5.8, 5.2, 6.2], VAMP_FUR);
+    M.box([hx + 4.2, hy - 0.5, 0], [3.2, 2.2, 2.8], VAMP_FUR, [0, -14, 0]);
+    M.G();
+    const jaw = 1.6 + strike * 1.8 + wind * 1.0;
+    M.e([hx + 4.2, hy - 2.6 - jaw * 0.5, 0], [2.6, 1.4 + jaw * 0.45, 2.3], CAVITY);
+    M.box([hx + 4.0, hy - 3.6 - jaw, 0], [2.8, 1.0, 2.2], VAMP_FUR, [0, -24 - jaw * 8, 0]);
+    both((s) => {
+      // tall feral swept-back bat ears with crimson inner ear
+      M.cone([hx - 0.5, hy + 3.6, s * 3.4], [hx - 3.5, hy + 14.2, s * 7.8], 2.2, CLKD);
+      M.cone([hx + 0.2, hy + 3.8, s * 3.4], [hx - 2.2, hy + 11.8, s * 6.8], 1.15, WEB);
+      // glowing crimson eyes & long sharp vampire fangs
+      if (!death) M.tube([[hx + 3.4, hy + 1.4, s * 2.9], [hx + 4.4, hy + 0.8, s * 1.8]], 0.62, ph > 1 ? HEART : VIO);
+      M.cone([hx + 5.6, hy - 1.8, s * 1.4], [hx + 5.9, hy - 4.6 - strike * 0.8, s * 1.5], 0.62, MASK);
     });
   },
 });
 
-const WH = mat("#344550"), WHD = mat("#22313c");
-const WPLATE = mat("#7c9a9c", { role: "keep" });
-const CYN = mat("#7ff6ff", { role: "glow" }), CYNC = mat("#e0ffff", { role: "glow" });
-const FLW = mat("#ff5ad8", { role: "glow" }), FLWC = mat("#ffd0f4", { role: "glow" });
+const WH = mat("#5a3288"), WHD = mat("#2c1846");
+const WPLATE = mat("#dcd2e4", { role: "keep" });
+const TRUNK = mat("#4e2c26"), WH_LANTERN = mat("#ffdf78", { role: "glow" });
+const CYN = mat("#b472ff", { role: "glow" }), CYNC = mat("#f0d8ff", { role: "glow" });
+const FLW = mat("#ff8ae0", { role: "glow" }), FLWC = mat("#ffe6f8", { role: "glow" });
 
-/** A broad-skulled leviathan, with a wedge jaw and exposed rib armour over a sunken keel. */
+/** 꽃무덤 고래 모비화 — colossal bone-plated spirit whale with a luminous violet pleated belly, gnarled cherry-blossom tree growing on its back, and hanging golden spirit lanterns. */
 const bloomwhale = (ph) => ({
-  size: "boss", n: 190, glow: ph > 2 ? "#ff5ad8" : "#7ff6ff", k: 1,
+  size: "boss", n: 212, glow: ph > 2 ? "#ff8ae0" : "#c888ff", k: 1,
   draw(M, p) {
     const [lf, lift] = lunge(p, 2.5);
     const dive = ph === 4, open = ph === 2 || ph === 3, bloom = ph >= 3;
     const charge = p.wind ? 1 : 0, strike = p.strike ? 1 : 0, death = p.dead || 0;
-    const f = lf * 0.62, u = (dive ? 10 : 13) + lift * 0.45 + bob(p, 1.05) - death * 6 + charge * 4.2;
-    const sw = p.walk ? Math.sin(p.ph * Math.PI * 2) * 3 : p.idle ? -1.5 : 0, glow = bloom ? FLW : CYN;
+    const f = lf * 0.62, u = (dive ? 10 : 15) + lift * 0.45 + bob(p, 1.15) - death * 6 + charge * 4.2;
+    const sw = p.walk ? Math.sin(p.ph * Math.PI * 2) * 3.2 : p.idle ? -1.5 : 0, glow = bloom ? FLW : CYN;
     M.G("body");
-    M.e([f - 5, u + 2, 0], [26, 10.5, 14.0], WH);
-    M.e([f - 13, u - 2.3, 0], [20.4, 8.5, 12.7], WHD);
-    M.e([f + 11, u + (open ? 1 : 7.2), 0], [15.6, 6.8, 12.3], open ? WHD : WH);
+    M.e([f - 5, u + 2, 0], [27, 11.2, 14.5], WH);
+    M.e([f - 13, u - 2.6, 0], [21.0, 8.8, 13.0], WHD);
+    M.e([f + 11, u + (open ? 1.2 : 7.5), 0], [16.2, 7.2, 12.8], open ? WHD : WH);
     M.G();
-    const fin = [f - 42.5 - strike * 2.5, u + 5.5 - strike * 5.3 + charge * 3.4, sw * 1.5];
-    M.tube([[f - 22, u + 1, 0], [f - 33, u + 1.5, sw], fin], [7, 4.8, 1.65], WH);
+    // luminous glowing violet belly grooves
+    for (const yOff of [-3.2, -5.8, -8.0]) {
+      M.tube([[f + 26, u + yOff + 2, 0], [f + 8, u + yOff, 0], [f - 12, u + yOff + 1.5, 0]], [0.85, 0.72, 0.4], glow);
+    }
+    // ethereal lavender-white glowing tail fluke
+    const fin = [f - 43 - strike * 2.5, u + 6.5 - strike * 5.3 + charge * 3.4, sw * 1.5];
+    M.tube([[f - 22, u + 1.5, 0], [f - 33, u + 2.2, sw], fin], [7.2, 4.8, 1.7], WH);
     both((s) => {
-      const tailTip = [fin[0] - 6.5, fin[1] + 2.3, fin[2] + s * 15.5], notch = [fin[0] - 9.4, fin[1] + 0.1, fin[2] + s * 3.2];
+      const tailTip = [fin[0] - 7, fin[1] + 3.2, fin[2] + s * 16.5], notch = [fin[0] - 9.8, fin[1] + 0.5, fin[2] + s * 3.4];
       M.G(s < 0 ? "leftFluke" : "rightFluke");
-      web(M, fin, tailTip, notch, WHD);
-      M.tube([fin, [fin[0] - 1.8, fin[1] + 1.5, fin[2] + s * 8.1], tailTip], [2.05, 1.55, 0.4], WH);
+      web(M, fin, tailTip, notch, CYN);
+      M.tube([fin, [fin[0] - 1.8, fin[1] + 2.0, fin[2] + s * 8.4], tailTip], [2.0, 1.4, 0.4], CYNC);
       M.G();
     });
     if (!dive) {
-      const head = f + 21.6 + strike * 3, brow = u + 7.1 + strike * 0.8;
+      const head = f + 22 + strike * 3, brow = u + 7.6 + strike * 0.8;
+      // cracked bone-white skull armor over the brow
       M.G("skull");
-      M.e([head, brow + 0.32, 0], [13.2, 6.25, 12.7], WHD, [0, -5, 0]);
-      M.box([head + 6.2, brow + 1.9, 0], [8.9, 2.6, 8.7], WPLATE, [0, -7, 0]);
-      M.e([head + 1.5, brow + 3.3, 0], [9.8, 3.1, 10.1], MASKD, [0, -9, 0]);
-      M.e([head + 9.2, brow + 1, 0], [7.2, 2.3, 8.1], MASK);
+      M.e([head, brow + 0.3, 0], [13.8, 6.5, 13.0], WHD, [0, -5, 0]);
+      M.box([head + 6.4, brow + 2.1, 0], [9.4, 2.7, 9.2], WPLATE, [0, -7, 0]);
+      M.e([head + 1.6, brow + 3.5, 0], [10.4, 3.2, 10.6], MASK, [0, -9, 0]);
+      M.e([head + 9.6, brow + 1.2, 0], [7.6, 2.4, 8.5], MASK);
       M.G();
-      const jaw = u - 3 - strike * 3.1 - charge * 0.9, reach = head + 17.5;
+      // hanging golden spirit lantern dangling from the front jaw
+      const lan1 = [head + 16.5, brow - 10.5 + Math.sin(sw) * 1.2, 0];
+      M.tube([[head + 16.5, brow - 1.2, 0], lan1], 0.35, TRUNK);
+      M.box(lan1, [1.5, 2.4, 1.5], WH_LANTERN);
+      const jaw = u - 3.2 - strike * 3.1 - charge * 0.9, reach = head + 18;
       both((s) => {
-        M.tube([[f + 11, u + 3.5, s * 10.3], [head + 0.5, jaw, s * 10.2], [head + 9.5, jaw - 1.4, s * 7.7], [reach, jaw - 0.2, s * 3.5]], [2.2, 2.5, 1.8, 0.8], MASKD);
-        M.tube([[head + 5.6, jaw - 1.45, s * 9.5], [head + 12.7, jaw - 1.3, s * 6.2], [reach, jaw - 0.15, s * 3.6]], [0.92, 0.72, 0.28], MASK);
-        for (const [tooth, side, depth] of [[3, 9.8, 4.5], [8, 8.2, 3.15], [12.5, 6.1, 3.8]]) {
-          M.cone([head + tooth, brow - 1.5, s * side], [head + tooth + 0.25, brow - 1.5 - depth, s * (side - 0.25)], 1.01, MASK);
+        M.tube([[f + 11, u + 3.5, s * 10.6], [head + 0.5, jaw, s * 10.5], [head + 9.5, jaw - 1.4, s * 7.9], [reach, jaw - 0.2, s * 3.6]], [2.2, 2.5, 1.8, 0.8], MASKD);
+        M.tube([[head + 5.6, jaw - 1.45, s * 9.8], [head + 12.7, jaw - 1.3, s * 6.4], [reach, jaw - 0.15, s * 3.7]], [0.92, 0.72, 0.28], MASK);
+        for (const [tooth, side, depth] of [[3, 10, 4.6], [8, 8.4, 3.3], [12.5, 6.2, 3.9]]) {
+          M.cone([head + tooth, brow - 1.5, s * side], [head + tooth + 0.25, brow - 1.5 - depth, s * (side - 0.25)], 1.02, MASK);
         }
-        M.tube([[head - 1.9, brow + 1.35, s * 10.3], [head + 1.8, brow + 0.35, s * 11.1], [head + 4.7, brow + 0.45, s * 9.5]], [1.3, 0.9, 0.35], CAVITY);
-        if (!death) M.tube([[head - 0.5, brow + 0.8, s * 11.05], [head + 2.32, brow + 0.44, s * 11.4]], 0.53, glow);
-        const wingRoot = [f + 8, u - 1.7, s * 10.0];
-        const wingElbow = [f + 3.8, u - 6.0 - sw * 0.35, s * 20.2], wingTip = [f - 7.2, u - 7.1 + strike * 2, s * 29];
+        M.tube([[head - 1.9, brow + 1.35, s * 10.5], [head + 1.8, brow + 0.35, s * 11.4], [head + 4.7, brow + 0.45, s * 9.8]], [1.35, 0.95, 0.35], CAVITY);
+        if (!death) M.tube([[head - 0.5, brow + 0.8, s * 11.3], [head + 2.32, brow + 0.44, s * 11.7]], 0.58, glow);
+        const wingRoot = [f + 8, u - 1.8, s * 10.4];
+        const wingElbow = [f + 3.8, u - 6.2 - sw * 0.35, s * 20.8], wingTip = [f - 7.5, u - 7.4 + strike * 2, s * 29.8];
         M.G(s < 0 ? "leftPectoral" : "rightPectoral");
-        web(M, wingRoot, wingElbow, [f - 8, u - 5.7, s * 12], WHD);
-        web(M, wingRoot, wingElbow, wingTip, WH);
-        M.tube([wingRoot, wingElbow, wingTip], [2.1, 1.8, 0.48], WHD);
+        web(M, wingRoot, wingElbow, [f - 8, u - 5.8, s * 12.5], WPLATE);
+        web(M, wingRoot, wingElbow, wingTip, MASK);
+        M.tube([wingRoot, wingElbow, wingTip], [2.2, 1.8, 0.5], MASKD);
         M.G();
       });
-      for (const [x, top, span] of [[-18, 10.6, 12.2], [-10.5, 13.3, 13.4], [-2.7, 13.6, 14.2], [5.4, 13, 13.6], [13.0, 10.6, 11.6]]) both((s) => {
+      // exposed bone-white ribcage armor & pink funeral ribbons along flanks
+      for (const [x, top, span] of [[-18, 10.8, 12.5], [-10.5, 13.6, 13.8], [-2.7, 13.9, 14.5], [5.4, 13.2, 13.9], [13.0, 10.8, 11.9]]) both((s) => {
         const rise = open && x > -11 ? 2.7 : 0, turn = open ? 1.8 : 0, rib = s * (span + turn);
-        M.tube([[f + x, u + top + rise, s * (open ? 3.2 : 0.7)], [f + x + 1.35, u + top - 2.2 + rise, rib * 0.65], [f + x + 0.35, u + 3.6, rib], [f + x - 1.4, u - 3.7, rib * 0.87]], [1.18, 1.2, 1.16, 0.64], x % 3 > 1 ? MASKD : WPLATE);
+        M.tube([[f + x, u + top + rise, s * (open ? 3.2 : 0.7)], [f + x + 1.35, u + top - 2.2 + rise, rib * 0.65], [f + x + 0.35, u + 3.6, rib], [f + x - 1.4, u - 3.7, rib * 0.87]], [1.2, 1.22, 1.18, 0.65], x % 3 > 1 ? MASKD : WPLATE);
       });
+      // gnarly cherry-blossom tree growing straight out of the whale's spine!
+      const tBase = [f - 5, u + 12.5, 0], tMid = [f - 9, u + 22, -2], tTop = [f - 14, u + 29, -4];
+      M.tube([tBase, tMid, tTop], [2.6, 1.7, 0.9], TRUNK);
+      M.tube([tMid, [f - 1, u + 27, 4], [f + 4, u + 29, 6]], [1.4, 0.9, 0.45], TRUNK);
+      M.tube([tMid, [f - 17, u + 26, 4], [f - 22, u + 28, 7]], [1.3, 0.8, 0.4], TRUNK);
+      // lush glowing pink cherry-blossom canopy clusters
+      const canopy = [
+        [tTop[0], tTop[1] + 2, tTop[2], 5.8],
+        [f - 8, u + 31, 1, 5.2],
+        [f + 3, u + 29.5, 5.5, 4.6],
+        [f - 21, u + 28.5, 6.5, 4.4],
+        [f - 15, u + 27, -8, 4.2],
+        [f + 12, u + 14.5, 0, 3.6],
+        [f + 22, u + 12.2, 2, 3.0],
+      ];
+      for (const [cx, cy, cz, cr] of canopy) {
+        M.e([cx, cy, cz], [cr, cr * 0.65, cr * 0.9], FLW);
+        M.s([cx + 0.8, cy + cr * 0.3, cz], cr * 0.48, FLWC);
+      }
+      // second golden spirit lantern hanging from the tree branch
+      const lan2 = [f - 19, u + 19.5, 6.5];
+      M.tube([[f - 19, u + 27.5, 6.5], lan2], 0.35, TRUNK);
+      M.box(lan2, [1.6, 2.6, 1.6], WH_LANTERN);
       if (open) {
         const light = bloom ? FLWC : CYNC;
         M.e([f + 0.8, u + 11, 0], [5.8, 2.9, 2.7], CAVITY);
@@ -312,21 +376,6 @@ const bloomwhale = (ph) => ({
       if (ph === 2) for (const [x, s] of [[10.2, 1], [-9.3, -1]]) {
         M.tube([[f + x, u + 1, s * 11], [f + x + 0.8, u + 4.4, s * 14.8], [f + x + 3.2, u + 5, s * 17.3]], [2.2, 1.45, 1.2], MASKD);
         M.dot([f + x + 4.27, u + 5.25, s * 17.6], "#30434b", 2, 1);
-      }
-    }
-    // A few distinct crystal growths turn into funeral flowers when the channel opens.
-    for (const [x, y, side, h] of [[15, 10, 3.4, 6], [3, 14, -4.2, 8], [-7, 13, 4.7, 6], [-17, 10.7, -4.0, 8], [-26, 8.0, 2.6, 5]]) {
-      const root = [f + x, u + y - (dive ? 2.9 : 0), side];
-      const tip = [root[0] - 2.75, root[1] + h, side * 1.25];
-      if (!bloom) {
-        M.cone(root, tip, 2.35, WPLATE);
-        M.cone([root[0] - 0.4, root[1] + 1.3, root[2]], tip, 1.0, CYN);
-      } else {
-        M.tube([root, tip], [0.94, 0.48], WH);
-        M.G("flowers");
-        both((s) => M.cone([tip[0] - s * 0.4, tip[1], tip[2]], [tip[0] - 1.15 + s * 2.4, tip[1] + 1.75, tip[2] + s * 2.15], 1.18, FLW));
-        M.s([tip[0] - 0.55, tip[1], tip[2]], 0.9, FLWC);
-        M.G();
       }
     }
     if (dive) M.e([f + 22, u - 4, 0], [12.6, 2.1, 10.7], WHD);
