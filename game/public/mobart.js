@@ -35,7 +35,8 @@ import { NAMED_ART } from "./mobart_named.js";
 import { INKLAKE_ART } from "./mobart_inklake.js";
 import { JAEMAEI_ART } from "./mobart_jaemaei.js";
 
-const INK = [0x24, 0x1a, 0x2a];
+const INK = [0x1b, 0x13, 0x24];
+const mixRgb = (a, b, t) => [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t), Math.round(a[2] + (b[2] - a[2]) * t)];
 const ELEV = Math.PI / 6, CE = Math.cos(ELEV), SE = Math.sin(ELEV);
 const norm = (v) => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
 /** World (x right, y up, z toward the viewer) → view (screen x, screen y down, depth away). */
@@ -65,10 +66,10 @@ function ramp4(rgb) {
   const [h, s, l] = toHsl(rgb);
   const grey = s < 0.12;
   return [
-    fromHsl(grey ? turn(h, 52, 0.3) : turn(h, 52, 0.14), grey ? s + 0.06 : s * 1.02 + 0.04, Math.min(0.95, l + 0.13 + (1 - l) * 0.06)),
+    fromHsl(grey ? turn(h, 50, 0.34) : turn(h, 50, 0.16), grey ? s + 0.08 : Math.min(1, s * 1.06 + 0.05), Math.min(0.96, l + 0.16 + (1 - l) * 0.09)),
     rgb,
-    fromHsl(turn(h, 268, grey ? 0.6 : 0.18), grey ? 0.16 : s * 0.94, l - 0.15 - l * 0.05),
-    fromHsl(turn(h, 274, grey ? 0.7 : 0.32), grey ? 0.2 : s * 0.9, l * 0.55 - 0.05),
+    fromHsl(turn(h, 266, grey ? 0.62 : 0.22), grey ? 0.18 : Math.min(1, s * 0.96 + 0.03), Math.max(0.05, l - 0.16 - l * 0.06)),
+    fromHsl(turn(h, 274, grey ? 0.72 : 0.36), grey ? 0.22 : Math.min(1, s * 0.94 + 0.04), Math.max(0.03, l * 0.48 - 0.04)),
   ];
 }
 /**
@@ -217,7 +218,7 @@ const YAW = [135, 45, 225, 315];
  * Rasterise one pose of a model. `N` the canvas, foot at (N/2, N − pad),
  * `dir` a facing, `k` a size factor, `tint` one of MOB_TINTS or "".
  */
-function raster(model, N, foot, dir, k, tint, p, rollK = 1, habitat = "") {
+function raster(model, N, foot, dir, k, tint, p, rollK = 1, habitat = "", glowHex = null) {
   // The shoulder follows through after contact before the feet turn again.
   const phi = (YAW[dir] + p.turn) * D2R, F = [Math.cos(phi), 0, Math.sin(phi)], R = [-F[2], 0, F[0]];
   const B = [[F[0], 0, R[0]], [0, 1, 0], [F[2], 0, R[2]]];
@@ -245,8 +246,9 @@ function raster(model, N, foot, dir, k, tint, p, rollK = 1, habitat = "") {
   const put = (i, z, n, q) => {
     zb[i] = z; mi[i] = matId(q.m); gi[i] = q.g;
     const I = n[0] * LV[0] + n[1] * LV[1] + n[2] * LV[2];
-    bd[i] = q.m.flat ? (I < -0.5 ? 2 : 1) : I > 0.5 ? 0 : I > -0.02 ? 1 : I > -0.5 ? 2 : 3;
-    spc[i] = q.m.wet && n[0] * HV[0] + n[1] * HV[1] + n[2] * HV[2] > 0.955 ? 1 : 0;
+    bd[i] = q.m.flat ? (I < -0.5 ? 2 : 1) : I > 0.46 ? 0 : I > -0.04 ? 1 : I > -0.52 ? 2 : 3;
+    const spec = n[0] * HV[0] + n[1] * HV[1] + n[2] * HV[2];
+    spc[i] = (q.m.wet && spec > 0.94) ? 2 : (!q.m.flat && (q.m.role === "keep" || q.m.role === "glow") && spec > 0.962) ? 1 : 0;
   };
   for (const q of model.P) {
     const c = app(Vm, q.c), cx = c[0] + ox, cy = c[1] + oy, cz = c[2] + oz;
@@ -310,8 +312,19 @@ function raster(model, N, foot, dir, k, tint, p, rollK = 1, habitat = "") {
       if (!same && tot >= 3) { let b = 0; for (let k2 = 1; k2 < 4; k2++) if (cnt[k2] > cnt[b]) b = k2; bd[i] = b; }
     }
   }
+  // depth-based crevice AO: pixels tucked behind neighboring geometry drop one shadow band
+  const aoThr = 0.9 * Math.max(1, k * 0.8), aoDiag = 0.72 * Math.max(1, k * 0.8);
+  const nb8 = [-1, 1, -N, N, -N - 1, -N + 1, N - 1, N + 1];
+  for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) {
+    const i = y * N + x;
+    if (mi[i] < 0 || mats[mi[i]].role === "glow") continue;
+    let card = 0, near = 0;
+    for (let u = 0; u < 4; u++) { const j = i + nb[u]; if (mi[j] >= 0 && zb[j] < zb[i] - aoThr) card++; }
+    for (let u = 0; u < 8; u++) { const j = i + nb8[u]; if (mi[j] >= 0 && zb[j] < zb[i] - aoDiag) near++; }
+    if ((card >= 2 || near >= 4) && bd[i] < 3) bd[i]++;
+  }
   // contact lines: where one part passes in front of another, the one behind gets a dark edge
-  const line = new Uint8Array(NN), thr = 3 * Math.max(1, k * 0.8);
+  const line = new Uint8Array(NN), thr = 2.6 * Math.max(1, k * 0.8);
   for (let y = 1; y < N - 1; y++) for (let x = 1; x < N - 1; x++) {
     const i = y * N + x;
     if (mi[i] < 0) continue;
@@ -319,11 +332,37 @@ function raster(model, N, foot, dir, k, tint, p, rollK = 1, habitat = "") {
   }
   const img = new ImageData(N, N), D = img.data;
   const ramps = mats.map((m) => rampOf(m, tint, habitat));
-  for (let i = 0; i < NN; i++) {
+  const rimCol = glowHex ? mixRgb(hex(glowHex), [245, 240, 255], 0.35) : (habitat && reflected[habitat] ? mixRgb(reflected[habitat], [250, 246, 232], 0.45) : [232, 224, 242]);
+  for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
+    const i = y * N + x;
     if (mi[i] < 0) continue;
-    const rm = ramps[mi[i]];
+    const m = mats[mi[i]], rm = ramps[mi[i]];
     let c = line[i] ? (bd[i] >= 2 ? INK : rm[3]) : rm[bd[i]];
-    if (spc[i] && !line[i]) c = [Math.min(255, rm[0][0] + 50), Math.min(255, rm[0][1] + 50), Math.min(255, rm[0][2] + 46)];
+    // crisp specular glint on wet surfaces and subtle edge sheen on bone/masks
+    if (spc[i] && !line[i]) {
+      const add = spc[i] === 2 ? 54 : 30;
+      c = [Math.min(255, rm[0][0] + add), Math.min(255, rm[0][1] + add), Math.min(255, rm[0][2] + Math.round(add * 0.92))];
+    }
+    // 1px top/left silhouette rim light so dark hides & armor pop cleanly in 3D
+    if (!line[i] && !spc[i] && m.role !== "glow" && bd[i] <= 2) {
+      const topEmpty = y === 0 || mi[i - N] < 0;
+      const leftEmpty = x === 0 || mi[i - 1] < 0;
+      if (topEmpty || (leftEmpty && bd[i] <= 1)) {
+        const lum = (c[0] * 3 + c[1] * 6 + c[2]) / 2550;
+        const amt = topEmpty ? (lum < 0.35 ? 0.30 : 0.16) : (lum < 0.35 ? 0.22 : 0.12);
+        c = mixRgb(c, rimCol, amt);
+      }
+    }
+    // 1px emissive glow bounce from adjacent glow parts onto neighboring body pixels
+    if (m.role !== "glow" && x > 0 && x < N - 1 && y > 0 && y < N - 1) {
+      for (const d of nb) {
+        const j = i + d;
+        if (mi[j] >= 0 && mats[mi[j]].role === "glow") {
+          c = mixRgb(c, ramps[mi[j]][0], 0.28);
+          break;
+        }
+      }
+    }
     D[i * 4] = c[0]; D[i * 4 + 1] = c[1]; D[i * 4 + 2] = c[2]; D[i * 4 + 3] = 255;
   }
   const set = (x, y, c) => { if (x < 0 || y < 0 || x >= N || y >= N) return; const i = (y * N + x) * 4; D[i] = c[0]; D[i + 1] = c[1]; D[i + 2] = c[2]; D[i + 3] = 255; };
@@ -351,13 +390,28 @@ function raster(model, N, foot, dir, k, tint, p, rollK = 1, habitat = "") {
     if (n === 2) set(x + s, y + 1, d.iris);
     else { const ix = x - 1 + (fwd < 0 ? 0 : 1); set(ix, y, d.iris); set(ix + 1, y, d.iris); set(ix, y + 1, d.iris); set(ix + 1, y + 1, INK); }
   }
-  // outline the silhouette
+  // sel-out coloured silhouette outline: lit upper edges take a dark material tone, shadow/bottom edges take deep INK
   const solid = new Uint8Array(NN);
   for (let i = 0; i < NN; i++) solid[i] = D[i * 4 + 3] ? 1 : 0;
   for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
     const i = y * N + x;
     if (solid[i]) continue;
-    if ((x > 0 && solid[i - 1]) || (x < N - 1 && solid[i + 1]) || (y > 0 && solid[i - N]) || (y < N - 1 && solid[i + N])) set(x, y, INK);
+    let pick = -1, bestBd = 9, isGlow = false;
+    const check = (j) => {
+      if (!solid[j]) return;
+      if (mi[j] >= 0) {
+        if (mats[mi[j]].role === "glow") { pick = j; isGlow = true; return; }
+        if (!isGlow && bd[j] < bestBd) { bestBd = bd[j]; pick = j; }
+      } else if (pick < 0) pick = j;
+    };
+    if (x > 0) check(i - 1);
+    if (x < N - 1) check(i + 1);
+    if (y > 0) check(i - N);
+    if (y < N - 1) check(i + N);
+    if (pick < 0) continue;
+    if (isGlow) set(x, y, mixRgb(ramps[mi[pick]][1], INK, 0.56));
+    else if (mi[pick] >= 0 && bestBd === 0) set(x, y, mixRgb(ramps[mi[pick]][3], INK, 0.44));
+    else set(x, y, INK);
   }
   // blood runs off the lower edges of anything raw, a little longer each frame
   const B1 = [0x8a, 0x10, 0x22], B2 = [0xd8, 0x24, 0x34];
@@ -419,7 +473,7 @@ export function rig(kind, tint, sc = 1, habitat = "") {
         const M = new Model();
         const posture = pose(fr);
         def.draw(M, posture);
-        c = frames[dir][fr] = raster(M, N, foot, dir, sc * GK * (def.k || 1), tint, posture, def.hover ? 0.25 : 1, habitat);
+        c = frames[dir][fr] = raster(M, N, foot, dir, sc * GK * (def.k || 1), tint, posture, def.hover ? 0.25 : 1, habitat, def.glow || null);
       }
       return c;
     },
