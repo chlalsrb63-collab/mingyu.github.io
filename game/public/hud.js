@@ -36,7 +36,7 @@ import * as Dex from "./dex.js";
 import * as Help from "./help.js";
 import * as Track from "./track.js";
 import * as Info from "./infocard.js";
-import { fireNear, countItem, talk, stoneNear } from "./actions.js";
+import { fireNear, countItem, talk, stoneNear, talkMenuSync } from "./actions.js";
 import { tip, showTip, hoverTip, tipBox, touch, hideTip, toggleWin, isOpen, shown, winEl, keepIn, addChat, toast } from "./windows.js";
 import { openTree, openStats, renderInv, renderChar, renderSkills, trackNew } from "./win_char.js";
 import { renderWarp, renderDaily, renderWeek, renderAchieve, renderCollect, tutCard, castBar, tickDaily } from "./win_world.js";
@@ -305,7 +305,7 @@ export function refreshUi() {
   draw("job", () => [s.job, s.wm, s.gold, near, JobTree.key()], (s) => JobTree.renderJobNpc($("#job-body"), s, { atJob: near === "job" }));
   draw("bank", () => [s.inv, s.wh, s.gold], Growth.renderBank);
   draw("quest", () => [s.q, s.bq, s.bn, s.mk, s.lvl, near, G.qsel, s.sq], renderQuest);
-  draw("talk", () => [s.sq, s.lvl, talk.npc && talk.npc.id, Board.talkKey(s)], () => { SideQ.renderTalk($("#talk-sq"), talk.npc, s, (line) => { $("#talk-text").textContent = line; }); Board.renderTalk(talk.npc, s); });
+  draw("talk", () => [s.sq, s.lvl, talk.npc && talk.npc.id, Board.talkKey(s)], () => { SideQ.renderTalk($("#talk-sq"), talk.npc, s, (line) => { $("#talk-text").textContent = line; }); Board.renderTalk(talk.npc, s); talkMenuSync(); });
   draw("warp", () => [s.wp, s.lvl, G.map && G.map.id, stoneNear(), near, G.warpPick], renderWarp);
   draw("daily", () => [s.daily && s.daily.day, s.daily && s.daily.tasks, s.daily && s.daily.bonus, s.inv.length], renderDaily);
   draw("week", () => [s.week && s.week.v, s.week && s.week.got, s.week && s.week.rest, s.week && Math.floor(s.week.reset / 3600000)], renderWeek);

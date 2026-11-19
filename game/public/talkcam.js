@@ -22,7 +22,7 @@ export function load() { enabled = localStorage.getItem("lumentale:talkcam") !==
 export function tick(dt) {
   const me = G.me, n = talk.npc;
   let m = 0;
-  if (enabled && me && !me.dead && n && G.map && isOpen("talk")) m = $("#talk-sq .sq-card") ? 2 : 1;
+  if (enabled && me && !me.dead && n && G.map && isOpen("talk")) m = talk.mode === "quest" && $("#talk-sq .sq-card") ? 2 : 1;
   if (m !== mode) {
     mode = m;
     document.body.classList.toggle("talkcam", m > 0);

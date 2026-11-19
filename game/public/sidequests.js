@@ -136,7 +136,7 @@ export const gives = (npc) => side().some((q) => q.giver === npc.id || turnIn(q)
 addEventListener("keydown", (e) => {
   const i = ["Digit1", "Digit2", "Digit3", "Digit4", "Digit5", "Digit6"].indexOf(e.code);
   const w = document.getElementById("w-talk");
-  if (i < 0 || e.repeat || !w || w.hidden) return;
+  if (i < 0 || e.repeat || !w || w.hidden || w.dataset.mode !== "quest") return;
   const b = w.querySelectorAll(".sq-choice .btn")[i];
   if (!b) return;
   e.preventDefault(); e.stopImmediatePropagation();

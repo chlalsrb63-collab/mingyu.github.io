@@ -20,3 +20,4 @@
 - Antigravity `gemini-4-neon-low`로 보조 옵션 수치를 교차 검토했다. 최종 구현과 시뮬레이션은 Codex가 실행했다.
 - `game/tests/`의 `itemlevel.mjs`, `loot.mjs`, `charms.mjs`, `prefix.mjs`, `prefix-util.mjs`, `rune-powers.mjs`를 갱신했다. `npm.cmd run build:logic`으로 생성 파일을 갱신했다.
 - `npm.cmd run test:rules` 87/87, `npm.cmd run check:split`, `git diff --check` 통과.
+- 로컬 `main`의 대화창 변경 `f62930d`를 병합했다. 생성 파일에 차이가 없었고 `itemlevel jobs rune-powers prefix charms bosses2 npclife-client sidequests` 8/8과 병합된 클라이언트 JS 4개 구문 검사가 통과했다.
