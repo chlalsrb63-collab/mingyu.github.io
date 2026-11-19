@@ -1490,6 +1490,26 @@
       "src": "assets/mobs/sluiceleviathan.png?v=a2de8276",
       "w": 96,
       "h": 96
+    },
+    "mob.twinhare": {
+      "src": "assets/mobs/twinhare.png?v=dea6264d",
+      "w": 64,
+      "h": 64
+    },
+    "mob.gutfrog": {
+      "src": "assets/mobs/gutfrog.png?v=36e8ab5c",
+      "w": 64,
+      "h": 64
+    },
+    "mob.eyecrow": {
+      "src": "assets/mobs/eyecrow.png?v=477afbd8",
+      "w": 64,
+      "h": 64
+    },
+    "mob.lambmaw": {
+      "src": "assets/mobs/lambmaw.png?v=589ab0ec",
+      "w": 64,
+      "h": 64
     }
   },
   "audio": {},

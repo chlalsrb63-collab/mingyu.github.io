@@ -189,35 +189,37 @@ const manifestPath = path.join("game", "public", "assets", "manifest.json");
 const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 manifest.images = manifest.images || {};
 
-const SIZE = 96;
+const DEFAULT_SIZE = 96;
 const previews = [];
 let totalBytes = 0;
 
 for (const job of jobs) {
   const sheet = decodeImage(job.img);
   const cols = job.cols || 2, rows = job.rows || 2;
+  const sz = job.size || DEFAULT_SIZE;
   let i = 0;
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const id = job.ids[i++];
       if (!id) continue;
       const cell = extractCellRgba(sheet, c, r, cols, rows);
-      const rgba = pixelSnap(cell, SIZE);
-      const png = encodePng(SIZE, SIZE, rgba);
+      const rgba = pixelSnap(cell, sz);
+      const png = encodePng(sz, sz, rgba);
       const file = `${id}.png`;
       fs.writeFileSync(path.join(outDir, file), png);
       const hash = crypto.createHash("sha256").update(png).digest("hex").slice(0, 8);
-      manifest.images[`mob.${id}`] = { src: `assets/mobs/${file}?v=${hash}`, w: SIZE, h: SIZE };
+      manifest.images[`mob.${id}`] = { src: `assets/mobs/${file}?v=${hash}`, w: sz, h: sz };
       totalBytes += png.length;
-      previews.push({ id, rgba });
+      previews.push({ id, sz, rgba });
     }
   }
 }
 
 fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + "\n");
-console.log(`Installed ${previews.length} boss sprites (${(totalBytes / 1024).toFixed(1)} KB).`);
+console.log(`Installed ${previews.length} mob sprites (${(totalBytes / 1024).toFixed(1)} KB).`);
 
 if (contactOut && previews.length) {
+  const SIZE = Math.max(...previews.map((p) => p.sz));
   const Z = 2, cell = (SIZE + 8) * Z, pad = 8, cols = 4, rows = Math.ceil(previews.length / cols);
   const W = cols * (cell + pad) + pad, H = rows * (cell + pad) + pad;
   const buf = Buffer.alloc(W * H * 4);
@@ -230,9 +232,10 @@ if (contactOut && previews.length) {
       const b = x === 0 || y === 0 || x === cell - 1 || y === cell - 1;
       buf[di] = b ? 84 : 42; buf[di + 1] = b ? 70 : 36; buf[di + 2] = b ? 112 : 56; buf[di + 3] = 255;
     }
-    const ox = bx + 4 * Z, oy = by + 4 * Z;
-    for (let y = 0; y < SIZE; y++) for (let x = 0; x < SIZE; x++) {
-      const si = (y * SIZE + x) * 4;
+    const ox = bx + (4 + Math.floor((SIZE - p.sz) / 2)) * Z;
+    const oy = by + (4 + (SIZE - p.sz)) * Z;
+    for (let y = 0; y < p.sz; y++) for (let x = 0; x < p.sz; x++) {
+      const si = (y * p.sz + x) * 4;
       if (p.rgba[si + 3] < 128) continue;
       for (let zy = 0; zy < Z; zy++) for (let zx = 0; zx < Z; zx++) {
         const di = ((oy + y * Z + zy) * W + (ox + x * Z + zx)) * 4;
@@ -241,5 +244,5 @@ if (contactOut && previews.length) {
     }
   });
   fs.writeFileSync(contactOut, encodePng(W, H, buf));
-  console.log("Saved boss contact sheet:", contactOut);
+  console.log("Saved mob contact sheet:", contactOut);
 }
