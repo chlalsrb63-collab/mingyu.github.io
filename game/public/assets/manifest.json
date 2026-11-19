@@ -430,6 +430,296 @@
       "src": "assets/weapons/bow/bow_t6.png?v=bd3134d3",
       "w": 32,
       "h": 32
+    },
+    "weapon.sword.t1": {
+      "src": "assets/weapons/sword/sword_held_t1.png?v=857548e9",
+      "w": 44,
+      "h": 32
+    },
+    "weapon.sword.t2": {
+      "src": "assets/weapons/sword/sword_held_t2.png?v=90d30cae",
+      "w": 44,
+      "h": 32
+    },
+    "weapon.sword.t3": {
+      "src": "assets/weapons/sword/sword_held_t3.png?v=7265ddd0",
+      "w": 44,
+      "h": 32
+    },
+    "weapon.sword.t4": {
+      "src": "assets/weapons/sword/sword_held_t4.png?v=2a6e3d49",
+      "w": 44,
+      "h": 32
+    },
+    "weapon.sword.t5": {
+      "src": "assets/weapons/sword/sword_held_t5.png?v=f524cbc3",
+      "w": 44,
+      "h": 32
+    },
+    "weapon.sword.t6": {
+      "src": "assets/weapons/sword/sword_held_t6.png?v=4cd4389a",
+      "w": 44,
+      "h": 32
+    },
+    "weapon.dagger.t1": {
+      "src": "assets/weapons/dagger/dagger_held_t1.png?v=ed7e27d2",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.t2": {
+      "src": "assets/weapons/dagger/dagger_held_t2.png?v=aafc0b1f",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.t3": {
+      "src": "assets/weapons/dagger/dagger_held_t3.png?v=a53d4096",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.t4": {
+      "src": "assets/weapons/dagger/dagger_held_t4.png?v=fb0d0367",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.t5": {
+      "src": "assets/weapons/dagger/dagger_held_t5.png?v=ce239b11",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.t6": {
+      "src": "assets/weapons/dagger/dagger_held_t6.png?v=50609ae6",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.spear.t1": {
+      "src": "assets/weapons/spear/spear_held_t1.png?v=63ae2620",
+      "w": 52,
+      "h": 32
+    },
+    "weapon.spear.t2": {
+      "src": "assets/weapons/spear/spear_held_t2.png?v=3e48ad2b",
+      "w": 52,
+      "h": 32
+    },
+    "weapon.spear.t3": {
+      "src": "assets/weapons/spear/spear_held_t3.png?v=5b05777a",
+      "w": 52,
+      "h": 32
+    },
+    "weapon.spear.t4": {
+      "src": "assets/weapons/spear/spear_held_t4.png?v=58782265",
+      "w": 52,
+      "h": 32
+    },
+    "weapon.spear.t5": {
+      "src": "assets/weapons/spear/spear_held_t5.png?v=0d3cc0f1",
+      "w": 52,
+      "h": 32
+    },
+    "weapon.spear.t6": {
+      "src": "assets/weapons/spear/spear_held_t6.png?v=6e985f36",
+      "w": 52,
+      "h": 32
+    },
+    "weapon.hammer.t1": {
+      "src": "assets/weapons/hammer/hammer_held_t1.png?v=c26bf2db",
+      "w": 40,
+      "h": 36
+    },
+    "weapon.hammer.t2": {
+      "src": "assets/weapons/hammer/hammer_held_t2.png?v=9a4725f4",
+      "w": 40,
+      "h": 36
+    },
+    "weapon.hammer.t3": {
+      "src": "assets/weapons/hammer/hammer_held_t3.png?v=98b93ee8",
+      "w": 40,
+      "h": 36
+    },
+    "weapon.hammer.t4": {
+      "src": "assets/weapons/hammer/hammer_held_t4.png?v=999e4054",
+      "w": 40,
+      "h": 36
+    },
+    "weapon.hammer.t5": {
+      "src": "assets/weapons/hammer/hammer_held_t5.png?v=c5c6c0b4",
+      "w": 40,
+      "h": 36
+    },
+    "weapon.hammer.t6": {
+      "src": "assets/weapons/hammer/hammer_held_t6.png?v=6f2ee48b",
+      "w": 40,
+      "h": 36
+    },
+    "weapon.staff.t1": {
+      "src": "assets/weapons/staff/staff_held_t1.png?v=350d3c04",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.staff.t2": {
+      "src": "assets/weapons/staff/staff_held_t2.png?v=03310c60",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.staff.t3": {
+      "src": "assets/weapons/staff/staff_held_t3.png?v=a46dead1",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.staff.t4": {
+      "src": "assets/weapons/staff/staff_held_t4.png?v=0bfc3b1e",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.staff.t5": {
+      "src": "assets/weapons/staff/staff_held_t5.png?v=f919ba27",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.staff.t6": {
+      "src": "assets/weapons/staff/staff_held_t6.png?v=2432d88b",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.book.t1": {
+      "src": "assets/weapons/book/book_held_t1.png?v=ae77ac3d",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.book.t2": {
+      "src": "assets/weapons/book/book_held_t2.png?v=3cac66cc",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.book.t3": {
+      "src": "assets/weapons/book/book_held_t3.png?v=3c40945b",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.book.t4": {
+      "src": "assets/weapons/book/book_held_t4.png?v=52064acb",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.book.t5": {
+      "src": "assets/weapons/book/book_held_t5.png?v=4f448ff5",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.book.t6": {
+      "src": "assets/weapons/book/book_held_t6.png?v=5473ffab",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.bow.t1": {
+      "src": "assets/weapons/bow/bow_held_t1.png?v=6403c5cf",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.bow.t2": {
+      "src": "assets/weapons/bow/bow_held_t2.png?v=48f336e8",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.bow.t3": {
+      "src": "assets/weapons/bow/bow_held_t3.png?v=229867fb",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.bow.t4": {
+      "src": "assets/weapons/bow/bow_held_t4.png?v=0788563d",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.bow.t5": {
+      "src": "assets/weapons/bow/bow_held_t5.png?v=4147e881",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.bow.t6": {
+      "src": "assets/weapons/bow/bow_held_t6.png?v=01503849",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.sword.skin.bloodmoon": {
+      "src": "assets/weapons/skins/sword_skin_bloodmoon.png?v=4b41c307",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.sword.skin.bloodmoon": {
+      "src": "assets/weapons/skins/sword_skin_bloodmoon_held.png?v=0a4c9d6a",
+      "w": 44,
+      "h": 32
+    },
+    "icon.weapon.sword.skin.dragonflame": {
+      "src": "assets/weapons/skins/sword_skin_dragonflame.png?v=59c42334",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.sword.skin.dragonflame": {
+      "src": "assets/weapons/skins/sword_skin_dragonflame_held.png?v=cca9b54c",
+      "w": 44,
+      "h": 32
+    },
+    "icon.weapon.sword.skin.seraphwing": {
+      "src": "assets/weapons/skins/sword_skin_seraphwing.png?v=5f683be1",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.sword.skin.seraphwing": {
+      "src": "assets/weapons/skins/sword_skin_seraphwing_held.png?v=f586e3c4",
+      "w": 44,
+      "h": 32
+    },
+    "icon.weapon.sword.skin.prismacrown": {
+      "src": "assets/weapons/skins/sword_skin_prismacrown.png?v=75425e12",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.sword.skin.prismacrown": {
+      "src": "assets/weapons/skins/sword_skin_prismacrown_held.png?v=d6f8e415",
+      "w": 44,
+      "h": 32
+    },
+    "icon.weapon.dagger.skin.bloodmoon": {
+      "src": "assets/weapons/skins/dagger_skin_bloodmoon.png?v=02b1b56f",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.skin.bloodmoon": {
+      "src": "assets/weapons/skins/dagger_skin_bloodmoon_held.png?v=1f9d1521",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.dagger.skin.dragonflame": {
+      "src": "assets/weapons/skins/dagger_skin_dragonflame.png?v=68956b07",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.skin.dragonflame": {
+      "src": "assets/weapons/skins/dagger_skin_dragonflame_held.png?v=57cf49c8",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.dagger.skin.seraphwing": {
+      "src": "assets/weapons/skins/dagger_skin_seraphwing.png?v=2a44e14a",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.skin.seraphwing": {
+      "src": "assets/weapons/skins/dagger_skin_seraphwing_held.png?v=426ccedb",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.dagger.skin.prismacrown": {
+      "src": "assets/weapons/skins/dagger_skin_prismacrown.png?v=2bf271d4",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.skin.prismacrown": {
+      "src": "assets/weapons/skins/dagger_skin_prismacrown_held.png?v=4da426bd",
+      "w": 32,
+      "h": 32
     }
   },
   "audio": {},

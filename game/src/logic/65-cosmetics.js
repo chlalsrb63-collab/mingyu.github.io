@@ -239,6 +239,11 @@ const COSMETICS = Object.fromEntries([
   ["top_hanbok_king", 196, "top", "홍룡포", 2, "shop", 8000, "전통 한복 세트의 한 벌. 고운 매무새가 눈에 띈다.", "hanbok"],
   ["hat_hanbok_musa", 197, "hat", "공작깃 전립", 2, "shop", 6000, "전통 한복 세트의 한 벌. 고운 매무새가 눈에 띈다.", "hanbok"],
   ["top_hanbok_musa", 198, "top", "청철릭 쾌자", 2, "shop", 6000, "전통 한복 세트의 한 벌. 고운 매무새가 눈에 띈다.", "hanbok"],
+  // 신화 프리미엄 무기 외형 아바타 (아바타 상점 판매용 — sword/dagger 전용 픽셀 에셋 + 전 무기 테마 팔레트)
+  ["ws_bloodmoon", 199, "wskin", "혈월 심연 무기 외형", 2, "shop", 8000, "검붉은 흑요석 날에 심연의 혈맥이 맥동하는 프리미엄 외형 무기."],
+  ["ws_dragonflame", 200, "wskin", "화룡 태양 무기 외형", 2, "shop", 8000, "황금 용의 머리 장식과 태양염이 타오르는 프리미엄 외형 무기."],
+  ["ws_seraphwing", 201, "wskin", "천사 성익 무기 외형", 2, "shop", 8000, "순백 백금 날에 천사의 날개와 보석이 어우러진 프리미엄 외형 무기."],
+  ["ws_prismacrown", 202, "wskin", "태초 왕관 무기 외형", 2, "shop", 8000, "황금 왕관과 무지개빛 성운 결정이 빛나는 최상위 프리미엄 외형 무기."],
 
 
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" || src === "token" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));

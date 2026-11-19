@@ -924,6 +924,13 @@ Object.assign(MOTIF, {
 const EXTRA = { willow: "#6ab84a", lantern: "#e0403a", glow2: "#fff4a0", rope: "#c8a060", bronze: "#b8843a", rib: "#b0a08e", whale: "#4a78b8", candyY: "#f8d850", candyB: "#7ac8f0", candyP: "#f07ab0", petal: "#ff9ac0", ice: "#e8fbff", candy: "#e8485a", foam: "#f4ffff", sand: "#fff8dc", node: "#4a7a3a", bee: "#3a3040", twig: "#6a3e36", bloom: "#ff8ab4", maple: "#d8302a", gold2: "#f0c040" };
 // 백자 청화 skin: drawn whole per weapon kind by weapons_porcelain.js (sprite() / weaponIcon() hand over); this row only names it
 MOTIF.porcelain = PORCELAIN_MOTIF.porcelain;
+// 신화 프리미엄 무기 외형 아바타 (sword/dagger use custom PNGs in manifest.json; other kinds inherit these palettes)
+Object.assign(MOTIF, {
+  bloodmoon:   { name: "혈월 심연", blade: ["#ff5a6a", "#8a1e2e", "#2b121c"], fit: ["#d49a42", "#7a4a24", "#321c14"] },
+  dragonflame: { name: "화룡 태양", blade: ["#fff28a", "#ff8c24", "#b83214"], fit: ["#ffe066", "#c8861e", "#6a3a10"] },
+  seraphwing:  { name: "천사 성익", blade: ["#ffffff", "#d8ecff", "#7aa0d4"], fit: ["#7ae8c8", "#3a88d8", "#224888"] },
+  prismacrown: { name: "태초 왕관", blade: ["#fff8ff", "#9ae8ff", "#c47aff"], fit: ["#ffe26a", "#d49424", "#7a4414"] },
+});
 export const MOTIFS = Object.keys(MOTIF);
 export const motifName = (k) => (MOTIF[k] ? MOTIF[k].name : "");
 
@@ -1129,7 +1136,7 @@ export function bowSprite(gear = {}, pull = 0, arrow = false) {
   return sprite("bow", gear, { pull: q / 8, arrow: !!arrow, q });
 }
 function sprite(kind, gear, o) {
-  const wt = Math.max(1, Math.min(6, gear.wt | 0 || 1)), wq = Math.max(0, Math.min(5, gear.wq | 0)), we = gear.we | 0;
+  const wt = Math.max(1, Math.min(10, gear.wt | 0 || 1)), wq = Math.max(0, Math.min(5, gear.wq | 0)), we = gear.we | 0;
   const motif = MOTIF[gear.ws] ? gear.ws : MOTIF[gear.wl] ? gear.wl : "";
   const key = `${kind}:${wt}:${wq}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}:${motif}${o ? `:${o.q}:${o.arrow ? 1 : 0}` : ""}`;
   let c = cache.get(key);

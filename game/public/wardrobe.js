@@ -2025,6 +2025,10 @@ export const ART = {
   ws_bee: ["wskin", "bee", {}],
   ws_clubclaw: ["wskin", "clubclaw", {}],
   ws_porcelain: ["wskin", "porcelain", {}],
+  ws_bloodmoon: ["wskin", "bloodmoon", {}],
+  ws_dragonflame: ["wskin", "dragonflame", {}],
+  ws_seraphwing: ["wskin", "seraphwing", {}],
+  ws_prismacrown: ["wskin", "prismacrown", {}],
   // the co-op part-time jobs' S grades
   hat_kerchief: ["hat", "kerchief", { c: "#5a9ae0", b: "#f6f4fa" }],
   back_tray: ["back", "tray", { c: "#d8dce8", b: "#a8acb8" }],
