@@ -160,7 +160,7 @@ export function probe(L, who, tier, secs = PROBE.secs, o = {}) {
     for (let t = 0; t < ticks; t++) {
       // anything that is not ours (an invasion, a sleeper) is put away
       for (const o of rt.mobs) if (!ids.has(o.id) && !o.dead) { o.dead = true; o.respAt = 1e15; }
-      for (const m of arena) if (m.dead && now >= m.back) { m.k = kinds[Math.floor(rand() * kinds.length)]; place(m); }
+      for (const m of arena) if (m.dead && now >= m.back) { m.k = kinds[Math.floor(rand() * kinds.length)]; m.bs = null; m.cast = null; place(m); }
       if (p.dead) {
         deaths++;
         act({ t: "respawn" });
