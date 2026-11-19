@@ -1,59 +1,493 @@
 {
   "_readme": "External images and sounds the client uses instead of the code drawing (public/assetlib.js). Empty = everything code-drawn. Written by scripts/import-art.mjs --install (approved files from the repo's asset/ folder; sources recorded in asset/CREDITS.md). Keys: weapon.<kind>.t<tier> | .lg.<power> | .skin.<motif>, icon.weapon.<kind>..., icon.item.<item id>; free-form for others (mob.twinhare, sfx.coin). Paths are relative to public/.",
   "images": {
-    "icon.item.bloom_a": { "src": "assets/gear/armor/bloom_a.png?v=86ce4baa", "w": 16, "h": 16 },
-    "icon.item.bloom_h": { "src": "assets/gear/helm/bloom_h.png?v=fd0c8b05", "w": 16, "h": 16 },
-    "icon.item.bloom_n": { "src": "assets/gear/amulet/bloom_n.png?v=00214580", "w": 16, "h": 16 },
-    "icon.item.bloom_r": { "src": "assets/gear/ring/bloom_r.png?v=6bb7a1dd", "w": 16, "h": 16 },
-    "icon.item.veil_a": { "src": "assets/gear/armor/veil_a.png?v=674379fa", "w": 16, "h": 16 },
-    "icon.item.veil_h": { "src": "assets/gear/helm/veil_h.png?v=debac191", "w": 16, "h": 16 },
-    "icon.item.veil_n": { "src": "assets/gear/amulet/veil_n.png?v=e88a3236", "w": 16, "h": 16 },
-    "icon.item.veil_r": { "src": "assets/gear/ring/veil_r.png?v=43b0f4aa", "w": 16, "h": 16 }
+    "icon.item.bloom_a": {
+      "src": "assets/gear/armor/bloom_a.png?v=86ce4baa",
+      "w": 16,
+      "h": 16
+    },
+    "icon.item.bloom_h": {
+      "src": "assets/gear/helm/bloom_h.png?v=fd0c8b05",
+      "w": 16,
+      "h": 16
+    },
+    "icon.item.bloom_n": {
+      "src": "assets/gear/amulet/bloom_n.png?v=00214580",
+      "w": 16,
+      "h": 16
+    },
+    "icon.item.bloom_r": {
+      "src": "assets/gear/ring/bloom_r.png?v=6bb7a1dd",
+      "w": 16,
+      "h": 16
+    },
+    "icon.item.veil_a": {
+      "src": "assets/gear/armor/veil_a.png?v=674379fa",
+      "w": 16,
+      "h": 16
+    },
+    "icon.item.veil_h": {
+      "src": "assets/gear/helm/veil_h.png?v=debac191",
+      "w": 16,
+      "h": 16
+    },
+    "icon.item.veil_n": {
+      "src": "assets/gear/amulet/veil_n.png?v=e88a3236",
+      "w": 16,
+      "h": 16
+    },
+    "icon.item.veil_r": {
+      "src": "assets/gear/ring/veil_r.png?v=43b0f4aa",
+      "w": 16,
+      "h": 16
+    },
+    "icon.item.h_1": {
+      "src": "assets/gear/helm/h_1.png?v=2092989c",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.a_1": {
+      "src": "assets/gear/armor/a_1.png?v=7746ec4a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.g_1": {
+      "src": "assets/gear/gloves/g_1.png?v=d76f03c8",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.b_1": {
+      "src": "assets/gear/boots/b_1.png?v=2d38c583",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.r_1": {
+      "src": "assets/gear/ring/r_1.png?v=a128a432",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.n_1": {
+      "src": "assets/gear/amulet/n_1.png?v=55a816bd",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.h_2": {
+      "src": "assets/gear/helm/h_2.png?v=dfc2e0e5",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.a_2": {
+      "src": "assets/gear/armor/a_2.png?v=634e3095",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.g_2": {
+      "src": "assets/gear/gloves/g_2.png?v=384a18dc",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.b_2": {
+      "src": "assets/gear/boots/b_2.png?v=6998e2d6",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.r_2": {
+      "src": "assets/gear/ring/r_2.png?v=141da501",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.n_2": {
+      "src": "assets/gear/amulet/n_2.png?v=bc1472f6",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.h_3": {
+      "src": "assets/gear/helm/h_3.png?v=371867f3",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.a_3": {
+      "src": "assets/gear/armor/a_3.png?v=180130ee",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.g_3": {
+      "src": "assets/gear/gloves/g_3.png?v=b0f753c7",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.b_3": {
+      "src": "assets/gear/boots/b_3.png?v=21e07026",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.r_3": {
+      "src": "assets/gear/ring/r_3.png?v=74bc504e",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.n_3": {
+      "src": "assets/gear/amulet/n_3.png?v=8d0c71af",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.h_4": {
+      "src": "assets/gear/helm/h_4.png?v=f8b88f10",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.a_4": {
+      "src": "assets/gear/armor/a_4.png?v=b6be1f94",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.g_4": {
+      "src": "assets/gear/gloves/g_4.png?v=d8e0e7aa",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.b_4": {
+      "src": "assets/gear/boots/b_4.png?v=75edf1f9",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.r_4": {
+      "src": "assets/gear/ring/r_4.png?v=7219e17a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.n_4": {
+      "src": "assets/gear/amulet/n_4.png?v=9e678a45",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.h_5": {
+      "src": "assets/gear/helm/h_5.png?v=72356a82",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.a_5": {
+      "src": "assets/gear/armor/a_5.png?v=c86b06c9",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.g_5": {
+      "src": "assets/gear/gloves/g_5.png?v=be64c2b1",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.b_5": {
+      "src": "assets/gear/boots/b_5.png?v=5674d46b",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.r_5": {
+      "src": "assets/gear/ring/r_5.png?v=94b011a1",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.n_5": {
+      "src": "assets/gear/amulet/n_5.png?v=bf5d59ee",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.h_6": {
+      "src": "assets/gear/helm/h_6.png?v=28c31d97",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.a_6": {
+      "src": "assets/gear/armor/a_6.png?v=25a52d38",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.g_6": {
+      "src": "assets/gear/gloves/g_6.png?v=7078df5e",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.b_6": {
+      "src": "assets/gear/boots/b_6.png?v=0d2c59ef",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.r_6": {
+      "src": "assets/gear/ring/r_6.png?v=0738a0ac",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.n_6": {
+      "src": "assets/gear/amulet/n_6.png?v=a1cc9801",
+      "w": 32,
+      "h": 32
+    }
   },
   "audio": {},
   "bgmLocal": {
-    "title": [["0.TITLE1.mp3", 2.76, 159.34], ["0.title2.mp3", 2.77, 129.03]],
-    "town": [["1.town1.mp3", 0.41, 167.73]],
-    "willow": [["2.Willow.mp3", 0.56]],
-    "meadow": [["3.meadow.mp3", 0, 158.80]],
+    "title": [
+      [
+        "0.TITLE1.mp3",
+        2.76,
+        159.34
+      ],
+      [
+        "0.title2.mp3",
+        2.77,
+        129.03
+      ]
+    ],
+    "town": [
+      [
+        "1.town1.mp3",
+        0.41,
+        167.73
+      ]
+    ],
+    "willow": [
+      [
+        "2.Willow.mp3",
+        0.56
+      ]
+    ],
+    "meadow": [
+      [
+        "3.meadow.mp3",
+        0,
+        158.8
+      ]
+    ],
     "forest": "willow",
-    "crypt": [["4.crypt.mp3", 0, 160.04]],
-    "city": [["5.city.mp3", 0, 160.18]],
-    "sewer": [["6.sewer.mp3", 0, 156.16]],
-    "cave": [["7.cave.mp3", 0, 170.31]],
-    "jungle": [["8.jungle.mp3", 0, 120.68]],
-    "abyss": [["9.abyss.mp3", 0, 109.68]],
-    "maple": [["10.maple.mp3", 1.76, 111.48]],
-    "oasis": [["11.oasis.mp3", 0, 106.02]],
-    "airship": [["17. aircraft.mp3"]],
-    "sunset_beach": [["18.dawn sea.mp3"]],
-    "coast": [["12.coast.mp3", 2.53, 108.22]],
-    "dunesea": [["13.dunesea.mp3", 0.82, 112.81]],
-    "frostkeep": [["14.frostkeep.mp3", 0, 107.70]],
+    "crypt": [
+      [
+        "4.crypt.mp3",
+        0,
+        160.04
+      ]
+    ],
+    "city": [
+      [
+        "5.city.mp3",
+        0,
+        160.18
+      ]
+    ],
+    "sewer": [
+      [
+        "6.sewer.mp3",
+        0,
+        156.16
+      ]
+    ],
+    "cave": [
+      [
+        "7.cave.mp3",
+        0,
+        170.31
+      ]
+    ],
+    "jungle": [
+      [
+        "8.jungle.mp3",
+        0,
+        120.68
+      ]
+    ],
+    "abyss": [
+      [
+        "9.abyss.mp3",
+        0,
+        109.68
+      ]
+    ],
+    "maple": [
+      [
+        "10.maple.mp3",
+        1.76,
+        111.48
+      ]
+    ],
+    "oasis": [
+      [
+        "11.oasis.mp3",
+        0,
+        106.02
+      ]
+    ],
+    "airship": [
+      [
+        "17. aircraft.mp3"
+      ]
+    ],
+    "sunset_beach": [
+      [
+        "18.dawn sea.mp3"
+      ]
+    ],
+    "coast": [
+      [
+        "12.coast.mp3",
+        2.53,
+        108.22
+      ]
+    ],
+    "dunesea": [
+      [
+        "13.dunesea.mp3",
+        0.82,
+        112.81
+      ]
+    ],
+    "frostkeep": [
+      [
+        "14.frostkeep.mp3",
+        0,
+        107.7
+      ]
+    ],
     "cloudtemple": "cave",
-    "mesa": [["15.mesa.mp3", 0.28, 127.61]],
-    "boss": [["16.boss1.mp3", 0, 123.94], ["16.boss2.mp3", 0, 178.18]],
+    "mesa": [
+      [
+        "15.mesa.mp3",
+        0.28,
+        127.61
+      ]
+    ],
+    "boss": [
+      [
+        "16.boss1.mp3",
+        0,
+        123.94
+      ],
+      [
+        "16.boss2.mp3",
+        0,
+        178.18
+      ]
+    ],
     "dim_crypt": "crypt",
     "dim_sewer": "sewer",
     "dim_cave": "cave",
     "dim_abyss": "abyss",
-    "bogle_lab": [["inside/bogle_lab.mp3", 0, 88.71]],
-    "boutique": [["inside/boutique.mp3"]],
-    "dojo": [["inside/dojo.mp3", 0, 88.40]],
-    "dongdong_apt": [["inside/dongdong_apt.mp3", 0, 79.50]],
-    "general_store": [["inside/general_store.mp3", 2.75, 76.86]],
-    "inn": [["inside/inn.mp3", 0, 179.73]],
-    "juju_diner": [["inside/juju_diner.mp3", 0, 94.36]],
-    "kangkang_forge": [["inside/kangkang_forge.mp3", 0, 86.04]],
-    "merc_office": [["inside/merc_office.mp3", 0, 127.06]],
-    "owl_library": [["inside/owl_library.mp3", 2.75]],
-    "pet_house": [["inside/pet_house.mp3", 0, 102.02]],
-    "starlight_inn": [["inside/starlight_inn.mp3", 0, 158.20]],
-    "tales_cafe": [["inside/tales_cafe.mp3", 0, 120.33]],
-    "town_hall": [["inside/town_hall.mp3"]],
-    "coop_apt": [["arbeit/apt.mp3", 0, 104.98]],
-    "coop_diner": [["arbeit/restaurant.mp3", 0, 177.55]],
-    "coop_forge": [["arbeit/Blacksmith.mp3", 0, 121.83]],
-    "coop_lib": [["arbeit/library.mp3", 0, 120.08]]
+    "bogle_lab": [
+      [
+        "inside/bogle_lab.mp3",
+        0,
+        88.71
+      ]
+    ],
+    "boutique": [
+      [
+        "inside/boutique.mp3"
+      ]
+    ],
+    "dojo": [
+      [
+        "inside/dojo.mp3",
+        0,
+        88.4
+      ]
+    ],
+    "dongdong_apt": [
+      [
+        "inside/dongdong_apt.mp3",
+        0,
+        79.5
+      ]
+    ],
+    "general_store": [
+      [
+        "inside/general_store.mp3",
+        2.75,
+        76.86
+      ]
+    ],
+    "inn": [
+      [
+        "inside/inn.mp3",
+        0,
+        179.73
+      ]
+    ],
+    "juju_diner": [
+      [
+        "inside/juju_diner.mp3",
+        0,
+        94.36
+      ]
+    ],
+    "kangkang_forge": [
+      [
+        "inside/kangkang_forge.mp3",
+        0,
+        86.04
+      ]
+    ],
+    "merc_office": [
+      [
+        "inside/merc_office.mp3",
+        0,
+        127.06
+      ]
+    ],
+    "owl_library": [
+      [
+        "inside/owl_library.mp3",
+        2.75
+      ]
+    ],
+    "pet_house": [
+      [
+        "inside/pet_house.mp3",
+        0,
+        102.02
+      ]
+    ],
+    "starlight_inn": [
+      [
+        "inside/starlight_inn.mp3",
+        0,
+        158.2
+      ]
+    ],
+    "tales_cafe": [
+      [
+        "inside/tales_cafe.mp3",
+        0,
+        120.33
+      ]
+    ],
+    "town_hall": [
+      [
+        "inside/town_hall.mp3"
+      ]
+    ],
+    "coop_apt": [
+      [
+        "arbeit/apt.mp3",
+        0,
+        104.98
+      ]
+    ],
+    "coop_diner": [
+      [
+        "arbeit/restaurant.mp3",
+        0,
+        177.55
+      ]
+    ],
+    "coop_forge": [
+      [
+        "arbeit/Blacksmith.mp3",
+        0,
+        121.83
+      ]
+    ],
+    "coop_lib": [
+      [
+        "arbeit/library.mp3",
+        0,
+        120.08
+      ]
+    ]
   }
 }

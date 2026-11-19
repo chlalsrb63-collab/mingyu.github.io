@@ -38,20 +38,22 @@ This repository includes a comprehensive pixel-art manual in `.claude/skills/pix
    - Remove accidental 1 px isolated orphan pixels and 2×2 outline clumps ("doubles") on diagonals.
    - Break long parallel banding stripes with form bevels or subtle bounce light.
 
-## 3. Mandatory Craft Loop (Never Ship Draft 1)
+## 3. Preferred Production Pipeline: `image-generator` Sheet → Crisp 32×32 Pixel Snap
 
-Every icon or sprite batch MUST go through at least **2 visual refinement passes**:
+Hand-typing 32×32 ASCII pixel grids in text loses 3D proportion and silhouette grace. For equipment icons, weapons, and detailed pixel assets, use the **official hybrid pipeline** (`AGENTS.md` §4.7):
 
-1. **Draft & Render**: Render a contact sheet using `game/scripts/pixcanvas.mjs` showing **Before (4×)**, **After (4×)**, and **Actual In-Game Slot Size (1×)** on the game's dark inventory slot background (`#362d42`).
-2. **Run Pixel Linter**: Run `.agents/skills/tales-tales-pixel-art/scripts/pixel-lint.mjs` on every icon to detect margin clips, orphan pixels, outline doubles, and low contrast.
-3. **Visual Self-Inspection (`read_file`)**: Open the rendered PNG with `read_file` and inspect EVERY icon at both 4× and 1× against:
-   - Silhouette clarity at 1×
-   - Proportions & heroic readability
-   - Smoothness of curves (jaggies / doubles)
-   - Material distinction (steel vs gold vs leather vs gem)
-4. **Polish Pass**: Fix every flaw found in steps 2–3, re-render, and re-inspect with `read_file` before presenting to the user or committing.
+1. **Batch-Generate 3×2 Sheets (`image-generator`)**:
+   - Generate 6 related items per sheet (e.g., 1 tier × 6 slots, or 1 weapon family × 6 tiers) in a clean 3×2 grid on a **flat solid bright magenta (`#ff00ff`) background** with NO grid lines, NO borders, NO drop shadows, NO text.
+   - Specify classic 16-bit/32-bit Korean 2D MMORPG / JRPG pixel art (MapleStory / TalesWeaver / Chrono Trigger style), upper-left lighting, rich material highlights, dark colored outlines.
+2. **Flood-Fill Chroma Key + Crisp 32×32 Downscale**:
+   - Decode the generated image and flood-fill `#ff00ff` from cell borders (plus pure bright magenta interior loops) so crimson/ruby interiors are never damaged.
+   - Tight-crop each item and downsample into a centered `28×28` box inside `32×32` using median/crisp pixel-art sampling (never blurry bilinear averaging) with thin-feature gold/highlight preservation.
+3. **Visual Self-Inspection (`read_file`) & Install**:
+   - Render a contact sheet at **4× zoom + 1× actual slot size** on `#362d42`, inspect EVERY icon with `read_file`, fix any fringe or clipped icon, then install into `game/public/assets/` + `game/public/assets/manifest.json` and record provenance in `asset/CREDITS.md`.
 
-## 4. Hybrid External/AI Asset Option
+## 4. Fallback Code-Drawn Craft Loop (When Pure Code Is Required)
 
-When intricate crests, ornate uniques, or painterly portraits exceed pure code-drawn geometry, follow `AGENTS.md` §4.7:
-- Generate reference/draft in `asset/<category>/` → normalize to 32×32 via `game/scripts/import-art.mjs` → pixel-cleanup & lint → get owner approval → `--install` and record provenance in `asset/CREDITS.md`.
+If an asset must be purely code-drawn without external PNGs, run at least **2 visual refinement passes**:
+1. Render Before/After contact sheet via `game/scripts/pixcanvas.mjs`.
+2. Run `.agents/skills/tales-tales-pixel-art/scripts/pixel-lint.mjs`.
+3. Inspect with `read_file` and refine until silhouette, margins, and material ramps pass.
