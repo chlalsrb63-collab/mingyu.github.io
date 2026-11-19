@@ -90,22 +90,32 @@ export function hudBars() {
   if (b.textContent !== mpt) b.textContent = mpt;
 }
 /** The purse under the bars: the coin and the sum, with a short +N / -N that floats off when it changes. */
-let hudGold = null;
+let hudGold = null, hudTtok = null;
 /** Forget the purse shown (a new character's starts without a +N). */
-export function resetPurse() { hudGold = null; }
+export function resetPurse() { hudGold = null; hudTtok = null; }
 function hudPurse(s) {
-  if (s.gold === hudGold) return;
-  const n = $("#st-gold-n"), fx = $("#st-gold-fx");
-  if (!n.firstChild) n.append(iconImg("coin", "#e2c486"), document.createTextNode(""));
-  n.lastChild.textContent = s.gold.toLocaleString();
-  if (hudGold !== null) {
-    const d = s.gold - hudGold;
-    fx.textContent = `${d > 0 ? "+" : "-"}${Math.abs(d).toLocaleString()}`;
-    fx.classList.toggle("lose", d < 0);
-    fx.style.left = n.offsetWidth + 6 + "px";
-    fx.classList.remove("go"); void fx.offsetWidth; fx.classList.add("go");
+  if (s.gold !== hudGold) {
+    const n = $("#st-gold-n"), fx = $("#st-gold-fx");
+    if (!n.firstChild) n.append(iconImg("coin", "#ffd448"), document.createTextNode(""));
+    n.lastChild.textContent = s.gold.toLocaleString();
+    if (hudGold !== null) {
+      const d = s.gold - hudGold;
+      fx.textContent = `${d > 0 ? "+" : "-"}${Math.abs(d).toLocaleString()}`;
+      fx.classList.toggle("lose", d < 0);
+      fx.style.left = n.offsetWidth + 6 + "px";
+      fx.classList.remove("go"); void fx.offsetWidth; fx.classList.add("go");
+    }
+    hudGold = s.gold;
   }
-  hudGold = s.gold;
+  const ttok = s.ttok || 0;
+  if (ttok !== hudTtok) {
+    const tn = $("#st-ttok-n");
+    if (tn) {
+      if (!tn.firstChild) tn.append(iconImg("ttoken", "#6ee8ff"), el("em", "tt-lb", "테일즈토큰"), el("b", "tt-v", ""));
+      tn.querySelector(".tt-v").textContent = ttok.toLocaleString();
+    }
+    hudTtok = ttok;
+  }
 }
 export function setOnce(node, key, fill) {
   if (node.dataset.k === key) return;

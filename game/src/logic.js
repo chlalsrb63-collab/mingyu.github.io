@@ -8435,7 +8435,7 @@ export function newChar(name, look, wk) {
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
     // XP is progress within the level; xpt is the cumulative experience already converted to levels.
-    lvl: 1, xp: 0, xpt: 0, gold: 50,
+    lvl: 1, xp: 0, xpt: 0, gold: 50, ttok: 0,
     st: freshSt(), wm: freshWm(), rs: 0, sw: picked ? 1 : 0,
     inv: [{ id: "hp_s", n: 5 }, { id: "mp_s", n: 3 }],
     eq: { weapon: plain(`w_${WK_ID[kind]}_1`), helm: null, armor: plain("a_1"), gloves: null, boots: null, ring1: null, ring2: null, amulet: null, weapon2: null },
@@ -8604,6 +8604,7 @@ function migrate(ch) {
   // the warehouse, a pet, scrolls being read, settings
   const wh = isObj(ch.wh) ? ch.wh : {};
   ch.wh = { items: (Array.isArray(wh.items) ? wh.items : []).map(fix).filter(Boolean).slice(0, WH), gold: Math.max(0, Math.floor(num(wh.gold) ? wh.gold : 0)) };
+  ch.ttok = Math.max(0, Math.floor(num(ch.ttok) ? ch.ttok : 0));
   ch.pet = typeof ch.pet === "string" && ITEMS[ch.pet] && ITEMS[ch.pet].type === "pet" && countItem(ch, ch.pet) > 0 ? ch.pet : "";
   const scr = isObj(ch.scr) ? ch.scr : {};
   ch.scr = { atk: num(scr.atk) ? scr.atk : 0, def: num(scr.def) ? scr.def : 0, xp: num(scr.xp) ? scr.xp : 0 };
@@ -25573,7 +25574,7 @@ function selfPayload(p) {
     // skill enhancement { [id]: +n } (48-skill-enh.js)
     ske: ch.ske,
     lo: (() => { const lo = loOf(ch); return [lo.a, lo.p, lo.x, ch.lo[ch.job] ? 1 : 0, loOpen(ch) ? 1 : 0, lo.y, loPower(ch)]; })(),
-    gold: ch.gold,
+    gold: ch.gold, ttok: ch.ttok || 0,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
     runeSets, runeCounts,

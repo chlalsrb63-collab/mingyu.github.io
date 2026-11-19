@@ -121,7 +121,7 @@ body:not([data-lay="full"]) #w-inv.docked > header .x { display: none; }
 #menu button[data-win="inv"] { display: none; }
 
 /* ───────────────────────────── the dock ───────────────────────────── */
-#dock { left: 0; bottom: 0; right: var(--side); height: var(--dock); display: flex; gap: 8px; }
+#dock { left: 0; bottom: 0; right: var(--side); height: var(--dock); display: flex; gap: 10px; padding: 2px 22px 2px 26px; box-sizing: border-box; }
 #chat { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
 #chat-tabs { display: flex; gap: 2px; flex: none; }
 #chat-tabs button { padding: 2px 8px; font: var(--t12)/1.2 var(--pix); color: var(--tx3, #9a90a8); background: var(--sf3-a, var(--sf3, #2a2433)); border: 2px solid var(--ink); box-shadow: inset 2px 2px 0 var(--sf4, #3e344b); }
@@ -162,15 +162,15 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #status { display: flex; gap: 6px; align-items: center; min-height: 0; }
 #status .face { flex: none; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; background: var(--sf3-a, var(--sf3, #2a2433)); border: 2px solid var(--ink); border-image: none; box-shadow: inset 0 0 0 1px var(--sf4, #3e344b); }
 #st-face { width: 40px; height: 40px; }
-/* the unit frame stays short: name and level on one line, two slim bars with tiny numbers, then the purse */
-.st-main { flex: 0 0 184px; min-width: 184px; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
-#status .row { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; line-height: 1.1; }
+/* the unit frame stays short: name and level on one line, two slim bars with snug numbers, then gold & Tales Token aligned in one column */
+.st-main { flex: 0 0 184px; min-width: 184px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+#status .row { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; line-height: 1.05; }
 #st-name { font: 700 var(--t12) var(--pix); color: var(--cream); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #st-lv { flex: none; max-width: 70%; overflow: hidden; text-overflow: ellipsis; color: var(--tx-hd, var(--b-hi)); font: 700 var(--t12) var(--pix); white-space: nowrap; }
-#status .meter { display: grid; grid-template-columns: calc(var(--t10) * 2.4 + 2px) minmax(40px, 1fr) calc(var(--t10) * 6.3); align-items: center; gap: 3px; height: 8px; }
-#status .meter em { font: var(--t10)/8px var(--pix9); font-style: normal; color: var(--hp-hi); text-shadow: 1px 1px 0 #000; }
+#status .meter { display: grid; grid-template-columns: 14px minmax(68px, 1fr) auto; align-items: center; gap: 5px; height: 9px; }
+#status .meter em { display: flex; align-items: center; justify-content: center; width: 14px; font: var(--t10)/8px var(--pix9); font-style: normal; color: var(--hp-hi); text-shadow: 1px 1px 0 #000; }
 #status .meter.mp em { color: var(--mp-hi); }
-#status .meter b { font: var(--t10)/8px var(--pix9); font-weight: normal; color: var(--cream); text-align: right; white-space: nowrap; text-shadow: 1px 1px 0 #000; }
+#status .meter b { min-width: 38px; font: var(--t10)/8px var(--pix9); font-weight: normal; color: var(--cream); text-align: right; white-space: nowrap; text-shadow: 1px 1px 0 #000; }
 #status .bar { position: relative; height: 8px; margin: 0; background: #000; border: 1px solid var(--ink); box-shadow: none; border-radius: 0; }
 #status .bar.hp i:not(.trail) { background: linear-gradient(var(--hp-hi) 0 1px, var(--hp) 1px 4px, var(--hp-lo) 4px); }
 /* the job level row under the weapon mastery: same size and look as one mastery cell, in brass */
@@ -181,9 +181,14 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #jr.pop { animation: jb-pop .9s steps(6); }
 @keyframes jb-pop { 0%, 40%, 80% { filter: brightness(2.2); } 20%, 60%, 100% { filter: none; } }
 #status .bar.mp i { background: linear-gradient(var(--mp-hi) 0 1px, var(--mp) 1px 4px, var(--mp-lo) 4px); }
-#st-gold { position: relative; display: flex; align-items: center; gap: 4px; height: 12px; font: 700 var(--t12)/12px var(--pix); color: var(--b-hi); white-space: nowrap; text-shadow: 1px 1px 0 #000; }
-#st-gold-n { display: inline-flex; align-items: center; gap: 4px; }
-#st-gold-n img.gi { width: 12px; height: 12px; }
+#st-gold { position: relative; display: flex; align-items: center; height: 12px; font: 700 var(--t12)/12px var(--pix); color: var(--b-hi); white-space: nowrap; text-shadow: 1px 1px 0 #000; }
+#st-gold-n { display: grid; grid-template-columns: 14px auto; align-items: center; gap: 5px; }
+#st-gold-n img.gi { width: 12px; height: 12px; justify-self: center; }
+#st-ttok { display: flex; align-items: center; height: 12px; font: 700 var(--t10)/12px var(--pix); color: var(--tx-info, #78e6ff); white-space: nowrap; cursor: help; }
+#st-ttok-n { display: grid; grid-template-columns: 14px auto auto; align-items: center; gap: 5px; }
+#st-ttok-n img.gi { width: 12px; height: 12px; justify-self: center; }
+#st-ttok-n .tt-lb { font-style: normal; font-weight: 700; opacity: .9; }
+#st-ttok-n .tt-v { font-weight: 700; }
 #st-gold-fx { position: absolute; left: 0; top: 0; font: var(--t10)/12px var(--pix9); font-style: normal; color: #ffe9a8; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; pointer-events: none; opacity: 0; }
 #st-gold-fx.lose { color: var(--tx-bad, #ff9a8a); }
 #st-gold-fx.go { animation: gold-pop 1.1s steps(6) forwards; }
@@ -2278,16 +2283,16 @@ body:not([data-lay="land"]) #dock::before, body:not([data-lay="land"]) #dock::af
   content: ""; position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated; background-repeat: no-repeat;
 }
 body:not([data-lay="land"]) #dock::before {
-  left: -8px; top: -12px; bottom: -4px; width: 84px;
+  left: -8px; top: -13px; bottom: -5px; width: 76px;
   background-image: url("assets/ui/vine_tl.png"), url("assets/ui/vine_bl.png");
   background-position: left top, left bottom;
-  background-size: 84px 51px, 64px 39px;
+  background-size: 72px 44px, 56px 34px;
 }
 body:not([data-lay="land"]) #dock::after {
-  left: 0; right: -8px; top: -12px; bottom: -4px;
+  left: 0; right: -8px; top: -13px; bottom: -5px;
   background-image: url("assets/ui/vine_top.png"), url("assets/ui/vine_tr.png"), url("assets/ui/vine_br.png");
   background-position: center top, right top, right bottom;
-  background-size: 136px 18px, 72px 51px, 56px 39px;
+  background-size: 136px 18px, 64px 44px, 50px 34px;
 }
 /* desktop right side panel: delicate hanging ivy tendril along the top-right edge (phone drawer untouched) */
 body[data-lay="full"] #side::after {

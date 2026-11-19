@@ -27,7 +27,7 @@ function selfPayload(p) {
     // skill enhancement { [id]: +n } (48-skill-enh.js)
     ske: ch.ske,
     lo: (() => { const lo = loOf(ch); return [lo.a, lo.p, lo.x, ch.lo[ch.job] ? 1 : 0, loOpen(ch) ? 1 : 0, lo.y, loPower(ch)]; })(),
-    gold: ch.gold,
+    gold: ch.gold, ttok: ch.ttok || 0,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
     runeSets, runeCounts,
