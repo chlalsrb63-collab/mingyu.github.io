@@ -1909,6 +1909,18 @@ body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#menu but
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"])[data-lay="full"] #status .meter b { text-shadow: none; }
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"])[data-lay="full"] #st-gold { color: var(--tx-hd); text-shadow: none; }
 body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(#wm, #jr) .wt { color: color-mix(in srgb, var(--wm-lo), var(--ink) 30%); text-shadow: none; }
+/* light themes: text drawn pale for the dark panels reads from the theme inks instead (same meaning, darker shade) */
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(
+  .wm-tip .wm-job, .jt-progress, .jt-wpn small, .jt-h small, .jt-scale, .jt-foot small, .jt-near .tx b, .jt-fold summary, .jt-reset small,
+  .window .jt-sig p, .window .jb-card .df, #mirror .mr-msg) { color: var(--tx2); }
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(
+  .wm-tip .wm-r, .wm-tip .wm-next small, .wm-tip .wm-xp, .wm-tip .hint, .jt-card .hd small, .jt-scale small, .jt-top .hd small,
+  .buddy-contact small, .buddy-line small) { color: var(--tx3); }
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.wm-tip .wm-r .wv, .wm-tip .wm-r:not(.on) .wv, .jt-need .ok, .window .jb-card .ok) { color: var(--tx-ok); }
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.jt-need .no, .window .jb-card .why, .window .jb-card .late, .window .alba-clock.late, #quest-track .jb-clock.late) { color: var(--tx-bad); }
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.wm-tip .wm-next, .jt-wpn.ready b, .jt-h.half b, .jt-h.ready b, .jt-sig b, .window .jb-card .where, #quest-track .jb-clock,
+  #w-talk > header .talk-role, #w-talk .talk-mn, #w-talk .sq-card .q-title, #w-talk .sq-card .q-reward) { color: var(--tx-gold); }
+body:is([data-hud="linen"], [data-hud="sand"], [data-hud="olive"]) :is(.jt-wpn b, .jt-h b, .jt-sig small, #w-talk .sq-card .q-next, #quest-track .qnext) { color: var(--tx-info); }
 
 /* ── UX pass 2026-11-15 (docs/design/ux-audit-2026-11-15.md) ── */
 /* notices and prompts draw over the windows (21–35, windows.js front), under the minigame (40) and the tooltip (80) */
