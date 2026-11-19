@@ -8,8 +8,7 @@
  *     set runes socketed across the loadout unlock another power;
  *   - a hunting ground is worth another lap: kill streaks, per-monster mastery,
  *     bounties that renew themselves, and a field boss the kills call out;
- *   - experience never stops mattering: it levels you up, and it can also be
- *     spent, without limit, on permanent training of your base stats;
+ *   - experience levels you up automatically and each level grants five points for your base stats;
  *   - hunting together pays: a party shares kills, quest credit and a bonus;
  *   - and there is a quiet side: campfires to sit by, fish to catch and cook,
  *     guilds, and a handful of emotes;
@@ -30,7 +29,7 @@ export const meta = { game: "테일즈테일즈", minPlayers: 1, maxPlayers: 40 
 const T = 16;
 /** The bag: INV_BASE slots to start, grown with bag_expand to INV_MAX (sheet field bagCap, 46-bag.js). */
 const INV_BASE = 40, INV_MAX = 100;
-/** Player levels run 1–200 (one level = one stat point); the world keeps its own 1–50 tiers (02-jobs-stats.js). */
+/** Player levels run 1–200; the world keeps its own 1–50 tiers (02-jobs-stats.js). */
 const MAXLV = 200;
 const STACK = 99;
 /** The order the bag's tidy button puts things in. */

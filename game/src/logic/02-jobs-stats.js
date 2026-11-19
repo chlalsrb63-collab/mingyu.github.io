@@ -13,9 +13,8 @@ const STATS = [
   ["luk", "행운", "치명타 · 치명 피해 · 아이템 발견 · 발동 확률"],
 ];
 const ST_ORDER = STATS.map((s) => s[0]);
-const ST_BASE = 5, ST_CAP = 99;
-/** Point cost: pointCost(N, s) = round(tierXp(toTier(N)) / LV_DIV × (1 + STAT_K × max(0, s − STAT_K0))). */
-const LV_DIV = 4.4, STAT_K = 0.004, STAT_K0 = 30;
+const ST_BASE = 5, AP_PER_LEVEL = 5, ST_CAP = 475;
+const ST_SOFT = [180, 280];
 /** The world's own scale (monster levels, map bands): 1–50. Players see 4·tier − 3. */
 const TIER_MAX = 50;
 /** Weapon kinds in wire order (`wm`, `["wm", eid, kindIndex, lv]`), and the mastery cap. */

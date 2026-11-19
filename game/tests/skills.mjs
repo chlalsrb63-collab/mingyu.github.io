@@ -280,8 +280,8 @@ for (const [id, hand] of CASTS) {
   const shots = (dx, wm) => {
     const W = world("매" + dx + wm, { wk: "bow", wm: { bow: wm }, st: { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 } });
     let s = 0, far = 0;
-    for (let i = 0; i < 60; i++) { W.ready(); const [m] = W.mobs([[dx, 0]]); W.act({ t: "atk", a: 0 }); for (let k = 0; k < 6; k++) { const v = W.step(); far += fx([v], W.p.eid).filter((c) => c === 115).length; } s += 50000 - m.hp; }
-    return { s, far };
+    for (let i = 0; i < 60; i++) { W.ready(); const [m] = W.mobs([[dx, 0]]); W.S.seed = 351 + 29191 * i; W.act({ t: "atk", a: 0 }); for (let k = 0; k < 6; k++) { const v = W.step(); far += fx([v], W.p.eid).filter((c) => c === 115).length; } s += 50000 - m.hp; }
+    return { s: s / W.self().atk, far };
   };
   const a = shots(140, 10), b = shots(140, 9), c = shots(30, 10);
   const k = a.s / b.s;

@@ -5,19 +5,22 @@
 /** Player level (1–200) → world tier (1–50, real); tier → the level printed on screen. */
 const toTier = (lvl) => (lvl + 3) / 4;
 const shownLv = (t) => 4 * t - 3;
-/** Soft caps: a stat counts fully to 40, half to 60, a quarter beyond. */
-const eff = (s) => Math.min(s, 40) + 0.5 * clamp(s - 40, 0, 20) + 0.25 * Math.max(0, s - 60);
-/** The experience one stat point costs at level `N` (buying N → N+1) for a stat now at `s`. */
-const pointCost = (N, s) => Math.round((tierXp(toTier(N)) / LV_DIV) * (1 + STAT_K * Math.max(0, s - STAT_K0)));
-/** A batch of points `a` (six counts, ST_ORDER), bought one at a time in stat order. */
-function batchCost(ch, a) {
-  let lvl = ch.lvl, c = 0;
-  ST_ORDER.forEach((k, i) => { let s = ch.st[k]; for (let n = 0; n < a[i]; n++) c += pointCost(lvl++, s++); });
-  return c;
+/** Invested AP keeps its full weight until the first threshold, then half and a quarter. */
+const eff = (s) => ST_BASE + 0.25 * (Math.min(s, ST_SOFT[0]) - ST_BASE +
+  0.5 * clamp(s - ST_SOFT[0], 0, ST_SOFT[1] - ST_SOFT[0]) + 0.25 * Math.max(0, s - ST_SOFT[1]));
+const levelXp = (lv) => Math.round(tierXp(toTier(lv)) / 4.4 * (1 + 0.13 * ((lv - 1) / (MAXLV - 1)) ** 1.4));
+const spentPoints = (st) => ST_ORDER.reduce((n, k) => n + st[k] - ST_BASE, 0);
+const statPoints = (ch) => Math.max(0, (ch.lvl - 1) * AP_PER_LEVEL - spentPoints(ch.st));
+/** Experience banked during this level rolls through every earned level in order. */
+function advanceLevels(ch) {
+  while (ch.lvl < MAXLV) {
+    const need = levelXp(ch.lvl);
+    if (ch.xp < need) break;
+    ch.xp -= need;
+    ch.xpt = Math.min(2e9, ch.xpt + need);
+    ch.lvl++;
+  }
 }
-const levelOf = (st) => 1 + ST_ORDER.reduce((n, k) => n + st[k] - ST_BASE, 0);
-/** What the next point in each stat costs now (0 when that stat or the level is at its cap). */
-const nextCosts = (ch) => ST_ORDER.map((k) => (ch.st[k] >= ST_CAP || ch.lvl >= MAXLV ? 0 : pointCost(ch.lvl, ch.st[k])));
 /** Mastery experience from level m to m + 1. */
 const wmNeed = (m) => 22 * m * m;
 const freshWm = () => Object.fromEntries(WK_ORDER.map((k) => [k, { lv: 1, xp: 0 }]));
@@ -101,7 +104,8 @@ function deriveStats(p) {
   const wAtk = w ? gearBaseValue(w, "atk") : 0;
   const sc = scaleOf(ch, wk), hk = (JOBS[ch.job] && JOBS[ch.job].handK && JOBS[ch.job].handK[wk]) || 1;
   let core = SFX.atk[0] + SFX.atk[1] * lv;
-  for (const k of Object.keys(sc)) core += sc[k] * E[k];
+  const spentAtkK = 1 + 0.65 * ((lv - 1) / (MAXLV - 1));
+  for (const k of Object.keys(sc)) core += sc[k] * (ST_BASE + (E[k] - ST_BASE - cm.st[k]) * spentAtkK + cm.st[k]);
   const wm = w ? ch.wm[wk].lv : 0;
   const jl = Math.max(0, (ch.jp?.lv || 0) - 1);
   const luk = E.luk, dex = E.dex, wil = E.wil, wis = E.wis;
@@ -390,25 +394,23 @@ const oldSkillCost = (lv, L) => ({ gold: Math.round((50 + lv * 25) * L * (L + 1)
 /** The levels the six skills of every old class were learned at (for the refund). */
 const OLD_SK_LV = [3, 7, 12, 18, 25, 35];
 /**
- * Spend `points` one by one on the stat furthest below its share (ties: stat order), none past 99.
- * Returns the stats and the experience that path cost (the xpt of a migrated sheet).
+ * Spend points one by one on the stat furthest below its share (ties: stat order).
  */
-function allocate(shares, points) {
+function allocate(shares, points, cap = ST_CAP) {
   const st = freshSt();
-  let xpt = 0;
   for (let n = 0; n < points; n++) {
     let best = null, bd = -Infinity;
     for (const k of ST_ORDER) {
-      if (st[k] >= ST_CAP) continue;
+      if (st[k] >= cap) continue;
       const gap = (shares[k] || 0) * (n + 1) - (st[k] - ST_BASE);
       if (gap > bd + 1e-9) { bd = gap; best = k; }
     }
     if (!best) break;
-    xpt += pointCost(1 + n, st[best]);
     st[best]++;
   }
-  return { st, xpt };
+  return st;
 }
+const experienceEarned = (lvl) => Array.from({ length: lvl - 1 }, (_, i) => levelXp(i + 1)).reduce((sum, n) => sum + n, 0);
 /**
  * A sheet from the four-class days (has `cls`, no `job`): a level 4L−3 hero with stats laid out like
  * its class, the class weapon's mastery at its old level, the class's job from old level 20, every
@@ -422,7 +424,7 @@ function migrateV10(ch) {
   const w = isObj(ch.eq) && ch.eq.weapon && typeof ch.eq.weapon.id === "string" ? ch.eq.weapon.id : "";
   if (cls === "mage" && w.startsWith("w_book_")) { wk = "book"; job = "warlock"; }
   const lvl = Math.min(197, 4 * L - 3);
-  const { st, xpt } = allocate(BUILD[wk], lvl - 1);
+  const st = allocate(BUILD[wk], lvl - 1, 99), xpt = experienceEarned(lvl);
   let xp = num(ch.xp) ? Math.max(0, Math.floor(ch.xp)) : 0, gold = num(ch.gold) ? Math.max(0, Math.floor(ch.gold)) : 0;
   // stat training: 120 + 40n experience a point, all back
   const tr = isObj(ch.tr) ? ch.tr : {};
@@ -441,15 +443,23 @@ function migrateV10(ch) {
   return ch;
 }
 /** Clamp a v10 sheet's jobs-and-stats fields (every load; never trust what was stored). */
-function cleanJobs(ch) {
+function cleanJobs(ch, legacy) {
   const st = isObj(ch.st) ? ch.st : {};
   ch.st = {};
-  for (const k of ST_ORDER) ch.st[k] = clamp(Math.floor(num(st[k]) ? st[k] : ST_BASE), ST_BASE, ST_CAP);
-  // a level is one point above 5; a sheet claiming more than 200 gives the extra back from its highest stats
-  while (levelOf(ch.st) > MAXLV) { const k = ST_ORDER.reduce((a, b) => (ch.st[b] > ch.st[a] ? b : a)); ch.st[k]--; }
-  ch.lvl = levelOf(ch.st);
+  for (const k of ST_ORDER) {
+    const raw = Math.floor(num(st[k]) ? st[k] : ST_BASE);
+    ch.st[k] = legacy ? ST_BASE + AP_PER_LEVEL * (clamp(raw, ST_BASE, 99) - ST_BASE) : clamp(raw, ST_BASE, ST_CAP);
+  }
+  const level = legacy ? 1 + spentPoints(ch.st) / AP_PER_LEVEL : Math.floor(num(ch.lvl) ? ch.lvl : 1);
+  ch.lvl = clamp(level, 1, MAXLV);
+  const budget = (ch.lvl - 1) * AP_PER_LEVEL;
+  for (let excess = spentPoints(ch.st) - budget; excess > 0; excess--) {
+    const k = ST_ORDER.reduce((a, b) => ch.st[b] > ch.st[a] ? b : a);
+    ch.st[k]--;
+  }
   ch.xp = num(ch.xp) ? clamp(Math.floor(ch.xp), 0, 2e9) : 0;
   ch.xpt = num(ch.xpt) ? clamp(Math.floor(ch.xpt), 0, 2e9) : 0;
+  if (legacy) advanceLevels(ch);
   const wm = isObj(ch.wm) ? ch.wm : {};
   ch.wm = {};
   for (const k of WK_ORDER) {
@@ -478,10 +488,11 @@ export function hero(name, o = {}) {
   const wk = WK_ORDER.includes(o.wk) ? o.wk : "sword";
   ch.eq.weapon = plain(`w_${WK_ID[wk]}_1`);
   ch.sw = 1;
-  const lvl = clamp(o.lvl | 0 || 1, 1, MAXLV);
-  if (isObj(o.st)) { for (const k of ST_ORDER) if (num(o.st[k])) ch.st[k] = o.st[k]; }
-  else { const a = allocate(isObj(o.build) ? o.build : BUILD[wk], lvl - 1); ch.st = a.st; ch.xpt = a.xpt; }
-  ch.lvl = levelOf(ch.st);
+  const preset = isObj(o.st);
+  if (preset) for (const k of ST_ORDER) if (num(o.st[k])) ch.st[k] = clamp(ST_BASE + (o.st[k] - ST_BASE) * AP_PER_LEVEL, ST_BASE, ST_CAP);
+  ch.lvl = clamp(o.lvl | 0 || (preset ? 1 + spentPoints(ch.st) / AP_PER_LEVEL : 1), 1, MAXLV);
+  if (!preset) ch.st = allocate(isObj(o.build) ? o.build : BUILD[wk], (ch.lvl - 1) * AP_PER_LEVEL);
+  ch.xpt = experienceEarned(ch.lvl);
   if (o.migrate) {
     const L = Math.round(toTier(ch.lvl));
     ch.wm[wk].lv = Math.min(WM_MAX, L);

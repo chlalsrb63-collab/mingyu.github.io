@@ -283,7 +283,7 @@ function arcA2(pick) {
 }
 // ── arcs A3–A6 (P4/P5, docs/design/arcs.md): scripted start-to-end runs, every answer of every choice
 const LX = await import("data:text/javascript;base64," + Buffer.from(readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { dimChest };").toString("base64"));
+  "\nexport const __t = { dimChest, tierXp, toTier };").toString("base64"));
 const take = (W, id, at) => { if (at) W.meet(at); W.ok({ t: "sq", a: "take", id }); };
 const done = (W, id, at, pick) => { if (at) W.meet(at); W.ok({ t: "sq", a: "done", id, ...(pick === undefined ? {} : { pick }) }); };
 const talk = (W, npc) => { W.meet(npc); W.ok({ t: "sq", a: "talk", npc }); };
@@ -420,7 +420,7 @@ function chainShape(ids, lo, hi, maps, scaled = ids) {
     if (i) assert.ok(q.req.quest === ids[i - 1] && q.req.lv >= prev.req.lv, `${id} follows ${ids[i - 1]}`);
     assert.equal(q.giverMapId, maps[i], `${id}: the giver stands on ${maps[i]}`);
     assert.ok(L.atlas().maps[q.giverMapId].npcs.some((n) => n.id === q.giver), `${id}: ${q.giver} is really there`);
-    const rws = [q.reward, ...(q.choice || []).map((o) => o.reward).filter(Boolean)], xp = Math.max(...rws.map((r) => r.xp)), cap = D.lvt[q.req.lv - 1];
+    const rws = [q.reward, ...(q.choice || []).map((o) => o.reward).filter(Boolean)], xp = Math.max(...rws.map((r) => r.xp)), cap = LX.__t.tierXp(LX.__t.toTier(q.req.lv));
     if (scaled.includes(id)) assert.ok(xp >= 0.12 * cap && xp <= 0.32 * cap && Math.max(...rws.map((r) => r.gold)) <= 60 * q.req.lv, `${id}: reward on the audit scale`);
     prev = q;
   }
@@ -543,7 +543,7 @@ for (const pick of [0, 1]) {
   };
   assert.deepEqual(D.side.filter((q) => q.repeat === "week").map((q) => q.id).sort(), Object.values(WEEKLY).flat().sort(), "no other weekly quests");
   for (const [giver, ids] of Object.entries(WEEKLY)) for (const id of ids) {
-    const q = D.side.find((o) => o.id === id), cap = D.lvt[q.req.lv - 1];
+    const q = D.side.find((o) => o.id === id), cap = LX.__t.tierXp(LX.__t.toTier(q.req.lv));
     assert.ok(q.giver === giver && q.goal.type === "fb" && q.goal.map === q.giverMapId && q.req.lv >= 160, `${id}: the field boss of ${giver}'s own ground`);
     assert.ok(q.reward.xp >= 0.12 * cap && q.reward.xp <= 0.16 * cap && q.reward.gold === 0, `${id}: XP on the scale, no gold`);
     assert.ok(q.reward.items.every(([it, n]) => it === "stone" && n <= 2), `${id}: 강화석 ≤ 2`);

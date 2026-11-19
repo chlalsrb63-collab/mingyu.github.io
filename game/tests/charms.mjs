@@ -204,11 +204,11 @@ function appraised(W, src, want, rv = X.CHARM_V, tier = 8) {
   }
   assert.equal(W.act({ t: "charm_quest", a: "accept" }).error, "주아나의 의뢰를 모두 마쳤습니다");
   assert.equal(W.self().charms.quest, null);
-  // a stat reset keeps the board (and the level falls back to 1)
+  // A stat reallocation keeps the board and the earned level.
   W.ch.rs = 1;
   W.npc("train");
   assert.ok(W.act({ t: "respec" }).ok);
-  assert.equal(W.ch.lvl, 1); assert.equal(W.cs.unlocked, true); assert.equal(W.cs.intro, 2);
+  assert.equal(W.ch.lvl, 90); assert.equal(W.cs.unlocked, true); assert.equal(W.cs.intro, 2);
 }
 
 // ═════════ drops: measured against the table with fixed seeds; exclusions; nothing of the rarity on the wire
@@ -223,6 +223,7 @@ function appraised(W, src, want, rv = X.CHARM_V, tier = 8) {
   const hunt = (n, k, more = {}) => {
     const out = { charm: 0, nail: 0, g: [0, 0, 0, 0] };
     for (let i = 0; i < n; i++) {
+      W.ch.xp = 0;
       Object.assign(m, { k, dead: false, hp: 10, by: { [W.PID]: 5 }, el: 0, temp: 0, dim: 0, evt: 0, ...more });
       X.killMob(W.S, W.rt, m);
       for (const d of W.rt.drops) {
@@ -434,6 +435,8 @@ function appraised(W, src, want, rv = X.CHARM_V, tier = 8) {
   V.npc("train");
   assert.ok(V.act({ t: "respec" }).ok);
   assert.deepEqual(V.self().charms.placed, before.placed, "a reset preserves the layout");
+  assert.equal(V.self().charms.sum.hp, before.sum.hp, "point reallocation does not disable charms");
+  V.ch.lvl = 1; V.p.stc = null;
   assert.equal(V.self().charms.sum.hp, 0, "underlevel charms grant no bonus");
   assert.equal(V.act({ ...place, t: "charm_move" }).error, "Lv.190부터 장착할 수 있는 참입니다");
   assert.ok(V.act({ t: "charm_remove", uid: strip.uid }).ok);

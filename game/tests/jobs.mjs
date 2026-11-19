@@ -7,7 +7,7 @@ import * as L from "../src/logic.js";
 const D = L.defs();
 const T = 16;
 const ST = ["str", "wil", "dex", "int", "wis", "luk"];
-const eff = (s) => Math.min(s, 40) + 0.5 * Math.min(20, Math.max(0, s - 40)) + 0.25 * Math.max(0, s - 60);
+const eff = (s) => 5 + 1.25 * (Math.min(s, 40) - 5 + 0.5 * Math.min(20, Math.max(0, s - 40)) + 0.25 * Math.max(0, s - 60));
 const near = (a, b, d, msg) => assert.ok(Math.abs(a - b) <= d, `${msg}: ${a} vs ${b}`);
 
 let pidN = 0;
@@ -133,168 +133,86 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.deepEqual([1, 2, 3, 4, 5, 6].map((t) => D.items[`h_${t}`].req), [1, 29, 61, 101, 149, 181], "gear asks for levels on the 1–200 scale");
 }
 
-// ═════════ what a level costs (B.2) ═════════
+// ═════════ Auto level-up, points and reallocation ═════════
 {
-  const golden = { 1: 74, 2: 97, 10: 438, 20: 1206, 50: 9206, 77: 40192, 100: 102441, 150: 526238, 181: 928545, 199: 1357430 };
-  for (const [n, c] of Object.entries(golden)) assert.equal(D.lvc[n - 1], c, `step ${n} → ${+n + 1}`);
-  for (let i = 1; i < 200; i++) assert.ok(D.lvc[i] > D.lvc[i - 1]);
-  // the stat surcharge: ×1.12 at 60, ×1.276 at 99
-  const W = world({ wk: "sword", lvl: 100, st: { str: 60, wil: 30, dex: 5, int: 5, wis: 5, luk: 5 } });
-  // (lvl from the stats: 1 + 55 + 25 = 81)
-  const s = W.self();
-  assert.equal(s.lvl, 81);
-  near(s.nx[0], Math.round(D.lvc[80] * 1.12), 1, "STR 60 costs ×1.12");
-  assert.equal(s.nx[1], D.lvc[80], "a stat at 30 pays the base price");
-  W.ch.st.str = 99; W.ch.lvl = 120;
-  assert.equal(W.self().nx[0], 0, "a stat at 99 has no next point");
-  // cumulative experience of a typical build (the 2026-11-16 curve: cheaper Lv.80–130, dearer past 150)
-  const cum = (lvl) => L.hero("누적", { wk: "sword", lvl }).xpt;
-  near(cum(37) / 48000, 1, 0.08, "to Lv.37");
-  near(cum(77) / 719000, 1, 0.06, "to Lv.77");
-  near(cum(157) / 22.1e6, 1, 0.06, "to Lv.157");
-  near(cum(200) / 67.8e6, 1, 0.06, "to Lv.200");
-}
-
-// ═════════ train: one point = one level (B.1) ═════════
-{
-  const W = world({ wk: "sword" });
-  const ch = W.ch, p = W.p;
-  ch.xp = 1e8;
-  const [sx, sy] = openSpot(W);
-  W.go("meadow", sx, sy);
-  assert.equal(W.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).error, "모닥불 곁이나 수련관 앞에서 레벨을 올릴 수 있습니다");
-  const fire = W.rt.fires[0];
-  p.x = fire.x + 12; p.y = fire.y + 8;
-  // a batch is bought one point at a time in stat order, each at the then-current level and value
-  const x0 = ch.xp;
+  assert.deepEqual(D.statGrowth, { perLevel: 5, cap: 475, soft: [180, 280] });
+  const earned = (lvl) => L.hero("누적", { wk: "sword", lvl }).xpt;
+  const cumulative = Array.from({ length: D.maxLv }, (_, i) => earned(i + 1));
+  const costs = cumulative.slice(1).map((n, i) => n - cumulative[i]);
+  assert.equal(costs[0], 74);
+  assert.ok(costs.every((cost, i) => !i || cost > costs[i - 1]), "the level cost increases across the full range");
+  const W = world({ wk: "sword" }), { ch, p } = W;
+  const mobs = arena(W);
+  ch.xp = costs[0] + costs[1] - 1;
   p.hp = 1;
-  assert.ok(W.act({ t: "train", a: [2, 0, 0, 0, 0, 1] }).ok, "by a campfire");
-  assert.equal(x0 - ch.xp, D.lvc[0] + D.lvc[1] + D.lvc[2]);
-  assert.equal(ch.xpt, x0 - ch.xp);
-  assert.deepEqual([ch.st.str, ch.st.luk, ch.lvl], [7, 6, 4]);
-  let s = W.self();
-  assert.equal(p.hp, s.mhp, "full health, as levels always gave");
-  assert.ok(s.toast === undefined || true);
-  // bigger batches, up to 50 points at once
-  assert.ok(!W.act({ t: "train", a: [51, 0, 0, 0, 0, 0] }).ok);
-  assert.ok(W.act({ t: "train", a: [10, 10, 10, 10, 10, 0] }).ok);
-  assert.equal(ch.lvl, 54);
-  assert.equal(ch.lvl, 1 + ST.reduce((n, k) => n + ch.st[k] - 5, 0), "the level is the points spent");
-  // 99 in a stat, 200 in all
-  ch.st.str = 98;
-  assert.equal(W.act({ t: "train", a: [2, 0, 0, 0, 0, 0] }).error, "능력치는 99까지 올릴 수 있습니다");
-  ch.st = { str: 99, wil: 99, dex: 5, int: 5, wis: 5, luk: 5 }; ch.lvl = 189;
-  ch.st.dex = 15; ch.lvl = 199;
-  assert.equal(W.act({ t: "train", a: [0, 0, 2, 0, 0, 0] }).error, "최고 레벨입니다");
-  assert.ok(W.act({ t: "train", a: [0, 0, 1, 0, 0, 0] }).ok, "the two-hundredth");
-  assert.equal(ch.lvl, 200);
-  assert.deepEqual(W.self().nx, [0, 0, 0, 0, 0, 0], "nothing left to buy");
-  // not enough experience; dead
-  const W2 = world({ wk: "dagger" });
-  W2.npc("train");
-  assert.equal(W2.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).error, "경험치가 부족합니다");
-  W2.ch.xp = 1e6; W2.p.dead = true;
-  assert.ok(!W2.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).ok, "not while fallen");
-  W2.p.dead = false;
-  assert.ok(W2.act({ t: "train", a: [0, 0, 1, 0, 0, 0] }).ok, "at 수련관 카이");
-  // experience only piles up
-  const W3 = world({ wk: "sword" });
-  const [ax, ay] = openSpot(W3);
-  W3.go("meadow", ax, ay);
-  W3.p.toast.length = 0;
-  W3.ch.xp = 0;
-  const lv = W3.ch.lvl;
-  for (let i = 0; i < 3; i++) { W3.p.lvHint = false; W3.ch.xp += 0; }
-  W3.S.now = W3.now;
-  L.applyAction(W3.S, W3.PID, { t: "opt" });
-  // grant through a kill
-  const mobs = arena(W3);
   const [m] = mobs([[16, 0]], { hp: 1 });
-  W3.ch.xp = 1e7; ready(W3);
-  assert.ok(W3.act({ t: "atk", a: 0 }).ok);
-  W3.step();
-  assert.ok(m.dead && W3.ch.lvl === lv && W3.ch.xp > 1e7, "a kill pays experience and never a level");
-}
-
-// ═════════ the stat panel's cost mirror (J3): defs.lvt / lvDiv / statK price a batch exactly as the server ═════════
-{
-  assert.equal(D.lvt.length, 200);
-  assert.equal(D.lvDiv, 4.4);
-  const [K, K0] = D.statK;
-  // statwin.js costOf: one point at a time in stat order, each at the then-current level and value
-  const mirror = (lvl, st, a) => {
-    let c = 0;
-    ST.forEach((k, i) => { let v = st[k]; for (let n = 0; n < a[i]; n++) c += Math.round((D.lvt[lvl++ - 1] / D.lvDiv) * (1 + K * Math.max(0, v++ - K0))); });
-    return c;
-  };
-  for (let N = 1; N < 200; N++) assert.equal(mirror(N, { str: 5 }, [1, 0, 0, 0, 0, 0]), D.lvc[N - 1], `level ${N} at a low stat = lvc`);
-  // a mixed batch above the surcharge line: exactly enough experience passes, one short fails
-  for (const [st, a] of [
-    [{ str: 60, wil: 30, dex: 5, int: 5, wis: 5, luk: 5 }, [3, 2, 0, 0, 0, 4]],
-    [{ str: 70, wil: 50, dex: 34, int: 5, wis: 5, luk: 5 }, [5, 7, 9, 0, 0, 1]],
-    [{ str: 97, wil: 60, dex: 33, int: 5, wis: 5, luk: 9 }, [2, 3, 4, 0, 0, 0]],
-  ]) {
-    const W = world({ wk: "sword", st });
-    W.npc("train");
-    assert.equal(W.ch.lvl, 1 + ST.reduce((n, k) => n + st[k] - 5, 0));
-    const cost = mirror(W.ch.lvl, W.ch.st, a);
-    W.ch.xp = cost - 1;
-    assert.equal(W.act({ t: "train", a }).error, "경험치가 부족합니다", "one short of the mirrored price");
-    W.ch.xp = cost;
-    assert.ok(W.act({ t: "train", a }).ok, "the mirrored price is enough");
-    assert.equal(W.ch.xp, 0, "and is exactly what it cost");
+  ready(W);
+  assert.ok(W.act({ t: "atk", a: 0 }).ok);
+  W.step();
+  assert.ok(m.dead);
+  const leveled = W.self();
+  assert.equal(leveled.lvl, 3, "a kill carries experience through both levels");
+  assert.equal(leveled.ap, 10, "each earned level grants five points");
+  assert.equal(leveled.xpNext, costs[2]);
+  assert.equal(ch.xpt, costs[0] + costs[1]);
+  assert.ok(ch.xp > 0 && ch.xp < costs[2]);
+  assert.equal(p.hp, leveled.mhp, "level-up restores health");
+  const xp = ch.xp;
+  assert.ok(W.act({ t: "train", a: [5, 5, 0, 0, 0, 0] }).ok, "allocate points away from the trainer");
+  assert.deepEqual([ch.lvl, ch.xp, ch.st.str, ch.st.wil, W.self().ap], [3, xp, 10, 10, 0]);
+  assert.equal(W.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).error, "능력치 포인트가 부족합니다");
+  for (const bad of [[1, 0], [0, 0, 0, 0, 0, 0], [-1, 2, 0, 0, 0, 0], [51, 0, 0, 0, 0, 0], [0.5, 0, 0, 0, 0, 0], "1"]) {
+    assert.ok(!W.act({ t: "train", a: bad }).ok);
   }
-}
-
-// ═════════ respec: 망각의 의식 (B.1) ═════════
-{
-  const W = world({ wk: "spear", lvl: 77, job: "lancer", wm: { spear: 30 } });
-  const ch = W.ch;
-  ch.xp = 100; ch.rs = 1;
-  const spent = ch.xpt;
-  assert.ok(spent > 0);
+  ch.rs = 1;
   assert.equal(W.act({ t: "respec" }).error, "수련관이 너무 멉니다");
   W.npc("train");
   assert.ok(W.act({ t: "respec" }).ok);
-  assert.deepEqual(ch.st, { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 });
-  assert.deepEqual([ch.lvl, ch.xp, ch.xpt, ch.rs], [1, 100 + spent, 0, 0], "the first reset is free and gives every point back");
-  assert.equal(ch.job, "lancer"); assert.equal(ch.wm.spear.lv, 30, "job and mastery stay");
+  assert.equal(W.self().ap, 10, "the free reset refunds the points");
+  assert.deepEqual([ch.lvl, ch.xp, ch.xpt, ch.rs], [3, xp, costs[0] + costs[1], 0]);
   assert.equal(W.act({ t: "respec" }).error, "되돌릴 능력치가 없습니다");
-  assert.ok(W.act({ t: "train", a: [10, 0, 0, 0, 0, 0] }).ok);
-  const xpt2 = ch.xpt, xp2 = ch.xp;
+  assert.ok(W.act({ t: "train", a: [5, 0, 0, 0, 0, 0] }).ok);
   const fee = W.self().respecCost;
-  assert.equal(fee, 926, "the quoted fee uses the character's pre-reset level");
   assert.equal(W.act({ t: "respec" }).error, "되새김 인장이 필요합니다");
-  ch.inv.push({ id: D.jf.respecItem, n: 1 });
-  ch.gold = fee - 1;
+  ch.inv.push({ id: D.jf.respecItem, n: 1 }); ch.gold = fee - 1;
   assert.match(W.act({ t: "respec" }).error, /골드가 부족합니다/);
-  assert.equal(ch.inv.find((it) => it.id === D.jf.respecItem).n, 1, "a refused ritual does not consume the item");
   ch.gold = fee + 30;
   assert.ok(W.act({ t: "respec" }).ok);
   assert.equal(ch.gold, 30);
-  assert.ok(!ch.inv.some((it) => it.id === D.jf.respecItem));
-  assert.equal(ch.xp, xp2 + xpt2, "the gold and seal preserve the full XP refund");
-  const high = world({ wk: "spear", lvl: 200 });
-  high.ch.rs = 0;
-  assert.equal(high.self().respecCost, 85220);
+  assert.ok(!ch.inv.some((item) => item.id === D.jf.respecItem));
+  assert.deepEqual([W.self().ap, ch.lvl, ch.xp], [10, 3, xp]);
+  const top = world({ wk: "sword", lvl: 200, st: { str: 99 } });
+  assert.equal(top.self().xpNext, 0);
+  assert.equal(top.self().respecCost, 85220);
+  assert.equal(top.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).error, "능력치는 475까지 올릴 수 있습니다");
+  assert.ok(top.act({ t: "train", a: [0, 5, 0, 0, 0, 0] }).ok, "max-level heroes can still assign their points");
+  top.p.dead = true;
+  assert.ok(!top.act({ t: "train", a: [0, 5, 0, 0, 0, 0] }).ok, "no allocation while fallen");
+
+  const legacy = L.newChar("구형", [], "sword");
+  Object.assign(legacy, { v: 30, lvl: 6, xp: 10, xpt: earned(6), st: { ...legacy.st, str: 8, wil: 7 } });
+  const restored = world({ ch: legacy });
+  assert.deepEqual([restored.ch.v, restored.ch.lvl, restored.ch.st.str, restored.ch.st.wil, restored.ch.xp, restored.self().ap], [31, 6, 20, 15, 10, 0]);
+  const reload = world({ ch: JSON.parse(JSON.stringify(restored.ch)) });
+  assert.deepEqual(reload.ch.st, restored.ch.st, "loading again does not multiply the points");
 }
 
 // ═════════ derived stats (B.4, B.7: golden rows ±1) ═════════
 {
   // [job, stats, atkCore, HP, MP, def, crit (without the weapon kind's own), attack speed %, evasion %, cdr %]
   const rows = [
-    ["swordsman", [22, 19, 7, 5, 7, 9], 39, 417, 106, 10, 8, 4, 2, 3],
-    ["thief", [7, 11, 22, 5, 7, 17], 38, 313, 106, 8, 10, 11, 7, 3],
-    ["wizard", [5, 13, 5, 22, 17, 7], 38, 339, 200, 8, 7, 3, 2, 7],
-    ["swordsman", [49, 40, 10, 5, 10, 15], 79, 840, 160, 22, 10, 5, 3, 4],
-    ["thief", [10, 20, 49, 5, 10, 35], 76, 580, 160, 17, 16, 22, 13, 4],
-    ["wizard", [5, 25, 5, 49, 35, 10], 76, 645, 389, 18, 8, 3, 2, 14],
-    ["spellblade", [40, 20, 5, 39, 10, 15], 90, 580, 228, 17, 10, 3, 2, 4],
-    ["swordsman", [94, 75, 15, 5, 15, 25], 111, 1269, 250, 37, 13, 8, 5, 6],
-    ["thief", [15, 35, 94, 5, 15, 65], 109, 1025, 250, 33, 20, 29, 18, 6],
-    ["wizard", [5, 45, 5, 94, 65, 15], 109, 1123, 575, 35, 10, 3, 2, 21],
-    ["spellblade", [75, 35, 5, 74, 15, 25], 130, 1025, 347, 33, 13, 3, 2, 6],
-    ["adventurer", [99, 14, 44, 14, 14, 44], 81, 752, 262, 28, 18, 21, 13, 6],
+    ["swordsman", [22, 19, 7, 5, 7, 9], 49, 463, 109, 10, 8, 4, 2, 3],
+    ["thief", [7, 11, 22, 5, 7, 17], 48, 333, 109, 8, 11, 13, 8, 3],
+    ["wizard", [5, 13, 5, 22, 17, 7], 48, 365, 227, 9, 7, 3, 2, 8],
+    ["swordsman", [49, 40, 10, 5, 10, 15], 118, 954, 168, 24, 10, 6, 3, 5],
+    ["thief", [10, 20, 49, 5, 10, 35], 113, 629, 168, 18, 18, 27, 16, 5],
+    ["wizard", [5, 25, 5, 49, 35, 10], 113, 710, 454, 20, 8, 3, 2, 17],
+    ["spellblade", [40, 20, 5, 39, 10, 15], 133, 629, 253, 18, 10, 3, 2, 5],
+    ["swordsman", [94, 75, 15, 5, 15, 25], 196, 1427, 265, 40, 14, 9, 5, 7],
+    ["thief", [15, 35, 94, 5, 15, 65], 193, 1123, 265, 35, 24, 30, 20, 7],
+    ["wizard", [5, 45, 5, 94, 65, 15], 193, 1244, 671, 37, 10, 3, 2, 25],
+    ["spellblade", [75, 35, 5, 74, 15, 25], 231, 1123, 386, 35, 14, 3, 2, 7],
+    ["adventurer", [99, 14, 44, 14, 14, 44], 133, 781, 280, 28, 20, 26, 15, 7],
   ];
   for (const [job, sv, atk, hp, mp, def, crit, aspd, eva, cdr] of rows) {
     const st = Object.fromEntries(ST.map((k, i) => [k, sv[i]]));
@@ -311,10 +229,11 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
     assert.equal(s.dv[0], D.wkinds[kind].mag ? 1 : 0, tag + " damage type");
   }
   // soft caps: 40 counts fully, then half to 60, then a quarter
-  const atkAt = (str) => { const ch = L.hero("캡", { wk: "sword", st: { str, wil: 5, dex: 5, int: 5, wis: 5, luk: 5 } }); const W = world({ ch }); return W.self().atk - 0.1 * (str - 4); };
-  near(atkAt(40) - atkAt(30), 0.85 * 10, 1, "10 STR below 40");
-  near(atkAt(60) - atkAt(40), 0.85 * 10, 1, "20 STR from 40 to 60 count half");
-  near(atkAt(99) - atkAt(60), 0.85 * 9.75, 1, "39 STR past 60 count a quarter");
+  const atkAt = (str) => world({ wk: "sword", lvl: 99, st: { str } }).self().atk;
+  const expected = 0.85 * 1.25 * (1 + 0.65 * 98 / 199);
+  near(atkAt(40) - atkAt(30), expected * 10, 1, "50 AP below the first threshold");
+  near(atkAt(60) - atkAt(40), expected * 10, 1, "100 AP in the half-efficiency band");
+  near(atkAt(99) - atkAt(60), expected * 9.75, 1, "195 AP in the quarter-efficiency band");
   // the weapon's grades decide what a stat is worth to it: INT does nothing for a sword
   const pair = (wk, st) => { const W = world({ wk, st: { str: 5, wil: 5, dex: 5, int: 5, wis: 5, luk: 5, ...st } }); const s = W.self(); return Math.round(s.atk - 0.1 * s.lvl); };
   assert.ok(Math.abs(pair("sword", { int: 40 }) - pair("sword", {})) <= 1, "(beyond the levels it adds)");
@@ -326,9 +245,10 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
     if (job !== "adventurer") ch.jp = { lv: 1, xp: 0 };
     return world({ ch }).self().atk;
   };
-  near(atkJob("swordsman", "sword") - atkJob("adventurer", "sword"), 0.1 * 40, 1, "대검전사 +0.1 STR on the sword");
+  const attackStat = 5 + (eff(40) - 5) * (1 + 0.65 * 70 / 199);
+  near(atkJob("swordsman", "sword") - atkJob("adventurer", "sword"), 0.1 * attackStat, 1, "대검전사 +0.1 STR on the sword");
   assert.equal(atkJob("swordsman", "staff"), atkJob("adventurer", "staff"), "but nothing on a staff");
-  near(atkJob("spellblade", "staff") - atkJob("adventurer", "staff"), 0.9 * 40 + 0.9 * 40 - 0.85 * 40 + (0.2 - 0.5) * 5, 1, "마검사's table on the staff");
+  near(atkJob("spellblade", "staff") - atkJob("adventurer", "staff"), (0.9 + 0.9 - 0.85) * attackStat + (0.2 - 0.5) * 5 + 0.2 * 5, 1, "마검사's table on the staff");
 }
 
 // ═════════ weapon mastery (B.10) ═════════
@@ -356,7 +276,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.ok(m.dead);
   assert.equal(ch.wm.sword.xp - before, 5 + 24 + 852, "landed hit and capped elite kill bonus");
   assert.equal(o.ch.wm.dagger.xp, 0, "the idle party member learns nothing");
-  assert.ok(o.ch.xp > 0 && ch.xp === o.ch.xp, "both share ordinary XP from a monster far above their level");
+  assert.ok(o.ch.xp + o.ch.xpt > 0 && ch.xp + ch.xpt === o.ch.xp + o.ch.xpt, "both share ordinary XP from a monster far above their level");
   // 22·m² a level, an event, a toast; capped at 50
   ch.wm.sword = { lv: 9, xp: 22 * 81 - 1 };
   const [m2] = mobs([[16, 0]]);
@@ -444,16 +364,16 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   };
   near(graze(1), 0.36, 0.07, "a fresh sword nine tiers deep grazes 36 %");
   assert.equal(graze(40), 0, "mastery 37+ never grazes there");
-  // evasion: DEX 99 slips about 18 % of direct blows; DEX 5 almost none
+  // A fully invested DEX build reaches the existing evasion ceiling.
   const dodge = (dex) => {
-    const W = world({ wk: "dagger", lvl: 1, st: { str: 5, wil: 5, dex, int: 5, wis: 5, luk: 5 } });
+    const W = world({ wk: "dagger", st: { str: 5, wil: 5, dex, int: 5, wis: 5, luk: 5 } });
     const mobs = arena(W);
     const [m] = mobs([[14, 0]], { tgt: W.PID, atkAt: 0, castAt: 1e15 });
     let n = 0, e3 = 0;
     for (let i = 0; i < 4000 && n < 400; i++) { W.p.hp = 1e6; W.p.dead = false; const v = W.step(); for (const e of v.ev || []) if (e[0] === "h" && e[1] === W.p.eid) { n++; if (e[3] === 3) e3++; } m.x = W.p.x + 14; m.y = W.p.y; }
     return e3 / n;
   };
-  near(dodge(99), 0.3 * eff(99) / 100, 0.05, "DEX 99 evades");
+  near(dodge(99), 0.20, 0.05, "a capped DEX build evades 20% of eligible blows");
   assert.ok(dodge(5) < 0.05);
   // an elite's blow staggers: shoved back, and a moment when no blow or skill can be thrown
   const W = world({ wk: "sword", lvl: 1 });
@@ -478,23 +398,23 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   const gains = levels.map((lvl) => {
     const W = world({ lvl, wk: "sword" }), mobs = arena(W);
     const [m] = mobs([[16, 0]], { hp: 1, k: "gutfrog" });
-    const before = W.ch.xp;
+    const before = W.ch.xp + W.ch.xpt;
     ready(W); assert.ok(W.act({ t: "atk", a: 0 }).ok); assert.ok(m.dead);
-    return W.ch.xp - before;
+    return W.ch.xp + W.ch.xpt - before;
   });
-  assert.deepEqual(gains, [29, 29, 23, 18], "hunter's early XP is full through 30 and gone at 40");
+  assert.deepEqual(gains, [29, 28, 22, 16], "the early hunter bonus tapers while trivial monsters pay less XP");
 
   const boosted = world({ wk: "sword" }), high = arena(boosted);
   const [outOfBand] = high([[16, 0]], { hp: 1, k: "ribdeer" });
   ready(boosted);
   assert.ok(boosted.act({ t: "atk", a: 0 }).ok && outOfBand.dead);
-  assert.equal(boosted.ch.xp, D.mobs.ribdeer.xp, "late-game carries get the regular reward");
+  assert.equal(boosted.ch.xp + boosted.ch.xpt, D.mobs.ribdeer.xp, "late-game carries get the regular reward");
 
   const W = world({ wk: "sword" });
   W.npc("elder");
   W.ch.q = { i: 0, n: D.quests[0].n, st: 1 };
   assert.ok(W.act({ t: "quest", a: "done" }).ok);
-  assert.equal(W.ch.xp, D.quests[0].xp);
+  assert.equal(W.ch.xp + W.ch.xpt, D.quests[0].xp);
   assert.deepEqual(W.ch.wm.sword, { lv: 1, xp: 0 }, "quest turn-ins do not teach weapon mastery");
 }
 

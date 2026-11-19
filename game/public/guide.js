@@ -14,7 +14,6 @@ import { Sound } from "./audio.js";
 import * as Mini from "./minigames.js";
 import { addChat } from "./windows.js";
 import { typing } from "./input.js";
-import { SOFT } from "./statwin.js";
 
 const LS = "lumentale:guide", LS_ST = (n) => `lumentale:guide:${n}`;
 const FIRST = [45, 90], EVERY = [180, 300], GAP = 120;   // seconds
@@ -32,7 +31,7 @@ const coopSize = (d) => { const p = Object.keys(d.coop.parN).map(Number); return
 const TIPS = [
   // the owner's four, in his order
   T("coop1", () => "파티원들과 함께 협동 아르바이트를 플레이하고 경험치와 특별한 아이템을 획득해보세요!", null, true),
-  T("stat1", () => `모은 경험치로 캐릭터 창(${K("char")})의 능력치 탭에서 스탯업을 하실 수 있습니다. (모닥불 곁이나 수련관 앞에서)`, null, true),
+  T("stat1", () => `경험치를 채우면 자동으로 레벨업합니다. 받은 포인트는 캐릭터 창(${K("char")})의 능력치 탭에서 투자하세요.`, null, true),
   T("jobs1", (d) => `테일즈테일즈에는 총 ${jobsN(d)}종의 직업이 있어요. 다양한 직업에 도전해보세요`, null, true),
   T("reset1", () => `직업과 스탯은 초기화가 가능합니다. 자세한 방법은 도움말(${K("help")})의 '스탯과 성장'에 있어요.`, null, true),
   // 협동 아르바이트
@@ -43,9 +42,9 @@ const TIPS = [
   T("coop6", () => "협동 아르바이트 중에 가만히 서 있으면 '근무 태도 불량'으로 보수를 받지 못해요. 파티원과 함께 움직여 주세요!"),
   // 스탯과 초기화
   T("stat2", (d) => `능력치는 ${d.stats.map((x) => x[1]).join("·")} 여섯 가지예요. 능력치 위에 마우스를 올리면 영향을 주는 항목이 밝아져요.`),
-  T("stat3", (d) => `능력치를 한 칸 올릴 때마다 레벨도 1씩 올라요. 최고 레벨은 ${d.maxLv}!`),
-  T("stat4", () => `능력치는 ${SOFT[0]}과 ${SOFT[1]}을 넘기면 한 칸의 효과가 줄어들어요. 골고루 올리는 것도 방법이에요.`, lv(10)),
-  T("reset2", () => "능력치만 되돌리고 싶다면 수련관 카이의 '망각의 의식'을 찾아가세요. 되새김 인장(연금공방 제작)과 골드로 투자한 경험치를 돌려받아요.", lv(10)),
+  T("stat3", (d) => `레벨업마다 능력치 포인트를 ${d.statGrowth.perLevel}개 받아요. 최고 레벨은 ${d.maxLv}예요.`),
+  T("stat4", (d) => `능력치는 ${d.statGrowth.soft.join("와 ")}에서 추가 투자 효율이 줄어들어요.`, lv(10)),
+  T("reset2", () => "능력치를 다시 배분하려면 수련관 카이의 '망각의 의식'을 찾아가세요. 투자한 능력치 포인트를 돌려받아요.", lv(10)),
   T("reset3", () => "전직관 아르센에게 전직 초기화 주문서와 골드를 내면 모험가로 돌아갈 수 있어요. 직업 레벨은 직업별로 그대로 남아요.", (d, s) => !free(s)),
   T("reset4", () => "레벨 초기화 주문서를 쓰면 레벨과 능력치만 1로 돌아가요. 숙련 · 장비 · 골드는 그대로예요.", lv(30)),
   T("reset5", () => "초기화 주문서는 사냥터 우두머리가 드물게 떨어뜨려요.", lv(20)),

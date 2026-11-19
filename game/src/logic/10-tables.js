@@ -326,6 +326,9 @@ const mobLevelAtk = (tier) => 1 + 0.48 * mobGearPressure(tier, 1.63);
 const mobItemDef = (tier) => 1 + 2.4 * mobGearPressure(tier, 1.5);
 const mobItemHp = (tier) => mobItemDef(tier) * (1 + mobGearPressure(tier, 0.72) * Math.min(1, Math.max(0, (tier - 1) / 12)));
 const mobItemAtk = (tier) => (1 + 1.95 * mobGearPressure(tier, 1.7)) * (1 + 0.42 * mobGearPressure(tier, 1.2));
+const mobStatHp = (tier) => 1 + 0.12 * mobGearPressure(tier, 1.1);
+const mobStatAtk = (tier) => 1 + 0.055 * mobGearPressure(tier, 1.6);
+const huntXpK = (tier) => 1 + 0.22 * mobGearPressure(tier, 1.2);
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
  * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
@@ -594,9 +597,10 @@ for (const k of Object.keys(MOBS)) {
   if (!d.sp) d.sp = k;
   for (const mv in TRICKS) if (d[mv] === undefined && MOBS[d.sp] && MOBS[d.sp][mv]) d[mv] = MOBS[d.sp][mv];
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
-  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv) * mobItemAtk(d.lv));
-  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv) * mobLevelHp(d.lv) * mobItemHp(d.lv));
+  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv) * mobItemAtk(d.lv) * mobStatAtk(d.lv));
+  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv) * mobLevelHp(d.lv) * mobItemHp(d.lv) * mobStatHp(d.lv));
   if (d.def) d.def = Math.round(d.def * mobItemDef(d.lv));
+  d.xp = Math.round(d.xp * huntXpK(d.lv));
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;

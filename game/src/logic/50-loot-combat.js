@@ -85,7 +85,7 @@ function pickUp(S, p, dr) {
   return true;
 }
 /** What dying costs: 3% of the unspent experience, up to about one old level's worth (a revive feather spares it). */
-const deathLoss = (ch, p) => { const n = Math.floor(Math.min(ch.xp, 4 * pointCost(ch.lvl, STAT_K0)) * 0.03); return p ? Math.max(0, Math.floor(pfxNum(p, "loss", n))) : n; };
+const deathLoss = (ch, p) => { const n = Math.floor(Math.min(ch.xp, levelXp(ch.lvl)) * 0.03); return p ? Math.max(0, Math.floor(pfxNum(p, "loss", n))) : n; };
 function takeItem(ch, id, n) {
   for (let i = ch.inv.length - 1; i >= 0 && n > 0; i--) {
     const s = ch.inv[i];
@@ -188,6 +188,11 @@ const DROP_TYPES = [["weapon", 24], ["helm", 13], ["armor", 15], ["gloves", 13],
 
 /** A dropped weapon's kind: half the time the looter's own, else any of the six. */
 const dropKind = (S, p) => (rnd(S) < 0.5 ? weaponKind(p.ch) : WK_ORDER[ri(S, 0, WK_ORDER.length - 1)]);
+const huntBandK = (level, tier) => 1 - 0.75 * clamp((toTier(level) - tier - 5) / 17, 0, 1);
+function gearDropChance(d, rank, find, band) {
+  const base = rank === 2 || d.chest ? 1 : rank === 1 ? 0.35 + 0.08 * mobGearPressure(d.lv) : d.gear * (1.18 + 0.57 * mobGearPressure(d.lv));
+  return Math.min(1, base * (1 + find / 100) * (rank === 2 || d.chest ? 1 : 0.6 + 0.4 * band));
+}
 /** What one looter finds on one corpse. Everyone in the party rolls their own. */
 function lootFor(S, rt, mob, p) {
   const d = MOBS[mob.k];
@@ -196,11 +201,12 @@ function lootFor(S, rt, mob, p) {
   const share = allies(S, p).length;
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
   const fx = pfxLoot(S, rt, p, mob, "drop");   // the powers that add to this kill's loot (51-prefix.js); all 0 without one
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1);
+  const band = !d.chest && !mob.dim ? huntBandK(p.ch.lvl, d.lv) : 1;
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
   const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
   for (let i = 0; i < tries; i++) {
-    if (rnd(S) >= (rank === 2 || d.chest ? 1 : rank === 1 ? 0.35 : d.gear) * (1 + (st.mf + fx.mf) / 100)) continue;
+    if (rnd(S) >= gearDropChance(d, rank, st.mf + fx.mf, band)) continue;
     let tier = tierFor(d.lv);
     if (rank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
@@ -235,18 +241,26 @@ function lootFor(S, rt, mob, p) {
 
 // ───────────────────────────── combat ─────────────────────────────
 
-/**
- * Experience only piles up: it is spent on stat points at a campfire or at 수련관 카이 (action
- * `train`, one point = one level). The first time a point is affordable, a word says where.
- */
+/** Award experience, carrying excess through every earned level. */
 function gainXp(S, p, n) {
   const ch = p.ch;
   n = Math.max(1, Math.round(n * (1 + stats(p).xp / 100)));
+  const from = ch.lvl;
   ch.xp = Math.min(2e9, ch.xp + n);
   p.gain.push(["xp", n]);
-  if (!p.lvHint && ch.lvl < MAXLV && ch.xp >= Math.min(...nextCosts(ch).filter((c) => c > 0))) {
-    p.lvHint = true;
-    toast(p, "레벨을 올릴 수 있습니다 — 모닥불이나 수련관에서 능력치를 고르세요.");
+  advanceLevels(ch);
+  if (ch.lvl > from) {
+    const rt = S.maps[p.map];
+    p.stc = null;
+    if (!p.dead) { const st = stats(p); p.hp = st.mhp; p.mp = st.mmp; }
+    p.gain.push(["lvl", ch.lvl]);
+    rt.ev.push(["l", p.eid]);
+    rt.who = true;
+    toast(p, `레벨 ${ch.lvl}! 능력치 포인트 +${(ch.lvl - from) * AP_PER_LEVEL}`);
+    for (let l = from + 1; l <= ch.lvl; l++) if (l % 50 === 0) sys(S, `${ch.name}님이 레벨 ${l}${pp(l, "을를")} 달성했습니다!`);
+    tutStep(S, p, "level");
+    checkAch(S, p);
+    saveSoon(p);
   }
   p.dirty = true;
 }
@@ -494,7 +508,8 @@ function killMob(S, rt, mob) {
     const early = hitters[p.pid] > 0 && wmEligible(p, d) && d.lv <= toTier(ch.lvl) + HUNT_EARLY.ahead
       ? HUNT_EARLY.extra * clamp((HUNT_EARLY.end - ch.lvl) / (HUNT_EARLY.end - HUNT_EARLY.full), 0, 1)
       : 0;
-    gainXp(S, p, xp * (1 + pfxLoot(S, rt, p, mob, "xp").xp / 100) * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
+    const band = field ? huntBandK(ch.lvl, d.lv) : 1;
+    gainXp(S, p, xp * band * (1 + pfxLoot(S, rt, p, mob, "xp").xp / 100) * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
     ch.kills = (ch.kills || 0) + 1;
     ch.mk[mob.k] = (ch.mk[mob.k] || 0) + 1;
     const now = masteryRank(ch, mob.k);

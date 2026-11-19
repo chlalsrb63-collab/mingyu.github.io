@@ -1,15 +1,4 @@
-/**
- * 능력치 (docs/design/jobs-and-stats.md B.1–B.4, E; J3): the C window's 능력치 tab, where experience
- * buys stat points by a campfire or at 수련관 카이, and 카이's own window (the starter weapon, the
- * way to the stat tab, 망각의 의식 = respec).
- *
- * The only rule mirrored here is the price of a batch (`costOf`, from `defs.lvt lvDiv statK`, exactly
- * as `45-jobs.js pointCost`/`batchCost`); the server re-checks every action. What each stat feeds
- * (`FEEDS`) only lights rows of the derived list while a stat is hovered.
- *
- * Reads `self`: lvl xp xpt st nx rs sw job wk atk mhp mmp def crit critd mf dv; `defs`: stats lvt lvDiv lvc
- * statK maxLv jobs scale grade wkOrder wkName items. Actions: `train {a}`, `starter {wk}`, `respec`.
- */
+/** The stat allocation tab, starter weapon and respec at 카이. The server supplies earned points and caps. */
 import { iconImg } from "./uiicons.js";
 import { kindIcon } from "./mastery.js";
 import * as Info from "./infocard.js";
@@ -21,7 +10,6 @@ export function init(deps) { C = deps; }
 const ST = ["str", "wil", "dex", "int", "wis", "luk"];
 /** The glyph and ink of each stat (also the C window's 장비 tab). */
 export const STAT_GLYPH = { str: ["fist", "#ff9a6a"], wil: ["heart", "#f07a8a"], dex: ["feather", "#9af0ae"], int: ["burst", "#8ab8ff"], wis: ["eye", "#c8a0ff"], luk: ["clover", "#ffe070"] };
-export const CAP = 99, SOFT = [40, 60];   // (the help window reads both)
 const BATCH = 50;
 /** The derived list: [key, name, value of self]. */
 const DERIVED = [
@@ -37,25 +25,6 @@ const FEEDS = { str: ["kbr"], wil: ["mhp", "def", "poise", "res"], dex: ["aspd",
 const el = (...a) => C.el(...a);
 const fmt = (n) => (Number.isFinite(n) ? n.toLocaleString() : "—");
 const jobName = (s) => (C.G.defs.jobs[s.job] || { name: "모험가" }).name;
-
-// ── what points cost (the server's pointCost / batchCost, rounded the same way) ──
-/** The experience a batch `a` (six counts, stat order) costs from the sheet `s`; Infinity past a cap. */
-export function costOf(s, a) {
-  const D = C.G.defs, [K, K0] = D.statK;
-  let lvl = s.lvl, c = 0;
-  for (let i = 0; i < ST.length; i++) {
-    let v = s.st[ST[i]];
-    for (let n = 0; n < a[i]; n++) {
-      if (lvl >= D.maxLv || v >= CAP) return Infinity;
-      const base = D.lvt ? D.lvt[lvl - 1] / D.lvDiv : D.lvc[lvl - 1];
-      c += Math.round(base * (1 + K * Math.max(0, v - K0)));
-      lvl++; v++;
-    }
-  }
-  return c;
-}
-/** The cheapest next point now (0 when nothing can be bought): the HUD bar's target. */
-export const cheapest = (s) => Math.min(...s.nx.filter((c) => c > 0), Infinity);
 
 // ── the weapon in hand: how it scales (job adjusted), as grade letters ──
 /** A coefficient as a grade: the highest grade at or under it, "+" when a job lifted it past. */
@@ -80,24 +49,20 @@ export function scaleText(s, k) {
 
 // ── the stat tab ──
 const pend = [0, 0, 0, 0, 0, 0];
-let pendLvl = -1, lit = -1;
+let lastStats = "", lit = -1;
 const sum = (a) => a.reduce((n, v) => n + v, 0);
 /** Whatever the panel shows besides `self` (for the window's redraw key). */
 export const key = () => pend.join();
 
-/**
- * Fill `box` with the stat tab. `here`: by a campfire or at 수련관 카이 (points can be bought);
- * `atTrainer`: at 카이 (respec is offered in his window, the tab only points there).
- */
-export function render(box, s, { here, atTrainer }) {
+export function render(box, s) {
   const D = C.G.defs;
-  // the sheet moved on (points bought, a reset, a death's loss): what was pending is void
-  if (pendLvl !== s.lvl || costOf(s, pend) > s.xp) { pend.fill(0); pendLvl = s.lvl; }
+  const { cap, soft, perLevel } = D.statGrowth;
+  const statKey = ST.map((k) => s.st[k]).join();
+  if (statKey !== lastStats || sum(pend) > s.ap) { pend.fill(0); lastStats = statKey; }
   box.textContent = "";
   const hd = el("div", "sw-head");
   const xpn = el("span", "xpn");
-  xpn.append(iconImg("up", "#9af0ae"), el("b", "xp", fmt(s.xp)));
-  xpn.title = "보유 경험치 — 능력치 포인트를 사는 데 씁니다";
+  xpn.append(iconImg("up", "#9af0ae"), el("b", "xp", `남은 포인트 ${fmt(s.ap)}`));
   hd.append(Info.jobMark(s.job), el("b", "", `Lv.${s.lvl} ${jobName(s)}`), xpn);
   box.append(hd);
   // what the hand wants: its scaling stats get a grade badge in their rows
@@ -109,10 +74,7 @@ export function render(box, s, { here, atTrainer }) {
     hb.append(ic, el("b", "", D.wkName[hand]), el("span", "", ` — ${scaleText(s, hand)}`), el("small", "", "등급이 높은 능력치가 공격력을 크게 올립니다"));
   } else hb.append(el("small", "", "무기를 들면 그 무기가 쓰는 능력치에 등급이 표시됩니다."));
   box.append(hb);
-  if (!here) box.append(el("p", "sw-away", "모닥불 곁이나 수련관 앞에서 레벨을 올릴 수 있습니다."));
-  else if (s.lvl >= D.maxLv) box.append(el("p", "sw-away", "최고 레벨입니다."));
-
-  const total = costOf(s, pend), n = sum(pend);
+  const n = sum(pend);
   const rows = el("div", "sw-rows");
   D.stats.forEach(([k, name, desc], i) => {
     const v = s.st[k], p = pend[i], [glyph, ink] = STAT_GLYPH[k] || ["star"];
@@ -123,35 +85,26 @@ export function render(box, s, { here, atTrainer }) {
     Info.bind(nm, `${name} — ${desc}`, () => Info.statCard(k));
     if (sc[k]) { const g = el("span", "gr", gradeOf(sc[k])); g.title = `${D.wkName[hand]}의 공격력이 ${name}에 따라 오릅니다 (등급 ${gradeOf(sc[k])})`; nm.append(g); }
     const val = el("div", "val");
-    const vb = el("b", v + p >= SOFT[1] ? "cap2" : v + p >= SOFT[0] ? "cap1" : "", String(v + p));
-    vb.title = v + p >= SOFT[1] ? "60부터는 1/4만 반영됩니다" : v + p >= SOFT[0] ? "40부터는 절반만 반영됩니다" : "40까지는 모두 반영됩니다";
+    const vb = el("b", v + p >= soft[1] ? "cap2" : v + p >= soft[0] ? "cap1" : "", String(v + p));
+    vb.title = v + p >= soft[1] ? "추가 투자 효율 25%" : v + p >= soft[0] ? "추가 투자 효율 50%" : "기본 투자 효율 100%";
     val.append(vb);
     if (p) val.append(el("em", "pn", `+${p}`));
-    const add = pend.slice(); add[i]++;
-    const step = costOf(s, add) - total;
     const minus = el("button", "btn small pm", "−");
     minus.disabled = !p;
     minus.title = "한 칸 빼기 (Shift: 모두)";
     minus.addEventListener("click", (e) => { pend[i] = e.shiftKey ? 0 : Math.max(0, p - 1); C.Sound.play("tick"); C.redraw(); });
     const plus = el("button", "btn small pm", "+");
-    const can = here && !s.dead && s.nx[i] > 0 && v + p < CAP && s.lvl + n < D.maxLv && n < BATCH && total + step <= s.xp;
+    const can = !s.dead && v + p < cap && n < Math.min(BATCH, s.ap);
     plus.disabled = !can;
-    plus.title = !here ? "모닥불 곁이나 수련관 앞에서 올릴 수 있습니다" : v + p >= CAP ? `능력치는 ${CAP}까지` : Number.isFinite(step) ? `+1: ${fmt(step)} EXP (Shift: +5)` : "최고 레벨";
+    plus.title = v + p >= cap ? `능력치는 ${cap}까지` : "+1 포인트 (Shift: +5)";
     plus.addEventListener("click", (e) => {
-      // Shift adds up to five, as many as the experience pays for
-      for (let t = e.shiftKey ? 5 : 1; t > 0; t--) {
-        const a = pend.slice(); a[i]++;
-        if (sum(a) > BATCH || s.st[k] + a[i] > CAP || s.lvl + sum(a) > D.maxLv || costOf(s, a) > s.xp) break;
-        pend[i]++;
-      }
-      pendLvl = s.lvl;
+      pend[i] += Math.max(0, Math.min(e.shiftKey ? 5 : 1, s.ap - n, BATCH - n, cap - v - p));
       C.Sound.play("tick");
       C.redraw();
     });
     const btns = el("div", "pmb");
     btns.append(minus, plus);
-    const nx = el("small", "nx", s.nx[i] ? `다음 ${fmt(Number.isFinite(step) ? step : s.nx[i])}` : "최대");
-    row.append(nm, val, btns, nx);
+    row.append(nm, val, btns, el("small", "nx", v + p >= cap ? "최대" : ""));
     // hovering a stat lights what it raises below
     row.addEventListener("mouseenter", () => { if (lit !== i) { lit = i; light(box, k, sc); } });
     row.addEventListener("mouseleave", () => { if (lit === i) { lit = -1; light(box, "", sc); } });
@@ -161,17 +114,15 @@ export function render(box, s, { here, atTrainer }) {
 
   // the footer: the next point, the batch, confirm or clear
   const ft = el("div", "sw-foot");
-  const nxt = (() => { let m = Infinity; for (let i = 0; i < 6; i++) { if (!s.nx[i]) continue; const a = pend.slice(); a[i]++; m = Math.min(m, costOf(s, a) - total); } return m; })();
   const info = el("div", "sum");
-  info.append(el("span", "", "다음 1포인트 "), el("b", "", fmt(nxt)));
-  if (n) info.append(el("span", "", ` · ${n}포인트 합계 `), el("b", total > s.xp ? "bad" : "", fmt(total)), el("span", "", ` → Lv.${s.lvl + n}`));
+  info.append(el("span", "", `${n}포인트 투자 · 확정 후 ${fmt(s.ap - n)} 남음`));
   const clear = el("button", "btn small", "되돌리기");
   clear.disabled = !n;
   clear.title = "고른 포인트를 모두 비웁니다";
   clear.addEventListener("click", () => { pend.fill(0); C.Sound.play("close"); C.redraw(); });
   const ok = el("button", "btn small gold", "확정");
-  ok.disabled = !n || !here || total > s.xp;
-  ok.addEventListener("click", () => { C.act({ t: "train", a: pend.slice() }); C.Sound.play("stat_train"); });
+  ok.disabled = !n || s.dead || n > s.ap;
+  ok.addEventListener("click", () => { C.act({ t: "train", a: pend.slice() }); pend.fill(0); C.Sound.play("stat_train"); C.redraw(); });
   ft.append(info, clear, ok);
   box.append(ft);
 
@@ -185,7 +136,7 @@ export function render(box, s, { here, atTrainer }) {
   }
   box.append(dv);
   if (lit >= 0) light(box, ST[lit], sc);
-  box.append(el("p", "hint", `레벨 1 = 능력치 1포인트. 한 능력치는 40부터 절반, 60부터 1/4만 반영되니 고르게 올리는 편이 좋습니다. 능력치에 마우스를 올리면 그 능력치가 올리는 수치가 빛나고, 그림을 누르면 설명이 열립니다.${atTrainer ? "" : ` 능력치 되돌리기는 수련관 카이에게서 (무료 ${s.rs}회).`}`));
+  box.append(el("p", "hint", `레벨업당 ${perLevel}포인트. 한 능력치는 ${soft[0]}부터 추가 투자 효율이 50%, ${soft[1]}부터 25%가 됩니다. 수련관 카이에게서 투자한 포인트를 되돌릴 수 있습니다.`));
 }
 /** Light the derived rows stat `k` raises (attack too when the hand scales with it). */
 function light(box, k, sc) {
@@ -235,14 +186,14 @@ export function renderTrainer(box, s, { atTrainer }) {
     b.addEventListener("click", () => { C.act({ t: "starter", wk: pick }); C.Sound.play("ok"); });
     go.append(b);
     box.append(go);
-  } else box.append(el("p", "say", "쌓은 경험치를 바치면 네 육체 자체를 단련해 주지. 모닥불 곁에서도 할 수 있다네."));
+  } else box.append(el("p", "say", "성장하며 얻은 능력치 포인트를 원하는 능력에 투자해 보게."));
 
   // levels: the stat tab does it
   const lv = el("div", "tw-sec");
-  lv.append(C.section("레벨 올리기", "up"));
-  const need = cheapest(s), ready = Number.isFinite(need) && s.xp >= need;
+  lv.append(C.section("능력치 투자", "up"));
+  const ready = s.ap > 0;
   const line = el("div", "tw-line");
-  line.append(el("span", "", `Lv.${s.lvl} · 경험치 ${fmt(s.xp)} · 다음 1포인트 ${Number.isFinite(need) ? fmt(need) : "—"}`));
+  line.append(el("span", "", `Lv.${s.lvl} · 남은 포인트 ${fmt(s.ap)}`));
   const open = el("button", "btn small" + (ready ? " gold" : ""), ready ? "능력치 올리기 ★" : "능력치 보기");
   open.addEventListener("click", () => C.openStats());
   line.append(open);
@@ -254,9 +205,9 @@ export function renderTrainer(box, s, { atTrainer }) {
   rs.append(C.section("망각의 의식", "clock"));
   const fee = s.respecCost || 0, seal = C.G.defs.jf.respecItem;
   const hasSeal = s.inv.some((st) => st.id === seal);
-  const why = s.lvl <= 1 ? "되돌릴 능력치가 없습니다" : !atTrainer ? "수련관 카이 앞에서 할 수 있습니다"
+  const why = !s.spentAp ? "되돌릴 능력치가 없습니다" : !atTrainer ? "수련관 카이 앞에서 할 수 있습니다"
     : fee && !hasSeal ? "연금 숙련 Lv.10의 되새김 인장이 필요합니다" : s.gold < fee ? "골드가 부족합니다" : "";
-  rs.append(el("p", "tw-txt", `모든 능력치를 5로 되돌리고, 쓴 경험치 ${fmt(s.xpt)}을 돌려받습니다. 무기 숙련과 직업은 그대로입니다.`));
+  rs.append(el("p", "tw-txt", "투자한 능력치 포인트를 돌려받아 다시 배분할 수 있습니다."));
   const row = el("div", "tw-line");
   row.append(el("span", fee ? "fee" : "free", fee ? `${fmt(fee)}G · 되새김 인장 1개` : `무료 (${s.rs}회 남음)`));
   if (fee && !hasSeal) rs.append(el("p", "tw-txt", "되새김 인장은 보글연금공방에서 연금 숙련 Lv.10에 제작할 수 있습니다."));
@@ -270,7 +221,7 @@ export function renderTrainer(box, s, { atTrainer }) {
   } else {
     rs.append(row);
     const cf = el("div", "confirm");
-    cf.append(el("p", "", `Lv.${s.lvl} → Lv.1. 능력치를 되돌리고 경험치 ${fmt(s.xpt)}을 돌려받습니다.${fee ? ` 되새김 인장 1개와 ${fmt(fee)}G를 사용합니다.` : ""}`));
+    cf.append(el("p", "", `능력치 포인트 ${fmt(s.spentAp)}개를 돌려받습니다.${fee ? ` 되새김 인장 1개와 ${fmt(fee)}G를 사용합니다.` : ""}`));
     const yes = el("button", "btn small gold", "되돌리기"), no = el("button", "btn small", "취소");
     yes.disabled = !!why;
     yes.title = why;

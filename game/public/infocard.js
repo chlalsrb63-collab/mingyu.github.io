@@ -190,10 +190,11 @@ export function statCard(key, value) {
   const six = (G.defs.stats || []).find((s) => s[0] === key);
   if (six) {
     const [glyph, ink] = SIX[key], v = G.self ? G.self.st[key] : value;
+    const [first, second] = G.defs.statGrowth.soft;
     return {
       icon: iconImg(glyph, ink), title: six[1], tag: "능력치", text: [`${six[2]}.`],
-      rows: [["지금", v], ["반영", v >= 60 ? "60부터는 1/4만" : v >= 40 ? "40부터는 절반만" : "40까지는 모두"]],
-      how: "레벨 1 = 능력치 1포인트. 모닥불 곁이나 수련관 카이 앞에서 경험치로 올립니다.",
+      rows: [["지금", v], ["추가 투자 효율", v >= second ? "25%" : v >= first ? "50%" : "100%"]],
+      how: "레벨업으로 얻은 능력치 포인트를 캐릭터 창에서 투자할 수 있습니다.",
       btn: hooks.openStats ? [`능력치 열기 (${K("char")})`, () => hooks.openStats()] : null,
     };
   }

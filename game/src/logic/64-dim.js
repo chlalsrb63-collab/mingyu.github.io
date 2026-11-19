@@ -20,7 +20,7 @@ const dimGearAtk = (tier, share = 0.20, levelShare = 0.65) =>
 const dimAtkK = (tier) => dimGearAtk(tier) / MOB_HARD;
 // Keep the opening stagger feasible and give the top weekly challenges time to cycle their phases.
 const chalGearHp = (tier) => dimGearHp(tier, 0.25 + 0.15 * clamp((tier - 25) / 25, 0, 1)) *
-  (0.88 + 0.12 / mobItemHp(tier)) * (1 + 0.14 * mobGearPressure(tier, 1.4));
+  (0.88 + 0.12 / mobItemHp(tier)) * (1 + 0.18 * mobGearPressure(tier, 1.4));
 const chalGearAtk = (tier) => dimGearAtk(tier, 0.10, 0.45);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 function dimHk(n, lv, mlv) {

@@ -147,23 +147,8 @@ export function applyAction(S, pid, a) {
     }
     case "socket": socketApply(S, p, a.k); break;
     case "train": {
-      // one point = one level: the stats rise, a full heal as of old, the news at every fifty
-      const cost = batchCost(ch, a.a), from = ch.lvl;
-      ch.xp -= cost;
-      ch.xpt += cost;
       ST_ORDER.forEach((k, i) => { ch.st[k] += a.a[i]; });
-      ch.lvl = levelOf(ch.st);
-      p.stc = null;
-      const st = stats(p);
-      p.hp = st.mhp; p.mp = st.mmp;
-      p.gain.push(["lvl", ch.lvl]);
-      S.maps[p.map].ev.push(["l", p.eid]);
-      S.maps[p.map].who = true;
-      toast(p, `레벨 ${ch.lvl}! ${STATS.filter((_, i) => a.a[i]).map((s) => `${s[1]} +${a.a[ST_ORDER.indexOf(s[0])]}`).join(" · ")}`);
-      for (let l = from + 1; l <= ch.lvl; l++) if (l % 50 === 0) sys(S, `${ch.name}님이 레벨 ${l}${pp(l, "을를")} 달성했습니다!`);
-      tutStep(S, p, "level");
-      checkAch(S, p);
-      p.dirty = true;
+      afterGear(S, p);
       break;
     }
     case "wh": {
@@ -641,11 +626,7 @@ export function applyAction(S, pid, a) {
         ch.gold -= fee;
         takeItem(ch, RESPEC_ITEM, 1);
       } else ch.rs--;
-      ch.xp = Math.min(2e9, ch.xp + ch.xpt);
-      ch.xpt = 0;
       ch.st = freshSt();
-      ch.lvl = 1;
-      if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);
       afterGear(S, p);
       S.maps[p.map].ev.push(["u", p.eid, 2]);
       toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (되새김 인장 1개 · ${fee.toLocaleString()}G)` : " (무료)"}`);

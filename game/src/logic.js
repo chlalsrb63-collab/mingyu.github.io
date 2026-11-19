@@ -10,8 +10,7 @@
  *     set runes socketed across the loadout unlock another power;
  *   - a hunting ground is worth another lap: kill streaks, per-monster mastery,
  *     bounties that renew themselves, and a field boss the kills call out;
- *   - experience never stops mattering: it levels you up, and it can also be
- *     spent, without limit, on permanent training of your base stats;
+ *   - experience levels you up automatically and each level grants five points for your base stats;
  *   - hunting together pays: a party shares kills, quest credit and a bonus;
  *   - and there is a quiet side: campfires to sit by, fish to catch and cook,
  *     guilds, and a handful of emotes;
@@ -32,7 +31,7 @@ export const meta = { game: "테일즈테일즈", minPlayers: 1, maxPlayers: 40 
 const T = 16;
 /** The bag: INV_BASE slots to start, grown with bag_expand to INV_MAX (sheet field bagCap, 46-bag.js). */
 const INV_BASE = 40, INV_MAX = 100;
-/** Player levels run 1–200 (one level = one stat point); the world keeps its own 1–50 tiers (02-jobs-stats.js). */
+/** Player levels run 1–200; the world keeps its own 1–50 tiers (02-jobs-stats.js). */
 const MAXLV = 200;
 const STACK = 99;
 /** The order the bag's tidy button puts things in. */
@@ -138,9 +137,8 @@ const STATS = [
   ["luk", "행운", "치명타 · 치명 피해 · 아이템 발견 · 발동 확률"],
 ];
 const ST_ORDER = STATS.map((s) => s[0]);
-const ST_BASE = 5, ST_CAP = 99;
-/** Point cost: pointCost(N, s) = round(tierXp(toTier(N)) / LV_DIV × (1 + STAT_K × max(0, s − STAT_K0))). */
-const LV_DIV = 4.4, STAT_K = 0.004, STAT_K0 = 30;
+const ST_BASE = 5, AP_PER_LEVEL = 5, ST_CAP = 475;
+const ST_SOFT = [180, 280];
 /** The world's own scale (monster levels, map bands): 1–50. Players see 4·tier − 3. */
 const TIER_MAX = 50;
 /** Weapon kinds in wire order (`wm`, `["wm", eid, kindIndex, lv]`), and the mastery cap. */
@@ -828,6 +826,9 @@ const mobLevelAtk = (tier) => 1 + 0.48 * mobGearPressure(tier, 1.63);
 const mobItemDef = (tier) => 1 + 2.4 * mobGearPressure(tier, 1.5);
 const mobItemHp = (tier) => mobItemDef(tier) * (1 + mobGearPressure(tier, 0.72) * Math.min(1, Math.max(0, (tier - 1) / 12)));
 const mobItemAtk = (tier) => (1 + 1.95 * mobGearPressure(tier, 1.7)) * (1 + 0.42 * mobGearPressure(tier, 1.2));
+const mobStatHp = (tier) => 1 + 0.12 * mobGearPressure(tier, 1.1);
+const mobStatAtk = (tier) => 1 + 0.055 * mobGearPressure(tier, 1.6);
+const huntXpK = (tier) => 1 + 0.22 * mobGearPressure(tier, 1.2);
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
  * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
@@ -1096,9 +1097,10 @@ for (const k of Object.keys(MOBS)) {
   if (!d.sp) d.sp = k;
   for (const mv in TRICKS) if (d[mv] === undefined && MOBS[d.sp] && MOBS[d.sp][mv]) d[mv] = MOBS[d.sp][mv];
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
-  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv) * mobItemAtk(d.lv));
-  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv) * mobLevelHp(d.lv) * mobItemHp(d.lv));
+  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv) * mobItemAtk(d.lv) * mobStatAtk(d.lv));
+  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv) * mobLevelHp(d.lv) * mobItemHp(d.lv) * mobStatHp(d.lv));
   if (d.def) d.def = Math.round(d.def * mobItemDef(d.lv));
+  d.xp = Math.round(d.xp * huntXpK(d.lv));
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;
@@ -2591,14 +2593,14 @@ function XP_K(lv) {
   }
   return XP_STEPS[XP_STEPS.length - 1][1];
 }
-/** Deeper monsters drop less gold for their level: the bands last longer, and the purse should not run away. */
-const goldK = (lv) => 1 - 0.7 * clamp((lv - 8) / 28, 0, 1);
+/** Keep later hunting payouts rising without making low-level farming more rewarding. */
+const goldK = (lv) => 1 - 0.48 * clamp((lv - 8) / 42, 0, 1);
 /** Hunting's share of a kill's gold (owner, 2026-11-15: 알바 should be where gold is earned; hunting pays in loot and XP). */
 const HUNT_GOLD = 0.4;
 /**
  * The experience the world pays and charges at tier `t` (a real number: a player's level maps to
  * `toTier(lvl) = (lvl + 3) / 4`). Once the experience to the next of the old 50 levels; now the yardstick
- * for quest, daily and event rewards and for the price of a stat point (45-jobs.js pointCost).
+ * for quest, daily and event rewards and for the character experience curve (45-jobs.js levelXp).
  */
 const tierXp = (t) => Math.round((34 * Math.pow(t, 1.85) + 20) * XP_K(t));
 const xpNeed = tierXp;
@@ -8334,7 +8336,7 @@ export function devPlace(ch, map, tx, ty) {
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
-const SHEET_VERSION = 30;
+const SHEET_VERSION = 31;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -8388,7 +8390,7 @@ export function newChar(name, look, wk) {
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
-    // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
+    // XP is progress within the level; xpt is the cumulative experience already converted to levels.
     lvl: 1, xp: 0, xpt: 0, gold: 50,
     st: freshSt(), wm: freshWm(), rs: 0, sw: picked ? 1 : 0,
     inv: [{ id: "hp_s", n: 5 }, { id: "mp_s", n: 3 }],
@@ -8438,7 +8440,7 @@ function migrate(ch) {
   const fourClass = typeof ch.cls === "string" && !ch.job;
   if (fourClass) migrateV10(ch);
   delete ch.cls; delete ch.tr; delete ch.skl;
-  cleanJobs(ch);
+  cleanJobs(ch, fourClass || (ch.v | 0) < 31);
   // an older, shorter look is padded with "as before"
   ch.look = cleanLook(ch.look);
   const recovered = [];
@@ -9165,19 +9167,22 @@ function leaveParty(S, p) {
 /** Player level (1–200) → world tier (1–50, real); tier → the level printed on screen. */
 const toTier = (lvl) => (lvl + 3) / 4;
 const shownLv = (t) => 4 * t - 3;
-/** Soft caps: a stat counts fully to 40, half to 60, a quarter beyond. */
-const eff = (s) => Math.min(s, 40) + 0.5 * clamp(s - 40, 0, 20) + 0.25 * Math.max(0, s - 60);
-/** The experience one stat point costs at level `N` (buying N → N+1) for a stat now at `s`. */
-const pointCost = (N, s) => Math.round((tierXp(toTier(N)) / LV_DIV) * (1 + STAT_K * Math.max(0, s - STAT_K0)));
-/** A batch of points `a` (six counts, ST_ORDER), bought one at a time in stat order. */
-function batchCost(ch, a) {
-  let lvl = ch.lvl, c = 0;
-  ST_ORDER.forEach((k, i) => { let s = ch.st[k]; for (let n = 0; n < a[i]; n++) c += pointCost(lvl++, s++); });
-  return c;
+/** Invested AP keeps its full weight until the first threshold, then half and a quarter. */
+const eff = (s) => ST_BASE + 0.25 * (Math.min(s, ST_SOFT[0]) - ST_BASE +
+  0.5 * clamp(s - ST_SOFT[0], 0, ST_SOFT[1] - ST_SOFT[0]) + 0.25 * Math.max(0, s - ST_SOFT[1]));
+const levelXp = (lv) => Math.round(tierXp(toTier(lv)) / 4.4 * (1 + 0.13 * ((lv - 1) / (MAXLV - 1)) ** 1.4));
+const spentPoints = (st) => ST_ORDER.reduce((n, k) => n + st[k] - ST_BASE, 0);
+const statPoints = (ch) => Math.max(0, (ch.lvl - 1) * AP_PER_LEVEL - spentPoints(ch.st));
+/** Experience banked during this level rolls through every earned level in order. */
+function advanceLevels(ch) {
+  while (ch.lvl < MAXLV) {
+    const need = levelXp(ch.lvl);
+    if (ch.xp < need) break;
+    ch.xp -= need;
+    ch.xpt = Math.min(2e9, ch.xpt + need);
+    ch.lvl++;
+  }
 }
-const levelOf = (st) => 1 + ST_ORDER.reduce((n, k) => n + st[k] - ST_BASE, 0);
-/** What the next point in each stat costs now (0 when that stat or the level is at its cap). */
-const nextCosts = (ch) => ST_ORDER.map((k) => (ch.st[k] >= ST_CAP || ch.lvl >= MAXLV ? 0 : pointCost(ch.lvl, ch.st[k])));
 /** Mastery experience from level m to m + 1. */
 const wmNeed = (m) => 22 * m * m;
 const freshWm = () => Object.fromEntries(WK_ORDER.map((k) => [k, { lv: 1, xp: 0 }]));
@@ -9261,7 +9266,8 @@ function deriveStats(p) {
   const wAtk = w ? gearBaseValue(w, "atk") : 0;
   const sc = scaleOf(ch, wk), hk = (JOBS[ch.job] && JOBS[ch.job].handK && JOBS[ch.job].handK[wk]) || 1;
   let core = SFX.atk[0] + SFX.atk[1] * lv;
-  for (const k of Object.keys(sc)) core += sc[k] * E[k];
+  const spentAtkK = 1 + 0.65 * ((lv - 1) / (MAXLV - 1));
+  for (const k of Object.keys(sc)) core += sc[k] * (ST_BASE + (E[k] - ST_BASE - cm.st[k]) * spentAtkK + cm.st[k]);
   const wm = w ? ch.wm[wk].lv : 0;
   const jl = Math.max(0, (ch.jp?.lv || 0) - 1);
   const luk = E.luk, dex = E.dex, wil = E.wil, wis = E.wis;
@@ -9550,25 +9556,23 @@ const oldSkillCost = (lv, L) => ({ gold: Math.round((50 + lv * 25) * L * (L + 1)
 /** The levels the six skills of every old class were learned at (for the refund). */
 const OLD_SK_LV = [3, 7, 12, 18, 25, 35];
 /**
- * Spend `points` one by one on the stat furthest below its share (ties: stat order), none past 99.
- * Returns the stats and the experience that path cost (the xpt of a migrated sheet).
+ * Spend points one by one on the stat furthest below its share (ties: stat order).
  */
-function allocate(shares, points) {
+function allocate(shares, points, cap = ST_CAP) {
   const st = freshSt();
-  let xpt = 0;
   for (let n = 0; n < points; n++) {
     let best = null, bd = -Infinity;
     for (const k of ST_ORDER) {
-      if (st[k] >= ST_CAP) continue;
+      if (st[k] >= cap) continue;
       const gap = (shares[k] || 0) * (n + 1) - (st[k] - ST_BASE);
       if (gap > bd + 1e-9) { bd = gap; best = k; }
     }
     if (!best) break;
-    xpt += pointCost(1 + n, st[best]);
     st[best]++;
   }
-  return { st, xpt };
+  return st;
 }
+const experienceEarned = (lvl) => Array.from({ length: lvl - 1 }, (_, i) => levelXp(i + 1)).reduce((sum, n) => sum + n, 0);
 /**
  * A sheet from the four-class days (has `cls`, no `job`): a level 4L−3 hero with stats laid out like
  * its class, the class weapon's mastery at its old level, the class's job from old level 20, every
@@ -9582,7 +9586,7 @@ function migrateV10(ch) {
   const w = isObj(ch.eq) && ch.eq.weapon && typeof ch.eq.weapon.id === "string" ? ch.eq.weapon.id : "";
   if (cls === "mage" && w.startsWith("w_book_")) { wk = "book"; job = "warlock"; }
   const lvl = Math.min(197, 4 * L - 3);
-  const { st, xpt } = allocate(BUILD[wk], lvl - 1);
+  const st = allocate(BUILD[wk], lvl - 1, 99), xpt = experienceEarned(lvl);
   let xp = num(ch.xp) ? Math.max(0, Math.floor(ch.xp)) : 0, gold = num(ch.gold) ? Math.max(0, Math.floor(ch.gold)) : 0;
   // stat training: 120 + 40n experience a point, all back
   const tr = isObj(ch.tr) ? ch.tr : {};
@@ -9601,15 +9605,23 @@ function migrateV10(ch) {
   return ch;
 }
 /** Clamp a v10 sheet's jobs-and-stats fields (every load; never trust what was stored). */
-function cleanJobs(ch) {
+function cleanJobs(ch, legacy) {
   const st = isObj(ch.st) ? ch.st : {};
   ch.st = {};
-  for (const k of ST_ORDER) ch.st[k] = clamp(Math.floor(num(st[k]) ? st[k] : ST_BASE), ST_BASE, ST_CAP);
-  // a level is one point above 5; a sheet claiming more than 200 gives the extra back from its highest stats
-  while (levelOf(ch.st) > MAXLV) { const k = ST_ORDER.reduce((a, b) => (ch.st[b] > ch.st[a] ? b : a)); ch.st[k]--; }
-  ch.lvl = levelOf(ch.st);
+  for (const k of ST_ORDER) {
+    const raw = Math.floor(num(st[k]) ? st[k] : ST_BASE);
+    ch.st[k] = legacy ? ST_BASE + AP_PER_LEVEL * (clamp(raw, ST_BASE, 99) - ST_BASE) : clamp(raw, ST_BASE, ST_CAP);
+  }
+  const level = legacy ? 1 + spentPoints(ch.st) / AP_PER_LEVEL : Math.floor(num(ch.lvl) ? ch.lvl : 1);
+  ch.lvl = clamp(level, 1, MAXLV);
+  const budget = (ch.lvl - 1) * AP_PER_LEVEL;
+  for (let excess = spentPoints(ch.st) - budget; excess > 0; excess--) {
+    const k = ST_ORDER.reduce((a, b) => ch.st[b] > ch.st[a] ? b : a);
+    ch.st[k]--;
+  }
   ch.xp = num(ch.xp) ? clamp(Math.floor(ch.xp), 0, 2e9) : 0;
   ch.xpt = num(ch.xpt) ? clamp(Math.floor(ch.xpt), 0, 2e9) : 0;
+  if (legacy) advanceLevels(ch);
   const wm = isObj(ch.wm) ? ch.wm : {};
   ch.wm = {};
   for (const k of WK_ORDER) {
@@ -9638,10 +9650,11 @@ export function hero(name, o = {}) {
   const wk = WK_ORDER.includes(o.wk) ? o.wk : "sword";
   ch.eq.weapon = plain(`w_${WK_ID[wk]}_1`);
   ch.sw = 1;
-  const lvl = clamp(o.lvl | 0 || 1, 1, MAXLV);
-  if (isObj(o.st)) { for (const k of ST_ORDER) if (num(o.st[k])) ch.st[k] = o.st[k]; }
-  else { const a = allocate(isObj(o.build) ? o.build : BUILD[wk], lvl - 1); ch.st = a.st; ch.xpt = a.xpt; }
-  ch.lvl = levelOf(ch.st);
+  const preset = isObj(o.st);
+  if (preset) for (const k of ST_ORDER) if (num(o.st[k])) ch.st[k] = clamp(ST_BASE + (o.st[k] - ST_BASE) * AP_PER_LEVEL, ST_BASE, ST_CAP);
+  ch.lvl = clamp(o.lvl | 0 || (preset ? 1 + spentPoints(ch.st) / AP_PER_LEVEL : 1), 1, MAXLV);
+  if (!preset) ch.st = allocate(isObj(o.build) ? o.build : BUILD[wk], (ch.lvl - 1) * AP_PER_LEVEL);
+  ch.xpt = experienceEarned(ch.lvl);
   if (o.migrate) {
     const L = Math.round(toTier(ch.lvl));
     ch.wm[wk].lv = Math.min(WM_MAX, L);
@@ -9874,9 +9887,8 @@ function jfApply(S, p, a) {
     ch.jp = null;
     toast(p, `전직 초기화 — [${was}]의 직업 레벨은 그대로 남습니다. 다시 전직하면 이어서 걷습니다. (${gold.toLocaleString()} G)`);
   } else {
-    // stats back to 5 and the level to 1; the experience they cost is not given back (망각의 의식 does that)
     const hand = inHand(ch);
-    ch.st = freshSt(); ch.lvl = 1; ch.xpt = 0;
+    ch.st = freshSt(); ch.lvl = 1; ch.xpt = 0; ch.xp = 0;
     for (const s of SLOTS) if (ch.eq[s] && gearReq(ch.eq[s]) > 1) { ch.inv.push(ch.eq[s]); ch.eq[s] = null; }
     if (inHand(ch) !== hand) handChanged(p);
     if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);
@@ -10366,7 +10378,7 @@ function pickUp(S, p, dr) {
   return true;
 }
 /** What dying costs: 3% of the unspent experience, up to about one old level's worth (a revive feather spares it). */
-const deathLoss = (ch, p) => { const n = Math.floor(Math.min(ch.xp, 4 * pointCost(ch.lvl, STAT_K0)) * 0.03); return p ? Math.max(0, Math.floor(pfxNum(p, "loss", n))) : n; };
+const deathLoss = (ch, p) => { const n = Math.floor(Math.min(ch.xp, levelXp(ch.lvl)) * 0.03); return p ? Math.max(0, Math.floor(pfxNum(p, "loss", n))) : n; };
 function takeItem(ch, id, n) {
   for (let i = ch.inv.length - 1; i >= 0 && n > 0; i--) {
     const s = ch.inv[i];
@@ -10469,6 +10481,11 @@ const DROP_TYPES = [["weapon", 24], ["helm", 13], ["armor", 15], ["gloves", 13],
 
 /** A dropped weapon's kind: half the time the looter's own, else any of the six. */
 const dropKind = (S, p) => (rnd(S) < 0.5 ? weaponKind(p.ch) : WK_ORDER[ri(S, 0, WK_ORDER.length - 1)]);
+const huntBandK = (level, tier) => 1 - 0.75 * clamp((toTier(level) - tier - 5) / 17, 0, 1);
+function gearDropChance(d, rank, find, band) {
+  const base = rank === 2 || d.chest ? 1 : rank === 1 ? 0.35 + 0.08 * mobGearPressure(d.lv) : d.gear * (1.18 + 0.57 * mobGearPressure(d.lv));
+  return Math.min(1, base * (1 + find / 100) * (rank === 2 || d.chest ? 1 : 0.6 + 0.4 * band));
+}
 /** What one looter finds on one corpse. Everyone in the party rolls their own. */
 function lootFor(S, rt, mob, p) {
   const d = MOBS[mob.k];
@@ -10477,11 +10494,12 @@ function lootFor(S, rt, mob, p) {
   const share = allies(S, p).length;
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
   const fx = pfxLoot(S, rt, p, mob, "drop");   // the powers that add to this kill's loot (51-prefix.js); all 0 without one
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1);
+  const band = !d.chest && !mob.dim ? huntBandK(p.ch.lvl, d.lv) : 1;
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
   const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
   for (let i = 0; i < tries; i++) {
-    if (rnd(S) >= (rank === 2 || d.chest ? 1 : rank === 1 ? 0.35 : d.gear) * (1 + (st.mf + fx.mf) / 100)) continue;
+    if (rnd(S) >= gearDropChance(d, rank, st.mf + fx.mf, band)) continue;
     let tier = tierFor(d.lv);
     if (rank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
@@ -10516,18 +10534,26 @@ function lootFor(S, rt, mob, p) {
 
 // ───────────────────────────── combat ─────────────────────────────
 
-/**
- * Experience only piles up: it is spent on stat points at a campfire or at 수련관 카이 (action
- * `train`, one point = one level). The first time a point is affordable, a word says where.
- */
+/** Award experience, carrying excess through every earned level. */
 function gainXp(S, p, n) {
   const ch = p.ch;
   n = Math.max(1, Math.round(n * (1 + stats(p).xp / 100)));
+  const from = ch.lvl;
   ch.xp = Math.min(2e9, ch.xp + n);
   p.gain.push(["xp", n]);
-  if (!p.lvHint && ch.lvl < MAXLV && ch.xp >= Math.min(...nextCosts(ch).filter((c) => c > 0))) {
-    p.lvHint = true;
-    toast(p, "레벨을 올릴 수 있습니다 — 모닥불이나 수련관에서 능력치를 고르세요.");
+  advanceLevels(ch);
+  if (ch.lvl > from) {
+    const rt = S.maps[p.map];
+    p.stc = null;
+    if (!p.dead) { const st = stats(p); p.hp = st.mhp; p.mp = st.mmp; }
+    p.gain.push(["lvl", ch.lvl]);
+    rt.ev.push(["l", p.eid]);
+    rt.who = true;
+    toast(p, `레벨 ${ch.lvl}! 능력치 포인트 +${(ch.lvl - from) * AP_PER_LEVEL}`);
+    for (let l = from + 1; l <= ch.lvl; l++) if (l % 50 === 0) sys(S, `${ch.name}님이 레벨 ${l}${pp(l, "을를")} 달성했습니다!`);
+    tutStep(S, p, "level");
+    checkAch(S, p);
+    saveSoon(p);
   }
   p.dirty = true;
 }
@@ -10775,7 +10801,8 @@ function killMob(S, rt, mob) {
     const early = hitters[p.pid] > 0 && wmEligible(p, d) && d.lv <= toTier(ch.lvl) + HUNT_EARLY.ahead
       ? HUNT_EARLY.extra * clamp((HUNT_EARLY.end - ch.lvl) / (HUNT_EARLY.end - HUNT_EARLY.full), 0, 1)
       : 0;
-    gainXp(S, p, xp * (1 + pfxLoot(S, rt, p, mob, "xp").xp / 100) * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
+    const band = field ? huntBandK(ch.lvl, d.lv) : 1;
+    gainXp(S, p, xp * band * (1 + pfxLoot(S, rt, p, mob, "xp").xp / 100) * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
     ch.kills = (ch.kills || 0) + 1;
     ch.mk[mob.k] = (ch.mk[mob.k] || 0) + 1;
     const now = masteryRank(ch, mob.k);
@@ -15442,12 +15469,12 @@ const TUT = [
   { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 Z로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
   { id: "skill", title: "스킬 써 보기", hint: "든 무기의 첫 스킬은 숙련 1부터 단축칸 1번에 있습니다. 몬스터 곁에서 1을 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
   // appended (the index is persisted): spending experience on a stat point
-  { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁이나 수련관 카이 앞에서 C 창 → 능력치를 한 칸 올려 보세요. 한 칸이 1레벨입니다.", reward: { gold: 50 } },
+  { id: "level", title: "첫 레벨업", hint: "사냥과 의뢰로 경험치를 모아 레벨 2에 도달하세요. 받은 능력치 포인트는 C 창에서 투자할 수 있습니다.", reward: { gold: 50 } },
 ];
 /** Is tutorial step `id` already done by what the sheet shows? (a step that becomes current then completes at once) */
 function tutDone(ch, id) {
   if (id === "equip") return !!(ch.eq.weapon && ch.sw);
-  if (id === "level") return (ch.xpt | 0) > 0;
+  if (id === "level") return ch.lvl >= 2;
   return false;
 }
 function tutStep(S, p, id) {
@@ -16876,7 +16903,7 @@ const dimGearAtk = (tier, share = 0.20, levelShare = 0.65) =>
 const dimAtkK = (tier) => dimGearAtk(tier) / MOB_HARD;
 // Keep the opening stagger feasible and give the top weekly challenges time to cycle their phases.
 const chalGearHp = (tier) => dimGearHp(tier, 0.25 + 0.15 * clamp((tier - 25) / 25, 0, 1)) *
-  (0.88 + 0.12 / mobItemHp(tier)) * (1 + 0.14 * mobGearPressure(tier, 1.4));
+  (0.88 + 0.12 / mobItemHp(tier)) * (1 + 0.18 * mobGearPressure(tier, 1.4));
 const chalGearAtk = (tier) => dimGearAtk(tier, 0.10, 0.45);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 function dimHk(n, lv, mlv) {
@@ -23823,15 +23850,13 @@ export function validateAction(S, pid, a) {
     }
     case "socket": return socketValidate(p, a.k);
     case "train": {
-      // stat points bought with experience, at a campfire or at 수련관 카이: a = [str, wil, dex, int, wis, luk]
+      // Spend earned points: a = [str, wil, dex, int, wis, luk].
       if (!Array.isArray(a.a) || a.a.length !== ST_ORDER.length || !a.a.every((v) => Number.isInteger(v) && v >= 0 && v <= 50)) return bad("잘못된 능력치");
       const n = a.a.reduce((s, v) => s + v, 0);
       if (n < 1 || n > 50) return bad("잘못된 능력치");
       if (p.dead) return bad("쓰러진 상태입니다");
-      if (!fireNear(S.maps[p.map], p) && !npcNear(p, "train")) return bad("모닥불 곁이나 수련관 앞에서 레벨을 올릴 수 있습니다");
       if (ST_ORDER.some((k, i) => ch.st[k] + a.a[i] > ST_CAP)) return bad(`능력치는 ${ST_CAP}까지 올릴 수 있습니다`);
-      if (ch.lvl + n > MAXLV) return bad("최고 레벨입니다");
-      if (ch.xp < batchCost(ch, a.a)) return bad("경험치가 부족합니다");
+      if (n > statPoints(ch)) return bad("능력치 포인트가 부족합니다");
       return OK;
     }
     case "wh": {
@@ -23981,7 +24006,7 @@ export function validateAction(S, pid, a) {
     case "respec": {
       if (p.dead) return bad("쓰러진 상태입니다");
       if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
-      if (ch.lvl <= 1) return bad("되돌릴 능력치가 없습니다");
+      if (!spentPoints(ch.st)) return bad("되돌릴 능력치가 없습니다");
       const gold = statResetCost(ch);
       if (gold && countItem(ch, RESPEC_ITEM) < 1) return bad("되새김 인장이 필요합니다");
       if (ch.gold < gold) return bad(`골드가 부족합니다 (${gold.toLocaleString()}G 필요)`);
@@ -24052,8 +24077,8 @@ function devTestValidate(S, p, a) {
 function devTestApply(S, p, a) {
   const ch = p.ch;
   const wk = WK_ORDER.includes(inHand(ch)) ? inHand(ch) : "sword";
-  const al = allocate(BUILD[wk] || BUILD.sword, MAXLV - 1);
-  ch.st = al.st; ch.xpt = al.xpt; ch.lvl = levelOf(ch.st);
+  ch.st = allocate(BUILD[wk] || BUILD.sword, (MAXLV - 1) * AP_PER_LEVEL);
+  ch.lvl = MAXLV; ch.xpt = experienceEarned(MAXLV); ch.xp = 0;
   for (const k of WK_ORDER) ch.wm[k] = { lv: WM_MAX, xp: 0 };
   for (const j of Object.keys(JOBS)) if (j !== "adventurer") ch.jobs[j] = { lv: JOB_PROGRESS.cap, xp: 0 };
   const j = devJob(a.j);
@@ -24223,23 +24248,8 @@ export function applyAction(S, pid, a) {
     }
     case "socket": socketApply(S, p, a.k); break;
     case "train": {
-      // one point = one level: the stats rise, a full heal as of old, the news at every fifty
-      const cost = batchCost(ch, a.a), from = ch.lvl;
-      ch.xp -= cost;
-      ch.xpt += cost;
       ST_ORDER.forEach((k, i) => { ch.st[k] += a.a[i]; });
-      ch.lvl = levelOf(ch.st);
-      p.stc = null;
-      const st = stats(p);
-      p.hp = st.mhp; p.mp = st.mmp;
-      p.gain.push(["lvl", ch.lvl]);
-      S.maps[p.map].ev.push(["l", p.eid]);
-      S.maps[p.map].who = true;
-      toast(p, `레벨 ${ch.lvl}! ${STATS.filter((_, i) => a.a[i]).map((s) => `${s[1]} +${a.a[ST_ORDER.indexOf(s[0])]}`).join(" · ")}`);
-      for (let l = from + 1; l <= ch.lvl; l++) if (l % 50 === 0) sys(S, `${ch.name}님이 레벨 ${l}${pp(l, "을를")} 달성했습니다!`);
-      tutStep(S, p, "level");
-      checkAch(S, p);
-      p.dirty = true;
+      afterGear(S, p);
       break;
     }
     case "wh": {
@@ -24717,11 +24727,7 @@ export function applyAction(S, pid, a) {
         ch.gold -= fee;
         takeItem(ch, RESPEC_ITEM, 1);
       } else ch.rs--;
-      ch.xp = Math.min(2e9, ch.xp + ch.xpt);
-      ch.xpt = 0;
       ch.st = freshSt();
-      ch.lvl = 1;
-      if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);
       afterGear(S, p);
       S.maps[p.map].ev.push(["u", p.eid, 2]);
       toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (되새김 인장 1개 · ${fee.toLocaleString()}G)` : " (무료)"}`);
@@ -25454,10 +25460,10 @@ function selfPayload(p) {
   const enh = {};
   for (const k of SLOTS) enh[k] = ch.eq[k] && !isJewel(ch.eq[k].id) ? enhCost(ch.eq[k]) : null;
   return {
-    // jobs and stats: the job, the level (1 + points), unspent and spent experience, the six stats and
-    // what the next point in each costs (0 at a cap), resets left, the starter pick taken, mastery
+    // Jobs and stats: experience towards the next level, unspent points and the six stats; mastery
     // [lv, xp, need] per kind (WK_ORDER), the kinds in hand and on the back
-    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, st: ch.st, nx: nextCosts(ch), rs: ch.rs, sw: ch.sw, respecCost: statResetCost(ch),
+    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, xpNext: ch.lvl < MAXLV ? levelXp(ch.lvl) : 0,
+    ap: statPoints(ch), spentAp: spentPoints(ch.st), st: ch.st, rs: ch.rs, sw: ch.sw, respecCost: statResetCost(ch),
     buddy: buddySelf(p),
     wm: WK_ORDER.map((k) => [ch.wm[k].lv, Math.floor(ch.wm[k].xp),ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
     jp: ch.jp ? [ch.jp.lv, ch.jp.xp, ch.jp.lv >= JOB_PROGRESS.cap ? 0 : jobNeed(ch.jp.lv)] : null,
@@ -25721,8 +25727,6 @@ export function defs() {
   const affix = {};
   for (const [k, label, prefix] of AFFIX) affix[k] = [label, prefix];
   // jobs and stats: the jobs (with each weapon's scaling as coefficients), the stats, the scaling grades,
-  // the base cost of each of the 200 levels' point (pointCost at a stat ≤ 30) and the stat surcharge
-  // [STAT_K, STAT_K0] — the one rule the client mirrors for its cost preview; mastery need per level.
   // jobs[id].wm: the mastery each of its weapons needs (single JOB_WM, hybrid HYB_WM); .sig its signature skill
   const jobs = {};
   for (const id of Object.keys(JOBS)) {
@@ -25732,14 +25736,11 @@ export function defs() {
   return {
     worldName: "루넬샤대륙",
     items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, jobPal: JOB_PAL, skillJob: SKILL_JOB, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
-    jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
+    jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, statGrowth: { perLevel: AP_PER_LEVEL, cap: ST_CAP, soft: ST_SOFT },
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
     ske: { rate: SKE_RATE, pct: SKE_PCT, max: SKE_MAX, item: SKE_ITEM },
     jf: { lo: [LO_MAX.a, LO_MAX.p], borrow: LO_BORROW, scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST, respecItem: RESPEC_ITEM },
-    // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
-    // (lvc is already rounded, so lvc × surcharge can miss by one)
-    lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
     affix, runes: RUNES, runeScale: RUNE_SCALE, runeStatCaps: RUNE_STAT_CAP, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
     elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
     elementPrefixes: ELEMENT_PREFIX_AFFIX,

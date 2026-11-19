@@ -139,9 +139,8 @@ function jfApply(S, p, a) {
     ch.jp = null;
     toast(p, `전직 초기화 — [${was}]의 직업 레벨은 그대로 남습니다. 다시 전직하면 이어서 걷습니다. (${gold.toLocaleString()} G)`);
   } else {
-    // stats back to 5 and the level to 1; the experience they cost is not given back (망각의 의식 does that)
     const hand = inHand(ch);
-    ch.st = freshSt(); ch.lvl = 1; ch.xpt = 0;
+    ch.st = freshSt(); ch.lvl = 1; ch.xpt = 0; ch.xp = 0;
     for (const s of SLOTS) if (ch.eq[s] && gearReq(ch.eq[s]) > 1) { ch.inv.push(ch.eq[s]); ch.eq[s] = null; }
     if (inHand(ch) !== hand) handChanged(p);
     if (mapLevelNeed(ch, p.map)) changeMap(S, p, START.map, START.x, START.y);

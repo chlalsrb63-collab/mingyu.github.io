@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { PFX, ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ_P, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollGearAtLevel, rollRarity, lootFor, gearIl, gearBaseValue, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, gearBonus, countItem, stats, chainBlow, newMob, mobGearHp, mobGearAtk, mobLevelHp, mobLevelAtk, mobItemHp, mobItemAtk };\n";
+  "\nexport const __t = { PFX, ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ_P, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollGearAtLevel, rollRarity, lootFor, gearIl, gearBaseValue, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, gearBonus, countItem, stats, chainBlow, newMob, mobGearHp, mobGearAtk, mobLevelHp, mobLevelAtk, mobItemHp, mobItemAtk, gearDropChance, huntBandK, huntXpK, goldK };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs();
 const VERBOSE = process.argv.includes("-v");
@@ -16,6 +16,21 @@ const affixTier = (g) => Math.min(50, (g.il + 3) / 4);
 const rel = ([k, v], g) => { const a = X.AFFIX.find((x) => x[0] === k); return v / ((a[3] + a[4]) / 2 + a[5] * affixTier(g)); };
 const IDS = ["w_warrior_3", "w_bow_4", "h_2", "a_4", "g_2", "b_3", "r_3", "n_4", "w_mage_5", "a_6"];
 const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, ilvl);
+
+// The hunting economy encourages stepping into a new band while preserving boss gear rolls.
+{
+  const early = X.MOBS.twinhare, late = X.MOBS.rimewalrus;
+  const chance = (d, rank, level) => X.gearDropChance(d, rank, 0, X.huntBandK(level, d.lv));
+  near(chance(early, 0, 1), early.gear * 1.18, 1e-8, "starter gear drop chance");
+  assert.ok(chance(late, 0, 200) > late.gear * 1.7);
+  assert.ok(chance(early, 0, 200) < chance(early, 0, 1));
+  assert.ok(chance(late, 1, 200) >= 0.42);
+  assert.equal(chance(early, 2, 200), 1);
+  assert.equal(X.huntBandK(200, early.lv), 0.25);
+  assert.equal(X.huntXpK(1), 1);
+  near(X.huntXpK(50), 1.22, 1e-8, "late monster XP multiplier");
+  near(X.goldK(50), 0.52, 1e-8, "late gold multiplier");
+}
 
 // ── level progression applies to every flat equipment base, including shop stock and old sheets
 {

@@ -297,12 +297,12 @@ const TUT = [
   { id: "rest", title: "모닥불에서 쉬기", hint: "모닥불 곁에서 Z로 앉아 잠시 쉬면 체력이 빨리 차고 경험치 보너스를 얻습니다.", reward: { gold: 40 } },
   { id: "skill", title: "스킬 써 보기", hint: "든 무기의 첫 스킬은 숙련 1부터 단축칸 1번에 있습니다. 몬스터 곁에서 1을 눌러 써 보세요.", reward: { gold: 100, items: [["camp", 1], ["recall", 2], ["pet_chick", 1]] } },
   // appended (the index is persisted): spending experience on a stat point
-  { id: "level", title: "모닥불에서 레벨 올리기", hint: "모닥불 곁이나 수련관 카이 앞에서 C 창 → 능력치를 한 칸 올려 보세요. 한 칸이 1레벨입니다.", reward: { gold: 50 } },
+  { id: "level", title: "첫 레벨업", hint: "사냥과 의뢰로 경험치를 모아 레벨 2에 도달하세요. 받은 능력치 포인트는 C 창에서 투자할 수 있습니다.", reward: { gold: 50 } },
 ];
 /** Is tutorial step `id` already done by what the sheet shows? (a step that becomes current then completes at once) */
 function tutDone(ch, id) {
   if (id === "equip") return !!(ch.eq.weapon && ch.sw);
-  if (id === "level") return (ch.xpt | 0) > 0;
+  if (id === "level") return ch.lvl >= 2;
   return false;
 }
 function tutStep(S, p, id) {
