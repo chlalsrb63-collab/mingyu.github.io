@@ -119,7 +119,7 @@ export function onEvent(e) {
   if (e[0] === "dm") {
     const [, kind, x, y] = e;
     if (kind === "orb") { f.ring(x, y, 22, "#c890ff", 360, false); f.sparkle(x, y, 0.5, "#e8c8ff", 14); A.Sound.play("dim_orb"); }
-    else if (kind === "chest") { f.pillar(x, y); f.sparkle(x, y, 0.6, "#ffd84a", 20); A.Sound.play("loot"); }
+    else if (kind === "chest") { f.pillar(x, y); f.sparkle(x, y, 0.6, "#ffd84a", 20); A.Sound.play("dim_chest"); }
     else if (kind === "open") { f.wave(x, y, 60, "#b880ff", 600); A.Sound.play("dim_open"); }
     else if (kind === "boss") { f.wave(x, y, 70, "#ff5a8a", 700); f.burst(x, y, 0.4, "#b880ff", 18, 2); S3.shake && S3.shake(6); }
     else {
@@ -227,20 +227,20 @@ function renderRc() {
   $("#rc-wait").textContent = rc[4] ? "파티원의 응답을 기다리는 중…" : me && me[2] === 1 ? "수락했습니다. 다른 파티원을 기다리는 중…" : "";
 }
 export function bindUi() {
-  $("#rc-yes").addEventListener("click", () => { if (st.rc) { A.act({ t: "dim_ready", id: st.rc[0], ok: 1 }); A.Sound.play("ui"); } });
-  $("#rc-no").addEventListener("click", () => { if (st.rc) { A.act({ t: "dim_ready", id: st.rc[0], ok: 0 }); A.Sound.play("ui"); } });
-  $("#rc-cancel").addEventListener("click", () => { A.act({ t: "dim_cancel" }); A.Sound.play("ui"); });
-  $("#dim-open").addEventListener("click", () => { A.act({ t: "dim_open" }); A.Sound.play("ui"); });
-  $("#dim-hanok").addEventListener("click", () => { A.act({ t: "dim_open", hanok: true }); A.Sound.play("ui"); });
+  $("#rc-yes").addEventListener("click", () => { if (st.rc) { A.act({ t: "dim_ready", id: st.rc[0], ok: 1 }); A.Sound.play("rc_accept"); } });
+  $("#rc-no").addEventListener("click", () => { if (st.rc) { A.act({ t: "dim_ready", id: st.rc[0], ok: 0 }); A.Sound.play("rc_decline"); } });
+  $("#rc-cancel").addEventListener("click", () => { A.act({ t: "dim_cancel" }); A.Sound.play("rc_decline"); });
+  $("#dim-open").addEventListener("click", () => { A.act({ t: "dim_open" }); A.Sound.play("raid_enter"); });
+  $("#dim-hanok").addEventListener("click", () => { A.act({ t: "dim_open", hanok: true }); A.Sound.play("raid_enter"); });
   $("#dim-pick").addEventListener("click", (e) => {
     const r = e.target.closest("button[data-a=raid]");
-    if (r) { A.act({ t: "dim_open", raid: r.dataset.k }); A.Sound.play("ui"); return; }
+    if (r) { A.act({ t: "dim_open", raid: r.dataset.k }); A.Sound.play("raid_enter"); return; }
     const b = e.target.closest("button[data-a=boss]");
     if (!b) return;
     A.act({ t: "dim_open", boss: b.dataset.k, step: +b.dataset.s || 0 });
-    A.Sound.play("ui");
+    A.Sound.play("raid_enter");
   });
-  $("#dim-join").addEventListener("click", () => { A.act({ t: "dim_join" }); A.Sound.play("ui"); });
+  $("#dim-join").addEventListener("click", () => { A.act({ t: "dim_join" }); A.Sound.play("raid_enter"); });
   $("#dim-leave").addEventListener("click", () => {
     const ask = st.sty && !st.dim ? "도전을 그만두고 원래 자리로 돌아갈까요? (그 자리로 다시 다가가면 재도전할 수 있습니다)" : "레이드던전을 떠나 마을로 돌아갈까요? (나중에 오벨리스크에서 다시 합류할 수 있습니다)";
     A.ask(ask, "떠나기", () => A.act({ t: "dim_leave" }));

@@ -1795,4 +1795,83 @@ const SFX = {
     this.tone("sine", 330, 660, 0.14, 0.06);
     this.noise(0.12, 0.05, 2400, "bandpass", 0.02, 4200);
   },
+  // ── wave-3 boss elemental impacts, phase cues, raid & housing SFX ──
+  boss_hit_physical() {
+    const p = this.vary();
+    this.punch(p, 290, 78, 1200, 1.05);
+    this.noise(0.26, 0.24, 900 * p, "lowpass", 0.01, 110 * p);
+    this.tone("sine", 95 * p, 34 * p, 0.28, 0.22);
+  },
+  boss_hit_bleed() {
+    const p = this.vary();
+    this.noise(0.18, 0.22, 1600 * p, "bandpass", 0, 420 * p);
+    this.tone("sawtooth", 240 * p, 72 * p, 0.2, 0.13);
+    this.noise(0.14, 0.14, 3400 * p, "highpass", 0.03, 900 * p);
+  },
+  boss_hit_fire() {
+    const p = this.vary();
+    this.noise(0.32, 0.26, 1400 * p, "lowpass", 0, 160 * p);
+    this.tone("sawtooth", 140 * p, 48 * p, 0.28, 0.14);
+    this.noise(0.18, 0.12, 3200 * p, "bandpass", 0.05, 1800 * p);
+  },
+  boss_hit_cold() {
+    const p = this.vary();
+    this.arp("triangle", [1760 * p, 1319 * p, 988 * p], 0.028, 0.16, 0.075);
+    this.noise(0.24, 0.18, 4600 * p, "highpass", 0, 1400 * p);
+    this.tone("sine", 160 * p, 62 * p, 0.2, 0.15);
+  },
+  boss_hit_lightning() {
+    const p = this.vary();
+    this.noise(0.11, 0.28, 4200 * p, "highpass");
+    this.tone("square", 1640 * p, 140 * p, 0.16, 0.095);
+    this.noise(0.34, 0.22, 760 * p, "lowpass", 0.06, 70 * p);
+  },
+  boss_hit_poison() {
+    const p = this.vary();
+    this.noise(0.24, 0.18, 1200 * p, "bandpass", 0, 380 * p);
+    this.tone("triangle", 320 * p, 140 * p, 0.14, 0.09);
+    this.arp("sine", [420 * p, 580 * p, 340 * p], 0.045, 0.09, 0.055, 0.05);
+  },
+  boss_hit_dark() {
+    const p = this.vary();
+    this.tone("sawtooth", 110 * p, 42 * p, 0.34, 0.14);
+    this.tone("sine", 466 * p, 233 * p, 0.24, 0.075, 0.02);
+    this.noise(0.28, 0.16, 980 * p, "bandpass", 0.02, 220 * p);
+  },
+  boss_hit_light() {
+    const p = this.vary();
+    this.arp("sine", [587 * p, 880 * p, 1175 * p, 1760 * p], 0.032, 0.22, 0.065);
+    this.tone("triangle", 294 * p, 147 * p, 0.26, 0.11);
+    this.noise(0.18, 0.11, 3800 * p, "highpass", 0.02);
+  },
+  boss_cast() {
+    this.tone("sawtooth", 92, 184, 0.38, 0.075);
+    this.arp("triangle", [233, 277, 349], 0.08, 0.22, 0.055, 0.04);
+    this.noise(0.34, 0.08, 600, "bandpass", 0, 2200);
+  },
+  boss_enrage() {
+    const p = this.vary();
+    this.punch(p, 360, 72, 1600, 1.15);
+    this.noise(0.42, 0.28, 1500 * p, "lowpass", 0.02, 85 * p);
+    this.tone("sawtooth", 160 * p, 38 * p, 0.38, 0.16, 0.01);
+  },
+  rc_accept() {
+    this.arp("sine", [659, 988], 0.045, 0.12, 0.06);
+  },
+  rc_decline() {
+    this.tone("triangle", 392, 262, 0.12, 0.065);
+  },
+  raid_enter() {
+    this.tone("sine", 196, 392, 0.22, 0.07);
+    this.arp("triangle", [392, 494, 659], 0.045, 0.18, 0.05, 0.03);
+    this.noise(0.18, 0.06, 1800, "bandpass", 0.02, 3600);
+  },
+  dim_chest() {
+    this.arp("sine", [784, 988, 1319, 1568, 2093], 0.045, 0.22, 0.06);
+    this.tone("triangle", 392, 392, 0.28, 0.05);
+  },
+  house_upgrade() {
+    this.tone("triangle", 220, 150, 0.08, 0.09);
+    this.arp("sine", [523, 659, 784, 1047], 0.055, 0.2, 0.06, 0.06);
+  },
 };

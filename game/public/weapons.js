@@ -95,9 +95,9 @@ const SWORD = [
       P([[-4, -1], [-2, -2], [-1, -1], [-1, 2], [-2, 3], [-4, 2]], "steel"),
       R(-2, 4, -1, 2, "oxblood"), R(0, 1, -1, 2, "wrap"), R(2, 3, -1, 2, "wrap"),
       P([[3, -4], [5, -3], [6, 0.5], [5, 4], [3, 5]], "iron"),
-      P([[5, -2], [18, -2], [23.5, 0.5], [18, 3], [5, 3]], "steel"),
-      P([[6, -2], [18, -2], [22.5, 0.5], [6, 0.5]], "bright"),
-    ], head: [5, 23.5, -2, 3], blade: ["steel", "bright"],
+      P([[5, -1.8], [20, -1.4], [26.5, 0.5], [20, 2.4], [5, 2.8]], "steel"),
+      P([[6, -1.8], [20, -1.4], [25.5, 0.5], [6, 0.5]], "bright"),
+    ], head: [5, 26.5, -1.8, 2.8], blade: ["steel", "bright"],
   }),
   // 2 강철 양손검 — clean steel, a ricasso, a fuller, a long wrapped grip
   () => ({
@@ -105,19 +105,19 @@ const SWORD = [
       P([[-6, 0], [-5, -1], [-3, -1], [-3, 2], [-5, 2], [-6, 1]], "steel"),
       R(-3, 4, -1, 2, "leather"), R(-2, -1, -1, 2, "wrap"), R(0, 1, -1, 2, "wrap"), R(2, 3, -1, 2, "wrap"),
       P([[3, -3.5], [5, -3], [7, 0.5], [5, 4], [3, 4.5], [4, 0.5]], "iron"),
-      R(6, 9, -1.5, 2.5, "steel"),
-      P([[8, -2], [19, -2], [25.5, 0.5], [19, 3], [8, 3]], "steel"),
-      L(9, 0, 20, 0, "fuller"),
-    ], head: [8, 25, -2, 3], blade: ["steel"],
+      R(6, 9, -1.4, 2.4, "steel"),
+      P([[8, -1.8], [21.5, -1.4], [28.5, 0.5], [21.5, 2.4], [8, 2.8]], "steel"),
+      L(9, 0, 22, 0, "fuller"),
+    ], head: [8, 28.5, -1.8, 2.8], blade: ["steel"],
   }),
   // 3 기사단 클레이모어 — gilt swept quillons and a sapphire
   () => ({
     sh: [
       C(-5, 0.5, 1.7, "gold"), R(-4, 4, -1, 2, "blue"), R(-2, -1, -1, 2, "gild"), R(1, 2, -1, 2, "gild"),
       P([[4, 0.5], [7, -3.8], [9, -4.8], [7, -0.5], [7, 1.5], [9, 5.8], [7, 4.8]], "gold"),
-      P([[7, -2.5], [20, -2], [28.5, 0.5], [20, 3], [7, 3.5]], "bright"),
-      L(9, 0, 23, 0, "fuller"), D(5, 0, "sapph"),
-    ], head: [9, 28, -2, 3], blade: ["bright"],
+      P([[7, -2.1], [22.5, -1.5], [31, 0.5], [22.5, 2.5], [7, 3.1]], "bright"),
+      L(9, 0, 25, 0, "fuller"), D(5, 0, "sapph"),
+    ], head: [9, 31, -2.1, 3.1], blade: ["bright"],
   }),
   // 4 고주파 대검 — gunmetal, vented, a cyan emitter edge humming along the blade
   () => ({
@@ -125,10 +125,10 @@ const SWORD = [
       R(-6, -2, -2, 3, "carbon"), D(-4, 0, "glow"),
       R(-2, 4, -1, 2, "dark"), D(0, 0, "glow"), D(2, 0, "glow"),
       P([[4, -3.5], [8, -2], [8, 3], [4, 4.5]], "carbon"), L(5, -2, 5, 2, "glow"),
-      P([[7, -2.5], [24, -2.5], [30.5, 0.5], [25, 3.5], [7, 3.5]], "gun"),
-      L(11, 0, 18, 0, "ink"), L(21, 0, 24, 0, "ink"),
-      L(8, 2, 26, 2, "glow"), L(9, -2, 24, -2, "core"),
-    ], head: [7, 30.5, -2.5, 3.5], blade: ["gun"],
+      P([[7, -2.1], [26, -1.7], [33, 0.5], [27, 2.7], [7, 3.1]], "gun"),
+      L(11, 0, 19, 0, "ink"), L(22, 0, 26, 0, "ink"),
+      L(8, 2, 27, 2, "glow"), L(9, -1.6, 25, -1.6, "core"),
+    ], head: [7, 33, -2.1, 3.1], blade: ["gun"],
   }),
   // 5 차원 절단기 — a swept void blade with a bright fissure
   () => ({
@@ -158,10 +158,10 @@ const DAGGER = [
   () => ({
     sh: [
       R(-4, -2, -1.5, 2.5, "steel"), R(-2, 2, -1, 2, "leather"), L(-1, 0, 1, 0, "wrap"),
-      R(2, 3.5, -2.5, 3.5, "iron"),
-      P([[3, -1.6], [6, -2.3], [9, -1.6], [13.5, 0.5], [9, 2.6], [6, 3.3], [3, 2.6]], "steel"),
-      P([[4, -1.8], [6, -2.3], [9, -1.6], [13, 0.4], [4, 0.4]], "bright"),
-    ], head: [3, 13.5, -2.3, 3.3], blade: ["steel", "bright"],
+      R(2, 3.5, -2.3, 3.3, "iron"),
+      P([[3, -1.2], [7, -1.6], [11, -1.1], [15.5, 0.5], [11, 2.1], [7, 2.6], [3, 2.2]], "steel"),
+      P([[4, -1.3], [7, -1.6], [11, -1.1], [15, 0.4], [4, 0.4]], "bright"),
+    ], head: [3, 15.5, -1.6, 2.6], blade: ["steel", "bright"],
   }),
   // 2 암살자의 비수 — a long black stiletto with a blood-red tassel
   () => ({
@@ -1148,7 +1148,7 @@ function sprite(kind, gear, o) {
   const d = build(kind, wt, motif, false, o || undefined);
   const glow = we >= 7 ? { blade: d.blade, col: GLOW7, edgeX: d.edgeX } : null;
   // Rasterize at the held size so the outline stays one pixel wide at either scale.
-  const scale = hammer ? 1.25 : book ? 0.85 : 1;
+  const scale = hammer ? 1.0 : book ? 0.85 : 1;
   c = paint(d, W, H, (s, t) => [ox + s * scale, oy + t * scale], (x, y) => [(x - ox) / scale, (y - oy) / scale], glow, we >= 10 ? [RARE_INK[wq] || INK, GLOW10] : [RARE_INK[wq] || INK]);
   cache.set(key, c);
   return c;

@@ -257,7 +257,7 @@ export function bagBar(s, box) {
   b.append(`+${G().defs.bag.step}칸 확장 `, iconImg("coin", "#2a1806"), `${gstr(cost)}G`);
   b.disabled = s.gold < cost;
   b.title = s.gold < cost ? `골드가 부족합니다 (${gstr(cost)}G 필요)` : `가방을 ${cap + G().defs.bag.step}칸으로 늘립니다`;
-  b.addEventListener("click", () => { A.act({ t: "bag_expand" }); A.Sound.play("coin"); });
+  b.addEventListener("click", () => { A.act({ t: "bag_expand" }); A.Sound.play("house_upgrade"); });
   box.append(b);
 }
 
@@ -271,7 +271,7 @@ function renderAgent(s) {
     const b = el("button", "btn gold", "");
     b.append(`집 마련하기 (`, iconImg("coin", "#2a1806"), `${gstr(tiers[1].price)} G)`);
     b.disabled = s.gold < tiers[1].price;
-    b.addEventListener("click", () => { A.act({ t: "house_buy" }); A.Sound.play("coin"); });
+    b.addEventListener("click", () => { A.act({ t: "house_buy" }); A.Sound.play("house_upgrade"); });
     head.append(b);
   } else {
     head.append(el("p", "say", `당신의 집: [${tiers[h[0]].name}] · 가구 ${tiers[h[0]].furn}개 · 카펫 ${tiers[h[0]].rugs}장 · 보관 가구 ${tiers[h[0]].store}개 · 보관함 ${h[3]}칸. 곁의 '내 집' 문으로 들어가세요.`));
@@ -311,7 +311,7 @@ function upgradeButton(s) {
   b.append(`[${next.name}]으로 넓히기 (`, iconImg("coin", "#2a1806"), `${gstr(next.price)} G)`);
   b.title = `${next.w - 2}×${next.h - 2}칸 · 가구 ${next.furn}개 · 카펫 ${next.rugs}장 · 보관 가구 ${next.store}개`;
   b.disabled = s.gold < next.price;
-  b.addEventListener("click", () => { A.act({ t: "house_upgrade" }); A.Sound.play("coin"); });
+  b.addEventListener("click", () => { A.act({ t: "house_upgrade" }); A.Sound.play("house_upgrade"); });
   return b;
 }
 
@@ -396,7 +396,7 @@ function renderStore(s) {
   top.append(el("span", "", `보관함 ${items.length} / ${h[3]}칸`));
   const sort = el("button", "btn small", "정리");
   sort.title = "종류별로, 좋은 것부터, 같은 것은 한 묶음으로";
-  sort.addEventListener("click", () => { A.act({ t: "h_sort" }); A.Sound.play("ui"); });
+  sort.addEventListener("click", () => { A.act({ t: "h_sort" }); A.Sound.play("bag_sort"); });
   top.append(sort);
   box.append(top);
   const panes = el("div", "bank-panes");

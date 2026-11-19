@@ -1627,9 +1627,12 @@ function bossTele(e, entityPos, G) {
   }, done: () => {
     const [x, y] = where();
     S3.fx.add({ k: "custom", flat: true, dur: 240, draw: (g, k) => { g.globalAlpha = 0.7 * (1 - k); g.fillStyle = "#ffe08a"; telePath(g, s, x, y, R, R0, A, H); g.fill("evenodd"); } });
-    S3.shake(4); Sound.play("slam");
+    S3.shake(4);
     const boss = bossNear(G, x0, y0);   // the pixelfx blow, once the mark has landed
-    if (boss && skillNear(G, x / P, y / P)) bossPfx(["donut", "cone", "mark"][s], x / P, y / P, r, elOf(G, boss), s === 0 ? a : A);
+    const el = boss ? elOf(G, boss) : "";
+    const bossSfx = { physical: "boss_hit_physical", bleed: "boss_hit_bleed", fire: "boss_hit_fire", cold: "boss_hit_cold", lightning: "boss_hit_lightning", poison: "boss_hit_poison", dark: "boss_hit_dark", light: "boss_hit_light" }[el];
+    Sound.play(bossSfx || "slam");
+    if (boss && skillNear(G, x / P, y / P)) bossPfx(["donut", "cone", "mark"][s], x / P, y / P, r, el, s === 0 ? a : A);
   } });
 }
 
@@ -2161,8 +2164,9 @@ export function skillEvent(e, ctx) {
       }
       const bd = m && G.defs.mobs[m.k];
       if (bd && bd.boss) bossPfx(code === 9 ? "cast" : code === 8 ? "broke" : code === 7 ? "off" : "", m.x, m.y, 0, bd.element);
+      if (m && code === 9 && bd && bd.boss && skillNear(G, m.x, m.y)) Sound.play("boss_cast");
       if (m && code === 8) { f.burst(m.x, m.y, 0.8, "#ffe08a", 30, 2.6); B.shake(6); Sound.play("boss_break"); }
-      else if (m && code === 7) { f.ring(m.x, m.y, 90, "#ff3a2a", 420, true); B.shake(8); Sound.play("boom"); }
+      else if (m && code === 7) { f.ring(m.x, m.y, 90, "#ff3a2a", 420, true); B.shake(8); Sound.play("boss_enrage"); }
       else if (m && code === 6) { f.burst(m.x, m.y, 0.6, "#ff4fd8", 18, 2); Sound.play("boss_absorb"); }   // an add flew into it and healed it
       return true;
     }
