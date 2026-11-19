@@ -173,6 +173,8 @@ lives in `game/.wrangler/` (delete it to reset local accounts/characters).
 - On the owner's PC the AI team runs from `ai/` (see `ai/README.md`): Codex and Gemini work in
   `.work/codex` / `.work/gemini` on `codex/work` / `gemini/work`, take tasks from `ai/TASKS.md`, write
   `ai/reports/*.md`, and Claude merges with `ai/merge.md`.
+- **The main checkout (`Tales Tales/`) always stays on `main`** (owner 2026-11-19): it is the one playable build
+  (`PLAY.bat` → http://localhost:8830, saved world `game/.wrangler/play`). Never switch its branch; work in your own worktree.
 - One task = one branch (or one `git worktree`) per AI: `claude/<task>`, `codex/<task>`,
   `gemini/<task>`. Never two AIs in the same working tree at once.
   `git worktree add ../tt-codex -b codex/<task>` → work there → `git worktree remove ../tt-codex`.
