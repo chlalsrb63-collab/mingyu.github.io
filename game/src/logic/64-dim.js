@@ -13,19 +13,22 @@
 const dimCnt = (ch) => ch.cnt;
 /** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
 const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), DIM.minTier, TIER_MAX - 1);
-// Keep part of the field boost in timed instances. Extra raid durability matters more than spike damage.
+// Keep part of the older field boost in timed instances, with enough extra durability for gear progression.
 const dimGearHp = (tier, share = 0.60) => share + (1 - share) / mobGearHp(tier);
-const dimGearAtk = (tier, share = 0.20) => share + (1 - share) / mobGearAtk(tier);
+const dimGearAtk = (tier, share = 0.20, levelShare = 0.65) =>
+  (share + (1 - share) / mobGearAtk(tier)) * (levelShare + (1 - levelShare) / mobLevelAtk(tier));
 const dimAtkK = (tier) => dimGearAtk(tier) / MOB_HARD;
 const chalGearHp = (tier) => dimGearHp(tier, 0.25 + 0.15 * clamp((tier - 25) / 25, 0, 1));
-const chalGearAtk = (tier) => dimGearAtk(tier, 0.10);
+const chalGearAtk = (tier) => dimGearAtk(tier, 0.10, 0.45);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 function dimHk(n, lv, mlv) {
   const [mid, width, trim] = DIM.hpMid;
   const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv), high = DIM.hpHigh[1] * Math.max(0, lv - DIM.hpHigh[0]);
   const middle = trim * Math.max(0, 1 - Math.abs(lv - mid) / width);
+  // Smaller groups lose more uptime while handling mechanics. Ease only the new level bonus.
+  const levelHp = n < DIM.party ? 0.85 + 0.15 / mobLevelHp(mlv) : 1;
   // ÷ MOB_HARD: the raids keep the party pace they were tuned to (bots 5–10 min) when field monsters got tougher
-  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv)) * dimGearHp(mlv) / MOB_HARD;
+  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv)) * dimGearHp(mlv) * levelHp / MOB_HARD;
 }
 
 /**

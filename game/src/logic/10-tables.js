@@ -186,8 +186,9 @@ const UNIQ_P = [0.001, 0.004, 0.01];
  */
 const IL_RANK = [0, 4, 8];
 const IL_GAP = 10;
-// Flat equipment stats receive up to 58% from item level, with a gentler start. Per-mille for the client tooltip.
-const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(580 * (i / (MAXLV - 1)) ** 1.55));
+// Flat equipment stats gain up to 232% from item level. Preserve the gentler opening of the curve.
+// Per-mille values also drive item comparisons in the client.
+const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(2320 * (i / (MAXLV - 1)) ** 1.55));
 /**
  * 접두사 고유 효과 (docs/design/prefix-effects.md): a 전설 or 유니크 piece carries ONE power `lg` no affix can give. Three tables per power,
  * all keyed by `lg`; the later parts 52+ extend them with Object.assign and never edit this file (the recipe is in 51-prefix.js):
@@ -316,9 +317,12 @@ const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2
 // MOB_HARD: owner 2026-11-19 — every monster 20 % more HP and attack (chests excepted)
 const GEAR_CUT = 0.3, MOB_ATK = 1.27, MOB_HARD = 1.2;
 // The stronger gear pays off against progressively tougher monsters. Openers stay gentle.
-const mobGearPressure = (tier) => ((Math.min(TIER_MAX, Math.max(1, tier)) - 1) / (TIER_MAX - 1)) ** 1.12;
+const mobGearPressure = (tier, power = 1.12) => ((Math.min(TIER_MAX, Math.max(1, tier)) - 1) / (TIER_MAX - 1)) ** power;
 const mobGearHp = (tier) => 1.08 + 0.40 * mobGearPressure(tier);
 const mobGearAtk = (tier) => 1.05 + 0.31 * mobGearPressure(tier);
+// Fixed to the monster's tier. Replacing a piece never makes its current enemies scale up.
+const mobLevelHp = (tier) => 1 + 0.72 * mobGearPressure(tier, 1.63);
+const mobLevelAtk = (tier) => 1 + 0.48 * mobGearPressure(tier, 1.63);
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
  * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
@@ -587,8 +591,8 @@ for (const k of Object.keys(MOBS)) {
   if (!d.sp) d.sp = k;
   for (const mv in TRICKS) if (d[mv] === undefined && MOBS[d.sp] && MOBS[d.sp][mv]) d[mv] = MOBS[d.sp][mv];
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
-  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv));
-  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv));
+  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv));
+  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv) * mobLevelHp(d.lv));
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;
