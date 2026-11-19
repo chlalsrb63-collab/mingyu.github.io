@@ -11,7 +11,7 @@ import path from "path";
 import zlib from "zlib";
 import crypto from "crypto";
 import { execFileSync } from "child_process";
-import { installCanvas } from "../../../game/scripts/pixcanvas.mjs";
+import { installCanvas } from "../../../../game/scripts/pixcanvas.mjs";
 
 installCanvas();
 
