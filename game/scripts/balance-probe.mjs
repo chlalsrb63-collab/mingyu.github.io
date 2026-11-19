@@ -158,6 +158,8 @@ export function probe(L, who, tier, secs = PROBE.secs, o = {}) {
     const AIM_N = D.aim[0];
     const ticks = Math.round((secs * 1000) / 100);
     for (let t = 0; t < ticks; t++) {
+      // Compare weapon performance at the requested level, excluding progression during the sample.
+      if (D.statGrowth) p.ch.xp = 0;
       // anything that is not ours (an invasion, a sleeper) is put away
       for (const o of rt.mobs) if (!ids.has(o.id) && !o.dead) { o.dead = true; o.respAt = 1e15; }
       for (const m of arena) if (m.dead && now >= m.back) { m.k = kinds[Math.floor(rand() * kinds.length)]; m.bs = null; m.cast = null; place(m); }

@@ -87,7 +87,7 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   give(ch, "scr_lvl");
   assert.ok(W.act({ t: "lv_reset" }).ok);
   assert.equal(ch.lvl, 1); assert.ok(Object.values(ch.st).every((v) => v === 5), "stats back to 5"); assert.equal(ch.xpt, 0);
-  assert.equal(ch.xp, 777, "unspent experience stays, spent is not given back");
+  assert.equal(ch.xp, 0, "a deliberate level reset also clears progress towards the next level");
   assert.equal(ch.gold, 100000 - (D.jf.cost.lvl[0] + D.jf.cost.lvl[1] * lvl)); assert.equal(has(ch, "scr_lvl"), 0);
   assert.equal(JSON.stringify(ch.wm), wm, "masteries kept"); assert.equal(JSON.stringify(ch.tro), tro); assert.equal(JSON.stringify(ch.cos), cos);
   assert.equal(ch.job, "swordsman"); assert.deepEqual(ch.jobs.thief, { lv: 4, xp: 2 }); assert.equal(ch.jp.lv, 9, "job levels kept");

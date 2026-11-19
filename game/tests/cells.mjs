@@ -107,6 +107,7 @@ const cheb = (m, a, b) => Math.max(Math.abs((a % m.cells.cw) - (b % m.cells.cw))
   const prey = W.cellMobs(c);
   assert.ok(prey.length >= 4, `it holds its monsters (${prey.length})`);
   for (const o of prey) { o.by[p.pid] = 1; X.killMob(W.S, W.rt, o); }
+  p.hp = 1e9;  // Keep the spawn probe alive after the level-up replaced its artificial HP.
   const killedAt = W.now;
   W.step();
   assert.equal(W.cellMobs(c).length, 0, "cleared");

@@ -341,15 +341,13 @@ export function validateAction(S, pid, a) {
     }
     case "socket": return socketValidate(p, a.k);
     case "train": {
-      // stat points bought with experience, at a campfire or at 수련관 카이: a = [str, wil, dex, int, wis, luk]
+      // Spend earned points: a = [str, wil, dex, int, wis, luk].
       if (!Array.isArray(a.a) || a.a.length !== ST_ORDER.length || !a.a.every((v) => Number.isInteger(v) && v >= 0 && v <= 50)) return bad("잘못된 능력치");
       const n = a.a.reduce((s, v) => s + v, 0);
       if (n < 1 || n > 50) return bad("잘못된 능력치");
       if (p.dead) return bad("쓰러진 상태입니다");
-      if (!fireNear(S.maps[p.map], p) && !npcNear(p, "train")) return bad("모닥불 곁이나 수련관 앞에서 레벨을 올릴 수 있습니다");
       if (ST_ORDER.some((k, i) => ch.st[k] + a.a[i] > ST_CAP)) return bad(`능력치는 ${ST_CAP}까지 올릴 수 있습니다`);
-      if (ch.lvl + n > MAXLV) return bad("최고 레벨입니다");
-      if (ch.xp < batchCost(ch, a.a)) return bad("경험치가 부족합니다");
+      if (n > statPoints(ch)) return bad("능력치 포인트가 부족합니다");
       return OK;
     }
     case "wh": {
@@ -499,7 +497,7 @@ export function validateAction(S, pid, a) {
     case "respec": {
       if (p.dead) return bad("쓰러진 상태입니다");
       if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
-      if (ch.lvl <= 1) return bad("되돌릴 능력치가 없습니다");
+      if (!spentPoints(ch.st)) return bad("되돌릴 능력치가 없습니다");
       const gold = statResetCost(ch);
       if (gold && countItem(ch, RESPEC_ITEM) < 1) return bad("되새김 인장이 필요합니다");
       if (ch.gold < gold) return bad(`골드가 부족합니다 (${gold.toLocaleString()}G 필요)`);

@@ -38,14 +38,14 @@ function XP_K(lv) {
   }
   return XP_STEPS[XP_STEPS.length - 1][1];
 }
-/** Deeper monsters drop less gold for their level: the bands last longer, and the purse should not run away. */
-const goldK = (lv) => 1 - 0.7 * clamp((lv - 8) / 28, 0, 1);
+/** Keep later hunting payouts rising without making low-level farming more rewarding. */
+const goldK = (lv) => 1 - 0.48 * clamp((lv - 8) / 42, 0, 1);
 /** Hunting's share of a kill's gold (owner, 2026-11-15: 알바 should be where gold is earned; hunting pays in loot and XP). */
 const HUNT_GOLD = 0.4;
 /**
  * The experience the world pays and charges at tier `t` (a real number: a player's level maps to
  * `toTier(lvl) = (lvl + 3) / 4`). Once the experience to the next of the old 50 levels; now the yardstick
- * for quest, daily and event rewards and for the price of a stat point (45-jobs.js pointCost).
+ * for quest, daily and event rewards and for the character experience curve (45-jobs.js levelXp).
  */
 const tierXp = (t) => Math.round((34 * Math.pow(t, 1.85) + 20) * XP_K(t));
 const xpNeed = tierXp;

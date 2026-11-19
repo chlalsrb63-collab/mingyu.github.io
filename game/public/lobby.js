@@ -533,7 +533,7 @@ function wireCreate() {
   const feel = el("p", "cr-feel"); feel.id = "c-wk-feel";
   card.append(wk, feel);
   const steps = el("ol", "cr-steps");
-  for (const t of ["고른 무기를 들고 바로 모험을 시작합니다", `모닥불 곁에서 경험치로 능력치를 올립니다 (${K("char")})`, `무기 숙련 20 → 전직관 아르센에게서 전직 (${K("skill")})`]) steps.append(el("li", "", t));
+  for (const t of ["고른 무기를 들고 바로 모험을 시작합니다", `레벨업으로 얻은 포인트를 능력치에 투자합니다 (${K("char")})`, `무기 숙련 20 → 전직관 아르센에게서 전직 (${K("skill")})`]) steps.append(el("li", "", t));
   card.append(steps);
   box.append(card);
   // the look editor (looks.js), without its presets: they get a row of their own

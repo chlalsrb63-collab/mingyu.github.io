@@ -204,12 +204,11 @@ const STAT_GROUPS = [
 export function renderChar(s) {
   // three tabs (the row is wardrobe_ui.js's): 장비 (the paper-doll and the sheet), 능력치 (statwin.js: buying points), 외형.
   const tab = G.charTab || "gear";
-  charTabBtn.classList.toggle("ready", s.lvl < G.defs.maxLv && s.xp >= StatWin.cheapest(s));
+  charTabBtn.classList.toggle("ready", s.ap > 0);
   $("#char-gear").hidden = tab !== "gear";
   $("#char-stat").hidden = tab !== "stat";
-  const role = G.near && G.near.role;
   if (tab === "cos") return;
-  if (tab === "stat") { StatWin.render($("#char-stat"), s, { here: fireNear() || role === "train", atTrainer: role === "train" }); return; }
+  if (tab === "stat") { StatWin.render($("#char-stat"), s); return; }
   renderDoll(s);
   renderSheet(s);
 }

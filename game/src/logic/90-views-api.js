@@ -14,10 +14,10 @@ function selfPayload(p) {
   const enh = {};
   for (const k of SLOTS) enh[k] = ch.eq[k] && !isJewel(ch.eq[k].id) ? enhCost(ch.eq[k]) : null;
   return {
-    // jobs and stats: the job, the level (1 + points), unspent and spent experience, the six stats and
-    // what the next point in each costs (0 at a cap), resets left, the starter pick taken, mastery
+    // Jobs and stats: experience towards the next level, unspent points and the six stats; mastery
     // [lv, xp, need] per kind (WK_ORDER), the kinds in hand and on the back
-    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, st: ch.st, nx: nextCosts(ch), rs: ch.rs, sw: ch.sw, respecCost: statResetCost(ch),
+    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, xpNext: ch.lvl < MAXLV ? levelXp(ch.lvl) : 0,
+    ap: statPoints(ch), spentAp: spentPoints(ch.st), st: ch.st, rs: ch.rs, sw: ch.sw, respecCost: statResetCost(ch),
     buddy: buddySelf(p),
     wm: WK_ORDER.map((k) => [ch.wm[k].lv, Math.floor(ch.wm[k].xp),ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
     jp: ch.jp ? [ch.jp.lv, ch.jp.xp, ch.jp.lv >= JOB_PROGRESS.cap ? 0 : jobNeed(ch.jp.lv)] : null,
@@ -281,8 +281,6 @@ export function defs() {
   const affix = {};
   for (const [k, label, prefix] of AFFIX) affix[k] = [label, prefix];
   // jobs and stats: the jobs (with each weapon's scaling as coefficients), the stats, the scaling grades,
-  // the base cost of each of the 200 levels' point (pointCost at a stat ≤ 30) and the stat surcharge
-  // [STAT_K, STAT_K0] — the one rule the client mirrors for its cost preview; mastery need per level.
   // jobs[id].wm: the mastery each of its weapons needs (single JOB_WM, hybrid HYB_WM); .sig its signature skill
   const jobs = {};
   for (const id of Object.keys(JOBS)) {
@@ -292,14 +290,11 @@ export function defs() {
   return {
     worldName: "루넬샤대륙",
     items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, jobPal: JOB_PAL, skillJob: SKILL_JOB, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
-    jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, lvc: Array.from({ length: MAXLV }, (_, i) => pointCost(i + 1, 0)), statK: [STAT_K, STAT_K0],
+    jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, statGrowth: { perLevel: AP_PER_LEVEL, cap: ST_CAP, soft: ST_SOFT },
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
     ske: { rate: SKE_RATE, pct: SKE_PCT, max: SKE_MAX, item: SKE_ITEM },
     jf: { lo: [LO_MAX.a, LO_MAX.p], borrow: LO_BORROW, scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST, respecItem: RESPEC_ITEM },
-    // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
-    // (lvc is already rounded, so lvc × surcharge can miss by one)
-    lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
     affix, runes: RUNES, runeScale: RUNE_SCALE, runeStatCaps: RUNE_STAT_CAP, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
     elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
     elementPrefixes: ELEMENT_PREFIX_AFFIX,

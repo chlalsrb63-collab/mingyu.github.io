@@ -140,7 +140,8 @@ assert.equal(p.ab.res[4], 2, "already paid today"); assert.equal(ch.gold - gold0
   S.now = now;
   const hk = h[0], nk = X.ALBA_ORDER.find((k) => X.ALBA[k] && !h.includes(k)), mul = [X.ALBA[hk].mul, X.ALBA[nk].mul];
   X.ALBA[hk].mul = X.ALBA[nk].mul = 1;
-  const pay = (k) => { ch.ab.done = {}; const g0 = ch.gold; X.albaPay(S, p, { k, score: X.ALBA[k].par }, 4); return ch.gold - g0; };
+  const lv = ch.lvl, xp = ch.xp, xpt = ch.xpt;
+  const pay = (k) => { Object.assign(ch, { lvl: lv, xp, xpt }); p.stc = null; ch.ab.done = {}; const g0 = ch.gold; X.albaPay(S, p, { k, score: X.ALBA[k].par }, 4); return ch.gold - g0; };
   const a = pay(hk), b = pay(nk);
   assert.ok(b > 0 && Math.abs(a - b * 1.25) <= 1.5, `a 특근 game pays 1.25 ×: ${a} vs ${b}`);
   X.ALBA[hk].mul = mul[0]; X.ALBA[nk].mul = mul[1];

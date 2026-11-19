@@ -449,12 +449,12 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   me = W.self();
   assert.equal(D.tutorial[me.tut.i].id, "level", "skill → the appended last step");
   assert.notEqual(JSON.stringify(W.p.ch.inv), items0, "the skill step pays a campfire kit and return scrolls");
-  // the last step: a stat point by the fire
-  W.p.ch.xp = 1000;
-  assert.ok(W.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).ok, "a point by the meadow's fire");
+  W.p.ch.xp = me.xpNext - 1;
+  W.kill("twinhare");
   me = W.self();
   assert.equal(me.tut.i, D.tutorial.length, "all first steps done");
   assert.equal(me.lvl, 2);
+  assert.equal(me.ap, 5);
 }
 
 /** A sheet as the four-class days saved it (v9): a class, levels 1–50, stat training, skill levels, counters in `st`. */
@@ -534,11 +534,12 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
     const ch = join(oldSheet("이주" + n, cls, L0, { xp: 123, gold: 1000, st: { elite: 7, carp: 1 }, qs: [["s", 0], ["i", "hp_s"], null, null, null, null, null, null, null] }));
     const tag = `${cls} L${L0}`;
     assert.equal(ch.v, L.newChar("현재양식", []).v, tag);
-    assert.equal(ch.lvl, Math.min(197, 4 * L0 - 3), tag + ": level 4L−3");
-    assert.equal(ST.reduce((s, k) => s + ch.st[k] - 5, 0), ch.lvl - 1, tag + ": a level is a point");
+    const baseLvl = Math.min(197, 4 * L0 - 3);
+    assert.equal(ch.lvl, L0 === 1 ? 2 : baseLvl, tag + ": legacy level plus eligible banked experience");
+    assert.equal(ST.reduce((s, k) => s + ch.st[k] - 5, 0), (baseLvl - 1) * 5, tag + ": every legacy point expands to five");
     assert.equal(ch.job, L0 >= 20 ? SH[cls][1] : "adventurer", tag + ": the class's job from old level 20");
     assert.equal(ch.wm[SH[cls][0]].lv, L0, tag + ": the class weapon's mastery = the old level");
-    assert.ok(ch.xp >= 123 && (ch.lvl === 1 ? ch.xpt === 0 : ch.xpt > 0), tag + ": progress kept, the path's cost recorded");
+    assert.equal(ch.xp + ch.xpt, L.hero("누적", { lvl: baseLvl }).xpt + 123, tag + ": banked experience conserved");
     assert.equal(ch.rs, 1, tag + ": one free reset"); assert.equal(ch.sw, 1, tag + ": no starter pick");
     assert.ok(!("cls" in ch) && !("tr" in ch) && !("skl" in ch), tag + ": old fields gone");
     assert.deepEqual([ch.cnt.elite, ch.cnt.carp], [7, 1], tag + ": achievement counters move to cnt");
@@ -583,9 +584,9 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   const twice = join(JSON.parse(JSON.stringify(once)));
   const strip = (c) => { const o = JSON.parse(JSON.stringify(c)); delete o.hp; delete o.mp; return o; };
   assert.deepEqual(strip(twice), strip(once), "idempotent");
-  const forged = join({ ...JSON.parse(JSON.stringify(once)), st: { str: 400, wil: -3, dex: "x", int: 5, wis: 5, luk: 5 }, lvl: 999, job: "emperor", wm: { sword: { lv: 99, xp: -5 } }, xp: -1 });
-  assert.equal(forged.st.str, 99); assert.equal(forged.st.wil, 5); assert.equal(forged.st.dex, 5);
-  assert.equal(forged.lvl, 1 + 94, "the level is recomputed from the stats, never trusted");
+  const forged = join({ ...JSON.parse(JSON.stringify(once)), v: 30, st: { str: 400, wil: -3, dex: "x", int: 5, wis: 5, luk: 5 }, lvl: 999, job: "emperor", wm: { sword: { lv: 99, xp: -5 } }, xp: -1 });
+  assert.equal(forged.st.str, 475); assert.equal(forged.st.wil, 5); assert.equal(forged.st.dex, 5);
+  assert.equal(forged.lvl, 1 + 94, "a legacy level is reconstructed from valid investment");
   assert.equal(forged.job, "adventurer"); assert.equal(forged.wm.sword.lv, 50); assert.equal(forged.wm.bow.lv, 1); assert.equal(forged.xp, 0);
   // a single-job hero whose mastery is somehow below 20 keeps the job
   const keep = join({ ...JSON.parse(JSON.stringify(once)), wm: {} });

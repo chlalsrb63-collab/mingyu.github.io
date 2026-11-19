@@ -58,30 +58,26 @@ for (const id of ["sc_atk", "sc_def", "sc_xp", "feather", "pet_chick", "pet_bat"
 assert.ok(D.items.pet_chick.radius < D.items.pet_bat.radius && D.items.pet_bat.radius < D.items.pet_wisp.radius, "dearer pets reach further");
 assert.ok(D.tutorial.length >= 1);
 
-// ── stat points: experience bought into the six stats at the trainer (or a fire), shown with their prices
-// (the cost table, batches, caps and resets in detail: tests/jobs.mjs)
+// ── stat points can be spent from the character window with no experience cost.
 {
   const W = world("수련", "warrior", 10);
   const ch = W.ch;
-  ch.xp = 1e7;
+  ch.st.str -= 10;
+  W.p.stc = null;
+  ch.xp = 20;
   let s = W.self();
   assert.equal(s.lvl, 37); assert.equal(s.job, "adventurer");
-  assert.equal(s.nx.length, 6, "the next point's price in each stat");
-  assert.ok(s.nx.every((c) => c > 0));
-  assert.ok(s.nx[0] >= s.nx[3], "a stat already above 30 costs a little more than one at 5");
+  assert.equal(s.ap, 10);
   W.to("town", 30, 18);
-  assert.equal(W.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).error, "모닥불 곁이나 수련관 앞에서 레벨을 올릴 수 있습니다");
-  W.npc("train");
-  const x0 = ch.xp, st0 = { ...ch.st }, atk0 = s.atk, hp0 = s.mhp;
-  assert.ok(W.act({ t: "train", a: [2, 1, 0, 0, 0, 0] }).ok);
-  assert.equal(ch.lvl, 40); assert.equal(ch.st.str, st0.str + 2); assert.equal(ch.st.wil, st0.wil + 1);
-  assert.ok(ch.xp < x0 && ch.xpt > 0);
+  const st0 = { ...ch.st }, atk0 = s.atk, hp0 = s.mhp;
+  assert.ok(W.act({ t: "train", a: [5, 5, 0, 0, 0, 0] }).ok);
+  assert.equal(ch.lvl, 37); assert.equal(ch.st.str, st0.str + 5); assert.equal(ch.st.wil, st0.wil + 5);
+  assert.equal(ch.xp, 20);
   s = W.self();
   assert.ok(s.atk > atk0 && s.mhp > hp0, "STR hits harder, WIL holds more");
-  assert.equal(W.p.hp, s.mhp, "a level heals in full, as of old");
   for (const bad of [[1, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0], [-1, 2, 0, 0, 0, 0], [51, 0, 0, 0, 0, 0], [0.5, 0, 0, 0, 0, 0], "1"]) assert.ok(!W.act({ t: "train", a: bad }).ok, "nonsense is refused: " + JSON.stringify(bad));
   ch.xp = 0;
-  assert.equal(W.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).error, "경험치가 부족합니다");
+  assert.equal(W.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).error, "능력치 포인트가 부족합니다");
 }
 
 // ── progress worth keeping asks the room for a save soon (not the 15 s cycle)
@@ -91,7 +87,7 @@ assert.ok(D.tutorial.length >= 1);
   L.takeSaves(W.S);
   W.step();
   assert.deepEqual(L.takeSaves(W.S), [], "walking about asks for nothing");
-  ch.gold = 1e7; ch.xp = 1e7;
+  ch.gold = 1e7; ch.st.str -= 2;
   W.npc("train");
   assert.ok(!W.act({ t: "train", a: [0, 0, 0, 0, 0, 0] }).ok);
   assert.deepEqual(L.takeSaves(W.S), [], "a refused action asks for nothing");
@@ -102,7 +98,7 @@ assert.ok(D.tutorial.length >= 1);
   assert.ok(W.act({ t: "train", a: [0, 1, 0, 0, 0, 0] }).ok);
   L.exportChar(W.S, W.PID);
   assert.deepEqual(L.takeSaves(W.S), [], "the 15 s save already covered it");
-  // a kill's experience only piles up: no level comes by itself, a word says where to spend it
+  // An earned level also asks for a save, even if no points are spent yet.
   const p = W.p, rt = L.runtime(W.S, "meadow");
   W.to("meadow", 20, 20);
   ch.xp = 0;
@@ -110,18 +106,19 @@ assert.ok(D.tutorial.length >= 1);
   W.step(); L.takeSaves(W.S);
   const mob = rt.mobs.find((o) => !o.dead && o.k === "twinhare");
   mob.el = 0; mob.hp = 1; mob.x = p.x + 12; mob.y = p.y; p.atkAt = 0; p.aim = 0; p.hp = 1e5; p.toast.length = 0;
-  ch.xp = 1e6;
+  ch.xp = W.self().xpNext - 1;
   assert.ok(W.act({ t: "atk" }).ok);
   W.step();
-  assert.equal(ch.lvl, lv0, "experience never levels by itself");
-  assert.ok(ch.xp > 1e6, "it piles up");
+  assert.equal(ch.lvl, lv0 + 1);
+  assert.equal(W.self().ap, 5);
+  assert.deepEqual(L.takeSaves(W.S), [W.PID]);
 }
 
 // ── WIS shortens every skill's wait (up to a quarter), and the sword's own mastery makes its attack grow
 {
   const dmgOf = (wis) => {
     const W = world("강타" + wis, "warrior", 40);
-    W.ch.st.wis = wis; W.p.stc = null;
+    W.ch.st.wis = 5 + (wis - 5) * 5; W.p.stc = null;
     W.to("meadow", 20, 22);
     W.step();
     const p = W.p, rt = L.runtime(W.S, "meadow");
@@ -140,7 +137,7 @@ assert.ok(D.tutorial.length >= 1);
   };
   const a = dmgOf(5), b = dmgOf(30), c = dmgOf(99);
   const cd = D.skills.slash.cd, cut = (w) => Math.min(0.25, 0.004 * w);
-  const eff = (s) => Math.min(s, 40) + 0.5 * Math.min(20, Math.max(0, s - 40)) + 0.25 * Math.max(0, s - 60);
+  const eff = (s) => 5 + 1.25 * (Math.min(s, 40) - 5 + 0.5 * Math.min(20, Math.max(0, s - 40)) + 0.25 * Math.max(0, s - 60));
   for (const [r, w] of [[a, 5], [b, 30], [c, 99]]) assert.ok(Math.abs(r.cd + 150 - cd * (1 - cut(eff(w)))) <= 20, `WIS ${w}: ${r.cd}`);
   assert.ok(a.cd > b.cd && b.cd > c.cd, `cooldowns shorten: ${a.cd}, ${b.cd}, ${c.cd}`);
   // mastery: +1% a level on the weapon's own attack
@@ -292,7 +289,7 @@ for (const cls of Object.keys(WK)) {
 }
 {
   // the last first step gives a pet
-  const W = world("첫펫", "warrior", 3);
+  const W = world("첫펫", "warrior", 1);
   const ch = W.ch;
   ch.tut = { i: D.tutorial.findIndex((t) => t.id === "skill"), n: 0 };
   ch.xpt = 0;   // no stat point bought yet, so the last step waits
@@ -380,7 +377,7 @@ for (const cls of Object.keys(WK)) {
   p.hp = 0; p.dead = true;
   let s = W.self();
   assert.ok(s.dead && s.dead.loss > 0 && s.dead.feather === 0, "the death panel knows what town will cost");
-  assert.equal(s.dead.loss, Math.floor(Math.min(50000, 4 * D.lvc[s.lvl - 1]) * 0.03), "3% of up to about one old level's worth");
+  assert.equal(s.dead.loss, Math.floor(Math.min(50000, s.xpNext) * 0.03), "3% of progress, capped at one level's requirement");
   assert.equal(W.act({ t: "respawn", here: true }).error, "부활 깃털이 없습니다");
   ch.inv.push({ id: "feather", n: 2 });
   assert.equal(W.self().dead.feather, 2);
@@ -454,20 +451,25 @@ for (const cls of Object.keys(WK)) {
   assert.deepEqual(ch.opt, { filter: 0, ahp: 0, amp: 0 });
 }
 
-// ── the price of a level: a curve that only climbs, from the first point to the two-hundredth
+// ── pacing at the prior hunting-speed baseline with the new EXP requirement and mob payout.
 {
-  assert.equal(D.lvc.length, 200);
-  for (let lv = 1; lv < 200; lv++) assert.ok(D.lvc[lv] > D.lvc[lv - 1], `Lv.${lv + 1}'s point costs more than Lv.${lv}'s`);
-  assert.deepEqual(D.statK, [0.004, 30]);
   // time per level at the balance-probe's kills-only pace (XP/min by monster tier, measured 2026-11-16 with band gear,
   // tier 6 from Lv.181; balance-2026-11-15 §8): Lv.61–200 ≈ 44 h, and each 20 levels at most ×2 the last, never steeper
   // than the step before (the old Lv.81–100 cliff was ×2.5 after ×1.8)
   const PACE = [[16, 5594], [18, 6957], [20, 8120], [22, 7993], [24, 8167], [26, 10644], [28, 10832], [30, 15361], [33, 17803], [36, 15593], [38, 20843], [40, 24322], [42, 22752], [44, 25783], [45, 25496], [46, 34380], [47, 32240], [48, 33075], [49, 35609], [50, 40009]];
   const xpm = (t) => { const i = PACE.findIndex(([u]) => u >= t), [b, y] = PACE[i], [a, x] = PACE[Math.max(0, i - 1)]; return b === a ? y : x + ((y - x) * (t - a)) / (b - a); };
   const seg = [];
-  for (let a = 61; a < 200; a += 20) { let m = 0; for (let l = a; l < a + 20 && l < 200; l++) m += D.lvc[l - 1] / xpm(Math.min(50, (l + 3) / 4)); seg.push(m); }
+  const cum = (lvl) => L.hero("누적", { lvl }).xpt;
+  for (let a = 61; a < 200; a += 20) {
+    let m = 0;
+    for (let l = a; l < a + 20 && l < 200; l++) {
+      const tier = Math.min(50, (l + 3) / 4), xpFactor = 1 + 0.22 * ((tier - 1) / 49) ** 1.2;
+      m += (cum(l + 1) - cum(l)) / (xpm(tier) * xpFactor);
+    }
+    seg.push(m);
+  }
   const hours = seg.reduce((s, m) => s + m, 0) / 60, step = seg.slice(1).map((m, i) => (m / Math.min(20, 119 - 20 * i)) / (seg[i] / 20));
-  assert.ok(hours > 42 && hours < 46, `Lv.61–200 in ${hours.toFixed(1)} h`);
+  assert.ok(hours > 38 && hours < 46, `Lv.61–200 in ${hours.toFixed(1)} h at the control pace`);
   step.forEach((r, i) => assert.ok(r < 2 && (i === 0 || r <= step[i - 1] + 0.02), `20-level step ${i}: ×${r.toFixed(2)} (${step.map((x) => x.toFixed(2))})`));
 }
 

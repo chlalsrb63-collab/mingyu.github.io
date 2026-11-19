@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { QUESTS, SQ_MAIN, SQ_BY, FIELD_BOSS, changeMap, ACH };\n";
+  "\nexport const __t = { QUESTS, SQ_MAIN, SQ_BY, FIELD_BOSS, changeMap, ACH, tierXp, toTier };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs(), Q = D.quests, T = 16;
 
@@ -65,7 +65,7 @@ for (const [i, id] of beats) {
   const b = D.side.find((o) => o.id === id);
   assert.ok(b && b.mainChapter && b.giver === "elder" && X.SQ_MAIN[id] === i, `${id} is row ${i}'s beat`);
   goals.add(b.goal.type);
-  assert.equal(b.reward.xp, Math.round(D.lvt[b.req.lv - 1] * 0.15), `${id}: 15 % of a level`);
+  assert.equal(b.reward.xp, Math.round(X.tierXp(X.toTier(b.req.lv)) * 0.15), `${id}: 15% of the world-tier XP unit`);
   assert.equal(b.reward.gold, 30 * b.req.lv);
   const lvRow = D.mobs[Q[i - 1].mob].lv;
   assert.ok(b.req.lv <= lvRow, `${id} is open by the time row ${i - 1} is done (Lv.${b.req.lv} ≤ ${lvRow})`);
@@ -73,7 +73,7 @@ for (const [i, id] of beats) {
 assert.deepEqual([...goals].sort(), ["deliver", "talk", "visit"], "beats are not kill quests");
 // rewards on the curve: the new rows pay like their neighbours (XP over a level's worth, kill rows 1.1–1.5, boss rows 1.4–1.9)
 for (const q of Q.filter((o) => o.v24)) {
-  const r = q.xp / D.lvt[D.mobs[q.mob].lv - 1];
+  const r = q.xp / X.tierXp(X.toTier(D.mobs[q.mob].lv));
   assert.ok(q.fb ? r > 1.4 && r < 1.9 : r > 1.1 && r < 1.5, `${q.title}: ${r.toFixed(2)} of a level`);
 }
 

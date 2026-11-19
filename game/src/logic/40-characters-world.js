@@ -1,7 +1,7 @@
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
-const SHEET_VERSION = 30;
+const SHEET_VERSION = 31;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -55,7 +55,7 @@ export function newChar(name, look, wk) {
     jobs: {}, lo: {}, ske: {},
     // ear, eyes, nose, colour, blush, markings, tunic, species, tail, accent, eye colour
     look: cleanLook(lk),
-    // level = 1 + points spent; xp = unspent experience; xpt = experience spent on points (a reset gives it back)
+    // XP is progress within the level; xpt is the cumulative experience already converted to levels.
     lvl: 1, xp: 0, xpt: 0, gold: 50,
     st: freshSt(), wm: freshWm(), rs: 0, sw: picked ? 1 : 0,
     inv: [{ id: "hp_s", n: 5 }, { id: "mp_s", n: 3 }],
@@ -105,7 +105,7 @@ function migrate(ch) {
   const fourClass = typeof ch.cls === "string" && !ch.job;
   if (fourClass) migrateV10(ch);
   delete ch.cls; delete ch.tr; delete ch.skl;
-  cleanJobs(ch);
+  cleanJobs(ch, fourClass || (ch.v | 0) < 31);
   // an older, shorter look is padded with "as before"
   ch.look = cleanLook(ch.look);
   const recovered = [];

@@ -21,8 +21,8 @@ function devTestValidate(S, p, a) {
 function devTestApply(S, p, a) {
   const ch = p.ch;
   const wk = WK_ORDER.includes(inHand(ch)) ? inHand(ch) : "sword";
-  const al = allocate(BUILD[wk] || BUILD.sword, MAXLV - 1);
-  ch.st = al.st; ch.xpt = al.xpt; ch.lvl = levelOf(ch.st);
+  ch.st = allocate(BUILD[wk] || BUILD.sword, (MAXLV - 1) * AP_PER_LEVEL);
+  ch.lvl = MAXLV; ch.xpt = experienceEarned(MAXLV); ch.xp = 0;
   for (const k of WK_ORDER) ch.wm[k] = { lv: WM_MAX, xp: 0 };
   for (const j of Object.keys(JOBS)) if (j !== "adventurer") ch.jobs[j] = { lv: JOB_PROGRESS.cap, xp: 0 };
   const j = devJob(a.j);
