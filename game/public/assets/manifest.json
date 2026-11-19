@@ -720,6 +720,206 @@
       "src": "assets/weapons/skins/dagger_skin_prismacrown_held.png?v=4da426bd",
       "w": 32,
       "h": 32
+    },
+    "icon.weapon.spear.t7": {
+      "src": "assets/weapons/spear/spear_t7.png?v=b1dc2528",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.spear.t7": {
+      "src": "assets/weapons/spear/spear_held_t7.png?v=7b86a9eb",
+      "w": 52,
+      "h": 32
+    },
+    "icon.weapon.spear.t8": {
+      "src": "assets/weapons/spear/spear_t8.png?v=d9c40cd2",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.spear.t8": {
+      "src": "assets/weapons/spear/spear_held_t8.png?v=4dd9b110",
+      "w": 52,
+      "h": 32
+    },
+    "icon.weapon.spear.t9": {
+      "src": "assets/weapons/spear/spear_t9.png?v=b2f81e98",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.spear.t9": {
+      "src": "assets/weapons/spear/spear_held_t9.png?v=1e798fc5",
+      "w": 52,
+      "h": 32
+    },
+    "icon.weapon.spear.t10": {
+      "src": "assets/weapons/spear/spear_t10.png?v=222a58fc",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.spear.t10": {
+      "src": "assets/weapons/spear/spear_held_t10.png?v=c8ecf557",
+      "w": 52,
+      "h": 32
+    },
+    "icon.weapon.hammer.t7": {
+      "src": "assets/weapons/hammer/hammer_t7.png?v=4d283ab4",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.hammer.t7": {
+      "src": "assets/weapons/hammer/hammer_held_t7.png?v=0d0f6d2a",
+      "w": 40,
+      "h": 36
+    },
+    "icon.weapon.hammer.t8": {
+      "src": "assets/weapons/hammer/hammer_t8.png?v=1d5f163a",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.hammer.t8": {
+      "src": "assets/weapons/hammer/hammer_held_t8.png?v=7e432f5a",
+      "w": 40,
+      "h": 36
+    },
+    "icon.weapon.hammer.t9": {
+      "src": "assets/weapons/hammer/hammer_t9.png?v=940e5c70",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.hammer.t9": {
+      "src": "assets/weapons/hammer/hammer_held_t9.png?v=f04962e9",
+      "w": 40,
+      "h": 36
+    },
+    "icon.weapon.hammer.t10": {
+      "src": "assets/weapons/hammer/hammer_t10.png?v=3e83d94d",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.hammer.t10": {
+      "src": "assets/weapons/hammer/hammer_held_t10.png?v=d2505c16",
+      "w": 40,
+      "h": 36
+    },
+    "icon.weapon.staff.t7": {
+      "src": "assets/weapons/staff/staff_t7.png?v=75918157",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.staff.t7": {
+      "src": "assets/weapons/staff/staff_held_t7.png?v=cf049bc1",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.staff.t8": {
+      "src": "assets/weapons/staff/staff_t8.png?v=27870103",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.staff.t8": {
+      "src": "assets/weapons/staff/staff_held_t8.png?v=0de51343",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.staff.t9": {
+      "src": "assets/weapons/staff/staff_t9.png?v=85e28d67",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.staff.t9": {
+      "src": "assets/weapons/staff/staff_held_t9.png?v=4131d155",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.staff.t10": {
+      "src": "assets/weapons/staff/staff_t10.png?v=35255023",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.staff.t10": {
+      "src": "assets/weapons/staff/staff_held_t10.png?v=be8e86f2",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.bow.t7": {
+      "src": "assets/weapons/bow/bow_t7.png?v=bf4a1ce6",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.bow.t7": {
+      "src": "assets/weapons/bow/bow_held_t7.png?v=5e284c7f",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.bow.t8": {
+      "src": "assets/weapons/bow/bow_t8.png?v=c9794a7e",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.bow.t8": {
+      "src": "assets/weapons/bow/bow_held_t8.png?v=1a6dc95e",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.bow.t9": {
+      "src": "assets/weapons/bow/bow_t9.png?v=b7a7d03a",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.bow.t9": {
+      "src": "assets/weapons/bow/bow_held_t9.png?v=bc27a282",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.bow.t10": {
+      "src": "assets/weapons/bow/bow_t10.png?v=2bbe6689",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.bow.t10": {
+      "src": "assets/weapons/bow/bow_held_t10.png?v=8ad80a89",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.book.t7": {
+      "src": "assets/weapons/book/book_t7.png?v=116cc8db",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.book.t7": {
+      "src": "assets/weapons/book/book_held_t7.png?v=e8adaa6b",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.book.t8": {
+      "src": "assets/weapons/book/book_t8.png?v=3229a6a9",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.book.t8": {
+      "src": "assets/weapons/book/book_held_t8.png?v=87e71ff9",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.book.t9": {
+      "src": "assets/weapons/book/book_t9.png?v=0364dcb4",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.book.t9": {
+      "src": "assets/weapons/book/book_held_t9.png?v=1f108939",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.book.t10": {
+      "src": "assets/weapons/book/book_t10.png?v=2d5fa343",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.book.t10": {
+      "src": "assets/weapons/book/book_held_t10.png?v=11bf3770",
+      "w": 32,
+      "h": 32
     }
   },
   "audio": {},
