@@ -2256,19 +2256,39 @@ body.talkq #w-talk .talk-me[data-ok="1"] { display: block; }
 #windows :is(#w-talk, #w-quest):not(.docked) { opacity: 1; }
 #w-talk .sq-card { background: var(--sf1-see); }
 
-/* window ornaments (owner 2026-11-20: woodland ivy vines hugging HUD & window borders, phone UI untouched):
-   crisp pixel-art ivy vines (assets/ui/vine_*.png) draped tastefully over corners & edges */
+/* window ornaments (owner 2026-11-20: woodland ivy vines hugging all 4 HUD & window borders, phone UI untouched):
+   top vines sit lower to drape over & soften the brass frame; bottom corners carry trimmer matching ivy clusters */
 .window:not(.docked)::before, .window:not(.docked)::after {
-  content: ""; position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated; background: no-repeat 0 0 / 100% 100%;
+  content: ""; position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated; background-repeat: no-repeat;
 }
-.window:not(.docked)::before { left: -20px; top: -20px; width: 84px; height: 51px; background-image: url("assets/ui/vine_tl.png"); }
-.window:not(.docked)::after { right: -20px; top: -20px; width: 72px; height: 51px; background-image: url("assets/ui/vine_tr.png"); }
-/* bottom HUD bar: left corner vine + slim centered top garland (not in landscape phone layout, where #dock is display: contents) */
+.window:not(.docked)::before {
+  left: -14px; top: -11px; bottom: -10px; width: 84px;
+  background-image: url("assets/ui/vine_tl.png"), url("assets/ui/vine_bl.png");
+  background-position: left top, left bottom;
+  background-size: 84px 51px, 64px 39px;
+}
+.window:not(.docked)::after {
+  right: -14px; top: -11px; bottom: -10px; width: 72px;
+  background-image: url("assets/ui/vine_tr.png"), url("assets/ui/vine_br.png");
+  background-position: right top, right bottom;
+  background-size: 72px 51px, 56px 39px;
+}
+/* bottom HUD bar: all 4 corners + slim centered top garland draped right across the top brass bar */
 body:not([data-lay="land"]) #dock::before, body:not([data-lay="land"]) #dock::after {
-  content: ""; position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated; background: no-repeat 0 0 / 100% 100%;
+  content: ""; position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated; background-repeat: no-repeat;
 }
-body:not([data-lay="land"]) #dock::before { left: -6px; top: -22px; width: 84px; height: 51px; background-image: url("assets/ui/vine_tl.png"); }
-body:not([data-lay="land"]) #dock::after { left: 50%; top: -21px; width: 136px; height: 18px; transform: translateX(-50%); background-image: url("assets/ui/vine_top.png"); }
+body:not([data-lay="land"]) #dock::before {
+  left: -8px; top: -12px; bottom: -4px; width: 84px;
+  background-image: url("assets/ui/vine_tl.png"), url("assets/ui/vine_bl.png");
+  background-position: left top, left bottom;
+  background-size: 84px 51px, 64px 39px;
+}
+body:not([data-lay="land"]) #dock::after {
+  left: 0; right: -8px; top: -12px; bottom: -4px;
+  background-image: url("assets/ui/vine_top.png"), url("assets/ui/vine_tr.png"), url("assets/ui/vine_br.png");
+  background-position: center top, right top, right bottom;
+  background-size: 136px 18px, 72px 51px, 56px 39px;
+}
 /* desktop right side panel: delicate hanging ivy tendril along the top-right edge (phone drawer untouched) */
 body[data-lay="full"] #side::after {
   content: ""; position: absolute; right: -2px; top: 2px; width: 26px; height: 60px;

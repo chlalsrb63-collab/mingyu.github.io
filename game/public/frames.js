@@ -39,7 +39,22 @@ function grid(n) {
   const set = (x, y, c) => { if (x >= 0 && y >= 0 && x < n && y < n) px[y][x] = c; };
   return { px, set, n };
 }
-function toUrl({ px, n }) {
+/** Parse #rgb / #rrggbb / rgba(...) into [r, g, b, a]. */
+function parseRgba(c) {
+  let m = /^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\s*\)$/i.exec(c);
+  if (m) return [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]];
+  m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
+  if (!m) return null;
+  const h = m[1].length === 3 ? [...m[1]].map((d) => d + d).join("") : m[1];
+  return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16), 1];
+}
+function shiftRgb(c, dr, dg, db) {
+  const p = parseRgba(c);
+  if (!p) return c;
+  const cl = (v) => Math.max(0, Math.min(255, Math.round(v)));
+  return p[3] < 1 ? `rgba(${cl(p[0] + dr)},${cl(p[1] + dg)},${cl(p[2] + db)},${p[3]})` : `rgb(${cl(p[0] + dr)},${cl(p[1] + dg)},${cl(p[2] + db)})`;
+}
+function toUrl({ px, n }, grad) {
   const c = document.createElement("canvas");
   c.width = c.height = n * S;
   const g = c.getContext("2d");
@@ -47,6 +62,16 @@ function toUrl({ px, n }) {
     if (!px[y][x]) continue;
     g.fillStyle = px[y][x];
     g.fillRect(x * S, y * S, S, S);
+  }
+  if (grad) {
+    const [inset, topCol, midCol, botCol] = grad;
+    const x0 = inset * S, w = (n - inset * 2) * S;
+    const lg = g.createLinearGradient(0, x0, 0, x0 + w);
+    lg.addColorStop(0, topCol);
+    lg.addColorStop(0.45, midCol);
+    lg.addColorStop(1, botCol);
+    g.fillStyle = lg;
+    g.fillRect(x0, x0, w, w);
   }
   return `url(${c.toDataURL()})`;
 }
@@ -87,13 +112,14 @@ function brass(P) {
   put(LEAF, n - 6, n - 6, LC, true);
   // a faint line just inside, so the face reads as a raised board
   for (let i = 6; i < n - 6; i++) { G.set(i, 6, P.line); G.set(6, i, P.line); }
-  return toUrl(G);
+  // subtle vertical gradient on the panel face (warm-lit top -> deep cozy bottom, respects HUD themes & opacity)
+  return toUrl(G, [6, shiftRgb(P.face, 15, 12, 18), P.face, shiftRgb(P.face, -10, -9, -12)]);
 }
 function screen(P) {
   const n = 8;
   const G = rings(n, [[P.ink, P.lip], [P.deep, P.rim]], P.scr);
   for (const [x, y] of [[0, 0], [n - 1, 0], [0, n - 1], [n - 1, n - 1]]) G.set(x, y, null);
-  return toUrl(G);
+  return toUrl(G, [2, shiftRgb(P.scr, -6, -5, -7), P.scr, shiftRgb(P.scr, 9, 8, 12)]);
 }
 function plate(P) {
   const n = 8;
