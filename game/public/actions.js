@@ -280,21 +280,46 @@ function serviceNotice(n) {
   const service = cover ? `${cover.name}에게 맡기거나 안내판을 이용하세요.` : "안내판에서 업무를 이용할 수 있습니다.";
   return `${at}. ${service}`;
 }
-/** The talk window: the NPC's greeting, then more on "다음 이야기", round and round. */
-export const talk = { npc: null, lines: [], i: 0, at: 0 };
+/**
+ * The talk window: the NPC's greeting and a menu (mode "home": 잡담하기 · 퀘스트 · 닫기); 잡담하기 ("chat") goes through the
+ * NPC's lines on "다음 이야기", 퀘스트 ("quest") shows the quest and 알바 cards. #w-talk[data-mode] hides the rest (hud.css).
+ */
+export const talk = { npc: null, lines: [], i: 0, at: 0, mode: "home" };
+/** Does the talk window hold a quest or 알바 card (sidequests.js renderTalk, board.js renderTalk)? */
+const talkHasQuest = () => !!$("#w-talk .talk-sq > *, #w-talk .talk-jb > *");
+/** Switch the talk window's page. */
+function talkMode(m) { talk.mode = m; if (m === "chat") talk.i = talk.lines.length > 1 ? 1 : 0; talkShow(); }
+/** Keep the menu's 퀘스트 button in step with the cards (hud.js redraws them after the window opens). */
+export function talkMenuSync() {
+  const q = $("#talk-q");
+  if (!q || !talk.npc) return;
+  const has = talkHasQuest(), mark = SideQ.mark(talk.npc, G.self);
+  q.hidden = !has;
+  q.textContent = `[${K("talkNext")}] 퀘스트${mark ? " " + mark : ""}`;
+  q.classList.toggle("gold", !!mark);
+  $("#talk-chat").textContent = has ? "잡담하기" : `[${K("talkNext")}] 잡담하기`;
+  // the quest page with nothing left on it (the last card handed in) goes back to the menu
+  if (talk.mode === "quest" && !has) talkMode("home");
+}
 /**
  * The dialogue keys while the talk window is open (input.js): "talkNext" shows the next line, and on the last
  * one presses the window's gold button (accept / hand in, as a click would) or closes it; "talkEnd" closes it.
  */
 export function talkKey(a) {
-  if (a === "talkEnd") { closeWin("talk"); Sound.play("ui"); return; }
+  if (a === "talkEnd") { if (talk.mode === "home") closeWin("talk"); else talkMode("home"); Sound.play("ui"); return; }
   if (now() - talk.at < 250) return;          // the F that opened the window must not skip its first line
+  // the menu: F opens the quests when there are any, else the chat
+  if (talk.mode === "home") { talkMode(talkHasQuest() ? "quest" : "chat"); Sound.play("blip"); return; }
+  if (talk.mode === "quest") {
+    const go = $("#w-talk").querySelector(".talk-sq .btn.gold:not(:disabled), .talk-jb .btn.gold:not(:disabled)");
+    if (go) go.click(); else talkMode("home");
+    return;
+  }
   if (talk.i % talk.lines.length < talk.lines.length - 1) { talk.i++; talkShow(); Sound.play("blip"); return; }
-  const go = $("#w-talk").querySelector(".talk-sq .btn.gold:not(:disabled), .talk-jb .btn.gold:not(:disabled)");
-  if (go) go.click(); else { closeWin("talk"); Sound.play("ui"); }
+  talkMode("home"); Sound.play("ui");
 }
 function talkTo(n) {
-  talk.npc = n; talk.i = 0; talk.at = now();
+  talk.npc = n; talk.i = 0; talk.at = now(); talk.mode = "home";
   const person = NPC.cast(n.id);
   const at = NPC.at(n.id);
   const spot = NPC.locations().find((p) => p.id === n.id);
@@ -332,18 +357,31 @@ export function refreshNpcTalk() {
   if (actText && n.offDuty && SERVICE_WINDOWS[n.originRole]) where.textContent += " · 업무는 안내판에서";
 }
 function talkShow() {
-  $("#talk-text").textContent = talk.lines[talk.i % talk.lines.length];
+  const w = $("#w-talk"), chat = talk.mode === "chat";
+  w.dataset.mode = talk.mode;
+  $("#talk-text").textContent = talk.lines[chat ? talk.i % talk.lines.length : 0];
   // side quests from the map editor: what this NPC offers (sidequests.js)
   if (!$("#talk-sq")) { const box = el("div", "talk-sq"); box.id = "talk-sq"; $("#talk-text").parentNode.append(box); }
   shown.talk = null;
+  // the menu: 잡담하기 · 퀘스트 (when there is one) · 닫기
+  let menu = $("#talk-menu");
+  if (!menu) {
+    menu = el("div", "talk-menu"); menu.id = "talk-menu";
+    const b = (id, cls, fn) => { const x = el("button", cls, ""); x.id = id; x.addEventListener("click", () => { fn(); Sound.play("blip"); }); menu.append(x); return x; };
+    b("talk-chat", "btn", () => talkMode("chat"));
+    b("talk-q", "btn", () => talkMode("quest"));
+    b("talk-bye", "btn", () => closeWin("talk")).textContent = `[${K("talkEnd")}] 닫기`;
+    $("#talk-text").after(menu);
+  }
+  talkMenuSync();
   let more = $("#talk-more");
   if (!more) {
     more = el("button", "btn small", "");
     more.id = "talk-more";
     more.addEventListener("click", () => { talk.i++; talkShow(); Sound.play("blip"); });
-    $("#talk-text").after(more);
+    menu.after(more);
   }
-  more.hidden = talk.lines.length < 2;
+  more.hidden = !chat || talk.lines.length < 2;
   // on the last line F closes (below), so this button no longer claims F: a click starts over
   const last = talk.i % talk.lines.length === talk.lines.length - 1;
   more.textContent = last ? `처음부터 (${talk.lines.length}/${talk.lines.length})` : `[${K("talkNext")}] 다음 이야기 (${(talk.i % talk.lines.length) + 1}/${talk.lines.length})`;
@@ -351,9 +389,10 @@ function talkShow() {
   if (!end) {
     end = el("button", "btn small", "");
     end.id = "talk-end";
-    end.addEventListener("click", () => talkKey("talkEnd"));
+    end.addEventListener("click", () => { talkMode("home"); Sound.play("ui"); });
     more.after(end);
   }
-  // on the last line F closes too (unless the window has a gold button for it to press)
-  end.textContent = `[${last ? `${K("talkNext")}/` : ""}${K("talkEnd")}] 닫기`;
+  // chat and quest pages: C (and F on the last line) go back to the menu
+  end.hidden = talk.mode === "home";
+  end.textContent = `[${chat && last ? `${K("talkNext")}/` : ""}${K("talkEnd")}] 돌아가기`;
 }

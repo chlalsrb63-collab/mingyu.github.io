@@ -2203,3 +2203,9 @@ body.talkq #w-talk .talk-me[data-ok="1"] { display: block; }
 .rw-row .rw-h { opacity: .8; }
 .rw-row .rw-chip { display: inline-flex; align-items: center; gap: 3px; background: rgba(0,0,0,.28); border: 1px solid rgba(245,216,138,.3); padding: 1px 5px; }
 .rw-row .rw-chip img { width: 16px; height: 16px; image-rendering: pixelated; }
+
+/* the talk window's pages (actions.js talkShow): the menu, the chat, the quests */
+#w-talk .talk-menu { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+#w-talk[data-mode="home"] .talk-sq, #w-talk[data-mode="home"] .talk-jb, #w-talk[data-mode="home"] #talk-more { display: none; }
+#w-talk[data-mode="chat"] .talk-menu, #w-talk[data-mode="chat"] .talk-sq, #w-talk[data-mode="chat"] .talk-jb { display: none; }
+#w-talk[data-mode="quest"] .talk-menu, #w-talk[data-mode="quest"] #talk-more, #w-talk[data-mode="quest"] #talk-rep, #w-talk[data-mode="quest"] #talk-where { display: none; }
