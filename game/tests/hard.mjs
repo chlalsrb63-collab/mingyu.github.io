@@ -113,7 +113,7 @@ assert.ok(!p.dead && p.hp >= 1, "but not to death");
 
 // ── fire, poison, frost: what a hit leaves behind
 for (const [tr, slot, key] of [["fire", 5, "burn"], ["poison", 6, "poison"], ["frost", 4, "slowed"]]) {
-  stand(); dress("lambmaw", 1, [tr], 14);
+  stand(); dress("meadowram", 1, [tr], 14);
   events(1600);
   assert.ok(p[key], `${tr} leaves its mark`);
   pet.dead = true;                                              // nothing is hitting any more
@@ -145,7 +145,7 @@ const slowN = blows([]), fastN = blows(["swift"]);
 assert.ok(fastN >= slowN * 1.25, `swift attacks faster: ${fastN} vs ${slowN}`);
 
 // ── vamp: it heals from what it spills
-stand(); dress("lambmaw", 1, ["vamp"], 14, { hp: 100 });
+stand(); dress("meadowram", 1, ["vamp"], 14, { hp: 100 });
 events(1600);
 assert.ok(pet.hp > 100, "a vampiric elite drinks");
 
@@ -157,7 +157,7 @@ assert.ok(pet.dead && ev.some((e) => e[0] === "t") && ev.some((e) => e[0] === "b
 assert.ok(p.hp < 9999, "and whoever stood there is hurt");
 
 // ── charge: a marked line, then a run down it
-stand(); dress("lambmaw", 0, [], 60, { castAt: 0 });
+stand(); dress("meadowram", 0, [], 60, { castAt: 0 });
 ev = events(300);
 const c = ev.find((e) => e[0] === "c");
 assert.ok(c && c[1] === pet.id && c.length === 7 && c[6] > 500, "the charge is announced: " + JSON.stringify(c));
@@ -168,7 +168,7 @@ ev = events(700);
 assert.ok(pet.x < x0 - 40, "then it runs");
 assert.ok(ev.some((e) => e[0] === "h" && e[1] === p.eid && e[2] > 0), "through whoever stood on the line");
 // stepping off the line is enough
-stand(); dress("lambmaw", 0, [], 60, { castAt: 0 });
+stand(); dress("meadowram", 0, [], 60, { castAt: 0 });
 events(200);
 p.y += 30; p.mvAt = now;
 const hpSide = p.hp;
@@ -187,7 +187,7 @@ assert.equal(ev.filter((e) => e[0] === "q").length, 3, "three land");
 assert.equal(ev.filter((e) => e[0] === "h" && e[1] === p.eid && e[2] > 0).length, 1, "one of them on a player who stood still");
 
 // ── pool: a puddle that lingers, bites and poisons, and dries up
-stand(); dress("toadbrood", 0, [], 50, { castAt: 0, atkAt: 1e15 });
+stand(); dress("hydrasnake", 0, [], 50, { castAt: 0, atkAt: 1e15 });
 ev = events(200);
 const g = ev.find((e) => e[0] === "g");
 assert.ok(g && g[1] === pet.id && g.length === 8 && g[7] === 0, "the spit is announced: " + JSON.stringify(g));
@@ -206,7 +206,7 @@ stand();
 pet.dead = true;
 const pack = rt.mobs.filter((m) => !m.fix && m !== pet && !m.k.startsWith("chest")).slice(0, 12);
 assert.equal(pack.length, 12);
-pack.forEach((m, i) => Object.assign(m, { k: "lambmaw", dead: false, el: 0, tr: [], hp: 1e6, x: X + 20 + (i % 6) * 9, y: Y - 10 + Math.floor(i / 6) * 20, tgt: null, st: 0, stun: 0, act: null, castAt: 1e15, atkAt: 1e15, mvAt: 1e15, by: {} }));
+pack.forEach((m, i) => Object.assign(m, { k: "meadowram", dead: false, el: 0, tr: [], hp: 1e6, x: X + 20 + (i % 6) * 9, y: Y - 10 + Math.floor(i / 6) * 20, tgt: null, st: 0, stun: 0, act: null, castAt: 1e15, atkAt: 1e15, mvAt: 1e15, by: {} }));
 pack.forEach((m) => { m.hx = m.x; m.hy = m.y; m.wx = m.x; m.wy = m.y; });
 events(1500);
 assert.equal(pack.filter((m) => m.tgt === PID).length, 3, "three at a time");
