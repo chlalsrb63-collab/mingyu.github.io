@@ -22,15 +22,17 @@ let C = null;
 
 const css = document.createElement("style");
 css.textContent = `
-#w-costume { width: 470px; }
+#w-costume { width: 690px; max-width: 94vw; }
 .wr-tabs { display: flex; gap: 4px; margin-bottom: 8px; }
 .wr-tabs button { flex: 1; padding: 4px 0; font-size: 12px; font-weight: 700; color: var(--muted, #aaa); background: rgba(255,255,255,.04); border: 1px solid #000; border-radius: 3px; cursor: pointer; }
 .wr-tabs button.on { color: var(--gold, #e2c486); box-shadow: inset 0 0 0 1px var(--line-hi, #8a7a5a); background: rgba(255,255,255,.09); }
 .wr-slots { display: flex; gap: 4px; flex-wrap: wrap; }
-.wr-slots button { padding: 2px 7px; font-size: 11px; color: var(--muted, #aaa); background: rgba(255,255,255,.04); border: 1px solid #000; border-radius: 3px; cursor: pointer; }
-.wr-slots button.on { color: var(--gold, #e2c486); box-shadow: inset 0 0 0 1px var(--line-hi, #8a7a5a); }
+.wr-slots button { padding: 4px 8px; font-size: 11px; font-weight: 600; color: var(--muted, #b8b0a2); background: rgba(255,255,255,.04); border: 1px solid rgba(0,0,0,.75); border-radius: 4px; cursor: pointer; transition: background .12s, color .12s; }
+.wr-slots button:hover { background: rgba(255,255,255,.09); color: #f4ecdc; }
+.wr-slots button.on { color: var(--gold, #f0d28c); background: rgba(226,196,134,.14); box-shadow: inset 0 0 0 1px var(--line-hi, #9a865e); }
+.wr-slots button .cnt { opacity: .65; font-size: 10px; margin-left: 3px; font-weight: 400; }
 .wr-top { display: flex; gap: 10px; align-items: flex-start; }
-.wr-pv { width: 150px; height: 150px; flex: none; image-rendering: pixelated; border: 1px solid #000; border-radius: 3px; background: #5e8a50; cursor: pointer; }
+.wr-pv { width: 150px; height: 150px; flex: none; image-rendering: pixelated; border: 1px solid #000; border-radius: 4px; background: #262230; cursor: pointer; }
 .wr-side { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
 .wr-worn { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
 .wr-worn .ws { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; color: var(--muted, #aaa); cursor: pointer; }
@@ -44,16 +46,46 @@ css.textContent = `
 .wr-grid .c.try canvas { box-shadow: 0 0 0 1px #fff; }
 .wr-count { font-size: 11px; color: var(--muted, #aaa); }
 .wr-hint { font-size: 11px; color: var(--muted, #aaa); line-height: 1.4; }
-#w-costume .list { max-height: 300px; overflow-y: auto; margin-top: 6px; }
-#w-costume .list .it.try { box-shadow: inset 0 0 0 1px var(--line-hi, #8a7a5a); }
-#w-costume .list .it .own { font-size: 11px; color: #7ad08a; font-weight: 700; padding: 0 4px; }
+/* ── 루루의상실 2-column boutique layout ── */
+.wr-boutique { display: grid; grid-template-columns: 204px 1fr; gap: 12px; align-items: start; }
+.wr-stage { display: flex; flex-direction: column; gap: 6px; padding: 8px; background: rgba(14,12,20,.55); border: 1px solid rgba(226,196,134,.2); border-radius: 6px; }
+.wr-stage .wr-pv { width: 186px; height: 186px; border-color: rgba(226,196,134,.35); border-radius: 5px; }
+.wr-pv-ctrl { display: flex; gap: 4px; }
+.wr-pv-ctrl button { flex: 1; padding: 3px 0; font-size: 11px; color: #d8cfc0; background: rgba(255,255,255,.06); border: 1px solid rgba(0,0,0,.75); border-radius: 3px; cursor: pointer; }
+.wr-pv-ctrl button:hover { background: rgba(255,255,255,.12); color: #fff; }
+.wr-pv-ctrl button:disabled { opacity: .35; cursor: default; }
+.wr-trycard { padding: 7px 8px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.09); border-radius: 4px; display: flex; flex-direction: column; gap: 5px; min-height: 82px; }
+.wr-trycard .head { display: flex; gap: 7px; align-items: center; }
+.wr-trycard .head canvas { width: 32px; height: 32px; flex: none; image-rendering: pixelated; background: #17141f; border: 1px solid rgba(226,196,134,.45); border-radius: 4px; }
+.wr-trycard .nm { font-size: 12px; font-weight: 700; line-height: 1.2; }
+.wr-trycard .sl { font-size: 10px; color: #9c94a8; }
+.wr-trycard .ds { font-size: 11px; color: #c6beb0; line-height: 1.35; }
+.wr-trycard .empty { font-size: 11px; color: #8c8498; line-height: 1.45; margin: auto 0; text-align: center; }
+.wr-catalog { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.wr-wallet { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 5px 8px; background: rgba(14,12,20,.45); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; font-size: 11px; }
+.wr-wallet .bal { display: flex; gap: 10px; align-items: center; font-weight: 700; color: #f0d28c; }
+.wr-wallet .bal .tk { color: #8ee0c4; }
+.wr-wallet .sub { color: #9c94a8; font-size: 10px; }
+#w-costume .list { max-height: 332px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; padding-right: 3px; margin-top: 0; }
+#w-costume .list .it { display: flex; align-items: center; gap: 9px; padding: 6px 8px; background: rgba(255,255,255,.035); border: 1px solid rgba(255,255,255,.07); border-radius: 5px; cursor: pointer; transition: background .1s, border-color .1s; }
+#w-costume .list .it:hover { background: rgba(255,255,255,.075); border-color: rgba(226,196,134,.3); }
+#w-costume .list .it.try { background: rgba(226,196,134,.12); border-color: rgba(226,196,134,.65); box-shadow: none; }
+#w-costume .list .it .icw { width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; background: #17141f; border: 1px solid #000; border-radius: 4px; }
+#w-costume .list .it .icw canvas { width: 32px; height: 32px; border: 0; background: transparent; }
+#w-costume .list .it .tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+#w-costume .list .it .tx .top { display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 700; }
+#w-costume .list .it .tx .tag { font-size: 10px; font-weight: 600; color: #b8b0c4; background: rgba(255,255,255,.07); padding: 1px 5px; border-radius: 3px; flex: none; }
+#w-costume .list .it .tx small { display: block; font-size: 11px; color: #a69eb0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#w-costume .list .it .act { display: flex; align-items: center; gap: 5px; flex: none; }
+#w-costume .list .it .own { font-size: 10px; color: #7ad08a; font-weight: 700; padding: 2px 5px; background: rgba(122,208,138,.12); border-radius: 3px; }
+#w-costume .list .it button { min-width: 68px; padding: 4px 8px; font-size: 11px; font-weight: 700; border-radius: 4px; }
 .wr-tip .src { margin-top: 3px; color: #e2c486; font-size: 11px; }
 .wr-tip .set { color: #9ad0c0; font-size: 11px; }
-.wr-set { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin: 6px 0 2px; padding: 1px 4px; font-size: 11px; font-weight: 700; color: var(--gold, #e2c486); border-bottom: 1px solid rgba(255,255,255,.12); }
+.wr-set { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin: 6px 0 2px; padding: 2px 4px; font-size: 11px; font-weight: 700; color: var(--gold, #e2c486); border-bottom: 1px solid rgba(226,196,134,.2); }
 .wr-set:first-child { margin-top: 0; }
 .wr-set small { font-weight: 400; color: var(--muted, #aaa); }
 .wr-set.full small { color: #7ad08a; }
-.wr-dye { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; padding: 5px 6px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 3px; }
+.wr-dye { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; padding: 6px 8px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 4px; }
 .wr-dye .row { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .wr-dye .lb { font-size: 11px; font-weight: 700; color: var(--gold, #e2c486); margin-right: 2px; }
 .wr-dye .sw { width: 18px; height: 18px; padding: 0; border: 1px solid #000; border-radius: 2px; cursor: pointer; box-shadow: inset 0 0 0 1px rgba(255,255,255,.25); }
@@ -70,13 +102,25 @@ const shopWin = document.createElement("section");
 shopWin.className = "window";
 shopWin.id = "w-costume";
 shopWin.hidden = true;
-shopWin.innerHTML = `<header><span class="t">의상실 주인 루루</span><button class="x" title="닫기 (Esc)"></button></header>
+shopWin.innerHTML = `<header><span class="t">루루의상실 · 외형 아바타</span><button class="x" title="닫기 (Esc)"></button></header>
 <div class="body">
-  <p class="say">어서 와요! 모자, 옷, 망토, 안경, 무기 외형까지 — 능력치는 그대로, 모습만 바뀌어요. 눌러서 입어 보고 마음에 들면 사세요.</p>
-  <div class="wr-top"><canvas class="wr-pv" id="wr-shop-pv" width="150" height="150" title="눌러서 돌려 보기"></canvas>
-    <div class="wr-side"><div class="wr-slots" id="wr-shop-slots"></div><div class="wr-hint" id="wr-shop-hint"></div></div></div>
+  <div class="wr-boutique">
+    <div class="wr-stage">
+      <canvas class="wr-pv" id="wr-shop-pv" width="186" height="186" title="눌러서 돌려 보기"></canvas>
+      <div class="wr-pv-ctrl">
+        <button id="wr-rot-l" title="왼쪽 회전">◀ 회전</button>
+        <button id="wr-rot-r" title="오른쪽 회전">회전 ▶</button>
+        <button id="wr-try-clr" title="미리보기 초기화">초기화</button>
+      </div>
+      <div class="wr-trycard" id="wr-trycard"></div>
+    </div>
+    <div class="wr-catalog">
+      <div class="wr-wallet" id="wr-shop-wallet"></div>
+      <div class="wr-slots" id="wr-shop-slots"></div>
+      <div class="list" id="wr-shop-list"></div>
+    </div>
+  </div>
   <div class="wr-dye" id="wr-dye"></div>
-  <div class="list" id="wr-shop-list"></div>
 </div>`;
 (document.getElementById("windows") || document.body).append(shopWin);
 
@@ -213,45 +257,63 @@ function drawPreview(cv, t) {
   const codes = worn.map((id) => (id === trying ? G.defs.cos[id].n + (G.defs.cosDyeK || 1000) * dyeTry : codeOf(G.defs, s, id)));
   const gear = { ...(w.gear || {}), dye: undefined, ...wireGear(G.defs, codes, w.gear && w.gear.wl) };
   const g = cv.getContext("2d");
-  const centerX = cv.width / 2, shadowY = 128;
+  const W = cv.width, H = cv.height, isBoutique = cv.id === "wr-shop-pv";
+  const centerX = W / 2, shadowY = Math.round(H * 0.82);
   g.imageSmoothingEnabled = false;
-  g.fillStyle = "#5e8a50"; g.fillRect(0, 0, cv.width, cv.height);
-  g.fillStyle = "#6c9a5c"; for (let i = 0; i < 7; i++) g.fillRect((i * 37 + 11) % 150, (i * 53 + 20) % 110, 6, 3);
-  g.fillStyle = "rgba(20,24,50,.28)"; g.beginPath(); g.ellipse(centerX, shadowY, 26, 7, 0, 0, 7); g.fill();
-  const views = ["front", "side", "back", "side"], v = views[spin % 4];
+  if (isBoutique) {
+    // Warm boutique fitting-room studio stage with soft floor spotlight
+    const bg = g.createLinearGradient(0, 0, 0, H);
+    bg.addColorStop(0, "#241f32"); bg.addColorStop(0.7, "#322b44"); bg.addColorStop(1, "#1e1a28");
+    g.fillStyle = bg; g.fillRect(0, 0, W, H);
+    g.fillStyle = "rgba(240,210,140,.08)";
+    g.beginPath(); g.ellipse(centerX, shadowY + 2, 54, 15, 0, 0, 7); g.fill();
+    g.strokeStyle = "rgba(240,210,140,.22)"; g.lineWidth = 1;
+    g.beginPath(); g.ellipse(centerX, shadowY + 2, 54, 15, 0, 0, 7); g.stroke();
+  } else {
+    g.fillStyle = "#2b2638"; g.fillRect(0, 0, W, H);
+    g.fillStyle = "rgba(240,210,140,.07)";
+    g.beginPath(); g.ellipse(centerX, shadowY + 2, 42, 12, 0, 0, 7); g.fill();
+  }
+  g.fillStyle = "rgba(8,6,18,.42)"; g.beginPath(); g.ellipse(centerX, shadowY, isBoutique ? 30 : 26, 7, 0, 0, 7); g.fill();
+  const views = ["front", "side", "back", "side"], v = views[((spin % 4) + 4) % 4];
   const sheet = SP.personSheet(SP.playerLook(w.cls, w.look, gear));
   const F = SP.FRAME, fr = [F.stepA, F.stretch, F.stepB, F.stretch][Math.floor(t / 180) % 4];
-  const zoom = 4, size = SP.SIZE * zoom;
+  const zoom = isBoutique ? 4.5 : 4, size = SP.SIZE * zoom;
   g.save();
-  if (spin % 4 === 3) { g.translate(cv.width, 0); g.scale(-1, 1); }
+  if ((((spin % 4) + 4) % 4) === 3) { g.translate(W, 0); g.scale(-1, 1); }
   SP.drawPersonCrop(g, sheet[v][fr], 0, 0, SP.SIZE, SP.SIZE, centerX - size / 2, shadowY - SP.FOOT[1] * zoom, size, size);
   g.restore();
   // the weapon in hand, as it is slung, with its skin
   const wk = SP.weaponKind(w.cls, gear), ws = SP.weaponSprite(wk, gear);
+  const wz = isBoutique ? 2.2 : 2;
   g.save();
-  g.translate(118, 104);
+  g.translate(Math.round(W * 0.78), Math.round(H * 0.68));
   g.rotate(-1.15);
-  g.drawImage(ws, -SP.GRIP[0] * 2, -SP.GRIP[1] * 2, ws.width * 2, ws.height * 2);
+  g.drawImage(ws, -SP.GRIP[0] * wz, -SP.GRIP[1] * wz, ws.width * wz, ws.height * wz);
   g.restore();
 }
 function loop(t) {
   if (C && C.G.self && C.G.self.cos) {
-    if (t - spinAt > 1400) { spin++; spinAt = t; }
+    if (t - spinAt > 2000) { spin++; spinAt = t; }
     if (!shopWin.hidden) drawPreview($("#wr-shop-pv"), t);
     if (!tabBox.hidden && !$("#w-char").hidden) drawPreview($("#wr-tab-pv"), t);
   }
   requestAnimationFrame(loop);
 }
 for (const id of ["#wr-shop-pv", "#wr-tab-pv"]) $(id).addEventListener("click", () => { spin++; spinAt = performance.now(); });
+$("#wr-rot-l").addEventListener("click", () => { spin--; spinAt = performance.now() + 2500; Sound.play("ui"); });
+$("#wr-rot-r").addEventListener("click", () => { spin++; spinAt = performance.now() + 2500; Sound.play("ui"); });
+$("#wr-try-clr").addEventListener("click", () => { if (!tried) return; tried = null; key.shop = ""; Sound.play("ui"); if (C) refresh(C.G.self); });
 
 // ───────────────────────────── rendering ─────────────────────────────
 
 let shopSlot = "all", tabSlot = "all";
 const key = { shop: "", tab: "", dye: "" };
-function slotBar(host, cur, set) {
+function slotBar(host, cur, set, counts) {
   host.textContent = "";
   for (const k of ["all", ...SLOTS]) {
     const b = C.el("button", k === cur ? "on" : "", k === "all" ? "전체" : C.G.defs.cosSlotName[k]);
+    if (counts && counts[k] !== undefined) b.append(C.el("span", "cnt", `${counts[k]}`));
     b.addEventListener("click", () => { set(k); Sound.play("ui"); key.shop = key.tab = ""; refresh(C.G.self); });
     host.append(b);
   }
@@ -259,35 +321,85 @@ function slotBar(host, cur, set) {
 function renderShop(s) {
   const D = C.G.defs, list = $("#wr-shop-list");
   const tokens = s.cos.tokens || 0;
-  slotBar($("#wr-shop-slots"), shopSlot, (k) => { shopSlot = k; });
-  $("#wr-shop-hint").textContent = `보유 골드 ${s.gold.toLocaleString()}G · 버드나무토큰 ${tokens.toLocaleString()}개. 토큰은 게시판 알바와 협동 근무로 얻습니다.`;
+  const allShopIds = Object.keys(D.cos).filter((id) => ["shop", "token"].includes(D.cos[id].src));
+  const counts = { all: allShopIds.length };
+  for (const k of SLOTS) counts[k] = allShopIds.filter((id) => D.cos[id].slot === k).length;
+  slotBar($("#wr-shop-slots"), shopSlot, (k) => { shopSlot = k; }, counts);
+
+  // Wallet header
+  const wal = $("#wr-shop-wallet");
+  wal.textContent = "";
+  const bal = C.el("div", "bal");
+  bal.append(C.el("span", "", `보유 ${s.gold.toLocaleString()} G`), C.el("span", "tk", `토큰 ${tokens.toLocaleString()}개`));
+  wal.append(bal, C.el("span", "sub", "클릭 시 왼쪽 미리보기 착용"));
+
+  // Try-on preview card under the fitting-room canvas
+  const clrBtn = $("#wr-try-clr");
+  if (clrBtn) clrBtn.disabled = !tried;
+  const card = $("#wr-trycard");
+  card.textContent = "";
+  if (tried && D.cos[tried]) {
+    const td = D.cos[tried], own = s.cos.own.includes(tried), on = s.cos.on[td.slot] === tried;
+    const head = C.el("div", "head");
+    const tic = iconCanvas(tried);
+    tic.style.borderColor = RARITY_COL[td.q];
+    const meta = C.el("div");
+    const nm = C.el("div", "nm", td.name); nm.style.color = RARITY_COL[td.q];
+    meta.append(nm, C.el("div", "sl", D.cosSlotName[td.slot] + (td.set && D.cosSets[td.set] ? ` · ${D.cosSets[td.set]}` : "")));
+    head.append(tic, meta);
+    card.append(head, C.el("div", "ds", td.desc));
+    if (own) {
+      const b = C.el("button", "", on ? "현재 착용 중" : "바로 입기");
+      b.disabled = on;
+      b.addEventListener("click", () => { C.act({ t: "cos_eq", id: tried }); Sound.play("cloth_equip"); });
+      card.append(b);
+    } else {
+      const byToken = td.src === "token";
+      const b = C.el("button", "", `구매하기 · ${td.price.toLocaleString()}${byToken ? " 토큰" : " G"}`);
+      b.disabled = (byToken ? tokens : s.gold) < td.price;
+      b.addEventListener("click", () => { C.act({ t: "cos_buy", id: tried }); Sound.play("coin"); tried = null; });
+      card.append(b);
+    }
+  } else {
+    card.append(C.el("div", "empty", "오른쪽 목록에서 외형을 클릭하면\n실시간 미리보기로 입어 볼 수 있어요."));
+  }
+
+  // Categorized item list
   list.textContent = "";
-  for (const g of groups(Object.keys(D.cos).filter((id) => ["shop", "token"].includes(D.cos[id].src) && (shopSlot === "all" || D.cos[id].slot === shopSlot)))) {
+  const shown = allShopIds.filter((id) => shopSlot === "all" || D.cos[id].slot === shopSlot);
+  for (const g of groups(shown)) {
    list.append(setHead(g, s));
    for (const id of g.ids) {
     const d = D.cos[id];
     const own = s.cos.own.includes(id);
+    const on = s.cos.on[d.slot] === id;
     const row = C.el("div", "it" + (tried === id ? " try" : ""));
+    const icw = C.el("div", "icw");
+    icw.style.borderColor = RARITY_COL[d.q];
     const ic = iconCanvas(id);
-    const tx = C.el("div", "tx", d.name);
-    tx.style.color = RARITY_COL[d.q];
-    tx.append(C.el("small", "", `${D.cosSlotName[d.slot]} · ${d.desc}`));
-    row.append(ic, tx);
+    icw.append(ic);
+    const tx = C.el("div", "tx");
+    const top = C.el("div", "top");
+    const nm = C.el("span", "", d.name); nm.style.color = RARITY_COL[d.q];
+    top.append(nm, C.el("span", "tag", D.cosSlotName[d.slot]));
+    tx.append(top, C.el("small", "", d.desc));
+    const act = C.el("div", "act");
     if (own) {
-      row.append(C.el("span", "own", "보유"));
-      const b = C.el("button", "", s.cos.on[d.slot] === id ? "입는 중" : "입기");
-      b.disabled = s.cos.on[d.slot] === id;
+      act.append(C.el("span", "own", "보유"));
+      const b = C.el("button", "", on ? "입는 중" : "입기");
+      b.disabled = on;
       b.addEventListener("click", (e) => { e.stopPropagation(); C.act({ t: "cos_eq", id }); Sound.play("cloth_equip"); });
-      row.append(b);
+      act.append(b);
     } else {
       const byToken = d.src === "token";
-      const b = C.el("button", "", `${d.price.toLocaleString()}${byToken ? " 토큰" : "G"}`);
+      const b = C.el("button", "", `${d.price.toLocaleString()}${byToken ? " 토큰" : " G"}`);
       b.disabled = (byToken ? tokens : s.gold) < d.price;
       b.addEventListener("click", (e) => { e.stopPropagation(); C.act({ t: "cos_buy", id }); Sound.play("coin"); tried = null; });
-      row.append(b);
+      act.append(b);
     }
+    row.append(icw, tx, act);
     row.addEventListener("click", () => { tried = tried === id ? null : id; key.shop = ""; Sound.play("cloth_try"); refresh(C.G.self); });
-    C.hoverTip(ic, (h) => tipFor(id, h, own ? "" : "눌러서 입어 보기"));
+    C.hoverTip(icw, (h) => tipFor(id, h, own ? "" : "눌러서 입어 보기"));
     list.append(row);
    }
   }
