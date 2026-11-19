@@ -388,7 +388,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   // a dagger in a back that is not watching you
   if (st.wk === "dagger" && mob.tgt !== p.pid) dmg *= 1 + st.sneak;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
-  dmg *= pfxMul(S, p, st, mob, d, o, crit);   // the powers that raise the blow (giant: +30% on elites and bosses), one product capped ×1.6
+  dmg *= pfxMul(S, p, st, mob, d, o, crit);   // combine active rune and prefix damage factors within their shared cap
   if (!pure && has(mob, "tough")) dmg *= 0.6;
   if (mob.vuln > S.now) dmg *= 1.3;
   // 금서의 낙인: a branded monster takes more from everyone

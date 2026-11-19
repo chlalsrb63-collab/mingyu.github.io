@@ -18,7 +18,7 @@ const pgFirm = (mob) => { const d = MOBS[mob.k]; return d.boss || d.still || d.c
 
 // ── mitigation: a blow after armour (MITI) ──────────────────────────────────────────────────────────────────────────────────────────────
 
-// 껍질의: a flat absorb, not a factor, because the factor floor (×0.6) would cut a 60 % share to 40 %; the absorb cap (20 % of max HP) bounds it instead
+// 껍질의: the proc uses the flat absorb budget so large hits still matter.
 Object.assign(PFX, { bark: { on: 1, p: 0.15, k: 0.4 } });
 Object.assign(LEGEND, { bark: ["껍질의", pfxText("bark", "피격 시 {p:%}% 확률로 그 피해를 {k:-%}% 줄인다"), "AH", "D", "M", "mit"] });
 Object.assign(PFX_FN, { bark: { miti(S, rt, p, st, mob, dmg, raw, r) { if (pfxChance(S, st, PFX.bark.p)) r.abs += Math.round(dmg * (1 - PFX.bark.k)); } } });
@@ -222,7 +222,7 @@ Object.assign(PFX_FN, {
   },
 });
 
-// 비상의: a big heal when HP gets low, if p is still standing (one-shot, so it is outside pfxHeal's 8 % a second, which the long `icd` makes safe)
+// 비상의: a one-shot heal outside the per-second budget, limited by its long internal cooldown.
 Object.assign(PFX, { emerg: { on: 1, hp: 0.3, k: 0.2, icd: 90000 } });
 Object.assign(LEGEND, { emerg: ["비상의", pfxText("emerg", "HP가 {hp:%}% 이하가 되면 즉시 최대 HP의 {k:%}% 회복 ({icd:s}초 간격)"), "ABNH", "D", "M", "sus"] });
 Object.assign(PFX_FN, {

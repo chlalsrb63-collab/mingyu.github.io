@@ -52,8 +52,7 @@ const JOB_PLUS = 0.1;
  * The jobs. `single`: one weapon, mastery 20 (JOB_WM), 1,000 G. `hybrid`: stay a 모험가 until both weapons
  * of the pair reach 15 (HYB_WM), 5,000 G; `scale` replaces the table for both weapons. Only the listed pairs can advance. Scale budget: two weapons with different main stats → 0.8 + 0.8 and the two second stats
  * 0.3 each (≈ 2.2); a shared main or second stat folds into fewer, bigger coefficients (≈ 1.6–2.2).
- * `handK` multiplies one hand's attack (owner 2026-11-19: tracker's and bladedancer's daggers, once the wider item-level gap
- * left stats too small a share of attack for a `hand` scale lift to reach the hybrid floor).
+ * `handK` multiplies one hand's attack for hybrids whose stat scaling alone falls below the weapon's intended pace.
  * Ids are frozen (persisted).
  */
 const JOBS = {
@@ -68,7 +67,7 @@ const JOBS = {
   spellblade: { name: "마검사", kind: "hybrid", wk: ["sword", "staff"], scale: { str: 0.9, int: 0.9, wil: 0.2, wis: 0.2 }, cost: HYB_COST },
   tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.75, luk: 0.8 }, handK: { dagger: 1.1 }, cost: HYB_COST },
   dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 }, cost: HYB_COST },
-  hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.5, int: 0.78, luk: 0.3, wil: 0.3 }, cost: HYB_COST },
+  hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.5, int: 0.78, luk: 0.3, wil: 0.3 }, handK: { dagger: 1.07 }, cost: HYB_COST },
   darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.9, str: 0.9, int: 0.4 }, cost: HYB_COST },
   // Additional hybrid pairings (docs/design/jobs-and-stats.md).
   bladedancer: { name: "검무사", kind: "hybrid", wk: ["sword", "dagger"], scale: { str: 0.68, dex: 0.5, wil: 0.3, luk: 0.3 }, handK: { dagger: 1.1 }, cost: HYB_COST },

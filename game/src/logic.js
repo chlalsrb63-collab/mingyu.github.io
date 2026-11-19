@@ -177,8 +177,7 @@ const JOB_PLUS = 0.1;
  * The jobs. `single`: one weapon, mastery 20 (JOB_WM), 1,000 G. `hybrid`: stay a 모험가 until both weapons
  * of the pair reach 15 (HYB_WM), 5,000 G; `scale` replaces the table for both weapons. Only the listed pairs can advance. Scale budget: two weapons with different main stats → 0.8 + 0.8 and the two second stats
  * 0.3 each (≈ 2.2); a shared main or second stat folds into fewer, bigger coefficients (≈ 1.6–2.2).
- * `handK` multiplies one hand's attack (owner 2026-11-19: tracker's and bladedancer's daggers, once the wider item-level gap
- * left stats too small a share of attack for a `hand` scale lift to reach the hybrid floor).
+ * `handK` multiplies one hand's attack for hybrids whose stat scaling alone falls below the weapon's intended pace.
  * Ids are frozen (persisted).
  */
 const JOBS = {
@@ -193,7 +192,7 @@ const JOBS = {
   spellblade: { name: "마검사", kind: "hybrid", wk: ["sword", "staff"], scale: { str: 0.9, int: 0.9, wil: 0.2, wis: 0.2 }, cost: HYB_COST },
   tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.75, luk: 0.8 }, handK: { dagger: 1.1 }, cost: HYB_COST },
   dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 }, cost: HYB_COST },
-  hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.5, int: 0.78, luk: 0.3, wil: 0.3 }, cost: HYB_COST },
+  hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.5, int: 0.78, luk: 0.3, wil: 0.3 }, handK: { dagger: 1.07 }, cost: HYB_COST },
   darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.9, str: 0.9, int: 0.4 }, cost: HYB_COST },
   // Additional hybrid pairings (docs/design/jobs-and-stats.md).
   bladedancer: { name: "검무사", kind: "hybrid", wk: ["sword", "dagger"], scale: { str: 0.68, dex: 0.5, wil: 0.3, luk: 0.3 }, handK: { dagger: 1.1 }, cost: HYB_COST },
@@ -659,7 +658,7 @@ Object.assign(ITEMS, {
 
 /** Affixes a dropped item can roll: [key, label, prefix word, min, max, per-item-level growth]. */
 const AFFIX = [
-  ["atk", "공격력", "날카로운", 1, 3, 0.35], ["atkp", "공격력 %", "맹렬한", 3, 8, 0], ["def", "방어력", "단단한", 1, 2, 0.25],
+  ["atk", "공격력", "날카로운", 1, 3, 0.35], ["atkp", "공격력 %", "맹렬한", 3, 6, 0], ["def", "방어력", "단단한", 1, 2, 0.25],
   ["hp", "최대 HP", "강인한", 8, 20, 2], ["mp", "최대 MP", "지혜의", 5, 12, 1], ["crit", "치명타 %", "예리한", 2, 5, 0],
   ["critd", "치명타 피해 %", "잔혹한", 8, 20, 0], ["ls", "흡혈 %", "흡혈의", 1, 3, 0], ["spd", "이동속도 %", "신속의", 3, 7, 0],
   ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
@@ -689,10 +688,8 @@ const UNIQ_P = [0.001, 0.004, 0.01];
  */
 const IL_RANK = [0, 4, 8];
 const IL_GAP = 10;
-// Flat equipment stats gain up to ×11.6 from item level (owner 2026-11-19: the Lv.1 → Lv.200 weapon gap 3–4× wider,
-// 6 → ~1,050 attack, so new gear and levels are felt and runes/charms stay a side dish). The gentle opening is kept.
-// Per-mille values also drive item comparisons in the client. Field monsters follow it (mobItemHp/mobItemAtk).
-const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(10620 * (i / (MAXLV - 1)) ** 1.55));
+// Double the displayed Lv.1 → Lv.200 weapon attack gap (6 → 2086). Per-mille values also drive client item comparisons.
+const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(22178 * (i / (MAXLV - 1)) ** 1.55));
 /**
  * 접두사 고유 효과 (docs/design/prefix-effects.md): a 전설 or 유니크 piece carries ONE power `lg` no affix can give. Three tables per power,
  * all keyed by `lg`; the later parts 52+ extend them with Object.assign and never edit this file (the recipe is in 51-prefix.js):
@@ -704,14 +701,14 @@ const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.roun
  *   PFX_FN  its code (51-prefix.js)
  */
 const PFX = {
-  chain: { on: 1, p: 0.25, n: 2, k: 0.6, r: 70 },
-  nova: { on: 1, k: 0.8, r: 34, n: 4, icd: 1200 },
-  haste: { on: 1, iv: 0.85 },
-  giant: { on: 1, k: 1.3 },
+  chain: { on: 1, p: 0.25, n: 2, k: 0.50, r: 70 },
+  nova: { on: 1, k: 0.68, r: 34, n: 4, icd: 1200 },
+  haste: { on: 1, iv: 0.88 },
+  giant: { on: 1, k: 1.20 },
   echo: { on: 1, p: 0.16, ms: 400, icd: 8000 },
   greed: { on: 1, gold: 60 },
-  thorn: { on: 1, k: 0.4 },
-  feast: { on: 1, k: 0.04 },
+  thorn: { on: 1, k: 0.30 },
+  feast: { on: 1, k: 0.03 },
 };
 /** The roll weight of a power by rating (S 1 · M 2 · L 1), and the letter of each slot / item type (`ring` = the item type of both rings). */
 const PFX_W = { S: 1, M: 2, L: 1 };
@@ -728,7 +725,7 @@ const LEGEND = {
   chain: ["뇌명의", pfxText("chain", "공격 시 {p:%}% 확률로 번개가 주변 적 {n}명에게 튄다 ({k:%}%)"), "WG", "O", "M", "blow"],
   nova: ["폭렬의", pfxText("nova", "적을 처치하면 주변 최대 {n}명에게 공격력의 {k:%}% 화염 피해 ({icd:s}초 간격)"), "WGR", "O", "M", "kill"],
   greed: ["황금손의", pfxText("greed", "골드 획득 +{gold}%"), "RG", "O", "M", "eco"],
-  haste: ["질주의", pfxText("haste", "공격 속도 +{iv:-%}%"), "WG", "O", "M", "pass"],
+  haste: ["질주의", pfxText("haste", "기본 공격 간격 -{iv:-%}%"), "WG", "O", "M", "pass"],
   thorn: ["가시의", pfxText("thorn", "받은 피해의 {k:%}%를 공격한 적에게 되돌려 준다"), "ABH", "D", "M", "mit"],
   feast: ["포식자의", pfxText("feast", "적을 처치할 때마다 최대 HP의 {k:%}% 회복 (접두사·룬 회복 상한 적용)"), "ANH", "D", "L", "sus"],
   echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 남은 재사용 대기시간이 {ms:s}초로 줄어든다 ({icd:s}초 간격)"), "WRG", "O", "L", "skill"],
@@ -827,10 +824,10 @@ const mobGearAtk = (tier) => 1.05 + 0.31 * mobGearPressure(tier);
 // Fixed to the monster's tier. Replacing a piece never makes its current enemies scale up.
 const mobLevelHp = (tier) => 1 + 0.72 * mobGearPressure(tier, 1.63);
 const mobLevelAtk = (tier) => 1 + 0.48 * mobGearPressure(tier, 1.63);
-// What a band hero of that tier gains from GEAR_BASE_SCALE's ×11.6 top (fitted: attack ×1.3 at Lv.33 → ×3.1 at Lv.197,
-// HP ×1.1 → ×2.7): monsters take its attack as HP and armour and its HP as attack, so in-band pace stays where it was.
-const mobItemHp = (tier) => 1 + 2.4 * mobGearPressure(tier, 1.5);
-const mobItemAtk = (tier) => 1 + 1.95 * mobGearPressure(tier, 1.7);
+// Match the extra weapon damage with HP. Keep armour on the gentler curve so older gear still lands useful hits.
+const mobItemDef = (tier) => 1 + 2.4 * mobGearPressure(tier, 1.5);
+const mobItemHp = (tier) => mobItemDef(tier) * (1 + mobGearPressure(tier, 0.72) * Math.min(1, Math.max(0, (tier - 1) / 12)));
+const mobItemAtk = (tier) => (1 + 1.95 * mobGearPressure(tier, 1.7)) * (1 + 0.42 * mobGearPressure(tier, 1.2));
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
  * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
@@ -1101,7 +1098,7 @@ for (const k of Object.keys(MOBS)) {
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
   d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv) * mobItemAtk(d.lv));
   if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv) * mobLevelHp(d.lv) * mobItemHp(d.lv));
-  if (d.def) d.def = Math.round(d.def * mobItemHp(d.lv));
+  if (d.def) d.def = Math.round(d.def * mobItemDef(d.lv));
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;
@@ -1463,7 +1460,7 @@ const RUNE_POOLS = { 1: [], 2: [], 3: [], 4: { 2: [], 3: [], 4: [] } };
 // Runes complement the host item. Keep low-level bonuses and bring endgame lines to 65% of face value.
 const RUNE_SCALE = Array.from({ length: 200 }, (_, i) => 18 + Math.floor(i * 47 / 199));
 // Combat limits apply only to the sum of socket lines; base gear, prefixes and set powers have their own rules.
-const RUNE_STAT_CAP = { atk: 32, atkp: 10, def: 20, hp: 220, mp: 100, crit: 8, critd: 20, ls: 4, spd: 8, dmg: 12, pen: 10, res: 16, dur: 10 };
+const RUNE_STAT_CAP = { atk: 32, atkp: 6, def: 20, hp: 220, mp: 100, crit: 6, critd: 16, ls: 3, spd: 8, dmg: 8, pen: 8, res: 12, dur: 10, proc: 8 };
 const runeStatCap = (key) => RUNE_STAT_CAP[key] ?? RUNE_STAT_CAP[key.split("_", 1)[0]] ?? Infinity;
 const runeIl = (il) => Number.isInteger(il) ? clamp(il, 1, RUNE_SCALE.length) : 1;
 const runeReq = (il) => Math.max(1, runeIl(il) - IL_GAP);
@@ -2394,8 +2391,8 @@ const ELEMENT_PREFIX_AFFIX = {
   nova: [["dmg_fire", 6]],
   bleed: [["pen_bleed", 8], ["dur_bleed", 10]],
   bile: [["pen_poison", 8]],
-  hellfire: [["dmg_fire", 12], ["dur_fire", 10]],
-  blizzard: [["dmg_cold", 9], ["dur_cold", 8]],
+  hellfire: [["dmg_fire", 9], ["dur_fire", 8]],
+  blizzard: [["dmg_cold", 7], ["dur_cold", 8]],
   rime: [["res_cold", 15]],
   cure: [["res_poison", 10]],
   purge: [["res_all", 4]],
@@ -8486,6 +8483,8 @@ function migrate(ch) {
       const p = Array.isArray(g.un) && g.un.length > 1 ? g.un[0] : -1, lg = Number.isInteger(p) ? UNIQ_OLD_LG[p] : "";
       if (lg) out.lg = lg; else out.q = 2;
     }
+    const maxAttackPct = Math.round(AFFIX_BY_KEY.atkp[4] * (AFFIX_MUL[out.q] || 1));
+    out.af = out.af.map((line) => line?.[0] === "atkp" && line[1] > maxAttackPct ? ["atkp", maxAttackPct] : line);
     // cu: 1 cursed by a failed enhancement (no more tries until lifted), 2 lifted (the next try +ENH_UNCURSE %p) — v19
     if ((g.cu | 0) > 0) out.cu = clamp(g.cu | 0, 1, 2);
     return out;
@@ -10670,7 +10669,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   // a dagger in a back that is not watching you
   if (st.wk === "dagger" && mob.tgt !== p.pid) dmg *= 1 + st.sneak;
   dmg *= 1 + 0.03 * masteryRank(p.ch, mob.k);
-  dmg *= pfxMul(S, p, st, mob, d, o, crit);   // the powers that raise the blow (giant: +30% on elites and bosses), one product capped ×1.6
+  dmg *= pfxMul(S, p, st, mob, d, o, crit);   // combine active rune and prefix damage factors within their shared cap
   if (!pure && has(mob, "tough")) dmg *= 0.6;
   if (mob.vuln > S.now) dmg *= 1.3;
   // 금서의 낙인: a branded monster takes more from everyone
@@ -11075,12 +11074,12 @@ function magicLand(S, rt, p, s, mob) {
 // HOOKS (a PFX_FN[key] member; PFX_HOOKS lists them). `st` is stats(p), `rt` the map runtime, `o` the hurtMob options of the blow, `mob`/`d` the monster and
 // MOBS[mob.k]. A hook runs only while its power counts (the winning piece of the key, 51 gearBonus) and only for the hooks it defines.
 //   pre(S, p, st, mob, d, o, r)             before a blow rolls; r.ign (share of armour ignored, 0–1), r.crit (+% crit chance), r.sure (1 = a sure crit)
-//   mul(S, p, st, mob, d, o, crit)          → a damage factor > 0; all of them multiply, the product is capped at ×1.6 (PFX_CAP.dmg)
+//   mul(S, p, st, mob, d, o, crit)          → a damage factor > 0; all factors multiply up to PFX_CAP.dmg
 //   hit(S, rt, p, st, mob, dmg, crit, killed, o)   a blow of any kind landed (skills too); NOT for a `px` blow. crit(…same) too, only on a crit
 //   kill(S, rt, p, st, mob, x, y, o)        the blow killed mob (it stood at x, y); also for a `px` blow (heals and resources still count)
 //   blow(S, rt, p, st, mob, x, y, fin, skip)  a BASIC blow landed (melee, missile, orb, plain arrow, hammer); fin = combo finisher; skip = mobs it already struck, or undefined
 //   skill(S, rt, p, st, sk, id, cost)       a skill was cast (MP paid, p.cds[id] set)
-//   miti(S, rt, p, st, mob, dmg, raw, r)    an incoming blow (dmg after armour; mob null = a marked area): r.f *= x (all prefix factors floor at ×0.6), r.abs += n (flat, ≤ 20 % mhp), r.block = 1
+//   miti(S, rt, p, st, mob, dmg, raw, r)    an incoming blow (dmg after armour; mob null = a marked area): r.f *= x, r.abs += n, r.block = 1; limits in PFX_CAP
 //   hurt(S, rt, p, st, mob, dmg, raw)       after the HP was taken (also when p is about to fall)
 //   lethal(S, rt, p, st, mob, dmg)          p.hp <= 0: return true if you kept p alive (p.hp is raised to 1 if you left it ≤ 0)
 //   dash(S, rt, p, st, x0, y0, x, y)        a dash went; evade(S, rt, p, st, how)   a blow was dodged, how "eva" (DEX) or "dash" (i-frames)
@@ -11093,14 +11092,14 @@ function magicLand(S, rt, p, s, mob) {
 // STATE: pfxPc(p) = { cd, n, t, v, heal, aura? }, in memory only: cd {key: ready-at} (pfxIcd), n {key: count} (pfxStack), t {key: until} (a timed buff), v {key: anything};
 // n, t, v, heal reset when p changes map or falls, cd does not (a 6-minute cheat death cannot be reset by walking through a gate). Relogging resets all.
 // RULES: chances are rnd(S) < base × min(st.proc, 1.5) (pfxChance); a power that can fire more than once a second takes an ICD ≥ 1 s (pfxIcd); damage a power
-// deals goes through hurtMob(S, rt, mob, p, mult, false, PX) (a `px` blow never starts another power); heals go through pfxHeal (≤ 8 % mhp a second);
+// deals goes through hurtMob(S, rt, mob, p, mult, false, PX) (a `px` blow never starts another power); heals go through pfxHeal;
 // statuses skip bosses and elite=2 and honour holdMob; write determinism-clean code (rnd(S), S.now).
 
 /** The hook names a PFX_FN member may define. */
 const PFX_HOOKS = ["pre", "mul", "hit", "crit", "kill", "blow", "skill", "miti", "hurt", "lethal", "dash", "evade", "tick", "status", "pot", "loot", "stat", "sheet", "num"];
 /** The caps of design §5: dmg (all prefix damage factors), iv (their attack-interval factor) and acd (× the weapon's wait, the floor), miti (the damage-taken factor floor),
  * abs (absorb, × mhp), heal (× mhp a second), xp (+%), gold (+%, with the static gold of PFX[k].gold), proc (LUK's most). */
-const PFX_CAP = { dmg: 1.6, iv: 0.8, acd: 0.45, miti: 0.6, abs: 0.2, heal: 0.08, xp: 15, gold: 100, proc: 1.5 };
+const PFX_CAP = { dmg: 1.36, iv: 0.8, acd: 0.45, miti: 0.68, abs: 0.14, heal: 0.05, xp: 15, gold: 100, proc: 1.5 };
 /** The hurtMob options of a blow a power dealt: it starts no other power's chance, status or crit effect. */
 const PX = Object.freeze({ px: 1 });
 
@@ -11168,7 +11167,7 @@ function pfxStack(p, key, add = 1, max = Infinity) {
 }
 /** A proc roll: `base` × LUK's proc factor (at most ×1.5), one rnd(S). */
 const pfxChance = (S, st, base) => rnd(S) < base * Math.min(st.proc, PFX_CAP.proc);
-/** Heal p by up to `amt` HP through the prefix budget (all prefix heals ≤ 8 % of max HP in a one-second window); returns what it healed. */
+/** Heal p by up to `amt` HP within the shared per-second prefix and rune budget; returns the amount healed. */
 function pfxHeal(S, p, st, amt) {
   const w = pfxPc(p).heal;
   if (S.now - w[0] >= 1000) { w[0] = S.now; w[1] = 0; }
@@ -11219,7 +11218,7 @@ function pfxSkill(S, rt, p, st, sk, id, cost) {
   const a = st.pfx.skill;
   for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, sk, id, cost);
 }
-/** An incoming blow of `dmg` (after armour) → what p takes: the prefix factors (floor ×0.6) and a flat absorb (≤ 20 % mhp); 0 = stopped. */
+/** An incoming blow of `dmg` (after armour) → what p takes after the shared mitigation and flat absorb limits; 0 = stopped. */
 function pfxMiti(S, rt, p, st, mob, dmg, raw) {
   const a = st.pfx.miti, au = p.pc && p.pc.aura;   // (au: a party member's 후광의 lays { f, until } on p.pc.aura from its tick, 54-prefix-util.js)
   if (!a.length && !au) return dmg;
@@ -11354,17 +11353,17 @@ const RUNE_POWER = {
   duskfang: { kill: 0.025, chance: 0.25, leech: 0.10, icd: 1200 },
   lantern: { shield: 0.12, ms: 5500, icd: 14000 },
   brassscale: { gold: 22, mf: 16, per: 180, atk: 0.07, ms: 30000 },
-  azureknot: { cdr: 0.08, mp: 0.86 },
-  ashbloom: { chance: 0.2, hit: 1, dot: 0.14, ms: 4000, radius: 64, targets: 5, icd: 5500 },
+  azureknot: { cdr: 0.08, mp: 0.82 },
+  ashbloom: { chance: 0.2, hit: 0.85, dot: 0.12, ms: 4000, radius: 64, targets: 5, icd: 5500 },
   silverlake: { slow: 1800, crit: 1.25 },
-  stormsail: { chance: 0.18, first: 1.05, fall: 0.74, radius: 94, targets: 5, icd: 4400 },
-  inkthorn: { dot: 0.045, vuln: 0.025, stacks: 4, ms: 6000, hitGap: 500 },
-  lastbell: { hp: 0.3, hit: 1.25, execute: 0.05 },
-  redanvil: { atk: 0.35, iv: 0.16, hp: 0.25, miti: 0.82 },
-  astrolabe: { chance: 0.11, cap: 0.35, ratio: 2, ms: 20000, icd: 13000 },
+  stormsail: { chance: 0.18, first: 0.93, fall: 0.74, radius: 94, targets: 5, icd: 4400 },
+  inkthorn: { dot: 0.04, vuln: 0.015, stacks: 4, ms: 6000, hitGap: 500 },
+  lastbell: { hp: 0.3, hit: 1.20, execute: 0.04 },
+  redanvil: { atk: 0.24, iv: 0.12, hp: 0.25, miti: 0.86 },
+  astrolabe: { chance: 0.10, cap: 0.22, ratio: 2, ms: 20000, icd: 15000 },
   dawnpillar: { heal: 0.35, ms: 2400, icd: 360000 },
-  moonveil: { ms: 1700, ign: 0.48, icd: 8500 },
-  blackstar: { chance: 0.19, damage: 1.12, splash: 0.48, radius: 84, targets: 5, icd: 4500 },
+  moonveil: { ms: 1700, ign: 0.38, icd: 8500 },
+  blackstar: { chance: 0.16, damage: 1.08, splash: 0.40, radius: 84, targets: 5, icd: 4500 },
 };
 
 const runePct = (n) => +(n * 100).toFixed(1);
@@ -11701,7 +11700,7 @@ const pgFirm = (mob) => { const d = MOBS[mob.k]; return d.boss || d.still || d.c
 
 // ── mitigation: a blow after armour (MITI) ──────────────────────────────────────────────────────────────────────────────────────────────
 
-// 껍질의: a flat absorb, not a factor, because the factor floor (×0.6) would cut a 60 % share to 40 %; the absorb cap (20 % of max HP) bounds it instead
+// 껍질의: the proc uses the flat absorb budget so large hits still matter.
 Object.assign(PFX, { bark: { on: 1, p: 0.15, k: 0.4 } });
 Object.assign(LEGEND, { bark: ["껍질의", pfxText("bark", "피격 시 {p:%}% 확률로 그 피해를 {k:-%}% 줄인다"), "AH", "D", "M", "mit"] });
 Object.assign(PFX_FN, { bark: { miti(S, rt, p, st, mob, dmg, raw, r) { if (pfxChance(S, st, PFX.bark.p)) r.abs += Math.round(dmg * (1 - PFX.bark.k)); } } });
@@ -11905,7 +11904,7 @@ Object.assign(PFX_FN, {
   },
 });
 
-// 비상의: a big heal when HP gets low, if p is still standing (one-shot, so it is outside pfxHeal's 8 % a second, which the long `icd` makes safe)
+// 비상의: a one-shot heal outside the per-second budget, limited by its long internal cooldown.
 Object.assign(PFX, { emerg: { on: 1, hp: 0.3, k: 0.2, icd: 90000 } });
 Object.assign(LEGEND, { emerg: ["비상의", pfxText("emerg", "HP가 {hp:%}% 이하가 되면 즉시 최대 HP의 {k:%}% 회복 ({icd:s}초 간격)"), "ABNH", "D", "M", "sus"] });
 Object.assign(PFX_FN, {
@@ -16875,8 +16874,9 @@ const dimGearHp = (tier, share = 0.60) => share + (1 - share) / mobGearHp(tier);
 const dimGearAtk = (tier, share = 0.20, levelShare = 0.65) =>
   (share + (1 - share) / mobGearAtk(tier)) * (levelShare + (1 - levelShare) / mobLevelAtk(tier));
 const dimAtkK = (tier) => dimGearAtk(tier) / MOB_HARD;
-// (an eighth of the item-level push, mobItemHp, is taken back: a weekly boss meets a party in raid-rolled gear and must still be staggered in time)
-const chalGearHp = (tier) => dimGearHp(tier, 0.25 + 0.15 * clamp((tier - 25) / 25, 0, 1)) * (0.88 + 0.12 / mobItemHp(tier));
+// Keep the opening stagger feasible and give the top weekly challenges time to cycle their phases.
+const chalGearHp = (tier) => dimGearHp(tier, 0.25 + 0.15 * clamp((tier - 25) / 25, 0, 1)) *
+  (0.88 + 0.12 / mobItemHp(tier)) * (1 + 0.14 * mobGearPressure(tier, 1.4));
 const chalGearAtk = (tier) => dimGearAtk(tier, 0.10, 0.45);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 function dimHk(n, lv, mlv) {
@@ -18935,11 +18935,11 @@ const CHARM_SRC = [
  */
 const CHARM_OPT = {
   st: { name: "능력치", lo: 1, hi: 2, cap: 8, w: 30 },
-  hp: { name: "HP", lo: 8, hi: 14, cap: 120, w: 18 },
+  hp: { name: "HP", lo: 8, hi: 14, cap: 160, w: 18 },
   mp: { name: "MP", lo: 4, hi: 7, cap: 60, w: 14 },
-  atk: { name: "공격력", lo: 1, hi: 2, cap: 30, w: 14 },
-  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 8, w: 18 },
-  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 10, w: 6 },
+  atk: { name: "공격력", lo: 1, hi: 2, cap: 44, w: 14 },
+  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 6, w: 18 },
+  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 8, w: 6 },
 };
 const CHARM_OPT_IDS = Object.keys(CHARM_OPT);
 /** The skills an option can name: every weapon active (damage), every skill that heals its caster (recovery). */
@@ -18950,12 +18950,12 @@ const CHARM_SKH = SKILL_ORDER.filter((id) => SKILL[id].heal > 0);
  * first placed). `off`: not dropped yet — 수호의 매듭참 waits for a spear or book skill that heals the party.
  */
 const CHARM_LEGEND = {
-  echo: { name: "메아리 뿔참", shape: "bar3", sk: "rend", k: 0.18, tail: 0.3, cd: 12000,
-    desc: "대검 [대지 가르기]의 파동 끝 30%에 처음 맞은 적에게 그 적중 피해의 18%를 한 번 더 준다. 시전당 1회, 12초마다." },
+  echo: { name: "메아리 뿔참", shape: "bar3", sk: "rend", k: 0.14, tail: 0.3, cd: 12000,
+    desc: "대검 [대지 가르기]의 파동 끝 30%에 처음 맞은 적에게 그 적중 피해의 14%를 한 번 더 준다. 시전당 1회, 12초마다." },
   knot: { name: "수호의 매듭참", shape: "elbow", off: 1, k: 0.04, ms: 4000, cd: 18000,
     desc: "창이나 마도서의 파티 회복 스킬로 HP 50% 미만의 아군을 회복하면 그 아군에게 최대 HP 4%의 보호막을 4초 준다. 18초마다. (아직 열리지 않음)" },
-  lens: { name: "길별의 렌즈참", shape: "tile2", sk: "pierce", k: 0.15, ms: 4000, cd: 14000,
-    desc: "활 [관통 화살]이 두 번째 표적을 맞히면 그 표적에 4초간 표식을 남긴다. 표식 있는 적에게 하는 다음 기본 공격 1회의 피해 +15%. 14초마다." },
+  lens: { name: "길별의 렌즈참", shape: "tile2", sk: "pierce", k: 0.12, ms: 4000, cd: 14000,
+    desc: "활 [관통 화살]이 두 번째 표적을 맞히면 그 표적에 4초간 표식을 남긴다. 표식 있는 적에게 하는 다음 기본 공격 1회의 피해 +12%. 14초마다." },
 };
 const CHARM_LG_LIVE = Object.keys(CHARM_LEGEND).filter((id) => !CHARM_LEGEND[id].off);
 /** 주아나's commissions: the first opens the board; the two after it each bring a 참틀 확장못. */
@@ -19035,8 +19035,9 @@ function charmOption(box, sh, have, level) {
     if (tries < 40 && have.some((h) => h[0] === kind && h[2] === arg)) continue;
     const shape = CHARM_SHAPES[sh];
     const step = level ? CHARM_LEVELS.indexOf(level) : 0;
-    const extraAttack = kind === "atk" ? 2 * (step / (CHARM_LEVELS.length - 1)) ** 1.25 : 0;
-    const v = (base * (1 + 0.08 * step) + extraAttack) * shape.k * (level && o.pct ? 0.65 : 1);
+    const progress = level ? (step / (CHARM_LEVELS.length - 1)) ** 1.25 : 0;
+    const extra = (kind === "atk" ? 3.5 : kind === "hp" ? 5 : 0) * progress;
+    const v = (base * (1 + 0.08 * step) + extra) * shape.k * (level && o.pct ? 0.58 : 1);
     // Round whole bonuses down, with a size floor so a low roll still rewards fitting a larger new piece.
     const min = level ? shape.cells.length : 0;
     return [kind, o.pct ? Math.round(v * 10) / 10 : Math.max(min, Math.floor(v)), arg];

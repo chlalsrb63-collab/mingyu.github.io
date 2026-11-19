@@ -13,12 +13,12 @@
 // HOOKS (a PFX_FN[key] member; PFX_HOOKS lists them). `st` is stats(p), `rt` the map runtime, `o` the hurtMob options of the blow, `mob`/`d` the monster and
 // MOBS[mob.k]. A hook runs only while its power counts (the winning piece of the key, 51 gearBonus) and only for the hooks it defines.
 //   pre(S, p, st, mob, d, o, r)             before a blow rolls; r.ign (share of armour ignored, 0–1), r.crit (+% crit chance), r.sure (1 = a sure crit)
-//   mul(S, p, st, mob, d, o, crit)          → a damage factor > 0; all of them multiply, the product is capped at ×1.6 (PFX_CAP.dmg)
+//   mul(S, p, st, mob, d, o, crit)          → a damage factor > 0; all factors multiply up to PFX_CAP.dmg
 //   hit(S, rt, p, st, mob, dmg, crit, killed, o)   a blow of any kind landed (skills too); NOT for a `px` blow. crit(…same) too, only on a crit
 //   kill(S, rt, p, st, mob, x, y, o)        the blow killed mob (it stood at x, y); also for a `px` blow (heals and resources still count)
 //   blow(S, rt, p, st, mob, x, y, fin, skip)  a BASIC blow landed (melee, missile, orb, plain arrow, hammer); fin = combo finisher; skip = mobs it already struck, or undefined
 //   skill(S, rt, p, st, sk, id, cost)       a skill was cast (MP paid, p.cds[id] set)
-//   miti(S, rt, p, st, mob, dmg, raw, r)    an incoming blow (dmg after armour; mob null = a marked area): r.f *= x (all prefix factors floor at ×0.6), r.abs += n (flat, ≤ 20 % mhp), r.block = 1
+//   miti(S, rt, p, st, mob, dmg, raw, r)    an incoming blow (dmg after armour; mob null = a marked area): r.f *= x, r.abs += n, r.block = 1; limits in PFX_CAP
 //   hurt(S, rt, p, st, mob, dmg, raw)       after the HP was taken (also when p is about to fall)
 //   lethal(S, rt, p, st, mob, dmg)          p.hp <= 0: return true if you kept p alive (p.hp is raised to 1 if you left it ≤ 0)
 //   dash(S, rt, p, st, x0, y0, x, y)        a dash went; evade(S, rt, p, st, how)   a blow was dodged, how "eva" (DEX) or "dash" (i-frames)
@@ -31,14 +31,14 @@
 // STATE: pfxPc(p) = { cd, n, t, v, heal, aura? }, in memory only: cd {key: ready-at} (pfxIcd), n {key: count} (pfxStack), t {key: until} (a timed buff), v {key: anything};
 // n, t, v, heal reset when p changes map or falls, cd does not (a 6-minute cheat death cannot be reset by walking through a gate). Relogging resets all.
 // RULES: chances are rnd(S) < base × min(st.proc, 1.5) (pfxChance); a power that can fire more than once a second takes an ICD ≥ 1 s (pfxIcd); damage a power
-// deals goes through hurtMob(S, rt, mob, p, mult, false, PX) (a `px` blow never starts another power); heals go through pfxHeal (≤ 8 % mhp a second);
+// deals goes through hurtMob(S, rt, mob, p, mult, false, PX) (a `px` blow never starts another power); heals go through pfxHeal;
 // statuses skip bosses and elite=2 and honour holdMob; write determinism-clean code (rnd(S), S.now).
 
 /** The hook names a PFX_FN member may define. */
 const PFX_HOOKS = ["pre", "mul", "hit", "crit", "kill", "blow", "skill", "miti", "hurt", "lethal", "dash", "evade", "tick", "status", "pot", "loot", "stat", "sheet", "num"];
 /** The caps of design §5: dmg (all prefix damage factors), iv (their attack-interval factor) and acd (× the weapon's wait, the floor), miti (the damage-taken factor floor),
  * abs (absorb, × mhp), heal (× mhp a second), xp (+%), gold (+%, with the static gold of PFX[k].gold), proc (LUK's most). */
-const PFX_CAP = { dmg: 1.6, iv: 0.8, acd: 0.45, miti: 0.6, abs: 0.2, heal: 0.08, xp: 15, gold: 100, proc: 1.5 };
+const PFX_CAP = { dmg: 1.36, iv: 0.8, acd: 0.45, miti: 0.68, abs: 0.14, heal: 0.05, xp: 15, gold: 100, proc: 1.5 };
 /** The hurtMob options of a blow a power dealt: it starts no other power's chance, status or crit effect. */
 const PX = Object.freeze({ px: 1 });
 
@@ -106,7 +106,7 @@ function pfxStack(p, key, add = 1, max = Infinity) {
 }
 /** A proc roll: `base` × LUK's proc factor (at most ×1.5), one rnd(S). */
 const pfxChance = (S, st, base) => rnd(S) < base * Math.min(st.proc, PFX_CAP.proc);
-/** Heal p by up to `amt` HP through the prefix budget (all prefix heals ≤ 8 % of max HP in a one-second window); returns what it healed. */
+/** Heal p by up to `amt` HP within the shared per-second prefix and rune budget; returns the amount healed. */
 function pfxHeal(S, p, st, amt) {
   const w = pfxPc(p).heal;
   if (S.now - w[0] >= 1000) { w[0] = S.now; w[1] = 0; }
@@ -157,7 +157,7 @@ function pfxSkill(S, rt, p, st, sk, id, cost) {
   const a = st.pfx.skill;
   for (let i = 0; i < a.length; i++) a[i](S, rt, p, st, sk, id, cost);
 }
-/** An incoming blow of `dmg` (after armour) → what p takes: the prefix factors (floor ×0.6) and a flat absorb (≤ 20 % mhp); 0 = stopped. */
+/** An incoming blow of `dmg` (after armour) → what p takes after the shared mitigation and flat absorb limits; 0 = stopped. */
 function pfxMiti(S, rt, p, st, mob, dmg, raw) {
   const a = st.pfx.miti, au = p.pc && p.pc.aura;   // (au: a party member's 후광의 lays { f, until } on p.pc.aura from its tick, 54-prefix-util.js)
   if (!a.length && !au) return dmg;

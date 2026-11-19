@@ -237,13 +237,13 @@ assert.equal(Object.keys(ROWS).length, 16);
   assert.equal(hurtBy(W, p, 0.04), 0, "after the interval a small blow is stopped outright"); assert.ok(W.rt.ev.some((e) => e[0] === "h" && e[1] === p.eid && e[2] === 0 && e[3] === 3), "(the 막음 cue)");
   assert.ok(v() > 0 && v() < sh, "the rest of the shield stays");
   W.skip(8001); assert.equal(hurtBy(W, p, 0.5), plain, "unused, it ends after 8 s");
-  // with 갑각의 too: 15 % + 12 % are cut to the dispatcher's 20 % of max HP in one blow
+  // With both shields, the dispatcher still limits the total absorbed by one blow.
   W.skip(26000); p.hitAt = 0; W.wear("armor", "a_3", "carap"); for (let i = 0; i < 6; i++) kill(W, p, "twinhare");
   const mhpA = X.stats(p).mhp; assert.equal(p.pc.v.carap, Math.round(mhpA * 0.15)); assert.equal(v(), 0);
   const shielded = hurtBy(W, p, 0.6);   // (bastion raises its own on this blow, the shield 갑각의 holds is already there)
   const unshielded = hurtWithoutMitigation(W, p, 0.6);
   W.wear("helm", "h_3", undefined); W.wear("armor", "a_3", undefined); assert.equal(X.stats(p).mhp, mhpA, "(the same pieces, no powers)");
-  assert.equal(unshielded - shielded, Math.floor(mhpA * 0.2), "absorb ≤ 20 % of max HP");
+  assert.equal(unshielded - shielded, Math.floor(mhpA * 0.14), "absorb ≤ 14 % of max HP");
 }
 
 // ── 5. AURA: 후광의 / 무리의
@@ -260,7 +260,7 @@ assert.equal(Object.keys(ROWS).length, 16);
   q.x = 240; W.run(1000); assert.equal(hurtBy(W, q, 0.5), Math.round(plainQ * 0.94), "back in range");
   // with another mitigation: the factors multiply and floor at ×0.6 (a ×0.1 stub must not take it lower)
   const st = X.stats(q), at = (f) => { const orig = st.pfx.miti; st.pfx.miti = [(S2, rt, p2, st2, mob, dmg, raw, rr) => { rr.f *= f; }]; const out = X.pfxMiti(S, W.rt, q, st, null, 1000, 1000); st.pfx.miti = orig; return out; };
-  assert.equal(at(0.1), 600, "all prefix factors floor at ×0.6, the aura's included"); assert.equal(at(1), 940, "the aura alone: ×0.94");
+  assert.equal(at(0.1), 680, "all prefix factors floor at ×0.68, the aura's included"); assert.equal(at(1), 940, "the aura alone: ×0.94");
   W.skip(2100); assert.equal(hurtBy(W, q, 0.5), plainQ, "the aura ends 2 s after the wearer's last tick");
   q.dead = true; W.run(1100); assert.ok(!q.pc.aura || S.now >= q.pc.aura.until, "a fallen mate gets none"); q.dead = false;
   W.wear("helm", "h_3", undefined, 100, p); W.run(2100); assert.equal(hurtBy(W, p, 0.5), plainP, "not worn");

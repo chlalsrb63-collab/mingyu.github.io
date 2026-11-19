@@ -156,7 +156,7 @@ Object.assign(ITEMS, {
 
 /** Affixes a dropped item can roll: [key, label, prefix word, min, max, per-item-level growth]. */
 const AFFIX = [
-  ["atk", "공격력", "날카로운", 1, 3, 0.35], ["atkp", "공격력 %", "맹렬한", 3, 8, 0], ["def", "방어력", "단단한", 1, 2, 0.25],
+  ["atk", "공격력", "날카로운", 1, 3, 0.35], ["atkp", "공격력 %", "맹렬한", 3, 6, 0], ["def", "방어력", "단단한", 1, 2, 0.25],
   ["hp", "최대 HP", "강인한", 8, 20, 2], ["mp", "최대 MP", "지혜의", 5, 12, 1], ["crit", "치명타 %", "예리한", 2, 5, 0],
   ["critd", "치명타 피해 %", "잔혹한", 8, 20, 0], ["ls", "흡혈 %", "흡혈의", 1, 3, 0], ["spd", "이동속도 %", "신속의", 3, 7, 0],
   ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
@@ -186,10 +186,8 @@ const UNIQ_P = [0.001, 0.004, 0.01];
  */
 const IL_RANK = [0, 4, 8];
 const IL_GAP = 10;
-// Flat equipment stats gain up to ×11.6 from item level (owner 2026-11-19: the Lv.1 → Lv.200 weapon gap 3–4× wider,
-// 6 → ~1,050 attack, so new gear and levels are felt and runes/charms stay a side dish). The gentle opening is kept.
-// Per-mille values also drive item comparisons in the client. Field monsters follow it (mobItemHp/mobItemAtk).
-const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(10620 * (i / (MAXLV - 1)) ** 1.55));
+// Double the displayed Lv.1 → Lv.200 weapon attack gap (6 → 2086). Per-mille values also drive client item comparisons.
+const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(22178 * (i / (MAXLV - 1)) ** 1.55));
 /**
  * 접두사 고유 효과 (docs/design/prefix-effects.md): a 전설 or 유니크 piece carries ONE power `lg` no affix can give. Three tables per power,
  * all keyed by `lg`; the later parts 52+ extend them with Object.assign and never edit this file (the recipe is in 51-prefix.js):
@@ -201,14 +199,14 @@ const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.roun
  *   PFX_FN  its code (51-prefix.js)
  */
 const PFX = {
-  chain: { on: 1, p: 0.25, n: 2, k: 0.6, r: 70 },
-  nova: { on: 1, k: 0.8, r: 34, n: 4, icd: 1200 },
-  haste: { on: 1, iv: 0.85 },
-  giant: { on: 1, k: 1.3 },
+  chain: { on: 1, p: 0.25, n: 2, k: 0.50, r: 70 },
+  nova: { on: 1, k: 0.68, r: 34, n: 4, icd: 1200 },
+  haste: { on: 1, iv: 0.88 },
+  giant: { on: 1, k: 1.20 },
   echo: { on: 1, p: 0.16, ms: 400, icd: 8000 },
   greed: { on: 1, gold: 60 },
-  thorn: { on: 1, k: 0.4 },
-  feast: { on: 1, k: 0.04 },
+  thorn: { on: 1, k: 0.30 },
+  feast: { on: 1, k: 0.03 },
 };
 /** The roll weight of a power by rating (S 1 · M 2 · L 1), and the letter of each slot / item type (`ring` = the item type of both rings). */
 const PFX_W = { S: 1, M: 2, L: 1 };
@@ -225,7 +223,7 @@ const LEGEND = {
   chain: ["뇌명의", pfxText("chain", "공격 시 {p:%}% 확률로 번개가 주변 적 {n}명에게 튄다 ({k:%}%)"), "WG", "O", "M", "blow"],
   nova: ["폭렬의", pfxText("nova", "적을 처치하면 주변 최대 {n}명에게 공격력의 {k:%}% 화염 피해 ({icd:s}초 간격)"), "WGR", "O", "M", "kill"],
   greed: ["황금손의", pfxText("greed", "골드 획득 +{gold}%"), "RG", "O", "M", "eco"],
-  haste: ["질주의", pfxText("haste", "공격 속도 +{iv:-%}%"), "WG", "O", "M", "pass"],
+  haste: ["질주의", pfxText("haste", "기본 공격 간격 -{iv:-%}%"), "WG", "O", "M", "pass"],
   thorn: ["가시의", pfxText("thorn", "받은 피해의 {k:%}%를 공격한 적에게 되돌려 준다"), "ABH", "D", "M", "mit"],
   feast: ["포식자의", pfxText("feast", "적을 처치할 때마다 최대 HP의 {k:%}% 회복 (접두사·룬 회복 상한 적용)"), "ANH", "D", "L", "sus"],
   echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 남은 재사용 대기시간이 {ms:s}초로 줄어든다 ({icd:s}초 간격)"), "WRG", "O", "L", "skill"],
@@ -324,10 +322,10 @@ const mobGearAtk = (tier) => 1.05 + 0.31 * mobGearPressure(tier);
 // Fixed to the monster's tier. Replacing a piece never makes its current enemies scale up.
 const mobLevelHp = (tier) => 1 + 0.72 * mobGearPressure(tier, 1.63);
 const mobLevelAtk = (tier) => 1 + 0.48 * mobGearPressure(tier, 1.63);
-// What a band hero of that tier gains from GEAR_BASE_SCALE's ×11.6 top (fitted: attack ×1.3 at Lv.33 → ×3.1 at Lv.197,
-// HP ×1.1 → ×2.7): monsters take its attack as HP and armour and its HP as attack, so in-band pace stays where it was.
-const mobItemHp = (tier) => 1 + 2.4 * mobGearPressure(tier, 1.5);
-const mobItemAtk = (tier) => 1 + 1.95 * mobGearPressure(tier, 1.7);
+// Match the extra weapon damage with HP. Keep armour on the gentler curve so older gear still lands useful hits.
+const mobItemDef = (tier) => 1 + 2.4 * mobGearPressure(tier, 1.5);
+const mobItemHp = (tier) => mobItemDef(tier) * (1 + mobGearPressure(tier, 0.72) * Math.min(1, Math.max(0, (tier - 1) / 12)));
+const mobItemAtk = (tier) => (1 + 1.95 * mobGearPressure(tier, 1.7)) * (1 + 0.42 * mobGearPressure(tier, 1.2));
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
  * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
@@ -598,7 +596,7 @@ for (const k of Object.keys(MOBS)) {
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
   d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv) * mobItemAtk(d.lv));
   if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv) * mobLevelHp(d.lv) * mobItemHp(d.lv));
-  if (d.def) d.def = Math.round(d.def * mobItemHp(d.lv));
+  if (d.def) d.def = Math.round(d.def * mobItemDef(d.lv));
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;

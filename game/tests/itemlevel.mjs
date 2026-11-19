@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { PFX, ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ_P, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollGearAtLevel, rollRarity, lootFor, gearIl, gearBaseValue, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, gearBonus, countItem, stats, chainBlow, newMob, mobGearHp, mobGearAtk, mobLevelHp, mobLevelAtk };\n";
+  "\nexport const __t = { PFX, ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ_P, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollGearAtLevel, rollRarity, lootFor, gearIl, gearBaseValue, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, gearBonus, countItem, stats, chainBlow, newMob, mobGearHp, mobGearAtk, mobLevelHp, mobLevelAtk, mobItemHp, mobItemAtk };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs();
 const VERBOSE = process.argv.includes("-v");
@@ -21,15 +21,20 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
 {
   const scale = D.gearBaseScale;
   assert.equal(scale.length, 200);
-  assert.deepEqual([scale[0], scale[199]], [1000, 11620]);
-  assert.ok(scale.every((n, i) => i === 0 || n - scale[i - 1] >= 0 && n - scale[i - 1] <= 83), "no jumps between adjacent levels");
+  assert.deepEqual([scale[0], scale[199]], [1000, 23178]);
+  assert.ok(scale.every((n, i) => i === 0 || n - scale[i - 1] >= 0 && n - scale[i - 1] <= 173), "no jumps between adjacent levels");
   assert.deepEqual([D.runeScale[0], D.runeScale[199]], [18, 65], "rune lines remain supplementary");
+  assert.deepEqual([D.runeStatCaps.atkp, D.runeStatCaps.dmg, D.runeStatCaps.proc], [6, 8, 8], "socketed percentage lines have a tighter budget");
   for (const [curve, start, end] of [[X.mobGearHp, 1.08, 1.48], [X.mobGearAtk, 1.05, 1.36], [X.mobLevelHp, 1, 1.72], [X.mobLevelAtk, 1, 1.48]]) {
     near(curve(1), start, 1e-8, "starter monsters get a gentler increase");
     near(curve(50), end, 1e-8, "endgame monsters gain more pressure");
     for (let t = 2; t <= 50; t++) assert.ok(curve(t) > curve(t - 1));
   }
   assert.equal(X.MOBS.chest_meadow.hp, 40, "a treasure chest is unaffected by combat scaling");
+  assert.equal(X.mobItemHp(1), 1);
+  assert.equal(X.mobItemAtk(1), 1);
+  assert.ok(X.mobItemHp(50) / 3.4 > 1.9 && X.mobItemHp(50) / 3.4 < 2.1, "endgame HP follows the wider weapon gap");
+  assert.ok(X.mobItemAtk(50) / 2.95 > 1.3 && X.mobItemAtk(50) / 2.95 < 1.6, "endgame attacks leave more room for outdated armor");
   for (const id of Object.keys(X.ITEMS).filter((id) => X.ITEMS[id].base)) {
     const old = X.plain(id);
     const variants = [20, 60, 100, 140, 180, 200].map((il) => ({ ...old, il }));
@@ -39,7 +44,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
         const prev = X.gearBaseValue(variants[i - 1], stat), next = X.gearBaseValue(variants[i], stat);
         assert.ok(fixed ? next === prev : next > prev, `${id} ${stat}`);
       }
-      near(X.gearBaseValue({ ...old, il: 200, enh: 4 }, stat), value * (fixed ? 1 : 11.62 * (1 + D.enhPct[4] / 100)), 1e-8, "level and enhancement share the base");
+      near(X.gearBaseValue({ ...old, il: 200, enh: 4 }, stat), value * (fixed ? 1 : 23.178 * (1 + D.enhPct[4] / 100)), 1e-8, "level and enhancement share the base");
       assert.equal(X.gearBaseValue({ ...old, il: undefined }, stat), X.gearBaseValue(old, stat), "old equipment uses its old level");
     }
   }
@@ -48,7 +53,13 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   const p = W.players.hero;
   const g = { ...X.plain("w_warrior_6"), enh: 4 };
   const lateBase = [181, 200].map((il) => Math.round(X.gearBaseValue({ ...g, il, enh: 0 }, "atk")));
-  assert.deepEqual(lateBase, [908, 1046], "upgrading the drop within the final base adds 138 displayed attack");
+  assert.deepEqual(lateBase, [1798, 2086], "upgrading the drop within the final base adds 288 displayed attack");
+  assert.equal(X.gearBaseValue(X.plain("w_warrior_1"), "atk"), 6, "the starter weapon keeps its attack");
+  const legacy = L.hero("기존 장비", { lvl: 200, wk: "sword" });
+  legacy.eq.weapon = { ...g, q: 3, lg: "giant", af: [["atkp", 10], ["atk", 22], ["crit", 4]] };
+  const adjusted = X.migrate(legacy).eq.weapon;
+  assert.deepEqual(adjusted.af, [["atkp", 8], ["atk", 22], ["crit", 4]], "old attack-percent lines follow the new rarity ceiling");
+  assert.equal(adjusted.lg, "giant", "rebalancing a line retains the named prefix");
   p.ch.eq.weapon = { ...g, il: 160 };
   p.stc = null;
   const low = X.stats(p).atk;
@@ -278,7 +289,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.equal(ch.inv[9].q, 5); assert.equal(ch.inv[9].lg, "haste"); assert.equal(ch.inv[9].un, undefined, "the second sheets' un is dropped, the power kept");
   assert.equal(ch.inv[10].q, 5); assert.equal(ch.inv[10].lg, "haste"); assert.equal(ch.inv[10].un, undefined, "a stray suffix index changes nothing");
   assert.equal(ch.inv[11].q, 2); assert.equal(ch.inv[11].lg, undefined, "a bad power is no power");
-  assert.equal(ch.inv[12].q, 5); assert.equal(JSON.stringify(ch.inv[12]), JSON.stringify({ id: "a_3", q: 5, enh: 0, af: [["atkp", 12]], sk: 0, ru: [], il: ch.inv[12].il, lg: "nova" }), "the current shape loads as it is");
+  assert.equal(ch.inv[12].q, 5); assert.equal(JSON.stringify(ch.inv[12]), JSON.stringify({ id: "a_3", q: 5, enh: 0, af: [["atkp", 9]], sk: 0, ru: [], il: ch.inv[12].il, lg: "nova" }), "the current shape retains its power while the high attack line is capped");
   assert.equal(ch.inv[3].q, 2, "q 9 is cut to the top (5) and, with no power, is no unique");
   assert.equal(ch.inv[4].il, 200, "an il is clamped");
   assert.equal(ch.inv[5].il, 111, "a negative il is derived (tier 4 → 101 + 10)");

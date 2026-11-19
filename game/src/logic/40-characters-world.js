@@ -150,6 +150,8 @@ function migrate(ch) {
       const p = Array.isArray(g.un) && g.un.length > 1 ? g.un[0] : -1, lg = Number.isInteger(p) ? UNIQ_OLD_LG[p] : "";
       if (lg) out.lg = lg; else out.q = 2;
     }
+    const maxAttackPct = Math.round(AFFIX_BY_KEY.atkp[4] * (AFFIX_MUL[out.q] || 1));
+    out.af = out.af.map((line) => line?.[0] === "atkp" && line[1] > maxAttackPct ? ["atkp", maxAttackPct] : line);
     // cu: 1 cursed by a failed enhancement (no more tries until lifted), 2 lifted (the next try +ENH_UNCURSE %p) — v19
     if ((g.cu | 0) > 0) out.cu = clamp(g.cu | 0, 1, 2);
     return out;

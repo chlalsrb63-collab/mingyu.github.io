@@ -51,7 +51,7 @@ function world(name, wk = "sword") {
   const afterNova = total();
   for (let i = 0; i < 6; i++) X.hurtMob(S, rt, W.mob("twinhare", 200, 200, { hp: 1 }), p, 1, true);
   assert.equal(total(), afterNova, "additional kills do not bypass the blast cooldown");
-  assert.ok(Math.abs(p.hp - st.mhp * 0.58) < 0.01, "one burst of kills respects the shared heal budget");
+  assert.ok(Math.abs(p.hp - st.mhp * 0.55) < 0.01, "one burst of kills respects the shared heal budget");
 }
 
 // The four-rune reset wins and consumes its own cooldown, with the gear refund still available later.
@@ -85,11 +85,13 @@ function world(name, wk = "sword") {
 
 // ── 1. the tables, row by row (a part that adds powers later is checked by the same loop)
 const OLD_DESC = {
-  chain: "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (60%)", nova: "적을 처치하면 주변 최대 4명에게 공격력의 80% 화염 피해 (1.2초 간격)", greed: "골드 획득 +60%", haste: "공격 속도 +15%",
-  thorn: "받은 피해의 40%를 공격한 적에게 되돌려 준다", feast: "적을 처치할 때마다 최대 HP의 4% 회복 (접두사·룬 회복 상한 적용)", echo: "스킬 사용 시 16% 확률로 남은 재사용 대기시간이 0.4초로 줄어든다 (8초 간격)", giant: "정예와 우두머리에게 주는 피해 +30%",
+  chain: "공격 시 25% 확률로 번개가 주변 적 2명에게 튄다 (50%)", nova: "적을 처치하면 주변 최대 4명에게 공격력의 68% 화염 피해 (1.2초 간격)", greed: "골드 획득 +60%", haste: "기본 공격 간격 -12%",
+  thorn: "받은 피해의 30%를 공격한 적에게 되돌려 준다", feast: "적을 처치할 때마다 최대 HP의 3% 회복 (접두사·룬 회복 상한 적용)", echo: "스킬 사용 시 16% 확률로 남은 재사용 대기시간이 0.4초로 줄어든다 (8초 간격)", giant: "정예와 우두머리에게 주는 피해 +20%",
 };
 const FAMS = ["blow", "kill", "pass", "crit", "skill", "mit", "sus", "mob", "eco", "xp", "util"], ALLOWED = { O: "WRG", D: "ABNH", U: "H" };
 function checkTables() {
+  const { dmg, miti, abs, heal } = X.PFX_CAP;
+  assert.deepEqual([dmg, miti, abs, heal], [1.36, 0.68, 0.14, 0.05]);
   const keys = Object.keys(X.LEGEND), words = new Set();
   for (const k of keys) {
     const row = X.LEGEND[k];
@@ -338,7 +340,7 @@ const seenCalls = () => { const c = calls.splice(0); return c; };
   const mob = W.mob("twinhare", 230, 200, { el: 1 });
   const dm = (opt) => { const hp = mob.hp; W.S.seed = 11; X.hurtMob(W.S, W.rt, mob, p, 40, true, opt); return hp - mob.hp; };
   const withGiant = dm(); delete p.ch.eq.helm.lg; delete p.ch.eq.ring1.lg; p.stc = null; const without = dm();
-  assert.ok(Math.abs(withGiant / without - 1.3) < 0.01, `giant on an elite: +30 % (${withGiant / without})`);
+  assert.ok(Math.abs(withGiant / without - 1.2) < 0.01, `giant on an elite: +20 % (${withGiant / without})`);
 }
 
 // ── 6. determinism and cost: four players, eight powers each, sixty monsters, 600 ticks

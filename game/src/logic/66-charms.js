@@ -77,11 +77,11 @@ const CHARM_SRC = [
  */
 const CHARM_OPT = {
   st: { name: "능력치", lo: 1, hi: 2, cap: 8, w: 30 },
-  hp: { name: "HP", lo: 8, hi: 14, cap: 120, w: 18 },
+  hp: { name: "HP", lo: 8, hi: 14, cap: 160, w: 18 },
   mp: { name: "MP", lo: 4, hi: 7, cap: 60, w: 14 },
-  atk: { name: "공격력", lo: 1, hi: 2, cap: 30, w: 14 },
-  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 8, w: 18 },
-  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 10, w: 6 },
+  atk: { name: "공격력", lo: 1, hi: 2, cap: 44, w: 14 },
+  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 6, w: 18 },
+  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 8, w: 6 },
 };
 const CHARM_OPT_IDS = Object.keys(CHARM_OPT);
 /** The skills an option can name: every weapon active (damage), every skill that heals its caster (recovery). */
@@ -92,12 +92,12 @@ const CHARM_SKH = SKILL_ORDER.filter((id) => SKILL[id].heal > 0);
  * first placed). `off`: not dropped yet — 수호의 매듭참 waits for a spear or book skill that heals the party.
  */
 const CHARM_LEGEND = {
-  echo: { name: "메아리 뿔참", shape: "bar3", sk: "rend", k: 0.18, tail: 0.3, cd: 12000,
-    desc: "대검 [대지 가르기]의 파동 끝 30%에 처음 맞은 적에게 그 적중 피해의 18%를 한 번 더 준다. 시전당 1회, 12초마다." },
+  echo: { name: "메아리 뿔참", shape: "bar3", sk: "rend", k: 0.14, tail: 0.3, cd: 12000,
+    desc: "대검 [대지 가르기]의 파동 끝 30%에 처음 맞은 적에게 그 적중 피해의 14%를 한 번 더 준다. 시전당 1회, 12초마다." },
   knot: { name: "수호의 매듭참", shape: "elbow", off: 1, k: 0.04, ms: 4000, cd: 18000,
     desc: "창이나 마도서의 파티 회복 스킬로 HP 50% 미만의 아군을 회복하면 그 아군에게 최대 HP 4%의 보호막을 4초 준다. 18초마다. (아직 열리지 않음)" },
-  lens: { name: "길별의 렌즈참", shape: "tile2", sk: "pierce", k: 0.15, ms: 4000, cd: 14000,
-    desc: "활 [관통 화살]이 두 번째 표적을 맞히면 그 표적에 4초간 표식을 남긴다. 표식 있는 적에게 하는 다음 기본 공격 1회의 피해 +15%. 14초마다." },
+  lens: { name: "길별의 렌즈참", shape: "tile2", sk: "pierce", k: 0.12, ms: 4000, cd: 14000,
+    desc: "활 [관통 화살]이 두 번째 표적을 맞히면 그 표적에 4초간 표식을 남긴다. 표식 있는 적에게 하는 다음 기본 공격 1회의 피해 +12%. 14초마다." },
 };
 const CHARM_LG_LIVE = Object.keys(CHARM_LEGEND).filter((id) => !CHARM_LEGEND[id].off);
 /** 주아나's commissions: the first opens the board; the two after it each bring a 참틀 확장못. */
@@ -177,8 +177,9 @@ function charmOption(box, sh, have, level) {
     if (tries < 40 && have.some((h) => h[0] === kind && h[2] === arg)) continue;
     const shape = CHARM_SHAPES[sh];
     const step = level ? CHARM_LEVELS.indexOf(level) : 0;
-    const extraAttack = kind === "atk" ? 2 * (step / (CHARM_LEVELS.length - 1)) ** 1.25 : 0;
-    const v = (base * (1 + 0.08 * step) + extraAttack) * shape.k * (level && o.pct ? 0.65 : 1);
+    const progress = level ? (step / (CHARM_LEVELS.length - 1)) ** 1.25 : 0;
+    const extra = (kind === "atk" ? 3.5 : kind === "hp" ? 5 : 0) * progress;
+    const v = (base * (1 + 0.08 * step) + extra) * shape.k * (level && o.pct ? 0.58 : 1);
     // Round whole bonuses down, with a size floor so a low roll still rewards fitting a larger new piece.
     const min = level ? shape.cells.length : 0;
     return [kind, o.pct ? Math.round(v * 10) / 10 : Math.max(min, Math.floor(v)), arg];
