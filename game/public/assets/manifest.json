@@ -1000,6 +1000,66 @@
       "src": "assets/weapons/dagger/dagger_held_t10.png?v=f9a5fb51",
       "w": 32,
       "h": 32
+    },
+    "icon.item.h_7": {
+      "src": "assets/gear/helm/h_7.png?v=bb9bf9b5",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.a_7": {
+      "src": "assets/gear/armor/a_7.png?v=5fe5eb7a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.g_7": {
+      "src": "assets/gear/gloves/g_7.png?v=2a9e6f92",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.b_7": {
+      "src": "assets/gear/boots/b_7.png?v=beb93080",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.r_7": {
+      "src": "assets/gear/ring/r_7.png?v=fd8ed980",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.n_7": {
+      "src": "assets/gear/amulet/n_7.png?v=68f82610",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.h_8": {
+      "src": "assets/gear/helm/h_8.png?v=e28e98a2",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.a_8": {
+      "src": "assets/gear/armor/a_8.png?v=3047c3b9",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.g_8": {
+      "src": "assets/gear/gloves/g_8.png?v=e6e99224",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.b_8": {
+      "src": "assets/gear/boots/b_8.png?v=8a94276a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.r_8": {
+      "src": "assets/gear/ring/r_8.png?v=f747d9c2",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.n_8": {
+      "src": "assets/gear/amulet/n_8.png?v=ba7fe3f8",
+      "w": 32,
+      "h": 32
     }
   },
   "audio": {},
