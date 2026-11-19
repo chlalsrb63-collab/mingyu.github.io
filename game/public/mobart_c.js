@@ -347,11 +347,12 @@ export const BEASTS_C = {
         const c3 = [f0 - len - rear * 4, Math.max(3, u0 + 4 - drop), s * 1.35 + wave];
         M.tube([c1, c2, c3], [w, w * 0.85, 0.5], Math.abs(s) === 6 ? MANE : KRION_DK);
       }
-      // heavy V-tapered obsidian-and-gold armored torso
-      M.G("torso");
+      // heavy V-tapered obsidian-and-gold armored torso (SDF smooth-blended with a real carved chest cavity for the Rift Core!)
+      M.G("torso", { smooth: 2.6 });
       M.e(P([f0, u0 - 2, 0]), [7.2, 8.5, 7.6], KRION_DK);
       M.e(P([f0 + 1.5, u0 + 9.5, 0]), [9.8, 10.2, 12.6], HIDE);
       M.box(P([f0 + 2.5, u0 + 11, 0]), [7.5, 7.2, 11.4], KRION_PL, [0, -8, 0]);
+      M.sub(P([f0 + 9.4, u0 + 10.5, 0]), [3.2, 5.2, 4.2]);
       M.G();
       // gold chest-plate trim & glowing rift cracks across waist/flanks
       both((s) => {
@@ -692,9 +693,9 @@ export const BEASTS_C = {
         M.tube([pts[2], pts[4], pts[6]], [r0 * 0.42, r0 * 0.28], BROOD);
         if (!p.dead && i < 6) M.dot(pts[6], "#ff5a6a", 2, 2);
       });
-      // colossal swollen dark-plum eldritch brood-mass behind the maiden
+      // colossal swollen dark-plum eldritch brood-mass behind the maiden (SDF organic smooth blend)
       const mass = [f - 10, u + 5, 0], massR = [16.5, 14.5, 16.5];
-      M.G("mass");
+      M.G("mass", { smooth: 4.5 });
       M.e(mass, massR, MOTHER);
       M.e([f - 13, u - 1, 0], [15.2, 10.5, 15.5], MOTHERD);
       M.e([f - 8, u + 14.5, 0], [11.5, 8.2, 11.8], MOTHERD);
@@ -716,9 +717,9 @@ export const BEASTS_C = {
       for (const [s, len] of [[-10, 14], [-4, 16], [4, 16], [10, 14]]) {
         M.tube([[f + 4, u + 6, s * 0.6], [f + 8, u - 3, s * 0.95], [f + 6, 1.5, s * 1.25]], [3.4, 2.8, 1.0], MOTHERD);
       }
-      // pale ghostly-white maiden upper torso emerging from the front of the brood-mass
+      // pale ghostly-white maiden upper torso emerging from the front of the brood-mass (SDF organic smooth blend)
       const mx = f + 8.5 + strike * 2.5, my = u + 8.5 + wind * 2.2;
-      M.G("maiden");
+      M.G("maiden", { smooth: 2.2 });
       M.e([mx - 1.5, my - 5.5, 0], [4.6, 7.2, 5.2], MORMA_PALE, [0, -10, 0]);
       M.e([mx + 0.5, my + 2.5, 0], [4.2, 5.2, 5.4], MORMA_PALE);
       M.G();

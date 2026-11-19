@@ -131,29 +131,39 @@ function rampOf(m, tint, habitat) {
  * way it faces), up, and to its right, in pixels at normal size; the ground is u = 0.
  */
 class Model {
-  constructor() { this.P = []; this.D = []; this.n = 0; this.grp = null; this.names = {}; }
-  /** Parts drawn inside one group get no contact lines between them. G() ends the group. */
-  G(name) { this.grp = name ? (this.names[name] ??= ++this.n + 100000) : null; return this; }
+  constructor() { this.P = []; this.D = []; this.n = 0; this.grp = null; this.sdfK = 0; this.names = {}; }
+  /** Parts drawn inside one group get no contact lines between them. Passing `{ smooth }` enables 3D SDF smooth-union blending for the group. G() ends the group. */
+  G(name, o) {
+    this.grp = name ? (this.names[name] ??= ++this.n + 100000) : null;
+    this.sdfK = name && o?.smooth ? o.smooth : 0;
+    return this;
+  }
   gid() { return this.grp ?? ++this.n; }
   /** A ball. */
-  s(c, r, m) { this.P.push({ k: 0, c, r, m, g: this.gid() }); return this; }
+  s(c, r, m) { this.P.push({ k: 0, c, r, m, g: this.gid(), sdf: this.sdfK }); return this; }
   /** An egg with radii [f, u, s], turned by [yaw, pitch, roll] degrees. */
-  e(c, r, m, rot) { this.P.push({ k: 1, c, r, m, rot, g: this.gid() }); return this; }
+  e(c, r, m, rot) { this.P.push({ k: 1, c, r, m, rot, g: this.gid(), sdf: this.sdfK }); return this; }
   /** A box with half-sizes [f, u, s], turned like an egg. */
-  box(c, r, m, rot) { this.P.push({ k: 2, c, r, m, rot, g: this.gid() }); return this; }
+  box(c, r, m, rot) { this.P.push({ k: 2, c, r, m, rot, g: this.gid(), sdf: this.sdfK }); return this; }
+  /** Carve a smooth 3D hollow (sphere if r is number, ellipsoid if [f,u,s]) inside the current `{ smooth }` SDF group. */
+  sub(c, r, rot) {
+    const isArr = Array.isArray(r);
+    this.P.push({ k: isArr ? 1 : 0, c, r, m: null, rot, g: this.gid(), sdf: this.sdfK || 1.5, sub: true });
+    return this;
+  }
   /** A tube through `pts`, its radius a number, [from, to], or one per point. */
   tube(pts, r, m) {
-    const g = this.gid();
+    const g = this.gid(), sdf = this.sdfK;
     const L = [0];
     for (let i = 1; i < pts.length; i++) L.push(L[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1], pts[i][2] - pts[i - 1][2]));
     const tot = L[L.length - 1] || 1;
     const rad = (i, k) => (typeof r === "number" ? r : r.length === 2 && pts.length !== 2 ? r[0] + (r[1] - r[0]) * ((L[i] + k * (L[i + 1] - L[i])) / tot) : r[i] + (r[Math.min(i + 1, r.length - 1)] - r[i]) * k);
     for (let i = 0; i < pts.length - 1; i++) {
-      const a = pts[i], b = pts[i + 1], len = L[i + 1] - L[i], n = Math.max(1, Math.ceil(len / 0.45));
+      const a = pts[i], b = pts[i + 1], len = L[i + 1] - L[i], n = Math.max(1, Math.ceil(len / (sdf ? 0.9 : 0.45)));
       for (let j = 0; j <= n; j++) {
         if (j === n && i < pts.length - 2) continue;
         const k = j / n;
-        this.P.push({ k: 0, c: [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k], r: Math.max(0.01, rad(i, k)), m, g });
+        this.P.push({ k: 0, c: [a[0] + (b[0] - a[0]) * k, a[1] + (b[1] - a[1]) * k, a[2] + (b[2] - a[2]) * k], r: Math.max(0.01, rad(i, k)), m, g, sdf });
       }
     }
     return this;
@@ -230,6 +240,7 @@ function raster(model, N, foot, dir, k, tint, p, rollK = 1, habitat = "", glowHe
   if (p.dead) {
     let lo = 1e9;
     for (const q of model.P) {
+      if (q.sub) continue;
       const w = app(Mw, q.c);
       if (q.k === 0) lo = Math.min(lo, w[1] - q.r * k);
       else if (q.k === 2) { const A = mul(Mw, mul(rotM(q.rot || []), [[q.r[0], 0, 0], [0, q.r[1], 0], [0, 0, q.r[2]]])); lo = Math.min(lo, w[1] - Math.abs(A[1][0]) - Math.abs(A[1][1]) - Math.abs(A[1][2])); }
@@ -250,7 +261,14 @@ function raster(model, N, foot, dir, k, tint, p, rollK = 1, habitat = "", glowHe
     const spec = n[0] * HV[0] + n[1] * HV[1] + n[2] * HV[2];
     spc[i] = (q.m.wet && spec > 0.94) ? 2 : (!q.m.flat && (q.m.role === "keep" || q.m.role === "glow") && spec > 0.962) ? 1 : 0;
   };
+  const sdfGroups = new Map();
   for (const q of model.P) {
+    if (q.sdf > 0) {
+      let arr = sdfGroups.get(q.g);
+      if (!arr) { arr = []; sdfGroups.set(q.g, arr); }
+      arr.push(q);
+      continue;
+    }
     const c = app(Vm, q.c), cx = c[0] + ox, cy = c[1] + oy, cz = c[2] + oz;
     if (q.k === 0) {
       const r = Math.max(0.62, q.r * k), r2 = r * r;
@@ -299,6 +317,101 @@ function raster(model, N, foot, dir, k, tint, p, rollK = 1, habitat = "", glowHe
         const n = norm([Ai[0][0] * s[0] + Ai[1][0] * s[1] + Ai[2][0] * s[2], Ai[0][1] * s[0] + Ai[1][1] * s[1] + Ai[2][1] * s[2], Ai[0][2] * s[0] + Ai[1][2] * s[1] + Ai[2][2] * s[2]]);
         put(i, t, n, q);
       }
+    }
+  }
+  // 3D SDF smooth-union (smin) & smooth-subtract groups: organic muscles, torsos, faces, and carved hollows
+  for (const [, list] of sdfGroups) {
+    const sm = Math.max(0.4, (list[0].sdf || 1.5) * k);
+    const pos = [], subs = [];
+    let gx0 = N, gy0 = N, gx1 = 0, gy1 = 0, zMin = 1e9, zMax = -1e9;
+    for (const q of list) {
+      const c = app(Vm, q.c), cx = c[0] + ox, cy = c[1] + oy, cz = c[2] + oz;
+      let item, ex, ey, ez;
+      if (q.k === 0) {
+        const r = Math.max(0.62, q.r * k);
+        item = { k: 0, cx, cy, cz, r, q };
+        ex = ey = ez = r;
+      } else {
+        const A = mul(Vm, mul(rotM(q.rot || []), [[q.r[0], 0, 0], [0, q.r[1], 0], [0, 0, q.r[2]]]));
+        const Ai = inv(A);
+        const minR = Math.max(0.5, Math.min(q.r[0], q.r[1], q.r[2]) * k);
+        item = { k: q.k, cx, cy, cz, Ai, minR, q };
+        if (q.k === 2) {
+          ex = Math.abs(A[0][0]) + Math.abs(A[0][1]) + Math.abs(A[0][2]);
+          ey = Math.abs(A[1][0]) + Math.abs(A[1][1]) + Math.abs(A[1][2]);
+          ez = Math.abs(A[2][0]) + Math.abs(A[2][1]) + Math.abs(A[2][2]);
+        } else {
+          ex = Math.hypot(A[0][0], A[0][1], A[0][2]);
+          ey = Math.hypot(A[1][0], A[1][1], A[1][2]);
+          ez = Math.hypot(A[2][0], A[2][1], A[2][2]);
+        }
+      }
+      if (q.sub) subs.push(item);
+      else {
+        pos.push(item);
+        gx0 = Math.min(gx0, Math.floor(cx - ex - sm * 0.5));
+        gx1 = Math.max(gx1, Math.ceil(cx + ex + sm * 0.5));
+        gy0 = Math.min(gy0, Math.floor(cy - ey - sm * 0.5));
+        gy1 = Math.max(gy1, Math.ceil(cy + ey + sm * 0.5));
+        zMin = Math.min(zMin, cz - ez - sm * 0.5);
+        zMax = Math.max(zMax, cz + ez + sm * 0.5);
+      }
+    }
+    if (!pos.length) continue;
+    gx0 = Math.max(0, gx0); gy0 = Math.max(0, gy0); gx1 = Math.min(N - 1, gx1); gy1 = Math.min(N - 1, gy1);
+    const primD = (it, px, py, pz) => {
+      const dx = px - it.cx, dy = py - it.cy, dz = pz - it.cz;
+      if (it.k === 0) return Math.hypot(dx, dy, dz) - it.r;
+      const Ai = it.Ai;
+      const lx = Ai[0][0] * dx + Ai[0][1] * dy + Ai[0][2] * dz;
+      const ly = Ai[1][0] * dx + Ai[1][1] * dy + Ai[1][2] * dz;
+      const lz = Ai[2][0] * dx + Ai[2][1] * dy + Ai[2][2] * dz;
+      if (it.k === 2) {
+        const bx = Math.abs(lx) - 1, by = Math.abs(ly) - 1, bz = Math.abs(lz) - 1;
+        return (Math.hypot(Math.max(bx, 0), Math.max(by, 0), Math.max(bz, 0)) + Math.min(Math.max(bx, by, bz), 0)) * it.minR;
+      }
+      return (Math.hypot(lx, ly, lz) - 1) * it.minR;
+    };
+    const evalD = (px, py, pz) => {
+      let d = 1e9;
+      for (let u = 0; u < pos.length; u++) {
+        const dp = primD(pos[u], px, py, pz);
+        if (u === 0) d = dp;
+        else {
+          const h = Math.max(sm - Math.abs(d - dp), 0) / sm;
+          d = Math.min(d, dp) - h * h * sm * 0.25;
+        }
+      }
+      const smSub = sm * 0.65;
+      for (let u = 0; u < subs.length; u++) {
+        const dn = -primD(subs[u], px, py, pz);
+        const h = Math.max(smSub - Math.abs(d - dn), 0) / smSub;
+        d = Math.max(d, dn) + h * h * smSub * 0.25;
+      }
+      return d;
+    };
+    for (let y = gy0; y <= gy1; y++) for (let x = gx0; x <= gx1; x++) {
+      const i = y * N + x;
+      if (zMin >= zb[i]) continue;
+      const px = x + 0.5, py = y + 0.5;
+      const zEnd = Math.min(zMax + 1.5, zb[i]);
+      let z = zMin - 1.5, hit = false;
+      for (let st = 0; st < 28 && z < zEnd; st++) {
+        const d = evalD(px, py, z);
+        if (d < 0.08) { hit = true; break; }
+        z += Math.max(0.28, d * 0.85);
+      }
+      if (!hit || z >= zb[i]) continue;
+      const eps = 0.28;
+      const nx = evalD(px + eps, py, z) - evalD(px - eps, py, z);
+      const ny = evalD(px, py + eps, z) - evalD(px, py - eps, z);
+      const nz = evalD(px, py, z + eps) - evalD(px, py, z - eps);
+      let bestQ = pos[0].q, bestD = 1e9;
+      for (let u = 0; u < pos.length; u++) {
+        const dp = primD(pos[u], px, py, z);
+        if (dp < bestD) { bestD = dp; bestQ = pos[u].q; }
+      }
+      put(i, z, norm([nx, ny, nz]), bestQ);
     }
   }
   // clean lone pixels: a band that none of its neighbours share takes theirs

@@ -200,8 +200,8 @@ const cloakbat = (ph) => ({
       M.tube([c0, c1, c2], [3.6, 3.0, 0.85], Math.abs(s) === 8 ? WEB : CLKD);
       if (Math.abs(s) === 15) M.tube([c0, c1, c2], [0.7, 0.45], VAMP_GOLD);
     }
-    // aristocratic hunched torso + ruffled white cravat & crimson-ruby brooch
-    M.G("body");
+    // aristocratic hunched torso (SDF smooth-blended) + ruffled white cravat & crimson-ruby brooch
+    M.G("body", { smooth: 2.8 });
     M.e([f - 1, u + 1.5, 0], [7.2, 9.8, 6.4], CLKD, [0, 14, 0]);
     M.e([f + 1.5, u + 7.8, 0], [7.6, 6.8, 9.8], CLK);
     M.G();
@@ -255,9 +255,9 @@ const cloakbat = (ph) => ({
         M.cone([hand[0] + 2.4, hand[1] + 0.2, hand[2] + s * (i - 1.5) * 1.1], [hand[0] + 6.6, hand[1] - 1.5, hand[2] + s * (i - 1.5) * 1.4], 0.8, WEB);
       }
     });
-    // feral pale-white-furred bat-wolf beast head with tall pointed ears & snarling fanged jaw
+    // feral pale-white-furred bat-wolf beast head (SDF smooth-blended cranium + snout)
     const hx = f + 6.8 + strike * 3.0, hy = u + 13.8 - strike * 1.5 + wind * 1.8;
-    M.G("head");
+    M.G("head", { smooth: 1.8 });
     M.e([hx - 1.2, hy, 0], [5.8, 5.2, 6.2], VAMP_FUR);
     M.box([hx + 4.2, hy - 0.5, 0], [3.2, 2.2, 2.8], VAMP_FUR, [0, -14, 0]);
     M.G();
@@ -290,7 +290,7 @@ const bloomwhale = (ph) => ({
     const charge = p.wind ? 1 : 0, strike = p.strike ? 1 : 0, death = p.dead || 0;
     const f = lf * 0.62, u = (dive ? 10 : 15) + lift * 0.45 + bob(p, 1.15) - death * 6 + charge * 4.2;
     const sw = p.walk ? Math.sin(p.ph * Math.PI * 2) * 3.2 : p.idle ? -1.5 : 0, glow = bloom ? FLW : CYN;
-    M.G("body");
+    M.G("body", { smooth: 4.2 });
     M.e([f - 5, u + 2, 0], [27, 11.2, 14.5], WH);
     M.e([f - 13, u - 2.6, 0], [21.0, 8.8, 13.0], WHD);
     M.e([f + 11, u + (open ? 1.2 : 7.5), 0], [16.2, 7.2, 12.8], open ? WHD : WH);
