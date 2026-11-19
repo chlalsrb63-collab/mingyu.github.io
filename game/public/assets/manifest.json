@@ -920,6 +920,86 @@
       "src": "assets/weapons/book/book_held_t10.png?v=11bf3770",
       "w": 32,
       "h": 32
+    },
+    "icon.weapon.sword.t7": {
+      "src": "assets/weapons/sword/sword_t7.png?v=81d24bfa",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.sword.t7": {
+      "src": "assets/weapons/sword/sword_held_t7.png?v=1cb82934",
+      "w": 44,
+      "h": 32
+    },
+    "icon.weapon.sword.t8": {
+      "src": "assets/weapons/sword/sword_t8.png?v=d0896da7",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.sword.t8": {
+      "src": "assets/weapons/sword/sword_held_t8.png?v=d314d5c5",
+      "w": 44,
+      "h": 32
+    },
+    "icon.weapon.sword.t9": {
+      "src": "assets/weapons/sword/sword_t9.png?v=35d63667",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.sword.t9": {
+      "src": "assets/weapons/sword/sword_held_t9.png?v=52d403db",
+      "w": 44,
+      "h": 32
+    },
+    "icon.weapon.sword.t10": {
+      "src": "assets/weapons/sword/sword_t10.png?v=33c2973f",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.sword.t10": {
+      "src": "assets/weapons/sword/sword_held_t10.png?v=4358bed5",
+      "w": 44,
+      "h": 32
+    },
+    "icon.weapon.dagger.t7": {
+      "src": "assets/weapons/dagger/dagger_t7.png?v=7bb3dc39",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.t7": {
+      "src": "assets/weapons/dagger/dagger_held_t7.png?v=28fc76b7",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.dagger.t8": {
+      "src": "assets/weapons/dagger/dagger_t8.png?v=010f285e",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.t8": {
+      "src": "assets/weapons/dagger/dagger_held_t8.png?v=15f013c5",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.dagger.t9": {
+      "src": "assets/weapons/dagger/dagger_t9.png?v=5497d4e6",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.t9": {
+      "src": "assets/weapons/dagger/dagger_held_t9.png?v=d81dc899",
+      "w": 32,
+      "h": 32
+    },
+    "icon.weapon.dagger.t10": {
+      "src": "assets/weapons/dagger/dagger_t10.png?v=2b53f6b2",
+      "w": 32,
+      "h": 32
+    },
+    "weapon.dagger.t10": {
+      "src": "assets/weapons/dagger/dagger_held_t10.png?v=f9a5fb51",
+      "w": 32,
+      "h": 32
     }
   },
   "audio": {},
