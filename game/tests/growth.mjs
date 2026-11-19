@@ -151,7 +151,9 @@ assert.ok(D.tutorial.length >= 1);
   const lo = W.self().atk;
   W.ch.wm.sword.lv = 50; W.p.stc = null;
   const hi = W.self().atk;
-  assert.ok(lo > s1 && Math.abs(hi - lo - 64 * 0.49) <= 1, `mastery 1 → 50 adds 49% of a tier-5 sword's 64: ${lo} → ${hi}`);
+  const item = D.items.w_warrior_5, il = item.req + D.ilGap;
+  const weaponAttack = item.base.atk * D.gearBaseScale[il - 1] / 1000;
+  assert.ok(lo > s1 && Math.abs(hi - lo - weaponAttack * 0.49) <= 1, `mastery 1 → 50 adds 49% of the scaled sword attack: ${lo} → ${hi}`);
 }
 
 // ── every single job's signature goes off with its own effect and lands

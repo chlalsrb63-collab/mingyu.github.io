@@ -39,6 +39,7 @@ const runeOf = (id) => G.defs.runes?.[id];
 export const runeSocketId = (socket) => Array.isArray(socket) ? socket[0] : socket;
 export const runeSocketLevel = (socket) => (Array.isArray(socket) ? socket[1] : 1) || 1;
 const runeLines = (rune, il) => rune.af.map(([k, n]) => [k, Math.max(1, Math.round(n * (G.defs.runeScale?.[(il || 1) - 1] ?? 100) / 100))]);
+const runeStatCap = (key) => G.defs.runeStatCaps?.[key] ?? G.defs.runeStatCaps?.[key.split("_", 1)[0]] ?? Infinity;
 const elementPowerLines = (entry) => G.defs.elementPrefixes?.[entry.lg] || [];
 export const itemRarity = (entry) => runeOf(entry.id)?.q || entry.q || G.defs.items[entry.id]?.q || 0;
 export const rarityLabel = (id, q) => runeOf(id) ? G.defs.runeRarity[q] : rarName(q);
@@ -61,17 +62,19 @@ export function itemName(entry) {
   const word = lg ? lg[0] : "";
   return (entry.cu === 1 ? "저주받은 " : "") + (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name;
 }
-/** The piece's own stats, enhancement included: [[key, value]…] (speed and crit do not scale). */
+/** The piece's own stats with the server's level and enhancement curves. */
 function baseStats(entry) {
   const it = G.defs.items[entry.id], e = entry.enh || 0;
-  return Object.keys(it.base || {}).map((k) => [k, k === "spd" || k === "crit" ? it.base[k] : Math.round(it.base[k] * (1 + (G.defs.enhPct ? G.defs.enhPct[e] : 10 * e) / 100))]);
+  const level = (G.defs.gearBaseScale?.[ilOf(entry) - 1] ?? 1000) / 1000;
+  const enhancement = 1 + (G.defs.enhPct ? G.defs.enhPct[e] : 10 * e) / 100;
+  return Object.entries(it.base || {}).map(([k, value]) => [k, k === "spd" || k === "crit" ? value : Math.round(value * level * enhancement)]);
 }
 export function itemDesc(entry) {
   const it = G.defs.items[entry.id];
   if (it.base) {
     const base = baseStats(entry).map(([k, v]) => statText(k, v));
     if (it.cls) base.push(`${G.defs.wkinds[it.wk].name} · ${G.defs.classes[it.cls].name} 전용`);
-    base.push(`Lv.${it.req}`);
+    base.push(`Lv.${reqLv(entry)}`);
     return base.join(" · ");
   }
   if (it.type === "rune") return [`아이템 레벨 ${entry.il || 1}`, ...runeLines(runeOf(entry.id), entry.il).map(([k, v]) => statText(k, v))].join(" · ");
@@ -112,7 +115,7 @@ function card(entry, o = {}) {
   if (gear || rune) {
     const r = el("div", "tc-sub");
     r.append(el("span", "", rune ? `${rarityLabel(entry.id, q)} 룬` : `${rarName(q)} ${TYPE_NAME[it.type]}`));
-    if (entry.il > 0 || rune) r.append(el("span", "tc-il", `아이템 레벨 ${entry.il || 1}`));
+    r.append(el("span", "tc-il", `아이템 레벨 ${rune ? entry.il || 1 : ilOf(entry)}`));
     head.append(r);
   } else if (it.q) head.append(el("div", "tc-sub", `${rarityLabel(entry.id, q)} 소모품`));
   if (it.base) {
@@ -166,6 +169,7 @@ function card(entry, o = {}) {
   }
   const foot = sec();
   if (gear || rune) foot.append(el("div", s && s.lvl < reqLv(entry) ? "tc-req bad" : "tc-req", `${rune ? "사용" : "착용"} 레벨 ${reqLv(entry)}`));
+  if (rune) foot.append(el("div", "tc-note", "장착한 모든 룬의 전투 능력치 합계에는 적용 한도가 있습니다."));
   if (gear && !o.worn && !o.eq && it.cls && s && it.cls !== s.cls) foot.append(el("div", "tc-err", `${G.defs.classes[it.cls].name}만 쓸 수 있습니다`));
   if (o.price) foot.append(el("div", "tc-gold", o.price));
   if (o.hint) foot.append(el("div", "tc-hint", o.hint));
@@ -209,7 +213,14 @@ export function itemTip(entry, host, o = {}) {
     wrap.append(card(w, { eq: k }));
   }
 }
-/** Every unconditional number a piece gives: base, enhancement, affixes and runes. */
+function addFittedRunes(entry, totals) {
+  for (const socket of (entry.ru || []).slice(0, Math.min(entry.sk, socketCap(entry)))) {
+    const id = runeSocketId(socket), rune = runeOf(id), il = runeSocketLevel(socket);
+    if (!rune || G.self.lvl < reqLv({ id, il })) continue;
+    for (const [k, v] of runeLines(rune, il)) totals[k] = (totals[k] || 0) + v;
+  }
+}
+/** Flat bonuses and this piece's applied share of socket bonuses alongside the rest of the loadout. */
 function statsOf(entry, o) {
   const out = {};
   const add = (k, v) => { out[k] = (out[k] || 0) + v; };
@@ -217,12 +228,10 @@ function statsOf(entry, o) {
   for (const [k, v] of entry.af || []) add(k, v);
   for (const [k, v] of G.defs.items[entry.id].elementAf || []) add(k, v);
   if (!lgDead(entry, o)) for (const [k, v] of elementPowerLines(entry)) add(k, v);
-  for (const socket of entry.ru || []) {
-    const id = runeSocketId(socket), rune = runeOf(id), il = runeSocketLevel(socket);
-    if (rune && (!G.self || G.self.lvl >= reqLv({ id, il }))) {
-      for (const [k, v] of runeLines(rune, il)) add(k, v);
-    }
-  }
+  const rest = {}, own = {}, slot = o.eq || o.replacing;
+  for (const [key, gear] of Object.entries(G.self.eq)) if (gear && key !== slot) addFittedRunes(gear, rest);
+  addFittedRunes(entry, own);
+  for (const [k, v] of Object.entries(own)) add(k, Math.min(v, Math.max(0, runeStatCap(k) - (rest[k] || 0))));
   return out;
 }
 export function itemSlot(entry, o = {}) {

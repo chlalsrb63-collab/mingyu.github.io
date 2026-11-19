@@ -98,7 +98,7 @@ function deriveStats(p) {
   const tf = trophySum(ch);
   const perk = loPerks(ch), plus = (n) => 1 + n / 100;
   for (const k of ST_ORDER) E[k] = eff(ch.st[k]) + cm.st[k];
-  const wAtk = w ? (ITEMS[w.id].base.atk || 0) * enhMul(w.enh) : 0;
+  const wAtk = w ? gearBaseValue(w, "atk") : 0;
   const sc = scaleOf(ch, wk);
   let core = SFX.atk[0] + SFX.atk[1] * lv;
   for (const k of Object.keys(sc)) core += sc[k] * E[k];

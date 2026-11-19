@@ -208,7 +208,7 @@ for (let g = 1; g <= 5; g++) RECIPES[`ing_${g}`] = recipeRow("craft", GRADE_LV[g
  * P7: tier 2's small pieces (helm, gloves, boots, ring, amulet; shop 360–480 G) take `ing2` ingots (four cost more than
  * the piece); a fee never below what the economy guard needs (inputs at sell value + fee ≥ 60 % of the shop's price).
  */
-const GEAR_CRAFT = { lv: [12, 22, 32, 42, 50], ing: 4, ing2: 2, wood: 2, fee: 0.29, q: [1, 2], ilvl: [4, 12, 21, 32, 44, 49], ms: 6000 };
+const GEAR_CRAFT = { lv: [12, 22, 32, 42, 50], ing: 4, ing2: 2, wood: 2, fee: 0.29, q: [1, 2], ms: 6000 };
 // Tier 6 (운철, Lv.181) has no ingot of its own: grade-5 materials at twice the count (`mat`), at 캉캉 craft Lv.50.
 const GEAR6 = { mat: 5, k: 2 };
 for (let t = 2; t <= 6; t++) {

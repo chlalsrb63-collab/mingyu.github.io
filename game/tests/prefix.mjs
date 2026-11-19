@@ -156,7 +156,7 @@ assert.deepEqual(X.PFX_W, { S: 1, M: 2, L: 1 }); assert.equal(X.SLOT_L.ring1, "R
   const ch = L.hero("쌍반지", { wk: "sword", lvl: 157, migrate: true });
   const piece = (id, lg, il, af = []) => ({ ...X.plain(id), q: 3, il, lg, af });
   const bonus = (eq) => X.gearBonus({ ...ch, eq });
-  const none = bonus({ ring1: piece("r_3", undefined, 100), ring2: piece("r_3", undefined, 90) });
+  const none = bonus({ ring1: piece("r_3", undefined, 90), ring2: piece("r_3", undefined, 120) });
   // two greed rings: +60 gold once, the lower item level is off
   let b = bonus({ ring1: piece("r_3", "greed", 90), ring2: piece("r_3", "greed", 120) });
   assert.deepEqual(b.lg, { greed: 1 }); assert.deepEqual(b.lgOff, ["ring1"], "the 120 wins, the 90 is off"); assert.equal(b.gold - none.gold, 60, "60 once, not 120");
@@ -167,7 +167,7 @@ assert.deepEqual(X.PFX_W, { S: 1, M: 2, L: 1 }); assert.equal(X.SLOT_L.ring1, "R
   assert.deepEqual(b.lgOff, ["weapon"], "item level first");
   // the off piece still gives its plain lines and base
   const lines = bonus({ ring1: piece("r_3", "greed", 90, [["atk", 7]]), ring2: piece("r_3", "greed", 120, [["atk", 5]]) });
-  assert.equal(lines.atk - none.atk, 12, "both pieces' ordinary lines count");
+  assert.ok(Math.abs(lines.atk - none.atk - 12) < 1e-8, "both pieces' ordinary lines count");
   // different keys: both, in slot order; three of a kind: the two losers, listed in slot order
   b = bonus({ ring1: piece("r_3", "giant", 100), helm: piece("h_3", "nova", 100), weapon: piece("w_warrior_3", "chain", 100) });
   assert.deepEqual(Object.keys(b.lg), ["chain", "nova", "giant"], "powers run in slot order"); assert.deepEqual(b.lgOff, []);

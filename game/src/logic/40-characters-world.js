@@ -348,6 +348,7 @@ function masteryRank(ch, k) {
 function gearBonus(ch) {
   const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
   const lg = {}, runeCounts = {}, win = {}, off = [], element = emptyElementStats();
+  const runeStats = {};
   const add = (s, v) => {
     if (Object.hasOwn(b, s)) b[s] += v;
     else addElementAffix(element, s, v);
@@ -359,13 +360,12 @@ function gearBonus(ch) {
     for (let i = 0; i < Math.min(g.sk, sockCap(g)); i++) {
       const socket = g.ru?.[i], rune = RUNES[runeSocketId(socket)], il = runeSocketLevel(socket);
       if (!rune || ch.lvl < runeReq(il)) continue;
-      for (const [stat, n] of rune.af) add(stat, runeStat(n, il));
+      for (const [stat, n] of rune.af) runeStats[stat] = (runeStats[stat] || 0) + runeStat(n, il);
       if (rune.set) runeCounts[rune.set] = (runeCounts[rune.set] || 0) + 1;
     }
     if (k === "weapon2") continue;
     const item = ITEMS[g.id], base = item.base;
-    // enhancement raises the piece's own stats along ENH_PCT
-    for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : enhMul(g.enh)));
+    for (const s of Object.keys(base)) add(s, gearBaseValue(g, s));
     for (const [s, v] of g.af) add(s, v);
     if (item.elementAf) for (const [s, v] of item.elementAf) add(s, v);
     // one power counts once however many pieces carry it: the higher item level wins, a tie goes to the earlier slot (SLOTS order)
@@ -376,6 +376,7 @@ function gearBonus(ch) {
       else off.push(k);
     }
   }
+  for (const [stat, total] of Object.entries(runeStats)) add(stat, Math.min(total, runeStatCap(stat)));
   // a worn title and every finished region of the monster collection add their bit
   const ttl = ch.title && ACH_BY[ch.title];
   if (ttl && ttl.bonus) for (const [s, v] of ttl.bonus) add(s, v);

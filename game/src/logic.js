@@ -687,6 +687,8 @@ const UNIQ_P = [0.001, 0.004, 0.01];
  */
 const IL_RANK = [0, 4, 8];
 const IL_GAP = 10;
+// Flat equipment stats receive up to 58% from item level, with a gentler start. Per-mille for the client tooltip.
+const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(580 * (i / (MAXLV - 1)) ** 1.55));
 /**
  * 접두사 고유 효과 (docs/design/prefix-effects.md): a 전설 or 유니크 piece carries ONE power `lg` no affix can give. Three tables per power,
  * all keyed by `lg`; the later parts 52+ extend them with Object.assign and never edit this file (the recipe is in 51-prefix.js):
@@ -814,6 +816,10 @@ const MV_GRACE = 1200;
 const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 15 };
 // MOB_HARD: owner 2026-11-19 — every monster 20 % more HP and attack (chests excepted)
 const GEAR_CUT = 0.3, MOB_ATK = 1.27, MOB_HARD = 1.2;
+// The stronger gear pays off against progressively tougher monsters. Openers stay gentle.
+const mobGearPressure = (tier) => ((Math.min(TIER_MAX, Math.max(1, tier)) - 1) / (TIER_MAX - 1)) ** 1.12;
+const mobGearHp = (tier) => 1.08 + 0.40 * mobGearPressure(tier);
+const mobGearAtk = (tier) => 1.05 + 0.31 * mobGearPressure(tier);
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
  * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
@@ -1082,8 +1088,8 @@ for (const k of Object.keys(MOBS)) {
   if (!d.sp) d.sp = k;
   for (const mv in TRICKS) if (d[mv] === undefined && MOBS[d.sp] && MOBS[d.sp][mv]) d[mv] = MOBS[d.sp][mv];
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
-  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD);
-  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD);
+  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv));
+  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv));
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;
@@ -1442,7 +1448,11 @@ const RUNE_PRICE = { 1: 500, 2: 900, 3: 1650, 4: 850 };
 const RUNES = {};
 const RUNE_KEYS = [];
 const RUNE_POOLS = { 1: [], 2: [], 3: [], 4: { 2: [], 3: [], 4: [] } };
-const RUNE_SCALE = Array.from({ length: 200 }, (_, i) => 18 + Math.floor(i * 82 / 199));
+// Runes complement the host item. Keep low-level bonuses and bring endgame lines to 65% of face value.
+const RUNE_SCALE = Array.from({ length: 200 }, (_, i) => 18 + Math.floor(i * 47 / 199));
+// Combat limits apply only to the sum of socket lines; base gear, prefixes and set powers have their own rules.
+const RUNE_STAT_CAP = { atk: 32, atkp: 10, def: 20, hp: 220, mp: 100, crit: 8, critd: 20, ls: 4, spd: 8, dmg: 12, pen: 10, res: 16, dur: 10 };
+const runeStatCap = (key) => RUNE_STAT_CAP[key] ?? RUNE_STAT_CAP[key.split("_", 1)[0]] ?? Infinity;
 const runeIl = (il) => Number.isInteger(il) ? clamp(il, 1, RUNE_SCALE.length) : 1;
 const runeReq = (il) => Math.max(1, runeIl(il) - IL_GAP);
 const runeSocketId = (socket) => Array.isArray(socket) ? socket[0] : socket;
@@ -1714,7 +1724,7 @@ for (let g = 1; g <= 5; g++) RECIPES[`ing_${g}`] = recipeRow("craft", GRADE_LV[g
  * P7: tier 2's small pieces (helm, gloves, boots, ring, amulet; shop 360–480 G) take `ing2` ingots (four cost more than
  * the piece); a fee never below what the economy guard needs (inputs at sell value + fee ≥ 60 % of the shop's price).
  */
-const GEAR_CRAFT = { lv: [12, 22, 32, 42, 50], ing: 4, ing2: 2, wood: 2, fee: 0.29, q: [1, 2], ilvl: [4, 12, 21, 32, 44, 49], ms: 6000 };
+const GEAR_CRAFT = { lv: [12, 22, 32, 42, 50], ing: 4, ing2: 2, wood: 2, fee: 0.29, q: [1, 2], ms: 6000 };
 // Tier 6 (운철, Lv.181) has no ingot of its own: grade-5 materials at twice the count (`mat`), at 캉캉 craft Lv.50.
 const GEAR6 = { mat: 5, k: 2 };
 for (let t = 2; t <= 6; t++) {
@@ -8662,6 +8672,7 @@ function masteryRank(ch, k) {
 function gearBonus(ch) {
   const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
   const lg = {}, runeCounts = {}, win = {}, off = [], element = emptyElementStats();
+  const runeStats = {};
   const add = (s, v) => {
     if (Object.hasOwn(b, s)) b[s] += v;
     else addElementAffix(element, s, v);
@@ -8673,13 +8684,12 @@ function gearBonus(ch) {
     for (let i = 0; i < Math.min(g.sk, sockCap(g)); i++) {
       const socket = g.ru?.[i], rune = RUNES[runeSocketId(socket)], il = runeSocketLevel(socket);
       if (!rune || ch.lvl < runeReq(il)) continue;
-      for (const [stat, n] of rune.af) add(stat, runeStat(n, il));
+      for (const [stat, n] of rune.af) runeStats[stat] = (runeStats[stat] || 0) + runeStat(n, il);
       if (rune.set) runeCounts[rune.set] = (runeCounts[rune.set] || 0) + 1;
     }
     if (k === "weapon2") continue;
     const item = ITEMS[g.id], base = item.base;
-    // enhancement raises the piece's own stats along ENH_PCT
-    for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : enhMul(g.enh)));
+    for (const s of Object.keys(base)) add(s, gearBaseValue(g, s));
     for (const [s, v] of g.af) add(s, v);
     if (item.elementAf) for (const [s, v] of item.elementAf) add(s, v);
     // one power counts once however many pieces carry it: the higher item level wins, a tie goes to the earlier slot (SLOTS order)
@@ -8690,6 +8700,7 @@ function gearBonus(ch) {
       else off.push(k);
     }
   }
+  for (const [stat, total] of Object.entries(runeStats)) add(stat, Math.min(total, runeStatCap(stat)));
   // a worn title and every finished region of the monster collection add their bit
   const ttl = ch.title && ACH_BY[ch.title];
   if (ttl && ttl.bonus) for (const [s, v] of ttl.bonus) add(s, v);
@@ -9236,7 +9247,7 @@ function deriveStats(p) {
   const tf = trophySum(ch);
   const perk = loPerks(ch), plus = (n) => 1 + n / 100;
   for (const k of ST_ORDER) E[k] = eff(ch.st[k]) + cm.st[k];
-  const wAtk = w ? (ITEMS[w.id].base.atk || 0) * enhMul(w.enh) : 0;
+  const wAtk = w ? gearBaseValue(w, "atk") : 0;
   const sc = scaleOf(ch, wk);
   let core = SFX.atk[0] + SFX.atk[1] * lv;
   for (const k of Object.keys(sc)) core += sc[k] * E[k];
@@ -10367,6 +10378,13 @@ function gearIl(g) {
 }
 /** The player level a piece can be worn from: its item level minus IL_GAP (at least 1). */
 const gearReq = (g) => Math.max(1, gearIl(g) - IL_GAP);
+/** Item level and enhancement strengthen flat stats. The authored speed and critical chance stay fixed. */
+function gearBaseValue(g, stat) {
+  const value = ITEMS[g.id].base[stat] || 0;
+  if (stat === "spd" || stat === "crit") return value;
+  const scale = GEAR_BASE_SCALE[clamp(gearIl(g), 1, MAXLV) - 1] / 1000;
+  return value * scale * enhMul(g.enh);
+}
 /** A piece's name word comes from a legendary or unique power. */
 function gearWord(g) {
   return g.lg ? `${LEGEND[g.lg][0]} ` : "";
@@ -10387,26 +10405,32 @@ function sellPrice(s) {
   return Math.floor(it.price * 0.05 * (1 + 0.8 * (s.q | 0)) * (1 + 0.3 * (s.enh | 0)));
 }
 /** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`. */
-function rollLine(S, key, ilvl, mul) {
+function rollLine(S, key, tier, mul) {
   const [, , , min, max, grow] = AFFIX_BY_KEY[key];
-  return [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * ilvl) * mul))];
+  return [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * tier) * mul))];
 }
+const rollGearLine = (S, key, g) => rollLine(S, key, Math.min(TIER_MAX, toTier(gearIl(g))), AFFIX_MUL[g.q | 0]);
 /**
  * Roll one piece of gear: rarity decides how many affixes, `ilvl` (a monster's tier, 1–50) how big and, shown, its item
  * level `il` (+ IL_RANK[rank] for an elite or boss). A 전설 or 유니크 also rolls one `lg` power of its item type's pool (a 유니크: 4 stronger lines, AFFIX_MUL[5]).
  */
 function rollGear(S, id, q, ilvl, rank = 0) {
+  const il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(ITEMS[id].tier | 0) - 1] || 1), 1, MAXLV);
+  return rollGearAtLevel(S, id, q, il);
+}
+/** Drop and craft use the same ordinary affix budget for the level printed on the item. */
+function rollGearAtLevel(S, id, q, il) {
   const it = ITEMS[id];
   if (q === 4) q = 3;
   const g = plain(id);
   g.q = q;
-  g.il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(it.tier | 0) - 1] || 1), 1, 200);
+  g.il = il;
   const [lo, hi] = RARITY_AFFIX[q];
   const used = new Set();
   for (let n = ri(S, lo, hi); n > 0; n--) {
     const key = rollAffixKey(S, it.type, used);
     used.add(key);
-    g.af.push(rollLine(S, key, ilvl, AFFIX_MUL[q]));
+    g.af.push(rollGearLine(S, key, g));
   }
   if (q === 3 || q === 5) g.lg = pfxPick(S, it.type);   // the power comes from the item type's pool (51-prefix.js)
   g.sk = ri(S, 0, sockCap(g));
@@ -11314,21 +11338,21 @@ const PFX_FN = {
 
 const RUNE_SET_MAX = 2;
 const RUNE_POWER = {
-  willowwind: { move: 1.18, iv: 0.84, ms: 2800 },
-  duskfang: { kill: 0.035, chance: 0.25, leech: 0.15, icd: 1200 },
-  lantern: { shield: 0.16, ms: 5500, icd: 14000 },
-  brassscale: { gold: 22, mf: 16, per: 180, atk: 0.12, ms: 30000 },
-  azureknot: { cdr: 0.12, mp: 0.8 },
-  ashbloom: { chance: 0.2, hit: 1.3, dot: 0.22, ms: 4000, radius: 64, targets: 5, icd: 4300 },
-  silverlake: { slow: 1800, crit: 1.5 },
-  stormsail: { chance: 0.22, first: 1.35, fall: 0.78, radius: 94, targets: 5, icd: 3300 },
-  inkthorn: { dot: 0.09, vuln: 0.055, stacks: 5, ms: 6000, hitGap: 500 },
-  lastbell: { hp: 0.3, hit: 1.48, execute: 0.09 },
-  redanvil: { atk: 1.08, iv: 0.45, hp: 0.25, miti: 0.72 },
-  astrolabe: { chance: 0.18, cap: 0.8, ratio: 4, ms: 20000, icd: 10000 },
-  dawnpillar: { heal: 0.55, ms: 3200, icd: 360000 },
-  moonveil: { ms: 1700, ign: 0.82, icd: 6300 },
-  blackstar: { chance: 0.30, damage: 1.35, splash: 0.85, radius: 84, targets: 6, icd: 2800 },
+  willowwind: { move: 1.14, iv: 0.90, ms: 2800 },
+  duskfang: { kill: 0.025, chance: 0.25, leech: 0.10, icd: 1200 },
+  lantern: { shield: 0.12, ms: 5500, icd: 14000 },
+  brassscale: { gold: 22, mf: 16, per: 180, atk: 0.07, ms: 30000 },
+  azureknot: { cdr: 0.08, mp: 0.86 },
+  ashbloom: { chance: 0.2, hit: 1, dot: 0.14, ms: 4000, radius: 64, targets: 5, icd: 5500 },
+  silverlake: { slow: 1800, crit: 1.25 },
+  stormsail: { chance: 0.18, first: 1.05, fall: 0.74, radius: 94, targets: 5, icd: 4400 },
+  inkthorn: { dot: 0.045, vuln: 0.025, stacks: 4, ms: 6000, hitGap: 500 },
+  lastbell: { hp: 0.3, hit: 1.25, execute: 0.05 },
+  redanvil: { atk: 0.35, iv: 0.16, hp: 0.25, miti: 0.82 },
+  astrolabe: { chance: 0.11, cap: 0.35, ratio: 2, ms: 20000, icd: 13000 },
+  dawnpillar: { heal: 0.35, ms: 2400, icd: 360000 },
+  moonveil: { ms: 1700, ign: 0.48, icd: 8500 },
+  blackstar: { chance: 0.19, damage: 1.12, splash: 0.48, radius: 84, targets: 5, icd: 4500 },
 };
 
 const runePct = (n) => +(n * 100).toFixed(1);
@@ -12515,7 +12539,11 @@ function bsCast(S, rt, mob, tgt) {
         const tx = Math.floor(x / T), ty = Math.floor(y / T), add = newMob(S, o.kind, [tx, ty, tx, ty], { elite: 0 });
         add.x = add.hx = x; add.y = add.hy = y; readyMob(S, add);
         add.temp = true; add.add = mob.id; add.shield = o.shield; add.feedAt = o.feed ? now + o.feed : 0; add.heal = o.heal;
-        if (mob.dim) { add.hk = 1 / MOB_HARD; add.ak = 1 / MOB_HARD; }   // raid adds keep the raid's tuned pace (64-dim.js dimHk)
+        if (mob.dim) {
+          const tier = MOBS[add.k].lv;
+          add.hk = dimGearHp(tier) / MOB_HARD;
+          add.ak = dimAtkK(tier);
+        }
         rt.mobs.push(add); rt.ev.push(["r", add.id]);
       }
       dur = 800; break;
@@ -14382,8 +14410,7 @@ function craftOnce(S, p, r, s) {
     const t = ITEMS[r.out[0]].tier;
     let q = clamp(rollRarity(S, 0, 0), GEAR_CRAFT.q[0], GEAR_CRAFT.q[1]);
     if (roll.great) q = Math.min(GEAR_CRAFT.q[1], q + 1);
-    const g = rollGear(S, r.out[0], q, GEAR_CRAFT.ilvl[t - 1]);
-    g.il = Math.min(200, G_REQ[t - 1] + 10);   // worn from the tier's own level as before (il − 10; tier 6 stays at Lv.181)
+    const g = rollGearAtLevel(S, r.out[0], q, G_REQ[t - 1] + IL_GAP);
     ch.inv.push(g);
     p.gain.push(["item", g.id, 1, g.q]);
   } else {
@@ -14632,10 +14659,10 @@ function lifeUseApply(S, p, a) {
     toast(p, `${it.name}${pp(it.name, "을를")} 마셨습니다. ${it.desc.split(".")[0]}.`);
   } else {
     const g = ch.eq[a.k];
-    // Replace the weakest affix with a different line rolled at the gear's tier.
-    const i = weakAffix(g), t = ITEMS[g.id].tier || 1;
+    // Replace the weakest affix with a line rolled at this piece's item level.
+    const i = weakAffix(g);
     const used = new Set(g.af.filter((_, j) => j !== i).map(([key]) => key));
-    g.af[i] = rollLine(S, rollAffixKey(S, ITEMS[g.id].type, used), GEAR_CRAFT.ilvl[t - 1], AFFIX_MUL[g.q | 0]);
+    g.af[i] = rollGearLine(S, rollAffixKey(S, ITEMS[g.id].type, used), g);
     toast(p, `${gearName(g)}의 옵션을 새로 다듬었습니다.`);
     S.maps[p.map].ev.push(["e", p.eid, 1]);
     afterGear(S, p);
@@ -16831,13 +16858,19 @@ const socialDefs = () => ({
 const dimCnt = (ch) => ch.cnt;
 /** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
 const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), DIM.minTier, TIER_MAX - 1);
+// Keep part of the field boost in timed instances. Extra raid durability matters more than spike damage.
+const dimGearHp = (tier, share = 0.60) => share + (1 - share) / mobGearHp(tier);
+const dimGearAtk = (tier, share = 0.20) => share + (1 - share) / mobGearAtk(tier);
+const dimAtkK = (tier) => dimGearAtk(tier) / MOB_HARD;
+const chalGearHp = (tier) => dimGearHp(tier, 0.25 + 0.15 * clamp((tier - 25) / 25, 0, 1));
+const chalGearAtk = (tier) => dimGearAtk(tier, 0.10);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 function dimHk(n, lv, mlv) {
   const [mid, width, trim] = DIM.hpMid;
   const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv), high = DIM.hpHigh[1] * Math.max(0, lv - DIM.hpHigh[0]);
   const middle = trim * Math.max(0, 1 - Math.abs(lv - mid) / width);
   // ÷ MOB_HARD: the raids keep the party pace they were tuned to (bots 5–10 min) when field monsters got tougher
-  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv)) / MOB_HARD;
+  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv)) * dimGearHp(mlv) / MOB_HARD;
 }
 
 /**
@@ -16999,7 +17032,7 @@ function dimFloor(S, dim, floor) {
       mob.temp = true; mob.dim = 1;
       if (sp.guard) mob.guard = 1;
       if (!sp.chest) mob.hk = dimHk(dim.n, dim.lv, MOBS[sp.k].lv) * tk.hp * dimRaidHk(map.dim.raid);
-      mob.ak = Math.max(1, tk.atk) / MOB_HARD;
+      mob.ak = Math.max(1, tk.atk) * dimAtkK(MOBS[mob.k].lv);
       if (mob.el === 1 && tk.traits > 1) mob.tr = rollTraits(S, tk.traits);
       dim.rt.mobs.push(mob);
     }
@@ -17105,7 +17138,7 @@ function dimBoss(S, dim) {
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   const [bh, ba] = dimRaidBoss(dim.map.dim.raid);
   mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid) * bh;
-  mob.ak = DIM.bossAtk * dim.tk.atk * ba / MOB_HARD;
+  mob.ak = DIM.bossAtk * dim.tk.atk * ba * dimAtkK(MOBS[mob.k].lv);
   mob.hp = mobMax(mob);
   mob.castAt = now + 4000;
   mob.stun = now + FB_WARN;
@@ -17391,9 +17424,9 @@ function chalSpawn(S, dim, k, n) {
   readyMob(S, mob);
   mob.temp = true; mob.dim = 1; mob.chal = 1; mob.tr = [];
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
-  mob.hk = DIM_CHAL.hp * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM_CHAL.lvK * up);
+  mob.hk = DIM_CHAL.hp * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM_CHAL.lvK * up) * chalGearHp(d.lv);
   // its script's state (56-boss-script.js) is the challenge's own: one object, with the tries and the wipe clock
-  dim.chal = Object.assign(bsNew(1 + DIM_CHAL.atkLv * up), { k, tries: 1, upAt: 0 });
+  dim.chal = Object.assign(bsNew((1 + DIM_CHAL.atkLv * up) * chalGearAtk(d.lv)), { k, tries: 1, upAt: 0 });
   mob.bs = dim.chal; mob.ak = dim.chal.ak;
   mob.castAt = now + 5000; mob.stun = now + 3000;
   dim.rt.mobs.push(mob);
@@ -18889,8 +18922,8 @@ const CHARM_OPT = {
   hp: { name: "HP", lo: 8, hi: 14, cap: 120, w: 18 },
   mp: { name: "MP", lo: 4, hi: 7, cap: 60, w: 14 },
   atk: { name: "공격력", lo: 1, hi: 2, cap: 30, w: 14 },
-  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 12, w: 18 },
-  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 12, w: 6 },
+  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 8, w: 18 },
+  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 10, w: 6 },
 };
 const CHARM_OPT_IDS = Object.keys(CHARM_OPT);
 /** The skills an option can name: every weapon active (damage), every skill that heals its caster (recovery). */
@@ -18985,8 +19018,9 @@ function charmOption(box, sh, have, level) {
     const base = o.pct ? ri(box, o.lo * 10, o.hi * 10) / 10 : ri(box, o.lo, o.hi);
     if (tries < 40 && have.some((h) => h[0] === kind && h[2] === arg)) continue;
     const shape = CHARM_SHAPES[sh];
-    const scale = level ? 1 + 0.08 * CHARM_LEVELS.indexOf(level) : 1;
-    const v = base * shape.k * scale;
+    const step = level ? CHARM_LEVELS.indexOf(level) : 0;
+    const extraAttack = kind === "atk" ? 2 * (step / (CHARM_LEVELS.length - 1)) ** 1.25 : 0;
+    const v = (base * (1 + 0.08 * step) + extraAttack) * shape.k * (level && o.pct ? 0.65 : 1);
     // Round whole bonuses down, with a size floor so a low roll still rewards fitting a larger new piece.
     const min = level ? shape.cells.length : 0;
     return [kind, o.pct ? Math.round(v * 10) / 10 : Math.max(min, Math.floor(v)), arg];
@@ -25689,7 +25723,7 @@ export function defs() {
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
-    affix, runes: RUNES, runeScale: RUNE_SCALE, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
+    affix, runes: RUNES, runeScale: RUNE_SCALE, runeStatCaps: RUNE_STAT_CAP, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
     elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
     elementPrefixes: ELEMENT_PREFIX_AFFIX,
     rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
@@ -25728,7 +25762,7 @@ export function defs() {
     //   max(1, entry.il − ilGap)   (what validateAction "eq" checks; an entry without `il` = items[id].req + ilGap, or 1 for req 1)
     // Gear `rarity` uses 0, 1, 2, 3 and 5, with 5 retained as the existing unique code.
     // Legendary and unique gear use their `lg` power's name prefix. Runes have a separate grade table.
-    ilGap: IL_GAP,
+    ilGap: IL_GAP, gearBaseScale: GEAR_BASE_SCALE,
     // the 아이템도감 (public/dex.js): the keys of `legend` that are live (can drop); the other rows are listed there as 준비 중
     pfxOn: Object.keys(LEGEND).filter((k) => PFX[k] && PFX[k].on && !PFX[k].off),
   };

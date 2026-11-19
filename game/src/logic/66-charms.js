@@ -80,8 +80,8 @@ const CHARM_OPT = {
   hp: { name: "HP", lo: 8, hi: 14, cap: 120, w: 18 },
   mp: { name: "MP", lo: 4, hi: 7, cap: 60, w: 14 },
   atk: { name: "공격력", lo: 1, hi: 2, cap: 30, w: 14 },
-  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 12, w: 18 },
-  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 12, w: 6 },
+  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 8, w: 18 },
+  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 10, w: 6 },
 };
 const CHARM_OPT_IDS = Object.keys(CHARM_OPT);
 /** The skills an option can name: every weapon active (damage), every skill that heals its caster (recovery). */
@@ -176,8 +176,9 @@ function charmOption(box, sh, have, level) {
     const base = o.pct ? ri(box, o.lo * 10, o.hi * 10) / 10 : ri(box, o.lo, o.hi);
     if (tries < 40 && have.some((h) => h[0] === kind && h[2] === arg)) continue;
     const shape = CHARM_SHAPES[sh];
-    const scale = level ? 1 + 0.08 * CHARM_LEVELS.indexOf(level) : 1;
-    const v = base * shape.k * scale;
+    const step = level ? CHARM_LEVELS.indexOf(level) : 0;
+    const extraAttack = kind === "atk" ? 2 * (step / (CHARM_LEVELS.length - 1)) ** 1.25 : 0;
+    const v = (base * (1 + 0.08 * step) + extraAttack) * shape.k * (level && o.pct ? 0.65 : 1);
     // Round whole bonuses down, with a size floor so a low roll still rewards fitting a larger new piece.
     const min = level ? shape.cells.length : 0;
     return [kind, o.pct ? Math.round(v * 10) / 10 : Math.max(min, Math.floor(v)), arg];

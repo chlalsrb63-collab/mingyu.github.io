@@ -111,7 +111,7 @@ function appraised(W, src, want, rv = X.CHARM_V, tier = 8) {
   for (const s of Object.values(C.shapes)) assert.equal(s.k, [1, 1.7, 2.3, 2.9][s.cells.length - 1]);
   assert.deepEqual(C.shapes.elbow.cells, [[0, 0], [0, 1], [1, 1]]);
   for (const id of Object.keys(C.shapes)) assert.equal(C.shapes[id].rot.length, 4);
-  assert.deepEqual(Object.fromEntries(Object.entries(C.opts).map(([k, o]) => [k, o.cap])), { st: 8, hp: 120, mp: 60, atk: 30, skd: 12, skh: 12 });
+  assert.deepEqual(Object.fromEntries(Object.entries(C.opts).map(([k, o]) => [k, o.cap])), { st: 8, hp: 120, mp: 60, atk: 30, skd: 8, skh: 10 });
   assert.equal(C.legend.echo.shape, "bar3"); assert.equal(C.legend.knot.shape, "elbow"); assert.equal(C.legend.lens.shape, "tile2");
   assert.equal(C.legend.knot.off, 1, "수호의 매듭참 waits for a party heal");
   assert.equal(C.legend.echo.sk, "rend"); assert.equal(C.legend.lens.sk, "pierce");
@@ -404,13 +404,16 @@ function appraised(W, src, want, rv = X.CHARM_V, tier = 8) {
   assert.ok(scaled > 1000, "progression increases most rolled options");
   assert.equal(glyphs.size, 20);
   assert.deepEqual([...shapes].sort(), Object.keys(C.shapes).filter((id) => id !== "pin").sort());
+  const endgameAttack = new Set();
   for (const il of C.levels) for (let seed = 1; seed <= 250; seed++) {
     const a = X.charmOption({ seed }, "bar2", [], il);
     const b = X.charmOption({ seed }, "bar3", [], il);
     const c = X.charmOption({ seed }, "bar4", [], il);
     assert.equal(a[0], b[0]); assert.equal(b[0], c[0]);
     assert.ok(a[1] < b[1] && b[1] < c[1], "the same roll rewards each extra cell");
+    if (il === 200 && c[0] === "atk") endgameAttack.add(c[1]);
   }
+  assert.deepEqual([...endgameAttack].sort((a, b) => a - b), [10, 15], "four-cell Lv.200 attack range");
 
   const strip = appraised(W, 3, (r) => r.sh === "bar4" && r.op.some(([kind]) => kind === "hp"), X.CHARM_V, 50);
   unlock(W);
@@ -567,26 +570,26 @@ function appraised(W, src, want, rv = X.CHARM_V, tier = 8) {
   W.p.hp = base.mhp + 14;
   assert.ok(W.act({ t: "charm_remove", uid: hp.uid }).ok);
   assert.equal(X.stats(W.p).mhp, base.mhp); assert.equal(W.p.hp, base.mhp, "HP held to the new maximum");
-  // caps: stats +8 each, attack +30 after gear, HP +120, MP +60, a skill's damage and healing +12% each
+  // caps: stats +8 each, attack +30 after gear, HP +120, MP +60, skill damage +8% and healing +10%.
   W.cs.placed = [];
   const put = (c, x, y) => W.cs.placed.push({ c, x, y, r: 0 });
   for (let i = 0; i < 5; i++) put(mk("pin", [["st", 5, "str"]]), i, 0);
   for (let i = 0; i < 5; i++) put(mk("pin", [["hp", 40, ""]]), i, 1);
   for (let i = 0; i < 5; i++) put(mk("pin", [["mp", 20, ""]]), i, 2);
-  for (let i = 0; i < 5; i++) put(mk("pin", [["atk", 9, ""]]), i, 3);
+  for (let i = 0; i < 5; i++) put(mk("pin", [["atk", 12, ""]]), i, 3);
   for (let i = 0; i < 3; i++) put(mk("pin", [["skd", 8.7, "rend"]]), i, 4);
   for (let i = 3; i < 5; i++) put(mk("pin", [["skh", 8.7, "soulbolt"]]), i, 4);
   W.p.stc = null;
   const sum = X.charmSum(W.ch);
   assert.deepEqual(sum.st, { str: 8, wil: 0, dex: 0, int: 0, wis: 0, luk: 0 });
-  assert.deepEqual([sum.hp, sum.mp, sum.atk, sum.skd.rend, sum.skh.soulbolt], [120, 60, 30, 12, 12]);
+  assert.deepEqual([sum.hp, sum.mp, sum.atk, sum.skd.rend, sum.skh.soulbolt], [120, 60, 30, 8, 10]);
   const st = X.stats(W.p);
   assert.equal(st.mhp, base.mhp + 120); assert.equal(st.mmp, base.mmp + 60);
   assert.ok(st.atk > base.atk + 30 && st.atk < base.atk + 30 + 8 * 1.2, `attack: +30 after gear, and eight points of strength (${base.atk} → ${st.atk})`);
   assert.equal(W.ch.st.str, clone(L.hero("기준", { lvl: 60, wk: "sword" })).st.str, "the sheet's own stats are untouched");
   assert.equal(W.ch.lvl, 60);
   const sv = W.self().charms.sum;
-  assert.deepEqual(sv, { st: [8, 0, 0, 0, 0, 0], hp: 120, mp: 60, atk: 30, skd: { rend: 12 }, skh: { soulbolt: 12 } });
+  assert.deepEqual(sv, { st: [8, 0, 0, 0, 0, 0], hp: 120, mp: 60, atk: 30, skd: { rend: 8 }, skh: { soulbolt: 10 } });
   // one legendary power at work: the first placed
   W.cs.placed = [];
   put(mk("bar3", [["hp", 20, ""]], "echo"), 0, 0); put(mk("tile2", [["mp", 10, ""]], "lens"), 0, 1);
@@ -880,7 +883,7 @@ function appraised(W, src, want, rv = X.CHARM_V, tier = 8) {
     return [a, b];
   };
   const [a0, b0] = dmg(false), [a1, b1] = dmg(true);
-  assert.ok(a1 / a0 > 1.06 && a1 / a0 < 1.18, `파워 슬래쉬 +12%: ×${(a1 / a0).toFixed(3)}`);
+  assert.ok(a1 / a0 > 1.04 && a1 / a0 < 1.12, `파워 슬래쉬 caps at +8%: ×${(a1 / a0).toFixed(3)}`);
   assert.ok(b1 / b0 > 0.95 && b1 / b0 < 1.05, `대지 가르기 as before: ×${(b1 / b0).toFixed(3)}`);
 }
 
