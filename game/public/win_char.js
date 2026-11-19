@@ -91,11 +91,11 @@ export function renderInv(s) {
     if (usable || bank) QS.dragSource(node, ["i", entry.id], { qs: usable, drop: bank });
     if (at) node.append(el("span", "qk", at));
     if (free) node.append(el("span", "qk equip-ready", "▲"));
-    // 새로 얻음: glows with a 새 tag until hovered (or tapped), sorted, or the bag is closed
+    // 새로 얻음: glows with a NEW badge until hovered (or tapped), sorted, or the bag is closed
     const k = invSig(entry);
     if (G.invNew && G.invNew.has(k)) {
       node.classList.add("new");
-      node.append(el("span", "nw", "새"));
+      node.append(el("span", "nw", "NEW"));
       node.addEventListener("pointerenter", () => { G.invNew.delete(k); node.classList.remove("new"); node.querySelector(".nw")?.remove(); }, { once: true });
     }
     grid.append(node);
