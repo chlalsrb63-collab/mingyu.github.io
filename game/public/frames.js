@@ -102,6 +102,46 @@ function plate(P) {
   return toUrl(G);
 }
 
+/**
+ * Ornaments that hang over a window's top corners (hud.css "window ornaments"): a meadow flower in leaves on the left, a
+ * sprout on the right. Fixed leaf greens with a dark green outline, so they read on every HUD theme.
+ */
+const ORN_C = { O: "#17301a", D: "#2e6a2c", M: "#4c9a3a", L: "#8ccd52", H: "#c9ef8a", P: "#f4a3c4", Q: "#c8608e", W: "#ffe3ef", Y: "#ffd84a", y: "#c8901a" };
+const ORN_FLOWER = [
+  "..OOO...........",
+  ".OWPPO..OO......",
+  "OWPPQQOOLHO.....",
+  "OPPYyQOLMLHO....",
+  "OPQyyQOMMMLO....",
+  ".OQQQOODMMO.....",
+  "..OOODDOOOO.....",
+  "...ODMO.........",
+  "..OLMDO.........",
+  ".OLHMO..........",
+  ".OLMDO..........",
+  "..OMO...........",
+  "..ODO...........",
+  "...O............",
+];
+const ORN_SPROUT = [
+  "......OO....",
+  ".....OHLO...",
+  "..OO.OLMO...",
+  ".OHLOOMDO...",
+  ".OLMMODO.OO.",
+  "..OMDOO.OLHO",
+  "...OODOOLMO.",
+  ".....ODMDO..",
+  ".....OOOO...",
+];
+function sprite(rows) {
+  const c = document.createElement("canvas");
+  c.width = rows[0].length * S; c.height = rows.length * S;
+  const g = c.getContext("2d");
+  rows.forEach((row, y) => [...row].forEach((ch, x) => { if (ORN_C[ch]) { g.fillStyle = ORN_C[ch]; g.fillRect(x * S, y * S, S, S); } }));
+  return `url(${c.toDataURL()})`;
+}
+
 /** `c` (#rgb / #rrggbb) at opacity `a`; anything else comes back as it is. */
 function fade(c, a) {
   const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
@@ -126,5 +166,6 @@ export function installFrames() {
   r.setProperty("--frt-brass-see", brass({ ...P, face: fade(P.face, see) }));
   r.setProperty("--frt-screen-see", screen({ ...P, scr: fade(P.scr, see) }));
   r.setProperty("--see-a", String(see));
+  if (!r.getPropertyValue("--orn-flower")) { r.setProperty("--orn-flower", sprite(ORN_FLOWER)); r.setProperty("--orn-sprout", sprite(ORN_SPROUT)); }
   dispatchEvent(new Event("hud-skin"));   // the smartphone's bezel (phone.js) is drawn in the same theme colours
 }

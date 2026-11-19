@@ -113,3 +113,7 @@ body.phone-ui #ph-app .window.docked > header:not(:has(> :not(.t, kbd, .pop, .x)
 #ph-app .wr-pv { width: 120px; height: 120px; }
 #ph-app .wr-worn { gap: 2px; }
 #ph-app .wr-worn .ws canvas { width: 28px; height: 28px; }
+/* frames.js ornaments over the phone's top corners (outside the border box: the bezel is 36px on top, 18px at the sides) */
+#phone .ph-body::before, #phone .ph-body::after { content: ""; position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated; background: no-repeat 0 0 / 100% 100%; }
+#phone .ph-body::before { left: -32px; top: -54px; width: 48px; height: 42px; background-image: var(--orn-flower); }
+#phone .ph-body::after { right: -28px; top: -50px; width: 36px; height: 27px; background-image: var(--orn-sprout); }

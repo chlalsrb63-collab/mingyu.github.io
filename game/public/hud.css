@@ -2219,3 +2219,17 @@ body.talkq #w-talk .talk-me[data-ok="1"] { display: block; }
 }
 #windows :is(#w-talk, #w-quest):not(.docked) { opacity: 1; }
 #w-talk .sq-card { background: var(--sf1-see); }
+
+/* window ornaments (owner 2026-11-19: borders less plain): a meadow flower in leaves over the top-left corner and a sprout
+   over the top-right one of every floating window (frames.js --orn-flower / --orn-sprout, drawn at 3 screen px per art px) */
+.window:not(.docked)::before, .window:not(.docked)::after {
+  content: ""; position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated; background: no-repeat 0 0 / 100% 100%;
+}
+.window:not(.docked)::before { left: -18px; top: -20px; width: 48px; height: 42px; background-image: var(--orn-flower); }
+.window:not(.docked)::after { right: -12px; top: -16px; width: 36px; height: 27px; background-image: var(--orn-sprout); }
+/* the same ornaments on the bottom HUD bar (not in the landscape layout, where #dock is display: contents) */
+body:not([data-lay="land"]) #dock::before, body:not([data-lay="land"]) #dock::after {
+  content: ""; position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated; background: no-repeat 0 0 / 100% 100%;
+}
+body:not([data-lay="land"]) #dock::before { left: 2px; top: -37px; width: 48px; height: 42px; background-image: var(--orn-flower); }
+body:not([data-lay="land"]) #dock::after { right: 4px; top: -25px; width: 36px; height: 27px; background-image: var(--orn-sprout); }
