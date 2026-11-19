@@ -28,9 +28,11 @@
 
 - 기존 최소 교전 시간은 2분 30초다. 2인 기본 무기 파티는 모든 경우에서 두 보스에 실패했다. 현재 4인 시전 차단에 필요한 레이드 피해 보정 전 누적 피해는 벨모라 약 23,803(6초), 모비화 약 180,080(7초)이다.
 - 장비 격차를 키울 때 일반 몬스터와 주간 토벌을 따로 검증해야 한다. 토벌에서는 클리어 시간, 파티 생존, 시전 차단을 함께 측정한다. 사람 플레이와 다른 직업 조합은 미측정이다.
+- 필드 레이드 4종에서 `dimrift.mjs`의 4인 봇을 두 시드씩 실행했다. 현재 8회 모두 5.0~9.0분에 클리어했다. 장비 격차 두 배 안에서는 3.4~6.4분에 클리어했고, 8회 중 5회가 기존 하한 4분을 밑돌았다.
 
 ## 검증
 
 - `npm.cmd run build:logic`에서 생성 파일이 최신이었다. `node scripts/test-all.mjs itemlevel balance dimrift bosses2 bossscript regional-bosses charms rune-sockets rune-powers` 9/9 통과.
+- 검증 중 추가된 로컬 `main`의 추적자·검무사 단검 보정 `0e1e866`을 병합했다. 생성 파일 최신, `node scripts/test-all.mjs itemlevel balance jobs jobfreedom bosses2` 5/5 통과.
 - `bosses2.mjs`의 동일 봇을 세 규칙 버전으로 실행했다. 두 배 안의 수치와 토벌 비교는 메모리에서 검증했다.
 - Antigravity CLI 1.5.12에서 `gemini-4-neon-low`로 측정값을 검토했다(`SUCCESS`). 레벨에 따라 필요한 체력 보정이 Lv.50 ×1.33, Lv.100 ×1.67, Lv.200 ×1.97로 다르며, 시전 차단과 노후 장비 생존을 별도로 확인해야 한다는 결과다. Antigravity는 전달받은 측정값을 교차 검토했다. 테스트는 Codex가 실행했다.
