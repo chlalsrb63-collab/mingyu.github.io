@@ -552,7 +552,7 @@ const MOBS = {
     lv: 28, hp: 4300, atk: 101, def: 13, spd: 36, xp: 0, gold: [0, 0], aggro: 125, range: 70, cd: 1500, shot: true, boss: true, questOnly: true,
     fan: 112, script: { gap: 5800, reach: 148, pats: [["검댕 깃털", "fan"], ["돛대 덮치기", "leapslam"]] } },
   jaemaei: {
-    name: "절망의 친칠라 재매이", lore: "제례전의 회색 털짐승. 금테 안경 너머로 초를 세던 두 눈은 아직 남아 있고, 등에 돋은 뼈와 촉수는 저마다의 박자로 몸을 끌어당긴다.",
+    name: "재매이", epithet: "절망의 친칠라 재매이", lore: "제례전의 회색 털짐승. 금테 안경 너머로 초를 세던 두 눈은 아직 남아 있고, 등에 돋은 뼈와 촉수는 저마다의 박자로 몸을 끌어당긴다.",
     lv: 10, hp: 330, atk: 36, def: 5, spd: 34, xp: 160, gold: [18, 36], aggro: 120, range: 25, cd: 1400,
     boss: true, fan: 145, charge: 98,
     script: {

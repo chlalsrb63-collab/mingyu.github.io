@@ -725,7 +725,7 @@ function quickClear(S, _dim, shares, fight) {
   assert.equal(last("ha", "dim")[16], "hanok");
   quickClear(S, S.dims[a.map], { ha: 1, hb: 1 }, (dim, boss) => {
     assert.equal(boss.k, "jaemaei");
-    assert.equal(L.defs().mobs[boss.k].name, "절망의 친칠라 재매이");
+    assert.equal(L.defs().mobs[boss.k].name, "재매이");
     const max = X.mobMax(boss), turns = [];
     const pulse = () => {
       for (const p of [a, b]) { p.hp = 1e6; p.x = boss.x; p.y = boss.y; }
