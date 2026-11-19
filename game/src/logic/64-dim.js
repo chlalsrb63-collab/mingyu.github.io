@@ -297,8 +297,10 @@ function dimBoss(S, dim) {
   mob.tr = rollTraits(S, dim.tk.boss || 2);
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   const [bh, ba] = dimRaidBoss(dim.map.dim.raid);
-  mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid) * bh;
-  mob.ak = DIM.bossAtk * dim.tk.atk * ba * dimAtkK(MOBS[mob.k].lv);
+  // A named master retains the level-band tuning of the procedurally selected boss.
+  const own = MOBS[mob.k], band = MOBS[m.dim.bossScaleK || mob.k];
+  mob.hk = dimHk(dim.n, dim.lv, band.lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid) * bh * (band.hp / own.hp);
+  mob.ak = DIM.bossAtk * dim.tk.atk * ba * dimAtkK(band.lv) * (band.atk / own.atk);
   mob.hp = mobMax(mob);
   mob.castAt = now + 4000;
   mob.stun = now + FB_WARN;
@@ -806,8 +808,12 @@ function dimDefs() {
     rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near, minLv: shownLv(DIM.minTier),
     // the 3-floor raid and the boss challenge: [key, name, level needed, the marked cast, pattern names, steps [[level shown, level needed]…], weekly reward bit, rotating 0/1]
     raid: { floors: DIM.floors, daily: DIM.dailyFull, downMs: DIM.downMs, names: DIM_FLOORS.map((c) => c.name), hanokNames: HANOK_FLOORS.map((c) => c.name) },
-    // every raid in display order: [key, name, shown level window, the three floor names, the art theme of its ground]
-    raids: Object.keys(RAID).map((k) => ({ k, name: RAID[k].name, minLv: RAID[k].minLv, maxLv: RAID[k].maxLv || MAXLV, floors: RAID[k].floors.map((c) => c.name), theme: RAID[k].theme || (k === "hanok" ? "interior" : "underground") })),
+    // Every raid in display order: level window, floor names, art theme and optional named master.
+    raids: Object.entries(RAID).map(([k, r]) => ({
+      k, name: r.name, minLv: r.minLv, maxLv: r.maxLv || MAXLV,
+      floors: r.floors.map((floor) => floor.name), theme: r.theme || (k === "hanok" ? "interior" : "underground"),
+      ...(r.master ? { master: r.master } : {}),
+    })),
     chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0, ((R) => [R.stone, R.rune | 0, R.gear | 0])(DIM_CHAL.bosses[k].rotation ? DIM_CHAL.rotationBig : DIM_CHAL.bosses[k].big || DIM_CHAL.big)]), stepNames: DIM_CHAL.stepNames,
       stepR: DIM_CHAL.stepR },
   };

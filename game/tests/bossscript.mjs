@@ -180,4 +180,7 @@ assert.equal(MA.artKind("bloomwhale", { bst: 1, bph: 1 }), "bloomwhale_ch");
 assert.equal(MA.artKind("bloodhorn", { bst: 1, bph: 2 }), "bloodhorn_p2", "no channel art: the phase's");
 assert.equal(MA.artKind("bloodhorn", { bst: 0, bph: 1 }), "bloodhorn");
 assert.equal(MA.artKind("lambmaw", { bst: 2, bph: 3 }), "lambmaw");
+assert.equal(MA.artKind("jaemaei", { bst: 0, bph: 1 }), "jaemaei");
+assert.equal(MA.artKind("jaemaei", { bst: 0, bph: 2 }), "jaemaei_p2");
+assert.equal(MA.artKind("jaemaei", { bst: 1, bph: 3 }), "jaemaei_ch");
 console.log("bossscript: ok");

@@ -1051,6 +1051,34 @@ const MOBS = {
   airship_lookout: { name: "누네크", epithet: "흑기수 외눈수리", lore: "깃이 찢어진 외눈수리가 정찰등 하나를 낚아채 매달고 다닌다. 빛을 본 조류 떼가 그 뒤를 따른다.",
     lv: 28, hp: 4300, atk: 101, def: 13, spd: 36, xp: 0, gold: [0, 0], aggro: 125, range: 70, cd: 1500, shot: true, boss: true, questOnly: true,
     fan: 112, script: { gap: 5800, reach: 148, pats: [["검댕 깃털", "fan"], ["돛대 덮치기", "leapslam"]] } },
+  jaemaei: {
+    name: "절망의 친칠라 재매이", lore: "제례전의 회색 털짐승. 금테 안경 너머로 초를 세던 두 눈은 아직 남아 있고, 등에 돋은 뼈와 촉수는 저마다의 박자로 몸을 끌어당긴다.",
+    lv: 10, hp: 330, atk: 36, def: 5, spd: 34, xp: 160, gold: [18, 36], aggro: 120, range: 25, cd: 1400,
+    boss: true, fan: 145, charge: 98,
+    script: {
+      tell: true, cast: "절망의 공명", every: 5, castMs: 5000, stunMs: 4800, stag: 0.04, blast: 2.15,
+      gap: 3000, reach: 210, enrage: 160000,
+      pats: [
+        ["휘어진 촉수", "cone", { ms: 1150, r: 62, half: 0.95, k: 1.4 }],
+        ["뼛가시 탄막", "fan2"],
+        ["골절의 파동", "punch", { ms: 1000, r: 17, ms2: 650, r2: 30 }],
+      ],
+      phases: [
+        { at: 0.65, gap: 2700, pats: [
+          ["갈비뼈의 고리", "donut", { ms: 1350, r0: 26, r: 69, k: 1.6 }],
+          ["뒤틀린 연속 돌진", "charge2"],
+          ["뼛가시 탄막", "fan2"],
+          ["절망의 낙인", "mark", { ms: 2200, r: 23, n: 2, k: 1.25 }],
+        ] },
+        { at: 0.30, cast: 1, gap: 2150, blast: 2.35, pats: [
+          ["쌍촉수 난타", "cone", { both: 1, ms: 1050, r: 65, half: 0.78, k: 1.6 }],
+          ["갈비뼈의 고리", "donut", { ms: 1150, r0: 23, r: 74, k: 1.75 }],
+          ["뒤틀린 연속 돌진", "charge2"],
+          ["절망의 낙인", "mark", { ms: 2000, r: 23, n: 3, k: 1.4 }],
+        ] },
+      ],
+    },
+  },
   crownpeacock: { name: "찬란조", epithet: "금관 공작", lv: 42, hp: 4200, atk: 124, def: 30, spd: 46, xp: 1900, gold: [104, 180], aggro: 92, range: 22, cd: 1300, fan: 150, charge: 120, pool: 28, poolKind: 1 },
   // bosses-2 (docs/design/bosses-2.md §2–3, §6–7): 혈루 왕도마뱀 keeps its own lair in mesa (a boss row: its health is the design's
   // field-boss figure 4,800 × 14, its atk 128 × 1.8), 망치 갯가재 is the coast's field boss (FIELD_BOSS: × 14 / × 1.8 at spawn).
@@ -4559,7 +4587,7 @@ const DIM_FLOORS = [
 const HANOK_FLOORS = [
   { name: "달그림자 별채", rooms: [18, 21], loops: [3, 6], packs: 1.4, shapes: ["plain", "plain", "ell"], hallFloor: "l" },
   { name: "겹살창 안채", rooms: [17, 20], loops: [3, 6], packs: 1.4, shapes: ["plain", "ell", "ell", "cross"], hallFloor: "l" },
-  { name: "붉은기둥 제례전", rooms: [17, 20], loops: [4, 7], packs: 1.1, shapes: ["plain", "plain", "cross"], hallFloor: "x" },
+  { name: "붉은기둥 제례전", rooms: [17, 20], loops: [4, 7], packs: 1.1, shapes: ["plain", "plain", "cross"], hallFloor: "x", masterSize: [22, 18] },
 ];
 const HANOK_DRESS = {
   guest: [["edge", "t", 0.2], ["edge", "g", 0.12]],
@@ -4635,8 +4663,15 @@ function dimBuild(cfg, seed) {
   const [GX, GY, CW, CH] = DIM.grid, NC = GX * GY;
   const cellBox = (c) => { const i = c % GX, j = (c / GX) | 0; return [2 + i * CW, 2 + j * CH, 2 + i * CW + CW - 1, 2 + j * CH + CH - 1]; };
   const adj = (c) => { const i = c % GX, j = (c / GX) | 0, out = []; if (i > 0) out.push(c - 1); if (i < GX - 1) out.push(c + 1); if (j > 0) out.push(c - GX); if (j < GY - 1) out.push(c + GX); return out; };
-  const nMain = ri(box, cc.rooms[0], cc.rooms[1]);
-  const used = [ri(box, 0, NC - 1)];
+  const roomBudget = ri(box, cc.rooms[0], cc.rooms[1]);
+  const masterCells = [];
+  if (cc.masterSize) {
+    // Reserve a two-by-two corner before the other rooms grow around the hall.
+    const x = ri(box, 0, 1) * (GX - 2), y = ri(box, 0, 1) * (GY - 2), c = y * GX + x;
+    masterCells.push(c, c + 1, c + GX, c + GX + 1);
+  }
+  const used = masterCells.length ? masterCells.slice() : [ri(box, 0, NC - 1)];
+  const nMain = roomBudget + used.length - 1;   // the reserved cells count as one room
   while (used.length < nMain) {
     const edge = [];
     for (const c of used) for (const n of adj(c)) if (!used.includes(n) && !edge.includes(n)) edge.push(n);
@@ -4693,6 +4728,12 @@ function dimBuild(cfg, seed) {
     }
     return (i, j) => mask[j * W + i] === 1;
   };
+  const masterK = masterCells.length ? rooms.length : -1;
+  if (masterK >= 0) {
+    const [w, h] = cc.masterSize, [x0, y0] = cellBox(masterCells[0]);
+    const x = x0 + Math.floor((2 * CW - w) / 2), y = y0 + Math.floor((2 * CH - h) / 2);
+    addRoom(masterCells, "boss", "plain", x, y, x + w - 1, y + h - 1);
+  }
   const SHAPES = ["plain", "cross", "round", "octagon", "ell", "ring", "pillared", "ragged"], BIG = ["pillared", "plain", "ring", "ragged", "cross"];
   for (const c of used) {
     if (cellRoom[c] >= 0) continue;
@@ -4792,11 +4833,13 @@ function dimBuild(cfg, seed) {
   const open = (i) => m.g[(i / W) | 0][i % W] !== "W";
   const tileOf = (r) => r.cy * W + r.cx;
   const far = (from) => { const d = bfs(W, H, tileOf(rooms[from]), open); let best = from; rooms.forEach((r, k) => { if (d[tileOf(r)] > d[tileOf(rooms[best])]) best = k; }); return best; };
-  const startK = far(far(0));
+  const startK = far(masterK >= 0 ? masterK : far(0));
   let dS = bfs(W, H, tileOf(rooms[startK]), open);
   const span = Math.max(...rooms.map((r) => dS[tileOf(r)]));
-  let bossK = -1;
-  rooms.forEach((r, k) => { if (k !== startK && dS[tileOf(r)] >= span * 0.85 && (bossK < 0 || r.area > rooms[bossK].area)) bossK = k; });
+  let bossK = masterK;
+  if (bossK < 0) rooms.forEach((r, k) => {
+    if (k !== startK && dS[tileOf(r)] >= span * 0.85 && (bossK < 0 || r.area > rooms[bossK].area)) bossK = k;
+  });
   // the two ends are open halls: room to arrive in, room to fight in
   const plainOut = (k) => {
     const r = rooms[k];
@@ -4878,7 +4921,7 @@ function dimBuild(cfg, seed) {
     },
     rows(k, t, [ch]) { const r = rooms[k]; for (const [x, y] of t) if ((y - r.y0) % 2 === 1 && (x - r.x0) % 4 !== 0 && Math.abs(x - r.cx) > 1 && y > r.y0 && y < r.y1 && canPut(x, y, k)) m.o[y][x] = ch; },
     altar(k, t, [ch, fl]) {
-      const r = rooms[k], y = r.cy - 3;
+      const r = rooms[k], y = k === masterK ? r.y0 + 1 : r.cy - 3;
       if (canPut(r.cx, y, k)) { m.o[y][r.cx] = ch; for (const x of [r.cx - 2, r.cx + 2]) if (canPut(x, y, k)) m.o[y][x] = fl; }
     },
     ring(k, t, [ch, R]) { const r = rooms[k]; for (let a = 0; a < 12; a++) { if (a % 3 === 1) continue; const x = r.cx + Math.round(Math.cos(a * Math.PI / 6) * R), y = r.cy + Math.round(Math.sin(a * Math.PI / 6) * R * 0.8); if (canPut(x, y, k)) m.o[y][x] = ch; } },
@@ -5020,10 +5063,11 @@ function dimBuild(cfg, seed) {
     elites++;
   });
   const bs = rooms[bossK];
+  const bossScaleK = dimBossKind(art, lv, pool), master = floor === DIM.floors && RAID[raid].master;
   m.dim = {
     rooms: rooms.map(({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt }) => ({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt })),
     start: [st.cx, st.cy], boss: [bs.cx, bs.cy], bossRoom: bossK, startRoom: startK, door, dead, spawns, pool,
-    bossK: dimBossKind(art, lv, pool), path: dS[tileOf(bs)], elites, cap: DIM.cap, links: links.map(([a, b]) => [a, b]),
+    bossK: master || bossScaleK, ...(master ? { bossScaleK } : {}), path: dS[tileOf(bs)], elites, cap: DIM.cap, links: links.map(([a, b]) => [a, b]),
     style, floor, hanok, raid, loops: links.length - (rooms.filter((r) => r.kind !== "vault" && r.kind !== "den").length - 1),
   };
   finalize(m);
@@ -5251,7 +5295,7 @@ const FIELD_RAIDS = {
 /** Every raid, in display order: `under` (the four underground themes), `hanok`, then the four field raids. `maxLv` 0: no ceiling. */
 const RAID = {
   under: { name: "차원의 균열", minLv: 37, maxLv: 0, floors: DIM_FLOORS },
-  hanok: { name: "달그림자 한옥", minLv: 37, maxLv: 0, floors: HANOK_FLOORS },
+  hanok: { name: "달그림자 한옥", minLv: 37, maxLv: 0, floors: HANOK_FLOORS, master: "jaemaei" },
   ...Object.fromEntries(Object.entries(FIELD_RAIDS).map(([k, r]) => [k, { ...r, field: 1 }])),
 };
 const dimRaidKey = (k) => (typeof k === "string" && Object.hasOwn(RAID, k) ? k : "under");
@@ -12495,9 +12539,10 @@ function bsCast(S, rt, mob, tgt) {
     for (const o of folk) toast(o, `${d.name}${pp(d.name, "이가")} [${B.cast}]${pp(B.cast, "을를")} 준비합니다! 몰아쳐서 무력화하세요!`);
     return;
   }
-  const i = c.pi++ % pats.length, o = { ...BS_PAT[pats[i][1]], ...pats[i][2] };
+  const i = c.pi++ % pats.length, [name, pattern, overrides] = pats[i];
+  const o = { ...BS_PAT[pattern], ...overrides };
   let dur = 1500;
-  switch (pats[i][1]) {
+  switch (pattern) {
     case "charge":    // the plain run at its target
       bsCharge(S, rt, mob, tgt); dur = CHARGE_MS + 800; break;
     case "fan":       // one volley of five
@@ -12551,14 +12596,14 @@ function bsCast(S, rt, mob, tgt) {
     case "cone": {    // a wedge toward its target (or its back): step aside
       const h = { x: Math.round(mob.x), y: Math.round(mob.y), r: o.r, r0: 0, ang: 0, half: 0 };
       let extra = [o.r0];
-      if (pats[i][1] === "donut") h.r0 = o.r0;
+      if (pattern === "donut") h.r0 = o.r0;
       else {
         // angles go on the wire in milliradians, and the hit test uses the same rounded numbers
         const am = Math.round((Math.atan2(tgt.y - mob.y, tgt.x - mob.x) + (o.back ? Math.PI : 0)) * 1000), hm = Math.round(o.half * 1000);
         h.ang = am / 1000; h.half = hm / 1000; extra = [am, hm];
         mob.dir = Math.cos(h.ang) < 0 ? 1 : 2;
       }
-      bsShape(S, rt, mob, h, o.ms, atk * o.k, pats[i][1] === "donut" ? 0 : 1, extra);
+      bsShape(S, rt, mob, h, o.ms, atk * o.k, pattern === "donut" ? 0 : 1, extra);
       if (o.both) { const am = extra[0] + (extra[0] > 0 ? -3142 : 3142); bsShape(S, rt, mob, { ...h, ang: am / 1000 }, o.ms, atk * o.k, 1, [am, extra[1]]); }
       if (o.rings) q.push({ at: now + o.ms, f: "rings" });
       mob.stun = now + o.ms + (o.rings ? 1200 : 0); dur = o.ms + (o.rings ? 2100 : 300); break;
@@ -12590,7 +12635,9 @@ function bsCast(S, rt, mob, tgt) {
   if (P && P.steps) for (const st of P.steps) q.push({ ...st, at: now + (st.dt || 0) });
   q.sort((a, b) => a.at - b.at);
   mob.castAt = now + dur + gap;
-  rt.ev.push(["bc", mob.id, i]);
+  // The optional named tell carries the timing and direction of the first wind-up.
+  const windMs = o.ms ?? (pattern === "charge2" ? CHARGE_MS : VOLLEY_MS);
+  rt.ev.push(B.tell ? ["bc", mob.id, i, windMs, name, Math.round(tgt.x - mob.x), Math.round(tgt.y - mob.y)] : ["bc", mob.id, i]);
 }
 
 /** Every tick of a scripted fight: the phase, the marked cast running out, queued steps, the enrage (soft, then hard). */
@@ -17180,8 +17227,10 @@ function dimBoss(S, dim) {
   mob.tr = rollTraits(S, dim.tk.boss || 2);
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   const [bh, ba] = dimRaidBoss(dim.map.dim.raid);
-  mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid) * bh;
-  mob.ak = DIM.bossAtk * dim.tk.atk * ba * dimAtkK(MOBS[mob.k].lv);
+  // A named master retains the level-band tuning of the procedurally selected boss.
+  const own = MOBS[mob.k], band = MOBS[m.dim.bossScaleK || mob.k];
+  mob.hk = dimHk(dim.n, dim.lv, band.lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid) * bh * (band.hp / own.hp);
+  mob.ak = DIM.bossAtk * dim.tk.atk * ba * dimAtkK(band.lv) * (band.atk / own.atk);
   mob.hp = mobMax(mob);
   mob.castAt = now + 4000;
   mob.stun = now + FB_WARN;
@@ -17689,8 +17738,12 @@ function dimDefs() {
     rcMs: DIM.rcMs, obelisk: DIM_TOWN.ob, reviveMs: DIM.reviveMs, near: DIM.near, minLv: shownLv(DIM.minTier),
     // the 3-floor raid and the boss challenge: [key, name, level needed, the marked cast, pattern names, steps [[level shown, level needed]…], weekly reward bit, rotating 0/1]
     raid: { floors: DIM.floors, daily: DIM.dailyFull, downMs: DIM.downMs, names: DIM_FLOORS.map((c) => c.name), hanokNames: HANOK_FLOORS.map((c) => c.name) },
-    // every raid in display order: [key, name, shown level window, the three floor names, the art theme of its ground]
-    raids: Object.keys(RAID).map((k) => ({ k, name: RAID[k].name, minLv: RAID[k].minLv, maxLv: RAID[k].maxLv || MAXLV, floors: RAID[k].floors.map((c) => c.name), theme: RAID[k].theme || (k === "hanok" ? "interior" : "underground") })),
+    // Every raid in display order: level window, floor names, art theme and optional named master.
+    raids: Object.entries(RAID).map(([k, r]) => ({
+      k, name: r.name, minLv: r.minLv, maxLv: r.maxLv || MAXLV,
+      floors: r.floors.map((floor) => floor.name), theme: r.theme || (k === "hanok" ? "interior" : "underground"),
+      ...(r.master ? { master: r.master } : {}),
+    })),
     chal: { limit: DIM_CHAL.limit, enrage: DIM_CHAL.enrage, castMs: DIM_CHAL.castMs, bosses: CHAL_KEYS.map((k) => [k, MOBS[k].name, chalMinLv(k), DIM_CHAL.bosses[k].cast, DIM_CHAL.bosses[k].pats.map((q) => q[0]), chalSteps(k).map(([, L], s) => [L, chalMinLv(k, s)]), chalRewardBit(k), DIM_CHAL.bosses[k].rotation ? 1 : 0, ((R) => [R.stone, R.rune | 0, R.gear | 0])(DIM_CHAL.bosses[k].rotation ? DIM_CHAL.rotationBig : DIM_CHAL.bosses[k].big || DIM_CHAL.big)]), stepNames: DIM_CHAL.stepNames,
       stepR: DIM_CHAL.stepR },
   };

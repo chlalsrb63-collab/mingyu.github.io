@@ -117,7 +117,7 @@ const FIELD_RAIDS = {
 /** Every raid, in display order: `under` (the four underground themes), `hanok`, then the four field raids. `maxLv` 0: no ceiling. */
 const RAID = {
   under: { name: "차원의 균열", minLv: 37, maxLv: 0, floors: DIM_FLOORS },
-  hanok: { name: "달그림자 한옥", minLv: 37, maxLv: 0, floors: HANOK_FLOORS },
+  hanok: { name: "달그림자 한옥", minLv: 37, maxLv: 0, floors: HANOK_FLOORS, master: "jaemaei" },
   ...Object.fromEntries(Object.entries(FIELD_RAIDS).map(([k, r]) => [k, { ...r, field: 1 }])),
 };
 const dimRaidKey = (k) => (typeof k === "string" && Object.hasOwn(RAID, k) ? k : "under");

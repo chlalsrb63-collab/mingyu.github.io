@@ -129,9 +129,10 @@ function bsCast(S, rt, mob, tgt) {
     for (const o of folk) toast(o, `${d.name}${pp(d.name, "이가")} [${B.cast}]${pp(B.cast, "을를")} 준비합니다! 몰아쳐서 무력화하세요!`);
     return;
   }
-  const i = c.pi++ % pats.length, o = { ...BS_PAT[pats[i][1]], ...pats[i][2] };
+  const i = c.pi++ % pats.length, [name, pattern, overrides] = pats[i];
+  const o = { ...BS_PAT[pattern], ...overrides };
   let dur = 1500;
-  switch (pats[i][1]) {
+  switch (pattern) {
     case "charge":    // the plain run at its target
       bsCharge(S, rt, mob, tgt); dur = CHARGE_MS + 800; break;
     case "fan":       // one volley of five
@@ -185,14 +186,14 @@ function bsCast(S, rt, mob, tgt) {
     case "cone": {    // a wedge toward its target (or its back): step aside
       const h = { x: Math.round(mob.x), y: Math.round(mob.y), r: o.r, r0: 0, ang: 0, half: 0 };
       let extra = [o.r0];
-      if (pats[i][1] === "donut") h.r0 = o.r0;
+      if (pattern === "donut") h.r0 = o.r0;
       else {
         // angles go on the wire in milliradians, and the hit test uses the same rounded numbers
         const am = Math.round((Math.atan2(tgt.y - mob.y, tgt.x - mob.x) + (o.back ? Math.PI : 0)) * 1000), hm = Math.round(o.half * 1000);
         h.ang = am / 1000; h.half = hm / 1000; extra = [am, hm];
         mob.dir = Math.cos(h.ang) < 0 ? 1 : 2;
       }
-      bsShape(S, rt, mob, h, o.ms, atk * o.k, pats[i][1] === "donut" ? 0 : 1, extra);
+      bsShape(S, rt, mob, h, o.ms, atk * o.k, pattern === "donut" ? 0 : 1, extra);
       if (o.both) { const am = extra[0] + (extra[0] > 0 ? -3142 : 3142); bsShape(S, rt, mob, { ...h, ang: am / 1000 }, o.ms, atk * o.k, 1, [am, extra[1]]); }
       if (o.rings) q.push({ at: now + o.ms, f: "rings" });
       mob.stun = now + o.ms + (o.rings ? 1200 : 0); dur = o.ms + (o.rings ? 2100 : 300); break;
@@ -224,7 +225,9 @@ function bsCast(S, rt, mob, tgt) {
   if (P && P.steps) for (const st of P.steps) q.push({ ...st, at: now + (st.dt || 0) });
   q.sort((a, b) => a.at - b.at);
   mob.castAt = now + dur + gap;
-  rt.ev.push(["bc", mob.id, i]);
+  // The optional named tell carries the timing and direction of the first wind-up.
+  const windMs = o.ms ?? (pattern === "charge2" ? CHARGE_MS : VOLLEY_MS);
+  rt.ev.push(B.tell ? ["bc", mob.id, i, windMs, name, Math.round(tgt.x - mob.x), Math.round(tgt.y - mob.y)] : ["bc", mob.id, i]);
 }
 
 /** Every tick of a scripted fight: the phase, the marked cast running out, queued steps, the enrage (soft, then hard). */

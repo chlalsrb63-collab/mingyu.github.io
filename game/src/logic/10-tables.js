@@ -551,6 +551,34 @@ const MOBS = {
   airship_lookout: { name: "누네크", epithet: "흑기수 외눈수리", lore: "깃이 찢어진 외눈수리가 정찰등 하나를 낚아채 매달고 다닌다. 빛을 본 조류 떼가 그 뒤를 따른다.",
     lv: 28, hp: 4300, atk: 101, def: 13, spd: 36, xp: 0, gold: [0, 0], aggro: 125, range: 70, cd: 1500, shot: true, boss: true, questOnly: true,
     fan: 112, script: { gap: 5800, reach: 148, pats: [["검댕 깃털", "fan"], ["돛대 덮치기", "leapslam"]] } },
+  jaemaei: {
+    name: "절망의 친칠라 재매이", lore: "제례전의 회색 털짐승. 금테 안경 너머로 초를 세던 두 눈은 아직 남아 있고, 등에 돋은 뼈와 촉수는 저마다의 박자로 몸을 끌어당긴다.",
+    lv: 10, hp: 330, atk: 36, def: 5, spd: 34, xp: 160, gold: [18, 36], aggro: 120, range: 25, cd: 1400,
+    boss: true, fan: 145, charge: 98,
+    script: {
+      tell: true, cast: "절망의 공명", every: 5, castMs: 5000, stunMs: 4800, stag: 0.04, blast: 2.15,
+      gap: 3000, reach: 210, enrage: 160000,
+      pats: [
+        ["휘어진 촉수", "cone", { ms: 1150, r: 62, half: 0.95, k: 1.4 }],
+        ["뼛가시 탄막", "fan2"],
+        ["골절의 파동", "punch", { ms: 1000, r: 17, ms2: 650, r2: 30 }],
+      ],
+      phases: [
+        { at: 0.65, gap: 2700, pats: [
+          ["갈비뼈의 고리", "donut", { ms: 1350, r0: 26, r: 69, k: 1.6 }],
+          ["뒤틀린 연속 돌진", "charge2"],
+          ["뼛가시 탄막", "fan2"],
+          ["절망의 낙인", "mark", { ms: 2200, r: 23, n: 2, k: 1.25 }],
+        ] },
+        { at: 0.30, cast: 1, gap: 2150, blast: 2.35, pats: [
+          ["쌍촉수 난타", "cone", { both: 1, ms: 1050, r: 65, half: 0.78, k: 1.6 }],
+          ["갈비뼈의 고리", "donut", { ms: 1150, r0: 23, r: 74, k: 1.75 }],
+          ["뒤틀린 연속 돌진", "charge2"],
+          ["절망의 낙인", "mark", { ms: 2000, r: 23, n: 3, k: 1.4 }],
+        ] },
+      ],
+    },
+  },
   crownpeacock: { name: "찬란조", epithet: "금관 공작", lv: 42, hp: 4200, atk: 124, def: 30, spd: 46, xp: 1900, gold: [104, 180], aggro: 92, range: 22, cd: 1300, fan: 150, charge: 120, pool: 28, poolKind: 1 },
   // bosses-2 (docs/design/bosses-2.md §2–3, §6–7): 혈루 왕도마뱀 keeps its own lair in mesa (a boss row: its health is the design's
   // field-boss figure 4,800 × 14, its atk 128 × 1.8), 망치 갯가재 is the coast's field boss (FIELD_BOSS: × 14 / × 1.8 at spawn).

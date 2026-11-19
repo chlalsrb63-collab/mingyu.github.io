@@ -32,9 +32,12 @@ for (const q of D.quests) {
 }
 // Retired stand-ins stay for old collections, and summoned adds live in their encounter.
 const NOT_PLACED = new Set("serpentwing_ash nightbat hagfishhead catsplit_gold toadbrood_poison mothface_bile ribdeer_bile lambmaw_bone eyecrow_ash twingoat_gold bearmaw_gold crabskull_blood fishwalker_frost eelknot_frost squidrat_blood gatorhalf_steel spiderhand_bone owlstare_gold fishwalker_blood crabskull_frost moleworm_gold spinescorp ribvulture crownpeacock bloodshard clubshrimp".split(" "));
-const arenaBosses = new Set(D.dim.chal.bosses.map(([k]) => k));
-for (const k of Object.keys(D.mobs)) assert.ok(homes[k] || arenaBosses.has(k) || NOT_PLACED.has(k) || D.mobs[k].questOnly, "every monster has a home or encounter: " + k);
-for (const k of arenaBosses) assert.ok(D.mobs[k]?.boss, `${k} is a declared boss`);
+const encounterBosses = new Set([
+  ...D.dim.chal.bosses.map(([k]) => k),
+  ...D.dim.raids.map((raid) => raid.master).filter(Boolean),
+]);
+for (const k of Object.keys(D.mobs)) assert.ok(homes[k] || encounterBosses.has(k) || NOT_PLACED.has(k) || D.mobs[k].questOnly, "every monster has a home or encounter: " + k);
+for (const k of encounterBosses) assert.ok(D.mobs[k]?.boss, `${k} is a declared boss`);
 
 // ── walk the whole world: from each arrival point, every door of that map can be reached on foot,
 // and every door leads somewhere. (Stand on a door tile, nudge, and see where you come out.)
