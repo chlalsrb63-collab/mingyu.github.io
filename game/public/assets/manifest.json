@@ -1450,6 +1450,46 @@
       "src": "assets/cosmetics/top_out_idol.png?v=52144ec7",
       "w": 32,
       "h": 32
+    },
+    "mob.boss": {
+      "src": "assets/mobs/boss.png?v=8dacf31d",
+      "w": 96,
+      "h": 96
+    },
+    "mob.abyssboss": {
+      "src": "assets/mobs/abyssboss.png?v=41a339fe",
+      "w": 96,
+      "h": 96
+    },
+    "mob.cloakbat": {
+      "src": "assets/mobs/cloakbat.png?v=5c4fa860",
+      "w": 96,
+      "h": 96
+    },
+    "mob.bloomwhale": {
+      "src": "assets/mobs/bloomwhale.png?v=fbfa5967",
+      "w": 96,
+      "h": 96
+    },
+    "mob.crownstag": {
+      "src": "assets/mobs/crownstag.png?v=d3a87e53",
+      "w": 96,
+      "h": 96
+    },
+    "mob.mistiger": {
+      "src": "assets/mobs/mistiger.png?v=8090db8c",
+      "w": 96,
+      "h": 96
+    },
+    "mob.wickregent": {
+      "src": "assets/mobs/wickregent.png?v=f81ce42e",
+      "w": 96,
+      "h": 96
+    },
+    "mob.sluiceleviathan": {
+      "src": "assets/mobs/sluiceleviathan.png?v=a2de8276",
+      "w": 96,
+      "h": 96
     }
   },
   "audio": {},

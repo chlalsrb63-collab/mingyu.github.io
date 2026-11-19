@@ -20,6 +20,7 @@
  * tints, and how a monster is drawn in the scene (facing, poses, aura, death).
  */
 
+import * as Assets from "./assetlib.js";
 import { hex } from "./mobart_kit.js";
 import { BEASTS_A } from "./mobart_a.js";
 import { BEASTS_B } from "./mobart_b.js";
@@ -399,6 +400,44 @@ const canvasSize = (def, sc) => Math.ceil((def.n || CANVAS[def.size] || 48) * sc
  * One monster's frames, drawn when first asked for. `sc` enlarges it (elites
  * and guardians are drawn bigger, not scaled up, so their pixels stay crisp).
  */
+/** Render an external manifest boss/monster PNG (`mob.<kind>`) into an N×N pose frame anchored at `foot`. */
+function renderExtMob(src, N, foot, dir, fr) {
+  const c = document.createElement("canvas");
+  c.width = c.height = N;
+  const g = c.getContext("2d");
+  g.imageSmoothingEnabled = false;
+  const flip = dir === 1 || dir === 3;
+  // Subtle frame-by-frame pose transforms (breath, stride, wind-up, strike, hurt, topple)
+  const poses = [
+    [1, 1, 0, 0, 0],         // 0 idleA
+    [1.02, 0.98, 0, 0, 0],   // 1 idleB
+    [1.01, 0.99, -1, -2, -0.025], // 2 walk0
+    [0.99, 1.01, 0, 0, 0],   // 3 walk1
+    [1.01, 0.99, 1, -2, 0.025],   // 4 walk2
+    [0.99, 1.01, 0, 0, 0],   // 5 walk3
+    [1.06, 0.92, 2, 0, 0.08],     // 6 wind
+    [0.95, 1.06, -4, -1, -0.10],  // 7 strike
+    [1.02, 0.98, -1, 0, -0.03],   // 8 recover
+    [0.94, 1.04, 3, -1, 0.11],    // 9 hurt
+    [1, 1, 2, 0, 0.42],      // 10 die0
+    [1, 1, 4, 2, 1.02],      // 11 die1
+    [1, 1, 6, 4, 1.50],      // 12 die2
+  ];
+  const [sx, sy, dx, dy, rot] = poses[fr] || poses[0];
+  const target = Math.round(N * 0.96);
+  g.save();
+  g.translate(foot[0], foot[1]);
+  if (flip) g.scale(-1, 1);
+  g.translate(dx, dy);
+  if (rot) g.rotate(rot);
+  g.scale(sx, sy);
+  // External boss PNGs are bottom-aligned with 4px bottom pad inside src.height
+  const padY = Math.round((4 / src.height) * target);
+  g.drawImage(src, -Math.round(target / 2), -target + padY, target, target);
+  g.restore();
+  return c;
+}
+
 export function rig(kind, tint, sc = 1, habitat = "") {
   if (!Object.hasOwn(reflected, habitat)) habitat = "";
   if (habitat && fieldHabitat !== habitat) { fieldRigs.clear(); fieldHabitat = habitat; }
@@ -412,14 +451,24 @@ export function rig(kind, tint, sc = 1, habitat = "") {
   const N = canvasSize(def, sc), foot = [N / 2, N - Math.round(Math.max(PAD * sc, N * 0.14))];
   const frames = [[], [], [], []];
   R = {
-    kind, def, N, foot, sc,
+    kind, def, N, foot, sc, _ext: false,
     frame(dir, fr) {
+      const ext = Assets.canvas("mob." + kind);
+      if (ext && !R._ext) {
+        R._ext = true;
+        for (let i = 0; i < 4; i++) frames[i].length = 0;
+        icons.clear();
+      }
       let c = frames[dir][fr];
       if (!c) {
-        const M = new Model();
-        const posture = pose(fr);
-        def.draw(M, posture);
-        c = frames[dir][fr] = raster(M, N, foot, dir, sc * GK * (def.k || 1), tint, posture, def.hover ? 0.25 : 1, habitat);
+        if (ext) {
+          c = frames[dir][fr] = renderExtMob(ext, N, foot, dir, fr);
+        } else {
+          const M = new Model();
+          const posture = pose(fr);
+          def.draw(M, posture);
+          c = frames[dir][fr] = raster(M, N, foot, dir, sc * GK * (def.k || 1), tint, posture, def.hover ? 0.25 : 1, habitat);
+        }
       }
       return c;
     },
