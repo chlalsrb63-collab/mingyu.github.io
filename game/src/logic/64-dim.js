@@ -13,13 +13,22 @@
 const dimCnt = (ch) => ch.cnt;
 /** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
 const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), DIM.minTier, TIER_MAX - 1);
+// Keep part of the older field boost in timed instances, with enough extra durability for gear progression.
+const dimGearHp = (tier, share = 0.60) => share + (1 - share) / mobGearHp(tier);
+const dimGearAtk = (tier, share = 0.20, levelShare = 0.65) =>
+  (share + (1 - share) / mobGearAtk(tier)) * (levelShare + (1 - levelShare) / mobLevelAtk(tier));
+const dimAtkK = (tier) => dimGearAtk(tier) / MOB_HARD;
+const chalGearHp = (tier) => dimGearHp(tier, 0.25 + 0.15 * clamp((tier - 25) / 25, 0, 1));
+const chalGearAtk = (tier) => dimGearAtk(tier, 0.10, 0.45);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 function dimHk(n, lv, mlv) {
   const [mid, width, trim] = DIM.hpMid;
   const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv), high = DIM.hpHigh[1] * Math.max(0, lv - DIM.hpHigh[0]);
   const middle = trim * Math.max(0, 1 - Math.abs(lv - mid) / width);
+  // Smaller groups lose more uptime while handling mechanics. Ease only the new level bonus.
+  const levelHp = n < DIM.party ? 0.85 + 0.15 / mobLevelHp(mlv) : 1;
   // ÷ MOB_HARD: the raids keep the party pace they were tuned to (bots 5–10 min) when field monsters got tougher
-  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv)) / MOB_HARD;
+  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv)) * dimGearHp(mlv) * levelHp / MOB_HARD;
 }
 
 /**
@@ -181,7 +190,7 @@ function dimFloor(S, dim, floor) {
       mob.temp = true; mob.dim = 1;
       if (sp.guard) mob.guard = 1;
       if (!sp.chest) mob.hk = dimHk(dim.n, dim.lv, MOBS[sp.k].lv) * tk.hp * dimRaidHk(map.dim.raid);
-      mob.ak = Math.max(1, tk.atk) / MOB_HARD;
+      mob.ak = Math.max(1, tk.atk) * dimAtkK(MOBS[mob.k].lv);
       if (mob.el === 1 && tk.traits > 1) mob.tr = rollTraits(S, tk.traits);
       dim.rt.mobs.push(mob);
     }
@@ -287,7 +296,7 @@ function dimBoss(S, dim) {
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   const [bh, ba] = dimRaidBoss(dim.map.dim.raid);
   mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid) * bh;
-  mob.ak = DIM.bossAtk * dim.tk.atk * ba / MOB_HARD;
+  mob.ak = DIM.bossAtk * dim.tk.atk * ba * dimAtkK(MOBS[mob.k].lv);
   mob.hp = mobMax(mob);
   mob.castAt = now + 4000;
   mob.stun = now + FB_WARN;
@@ -573,9 +582,9 @@ function chalSpawn(S, dim, k, n) {
   readyMob(S, mob);
   mob.temp = true; mob.dim = 1; mob.chal = 1; mob.tr = [];
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
-  mob.hk = DIM_CHAL.hp * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM_CHAL.lvK * up);
+  mob.hk = DIM_CHAL.hp * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM_CHAL.lvK * up) * chalGearHp(d.lv);
   // its script's state (56-boss-script.js) is the challenge's own: one object, with the tries and the wipe clock
-  dim.chal = Object.assign(bsNew(1 + DIM_CHAL.atkLv * up), { k, tries: 1, upAt: 0 });
+  dim.chal = Object.assign(bsNew((1 + DIM_CHAL.atkLv * up) * chalGearAtk(d.lv)), { k, tries: 1, upAt: 0 });
   mob.bs = dim.chal; mob.ak = dim.chal.ak;
   mob.castAt = now + 5000; mob.stun = now + 3000;
   dim.rt.mobs.push(mob);

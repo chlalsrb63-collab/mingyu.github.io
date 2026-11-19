@@ -99,8 +99,8 @@ for (let i = 0; i < 9; i++) {
   X.pfxHit(S, rt, p, st, target, 100, true, false, {});
   S.now += 500;
 }
-assert.equal(target.runePoison.stacks, 5);
-assert.ok(X.runePoisonFactor(S, target) > 1);
+assert.equal(target.runePoison.stacks, 4);
+assert.equal(X.runePoisonFactor(S, target), 1.10);
 const allyId = "runes-power-ally";
 L.addPlayer(S, allyId, L.hero("동료시험", { wk: "sword", lvl: 120, migrate: true }));
 const ally = S.players[allyId];
@@ -134,21 +134,23 @@ const highHpAtk = st.atk;
 st = active("redanvil");
 p.hp = st.mhp * 0.16;
 X.pfxStat(p, st);
-assert.ok(st.atk > highHpAtk * 1.25 && st.acd < base.acd);
+assert.ok(st.atk > highHpAtk * 1.15 && st.atk <= Math.round(base.atk * 1.25) && st.acd < base.acd);
 assert.ok(X.pfxMiti(S, rt, p, st, near, 300, 300) < 300);
 
 st = active("astrolabe");
 assert.equal(X.runeSkillDamage(S, p, st, { mult: 1 }), 1);
 p.cds.bolt = S.now + 10000;
 attempt(st, () => { X.pfxSkill(S, rt, p, st, { name: "불꽃", mult: 1 }, "bolt", 100); return p.cds.bolt <= S.now; });
-assert.ok(X.runeSkillDamage(S, p, st, { mult: 1 }) > 1);
+const skillBoost = X.runeSkillDamage(S, p, st, { mult: 1 });
+assert.ok(skillBoost > 1 && skillBoost <= 1.35);
 assert.equal(X.runeSkillDamage(S, p, st, { mult: 1 }), 1);
 
 st = active("dawnpillar");
 p.hp = -35;
 p.save = false;
 assert.ok(X.pfxLethal(S, rt, p, st, near, 500));
-assert.ok(p.hp > st.mhp * 0.4 && p.ghost > S.now && p.ch.runeWardAt > S.now + 60000 && p.save);
+assert.equal(p.hp, Math.round(st.mhp * 0.35));
+assert.ok(p.ghost > S.now && p.ch.runeWardAt > S.now + 60000 && p.save);
 p.pc = null;
 p.hp = -1;
 assert.ok(!X.pfxLethal(S, rt, p, st, near, 500));
@@ -161,7 +163,7 @@ assert.ok(X.runeHidden(p, S.now));
 assert.equal(X.pfxPre(S, p, st, near, {}, {}).sure, 1);
 assert.ok(!X.runeHidden(p, S.now));
 assert.equal(X.pfxPre(S, p, st, near, {}, {}).sure, 0);
-S.now += 7000;
+S.now += 8500;
 X.runeMoveSkill(S, p);
 assert.ok(X.runeHidden(p, S.now));
 X.syncRuneActive(p, []);

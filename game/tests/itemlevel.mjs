@@ -4,17 +4,70 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { PFX, ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ_P, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollRarity, lootFor, gearIl, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, gearBonus, countItem, stats, chainBlow, newMob };\n";
+  "\nexport const __t = { PFX, ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ_P, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollGearAtLevel, rollRarity, lootFor, gearIl, gearBaseValue, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, gearBonus, countItem, stats, chainBlow, newMob, mobGearHp, mobGearAtk, mobLevelHp, mobLevelAtk };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs();
 const VERBOSE = process.argv.includes("-v");
 const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
 const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg}: ${a} vs ${b} ± ${eps}`);
 
-// one line's value against what its range gives at `ilvl` (1.0 = the middle of the normal range)
-const rel = ([k, v], ilvl) => { const a = X.AFFIX.find((x) => x[0] === k); return v / ((a[3] + a[4]) / 2 + a[5] * ilvl); };
+// One line against the middle of its normal range at the printed level.
+const affixTier = (g) => Math.min(50, (g.il + 3) / 4);
+const rel = ([k, v], g) => { const a = X.AFFIX.find((x) => x[0] === k); return v / ((a[3] + a[4]) / 2 + a[5] * affixTier(g)); };
 const IDS = ["w_warrior_3", "w_bow_4", "h_2", "a_4", "g_2", "b_3", "r_3", "n_4", "w_mage_5", "a_6"];
 const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, ilvl);
+
+// ── level progression applies to every flat equipment base, including shop stock and old sheets
+{
+  const scale = D.gearBaseScale;
+  assert.equal(scale.length, 200);
+  assert.deepEqual([scale[0], scale[199]], [1000, 3320]);
+  assert.ok(scale.every((n, i) => i === 0 || n - scale[i - 1] >= 0 && n - scale[i - 1] <= 19), "no jumps between adjacent levels");
+  assert.deepEqual([D.runeScale[0], D.runeScale[199]], [18, 65], "rune lines remain supplementary");
+  for (const [curve, start, end] of [[X.mobGearHp, 1.08, 1.48], [X.mobGearAtk, 1.05, 1.36], [X.mobLevelHp, 1, 1.72], [X.mobLevelAtk, 1, 1.48]]) {
+    near(curve(1), start, 1e-8, "starter monsters get a gentler increase");
+    near(curve(50), end, 1e-8, "endgame monsters gain more pressure");
+    for (let t = 2; t <= 50; t++) assert.ok(curve(t) > curve(t - 1));
+  }
+  assert.equal(X.MOBS.chest_meadow.hp, 40, "a treasure chest is unaffected by combat scaling");
+  for (const id of Object.keys(X.ITEMS).filter((id) => X.ITEMS[id].base)) {
+    const old = X.plain(id);
+    const variants = [20, 60, 100, 140, 180, 200].map((il) => ({ ...old, il }));
+    for (const [stat, value] of Object.entries(X.ITEMS[id].base)) {
+      const fixed = stat === "spd" || stat === "crit";
+      for (let i = 1; i < variants.length; i++) {
+        const prev = X.gearBaseValue(variants[i - 1], stat), next = X.gearBaseValue(variants[i], stat);
+        assert.ok(fixed ? next === prev : next > prev, `${id} ${stat}`);
+      }
+      near(X.gearBaseValue({ ...old, il: 200, enh: 4 }, stat), value * (fixed ? 1 : 3.32 * (1 + D.enhPct[4] / 100)), 1e-8, "level and enhancement share the base");
+      assert.equal(X.gearBaseValue({ ...old, il: undefined }, stat), X.gearBaseValue(old, stat), "old equipment uses its old level");
+    }
+  }
+  const W = L.setup();
+  L.addPlayer(W, "hero", L.hero("곡선", { lvl: 200, wk: "sword", wm: { sword: 50 } }));
+  const p = W.players.hero;
+  const g = { ...X.plain("w_warrior_6"), enh: 4 };
+  const lateBase = [181, 200].map((il) => Math.round(X.gearBaseValue({ ...g, il, enh: 0 }, "atk")));
+  assert.deepEqual(lateBase, [269, 299], "upgrading the drop within the final base adds 30 displayed attack");
+  p.ch.eq.weapon = { ...g, il: 160 };
+  p.stc = null;
+  const low = X.stats(p).atk;
+  p.ch.eq.weapon.il = 200;
+  p.stc = null;
+  const delta = X.gearBaseValue(p.ch.eq.weapon, "atk") - X.gearBaseValue({ ...g, il: 160 }, "atk");
+  near(X.stats(p).atk - low, delta * 1.5, 1, "weapon mastery uses the scaled weapon base once");
+
+  const q = 2, level = 69;
+  assert.deepEqual(X.rollGear({ seed: 17 }, "g_2", q, 17, 1), X.rollGearAtLevel({ seed: 17 }, "g_2", q, level));
+  const growing = new Set(X.AFFIX.filter((a) => a[5]).map((a) => a[0]));
+  for (let seed = 1; seed <= 100; seed++) {
+    const low = X.rollGearAtLevel({ seed }, "a_3", q, 80), high = X.rollGearAtLevel({ seed }, "a_3", q, 200);
+    low.af.forEach(([k, v], i) => {
+      assert.equal(k, high.af[i][0]);
+      assert.ok(growing.has(k) ? high.af[i][1] > v : high.af[i][1] === v, k);
+    });
+  }
+}
 
 // ── the contract the client reads: rarity names, the gap, the power words; a 유니크 has no words of its own (owner 2026-11-16)
 {
@@ -40,7 +93,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
     assert.ok(g.af.every(([, v]) => Number.isInteger(v) && v >= 1));
   }
   // Strength of an ordinary line: 마법 ×0.85, 희귀 ×1.0, 전설 ×1.3, 유니크 ×1.45.
-  const lines = (q, from = 0) => by[q].flatMap((g) => g.af.slice(from).map((a) => rel(a, 30)));
+  const lines = (q) => by[q].flatMap((g) => g.af.map((a) => rel(a, g)));
   near(mean(lines(1)), 0.85, 0.05, "마법 is weak");
   near(mean(lines(2)), 1.0, 0.05, "희귀 as rolled");
   near(mean(lines(3)), 1.3, 0.06, "전설 ×1.3");
@@ -48,7 +101,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   // no "own" lines, no suffix: a 유니크 is plain lines + the power, shaped like a 전설 (no `un`, no set)
   assert.ok(by[5].every((g) => g.un === undefined && !("un" in g)), "no un field");
   // owner 2026-11-16: a unique = a legendary's power + ~10–15 % stronger lines than a legendary of the same level
-  const tot = (q) => mean(by[q].map((g) => g.af.reduce((s, a) => s + rel(a, 30), 0)));
+  const tot = (q) => mean(by[q].map((g) => g.af.reduce((s, a) => s + rel(a, g), 0)));
   assert.ok(tot(5) > tot(3) * 1.10 && tot(5) < tot(3) * 1.15, `unique ${tot(5).toFixed(3)} vs legendary ${tot(3).toFixed(3)} = ${(tot(5) / tot(3)).toFixed(3)}`);
   assert.ok(tot(3) > tot(2) && tot(2) > tot(1));
   // Every power in these slots is drawn. Socket distribution is covered in rune-sockets.mjs.
@@ -293,6 +346,11 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
       const r = act("a@s1", { t: "use", id: "whet", k: "weapon" });
       assert.ok(r.ok, r.error);
       assert.equal(g.af.length, 4); assert.equal(new Set(g.af.map((a) => a[0])).size, 4);
+      for (const [key, value] of g.af) {
+        const [, , , min, max, grow] = X.AFFIX.find((a) => a[0] === key);
+        const bonus = grow * affixTier(g), mul = X.AFFIX_MUL[g.q];
+        assert.ok(value >= Math.round((min + bonus) * mul) && value <= Math.round((max + bonus) * mul), "whetstone respects the printed level");
+      }
     }
     assert.equal(g.lg, lg0, "the power stays"); assert.notEqual(JSON.stringify(g.af), lines0, "the whetstone re-rolls the weakest of the four plain lines");
     near(p, "smith");
@@ -306,7 +364,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
     const g = uniq("a_3", 8), prev = ch.eq;
     ch.eq = { weapon: null, helm: null, armor: g, gloves: null, boots: null, ring1: null, ring2: null, amulet: null, weapon2: null };
     const b1 = X.gearBonus(ch);
-    ch.eq.armor = X.plain("a_3");
+    ch.eq.armor = { ...X.plain("a_3"), il: g.il };
     const b0 = X.gearBonus(ch);
     ch.eq = prev;
     for (const k of Object.keys(b0)) if (typeof b0[k] === "number") assert.equal(Math.round((b1[k] - b0[k]) * 1e6) / 1e6, g.af.filter((a) => a[0] === k).reduce((s, a) => s + a[1], 0), `${k}: the four lines add`);

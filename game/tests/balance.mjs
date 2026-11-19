@@ -21,14 +21,12 @@ export const BASE = {
 /** Which old class each weapon kind is compared with (the bow with the average of all four). */
 const VS = { sword: ["warrior"], dagger: ["rogue"], spear: ["lancer"], staff: ["mage"], book: ["mage"], bow: ["warrior", "rogue", "lancer", "mage"] };
 
-// Plain weapons in the preceding socket-stone build (e6ae3f0), before adding resistance and ailments.
-// Each entry is the mean of the three arena seeds used below. Include hammer in the modern control.
+// Plain equipment after the gear level and monster pressure curves, averaged across the three arena seeds below.
 const ELEMENT_BASE = {
-  // re-measured 2026-11-19 after the owner's MOB_HARD (monsters +20 % HP and attack; 10-tables.js): kill rates fell 10–28 %
-  sword: [34.83, 30.67, 17.17, 16.17], dagger: [32.50, 34.67, 20.33, 20.33],
-  spear: [32.17, 26.33, 14.33, 8.50], staff: [31.17, 31.67, 21.67, 19.83],
-  book: [35.00, 32.17, 20.00, 17.67], bow: [30.67, 29.00, 16.50, 17.00],
-  hammer: [33.17, 30.83, 16.83, 12.33],
+  sword: [30.33, 29.50, 15.50, 14.83], dagger: [29.83, 31.50, 17.50, 18.33],
+  spear: [30.67, 23.83, 12.00, 9.50], staff: [28.00, 29.83, 18.50, 18.83],
+  book: [32.67, 30.50, 17.17, 15.67], bow: [25.83, 26.17, 13.33, 14.17],
+  hammer: [30.17, 27.67, 14.50, 11.50],
 };
 
 /** A borderline single run can change when the loot stream takes different draws. On a miss,
@@ -36,10 +34,14 @@ const ELEMENT_BASE = {
 function withinBand(wk, tier, first, min, max) {
   if (first >= min && first <= max) return true;
   const samples = [first, ...[1, 2, 3, 4].map((offset) => probe(L, wk, tier, PROBE.secs, { seed: ARENA.seed + offset }).kpm)];
-  const mean = samples.reduce((sum, n) => sum + n, 0) / samples.length;
-  const variance = samples.reduce((sum, n) => sum + (n - mean) ** 2, 0) / (samples.length - 1);
+  return overlapsBand(samples, min, max);
+}
+const mean = (samples) => samples.reduce((sum, n) => sum + n, 0) / samples.length;
+function overlapsBand(samples, min, max) {
+  const center = mean(samples);
+  const variance = samples.reduce((sum, n) => sum + (n - center) ** 2, 0) / (samples.length - 1);
   const margin = 2.776 * Math.sqrt(variance / samples.length); // t critical value, 4 degrees of freedom
-  return mean + margin >= min && mean - margin <= max;
+  return center + margin >= min && center - margin <= max;
 }
 
 if (!L.hero) {
@@ -57,7 +59,7 @@ if (!L.hero) {
       const samples = [0, 1, 2].map((offset) => probe(L, wk, t, PROBE.secs, { seed: ARENA.seed + offset }).kpm);
       const average = samples.reduce((n, v) => n + v, 0) / samples.length;
       const base = baseOfElement(wk, t), ratio = average / base;
-      assert.ok(ratio >= 0.85 && ratio <= 1.15, `${wk} T${t}: ${average.toFixed(2)} k/m, ×${ratio.toFixed(2)} of the socket-stone control ${base} (allowed ×0.85–×1.15)`);
+      assert.ok(ratio >= 0.85 && ratio <= 1.15, `${wk} T${t}: ${average.toFixed(2)} k/m, ×${ratio.toFixed(2)} of the field control ${base} (allowed ×0.85–×1.15)`);
       rows.push(`${wk.padEnd(6)} T${t}: ${average.toFixed(2)} k/m (control ${base}, ×${ratio.toFixed(2)})`);
       continue;
     }
@@ -87,25 +89,33 @@ if (!L.hero) {
   for (const j of Object.keys(D.jobs).filter((id) => D.jobs[id].kind === "hybrid" && (!only.length || only.includes(id)))) for (const t of PROBE.hybTiers) {
     const [a, b] = D.jobs[j].wk;
     const run = (wk, offset, secs = PROBE.secs) => probe(L, wk, t, secs, { job: j, seed: ARENA.seed + offset });
-    const base = (baseOf(a, t) + baseOf(b, t)) / 2, hi = (HI(a) + HI(b)) / 2;
+    const hi = (HI(a) + HI(b)) / 2;
+    let controlA = baseOf(a, t), controlB = baseOf(b, t);
     const ra = run(a, 0), rb = run(b, 0);
-    let ak = ra.kpm, bk = rb.kpm;
-    const pairRate = () => (ak + bk) / 2 / base;
-    const handLow = (wk, kpm) => kpm / baseOf(wk, t) < HAND_MIN;
-    if (modern && (pairRate() < 0.75 || pairRate() > hi || handLow(a, ak) || handLow(b, bk))) {
-      // Recheck borderline hands over twice the hunt time. One kill in a short fixed window
-      // can move the result past the floor when changing only the loot stream.
+    let ak = ra.kpm, bk = rb.kpm, paired = null;
+    const pairRate = () => (ak + bk) / (controlA + controlB);
+    if (modern && (pairRate() < 0.75 || pairRate() > hi || ak / controlA < HAND_MIN || bk / controlB < HAND_MIN)) {
+      // Repeat borderline comparisons with the same seeds and duration for the hybrid and both single-job controls.
       const longer = PROBE.secs * 2;
-      const mean = (wk) => [0, 1, 2].reduce((n, offset) => n + run(wk, offset, longer).kpm, 0) / 3;
-      ak = mean(a);
-      bk = mean(b);
+      const offsets = [0, 1, 2, 3, 4];
+      const one = (wk, seed) => probe(L, wk, t, longer, { seed: ARENA.seed + seed }).kpm;
+      const aHands = offsets.map((seed) => run(a, seed, longer).kpm), bHands = offsets.map((seed) => run(b, seed, longer).kpm);
+      const aSolo = offsets.map((seed) => one(a, seed)), bSolo = offsets.map((seed) => one(b, seed));
+      ak = mean(aHands); bk = mean(bHands); controlA = mean(aSolo); controlB = mean(bSolo);
+      paired = {
+        pair: offsets.map((i) => (aHands[i] + bHands[i]) / (aSolo[i] + bSolo[i])),
+        [a]: offsets.map((i) => aHands[i] / aSolo[i]),
+        [b]: offsets.map((i) => bHands[i] / bSolo[i]),
+      };
     }
-    const x = pairRate();
-    if (x < 0.75 || x > hi) bad.push(`${j} T${t}: ${((ak + bk) / 2).toFixed(2)} kills/min is ×${x.toFixed(2)} of the pair's ${base.toFixed(1)} (allowed ×0.75–×${hi.toFixed(3)})`);
-    for (const [wk, kpm] of [[a, ak], [b, bk]]) if (handLow(wk, kpm)) bad.push(`${j}/${wk} T${t}: ${kpm.toFixed(2)} kills/min is ×${(kpm / baseOf(wk, t)).toFixed(2)} of the control ${baseOf(wk, t).toFixed(1)} (at least ×${HAND_MIN})`);
+    const x = pairRate(), base = (controlA + controlB) / 2;
+    if ((x < 0.75 || x > hi) && (!paired || !overlapsBand(paired.pair, 0.75, hi))) bad.push(`${j} T${t}: ${((ak + bk) / 2).toFixed(2)} kills/min is ×${x.toFixed(2)} of the pair's ${base.toFixed(1)} (allowed ×0.75–×${hi.toFixed(3)})`);
+    for (const [wk, kpm, control] of [[a, ak, controlA], [b, bk, controlB]]) {
+      if (kpm / control < HAND_MIN && (!paired || !overlapsBand(paired[wk], HAND_MIN, Infinity))) bad.push(`${j}/${wk} T${t}: ${kpm.toFixed(2)} kills/min is ×${(kpm / control).toFixed(2)} of the control ${control.toFixed(1)} (at least ×${HAND_MIN})`);
+    }
     rows.push(`${j.padEnd(12)} T${String(t).padEnd(2)} ×${x.toFixed(2)} of ${base.toFixed(1)} · ${a} ${ak.toFixed(2)} k/m (${ra.dtpm} dmg/m, ${ra.deaths} d) · ${b} ${bk.toFixed(2)} k/m (${rb.dtpm} dmg/m, ${rb.deaths} d)`);
   }
   if (process.argv.includes("-v")) console.log(rows.join("\n"));
   assert.deepEqual(bad, [], "every hybrid inside the band of its pair");
-  console.log(`balance ok — every weapon kind and every hybrid within its range of the ${modern ? "socket-stone control" : "old classes"}`);
+  console.log(`balance ok — every weapon kind and every hybrid within its range of the ${modern ? "field control" : "old classes"}`);
 }

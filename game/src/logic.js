@@ -687,6 +687,9 @@ const UNIQ_P = [0.001, 0.004, 0.01];
  */
 const IL_RANK = [0, 4, 8];
 const IL_GAP = 10;
+// Flat equipment stats gain up to 232% from item level. Preserve the gentler opening of the curve.
+// Per-mille values also drive item comparisons in the client.
+const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(2320 * (i / (MAXLV - 1)) ** 1.55));
 /**
  * 접두사 고유 효과 (docs/design/prefix-effects.md): a 전설 or 유니크 piece carries ONE power `lg` no affix can give. Three tables per power,
  * all keyed by `lg`; the later parts 52+ extend them with Object.assign and never edit this file (the recipe is in 51-prefix.js):
@@ -814,6 +817,13 @@ const MV_GRACE = 1200;
 const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 15 };
 // MOB_HARD: owner 2026-11-19 — every monster 20 % more HP and attack (chests excepted)
 const GEAR_CUT = 0.3, MOB_ATK = 1.27, MOB_HARD = 1.2;
+// The stronger gear pays off against progressively tougher monsters. Openers stay gentle.
+const mobGearPressure = (tier, power = 1.12) => ((Math.min(TIER_MAX, Math.max(1, tier)) - 1) / (TIER_MAX - 1)) ** power;
+const mobGearHp = (tier) => 1.08 + 0.40 * mobGearPressure(tier);
+const mobGearAtk = (tier) => 1.05 + 0.31 * mobGearPressure(tier);
+// Fixed to the monster's tier. Replacing a piece never makes its current enemies scale up.
+const mobLevelHp = (tier) => 1 + 0.72 * mobGearPressure(tier, 1.63);
+const mobLevelAtk = (tier) => 1 + 0.48 * mobGearPressure(tier, 1.63);
 /**
  * Active-area spawning (docs/design/scale-and-rift.md B.4d). A map is cut into CELL × CELL tile
  * cells; a cell wakes when a living player comes within WAKE_R cells (Chebyshev) and is filled
@@ -1082,8 +1092,8 @@ for (const k of Object.keys(MOBS)) {
   if (!d.sp) d.sp = k;
   for (const mv in TRICKS) if (d[mv] === undefined && MOBS[d.sp] && MOBS[d.sp][mv]) d[mv] = MOBS[d.sp][mv];
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
-  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD);
-  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD);
+  d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv));
+  if (!d.chest) d.hp = Math.round(d.hp * MOB_HARD * mobGearHp(d.lv) * mobLevelHp(d.lv));
   d.moves = MOVES.filter((mv) => d[mv]);
   if (!d.resp) d.resp = 4500 + d.lv * 150;       // hunting grounds refill quickly
   if (!d.gear) d.gear = (0.06 + d.lv * 0.002) * GEAR_CUT;
@@ -1442,7 +1452,11 @@ const RUNE_PRICE = { 1: 500, 2: 900, 3: 1650, 4: 850 };
 const RUNES = {};
 const RUNE_KEYS = [];
 const RUNE_POOLS = { 1: [], 2: [], 3: [], 4: { 2: [], 3: [], 4: [] } };
-const RUNE_SCALE = Array.from({ length: 200 }, (_, i) => 18 + Math.floor(i * 82 / 199));
+// Runes complement the host item. Keep low-level bonuses and bring endgame lines to 65% of face value.
+const RUNE_SCALE = Array.from({ length: 200 }, (_, i) => 18 + Math.floor(i * 47 / 199));
+// Combat limits apply only to the sum of socket lines; base gear, prefixes and set powers have their own rules.
+const RUNE_STAT_CAP = { atk: 32, atkp: 10, def: 20, hp: 220, mp: 100, crit: 8, critd: 20, ls: 4, spd: 8, dmg: 12, pen: 10, res: 16, dur: 10 };
+const runeStatCap = (key) => RUNE_STAT_CAP[key] ?? RUNE_STAT_CAP[key.split("_", 1)[0]] ?? Infinity;
 const runeIl = (il) => Number.isInteger(il) ? clamp(il, 1, RUNE_SCALE.length) : 1;
 const runeReq = (il) => Math.max(1, runeIl(il) - IL_GAP);
 const runeSocketId = (socket) => Array.isArray(socket) ? socket[0] : socket;
@@ -1714,7 +1728,7 @@ for (let g = 1; g <= 5; g++) RECIPES[`ing_${g}`] = recipeRow("craft", GRADE_LV[g
  * P7: tier 2's small pieces (helm, gloves, boots, ring, amulet; shop 360–480 G) take `ing2` ingots (four cost more than
  * the piece); a fee never below what the economy guard needs (inputs at sell value + fee ≥ 60 % of the shop's price).
  */
-const GEAR_CRAFT = { lv: [12, 22, 32, 42, 50], ing: 4, ing2: 2, wood: 2, fee: 0.29, q: [1, 2], ilvl: [4, 12, 21, 32, 44, 49], ms: 6000 };
+const GEAR_CRAFT = { lv: [12, 22, 32, 42, 50], ing: 4, ing2: 2, wood: 2, fee: 0.29, q: [1, 2], ms: 6000 };
 // Tier 6 (운철, Lv.181) has no ingot of its own: grade-5 materials at twice the count (`mat`), at 캉캉 craft Lv.50.
 const GEAR6 = { mat: 5, k: 2 };
 for (let t = 2; t <= 6; t++) {
@@ -8662,6 +8676,7 @@ function masteryRank(ch, k) {
 function gearBonus(ch) {
   const b = { atk: 0, atkp: 0, def: 0, hp: 0, mp: 0, crit: 0, critd: 0, ls: 0, spd: 0, xp: 0, mf: 0, gold: 0 };
   const lg = {}, runeCounts = {}, win = {}, off = [], element = emptyElementStats();
+  const runeStats = {};
   const add = (s, v) => {
     if (Object.hasOwn(b, s)) b[s] += v;
     else addElementAffix(element, s, v);
@@ -8673,13 +8688,12 @@ function gearBonus(ch) {
     for (let i = 0; i < Math.min(g.sk, sockCap(g)); i++) {
       const socket = g.ru?.[i], rune = RUNES[runeSocketId(socket)], il = runeSocketLevel(socket);
       if (!rune || ch.lvl < runeReq(il)) continue;
-      for (const [stat, n] of rune.af) add(stat, runeStat(n, il));
+      for (const [stat, n] of rune.af) runeStats[stat] = (runeStats[stat] || 0) + runeStat(n, il);
       if (rune.set) runeCounts[rune.set] = (runeCounts[rune.set] || 0) + 1;
     }
     if (k === "weapon2") continue;
     const item = ITEMS[g.id], base = item.base;
-    // enhancement raises the piece's own stats along ENH_PCT
-    for (const s of Object.keys(base)) add(s, base[s] * (s === "spd" || s === "crit" ? 1 : enhMul(g.enh)));
+    for (const s of Object.keys(base)) add(s, gearBaseValue(g, s));
     for (const [s, v] of g.af) add(s, v);
     if (item.elementAf) for (const [s, v] of item.elementAf) add(s, v);
     // one power counts once however many pieces carry it: the higher item level wins, a tie goes to the earlier slot (SLOTS order)
@@ -8690,6 +8704,7 @@ function gearBonus(ch) {
       else off.push(k);
     }
   }
+  for (const [stat, total] of Object.entries(runeStats)) add(stat, Math.min(total, runeStatCap(stat)));
   // a worn title and every finished region of the monster collection add their bit
   const ttl = ch.title && ACH_BY[ch.title];
   if (ttl && ttl.bonus) for (const [s, v] of ttl.bonus) add(s, v);
@@ -9236,7 +9251,7 @@ function deriveStats(p) {
   const tf = trophySum(ch);
   const perk = loPerks(ch), plus = (n) => 1 + n / 100;
   for (const k of ST_ORDER) E[k] = eff(ch.st[k]) + cm.st[k];
-  const wAtk = w ? (ITEMS[w.id].base.atk || 0) * enhMul(w.enh) : 0;
+  const wAtk = w ? gearBaseValue(w, "atk") : 0;
   const sc = scaleOf(ch, wk);
   let core = SFX.atk[0] + SFX.atk[1] * lv;
   for (const k of Object.keys(sc)) core += sc[k] * E[k];
@@ -10367,6 +10382,13 @@ function gearIl(g) {
 }
 /** The player level a piece can be worn from: its item level minus IL_GAP (at least 1). */
 const gearReq = (g) => Math.max(1, gearIl(g) - IL_GAP);
+/** Item level and enhancement strengthen flat stats. The authored speed and critical chance stay fixed. */
+function gearBaseValue(g, stat) {
+  const value = ITEMS[g.id].base[stat] || 0;
+  if (stat === "spd" || stat === "crit") return value;
+  const scale = GEAR_BASE_SCALE[clamp(gearIl(g), 1, MAXLV) - 1] / 1000;
+  return value * scale * enhMul(g.enh);
+}
 /** A piece's name word comes from a legendary or unique power. */
 function gearWord(g) {
   return g.lg ? `${LEGEND[g.lg][0]} ` : "";
@@ -10387,26 +10409,32 @@ function sellPrice(s) {
   return Math.floor(it.price * 0.05 * (1 + 0.8 * (s.q | 0)) * (1 + 0.3 * (s.enh | 0)));
 }
 /** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`. */
-function rollLine(S, key, ilvl, mul) {
+function rollLine(S, key, tier, mul) {
   const [, , , min, max, grow] = AFFIX_BY_KEY[key];
-  return [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * ilvl) * mul))];
+  return [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * tier) * mul))];
 }
+const rollGearLine = (S, key, g) => rollLine(S, key, Math.min(TIER_MAX, toTier(gearIl(g))), AFFIX_MUL[g.q | 0]);
 /**
  * Roll one piece of gear: rarity decides how many affixes, `ilvl` (a monster's tier, 1–50) how big and, shown, its item
  * level `il` (+ IL_RANK[rank] for an elite or boss). A 전설 or 유니크 also rolls one `lg` power of its item type's pool (a 유니크: 4 stronger lines, AFFIX_MUL[5]).
  */
 function rollGear(S, id, q, ilvl, rank = 0) {
+  const il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(ITEMS[id].tier | 0) - 1] || 1), 1, MAXLV);
+  return rollGearAtLevel(S, id, q, il);
+}
+/** Drop and craft use the same ordinary affix budget for the level printed on the item. */
+function rollGearAtLevel(S, id, q, il) {
   const it = ITEMS[id];
   if (q === 4) q = 3;
   const g = plain(id);
   g.q = q;
-  g.il = clamp(Math.max(shownLv(ilvl | 0) + IL_RANK[rank | 0], G_REQ[(it.tier | 0) - 1] || 1), 1, 200);
+  g.il = il;
   const [lo, hi] = RARITY_AFFIX[q];
   const used = new Set();
   for (let n = ri(S, lo, hi); n > 0; n--) {
     const key = rollAffixKey(S, it.type, used);
     used.add(key);
-    g.af.push(rollLine(S, key, ilvl, AFFIX_MUL[q]));
+    g.af.push(rollGearLine(S, key, g));
   }
   if (q === 3 || q === 5) g.lg = pfxPick(S, it.type);   // the power comes from the item type's pool (51-prefix.js)
   g.sk = ri(S, 0, sockCap(g));
@@ -11314,21 +11342,21 @@ const PFX_FN = {
 
 const RUNE_SET_MAX = 2;
 const RUNE_POWER = {
-  willowwind: { move: 1.18, iv: 0.84, ms: 2800 },
-  duskfang: { kill: 0.035, chance: 0.25, leech: 0.15, icd: 1200 },
-  lantern: { shield: 0.16, ms: 5500, icd: 14000 },
-  brassscale: { gold: 22, mf: 16, per: 180, atk: 0.12, ms: 30000 },
-  azureknot: { cdr: 0.12, mp: 0.8 },
-  ashbloom: { chance: 0.2, hit: 1.3, dot: 0.22, ms: 4000, radius: 64, targets: 5, icd: 4300 },
-  silverlake: { slow: 1800, crit: 1.5 },
-  stormsail: { chance: 0.22, first: 1.35, fall: 0.78, radius: 94, targets: 5, icd: 3300 },
-  inkthorn: { dot: 0.09, vuln: 0.055, stacks: 5, ms: 6000, hitGap: 500 },
-  lastbell: { hp: 0.3, hit: 1.48, execute: 0.09 },
-  redanvil: { atk: 1.08, iv: 0.45, hp: 0.25, miti: 0.72 },
-  astrolabe: { chance: 0.18, cap: 0.8, ratio: 4, ms: 20000, icd: 10000 },
-  dawnpillar: { heal: 0.55, ms: 3200, icd: 360000 },
-  moonveil: { ms: 1700, ign: 0.82, icd: 6300 },
-  blackstar: { chance: 0.30, damage: 1.35, splash: 0.85, radius: 84, targets: 6, icd: 2800 },
+  willowwind: { move: 1.14, iv: 0.90, ms: 2800 },
+  duskfang: { kill: 0.025, chance: 0.25, leech: 0.10, icd: 1200 },
+  lantern: { shield: 0.12, ms: 5500, icd: 14000 },
+  brassscale: { gold: 22, mf: 16, per: 180, atk: 0.07, ms: 30000 },
+  azureknot: { cdr: 0.08, mp: 0.86 },
+  ashbloom: { chance: 0.2, hit: 1, dot: 0.14, ms: 4000, radius: 64, targets: 5, icd: 5500 },
+  silverlake: { slow: 1800, crit: 1.25 },
+  stormsail: { chance: 0.18, first: 1.05, fall: 0.74, radius: 94, targets: 5, icd: 4400 },
+  inkthorn: { dot: 0.045, vuln: 0.025, stacks: 4, ms: 6000, hitGap: 500 },
+  lastbell: { hp: 0.3, hit: 1.25, execute: 0.05 },
+  redanvil: { atk: 0.35, iv: 0.16, hp: 0.25, miti: 0.82 },
+  astrolabe: { chance: 0.11, cap: 0.35, ratio: 2, ms: 20000, icd: 13000 },
+  dawnpillar: { heal: 0.35, ms: 2400, icd: 360000 },
+  moonveil: { ms: 1700, ign: 0.48, icd: 8500 },
+  blackstar: { chance: 0.19, damage: 1.12, splash: 0.48, radius: 84, targets: 5, icd: 4500 },
 };
 
 const runePct = (n) => +(n * 100).toFixed(1);
@@ -12515,7 +12543,11 @@ function bsCast(S, rt, mob, tgt) {
         const tx = Math.floor(x / T), ty = Math.floor(y / T), add = newMob(S, o.kind, [tx, ty, tx, ty], { elite: 0 });
         add.x = add.hx = x; add.y = add.hy = y; readyMob(S, add);
         add.temp = true; add.add = mob.id; add.shield = o.shield; add.feedAt = o.feed ? now + o.feed : 0; add.heal = o.heal;
-        if (mob.dim) { add.hk = 1 / MOB_HARD; add.ak = 1 / MOB_HARD; }   // raid adds keep the raid's tuned pace (64-dim.js dimHk)
+        if (mob.dim) {
+          const tier = MOBS[add.k].lv;
+          add.hk = dimGearHp(tier) / MOB_HARD;
+          add.ak = dimAtkK(tier);
+        }
         rt.mobs.push(add); rt.ev.push(["r", add.id]);
       }
       dur = 800; break;
@@ -14382,8 +14414,7 @@ function craftOnce(S, p, r, s) {
     const t = ITEMS[r.out[0]].tier;
     let q = clamp(rollRarity(S, 0, 0), GEAR_CRAFT.q[0], GEAR_CRAFT.q[1]);
     if (roll.great) q = Math.min(GEAR_CRAFT.q[1], q + 1);
-    const g = rollGear(S, r.out[0], q, GEAR_CRAFT.ilvl[t - 1]);
-    g.il = Math.min(200, G_REQ[t - 1] + 10);   // worn from the tier's own level as before (il − 10; tier 6 stays at Lv.181)
+    const g = rollGearAtLevel(S, r.out[0], q, G_REQ[t - 1] + IL_GAP);
     ch.inv.push(g);
     p.gain.push(["item", g.id, 1, g.q]);
   } else {
@@ -14632,10 +14663,10 @@ function lifeUseApply(S, p, a) {
     toast(p, `${it.name}${pp(it.name, "을를")} 마셨습니다. ${it.desc.split(".")[0]}.`);
   } else {
     const g = ch.eq[a.k];
-    // Replace the weakest affix with a different line rolled at the gear's tier.
-    const i = weakAffix(g), t = ITEMS[g.id].tier || 1;
+    // Replace the weakest affix with a line rolled at this piece's item level.
+    const i = weakAffix(g);
     const used = new Set(g.af.filter((_, j) => j !== i).map(([key]) => key));
-    g.af[i] = rollLine(S, rollAffixKey(S, ITEMS[g.id].type, used), GEAR_CRAFT.ilvl[t - 1], AFFIX_MUL[g.q | 0]);
+    g.af[i] = rollGearLine(S, rollAffixKey(S, ITEMS[g.id].type, used), g);
     toast(p, `${gearName(g)}의 옵션을 새로 다듬었습니다.`);
     S.maps[p.map].ev.push(["e", p.eid, 1]);
     afterGear(S, p);
@@ -16831,13 +16862,22 @@ const socialDefs = () => ({
 const dimCnt = (ch) => ch.cnt;
 /** The world tier an instance is made for, from the highest player level going in (toTier; shown as 4·tier − 3). */
 const dimLvOf = (ps) => clamp(Math.floor(toTier(Math.max(...ps.map((o) => o.ch.lvl)))), DIM.minTier, TIER_MAX - 1);
+// Keep part of the older field boost in timed instances, with enough extra durability for gear progression.
+const dimGearHp = (tier, share = 0.60) => share + (1 - share) / mobGearHp(tier);
+const dimGearAtk = (tier, share = 0.20, levelShare = 0.65) =>
+  (share + (1 - share) / mobGearAtk(tier)) * (levelShare + (1 - levelShare) / mobLevelAtk(tier));
+const dimAtkK = (tier) => dimGearAtk(tier) / MOB_HARD;
+const chalGearHp = (tier) => dimGearHp(tier, 0.25 + 0.15 * clamp((tier - 25) / 25, 0, 1));
+const chalGearAtk = (tier) => dimGearAtk(tier, 0.10, 0.45);
 /** How much tougher a monster of level `mlv` is made for a party of `n` at level `lv` (taken off the blows it takes; DIM in 31-maps-dim.js). */
 function dimHk(n, lv, mlv) {
   const [mid, width, trim] = DIM.hpMid;
   const low = DIM.hpLow[1] * Math.max(0, DIM.hpLow[0] - lv), high = DIM.hpHigh[1] * Math.max(0, lv - DIM.hpHigh[0]);
   const middle = trim * Math.max(0, 1 - Math.abs(lv - mid) / width);
+  // Smaller groups lose more uptime while handling mechanics. Ease only the new level bonus.
+  const levelHp = n < DIM.party ? 0.85 + 0.15 / mobLevelHp(mlv) : 1;
   // ÷ MOB_HARD: the raids keep the party pace they were tuned to (bots 5–10 min) when field monsters got tougher
-  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv)) / MOB_HARD;
+  return (DIM.hpBase + low + middle - high) * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM.lvK * Math.max(0, lv - 1 - mlv)) * dimGearHp(mlv) * levelHp / MOB_HARD;
 }
 
 /**
@@ -16999,7 +17039,7 @@ function dimFloor(S, dim, floor) {
       mob.temp = true; mob.dim = 1;
       if (sp.guard) mob.guard = 1;
       if (!sp.chest) mob.hk = dimHk(dim.n, dim.lv, MOBS[sp.k].lv) * tk.hp * dimRaidHk(map.dim.raid);
-      mob.ak = Math.max(1, tk.atk) / MOB_HARD;
+      mob.ak = Math.max(1, tk.atk) * dimAtkK(MOBS[mob.k].lv);
       if (mob.el === 1 && tk.traits > 1) mob.tr = rollTraits(S, tk.traits);
       dim.rt.mobs.push(mob);
     }
@@ -17105,7 +17145,7 @@ function dimBoss(S, dim) {
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
   const [bh, ba] = dimRaidBoss(dim.map.dim.raid);
   mob.hk = dimHk(dim.n, dim.lv, MOBS[mob.k].lv) * DIM.bossHp * dim.tk.hp * dimRaidHk(dim.map.dim.raid) * bh;
-  mob.ak = DIM.bossAtk * dim.tk.atk * ba / MOB_HARD;
+  mob.ak = DIM.bossAtk * dim.tk.atk * ba * dimAtkK(MOBS[mob.k].lv);
   mob.hp = mobMax(mob);
   mob.castAt = now + 4000;
   mob.stun = now + FB_WARN;
@@ -17391,9 +17431,9 @@ function chalSpawn(S, dim, k, n) {
   readyMob(S, mob);
   mob.temp = true; mob.dim = 1; mob.chal = 1; mob.tr = [];
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
-  mob.hk = DIM_CHAL.hp * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM_CHAL.lvK * up);
+  mob.hk = DIM_CHAL.hp * DIM.hpN[clamp(n, 1, DIM.party) - 1] * (1 + DIM_CHAL.lvK * up) * chalGearHp(d.lv);
   // its script's state (56-boss-script.js) is the challenge's own: one object, with the tries and the wipe clock
-  dim.chal = Object.assign(bsNew(1 + DIM_CHAL.atkLv * up), { k, tries: 1, upAt: 0 });
+  dim.chal = Object.assign(bsNew((1 + DIM_CHAL.atkLv * up) * chalGearAtk(d.lv)), { k, tries: 1, upAt: 0 });
   mob.bs = dim.chal; mob.ak = dim.chal.ak;
   mob.castAt = now + 5000; mob.stun = now + 3000;
   dim.rt.mobs.push(mob);
@@ -18824,12 +18864,23 @@ function albaDefs() {
 //   rec       charms a migration took off a broken board (claimed at 주아나, never put back by themselves)
 // A charm in the bag: { id: "charm", n: 1, uid, seal, rv, tier, src, rev: 0 } and, once appraised,
 //   rev: 1, g (1 매직 · 2 레어 · 3 전설), sh (shape id), op [[kind, value, arg]], lg (legendary id).
-//   `seal` never leaves the server (charmWire); with `rv` (the rule version it was sealed under) and `src`
-//   it decides the appraisal, so asking again — or after a reconnect — gives the same charm.
+//   The source tier supplies the item level. The seal stays on the server and fixes the appraisal and engraving.
 
 /** The appraisal rules' version: part of every seal's hash. */
-const CHARM_V = 1;
+const CHARM_V = 2;
 const CHARM_SIZE = 5;
+const CHARM_LEVELS = [30, 50, 70, 90, 110, 130, 150, 170, 190, 200];
+const CHARM_RUNES = 20; // Stable glyph ids in the client's engraving atlas.
+/** Each source tier spans four displayed levels. Use its upper bound so the final tier can drop Lv.200. */
+function charmIl(c) {
+  const sourceLv = c.src === 4 ? CHARM_LEVELS[0] : shownLv(c.tier || 1) + 3;
+  return CHARM_LEVELS.findLast((lv) => lv <= sourceLv) ?? CHARM_LEVELS[0];
+}
+const charmReq = (c) => charmIl(c) - IL_GAP;
+const charmLevelError = (ch, c) => {
+  const req = charmReq(c);
+  return ch.lvl < req ? `Lv.${req}부터 장착할 수 있는 참입니다` : "";
+};
 /** Monsters more than this many tiers below the hunter give neither charms nor quest kills. */
 const CHARM_LOW = 4;
 /** The cells bought one at a time after the inner (1,1)–(3,3), in this order. */
@@ -18838,19 +18889,27 @@ const CHARM_EXPAND = [[4, 1], [4, 2], [4, 3], [1, 4], [2, 4], [3, 4], [4, 4], [0
 const charmExpandCost = (k) => 2000 + 800 * k + 100 * k * k;
 /** What an appraisal costs, by the tier the charm came from (never by what it turns out to be). */
 const charmIdCost = (tier) => Math.round(200 + 12 * tier);
-/** Shapes: cells in the base turn, and what a general option is multiplied by. */
+/** Shapes: cells in the base turn and the general option multiplier. Keep the one-cell shape for old seals. */
 const CHARM_SHAPES = {
-  pin: { cells: [[0, 0]], k: 1.0, w: 40 },
-  bar2: { cells: [[0, 0], [1, 0]], k: 1.7, w: 25 },
-  bar3: { cells: [[0, 0], [1, 0], [2, 0]], k: 2.3, w: 12 },
-  elbow: { cells: [[0, 0], [0, 1], [1, 1]], k: 2.3, w: 13 },
-  tile2: { cells: [[0, 0], [1, 0], [0, 1], [1, 1]], k: 2.9, w: 10 },
+  pin: { cells: [[0, 0]], k: 1 },
+  bar2: { cells: [[0, 0], [1, 0]], k: 1.7 },
+  bar3: { cells: [[0, 0], [1, 0], [2, 0]], k: 2.3 },
+  elbow: { cells: [[0, 0], [0, 1], [1, 1]], k: 2.3 },
+  tile2: { cells: [[0, 0], [1, 0], [0, 1], [1, 1]], k: 2.9 },
+  bar4: { cells: [[0, 0], [1, 0], [2, 0], [3, 0]], k: 2.9 },
+  pole4: { cells: [[0, 0], [0, 1], [0, 2], [0, 3]], k: 2.9 },
+  tee4: { cells: [[0, 0], [1, 0], [2, 0], [1, 1]], k: 2.9 },
+  hook4: { cells: [[0, 0], [0, 1], [0, 2], [1, 2]], k: 2.9 },
+  hook4m: { cells: [[1, 0], [1, 1], [0, 2], [1, 2]], k: 2.9 },
+  step4: { cells: [[1, 0], [2, 0], [0, 1], [1, 1]], k: 2.9 },
+  step4m: { cells: [[0, 0], [1, 0], [1, 1], [2, 1]], k: 2.9 },
 };
-const CHARM_SHAPE_IDS = Object.keys(CHARM_SHAPES);
+const CHARM_SHAPE_V1 = { pin: 40, bar2: 25, bar3: 12, elbow: 13, tile2: 10 };
+const CHARM_SHAPE_V2 = { bar2: 34, bar3: 16, elbow: 16, tile2: 8, bar4: 4, pole4: 4, tee4: 6, hook4: 3, hook4m: 3, step4: 3, step4m: 3 };
 const CHARM_GRADE = ["", "매직", "레어", "전설"];
 /**
  * Where a charm comes from (wire `src`): the chance of a sealed charm, the odds of 매직 / 레어 / 전설 once
- * one fell (percent), and the chance of a 참틀 확장못. 4 is 주아나's first charm (always a 매직 1 × 1).
+ * one fell (percent), and the chance of a 참틀 확장못. 4 is 주아나's first charm.
  */
 const CHARM_SRC = [
   { name: "필드 사냥", p: 0.001, g: [85, 14.8, 0.2], nail: 0.0005 },
@@ -18870,8 +18929,8 @@ const CHARM_OPT = {
   hp: { name: "HP", lo: 8, hi: 14, cap: 120, w: 18 },
   mp: { name: "MP", lo: 4, hi: 7, cap: 60, w: 14 },
   atk: { name: "공격력", lo: 1, hi: 2, cap: 30, w: 14 },
-  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 12, w: 18 },
-  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 12, w: 6 },
+  skd: { name: "스킬 피해", lo: 2, hi: 3, pct: 1, cap: 8, w: 18 },
+  skh: { name: "스킬 회복량", lo: 2, hi: 3, pct: 1, cap: 10, w: 6 },
 };
 const CHARM_OPT_IDS = Object.keys(CHARM_OPT);
 /** The skills an option can name: every weapon active (damage), every skill that heals its caster (recovery). */
@@ -18906,12 +18965,14 @@ const isCharm = (s) => !!s && s.id === "charm";
 
 // ── shapes and the board
 
-/** The cells of shape `sh` after `r` quarter turns, moved back to the origin, in reading order. */
-function charmCells(sh, r) {
+const charmCellOrder = (a, b) => a[1] - b[1] || a[0] - b[0];
+/** The cells after `r` turns. Keep base order when matching rotated cells to their engravings. */
+function charmCells(sh, r, readingOrder = true) {
   let cells = CHARM_SHAPES[sh].cells.map(([x, y]) => [x, y]);
   for (let i = 0; i < (r & 3); i++) cells = cells.map(([x, y]) => [-y, x]);
   const mx = Math.min(...cells.map((c) => c[0])), my = Math.min(...cells.map((c) => c[1]));
-  return cells.map(([x, y]) => [x - mx, y - my]).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+  cells = cells.map(([x, y]) => [x - mx, y - my]);
+  return readingOrder ? cells.sort(charmCellOrder) : cells;
 }
 /** The open cells of a board with `openN` expansions, as a set of "x,y" (nothing before the board is unlocked). */
 function charmOpen(cs) {
@@ -18954,7 +19015,7 @@ function charmOwn(ch, c) {
   return out;
 }
 /** One general option for a shape, not one of `have`: [kind, value, arg]. */
-function charmOption(box, sh, have) {
+function charmOption(box, sh, have, level) {
   const total = CHARM_OPT_IDS.reduce((n, k) => n + CHARM_OPT[k].w, 0);
   for (let tries = 0; ; tries++) {
     let roll = rnd(box) * total, kind = CHARM_OPT_IDS[0];
@@ -18963,8 +19024,13 @@ function charmOption(box, sh, have) {
     const arg = kind === "st" ? ST_ORDER[ri(box, 0, ST_ORDER.length - 1)] : kind === "skd" ? CHARM_SKD[ri(box, 0, CHARM_SKD.length - 1)] : kind === "skh" ? CHARM_SKH[ri(box, 0, CHARM_SKH.length - 1)] : "";
     const base = o.pct ? ri(box, o.lo * 10, o.hi * 10) / 10 : ri(box, o.lo, o.hi);
     if (tries < 40 && have.some((h) => h[0] === kind && h[2] === arg)) continue;
-    const v = base * CHARM_SHAPES[sh].k;
-    return [kind, o.pct ? Math.round(v * 10) / 10 : Math.floor(v), arg];
+    const shape = CHARM_SHAPES[sh];
+    const step = level ? CHARM_LEVELS.indexOf(level) : 0;
+    const extraAttack = kind === "atk" ? 2 * (step / (CHARM_LEVELS.length - 1)) ** 1.25 : 0;
+    const v = (base * (1 + 0.08 * step) + extraAttack) * shape.k * (level && o.pct ? 0.65 : 1);
+    // Round whole bonuses down, with a size floor so a low roll still rewards fitting a larger new piece.
+    const min = level ? shape.cells.length : 0;
+    return [kind, o.pct ? Math.round(v * 10) / 10 : Math.max(min, Math.floor(v)), arg];
   }
 }
 /** What a seal holds: { g, sh, op, lg }. The same for the same seal, rule version and source, every time. */
@@ -18972,24 +19038,36 @@ function charmAppraise(c) {
   const box = { seed: strHash(`charm:${c.seal >>> 0}:${c.rv | 0}:${c.src | 0}`) | 0 };
   const odds = (CHARM_SRC[c.src] || CHARM_SRC[0]).g;
   const x = rnd(box) * 100, pick = rnd(box);
-  let g = x < odds[0] ? 1 : x < odds[0] + odds[1] ? 2 : 3, sh = "pin", lg = "";
+  const level = c.rv >= 2 ? charmIl(c) : 0;
+  let g = x < odds[0] ? 1 : x < odds[0] + odds[1] ? 2 : 3, sh = level ? "bar2" : "pin", lg = "";
   if (c.fx) g = 1;
   else if (g === 3 && CHARM_LG_LIVE.length) { lg = CHARM_LG_LIVE[Math.floor(pick * CHARM_LG_LIVE.length)]; sh = CHARM_LEGEND[lg].shape; }
   else {
     if (g === 3) g = 2;
-    const total = CHARM_SHAPE_IDS.reduce((n, k) => n + CHARM_SHAPES[k].w, 0);
-    let roll = pick * total;
-    for (const k of CHARM_SHAPE_IDS) { if (roll < CHARM_SHAPES[k].w) { sh = k; break; } roll -= CHARM_SHAPES[k].w; }
+    let roll = pick * 100;
+    for (const [id, weight] of Object.entries(level ? CHARM_SHAPE_V2 : CHARM_SHAPE_V1)) {
+      if (roll < weight) { sh = id; break; }
+      roll -= weight;
+    }
   }
   const op = [];
-  for (let n = g === 2 ? 2 : 1; n > 0; n--) op.push(charmOption(box, sh, op));
+  for (let n = g === 2 ? 2 : 1; n > 0; n--) op.push(charmOption(box, sh, op, level));
   return { g, sh, op, lg };
 }
 const charmName = (c) => (!c.rev ? "미감정 참" : c.lg ? CHARM_LEGEND[c.lg].name : `${CHARM_GRADE[c.g]} 참`);
-/** What the owner's client is told of a charm: never the seal, and of a sealed one only where it came from. */
+/** One distinct engraving per base cell, from a separate random stream so it cannot change the appraisal. */
+function charmRunes(c) {
+  const box = { seed: strHash(`charms:engrave:${c.seal >>> 0}:${c.rv}:${c.src}`) | 0 };
+  const pool = Array.from({ length: CHARM_RUNES }, (_, i) => i);
+  return CHARM_SHAPES[c.sh].cells.map(() => pool.splice(ri(box, 0, pool.length - 1), 1)[0]);
+}
+
+/** Unappraised charms show their item level and source. The grade, shape and engravings are hidden. */
 function charmWire(c) {
-  if (!c.rev) return { id: "charm", n: 1, uid: c.uid, src: c.src, tier: c.tier, rev: 0, cost: charmIdCost(c.tier) };
-  const out = { id: "charm", n: 1, uid: c.uid, src: c.src, tier: c.tier, rev: 1, g: c.g, sh: c.sh, op: c.op };
+  const il = charmIl(c);
+  const base = { id: "charm", n: 1, uid: c.uid, src: c.src, tier: c.tier, il, req: il - IL_GAP };
+  if (!c.rev) return { ...base, rev: 0, cost: charmIdCost(c.tier) };
+  const out = { ...base, rev: 1, g: c.g, sh: c.sh, op: c.op, runes: charmRunes(c) };
   if (c.lg) out.lg = c.lg;
   return out;
 }
@@ -19077,6 +19155,7 @@ function charmSum(ch) {
   const cs = ch.charms;
   if (!cs || !cs.placed.length) return out;
   for (const e of cs.placed) {
+    if (ch.lvl < charmReq(e.c)) continue;
     if (e.c.lg && !out.lg && !CHARM_LEGEND[e.c.lg].off) out.lg = e.c.lg;
     for (const [kind, v, arg] of e.c.op) {
       const cap = CHARM_OPT[kind].cap;
@@ -19253,7 +19332,7 @@ function charmValidate(S, p, a) {
       if (!c) return bad("가방에 없는 참입니다");
       if (!c.rev) return bad("감정하지 않은 참은 놓을 수 없습니다");
       if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
-      const why = charmFit(cs, c.sh, a.x, a.y, a.r, 0);
+      const why = charmLevelError(ch, c) || charmFit(cs, c.sh, a.x, a.y, a.r, 0);
       return why ? bad(why) : OK;
     }
     case "charm_move": {
@@ -19261,7 +19340,7 @@ function charmValidate(S, p, a) {
       if (!e) return bad("보드에 없는 참입니다");
       if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
       if (e.x === a.x && e.y === a.y && e.r === a.r) return bad("이미 그 자리에 있습니다");
-      const why = charmFit(cs, e.c.sh, a.x, a.y, a.r, e.c.uid);
+      const why = charmLevelError(ch, e.c) || charmFit(cs, e.c.sh, a.x, a.y, a.r, e.c.uid);
       return why ? bad(why) : OK;
     }
     case "charm_remove":
@@ -19381,8 +19460,9 @@ function charmApply(S, p, a) {
 /** `self.charms`: the board, what waits at 주아나, the quest, the totals and the power at work. */
 function charmSelf(p) {
   const ch = p.ch, cs = ch.charms, q = charmQuest(cs), cm = deriveStats(p).cm;
-  const lg = cs.placed.find((e) => e.c.lg);
+  const lg = cs.placed.find((e) => e.c.lg && ch.lvl >= charmReq(e.c)) || cs.placed.find((e) => e.c.lg);
   const sk = cm.lg && CHARM_LEGEND[cm.lg].sk ? SKILL[CHARM_LEGEND[cm.lg].sk] : null;
+  const lgWhy = sk ? skWhy(ch, sk) || "" : lg && !cm.lg ? charmLevelError(ch, lg.c) || "아직 열리지 않은 효과입니다" : "";
   return {
     un: cs.unlocked ? 1 : 0, openN: cs.openN, open: [...charmOpen(cs)].map((k) => k.split(",").map(Number)),
     next: cs.unlocked && cs.openN < CHARM_EXPAND.length ? { k: cs.openN, cell: CHARM_EXPAND[cs.openN], cost: charmExpandCost(cs.openN), nail: countItem(ch, "charm_nail") } : null,
@@ -19392,14 +19472,18 @@ function charmSelf(p) {
     quest: q ? { i: q.i, st: q.st, n: cs.kn, need: CHARM_QUESTS[q.i].n, lv: CHARM_QUESTS[q.i].lv, ok: ch.lvl >= CHARM_QUESTS[q.i].lv ? 1 : 0 } : null,
     sum: { st: ST_ORDER.map((k) => cm.st[k]), hp: cm.hp, mp: cm.mp, atk: cm.atk, skd: cm.skd, skh: cm.skh },
     // the power at work, why it cannot go off just now ("" when it can), and how many legendaries lie on the board
-    lg: cm.lg, lgWhy: sk ? skWhy(ch, sk) || "" : lg && !cm.lg ? "아직 열리지 않은 효과입니다" : "", lgN: cs.placed.filter((e) => e.c.lg).length,
+    lg: cm.lg, lgWhy, lgN: cs.placed.filter((e) => e.c.lg).length,
   };
 }
 /** `defs().charms`: everything the board UI draws from. */
 function charmDefs() {
   return {
     v: CHARM_V, size: CHARM_SIZE, lv: CHARM_QUESTS[0].lv, low: CHARM_LOW,
-    shapes: Object.fromEntries(CHARM_SHAPE_IDS.map((id) => [id, { cells: CHARM_SHAPES[id].cells, k: CHARM_SHAPES[id].k, rot: [0, 1, 2, 3].map((r) => charmCells(id, r)) }])),
+    levels: CHARM_LEVELS,
+    shapes: Object.fromEntries(Object.entries(CHARM_SHAPES).map(([id, { cells, k }]) => {
+      const turns = [0, 1, 2, 3].map((r) => charmCells(id, r, false).map(([x, y], i) => [x, y, i]).sort(charmCellOrder));
+      return [id, { cells, k, rot: turns.map((turn) => turn.map(([x, y]) => [x, y])), order: turns.map((turn) => turn.map(([, , i]) => i)) }];
+    })),
     grades: CHARM_GRADE, src: CHARM_SRC.map((s) => s.name),
     opts: Object.fromEntries(CHARM_OPT_IDS.map((k) => [k, { name: CHARM_OPT[k].name, lo: CHARM_OPT[k].lo, hi: CHARM_OPT[k].hi, pct: CHARM_OPT[k].pct ? 1 : 0, cap: CHARM_OPT[k].cap }])),
     skd: CHARM_SKD, skh: CHARM_SKH,
@@ -25646,7 +25730,7 @@ export function defs() {
     // J3: the stat panel's exact cost mirror — tierXp of each level and LV_DIV, so the client rounds once as pointCost does
     // (lvc is already rounded, so lvc × surcharge can miss by one)
     lvt: Array.from({ length: MAXLV }, (_, i) => tierXp(toTier(i + 1))), lvDiv: LV_DIV,
-    affix, runes: RUNES, runeScale: RUNE_SCALE, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
+    affix, runes: RUNES, runeScale: RUNE_SCALE, runeStatCaps: RUNE_STAT_CAP, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
     elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
     elementPrefixes: ELEMENT_PREFIX_AFFIX,
     rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
@@ -25685,7 +25769,7 @@ export function defs() {
     //   max(1, entry.il − ilGap)   (what validateAction "eq" checks; an entry without `il` = items[id].req + ilGap, or 1 for req 1)
     // Gear `rarity` uses 0, 1, 2, 3 and 5, with 5 retained as the existing unique code.
     // Legendary and unique gear use their `lg` power's name prefix. Runes have a separate grade table.
-    ilGap: IL_GAP,
+    ilGap: IL_GAP, gearBaseScale: GEAR_BASE_SCALE,
     // the 아이템도감 (public/dex.js): the keys of `legend` that are live (can drop); the other rows are listed there as 준비 중
     pfxOn: Object.keys(LEGEND).filter((k) => PFX[k] && PFX[k].on && !PFX[k].off),
   };

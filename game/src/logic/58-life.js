@@ -405,8 +405,7 @@ function craftOnce(S, p, r, s) {
     const t = ITEMS[r.out[0]].tier;
     let q = clamp(rollRarity(S, 0, 0), GEAR_CRAFT.q[0], GEAR_CRAFT.q[1]);
     if (roll.great) q = Math.min(GEAR_CRAFT.q[1], q + 1);
-    const g = rollGear(S, r.out[0], q, GEAR_CRAFT.ilvl[t - 1]);
-    g.il = Math.min(200, G_REQ[t - 1] + 10);   // worn from the tier's own level as before (il − 10; tier 6 stays at Lv.181)
+    const g = rollGearAtLevel(S, r.out[0], q, G_REQ[t - 1] + IL_GAP);
     ch.inv.push(g);
     p.gain.push(["item", g.id, 1, g.q]);
   } else {
@@ -655,10 +654,10 @@ function lifeUseApply(S, p, a) {
     toast(p, `${it.name}${pp(it.name, "을를")} 마셨습니다. ${it.desc.split(".")[0]}.`);
   } else {
     const g = ch.eq[a.k];
-    // Replace the weakest affix with a different line rolled at the gear's tier.
-    const i = weakAffix(g), t = ITEMS[g.id].tier || 1;
+    // Replace the weakest affix with a line rolled at this piece's item level.
+    const i = weakAffix(g);
     const used = new Set(g.af.filter((_, j) => j !== i).map(([key]) => key));
-    g.af[i] = rollLine(S, rollAffixKey(S, ITEMS[g.id].type, used), GEAR_CRAFT.ilvl[t - 1], AFFIX_MUL[g.q | 0]);
+    g.af[i] = rollGearLine(S, rollAffixKey(S, ITEMS[g.id].type, used), g);
     toast(p, `${gearName(g)}의 옵션을 새로 다듬었습니다.`);
     S.maps[p.map].ev.push(["e", p.eid, 1]);
     afterGear(S, p);
