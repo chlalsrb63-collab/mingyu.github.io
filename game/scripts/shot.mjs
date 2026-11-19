@@ -142,11 +142,12 @@ try {
       .catch(() => errors.push("the page never said it was ready: it may have thrown (see above)"));
   } else {
     const s = await account();
-    await ctx.addInitScript(([sess]) => {
+    await ctx.addInitScript(([sess, hud]) => {
+      if (hud) localStorage.setItem("lumentale:hud", hud);   // SHOT_HUD=linen: a HUD colour theme
       if (!localStorage.getItem("lumentale:sess")) localStorage.setItem("lumentale:sess", sess);
       localStorage.setItem("tales:last", "s1-ch1");
       localStorage.setItem("lumentale:tuthide", "99");
-    }, [JSON.stringify(s)]);
+    }, [JSON.stringify(s), process.env.SHOT_HUD || ""]);
     console.log(`open ${BASE} as ${s.id}`);
     await pg.goto(BASE + String(opt.path || ""));
     await pg.click("#t-press");
