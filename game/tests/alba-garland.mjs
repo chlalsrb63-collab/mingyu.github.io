@@ -42,9 +42,9 @@ const head = (ab) => xy(ab.g.c.at(-1));
 // the step clock: GAR.base ms to start (no gentle start: the old 4th garland), faster with every garland, never below GAR.min, ×1.35 slower in a fever
 {
   const g = { done: 0 };
-  assert.equal(X.garInt(g, { feverUntil: 0 }, 0), GAR.base); assert.ok(GAR.base <= 125 && GAR.min <= 80, "from the first step as quick as the old 4th garland, the top 1.4x the old one");
-  g.done = 1; assert.equal(X.garInt(g, { feverUntil: 0 }, 0), Math.round(GAR.base * 0.92), "faster with every garland");
-  g.done = 3; assert.equal(X.garInt(g, { feverUntil: 0 }, 0), Math.round(GAR.base * 0.92 ** 3));
+  assert.equal(X.garInt(g, { feverUntil: 0 }, 0), GAR.base); assert.ok(GAR.base <= 140 && GAR.min <= 95, "a little gentler than the 2026-11-18 clock (eased 2026-11-20)");
+  g.done = 1; assert.equal(X.garInt(g, { feverUntil: 0 }, 0), Math.round(GAR.base * GAR.ramp), "faster with every garland");
+  g.done = 3; assert.equal(X.garInt(g, { feverUntil: 0 }, 0), Math.round(GAR.base * GAR.ramp ** 3));
   g.done = 99; assert.equal(X.garInt(g, { feverUntil: 0 }, 0), GAR.min, "never faster than the limit");
   g.done = 0; assert.equal(X.garInt(g, { feverUntil: 500 }, 100), Math.round(GAR.base * 1.35), "a fever (봄바람) slows the chain");
   assert.equal(X.garInt(g, { feverUntil: 500 }, 600), GAR.base, "and ends");
@@ -142,7 +142,7 @@ for (const [name, chain, dir, expDir] of [
   const t = step(ab);
   assert.equal(ab.g.done, 1); assert.equal(ab.g.c.length, GAR.stub, "the chain starts over as a stub"); assert.equal(ab.g.ev[1], 1 | 4);
   assert.equal(ab.score, 10 + Math.round(100 * 1.1), "the flower, then the garland (combo 1)"); assert.equal(ab.combo, 2);
-  assert.equal(ab.g.simAt, t + Math.round(GAR.base * 0.92), "and a notch faster");
+  assert.equal(ab.g.simAt, t + Math.round(GAR.base * GAR.ramp), "and a notch faster");
   assert.deepEqual(ab.g.c, [cell(10, 8), cell(11, 8), cell(12, 8)], "the stub is the head's last links"); assert.equal(ab.g.dir, 1, "still heading on");
   const bb = setup(mkAb(), { chain: row(1, 8, 11), f: [[12, 8]] }); bb.g.th = [cell(15, 8)];
   step(bb); assert.ok(bb.g.dir !== 3, "the restarted stub never faces its own neck"); assert.equal(bb.g.hits, 0, "a garland is not a crash");
@@ -339,7 +339,7 @@ assert.ok(results.perfect.every((r) => r.grade === 4), "the perfect bot reaches 
 assert.ok(avg(results.strong.map((r) => r.score)) / PAR >= 0.85, "a strong player gets A or better on average");
 {
   const m = avg(results.human.map((r) => r.score)) / PAR;
-  assert.ok(m >= 0.6 && m <= 0.9, `the human-like bot lands around B (${m.toFixed(2)} of par)`);
+  assert.ok(m >= 0.6 && m <= 1.15, `the human-like bot lands around B–A (eased 2026-11-20) (${m.toFixed(2)} of par)`);
   const c = avg(results.casual.map((r) => r.score)) / PAR;
   assert.ok(c >= 0.3 && c <= 0.7, `the casual bot lands around C (${c.toFixed(2)} of par)`);
 }
@@ -355,7 +355,7 @@ assert.ok(viewMax < 600, `the view stays small (${viewMax} bytes)`);
   const rp = rate(BOTS.perfect), rh = rate(BOTS.human), rc = rate(BOTS.casual), rs_ = rate(BOTS.slow);
   console.log(`  strike-outs over ${N} seeds: perfect ${Math.round(rp.r * 100)}% · human ${Math.round(rh.r * 100)}% · casual ${Math.round(rc.r * 100)}% · sloppy (slow) ${Math.round(rs_.r * 100)}% (those runs end after ${rs_.run} s)`);
   assert.equal(rp.r, 0, "the perfect bot never strikes out"); assert.ok(rh.r <= 0.25, "the human-like bot strikes out in at most a quarter of its shifts");
-  assert.ok(rs_.r >= 0.5, "the sloppy bot strikes out in at least half of its shifts"); assert.ok(rs_.run < 75, `and its run ends before 75 s (${rs_.run} s)`);
+  assert.ok(rs_.r >= 0.25, "the sloppy bot still strikes out in at least a quarter of its shifts (eased 2026-11-20)"); assert.ok(rs_.run < 88, `and its run ends before 75 s (${rs_.run} s)`);
 }
 
 // (a) determinism: the same seed gives the same garden, the same inputs the same shift

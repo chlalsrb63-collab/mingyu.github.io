@@ -19814,8 +19814,8 @@ const ALBA_ORDER = ["pipe", "fly", "store", "parcel", "laundry", "taiyaki",
   "pest", "wall", "cross", "lamp", "rhythm", "garland"];
 const ALBA_T = {
   briefMs: 5000, runMs: 90000, resultMs: 90000, rushMs: 15000, actMs: 35,
-  feverMs: 8000, feverMax: 2, feverEvery: 10,    // a fever at combo 10 and 20 (at most two per shift)
-  cuts: [0.30, 0.65, 0.85, 1.0],                  // share of the game's par for C B A S
+  feverMs: 8000, feverMax: 3, feverEvery: 8,     // a fever at combo 8, 16 and 24 (at most three per shift; easier 2026-11-20: was 10 / 20, two)
+  cuts: [0.25, 0.55, 0.75, 0.9],                  // share of the game's par for C B A S (easier 2026-11-20: was 0.30 0.65 0.85 1.0)
   gradeK: [0.7, 1.0, 1.3, 1.7],                   // pay multiplier per grade
   rep: [1, 2, 2, 3], stone: [0, 0, 1, 2], life: 0.5,
   lives: 3,                                       // serious failures before the shift ends early (a game may set ALBA[k].lives)
@@ -20775,13 +20775,14 @@ function airshipReturn(st) {
 //         ev, ms until the lanes start, hops taken, ms since the delivery began]; ev = [seq, 1 delivered · 2 delivered flawless · 3 hit · 4 water · 5 gift, points]
 const CROSS = {
   W: 13, H: 11, SX: 6, SY: 10,
-  D0: 4, VMAX: 2.4, MEND: 5000,      // 2026-11-18: the street starts as hard as the old 5th delivery (D0), the lanes speed up to VMAX x (the old top was 1.6); a heart mends every MEND ms
+  D0: 2, VMAX: 2.0, MEND: 4000,      // (easier 2026-11-20) start at the 3rd delivery's street (D0 4), top 2.0× (2.4×), a heart a 4 s (5 s)
+       // 2026-11-18: the street starts as hard as the old 5th delivery (D0), the lanes speed up to VMAX x (the old top was 1.6); a heart mends every MEND ms
   STEP: 50, CATCH: 40,
   CD: 300, CD_FEVER: 150, STUN: 500, PAUSE: 400,                   // ms: a hop's cooldown (halved in a fever), the pause after a hit, after a delivery
   PAY: 100, FLAWLESS: 50, GIFT: 30, HIT: 20, BONUS: 3, BONUS_MAX: 60, BUDGET: [12000, 26000],
   IN: 0.2, CIN: 0.1, SLACK: 0.2,                                   // hit-box inset of the courier and of a cart; how far past a log's end a foot still holds
 };
-Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 1300, lives: 5, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차·행인에 치이거나 강에 빠지면 ♥ 하나(5개면 퇴근), 5초마다 ♥ 하나 회복. 통나무를 타고 건너 꾸러미를 전하세요." } });
+Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 1300, lives: 5, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차·행인에 치이거나 강에 빠지면 ♥ 하나(5개면 퇴근), 4초마다 ♥ 하나 회복. 통나무를 타고 건너 꾸러미를 전하세요." } });
 
 const crossN = (ln) => Math.ceil((CROSS.W + ln.len) / ln.sp);
 /** Where the ring's first object is (cells, 0 ≤ phase < ring length) `T` ms. */
@@ -20923,8 +20924,8 @@ ALBA_RULES.cross = {
 // view = [[[id, can, ms to spawn (< 0: already out), life, kind (4 = wounded poison)]… alive or spawning within FLY.ahead ms], [[can, ms the lid stays shut]…]];
 // the view is re-sent (rev) on every hit and whenever the announced window is about to run dry, so an idle player still sees what comes.
 // The only input is {hit: fly id}: it must name a fly that is out (± FLY.grace for latency) and not hit yet; a swing at nothing is refused without a penalty.
-const FLY = { ahead: 3500, refresh: 1200, grace: 250, early: 100, close: 1000, gap: 400, pts: [10, 40, 0, 25], beePen: 30, bombs: [22000, 60000, 80000], rate: [1.9, 2.8], life: [[700, 380], [420, 280], [800, 560], [1300, 850]] };
-Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 5200, lives: 4, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌을 치면 ♥ 하나 (네 번이면 끝)!" } });
+const FLY = { ahead: 3500, refresh: 1200, grace: 250, early: 100, close: 1000, gap: 400, pts: [10, 40, 0, 25], beePen: 30, bombs: [22000, 60000, 80000], rate: [1.9, 2.8], life: [[840, 460], [500, 340], [960, 670], [1560, 1020]] };   // (easier 2026-11-20) every fly stays 20 % longer
+Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 5200, lives: 5, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌을 치면 ♥ 하나 (다섯 번이면 끝)!" } });
 
 /** Roll the whole schedule: a spawn clock whose pace and lifetimes ramp with the time, and two 쓰레기 폭탄 (every can opens at once). */
 function flyBuild(box) {
@@ -21019,12 +21020,13 @@ ALBA_RULES.fly = {
 // view = [chain cells, dir, ms to the next step, step ms, flower cells, [gold cell, ms left] | 0, thorn cells, garlands done, queued turns, ev]
 // 2026-11-18: faster from the first step, thorns sooner and denser; a crash costs a heart, one mends every `mend` ms
 const GAR = {
-  W: 16, base: 120, min: 80, ramp: 0.92, mend: 7000, stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
+  W: 16, base: 135, min: 92, ramp: 0.93, mend: 5500,   // (easier 2026-11-20) slower step (120 → 135 ms, floor 80 → 92), a heart a 5.5 s (7 s)
+  stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
   thornFirst: 3000, thornEvery: 2400, thornMax: 22, goldFirst: [6000, 12000], goldGap: [8000, 14000], goldLife: 6000,
   slow: 1.35, pts: [10, 50, 100], pen: 40, catchup: 40, queue: 2,
 };
 const GAR_DX = [0, 1, 0, -1], GAR_DY = [-1, 0, 1, 0];
-Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 3700, lives: 5, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊기고 ♥ 하나가 깎여요(5개면 퇴근, 7초마다 하나 회복). 12송이면 화환 완성!" } });
+Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 3700, lives: 5, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊기고 ♥ 하나가 깎여요(5개면 퇴근, 5.5초마다 하나 회복). 12송이면 화환 완성!" } });
 
 /** Ms between steps: faster with every garland, ×1.35 slower in a fever ("봄바람"). */
 const garInt = (g, ab, T) => Math.round(Math.max(GAR.min, GAR.base * GAR.ramp ** g.done) * (T < ab.feverUntil ? GAR.slow : 1));
@@ -21156,13 +21158,14 @@ ALBA_RULES.garland = {
 //         ev = [seq, 1 big bulb · 2 caught · 3 alley cleared · 4 shadow eaten, points]
 const LAMP = {
   N: 15, STEP: 50, CATCH: 40, UNIT: 120, PSP: 40, SP: [34, 34, 36, 32], FSP: 22, PW: 5500,
-  RDELAY: [60, 90, 120, 150], EL0: 2, RAMP: 4, SPMAX: 42, MEND: 8000, HEAL: 4,   // 2026-11-18: no gentle first alley (EL0 levels ahead), the shadows speed up by RAMP over the shift (up to SPMAX, a hair faster than the courier); a caught heart mends every MEND ms and every HEAL bulbs lit
+  RDELAY: [60, 90, 120, 150], EL0: 1, RAMP: 3, SPMAX: 40, MEND: 6500, HEAL: 3,   // (easier 2026-11-20) gentle first alley, slower shadows, faster mending
+    // 2026-11-18: no gentle first alley (EL0 levels ahead), the shadows speed up by RAMP over the shift (up to SPMAX, a hair faster than the courier); a caught heart mends every MEND ms and every HEAL bulbs lit
   START: [7, 13], HOME: [[7, 5], [5, 3], [9, 3], [7, 1]], CORNER: [[13, 1], [1, 1], [1, 13], [13, 13]], DELAY: [0, 30, 60, 90], FREEZE: 16,
   PEL: 10, GROUP: 5, BIG: 50, CLEAR: 200, EAT: 200, PEN: 30, R2: 0.36, WANT: 40,
   CUT: [8, 5],   // a ~90 s shift: the first two alleys only light the bottom rows (from this row down), so a first alley takes about a minute
 };
 const lampEl = (lv) => 2 * lv + LAMP.EL0;   // an alley is two "difficulty levels" at once (loops, scatter, shadow speed)
-Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 5500, lives: 4, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자에게 잡히면 ♥ 하나(4개면 퇴근)! 시간이 지나거나 전구를 켜면 ♥가 회복돼요. 큰 전구로 그림자를 잡아보세요." } });
+Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 5500, lives: 5, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자에게 잡히면 ♥ 하나(5개면 퇴근)! 시간이 지나거나 전구를 켜면 ♥가 회복돼요. 큰 전구로 그림자를 잡아보세요." } });
 const LAMP_D = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 /** The alley of a level: [wall per tile (1 wall · 0 open)]. Symmetric, connected, loops, no dead ends; more loops (an easier alley) for the first levels. */
@@ -21436,7 +21439,7 @@ function laundryDraw(g, box) {
   return [ri(box, 1, nc), ri(box, 1, nc)];
 }
 /** Ms between drops: faster with every chain step, ×0.7 in the rush, ×1.5 slower in a fever ("건조기"). */
-const laundryDrop = (g, ab, T) => Math.round(Math.max(125, 320 - 12 * g.washes) * (T >= ab.endAt - ALBA_T.rushMs ? 0.65 : 1) * (T < ab.feverUntil ? 1.5 : 1));
+const laundryDrop = (g, ab, T) => Math.round(Math.max(160, 380 - 11 * g.washes) * (T >= ab.endAt - ALBA_T.rushMs ? 0.65 : 1) * (T < ab.feverUntil ? 1.5 : 1));
 
 /** A pair arrives at the top; if its place is taken the stack reached the ceiling: the washer is emptied. */
 function laundrySpawn(ab, T) {
@@ -21476,7 +21479,7 @@ function laundryLock(ab, T) {
   }
 }
 
-ALBA.laundry = { name: "세탁소", npc: "costume", place: "의상실 세탁실", skill: "craft", par: 5000, lives: 3, mul: 1.1, outfit: ["top_apron_moka"], tool: "basket", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 같은 색 4개를 이어 세탁하세요. 세탁기가 넘치면 ♥ 하나." };
+ALBA.laundry = { name: "세탁소", npc: "costume", place: "의상실 세탁실", skill: "craft", par: 5000, lives: 4, mul: 1.1, outfit: ["top_apron_moka"], tool: "basket", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 같은 색 4개를 이어 세탁하세요. 세탁기가 넘치면 ♥ 하나." };
 ALBA_RULES.laundry = {
   init(S, p, ab) {
     const g = ab.g = { b: new Array(LAUNDRY_W * LAUNDRY_H).fill(0), cur: null, next: null, fallAt: 0, spawnAt: ab.runAt, locks: 0, washes: 0, wc: 0, n: 0, det: 12, stain: 4, sb: { seed: (ab.box.seed ^ 0x2f6b9a1d) | 0 }, seq: 0, ev: [0, 0, [], 0] };
@@ -21573,7 +21576,7 @@ function parcelDraw(g, box) {
   return { k, f: k <= 2 && g.n >= 2 && rnd(box) < 0.18 ? 1 : 0 };
 }
 /** Ms between drops: faster with every row shipped, ×0.7 in the rush, ×1.5 slower in a fever ("지게차"). */
-const parcelDrop = (g, ab, T) => Math.round(Math.max(150, 490 - 18 * g.rows) * (T >= ab.endAt - ALBA_T.rushMs ? 0.65 : 1) * (T < ab.feverUntil ? 1.5 : 1));
+const parcelDrop = (g, ab, T) => Math.round(Math.max(190, 560 - 16 * g.rows) * (T >= ab.endAt - ALBA_T.rushMs ? 0.65 : 1) * (T < ab.feverUntil ? 1.5 : 1));
 
 /** The box comes off the conveyor at the top; a blocked spawn means the stack reached the ceiling: the truck is swapped. */
 function parcelSpawn(ab, T) {
@@ -21605,7 +21608,7 @@ function parcelLock(ab, T) {
   g.cur = null; g.spawnAt = T + PARCEL_GAP;
 }
 
-ALBA.parcel = { name: "택배 상하차", npc: "shop", place: "광장 택배 집하장", skill: "deliver", par: 2100, lives: 4, mul: 1.15, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "box", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 한 줄을 채우면 출하! 깨짐 주의 상자를 눌러도, 트럭이 가득 차도 ♥ 하나." };
+ALBA.parcel = { name: "택배 상하차", npc: "shop", place: "광장 택배 집하장", skill: "deliver", par: 2100, lives: 5, mul: 1.15, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "box", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 한 줄을 채우면 출하! 깨짐 주의 상자를 눌러도, 트럭이 가득 차도 ♥ 하나." };
 ALBA_RULES.parcel = {
   init(S, p, ab) {
     const g = ab.g = { b: new Array(PARCEL_W * PARCEL_H).fill(0), fr: new Array(PARCEL_W * PARCEL_H).fill(0), cur: null, next: null, fallAt: 0, spawnAt: ab.runAt, rows: 0, n: 0, fid: 0, seq: 0, ev: [0, 0, 0] };
@@ -21675,7 +21678,7 @@ ALBA_RULES.parcel = {
 //   rescue [x, y, vx] | 0, queen [x, y, hp, max] | 0, events [[seq, type, x, y, points]…], bugs left]
 // event types: 1 bug shot · 2 diver shot · 3 ship rammed · 4 webbed · 5 rescued · 6 wave cleared · 7 queen hit · 8 queen shot · 9 queen spits a web
 const PEST = { W: 240, H: 300, SY: 282, STEP: 50, SPD: 4, FCD: 4, BSP: 8, MAXV: 3, FX: 120, FY: 54, SPX: 26, SPY: 20, SWAY: 80, AMP: 20, DESC: 3, MAXDROP: 54, INTRO: 25,
-  REST: 50, STUN: 40, INV: 20, WEB: 60, WEBSP: 4, COMMIT: 60,
+  REST: 50, STUN: 40, INV: 30, WEB: 60, WEBSP: 4, COMMIT: 60,
   SINT: [0, 24, 45, 59, 64, 59, 45, 24, 0, -24, -45, -59, -64, -59, -45, -24],
   COLS: [6, 6, 7, 7, 8, 8, 8, 8], ROWS: [2, 3, 3, 4, 4, 4, 5, 5], KINDS: { 2: [1, 0], 3: [2, 1, 0], 4: [2, 1, 1, 0], 5: [2, 2, 1, 0, 0] },   // 0 cockroach · 1 mosquito · 2 moth
   WIG: [6, 14, 20], FRQ: [2, 3, 2], PTS: [10, 40, 60, 100, 100] };   // PTS: a bug in place · a diver · the rescue · the wave · the wave without a hit (extra)
@@ -21774,7 +21777,7 @@ function pestFight(ab, T) {
       const i = open[ri(ab.box, 0, open.length - 1)], k = g.kinds[(i / g.cols) | 0], x = pestSx(g, i), y = pestSy(g, i);
       g.F[i] = 2;
       g.D.push({ i, k, x, y, y0: y, cx: x, a: 0, st: 0, vx: 0, vy: 0, web: k === 1 && g.wv >= 2 && rnd(ab.box) < 0.5 ? 1 : 0, wd: 0 });
-      g.dn = Math.max(12, 40 - 3 * lv) + ri(ab.box, 0, 8);
+      g.dn = Math.max(16, 46 - 3 * lv) + ri(ab.box, 0, 8);   // (easier 2026-11-20) dives come a little less often (was 12, 40)
     } else g.dn = 10;
   }
   for (let j = g.D.length - 1; j >= 0; j--) {
@@ -21892,14 +21895,14 @@ ALBA_RULES.pest = {
 //   view: [site n, inlet row, outlet row, 144-char board ("0" empty, hex = open sides N1 E2 S4 W8, "#" rock), hand + next three (hex), ms to open, ms to end, trashed, last site's end]
 //   last site's end: 0 none · 1 cleared · 2 leak · 3 timeout · 4 skipped
 
-Object.assign(ALBA, { pipe: { name: "배관 수리", npc: "popo", place: "마을회관 배관실", skill: "craft", par: 460, mul: 1, lives: 4, outfit: ["hat_coop_cap","top_coop_vest"], tool: "wrench", hint: "조각을 칸에 놓아 급수구에서 배수구까지 길을 이으세요. 물이 새거나 시간이 다 되면 ♥ 하나." } });
+Object.assign(ALBA, { pipe: { name: "배관 수리", npc: "popo", place: "마을회관 배관실", skill: "craft", par: 460, mul: 1, lives: 5, outfit: ["hat_coop_cap","top_coop_vest"], tool: "wrench", hint: "조각을 칸에 놓아 급수구에서 배수구까지 길을 이으세요. 물이 새거나 시간이 다 되면 ♥ 하나." } });
 
 const APIPE = { gap: 800, trashMs: 3000, spare: 0.3, fit: 0.3, rock: 255 };
 const APIPE_DX = [0, 1, 0, -1], APIPE_DY = [-1, 0, 1, 0];   // direction index: 0 N · 1 E · 2 S · 3 W; a piece is the mask of its open sides (1 << dir)
 const APIPE_SPARE = [10, 5, 3, 6, 12, 9, 15];                  // straight ─ │, the four corners, the cross
-const apipeLen = (n) => Math.min(44, 24 + 3 * n);               // cells on the first route (no gentle first site: 2026-11-18 harder)
-const apipeRocks = (n) => Math.min(34, 14 + 3 * n);
-const apipeLimit = (n) => Math.max(19, 33 - 3 * n) * 1000;
+const apipeLen = (n) => Math.min(42, 22 + 3 * n);               // cells on the first route (no gentle first site: 2026-11-18 harder)
+const apipeRocks = (n) => Math.min(32, 12 + 3 * n);
+const apipeLimit = (n) => Math.max(21, 35 - 3 * n) * 1000;   // (easier 2026-11-20) route 22+3n, 12+3n rocks, 35 s − 3 s a site (was 24, 14, 33)
 const apipeDir = (a, b) => { const d = b - a; return d === -12 ? 0 : d === 1 ? 1 : d === 12 ? 2 : 3; };
 
 /** A self-avoiding route of `want` cells (fewer when the board is too tight; at least the shortest) from cell `s` to cell `e` over the empty cells of `b` (`s` and `e` themselves count as empty); null when there is no way. */
@@ -22091,11 +22094,12 @@ ALBA_RULES.pipe = {
 // view = [notes flat [id, lane, ms from now (t − now), hold ms, held 0|1 …], judgements flat [seq, lane, kind …] (kind 0 miss · 1 good · 2 perfect ·
 //         3 hold done · 4 hold broken, the last RHY.ring), bpm, [perfect, good, miss]]; the notes are the waiting / held ones within RHY.ahead ms.
 const RHY = {
-  ahead: 4000, refresh: 2500, lat: 40, perf: 45, good: 100, wide: 1.5, tailOk: 120, tailEnd: 150, lead: 2000, tail: 1500, sameLane: 240,
-  perSec: 9, strayN: 5, strayMs: 2000, lockMs: 1500, missPen: 10, pts: [10, 20], holdPts: 10, ring: 8, bpm: [120, 170], run: 3, skip: 0.4,
+  ahead: 4000, refresh: 2500, lat: 40, perf: 55, good: 125, wide: 1.5, tailOk: 120, tailEnd: 150, lead: 2000, tail: 1500, sameLane: 240,
+  perSec: 9, strayN: 5, strayMs: 2000, lockMs: 1500, missPen: 10, pts: [10, 20], holdPts: 10, ring: 8, bpm: [120, 170], run: 4, skip: 0.4,   // (easier 2026-11-20) wider perfect / good windows (45 / 100 ms), four misses in a row cost a heart
+ 
   quarterTo: 4000, holdFrom: 6000, chordFrom: 8000, tripleFrom: 45000,   // 2026-11-18: no gentle intro; `run` misses in a row cost a heart
 };
-Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 14600, mul: 1.05, outfit: ["hat_beret", "top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 D F J K (← ↓ ↑ →) 또는 터치로 연주하세요. 긴 음표는 끝까지 누르세요! 음표를 3번 연속 놓치면 ♥ 하나가 깎여요(3개면 퇴근)." } });
+Object.assign(ALBA, { rhythm: { name: "여관 공연", npc: "inn_lira", place: "여관 무대", skill: "cook", par: 14600, lives: 4, mul: 1.05, outfit: ["hat_beret", "top_vest"], tool: "lute", hint: "내려오는 음표를 박자에 맞춰 D F J K (← ↓ ↑ →) 또는 터치로 연주하세요. 긴 음표는 끝까지 누르세요! 음표를 4번 연속 놓치면 ♥ 하나가 깎여요(4개면 퇴근)." } });
 
 const rhyBpm = (t) => RHY.bpm[0] + (RHY.bpm[1] - RHY.bpm[0]) * clamp(t / ALBA_T.runMs, 0, 1);
 /** Fever widens every window ×1.5. */
@@ -22239,11 +22243,11 @@ ALBA_RULES.rhythm = {
 //   act: {s: lane, i: item} scan · {p: lane, v: 0..3} a coin or bill (pad[v]) · {cl: lane} empty the tray
 //   view: [lane ×4]; a lane is 0 (nobody) or [customer id, kind, item prices (hundreds), scanned bitmask, paid, tray, ms until she leaves, patience ms, changed-her-mind flag]
 
-Object.assign(ALBA, { store: { name: "편의점 아르바이트", npc: "store_kong", place: "다람쥐 잡화점 계산대", skill: "deliver", par: 3000, lives: 4, mul: 1, outfit: ["top_coop_vest"], tool: "scanner", hint: "물건을 눌러 스캔하고 거스름돈을 정확히 내주세요. 손님이 화내며 가면 ♥ 하나!" } });
+Object.assign(ALBA, { store: { name: "편의점 아르바이트", npc: "store_kong", place: "다람쥐 잡화점 계산대", skill: "deliver", par: 3000, lives: 5, mul: 1, outfit: ["top_coop_vest"], tool: "scanner", hint: "물건을 눌러 스캔하고 거스름돈을 정확히 내주세요. 손님이 화내며 가면 ♥ 하나!" } });
 
 const ASTORE = { pad: [1, 5, 10, 50], lanes: 4, leavePen: 20, groupItems: 12 };
 /** How hard it is at time `t`: starts at 3 (no gentle intro), climbs with the score (a level per 220 points) and the time (one per 10 s), 0..10. */
-const astoreDiff = (ab, t) => clamp(Math.floor(ab.score / 220 + 3 + Math.max(0, t - ab.runAt) / 10000), 0, 10);
+const astoreDiff = (ab, t) => clamp(Math.floor(ab.score / 260 + 1 + Math.max(0, t - ab.runAt) / 12000), 0, 10);   // (easier 2026-11-20) starts at 1, climbs slower (was 3, /220, /10 s)
 /** The wait before the next customer comes to an empty lane (shorter as it gets harder, and 1.4× faster in the rush). */
 const astoreGap = (ab, t) => Math.round((2600 - 220 * astoreDiff(ab, t) + ri(ab.g.gb, 0, 1500)) / (t >= ab.endAt - ALBA_T.rushMs ? 1.4 : 1));
 
@@ -22256,7 +22260,7 @@ function astoreMake(ab, t) {
   for (let i = 0; i < n; i++) { const v = ri(cb, 2, 15); it.push(v); tot += v; }
   const up = (Math.floor(tot / 10) + 1) * 10, q = rnd(cb);   // the next thousand won above the total, now and then more
   const paid = q < 0.6 ? up : q < 0.8 ? up + 10 : q < 0.9 && up < 50 ? 50 : up < 100 ? 100 : up + 10;
-  const pt = Math.round(Math.max(8500, 25000 - 1600 * d) * (kind === 1 ? 0.8 : 1)) + 1400 * n;
+  const pt = Math.round(Math.max(11000, 28000 - 1500 * d) * (kind === 1 ? 0.8 : 1)) + 1600 * n;   // (easier 2026-11-20) more patience
   return { id, kind, it, sc: 0, tot, paid, tray: 0, lv: t + pt, pt, fl: 1, ch: 0 };
 }
 
@@ -22329,7 +22333,7 @@ ALBA_RULES.store = {
 // Input: {slot, step, f?} — `step` is the stage the player saw (a stale tap is refused, so a double tap can't skip a step), `f` the filling at stage 1 —
 //        or {c: customer id} to serve. Everything is validated; a refusal costs nothing.
 // view = [open slots, [[stage, filling, quality, ms since the stage began (≤ 0), side ms, z0, z1, z2, z3]…8], [[id, n0, n1, n2, ms patience left, patience ms, group]…], [[filling, quality]…tray], ms to the 8th slot]
-const TAI = { more: 15000, group: 28000, queue: 5, tray: 6, burn: 10, leave: 20, leaveGroup: 40, pts: [30, 60], bonus: 12, cook: [6500, 4000], flip: [26, 14], gold: [12, 6], groupN: [3, 3, 2], groupWait: 24000 };
+const TAI = { more: 15000, group: 28000, queue: 5, tray: 6, burn: 10, leave: 20, leaveGroup: 40, pts: [30, 60], bonus: 12, cook: [6500, 4000], flip: [26, 14], gold: [12, 6], groupN: [3, 3, 2], groupWait: 30000 };   // (easier 2026-11-20) customers wait 4 s longer, a group 6 s
 Object.assign(ALBA, { taiyaki: { name: "붕어빵 노점", npc: "cafe_moka", place: "광장 먹거리 골목", skill: "cook", par: 5000, lives: 5, mul: 1, outfit: ["top_apron_juju"], tool: "spatula", hint: "알맞게 구워졌을 때 뒤집고 꺼내세요. 손님이 기다리다 가면 ♥ 하나." } });
 
 const taiLerp = (r, rt) => r[0] + (r[1] - r[0]) * clamp(rt / ALBA_T.runMs, 0, 1);
@@ -22345,7 +22349,7 @@ function taiCustomer(g, ab, bt, grp) {
     tot = g.bag.pop(); need[ri(ab.box, 0, 2)]++;
     if (tot === 2) need[ri(ab.box, 0, 2)]++;
   }
-  const wait = Math.round(grp ? TAI.groupWait : (19000 - 8000 * u) * (tot === 2 ? 1.35 : 1) * (0.9 + 0.2 * rnd(ab.box)));
+  const wait = Math.round(grp ? TAI.groupWait : (23000 - 8000 * u) * (tot === 2 ? 1.35 : 1) * (0.9 + 0.2 * rnd(ab.box)));
   g.cu.push({ id: g.nid++, need, tot, at: bt, until: bt + wait, wait, grp: grp ? 1 : 0 });
 }
 /** The earliest thing that happens by itself: [time, kind, index] — 0 the 8th slot opens · 1 the group order comes · 2 a customer arrives · 3 a slot burns · 4 a customer leaves. */
@@ -22444,7 +22448,8 @@ ALBA_RULES.taiyaki = {
 //   items [x, y, kind …], [wide ms, piercing ms, slow ms, serve ms], events [[seq, type, x, y, value]…], bricks left, big ball (fever) 0|1]
 // event types: 1 brick broken (value = points of the blow) · 2 brick cracked (hits left) · 3 bomb · 4 item caught (kind) · 5 ball lost · 6 wall cleared (points) · 7 paddle bounce · 8 item dropped (kind)
 // items: 0 wide paddle · 1 three balls · 2 piercing · 3 slow ball
-const WALL = { SP0: 50, SPL: 6, SPR: 24, HEAL: 10, W: 240, H: 240, STEP: 50, SUB: 4, BW: 20, BH: 8, COLS: 12, ROWS: 9, Y0: 28, PY: 222, PSPD: 10, HW: [20, 32], SERVE: 30, RESERVE: 60, FALL: 3,
+const WALL = { SP0: 44, SPL: 6, SPR: 20,   // (easier 2026-11-20) ball 44 (was 50), the shift's speed-up 20 (was 24), wider paddle
+  HEAL: 10, W: 240, H: 240, STEP: 50, SUB: 4, BW: 20, BH: 8, COLS: 12, ROWS: 9, Y0: 28, PY: 222, PSPD: 11, HW: [24, 36], SERVE: 30, RESERVE: 60, FALL: 3,
   TAB: [[-55, 32], [-48, 43], [-38, 52], [-26, 58], [-13, 63], [0, 64], [13, 63], [26, 58], [38, 52], [48, 43], [55, 32]],   // paddle bounce directions, 12° apart (dx, up)
   FX: [240, 160, 200], PTS: { plain: 10, crack: 5, bomb: 20, box: 30, item: 30, wall: 150, lost: 50 } };
 // 1/16 px per sub-step: no gentle start (the old wall 3 speed from the first ball), +24 over the shift (1.5x at the end; 2026-11-18, three lost balls end it)

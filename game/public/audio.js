@@ -762,7 +762,7 @@ const BOOST = {
 /** Effects that play even when many voices are already sounding. */
 const IMPORTANT = new Set(["verdict", "steam", "overload", "supercon", "dragon_final", "meteor_cast", "crimson", "dive", "thunder", "sanctuary", "pact", "hundred", "oath_cast", "level", "achieve", "job_change", "death", "rift_start", "rift_boss", "rc_ping", "dim_boss", "dim_clear", "announce", "enh_ok", "enh_fail", "warp", "loot", "whale_burst", "boss_break", "cleave_hit", "ignite_burst", "soul_drain_fin", "snipe_shot", "parry_clang", "mountain_split", "dragonbone_shot"]);
 /** 일일 아르바이트 sounds that may come in quick bursts (a hop, a brick, a spray) and the three that frame a shift, which never get dropped. */
-Object.assign(THROTTLE, { alba_pop: 0.045, alba_snap: 0.04, alba_crunch: 0.05, alba_step: 0.05, alba_zap: 0.06, alba_sizzle: 0.1, alba_swish: 0.08, alba_thud: 0.06, alba_clang: 0.05, alba_n0: 0.04, alba_n1: 0.04, alba_n2: 0.04, alba_n3: 0.04 });
+Object.assign(THROTTLE, { alba_pop: 0.045, alba_snap: 0.04, alba_crunch: 0.05, alba_step: 0.05, alba_zap: 0.06, alba_sizzle: 0.1, alba_swish: 0.08, alba_thud: 0.06, alba_clang: 0.05, alba_gain: 0.05, alba_hurt: 0.2, alba_n0: 0.04, alba_n1: 0.04, alba_n2: 0.04, alba_n3: 0.04 });
 Object.assign(BOOST, {
   alba_ok: 1.55, alba_big: 1.7, alba_bad: 1.55, alba_fever: 1.8, alba_tick: 1.5,
   alba_pop: 1.65, alba_snap: 1.75, alba_swish: 1.75, alba_thud: 1.85, alba_coin: 1.7,
@@ -770,6 +770,7 @@ Object.assign(BOOST, {
   alba_step: 1.65, alba_zap: 1.7, alba_chime: 1.65, alba_buzz: 1.55,
   alba_n0: 1.65, alba_n1: 1.65, alba_n2: 1.65, alba_n3: 1.65,
   alba_go: 1.75, alba_end: 1.7, alba_win: 1.85,
+  alba_gain: 1.5, alba_hurt: 1.75,
 });
 for (const n of ["alba_go", "alba_end", "alba_win"]) IMPORTANT.add(n);
 
@@ -1259,6 +1260,21 @@ const SFX = {
     this.tone("sawtooth", 118 * p, 96 * p, 0.20, 0.095, 0, true);
     this.tone("triangle", 124 * p, 102 * p, 0.20, 0.085, 0, true);
     this.noise(0.04, 0.075, 700 * p, "lowpass", 0, 240 * p, 1.4, true);
+  },
+  /** Points landed (alba.js scorePop): a coin blip that climbs and brightens with the size of the gain, arg = tier 0..3. */
+  alba_gain(tier = 0) {
+    const p = this.vary(), f = [784, 988, 1175, 1568][tier] || 784;
+    this.tone("triangle", f * p, f * 1.5 * p, 0.06 + 0.02 * tier, 0.05 + 0.012 * tier);
+    if (tier >= 1) this.tone("sine", f * 2 * p, f * 2 * p, 0.12 + 0.04 * tier, 0.03 + 0.008 * tier, 0.045);
+    if (tier >= 2) this.arp("triangle", [f * 1.25, f * 1.5, f * 2], 0.04, 0.09, 0.045, 0.06);
+    if (tier >= 3) this.whoosh(0.2, 0.05, 2000, 6000, 0.4, 2.4, 0.05);
+  },
+  /** A heart lost (alba.js): a low heavy thump and a falling minor two-note. */
+  alba_hurt() {
+    this.tone("sine", 160, 52, 0.22, 0.16, 0, true);
+    this.noise(0.08, 0.12, 700, "lowpass", 0, 180, 1.4, true);
+    this.tone("triangle", 466, 440, 0.12, 0.07, 0.04);
+    this.tone("triangle", 349, 330, 0.22, 0.08, 0.15);
   },
   alba_n0() { albaNote(this, 523.25); },
   alba_n1() { albaNote(this, 659.25); },

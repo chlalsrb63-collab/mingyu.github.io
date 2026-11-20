@@ -198,7 +198,7 @@ function frame(t, info) {
   drawCourier(cx, cy, p.dir, t, p.tx !== p.x || p.ty !== p.y);
   // floating points, banners
   floats = floats.filter((f) => t - f.at < 900);
-  for (const f of floats) text(f.txt, f.x, f.y - (t - f.at) / 40, "#fff2a8");
+  for (const f of floats) text(f.txt, f.x, f.y - (t - f.at) / 40, "#fff2a8", "center", 11);
   pops = pops.filter((q) => t - q.at < 1800);
   for (const q of pops) { const yy = 56 - Math.min(14, (t - q.at) / 60); plate(CW / 2 - 28, yy - 4, 56, 20); text(q.txt, CW / 2, yy, "#c8462a", "center", 11); }
   if (flash && t - flash.at < 260) { g.globalAlpha = clamp(0.4 - (t - flash.at) / 650, 0, 0.4); R(flash.col, 0, 0, CW, N * AU); g.globalAlpha = 1; }

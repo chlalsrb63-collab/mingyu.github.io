@@ -11,7 +11,8 @@
 //   items [x, y, kind …], [wide ms, piercing ms, slow ms, serve ms], events [[seq, type, x, y, value]…], bricks left, big ball (fever) 0|1]
 // event types: 1 brick broken (value = points of the blow) · 2 brick cracked (hits left) · 3 bomb · 4 item caught (kind) · 5 ball lost · 6 wall cleared (points) · 7 paddle bounce · 8 item dropped (kind)
 // items: 0 wide paddle · 1 three balls · 2 piercing · 3 slow ball
-const WALL = { SP0: 50, SPL: 6, SPR: 24, HEAL: 10, W: 240, H: 240, STEP: 50, SUB: 4, BW: 20, BH: 8, COLS: 12, ROWS: 9, Y0: 28, PY: 222, PSPD: 10, HW: [20, 32], SERVE: 30, RESERVE: 60, FALL: 3,
+const WALL = { SP0: 44, SPL: 6, SPR: 20,   // (easier 2026-11-20) ball 44 (was 50), the shift's speed-up 20 (was 24), wider paddle
+  HEAL: 10, W: 240, H: 240, STEP: 50, SUB: 4, BW: 20, BH: 8, COLS: 12, ROWS: 9, Y0: 28, PY: 222, PSPD: 11, HW: [24, 36], SERVE: 30, RESERVE: 60, FALL: 3,
   TAB: [[-55, 32], [-48, 43], [-38, 52], [-26, 58], [-13, 63], [0, 64], [13, 63], [26, 58], [38, 52], [48, 43], [55, 32]],   // paddle bounce directions, 12° apart (dx, up)
   FX: [240, 160, 200], PTS: { plain: 10, crack: 5, bomb: 20, box: 30, item: 30, wall: 150, lost: 50 } };
 // 1/16 px per sub-step: no gentle start (the old wall 3 speed from the first ball), +24 over the shift (1.5x at the end; 2026-11-18, three lost balls end it)

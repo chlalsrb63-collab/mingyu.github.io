@@ -41,7 +41,7 @@ function parcelDraw(g, box) {
   return { k, f: k <= 2 && g.n >= 2 && rnd(box) < 0.18 ? 1 : 0 };
 }
 /** Ms between drops: faster with every row shipped, ×0.7 in the rush, ×1.5 slower in a fever ("지게차"). */
-const parcelDrop = (g, ab, T) => Math.round(Math.max(150, 490 - 18 * g.rows) * (T >= ab.endAt - ALBA_T.rushMs ? 0.65 : 1) * (T < ab.feverUntil ? 1.5 : 1));
+const parcelDrop = (g, ab, T) => Math.round(Math.max(190, 560 - 16 * g.rows) * (T >= ab.endAt - ALBA_T.rushMs ? 0.65 : 1) * (T < ab.feverUntil ? 1.5 : 1));
 
 /** The box comes off the conveyor at the top; a blocked spawn means the stack reached the ceiling: the truck is swapped. */
 function parcelSpawn(ab, T) {
@@ -73,7 +73,7 @@ function parcelLock(ab, T) {
   g.cur = null; g.spawnAt = T + PARCEL_GAP;
 }
 
-ALBA.parcel = { name: "택배 상하차", npc: "shop", place: "광장 택배 집하장", skill: "deliver", par: 2100, lives: 4, mul: 1.15, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "box", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 한 줄을 채우면 출하! 깨짐 주의 상자를 눌러도, 트럭이 가득 차도 ♥ 하나." };
+ALBA.parcel = { name: "택배 상하차", npc: "shop", place: "광장 택배 집하장", skill: "deliver", par: 2100, lives: 5, mul: 1.15, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "box", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 한 줄을 채우면 출하! 깨짐 주의 상자를 눌러도, 트럭이 가득 차도 ♥ 하나." };
 ALBA_RULES.parcel = {
   init(S, p, ab) {
     const g = ab.g = { b: new Array(PARCEL_W * PARCEL_H).fill(0), fr: new Array(PARCEL_W * PARCEL_H).fill(0), cur: null, next: null, fallAt: 0, spawnAt: ab.runAt, rows: 0, n: 0, fid: 0, seq: 0, ev: [0, 0, 0] };

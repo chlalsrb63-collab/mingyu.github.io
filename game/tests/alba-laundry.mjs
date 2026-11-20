@@ -156,11 +156,11 @@ const drop2 = (ab, now = 10) => R.act(null, null, ab, { drop: 2 }, now);
   const ab3 = mkAb(); R.adv(null, null, ab3, 1e9);
   assert.ok(ab3.g.b.every((v) => Number.isInteger(v) && v >= 0 && v <= 7), "a huge stall ends at once and leaves a sane washer");
   const g = ab.g;
-  assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 320);
-  g.washes = 10; assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 200, "faster with every chain step");
-  assert.equal(X.laundryDrop(g, { endAt: 100000, feverUntil: 0 }, 90000), Math.round(200 * 0.65), "the last 15 s rush");
-  assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 500 }, 0), 300, "a fever slows the fall (the dryer)");
-  g.washes = 1e5; assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 125, "never faster than 125 ms");
+  assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 380);   // (eased 2026-11-20: was 320)
+  g.washes = 10; assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 270, "faster with every chain step");
+  assert.equal(X.laundryDrop(g, { endAt: 100000, feverUntil: 0 }, 90000), Math.round(270 * 0.65), "the last 15 s rush");
+  assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 500 }, 0), 405, "a fever slows the fall (the dryer)");
+  g.washes = 1e5; assert.equal(X.laundryDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 160, "never faster than 160 ms");
 }
 
 // ── stains come at intervals and never in the top two rows; the 6th colour joins late; detergent blocks come
@@ -191,7 +191,7 @@ const drop2 = (ab, now = 10) => R.act(null, null, ab, { drop: 2 }, now);
   R.adv(null, null, ab, 5);
   const v = R.view(ab, 5);
   assert.equal(v[0].length, W * H); assert.ok(/^[.1-6s]+$/.test(v[0]));
-  assert.equal(v[1].length, 6, "pivot and satellite as x,y,colour"); assert.equal(v[2].length, 2); assert.ok(v[3] > 0 && v[4] === 320 && v[5] === 0);
+  assert.equal(v[1].length, 6, "pivot and satellite as x,y,colour"); assert.equal(v[2].length, 2); assert.ok(v[3] > 0 && v[4] === 380 && v[5] === 0);
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v, "plain JSON");
 }
 
@@ -334,11 +334,11 @@ assert.ok(results.perfect.every((r) => r.grade === 4), "the perfect bot reaches 
   console.log(`laundry strike-outs: perfect ${rate(results.perfect)} human ${rate(results.human).toFixed(2)} sloppy ${rate(results.wild).toFixed(2)}`);
   assert.equal(rate(results.perfect), 0, "the perfect bot never strikes out");
   assert.ok(rate(results.human) <= 0.25, "a human-like bot strikes out in at most 25 % of seeds");
-  assert.ok(results.wild.filter((r) => r.out && r.endMs < 75000).length >= results.wild.length / 2, "a sloppy bot strikes out in at least half of its seeds, before 75 s");
+  assert.ok(results.wild.filter((r) => r.out || r.grade === 0).length >= results.wild.length * 0.75, "a sloppy bot still strikes out or gets no grade in most seeds (eased 2026-11-20)");
 }
 {
   const m = avg(results.human.map((r) => r.score)) / PAR;
-  assert.ok(m >= 0.6 && m <= 0.9, `the human-like bot lands around B (${m.toFixed(2)} of par)`);
+  assert.ok(m >= 0.6 && m <= 1.15, `the human-like bot lands around B–A (eased 2026-11-20) (${m.toFixed(2)} of par)`);
 }
 assert.ok(avg(results.strong.map((r) => r.score)) > avg(results.human.map((r) => r.score)), "playing better scores more");
 assert.ok(avg(results.casual.map((r) => r.score)) < avg(results.human.map((r) => r.score)), "playing worse scores less");

@@ -331,7 +331,7 @@ console.log(`  idle     score ${idle.score} grade ${"-CBAS"[idle.grade]}   view 
 assert.ok(results.perfect.every((r) => r.grade === 4), "the perfect bot reaches S every time");
 {
   const m = avg(results.human.map((r) => r.score)) / PAR;
-  assert.ok(m >= 0.6 && m <= 0.9, `the human-like bot lands around B (${m.toFixed(2)} of par)`);
+  assert.ok(m >= 0.6 && m <= 1.15, `the human-like bot lands around B–A (eased 2026-11-20) (${m.toFixed(2)} of par)`);
   const c = avg(results.casual.map((r) => r.score)) / PAR;
   assert.ok(c >= 0.3 && c <= 0.7, `the casual bot lands around C (${c.toFixed(2)} of par)`);
 }
@@ -341,13 +341,13 @@ assert.ok(avg(results.human.map((r) => r.score)) > avg(results.casual.map((r) =>
 assert.equal(idle.grade, 0, "an idle player gets no grade"); assert.equal(idle.score, 0, "and no points");
 assert.ok(viewMax < 500, `the view stays small (${viewMax} bytes)`);
 
-// 2026-11-18 strikes: four catches end the shift (a heart mends every 8 s and every 4 bulbs lit). Rates over the 12 seeds.
+// strikes: five catches end the shift (eased 2026-11-20: a heart mends every 6.5 s and every 3 bulbs lit). Rates over the 12 seeds.
 {
   const rate = (nm) => { const rs = results[nm], o = rs.filter((x) => x.out); return { r: o.length / rs.length, run: o.length ? avg(o.map((x) => x.runMs / 1000)) : 0 }; };
   const rp = rate("perfect"), rh = rate("human"), rs_ = rate("sloppy");
   console.log(`  strike-outs over ${SEEDS.length} seeds: perfect ${Math.round(rp.r * 100)}% · human ${Math.round(rh.r * 100)}% · sloppy ${Math.round(rs_.r * 100)}% (those runs end after ${rs_.run} s)`);
   assert.equal(rp.r, 0, "the perfect bot never strikes out"); assert.ok(rh.r <= 0.25, "the human-like bot strikes out in at most a quarter of its shifts");
-  assert.ok(rs_.r >= 0.5, "the sloppy bot strikes out in at least half of its shifts"); assert.ok(rs_.run < 75, `and its run ends before 75 s (${rs_.run} s)`);
+  assert.ok(results.sloppy.filter((x) => x.out || x.grade === 0).length >= results.sloppy.length * 0.75, "the sloppy bot still strikes out or gets no grade in most shifts (eased 2026-11-20: the hearts mend faster)");
 }
 
 // (a) determinism: the same seed and the same inputs play the same shift

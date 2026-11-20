@@ -155,11 +155,11 @@ for (const rots of SH) for (const cells of rots) assert.ok(Math.min(...cells.map
   assert.ok(ab3.g.b.every((v) => Number.isInteger(v) && v >= 0 && v <= 7));
   // speed: rows, rush, fever
   const g = ab.g;
-  assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 490);
-  g.rows = 10; assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 310, "faster with every row shipped");
-  assert.equal(X.parcelDrop(g, { endAt: 100000, feverUntil: 0 }, 90000), Math.round(310 * 0.65), "the last 15 s rush");
-  assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 500 }, 0), 465, "a fever slows the fall");
-  g.rows = 1000; assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 150, "never faster than 150 ms");
+  assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 560);   // (eased 2026-11-20: was 490)
+  g.rows = 10; assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 400, "faster with every row shipped");
+  assert.equal(X.parcelDrop(g, { endAt: 100000, feverUntil: 0 }, 90000), Math.round(400 * 0.65), "the last 15 s rush");
+  assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 500 }, 0), 600, "a fever slows the fall");
+  g.rows = 1000; assert.equal(X.parcelDrop(g, { endAt: 1e9, feverUntil: 0 }, 0), 190, "never faster than 190 ms");
 }
 
 // view: shape, and unchanged when nothing happened
@@ -169,7 +169,7 @@ for (const rots of SH) for (const cells of rots) assert.ok(Math.min(...cells.map
   const v = R.view(ab, 5);
   assert.equal(v[0].length, W * H); assert.ok(/^[.1-7f]+$/.test(v[0]));
   assert.ok(v[2] >= 1 && v[2] <= 7); assert.equal(v[1].length, 2 * SH[v[2] - 1][0].length, "the box's cells as x,y pairs");
-  assert.ok(v[7] > 0 && v[8] === 490 && v[9] === 0);
+  assert.ok(v[7] > 0 && v[8] === 560 && v[9] === 0);
   assert.deepEqual(JSON.parse(JSON.stringify(v)), v, "plain JSON");
 }
 
@@ -295,11 +295,11 @@ assert.ok(results.perfect.every((r) => r.grade === 4), "the perfect bot reaches 
   console.log(`parcel strike-outs: perfect ${rate(results.perfect)} human ${rate(results.human).toFixed(2)} sloppy ${rate(results.wild).toFixed(2)}`);
   assert.equal(rate(results.perfect), 0, "the perfect bot never strikes out");
   assert.ok(rate(results.human) <= 0.25, "a human-like bot strikes out in at most 25 % of seeds");
-  assert.ok(results.wild.filter((r) => r.out && r.endMs < 75000).length >= results.wild.length / 2, "a sloppy bot strikes out in at least half of its seeds, before 75 s");
+  assert.ok(results.wild.filter((r) => r.out && r.endMs < 88000).length >= results.wild.length / 4, "a sloppy bot still strikes out in at least a quarter of its seeds (eased 2026-11-20)");
 }
 {
   const m = avg(results.human.map((r) => r.score)) / PAR;
-  assert.ok(m >= 0.55 && m <= 0.9, `the human-like bot lands around B (${m.toFixed(2)} of par)`);
+  assert.ok(m >= 0.6 && m <= 1.15, `the human-like bot lands around B–A (eased 2026-11-20) (${m.toFixed(2)} of par)`);
 }
 assert.ok(avg(results.strong.map((r) => r.score)) > avg(results.human.map((r) => r.score)), "playing better scores more");
 assert.ok(avg(results.slow.map((r) => r.score)) < avg(results.human.map((r) => r.score)), "playing worse scores less");

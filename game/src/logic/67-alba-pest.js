@@ -11,7 +11,7 @@
 //   rescue [x, y, vx] | 0, queen [x, y, hp, max] | 0, events [[seq, type, x, y, points]…], bugs left]
 // event types: 1 bug shot · 2 diver shot · 3 ship rammed · 4 webbed · 5 rescued · 6 wave cleared · 7 queen hit · 8 queen shot · 9 queen spits a web
 const PEST = { W: 240, H: 300, SY: 282, STEP: 50, SPD: 4, FCD: 4, BSP: 8, MAXV: 3, FX: 120, FY: 54, SPX: 26, SPY: 20, SWAY: 80, AMP: 20, DESC: 3, MAXDROP: 54, INTRO: 25,
-  REST: 50, STUN: 40, INV: 20, WEB: 60, WEBSP: 4, COMMIT: 60,
+  REST: 50, STUN: 40, INV: 30, WEB: 60, WEBSP: 4, COMMIT: 60,
   SINT: [0, 24, 45, 59, 64, 59, 45, 24, 0, -24, -45, -59, -64, -59, -45, -24],
   COLS: [6, 6, 7, 7, 8, 8, 8, 8], ROWS: [2, 3, 3, 4, 4, 4, 5, 5], KINDS: { 2: [1, 0], 3: [2, 1, 0], 4: [2, 1, 1, 0], 5: [2, 2, 1, 0, 0] },   // 0 cockroach · 1 mosquito · 2 moth
   WIG: [6, 14, 20], FRQ: [2, 3, 2], PTS: [10, 40, 60, 100, 100] };   // PTS: a bug in place · a diver · the rescue · the wave · the wave without a hit (extra)
@@ -110,7 +110,7 @@ function pestFight(ab, T) {
       const i = open[ri(ab.box, 0, open.length - 1)], k = g.kinds[(i / g.cols) | 0], x = pestSx(g, i), y = pestSy(g, i);
       g.F[i] = 2;
       g.D.push({ i, k, x, y, y0: y, cx: x, a: 0, st: 0, vx: 0, vy: 0, web: k === 1 && g.wv >= 2 && rnd(ab.box) < 0.5 ? 1 : 0, wd: 0 });
-      g.dn = Math.max(12, 40 - 3 * lv) + ri(ab.box, 0, 8);
+      g.dn = Math.max(16, 46 - 3 * lv) + ri(ab.box, 0, 8);   // (easier 2026-11-20) dives come a little less often (was 12, 40)
     } else g.dn = 10;
   }
   for (let j = g.D.length - 1; j >= 0; j--) {

@@ -11,11 +11,11 @@
 //   act: {s: lane, i: item} scan · {p: lane, v: 0..3} a coin or bill (pad[v]) · {cl: lane} empty the tray
 //   view: [lane ×4]; a lane is 0 (nobody) or [customer id, kind, item prices (hundreds), scanned bitmask, paid, tray, ms until she leaves, patience ms, changed-her-mind flag]
 
-Object.assign(ALBA, { store: { name: "편의점 아르바이트", npc: "store_kong", place: "다람쥐 잡화점 계산대", skill: "deliver", par: 3000, lives: 4, mul: 1, outfit: ["top_coop_vest"], tool: "scanner", hint: "물건을 눌러 스캔하고 거스름돈을 정확히 내주세요. 손님이 화내며 가면 ♥ 하나!" } });
+Object.assign(ALBA, { store: { name: "편의점 아르바이트", npc: "store_kong", place: "다람쥐 잡화점 계산대", skill: "deliver", par: 3000, lives: 5, mul: 1, outfit: ["top_coop_vest"], tool: "scanner", hint: "물건을 눌러 스캔하고 거스름돈을 정확히 내주세요. 손님이 화내며 가면 ♥ 하나!" } });
 
 const ASTORE = { pad: [1, 5, 10, 50], lanes: 4, leavePen: 20, groupItems: 12 };
 /** How hard it is at time `t`: starts at 3 (no gentle intro), climbs with the score (a level per 220 points) and the time (one per 10 s), 0..10. */
-const astoreDiff = (ab, t) => clamp(Math.floor(ab.score / 220 + 3 + Math.max(0, t - ab.runAt) / 10000), 0, 10);
+const astoreDiff = (ab, t) => clamp(Math.floor(ab.score / 260 + 1 + Math.max(0, t - ab.runAt) / 12000), 0, 10);   // (easier 2026-11-20) starts at 1, climbs slower (was 3, /220, /10 s)
 /** The wait before the next customer comes to an empty lane (shorter as it gets harder, and 1.4× faster in the rush). */
 const astoreGap = (ab, t) => Math.round((2600 - 220 * astoreDiff(ab, t) + ri(ab.g.gb, 0, 1500)) / (t >= ab.endAt - ALBA_T.rushMs ? 1.4 : 1));
 
@@ -28,7 +28,7 @@ function astoreMake(ab, t) {
   for (let i = 0; i < n; i++) { const v = ri(cb, 2, 15); it.push(v); tot += v; }
   const up = (Math.floor(tot / 10) + 1) * 10, q = rnd(cb);   // the next thousand won above the total, now and then more
   const paid = q < 0.6 ? up : q < 0.8 ? up + 10 : q < 0.9 && up < 50 ? 50 : up < 100 ? 100 : up + 10;
-  const pt = Math.round(Math.max(8500, 25000 - 1600 * d) * (kind === 1 ? 0.8 : 1)) + 1400 * n;
+  const pt = Math.round(Math.max(11000, 28000 - 1500 * d) * (kind === 1 ? 0.8 : 1)) + 1600 * n;   // (easier 2026-11-20) more patience
   return { id, kind, it, sc: 0, tot, paid, tray: 0, lv: t + pt, pt, fl: 1, ch: 0 };
 }
 

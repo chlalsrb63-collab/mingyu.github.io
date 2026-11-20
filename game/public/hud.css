@@ -2228,11 +2228,37 @@ body[data-lay="full"].playing #w-dex:not(.docked) { height: var(--win-h); }
 /* 일일 아르바이트 window (alba.js) */
 #alba-play { position: fixed; inset: 0; z-index: 4000; display: flex; align-items: center; justify-content: center; background: rgba(8, 6, 14, .72); }
 #alba-play[hidden] { display: none; }
-#alba-play .ap-box { --ap-acc: #d9a441; width: min(clamp(560px, 66vh, 780px), 96vw); max-height: 96vh; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px 10px; background: linear-gradient(#fbf0d2, #ecd9a8); border: 3px solid #b98a3e; border-radius: 6px; box-shadow: 0 0 0 2px #3a2a18, inset 0 0 0 2px #fff4cf, 0 8px 28px rgba(40,24,8,.5); color: #3a2a18; }
+#alba-play .ap-box { --ap-acc: #d9a441; width: min(clamp(560px, 66vh, 780px), 96vw); max-height: 96vh; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px 10px; background: linear-gradient(#fbf0d2, #ecd9a8); border: 3px solid #b98a3e; border-radius: 6px; box-shadow: 0 0 0 2px #3a2a18, inset 0 0 0 2px #fff4cf, 0 8px 28px rgba(40,24,8,.5); color: #3a2a18; position: relative; }
 #alba-play.fever .ap-box { box-shadow: 0 0 0 2px #000, 0 0 24px 4px #ff8a2a; }
 #alba-play .ap-head { display: flex; align-items: baseline; gap: 10px; font: 700 var(--t12)/1.2 var(--pix); color: #4a3418; padding: 2px 6px 4px; border-bottom: 2px solid #c9a762; }
 #alba-play .ap-title { flex: 1 1 auto; color: #8a4a12; font-size: 1.1em; text-shadow: 0 1px 0 #fff4cf; }
 #alba-play .ap-time { min-width: 3.5em; text-align: right; color: #3a2a18; } #alba-play .ap-combo { color: #d4520a; min-width: 6em; } #alba-play .ap-score { color: #2e6a3a; }
+/* score feedback (alba.js scorePop/banner): big +N / −N over the board, a counting score, a jolt on a lost heart */
+#alba-play .ap-score { display: inline-block; min-width: 5.5em; text-align: right; font-size: 1.35em; color: #1f7a3a; text-shadow: 0 1px 0 #fff4cf; transform-origin: 100% 60%; }
+#alba-play .ap-score.bump { animation: ap-bump .28s ease-out; } #alba-play .ap-score.drop { animation: ap-drop .4s ease-out; }
+#alba-play .ap-combo { display: inline-block; } #alba-play .ap-combo.bump { animation: ap-bump .2s ease-out; }
+#alba-play .ap-mul { margin-left: .3em; padding: 0 .35em; border-radius: 3px; background: #d4520a; color: #fff6da; font-size: .95em; }
+#alba-play.fever .ap-mul { background: #ff2a6a; box-shadow: 0 0 6px #ffb040; }
+#alba-play .ap-pops { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 3; }
+#alba-play .ap-pop { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font: 900 30px/1 var(--pix); color: #ffe24a; -webkit-text-stroke: 2px #3a2208; paint-order: stroke fill; text-shadow: 0 3px 0 #3a2208, 0 0 12px rgba(255,200,60,.7); animation: ap-pop 1.1s cubic-bezier(.2,.9,.3,1) forwards; }
+#alba-play .ap-pop.t1 { font-size: 38px; } #alba-play .ap-pop.t2 { font-size: 48px; color: #fff07a; } #alba-play .ap-pop.t3 { font-size: 60px; color: #fff; text-shadow: 0 3px 0 #3a2208, 0 0 18px #ffb020, 0 0 34px #ff7a20; }
+#alba-play .ap-pop small { margin-left: .2em; font-size: .5em; color: #ffb04a; vertical-align: .35em; }
+#alba-play .ap-pop.neg { color: #ff5a4a; -webkit-text-stroke-color: #3a0a08; text-shadow: 0 3px 0 #3a0a08, 0 0 12px rgba(255,60,40,.7); animation-name: ap-neg; }
+#alba-play .ap-banner { position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%); padding: 10px 26px; white-space: nowrap; font: 900 34px/1 var(--pix); color: #fff; -webkit-text-stroke: 2px #4a1a08; paint-order: stroke fill; background: linear-gradient(90deg, transparent, rgba(255,110,30,.9) 18%, rgba(255,60,90,.9) 82%, transparent); animation: ap-banner 1.6s ease-out forwards; }
+#alba-play .ap-banner.rush { background: linear-gradient(90deg, transparent, rgba(60,120,255,.9) 18%, rgba(140,60,255,.9) 82%, transparent); }
+#alba-play .ap-box.shake { animation: ap-shake .3s linear; }
+#alba-play .ap-box.hurt { animation: ap-shake .4s linear; }
+#alba-play .ap-box.hurt .ap-board { animation: ap-hurt .5s ease-out; }
+#alba-play .ap-time.lost { animation: ap-drop .5s ease-out; }
+@keyframes ap-pop { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.35); } 14% { opacity: 1; transform: translate(-50%, -50%) scale(1.35); } 26% { transform: translate(-50%, -55%) scale(1); } 70% { opacity: 1; transform: translate(-50%, -110%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -160%) scale(.9); } }
+@keyframes ap-neg { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.8); } 12% { opacity: 1; transform: translate(-56%, -50%) scale(1.1); } 22% { transform: translate(-44%, -50%) scale(1.1); } 32% { transform: translate(-50%, -50%) scale(1); } 70% { opacity: 1; transform: translate(-50%, -30%); } 100% { opacity: 0; transform: translate(-50%, 0%) scale(.9); } }
+@keyframes ap-banner { 0% { opacity: 0; transform: translate(-50%, -50%) scale(2.2); } 12% { opacity: 1; transform: translate(-50%, -50%) scale(.95); } 20% { transform: translate(-50%, -50%) scale(1.05); } 78% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -80%) scale(1); } }
+@keyframes ap-bump { 0% { transform: scale(1); } 35% { transform: scale(1.3); color: #e8a010; } 100% { transform: scale(1); } }
+@keyframes ap-drop { 0%, 100% { transform: none; } 20% { transform: translateX(-4px); color: #d8301a; } 40% { transform: translateX(4px); color: #d8301a; } 60% { transform: translateX(-3px); } 80% { transform: translateX(2px); } }
+@keyframes ap-shake { 0%, 100% { transform: none; } 20% { transform: translate(-5px, 2px); } 40% { transform: translate(5px, -2px); } 60% { transform: translate(-3px, 1px); } 80% { transform: translate(3px, 0); } }
+@keyframes ap-hurt { 0% { box-shadow: inset 0 0 0 2px #5a5284, inset 0 0 60px 20px rgba(255,40,30,.85); } 100% { box-shadow: inset 0 0 0 2px #5a5284, inset 0 0 0 0 rgba(255,40,30,0); } }
+@keyframes ap-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #alba-play .ap-pop, #alba-play .ap-banner { animation-name: ap-fade; } #alba-play .ap-box.shake, #alba-play .ap-box.hurt { animation: none; } }
 #alba-play .ap-stage { width: auto; max-width: 100%; height: auto; max-height: 17vh; align-self: center; aspect-ratio: 4 / 1; image-rendering: pixelated; border: 2px solid #3a2a18; box-shadow: 0 0 0 2px #d9b665; background: #cfe8f8; }
 #alba-play .ap-bar { position: relative; height: 12px; background: #fff6da; border: 2px solid #3a2a18; border-radius: 2px; margin: 4px 0 8px; }
 #alba-play .ap-fill { display: block; height: 100%; width: 0; background: var(--ap-acc); transition: width .12s linear; }

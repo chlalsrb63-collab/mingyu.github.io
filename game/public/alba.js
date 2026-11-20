@@ -12,7 +12,8 @@
  *   keyup(e) (optional)   a keyup (for hold notes and the like)
  *   unmount()             the window closed
  * api = { act(obj) → sends {t:"ab_act", ...obj}, fx(kind, text?, x?, y?) → the stage reacts ("good" | "bad" | "big" | "fever"), sfx(name), now() }
- * Sounds the games may use: alba_ok alba_big alba_bad alba_fever alba_tick (audio.js), anything else is silent.
+ * Sounds the games may use: alba_ok alba_big alba_bad alba_fever alba_tick and the alba_* foley (audio.js), anything else is silent.
+ * The shell itself shows every score change as a big +N / −N (scorePop, sound alba_gain) and jolts the window on a lost heart (alba_hurt).
  */
 import { Sound } from "./audio.js";
 import * as SP from "./sprites.js";
@@ -39,7 +40,7 @@ const st = { ab: null, k: null, mod: null, recv: 0, toStart: 0, toEnd: 0, fever:
 const api = {
   act: (o) => act({ t: "ab_act", ...o }),
   fx: (kind, text, x, y) => react(kind, text, x, y),
-  sfx: (name) => { try { Sound.play(name); } catch { /* a missing sound is silent */ } },
+  sfx: (name, arg) => { try { Sound.play(name, arg); } catch { /* a missing sound is silent */ } },
   now: () => performance.now(),
 };
 /** A shift's window is open: input.js stands the hero still and takes no world keys. */
@@ -66,11 +67,11 @@ function build() {
   const bar = el("div", "ap-bar"), fill = el("i", "ap-fill"); bar.append(fill);
   const marks = ["C", "B", "A", "S"].map((l) => { const m = el("span", "ap-mark", l); bar.append(m); return m; });
   const board = el("div", "ap-board"), res = el("div", "ap-res"); res.hidden = true;
-  const hint = el("div", "ap-hint");
-  box.append(head, stage, bar, hint, board, res);
+  const hint = el("div", "ap-hint"), pops = el("div", "ap-pops");
+  box.append(head, stage, bar, hint, board, res, pops);
   root.append(box);
   document.body.append(root);
-  st.dom = { root, box, title, time, score, combo, stage, g: stage.getContext("2d"), bar, fill, marks, board, res, hint, quit };
+  st.dom = { root, box, pops, title, time, score, combo, stage, g: stage.getContext("2d"), bar, fill, marks, board, res, hint, quit };
   st.dom.g.imageSmoothingEnabled = false;
   return st.dom;
 }
@@ -83,7 +84,7 @@ async function open(k) {
     const mod = GAMES[k] || (GAMES[k] = (await LOADERS[k]()).default);
     if (!st.ab || st.ab[0] !== k) return;   // the shift ended while the module loaded
     const d = build(), row = G.defs.alba.rows[k];
-    st.k = k; st.mod = mod; st.prevPhase = ""; st.act = 0; st.ph = 0; st.sAt = 0; st.parts.length = 0; st.react = null; st.result = null; st.shown = "";
+    st.k = k; st.mod = mod; st.prevPhase = ""; st.act = 0; st.ph = 0; st.sAt = 0; st.parts.length = 0; st.react = null; st.result = null; st.shown = ""; st.disp = 0; st.last = { t: "", s: -1, c: -1 }; st.wasFever = false; st.wasRush = false; d.pops.textContent = "";
     d.title.textContent = row.name; d.hint.textContent = row.hint; d.res.hidden = true; d.res.textContent = "";
     d.board.textContent = ""; d.root.hidden = false; d.quit.textContent = "그만두기"; delete d.quit.dataset.sure;
     const th = THEME[row.tool] || THEME.box; d.box.style.setProperty("--ap-acc", th[2]);
@@ -225,10 +226,33 @@ function stage(t, phase) {
     const q = st.parts[i]; q.life -= dt2; if (q.life <= 0) { st.parts.splice(i, 1); continue; }
     q.x += q.vx * dt2; q.y += q.vy * dt2; q.vy += (q.txt ? 0 : 160) * dt2;
     g.globalAlpha = clamp(q.life * 2, 0, 1); g.fillStyle = q.col;
-    if (q.txt) { g.font = "bold 14px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.fillStyle = "#2a2236"; g.fillText(q.txt, q.x + 1, q.y + 1); g.fillStyle = q.col; g.fillText(q.txt, q.x, q.y); } else g.fillRect(Math.round(q.x), Math.round(q.y), 3, 3);
+    if (q.txt) { g.font = "900 18px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.lineJoin = "round"; g.lineWidth = 4; g.strokeStyle = "#2a2236"; g.strokeText(q.txt, q.x, q.y); g.fillStyle = q.col; g.fillText(q.txt, q.x, q.y); } else g.fillRect(Math.round(q.x), Math.round(q.y), 3, 3);
   }
   g.globalAlpha = 1;
   if (st.parts.length > 80) st.parts.splice(0, st.parts.length - 80);
+}
+
+// ── score feedback: big +N / −N over the board, the multiplier, banners for fever and the last rush
+/** The points multiplier as the rules apply it (66-alba.js albaMult), only to show it. */
+const mult = (combo, fever, rush) => (1 + 0.1 * Math.min(combo, 10)) * (fever ? 2 : 1) * (rush ? 1.5 : 1);
+/** Restart a one-shot CSS animation class on an element. */
+function jolt(node, cls) { node.classList.remove(cls); void node.offsetWidth; node.classList.add(cls); }
+function scorePop(dl, par, m) {
+  const d = st.dom, share = Math.abs(dl) / Math.max(1, par);
+  const tier = share >= 0.05 ? 3 : share >= 0.025 ? 2 : share >= 0.01 ? 1 : 0;
+  const p = el("b", `ap-pop t${tier}${dl < 0 ? " neg" : ""}`, `${dl > 0 ? "+" : "−"}${Math.abs(Math.round(dl)).toLocaleString()}`);
+  if (dl > 0 && m > 1.05) p.append(el("small", "", `×${m.toFixed(1)}`));
+  // scattered a little so a burst of points does not stack on one spot
+  p.style.left = `${50 + (Math.random() * 2 - 1) * 16}%`; p.style.top = `${48 + (Math.random() * 2 - 1) * 8}%`;
+  d.pops.append(p); setTimeout(() => p.remove(), 1200);
+  while (d.pops.querySelectorAll(".ap-pop").length > 7) d.pops.querySelector(".ap-pop").remove();
+  jolt(d.score, dl > 0 ? "bump" : "drop");
+  if (dl > 0) api.sfx("alba_gain", tier); else jolt(d.box, "shake");
+}
+function banner(text, cls) {
+  const b = el("div", `ap-banner ${cls}`, text);
+  st.dom.pops.append(b); setTimeout(() => b.remove(), 1700);
+  api.sfx(cls === "fever" ? "alba_fever" : "alba_big");
 }
 
 // ── every animation frame
@@ -246,12 +270,28 @@ export function tick(t) {
   }
   const lives = st.ab[11] || 0, hearts = lives ? " " + "♥".repeat(Math.max(0, lives - (st.ab[10] || 0))) + "♡".repeat(Math.min(lives, st.ab[10] || 0)) : "";
   const txt = (ended ? "종료" : phase === "brief" ? `준비 ${Math.ceil(toStart / 1000)}` : mmss(left)) + hearts;
-  if (txt !== st.last.t) { d.time.textContent = txt; st.last.t = txt; if (phase === "run" && left < 10500 && left > 0) api.sfx("alba_tick"); if (st.last.h !== undefined && hearts.length && st.ab[10] > st.last.h) api.sfx("alba_bad"); st.last.h = st.ab[10] || 0; }
-  if (score !== st.last.s) { d.score.textContent = `${score.toLocaleString()}점`; st.last.s = score; d.fill.style.width = `${clamp(score / par / 1.1, 0, 1) * 100}%`; }
+  if (txt !== st.last.t) { d.time.textContent = txt; st.last.t = txt; if (phase === "run" && left < 10500 && left > 0) api.sfx("alba_tick"); if (st.last.h !== undefined && hearts.length && st.ab[10] > st.last.h) { api.sfx("alba_hurt"); jolt(d.box, "hurt"); jolt(d.time, "lost"); } st.last.h = st.ab[10] || 0; }
+  const rush = left < G.defs.alba.rushMs && phase === "run";
+  if (score !== st.last.s) {
+    const dl = st.last.s >= 0 && phase !== "end" ? score - st.last.s : 0;
+    st.last.s = score; d.fill.style.width = `${clamp(score / par / 1.1, 0, 1) * 100}%`;
+    if (dl) scorePop(dl, par, mult(combo - 1, fever > 0, rush));   // the points were counted before the combo stepped up
+    else st.disp = score;
+  }
+  // the score counts up to the server's number instead of jumping
+  if (st.disp !== score) st.disp = Math.abs(score - st.disp) < 1.5 ? score : st.disp + (score - st.disp) * 0.22;
+  const shown = `${Math.round(st.disp).toLocaleString()}점`;
+  if (shown !== d.score.textContent) d.score.textContent = shown;
+  if (fever > 0 && !st.wasFever && phase === "run") banner("피버! 점수 ×2", "fever");
+  if (rush && !st.wasRush) banner("막판 러시! 점수 ×1.5", "rush");
+  st.wasFever = fever > 0; st.wasRush = rush;
   const ck = `${combo}|${fever > 0}|${left < G.defs.alba.rushMs}`;
   if (ck !== st.last.c) {
     st.last.c = ck;
+    const m = mult(combo, fever > 0, left < G.defs.alba.rushMs && !ended);
     d.combo.textContent = combo > 1 ? `콤보 ${combo}${fever > 0 ? " 🔥 피버!" : ""}${left < G.defs.alba.rushMs && !ended ? " · 막판 러시" : ""}` : (left < G.defs.alba.rushMs && !ended ? "막판 러시!" : "");
+    if (m > 1.05) d.combo.append(el("b", "ap-mul", ` ×${m.toFixed(1)}`));
+    if (combo > 1) jolt(d.combo, "bump");
     d.root.classList.toggle("fever", fever > 0);
   }
   if (phase !== st.prevPhase) { if (phase === "run" && st.prevPhase === "brief") api.sfx("alba_go"); if (phase === "end" && st.prevPhase === "run") api.sfx("alba_end"); st.prevPhase = phase; }

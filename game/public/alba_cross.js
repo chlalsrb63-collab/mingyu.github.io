@@ -235,7 +235,7 @@ function frame(t, info) {
     const a = (t - e.at) / 1000;
     if (a < 0) continue;
     if (e.k === "star") { P(OL, e.x + e.vx * a - 1, e.y + e.vy * a + 40 * a * a - 1, 4, 4); P(e.col, e.x + e.vx * a, e.y + e.vy * a + 40 * a * a, 2, 2); }
-    else if (e.k === "txt") { g.globalAlpha = clamp(1.2 - a * 1.3, 0, 1); text(e.txt, e.x, e.y - a * 22, e.col, "center"); g.globalAlpha = 1; }
+    else if (e.k === "txt") { g.globalAlpha = clamp(1.2 - a * 1.3, 0, 1); text(e.txt, e.x, e.y - a * 22, e.col, "center", 11); g.globalAlpha = 1; }
     else { const r = Math.round(a * 22); P("#e8f8ff", e.x - r, e.y, 2, 1); P("#e8f8ff", e.x + r, e.y, 2, 1); P("#e8f8ff", e.x, e.y - (r >> 1), 1, 2); P("#e8f8ff", e.x, e.y + (r >> 1), 1, 2); }
   }
   if (flash && t - flash.at < 260) { g.globalAlpha = clamp(0.45 - (t - flash.at) / 600, 0, 0.45); P(flash.col, 0, 0, CW, SH); g.globalAlpha = 1; }

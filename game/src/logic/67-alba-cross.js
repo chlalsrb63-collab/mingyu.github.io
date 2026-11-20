@@ -12,13 +12,14 @@
 //         ev, ms until the lanes start, hops taken, ms since the delivery began]; ev = [seq, 1 delivered · 2 delivered flawless · 3 hit · 4 water · 5 gift, points]
 const CROSS = {
   W: 13, H: 11, SX: 6, SY: 10,
-  D0: 4, VMAX: 2.4, MEND: 5000,      // 2026-11-18: the street starts as hard as the old 5th delivery (D0), the lanes speed up to VMAX x (the old top was 1.6); a heart mends every MEND ms
+  D0: 2, VMAX: 2.0, MEND: 4000,      // (easier 2026-11-20) start at the 3rd delivery's street (D0 4), top 2.0× (2.4×), a heart a 4 s (5 s)
+       // 2026-11-18: the street starts as hard as the old 5th delivery (D0), the lanes speed up to VMAX x (the old top was 1.6); a heart mends every MEND ms
   STEP: 50, CATCH: 40,
   CD: 300, CD_FEVER: 150, STUN: 500, PAUSE: 400,                   // ms: a hop's cooldown (halved in a fever), the pause after a hit, after a delivery
   PAY: 100, FLAWLESS: 50, GIFT: 30, HIT: 20, BONUS: 3, BONUS_MAX: 60, BUDGET: [12000, 26000],
   IN: 0.2, CIN: 0.1, SLACK: 0.2,                                   // hit-box inset of the courier and of a cart; how far past a log's end a foot still holds
 };
-Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 1300, lives: 5, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차·행인에 치이거나 강에 빠지면 ♥ 하나(5개면 퇴근), 5초마다 ♥ 하나 회복. 통나무를 타고 건너 꾸러미를 전하세요." } });
+Object.assign(ALBA, { cross: { name: "횡단 배달", npc: "inn_toto", place: "여관 앞 큰길", skill: "deliver", par: 1300, lives: 5, mul: 1, outfit: ["hat_coop_cap", "top_appr_deliver"], tool: "parcelbag", hint: "방향키 · WASD로 한 칸씩. 마차·행인에 치이거나 강에 빠지면 ♥ 하나(5개면 퇴근), 4초마다 ♥ 하나 회복. 통나무를 타고 건너 꾸러미를 전하세요." } });
 
 const crossN = (ln) => Math.ceil((CROSS.W + ln.len) / ln.sp);
 /** Where the ring's first object is (cells, 0 ≤ phase < ring length) `T` ms. */

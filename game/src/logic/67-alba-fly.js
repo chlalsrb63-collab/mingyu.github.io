@@ -6,8 +6,8 @@
 // view = [[[id, can, ms to spawn (< 0: already out), life, kind (4 = wounded poison)]… alive or spawning within FLY.ahead ms], [[can, ms the lid stays shut]…]];
 // the view is re-sent (rev) on every hit and whenever the announced window is about to run dry, so an idle player still sees what comes.
 // The only input is {hit: fly id}: it must name a fly that is out (± FLY.grace for latency) and not hit yet; a swing at nothing is refused without a penalty.
-const FLY = { ahead: 3500, refresh: 1200, grace: 250, early: 100, close: 1000, gap: 400, pts: [10, 40, 0, 25], beePen: 30, bombs: [22000, 60000, 80000], rate: [1.9, 2.8], life: [[700, 380], [420, 280], [800, 560], [1300, 850]] };
-Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 5200, lives: 4, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌을 치면 ♥ 하나 (네 번이면 끝)!" } });
+const FLY = { ahead: 3500, refresh: 1200, grace: 250, early: 100, close: 1000, gap: 400, pts: [10, 40, 0, 25], beePen: 30, bombs: [22000, 60000, 80000], rate: [1.9, 2.8], life: [[840, 460], [500, 340], [960, 670], [1560, 1020]] };   // (easier 2026-11-20) every fly stays 20 % longer
+Object.assign(ALBA, { fly: { name: "파리잡기", npc: "dongdong", place: "동동아파트 쓰레기장", skill: "gather", par: 5200, lives: 5, mul: 0.9, outfit: ["top_willow_apron"], tool: "swatter", hint: "파리를 눌러 잡으세요. 벌을 치면 ♥ 하나 (다섯 번이면 끝)!" } });
 
 /** Roll the whole schedule: a spawn clock whose pace and lifetimes ramp with the time, and two 쓰레기 폭탄 (every can opens at once). */
 function flyBuild(box) {

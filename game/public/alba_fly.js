@@ -211,7 +211,7 @@ export default {
       g.globalAlpha = Math.min(1, p.life * 4); px(p.col, Math.round(p.x), Math.round(p.y), 2, 2);
     }
     g.globalAlpha = 1;
-    g.font = "9px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.textAlign = "center";
+    g.font = "bold 12px Pretendard, 'Noto Sans KR', 'Malgun Gothic', sans-serif"; g.textAlign = "center";
     for (let i = floats.length - 1; i >= 0; i--) {
       const f = floats[i], a = t - f.at;
       if (a > 800) { floats.splice(i, 1); continue; }

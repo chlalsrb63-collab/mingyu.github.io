@@ -225,7 +225,7 @@ const human = (lo = 400, hi = 700) => (rand) => lo + rand() * (hi - lo);
   R.adv(S, p, ab3, T.runMs - T.rushMs - 1); assert.equal(ab3.g.lanes[3].c, null);
   R.adv(S, p, ab3, T.runMs - T.rushMs + 500); assert.ok(ab3.g.lanes[3].c, "a fourth lane opens for the last 15 s");
   // difficulty climbs with the score and the time
-  const abD = fakeAb(1); abD.score = 0; assert.equal(X.astoreDiff(abD, 0), 3, "no gentle intro"); abD.score = 1e9; assert.equal(X.astoreDiff(abD, 0), 10); abD.score = 0; assert.equal(X.astoreDiff(abD, 90000), 10); assert.equal(X.astoreDiff(abD, 10000), 4);
+  const abD = fakeAb(1); abD.score = 0; assert.equal(X.astoreDiff(abD, 0), 1, "a gentle start (eased 2026-11-20)"); abD.score = 1e9; assert.equal(X.astoreDiff(abD, 0), 10); abD.score = 0; assert.equal(X.astoreDiff(abD, 90000), 8); assert.equal(X.astoreDiff(abD, 12000), 2);
 }
 
 // ── (c) the bots
@@ -254,12 +254,12 @@ const human = (lo = 400, hi = 700) => (rand) => lo + rand() * (hi - lo);
   console.log(`store strike-outs: perfect ${rate([...perfect35, ...expert])} human ${rate(hum).toFixed(2)} sloppy ${rate(sloppy).toFixed(2)}`);
   assert.equal(rate([...perfect35, ...expert]), 0, "the perfect bot never strikes out");
   assert.ok(rate(hum) <= 0.25, "a human-like bot strikes out in at most 25 % of seeds");
-  assert.ok(sloppy.filter((r) => r.out && r.endMs < 75000).length >= sloppy.length / 2, "a sloppy bot strikes out in at least half of its seeds, before 75 s");
+  assert.ok(sloppy.filter((r) => r.out || r.grade <= 1).length >= sloppy.length * 0.75, "a sloppy bot still strikes out or stays at C at best in most seeds (eased 2026-11-20)");
   assert.equal(idleRun.score, 0, "an idle shift scores 0"); assert.equal(idleRun.grade, 0, "and is below C");
   assert.ok(perfect35.every((r) => r.grade === 4), "a perfect bot is S");
   assert.ok(expert.every((r) => r.grade === 4), "an optimal fast player is S");
-  assert.ok(rH >= 0.62 && rH < 0.88, `a human-like bot lands around B (${rH.toFixed(2)} of par)`);
-  assert.ok(hum.filter((r) => r.grade === 4).length <= hum.length * 0.3, "S is rare for a human-like bot: it needs near-flawless play");
+  assert.ok(rH >= 0.6 && rH <= 1.15, `a human-like bot lands around B–A (eased 2026-11-20) (${rH.toFixed(2)} of par)`);
+  assert.ok(hum.filter((r) => r.grade === 4).length <= hum.length * 0.6, "S is not a given for a human-like bot (eased 2026-11-20: was ≤ 30 %)");
   assert.ok(rC > rH, "fewer slips, more points");
   assert.ok(rC >= 0.9, "a flawless human reads S");
   assert.ok(rS < rH, "a slow player scores less (and mostly strikes out)");

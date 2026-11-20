@@ -206,7 +206,7 @@ function frame(t, info) {
   for (let i = floats.length - 1; i >= 0; i--) {
     const f = floats[i], a = t - f.at;
     if (a > 800) { floats.splice(i, 1); continue; }
-    text(f.txt, Math.round(f.x), Math.round(f.y - a / 40), f.col, f.big ? FONT11 : FONT9);
+    text(f.txt, Math.round(f.x), Math.round(f.y - a / 40), f.col, FONT11);
   }
   if (info.fever > 0) { const c = Math.floor(t / 90) % 2 ? "#ffb4d8" : "#fff2a8"; px(c, 0, 0, W, 2); px(c, 0, W - 2, W, 2); px(c, 0, 0, 2, W); px(c, W - 2, 0, 2, W); }
   g.setTransform(kk, 0, 0, kk, 0, 0);

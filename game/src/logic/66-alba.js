@@ -24,8 +24,8 @@ const ALBA_ORDER = ["pipe", "fly", "store", "parcel", "laundry", "taiyaki",
   "pest", "wall", "cross", "lamp", "rhythm", "garland"];
 const ALBA_T = {
   briefMs: 5000, runMs: 90000, resultMs: 90000, rushMs: 15000, actMs: 35,
-  feverMs: 8000, feverMax: 2, feverEvery: 10,    // a fever at combo 10 and 20 (at most two per shift)
-  cuts: [0.30, 0.65, 0.85, 1.0],                  // share of the game's par for C B A S
+  feverMs: 8000, feverMax: 3, feverEvery: 8,     // a fever at combo 8, 16 and 24 (at most three per shift; easier 2026-11-20: was 10 / 20, two)
+  cuts: [0.25, 0.55, 0.75, 0.9],                  // share of the game's par for C B A S (easier 2026-11-20: was 0.30 0.65 0.85 1.0)
   gradeK: [0.7, 1.0, 1.3, 1.7],                   // pay multiplier per grade
   rep: [1, 2, 2, 3], stone: [0, 0, 1, 2], life: 0.5,
   lives: 3,                                       // serious failures before the shift ends early (a game may set ALBA[k].lives)

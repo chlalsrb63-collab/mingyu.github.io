@@ -11,12 +11,13 @@
 // view = [chain cells, dir, ms to the next step, step ms, flower cells, [gold cell, ms left] | 0, thorn cells, garlands done, queued turns, ev]
 // 2026-11-18: faster from the first step, thorns sooner and denser; a crash costs a heart, one mends every `mend` ms
 const GAR = {
-  W: 16, base: 120, min: 80, ramp: 0.92, mend: 7000, stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
+  W: 16, base: 135, min: 92, ramp: 0.93, mend: 5500,   // (easier 2026-11-20) slower step (120 → 135 ms, floor 80 → 92), a heart a 5.5 s (7 s)
+  stub: 3, full: 12, lead: 1200, pause: 1500, flowers: 2, near: 3,
   thornFirst: 3000, thornEvery: 2400, thornMax: 22, goldFirst: [6000, 12000], goldGap: [8000, 14000], goldLife: 6000,
   slow: 1.35, pts: [10, 50, 100], pen: 40, catchup: 40, queue: 2,
 };
 const GAR_DX = [0, 1, 0, -1], GAR_DY = [-1, 0, 1, 0];
-Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 3700, lives: 5, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊기고 ♥ 하나가 깎여요(5개면 퇴근, 7초마다 하나 회복). 12송이면 화환 완성!" } });
+Object.assign(ALBA, { garland: { name: "화환 엮기", npc: "willow_florist", place: "꽃집 앞 꽃밭", skill: "gather", par: 3700, lives: 5, mul: 0.95, outfit: ["hat_wreath_pink", "top_willow_apron"], tool: "shears", hint: "방향키·WASD·스와이프로 꽃줄을 이끌어 꽃을 모으세요. 벽·가시덩굴·내 몸에 닿으면 줄이 끊기고 ♥ 하나가 깎여요(5개면 퇴근, 5.5초마다 하나 회복). 12송이면 화환 완성!" } });
 
 /** Ms between steps: faster with every garland, ×1.35 slower in a fever ("봄바람"). */
 const garInt = (g, ab, T) => Math.round(Math.max(GAR.min, GAR.base * GAR.ramp ** g.done) * (T < ab.feverUntil ? GAR.slow : 1));

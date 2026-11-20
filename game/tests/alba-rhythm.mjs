@@ -28,8 +28,10 @@ function setNotes(ab, list) {
 const send = (ab, now, a) => { R.adv(null, null, ab, now); return R.act(null, null, ab, a, now); };
 const hit = (ab, t, dt, l = 0) => send(ab, t + RHY.lat + dt, { l });   // press lane l as if the player's key came `dt` ms after the note's time
 
-// judging windows: Perfect ±45 (20), Good ±100 (10), the latency allowance is 40 ms
-for (const [dt, pts, kind] of [[0, 20, 2], [45, 20, 2], [-45, 20, 2], [46, 10, 1], [-46, 10, 1], [100, 10, 1], [-100, 10, 1]]) {
+// judging windows: Perfect ±RHY.perf (20), Good ±RHY.good (10) — ±55 / ±125 since the eased 2026-11-20 (was 45 / 100); the latency allowance is 40 ms
+const P = RHY.perf, G = RHY.good, PF = Math.floor(P * RHY.wide), GF = Math.floor(G * RHY.wide);
+assert.deepEqual([P, G], [55, 125]);
+for (const [dt, pts, kind] of [[0, 20, 2], [P, 20, 2], [-P, 20, 2], [P + 1, 10, 1], [-P - 1, 10, 1], [G, 10, 1], [-G, 10, 1]]) {
   const ab = setNotes(mkAb(), [[1000, 0]]);
   assert.equal(hit(ab, 1000, dt), null);
   assert.equal(ab.score, pts, `dt ${dt}: ${pts} points`);
@@ -40,13 +42,13 @@ for (const [dt, pts, kind] of [[0, 20, 2], [45, 20, 2], [-45, 20, 2], [46, 10, 1
   const ab = setNotes(mkAb(), [[1000, 0]]);
   assert.equal(send(ab, 1000, { l: 0 }), null); assert.equal(ab.score, 20, "the 40 ms latency allowance: a press that arrives at the note's own time was 40 ms early, still Perfect");
   const bb = setNotes(mkAb(), [[1000, 0]]);
-  hit(bb, 1000, -101); assert.equal(bb.score, 0, "101 ms early: too early to count"); assert.equal(bb.g.N[0].s, 0, "the note still waits"); assert.equal(bb.g.stray.length, 1);
+  hit(bb, 1000, -G - 1); assert.equal(bb.score, 0, "past the Good window early: too early to count"); assert.equal(bb.g.N[0].s, 0, "the note still waits"); assert.equal(bb.g.stray.length, 1);
   hit(bb, 1000, 0); assert.equal(bb.score, 20, "and can still be hit");
   const cc = setNotes(mkAb(), [[1000, 0]]);
-  hit(cc, 1000, 101); assert.equal(cc.g.N[0].s, 2, "101 ms late: already a Miss"); assert.equal(cc.score, 0);
+  hit(cc, 1000, G + 1); assert.equal(cc.g.N[0].s, 2, "past the Good window late: already a Miss"); assert.equal(cc.score, 0);
 }
-// the fever "앙코르" widens every window ×1.5 (Perfect ±67, Good ±150)
-for (const [dt, kind] of [[67, 2], [-67, 2], [68, 1], [150, 1], [-150, 1]]) {
+// the fever "앙코르" widens every window ×1.5
+for (const [dt, kind] of [[PF, 2], [-PF, 2], [PF + 1, 1], [GF, 1], [-GF, 1]]) {
   const ab = setNotes(mkAb(), [[1000, 0]]);
   ab.feverUntil = 1e9;
   assert.equal(hit(ab, 1000, dt), null);
@@ -55,7 +57,7 @@ for (const [dt, kind] of [[67, 2], [-67, 2], [68, 1], [150, 1], [-150, 1]]) {
 }
 {
   const ab = setNotes(mkAb(), [[1000, 0]]); ab.feverUntil = 1e9;
-  hit(ab, 1000, 151); assert.equal(ab.g.N[0].s, 2, "151 ms late is a Miss even in a fever");
+  hit(ab, 1000, GF + 1); assert.equal(ab.g.N[0].s, 2, "just past the widened Good window is a Miss even in a fever");
   const bb = setNotes(mkAb(), [[1000, 0]]); hit(bb, 1000, 68); assert.equal(bb.score, 10, "without the fever 68 ms is only Good");
 }
 
@@ -63,10 +65,11 @@ for (const [dt, kind] of [[67, 2], [-67, 2], [68, 1], [150, 1], [-150, 1]]) {
 {
   const ab = setNotes(mkAb(), [[1000, 0], [1000, 3], [1100, 1], [1200, 2]]);
   ab.score = 100; ab.combo = 6;
-  R.adv(null, null, ab, 1140);
-  assert.equal(ab.g.cnt[2], 0, "not yet: a press at 1140 could still be 100 ms late");
-  const rev = ab.rev; R.adv(null, null, ab, 1140); assert.equal(ab.rev, rev, "nothing happened, nothing to resend");
-  R.adv(null, null, ab, 1141);
+  const last = 1000 + RHY.lat + RHY.good;   // the last moment a press could still be Good
+  R.adv(null, null, ab, last);
+  assert.equal(ab.g.cnt[2], 0, "not yet: a press now could still be a late Good");
+  const rev = ab.rev; R.adv(null, null, ab, last); assert.equal(ab.rev, rev, "nothing happened, nothing to resend");
+  R.adv(null, null, ab, last + 1);
   assert.deepEqual(ab.g.ev.map((e) => e[1]), [0, 3], "the chord's two notes are missed together");
   assert.equal(ab.score, 80); assert.equal(ab.combo, 0, "a miss breaks the combo");
   R.adv(null, null, ab, 5000);
@@ -316,7 +319,7 @@ assert.ok(results.perfect.every((r) => r.cnt[1] === 0 && r.cnt[2] === 0), "and n
 assert.ok(avg(results.strong.map((r) => r.score)) / PAR >= 0.85, "a strong player gets A or better on average");
 {
   const m = avg(results.human.map((r) => r.score)) / PAR;
-  assert.ok(m >= 0.6 && m <= 0.9, `the human-like bot lands around B (${m.toFixed(2)} of par)`);
+  assert.ok(m >= 0.6 && m <= 1.15, `the human-like bot lands around B–A (eased 2026-11-20) (${m.toFixed(2)} of par)`);
   const c = avg(results.casual.map((r) => r.score)) / PAR;
   assert.ok(c >= 0.3 && c <= 0.7, `the casual bot lands around C (${c.toFixed(2)} of par)`);
 }
@@ -333,7 +336,7 @@ assert.ok(viewMax < 600, `the view stays small (${viewMax} bytes)`);
   const rp = rate(BOTS.perfect), rh = rate(BOTS.human), rc = rate(BOTS.casual), rs_ = rate(BOTS.slow);
   console.log(`  strike-outs over ${N} seeds: perfect ${Math.round(rp.r * 100)}% · human ${Math.round(rh.r * 100)}% · casual ${Math.round(rc.r * 100)}% · sloppy (slow) ${Math.round(rs_.r * 100)}% (those runs end after ${rs_.run} s)`);
   assert.equal(rp.r, 0, "the perfect bot never strikes out"); assert.ok(rh.r <= 0.25, "the human-like bot strikes out in at most a quarter of its shifts");
-  assert.ok(rs_.r >= 0.5, "the sloppy bot strikes out in at least half of its shifts"); assert.ok(rs_.run < 75, `and its run ends before 75 s (${rs_.run} s)`);
+  assert.ok(rs_.r >= 0.25, "the sloppy bot still strikes out in at least a quarter of its shifts (eased 2026-11-20)"); assert.ok(rs_.run < 88, `and its run ends before 75 s (${rs_.run} s)`);
 }
 for (const r of results.perfect) {   // the player sees every note coming (≥ 1.5 s ahead) in the views
   for (const n of r.notes) assert.ok(r.seen.has(n.id) && r.seen.get(n.id) >= 1500, `note ${n.id} was announced ≥ 1.5 s ahead (${r.seen.get(n.id)})`);

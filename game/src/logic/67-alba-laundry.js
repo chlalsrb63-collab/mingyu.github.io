@@ -76,7 +76,7 @@ function laundryDraw(g, box) {
   return [ri(box, 1, nc), ri(box, 1, nc)];
 }
 /** Ms between drops: faster with every chain step, ×0.7 in the rush, ×1.5 slower in a fever ("건조기"). */
-const laundryDrop = (g, ab, T) => Math.round(Math.max(125, 320 - 12 * g.washes) * (T >= ab.endAt - ALBA_T.rushMs ? 0.65 : 1) * (T < ab.feverUntil ? 1.5 : 1));
+const laundryDrop = (g, ab, T) => Math.round(Math.max(160, 380 - 11 * g.washes) * (T >= ab.endAt - ALBA_T.rushMs ? 0.65 : 1) * (T < ab.feverUntil ? 1.5 : 1));
 
 /** A pair arrives at the top; if its place is taken the stack reached the ceiling: the washer is emptied. */
 function laundrySpawn(ab, T) {
@@ -116,7 +116,7 @@ function laundryLock(ab, T) {
   }
 }
 
-ALBA.laundry = { name: "세탁소", npc: "costume", place: "의상실 세탁실", skill: "craft", par: 5000, lives: 3, mul: 1.1, outfit: ["top_apron_moka"], tool: "basket", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 같은 색 4개를 이어 세탁하세요. 세탁기가 넘치면 ♥ 하나." };
+ALBA.laundry = { name: "세탁소", npc: "costume", place: "의상실 세탁실", skill: "craft", par: 5000, lives: 4, mul: 1.1, outfit: ["top_apron_moka"], tool: "basket", hint: "←→ 이동 · ↑ 회전 · ↓ 천천히 · 스페이스 바로 내리기. 같은 색 4개를 이어 세탁하세요. 세탁기가 넘치면 ♥ 하나." };
 ALBA_RULES.laundry = {
   init(S, p, ab) {
     const g = ab.g = { b: new Array(LAUNDRY_W * LAUNDRY_H).fill(0), cur: null, next: null, fallAt: 0, spawnAt: ab.runAt, locks: 0, washes: 0, wc: 0, n: 0, det: 12, stain: 4, sb: { seed: (ab.box.seed ^ 0x2f6b9a1d) | 0 }, seq: 0, ev: [0, 0, [], 0] };

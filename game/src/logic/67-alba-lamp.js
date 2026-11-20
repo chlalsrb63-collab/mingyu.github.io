@@ -15,13 +15,14 @@
 //         ev = [seq, 1 big bulb · 2 caught · 3 alley cleared · 4 shadow eaten, points]
 const LAMP = {
   N: 15, STEP: 50, CATCH: 40, UNIT: 120, PSP: 40, SP: [34, 34, 36, 32], FSP: 22, PW: 5500,
-  RDELAY: [60, 90, 120, 150], EL0: 2, RAMP: 4, SPMAX: 42, MEND: 8000, HEAL: 4,   // 2026-11-18: no gentle first alley (EL0 levels ahead), the shadows speed up by RAMP over the shift (up to SPMAX, a hair faster than the courier); a caught heart mends every MEND ms and every HEAL bulbs lit
+  RDELAY: [60, 90, 120, 150], EL0: 1, RAMP: 3, SPMAX: 40, MEND: 6500, HEAL: 3,   // (easier 2026-11-20) gentle first alley, slower shadows, faster mending
+    // 2026-11-18: no gentle first alley (EL0 levels ahead), the shadows speed up by RAMP over the shift (up to SPMAX, a hair faster than the courier); a caught heart mends every MEND ms and every HEAL bulbs lit
   START: [7, 13], HOME: [[7, 5], [5, 3], [9, 3], [7, 1]], CORNER: [[13, 1], [1, 1], [1, 13], [13, 13]], DELAY: [0, 30, 60, 90], FREEZE: 16,
   PEL: 10, GROUP: 5, BIG: 50, CLEAR: 200, EAT: 200, PEN: 30, R2: 0.36, WANT: 40,
   CUT: [8, 5],   // a ~90 s shift: the first two alleys only light the bottom rows (from this row down), so a first alley takes about a minute
 };
 const lampEl = (lv) => 2 * lv + LAMP.EL0;   // an alley is two "difficulty levels" at once (loops, scatter, shadow speed)
-Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 5500, lives: 4, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자에게 잡히면 ♥ 하나(4개면 퇴근)! 시간이 지나거나 전구를 켜면 ♥가 회복돼요. 큰 전구로 그림자를 잡아보세요." } });
+Object.assign(ALBA, { lamp: { name: "가로등 점등", npc: "hall_bori", place: "버드나무 골목", skill: "gather", par: 5500, lives: 5, mul: 1, outfit: ["top_willow_patrol"], tool: "torch", hint: "방향키 · WASD로 골목의 전구를 모두 켜세요. 그림자에게 잡히면 ♥ 하나(5개면 퇴근)! 시간이 지나거나 전구를 켜면 ♥가 회복돼요. 큰 전구로 그림자를 잡아보세요." } });
 const LAMP_D = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 /** The alley of a level: [wall per tile (1 wall · 0 open)]. Symmetric, connected, loops, no dead ends; more loops (an easier alley) for the first levels. */

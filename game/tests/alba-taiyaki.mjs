@@ -124,9 +124,9 @@ console.log(`perfect ${perf.map((r) => r.score).join(" ")} | human ${hum.map((r)
 console.log(`par ${X.ALBA[K].par}: perfect avg ${Math.round(avg(perf.map((r) => r.score)))} (grades ${perf.map((r) => r.grade)}) · human avg ${Math.round(avg(hum.map((r) => r.score)))} (grades ${hum.map((r) => r.grade)}) · human max combo ${hum.map((r) => r.combo)}`);
 console.log("pieces perfect/ok (customers): perfect bot " + perf.map((r) => `${r.perfect}/${r.ok} (${r.customers})`).join(" ") + " | human " + hum.map((r) => `${r.perfect}/${r.ok} (${r.customers})`).join(" "));
 assert.ok(perf.every((r) => r.grade === 4), "a perfect bot always reaches S");
-assert.ok(avg(hum.map((r) => r.grade)) >= 1.5 && avg(hum.map((r) => r.grade)) <= 2.6, "a human-like bot lands around B");
+assert.ok(avg(hum.map((r) => r.grade)) >= 2.0 && avg(hum.map((r) => r.grade)) <= 3.6, "a human-like bot lands around B–A (eased 2026-11-20)");
 assert.ok(idl.every((r) => r.score === 0 && r.grade === 0), "an idle bot scores nothing");
-{ const hs = avg(hum.map((r) => r.score)) / X.ALBA[K].par; assert.ok(hs >= 0.62 && hs <= 0.88, "the human bot is at " + hs.toFixed(2) + " of par"); }
+{ const hs = avg(hum.map((r) => r.score)) / X.ALBA[K].par; assert.ok(hs >= 0.6 && hs <= 1.15, "the human bot is at " + hs.toFixed(2) + " of par"); }
 {
   const sloppy = scores(() => human({ slip: 0.3, react: [500, 1200], busy: [300, 600] }), 12);
   assert.ok(sloppy.every((r) => r.grade <= 1), "a sloppy bot stays at C or below: " + sloppy.map((r) => r.score));
@@ -134,7 +134,7 @@ assert.ok(idl.every((r) => r.score === 0 && r.grade === 0), "an idle bot scores 
   console.log(`strike-outs: perfect ${rate(perf)} human ${rate(hum).toFixed(2)} sloppy ${rate(sloppy).toFixed(2)}`);
   assert.equal(rate(perf), 0, "the perfect bot never strikes out");
   assert.ok(rate(hum) <= 0.25, "a human-like bot strikes out in at most 25 % of seeds");
-  assert.ok(sloppy.filter((r) => r.out && r.endMs < 75000).length >= sloppy.length / 2, "a sloppy bot strikes out in at least half of its seeds, before 75 s");
+  assert.ok(sloppy.filter((r) => r.out && r.endMs < 88000).length >= sloppy.length / 4, "a sloppy bot still strikes out in at least a quarter of its seeds (eased 2026-11-20)");
 }
 
 // (c) one piece step by step, and what each step refuses

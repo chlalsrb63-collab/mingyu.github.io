@@ -6,7 +6,7 @@
 // Input: {slot, step, f?} — `step` is the stage the player saw (a stale tap is refused, so a double tap can't skip a step), `f` the filling at stage 1 —
 //        or {c: customer id} to serve. Everything is validated; a refusal costs nothing.
 // view = [open slots, [[stage, filling, quality, ms since the stage began (≤ 0), side ms, z0, z1, z2, z3]…8], [[id, n0, n1, n2, ms patience left, patience ms, group]…], [[filling, quality]…tray], ms to the 8th slot]
-const TAI = { more: 15000, group: 28000, queue: 5, tray: 6, burn: 10, leave: 20, leaveGroup: 40, pts: [30, 60], bonus: 12, cook: [6500, 4000], flip: [26, 14], gold: [12, 6], groupN: [3, 3, 2], groupWait: 24000 };
+const TAI = { more: 15000, group: 28000, queue: 5, tray: 6, burn: 10, leave: 20, leaveGroup: 40, pts: [30, 60], bonus: 12, cook: [6500, 4000], flip: [26, 14], gold: [12, 6], groupN: [3, 3, 2], groupWait: 30000 };   // (easier 2026-11-20) customers wait 4 s longer, a group 6 s
 Object.assign(ALBA, { taiyaki: { name: "붕어빵 노점", npc: "cafe_moka", place: "광장 먹거리 골목", skill: "cook", par: 5000, lives: 5, mul: 1, outfit: ["top_apron_juju"], tool: "spatula", hint: "알맞게 구워졌을 때 뒤집고 꺼내세요. 손님이 기다리다 가면 ♥ 하나." } });
 
 const taiLerp = (r, rt) => r[0] + (r[1] - r[0]) * clamp(rt / ALBA_T.runMs, 0, 1);
@@ -22,7 +22,7 @@ function taiCustomer(g, ab, bt, grp) {
     tot = g.bag.pop(); need[ri(ab.box, 0, 2)]++;
     if (tot === 2) need[ri(ab.box, 0, 2)]++;
   }
-  const wait = Math.round(grp ? TAI.groupWait : (19000 - 8000 * u) * (tot === 2 ? 1.35 : 1) * (0.9 + 0.2 * rnd(ab.box)));
+  const wait = Math.round(grp ? TAI.groupWait : (23000 - 8000 * u) * (tot === 2 ? 1.35 : 1) * (0.9 + 0.2 * rnd(ab.box)));
   g.cu.push({ id: g.nid++, need, tot, at: bt, until: bt + wait, wait, grp: grp ? 1 : 0 });
 }
 /** The earliest thing that happens by itself: [time, kind, index] — 0 the 8th slot opens · 1 the group order comes · 2 a customer arrives · 3 a slot burns · 4 a customer leaves. */
