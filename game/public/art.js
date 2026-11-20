@@ -10,7 +10,7 @@
  */
 
 import * as WPN from "./weapons.js";
-import { equipmentIcon, fitEquipmentIcon } from "./gear_icons.js";
+import { equipmentIcon, fitEquipmentIcon, tintHue } from "./gear_icons.js";
 import * as Assets from "./assetlib.js";
 import { furnIcon } from "./houseart.js";
 import { matIcon } from "./gatherart.js";
@@ -566,6 +566,9 @@ export const charmIconUrl = (kind) => { const k = "url:" + kind; return charmCac
 /** Which icon a bag charm shows: nothing of a sealed one's grade leaks (it has none on the wire). */
 export const charmKind = (c) => (!c || !c.rev ? "sealed" : c.lg && CHARM_ART[c.lg] ? c.lg : `g${c.g || 1}`);
 
+/** Armour tiers drawn as a colour variant of another tier's art: 성익 (9) borrows 화룡 (8)'s pieces in platinum. */
+const GEAR_LIVERY = { 9: { hue: 210, sat: 0.12, lift: 0.4 } };
+
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items, runes = {}) {
   const cv = { camp: campIcon(), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem(),
@@ -592,6 +595,13 @@ export function buildIcons(items, runes = {}) {
   for (const id of new Set([...Object.keys(cv), ...Object.keys(items)])) {
     const a = Assets.canvas("icon.item." + id);
     if (a) cv[id] = equipment.has(id) ? fitEquipmentIcon(a) : a;
+  }
+  for (const id of equipment) {
+    const it = items[id], lv = it.type !== "weapon" && GEAR_LIVERY[it.tier];
+    if (!lv) continue;
+    const [c, g] = canvas(cv[id].width, cv[id].height);
+    g.drawImage(cv[id], 0, 0);
+    cv[id] = tintHue(c, lv.hue, lv);
   }
   const url = {}, left = {};
   for (const id of Object.keys(cv)) { url[id] = cv[id].toDataURL(); left[id] = flip(cv[id]); }

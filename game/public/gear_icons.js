@@ -12,6 +12,28 @@ const PALETTE = [
   ["#cbd5fc", "#7c8ec5", "#465887", "#282d51", "#ffdf90", "#d99557"],
 ];
 
+/**
+ * Recolour a canvas in place to one hue, keeping each pixel's lightness so shape and shading stay. Skips the outline
+ * (dark), white glints and `keep` colours. `minS` lifts greys to a tint; `sat` sets one saturation; `lift` moves every pixel that far toward white.
+ */
+export function tintHue(c, hue, { keep = [], minS = 0, sat = null, lift = 0 } = {}) {
+  const g = c.getContext("2d"), k = new Set(keep.filter(Boolean).map((h) => { const n = parseInt(h.slice(1), 16); return `${n >> 16 & 255},${n >> 8 & 255},${n & 255}`; }));
+  const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3] || k.has(`${d[i]},${d[i + 1]},${d[i + 2]}`)) continue;
+    const r = d[i] / 255, gr = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gr, b), mn = Math.min(r, gr, b);
+    let l = (mx + mn) / 2;
+    if (l < 0.2 || l > 0.92) continue;
+    const s = sat ?? Math.max(mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1)), minS);
+    l += (1 - l) * lift;
+    const C = (1 - Math.abs(2 * l - 1)) * s, hp = (((hue % 360) + 360) % 360) / 60, X = C * (1 - Math.abs((hp % 2) - 1)), m = l - C / 2;
+    const [R, G, B] = hp < 1 ? [C, X, 0] : hp < 2 ? [X, C, 0] : hp < 3 ? [0, C, X] : hp < 4 ? [0, X, C] : hp < 5 ? [X, 0, C] : [C, 0, X];
+    d[i] = Math.round((R + m) * 255); d[i + 1] = Math.round((G + m) * 255); d[i + 2] = Math.round((B + m) * 255);
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+
 function surface() {
   const cv = document.createElement("canvas");
   cv.width = cv.height = EQUIP_ICON_SIZE;

@@ -24,7 +24,7 @@
  */
 
 import * as Assets from "./assetlib.js";
-import { EQUIP_ICON_SIZE, fitEquipmentIcon, weaponIconProjection } from "./gear_icons.js";
+import { EQUIP_ICON_SIZE, fitEquipmentIcon, weaponIconProjection, tintHue } from "./gear_icons.js";
 import { porcelainWeaponSprite, porcelainWeaponIcon, PORCELAIN_MOTIF } from "./weapons_porcelain.js";
 
 const GRIP = [5, 16];
@@ -1140,22 +1140,7 @@ function dressAsset(c, ink, we, front) {
  * (greys lifted to a bronze), so the shape and shading stay and only the colour tells it apart. Outline and white glints stay.
  */
 const isScout = (wl) => typeof wl === "string" && wl.startsWith("w_ship_");
-function scoutTint(c, keep = []) {
-  const g = c.getContext("2d"), k = new Set([...keep, GLOW7, GLOW10].filter(Boolean).map((h) => hexRgb(h).join()));   // rarity ink and +7/+10 glow stay
-  const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
-  for (let i = 0; i < d.length; i += 4) {
-    if (!d[i + 3] || k.has(`${d[i]},${d[i + 1]},${d[i + 2]}`)) continue;
-    const r = d[i] / 255, gr = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gr, b), mn = Math.min(r, gr, b);
-    const l = (mx + mn) / 2;
-    if (l < 0.2 || l > 0.92) continue;
-    let s = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1));
-    if (s < 0.3) s = 0.3;   // steel greys warm to bronze, so plain-metal weapons change too
-    const C = (1 - Math.abs(2 * l - 1)) * s, X = C * (1 - Math.abs(((38 / 60) % 2) - 1)), m = l - C / 2;   // hue 38°: C, X, 0
-    d[i] = Math.round((C + m) * 255); d[i + 1] = Math.round((X + m) * 255); d[i + 2] = Math.round(m * 255);
-  }
-  g.putImageData(img, 0, 0);
-  return c;
-}
+const scoutTint = (c, keep = []) => tintHue(c, 38, { keep: [...keep, GLOW7, GLOW10], minS: 0.3 });   // rarity ink and +7/+10 glow stay
 
 const cache = new Map();
 /**
