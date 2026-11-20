@@ -24965,7 +24965,14 @@ function coopDefs() {
 
 const BUDDY_COOLDOWN = 60 * 60000;
 const BUDDY_PARTY_NOTICE = "다른 유저와 파티를 하여, 짝꿍은 집으로 돌아갑니다";
-const BUDDY_ASSIST = { share: 0.15, bossShare: 0.08, perHit: 0.18, duration: 4200, range: 120, maxTargets: 5 };
+const BUDDY_ASSIST = { share: 0.15, bossShare: 0.08, perHit: 0.18, duration: 4200, range: 120, maxTargets: 5, guardRange: 64, guardHealCd: 10000, guardHealRate: 0.06 };
+const BUDDY_MODES = ["neutral", "attack", "guard", "passive"];
+const BUDDY_AI_LINES = {
+  attack: "알겠어! 주변 몬스터는 내가 먼저 앞장서서 상대할게!",
+  neutral: "좋아, 네가 먼저 노리는 녀석부터 맞춰서 도울게.",
+  guard: "맡겨 줘! 다가오는 적을 막아 주고 네 체력도 챙길게.",
+  passive: "응, 전투는 잠시 쉬고 옆에서 조용히 따라갈게.",
+};
 const BUDDY_NAMES = ["보리", "솔이", "두리", "단비", "포포", "모루", "여울", "라온", "콩이", "나루", "초리", "새봄", "밤톨", "하루", "별이"];
 const BUDDY_JOBS = Object.keys(JOBS).filter((job) => JOBS[job].wk.length);
 const BUDDY_LINES = {
@@ -25013,15 +25020,21 @@ function buddyClean(value) {
     wk: kit.includes(value.wk) ? value.wk : kit[0],
     nextAt: Number.isSafeInteger(value.nextAt) ? Math.max(0, value.nextAt) : 0,
     active: value.active === true,
+    ai: BUDDY_MODES.includes(value.ai) ? value.ai : "neutral",
   };
 }
 
 function buddyValidate(S, p, a) {
-  if (!["call", "leave", "new"].includes(a.k)) return bad("알 수 없는 짝꿍 요청이에요.");
+  if (!["call", "leave", "new", "ai"].includes(a.k)) return bad("알 수 없는 짝꿍 요청이에요.");
+  const b = p.ch.buddy;
+  if (a.k === "ai") {
+    if (p.dead) return bad("쓰러진 상태에서는 지시할 수 없어요.");
+    if (!b) return bad("먼저 짝꿍을 불러 주세요.");
+    return BUDDY_MODES.includes(a.ai) ? OK : bad("알 수 없는 행동 모드예요.");
+  }
   if (a.k !== "leave" && buddyInParty(S, p)) return bad("다른 유저와 파티 중에는 짝꿍을 부를 수 없어요.");
   if (p.dead || inDim(p) || p.ab) return bad("현재 활동을 마치고 짝꿍에게 연락해 주세요.");
   if (p.buddyCall) return bad("짝꿍이 메시지를 확인하고 있어요.");
-  const b = p.ch.buddy;
   if (a.k === "leave") return b?.active ? OK : bad("곁에 있는 짝꿍이 없어요.");
   if (typeof a.m !== "string" || !a.m.trim() || a.m.length > 60 || /[\x00-\x1f\x7f]/.test(a.m)) return bad("메시지를 1~60자로 써 주세요.");
   if (a.k === "call") return b?.active ? bad("짝꿍이 이미 곁에 있어요.") : OK;
@@ -25029,16 +25042,25 @@ function buddyValidate(S, p, a) {
 }
 
 function buddyApply(S, p, a) {
-  if (a.k === "leave") {
+  if (a.k === "ai") {
+    p.ch.buddy.ai = a.ai;
+    const b = buddyOf(S, p);
+    if (b) {
+      b.ch.ai = a.ai;
+      if (a.ai === "passive") { b.target = null; b.engaged.clear(); }
+      p.buddySay = [b.eid, BUDDY_AI_LINES[a.ai]];
+    }
+  } else if (a.k === "leave") {
     p.ch.buddy.active = false;
     buddyRemove(S, p);
   } else {
     if (!p.ch.buddy || a.k === "new") {
+      const prevAi = BUDDY_MODES.includes(p.ch.buddy?.ai) ? p.ch.buddy.ai : "neutral";
       buddyRemove(S, p);
       const job = BUDDY_JOBS[ri(S, 0, BUDDY_JOBS.length - 1)], kit = JOBS[job].wk;
       const names = BUDDY_NAMES.filter((name) => name !== p.ch.name && name !== p.ch.buddy?.name);
       const look = LOOK_MAX.map((max, slot) => ri(S, slot === 8 ? 1 : 0, max));
-      p.ch.buddy = { name: names[ri(S, 0, names.length - 1)], job, wk: kit[ri(S, 0, kit.length - 1)], look, nextAt: S.now + BUDDY_COOLDOWN, active: false };
+      p.ch.buddy = { name: names[ri(S, 0, names.length - 1)], job, wk: kit[ri(S, 0, kit.length - 1)], look, nextAt: S.now + BUDDY_COOLDOWN, active: false, ai: prevAi };
     }
     p.ch.buddy.active = false;
     p.buddyCall = { replyAt: S.now + 850, arriveAt: S.now + 1800 };
@@ -25101,7 +25123,7 @@ function buddySpawn(S, p) {
 
 function buddySelf(p) {
   const b = p.ch.buddy;
-  return b ? [b.name, b.job, p.ch.lvl, b.active ? 1 : 0, Math.max(0, b.nextAt - p.S.now), p.buddyCall ? 1 : 0] : null;
+  return b ? [b.name, b.job, p.ch.lvl, b.active ? 1 : 0, Math.max(0, b.nextAt - p.S.now), p.buddyCall ? 1 : 0, b.ai || "neutral"] : null;
 }
 
 function buddyView(p, out) {
@@ -25180,7 +25202,8 @@ function buddyDanger(S, rt, x, y) {
     rt.pools.some((e) => e.until > S.now && near(e));
 }
 
-function buddyTarget(S, p, b) {
+function buddyTarget(S, p, b, rt, mode) {
+  if (mode === "passive") return null;
   let best = null, priority = Infinity;
   for (const [mob, hit] of b.engaged) {
     const d = dist(p.x, p.y, mob.x, mob.y);
@@ -25189,17 +25212,39 @@ function buddyTarget(S, p, b) {
     const rank = d + dist(b.x, b.y, mob.x, mob.y) * 0.2 - (mob === b.target ? 22 : 0) - (mob.tgt === p.pid ? 30 : 0);
     if (rank < priority) { best = mob; priority = rank; }
   }
+  if (best || mode === "neutral") return best;
+  for (const mob of rt.mobs) {
+    if (mob.dead || mob.dive || MOBS[mob.k].chest) continue;
+    const d = dist(p.x, p.y, mob.x, mob.y);
+    if (d > BUDDY_ASSIST.range) continue;
+    if (mode === "guard" && mob.tgt !== p.pid && d > BUDDY_ASSIST.guardRange) continue;
+    const rank = d + dist(b.x, b.y, mob.x, mob.y) * 0.2 - (mob === b.target ? 22 : 0) - (mob.tgt === p.pid ? 40 : 0);
+    if (rank < priority) { best = mob; priority = rank; }
+  }
   return best;
 }
 
 function buddyFight(S, p, b, rt, m, dt) {
   if (p.sit || p.recall || dist(b.x, b.y, p.x, p.y) > BUDDY_ASSIST.range) { b.target = null; b.engaged.clear(); return false; }
-  const mob = b.target = buddyTarget(S, p, b);
+  const mode = p.ch.buddy?.ai || "neutral";
   const safe = (x, y) => !buddyDanger(S, rt, x, y);
   if (!safe(b.x, b.y)) {
     buddyWalk(S, b, p.x, p.y, 64, dt, safe, "evade");
     return true;
   }
+  if (mode === "passive") { b.target = null; b.engaged.clear(); return false; }
+  const st = stats(p);
+  if (mode === "guard" && p.hp > 0 && p.hp < st.mhp * 0.65 && S.now >= (b.healAt || 0)) {
+    const heal = Math.min(st.mhp - p.hp, Math.max(1, Math.round(st.mhp * BUDDY_ASSIST.guardHealRate * elementHealFactor(S, p))));
+    if (heal > 0) {
+      p.hp += heal;
+      b.healAt = S.now + BUDDY_ASSIST.guardHealCd;
+      rt.ev.push(["h", p.eid, heal, 1, 0]);
+      p.buddySay = [b.eid, "괜찮아? 내가 잠깐 회복해 줄게!"];
+      p.dirty = true;
+    }
+  }
+  const mob = b.target = buddyTarget(S, p, b, rt, mode);
   if (!mob) return false;
   const w = WKIND[b.ch.wk], reach = (w.shot ? Math.min(86, w.range) : w.range) - 3;
   const clear = (x, y) => {
@@ -25211,13 +25256,14 @@ function buddyFight(S, p, b, rt, m, dt) {
   const pass = (x, y) => safe(x, y) && dist(p.x, p.y, x, y) <= BUDDY_ASSIST.range;
   if (!buddyWalk(S, b, mob.x, mob.y, reach, dt, clear, "hunt-" + mob.id, pass) || S.now < b.atkAt) return true;
   face(b, mob);
-  b.atkAt = S.now + Math.max(1500, Math.round(w.cd * 1.65));
+  b.atkAt = S.now + (mode === "attack" ? Math.max(1250, Math.round(w.cd * 1.4)) : Math.max(1500, Math.round(w.cd * 1.65)));
   rt.ev.push(["a", b.eid, w.fx, Math.round(mob.x), Math.round(mob.y - 6), b.dir, 0]);
-  const st = stats(p), type = WEAPON_ELEMENT[b.ch.wk] || "physical";
+  const type = WEAPON_ELEMENT[b.ch.wk] || "physical";
   const hit = b.engaged.get(mob), base = Math.max(1, Math.min(2 + b.ch.lvl * 0.35, st.atk * BUDDY_ASSIST.perHit));
   const defence = MOBS[mob.k].def * (w.mag ? SFX.magDef : SFX.physDef);
-  const damage = Math.min(Math.floor(hit.credit), Math.max(1, Math.round((base - defence) * elementResist(S, mob, type, 0))));
-  hit.credit -= damage;
+  const raw = Math.max(1, Math.round((base * (mode !== "neutral" && (mob.el === 2 || MOBS[mob.k].boss) ? 0.65 : 1) - defence) * elementResist(S, mob, type, 0)));
+  const damage = hit && hit.credit >= 1 ? Math.min(Math.floor(hit.credit), raw) : raw;
+  if (hit && hit.credit >= 1) hit.credit -= damage;
   dealMob(S, rt, mob, p, damage, false, 0, [[type, damage]], { buddyCap: damage });
   return true;
 }

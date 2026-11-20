@@ -272,6 +272,15 @@
             <div><b id="buddy-name">짝꿍에게 연락하기</b><small id="buddy-status"></small></div>
             <button class="btn" type="button" id="buddy-leave" hidden>잠시 헤어지기</button>
           </div>
+          <div class="buddy-ai" id="buddy-ai" hidden>
+            <div class="buddy-ai-head"><span>행동 AI</span><small id="buddy-ai-desc"></small></div>
+            <div class="buddy-ai-btns" role="group" aria-label="짝꿍 행동 AI 모드">
+              <button class="btn" type="button" data-ai="attack" aria-pressed="false">공격</button>
+              <button class="btn" type="button" data-ai="neutral" aria-pressed="true">중립</button>
+              <button class="btn" type="button" data-ai="guard" aria-pressed="false">호위</button>
+              <button class="btn" type="button" data-ai="passive" aria-pressed="false">대기</button>
+            </div>
+          </div>
           <div id="buddy-messages" class="sunk buddy-messages" role="log" aria-label="짝꿍과의 메시지"></div>
           <form id="buddy-form">
             <label class="buddy-label" for="buddy-message">메시지</label>

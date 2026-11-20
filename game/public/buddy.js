@@ -4,6 +4,12 @@ import { addChat } from "./windows.js";
 import { Sound } from "./audio.js";
 
 const GREETING = "지금 어디야? 혹시 같이 갈래?";
+const AI_DESC = {
+  attack: "주변 몬스터를 먼저 적극적으로 공격",
+  neutral: "내가 공격한 적만 맞춰서 보조",
+  guard: "다가오는 적 요격 · 위급 시 응원 회복",
+  passive: "공격하지 않고 곁에서 조용히 동행",
+};
 let contact = null, refreshAt = 0, availableAt = 0;
 
 export function setup() {
@@ -13,6 +19,10 @@ export function setup() {
     if (m) act({ t: "buddy", k: ev.submitter?.value || "call", m });
   });
   $("#buddy-leave").addEventListener("click", () => act({ t: "buddy", k: "leave" }));
+  $("#buddy-ai").addEventListener("click", (ev) => {
+    const btn = ev.target.closest("button[data-ai]");
+    if (btn && !btn.disabled) act({ t: "buddy", k: "ai", ai: btn.dataset.ai });
+  });
   render(0);
 }
 
@@ -24,7 +34,7 @@ export function reset() {
 }
 
 function render(t) {
-  const [name, job, lv, active, , busy] = contact || [];
+  const [name, job, lv, active, , busy, ai = "neutral"] = contact || [];
   const grouped = G.party.some(([eid]) => eid !== G.you);
   const canSend = !!G.playing && !grouped && !G.me.dead && !G.map?.id.startsWith("dim:") && !G.ab;
   $("#buddy-name").textContent = name || "짝꿍에게 연락하기";
@@ -32,6 +42,15 @@ function render(t) {
   $("#buddy-status").textContent = detail + (grouped ? "파티 중" : busy ? "답장 기다리는 중…" : active ? "곁에 있어요" : name ? "연락할 수 있어요" : "메시지를 보내면 모험을 함께할 짝꿍이 찾아와요.");
   $("#buddy-leave").hidden = !active || !!busy;
   $("#buddy-leave").disabled = !canSend;
+  const aiBox = $("#buddy-ai");
+  aiBox.hidden = !name;
+  $("#buddy-ai-desc").textContent = AI_DESC[ai] || AI_DESC.neutral;
+  for (const btn of aiBox.querySelectorAll("button[data-ai]")) {
+    const on = btn.dataset.ai === ai;
+    btn.classList.toggle("on", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+    btn.disabled = !G.playing || !!G.me.dead;
+  }
   $("#buddy-message").disabled = !canSend || !!busy;
   $("#buddy-send").disabled = !canSend || !!active || !!busy;
   const seconds = Math.max(0, Math.ceil((availableAt - t) / 1000));

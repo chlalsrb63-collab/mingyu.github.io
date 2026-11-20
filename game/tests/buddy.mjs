@@ -347,4 +347,43 @@ for (const seed of [20251111, 808093]) {
   assert.ok(S.now - q.workAt < 1000);
 }
 
-console.log("buddy: dialogue rotation, party lifecycle, bounded hunting, five co-op jobs and replay rewards");
+// AI stance modes: neutral (default), attack (proactive), guard (intercept + heal), passive (no combat) + persistence
+{
+  const w = session(), b = invite(w), { p, S, act, step } = w, map = X.mapOf("meadow");
+  assert.equal(p.ch.buddy.ai, "neutral");
+  assert.equal(act("buddy", { k: "ai", ai: "bogus" }).ok, false);
+  X.changeMap(S, p, map.id, ...X.tilePx(map.entry));
+  step(200);
+  const rt = S.maps[map.id], mob = rt.mobs.find((m) => !m.dead && !X.MOBS[m.k].chest && m.el === 0);
+  [mob.x, mob.y] = [b.x, b.y];
+  mob.stun = S.now + 20000;
+  mob.hp = 60;
+  // attack mode engages proactively without owner hitting first
+  assert.ok(act("buddy", { k: "ai", ai: "attack" }).ok);
+  assert.equal(p.ch.buddy.ai, "attack");
+  step(2000);
+  assert.ok(mob.hp < 60, "attack mode proactively engages nearby monsters");
+  // passive mode stops attacking even engaged monsters
+  assert.ok(act("buddy", { k: "ai", ai: "passive" }).ok);
+  X.dealMob(S, rt, mob, p, 10, false, 0, null, { trackBuddy: true });
+  const hpAfterPassive = mob.hp;
+  step(2000);
+  assert.equal(mob.hp, hpAfterPassive, "passive mode never attacks");
+  // guard mode heals low-HP owner and intercepts close threats
+  assert.ok(act("buddy", { k: "ai", ai: "guard" }).ok);
+  p.hp = 10;
+  step(2000);
+  assert.ok(p.hp > 10, "guard mode heals hurt owner");
+  assert.ok(mob.hp < hpAfterPassive, "guard mode intercepts close threats");
+  // persists across reconnect and old sheets without ai default to neutral
+  const saved = structuredClone(L.removePlayer(S, pid));
+  assert.equal(saved.buddy.ai, "guard");
+  L.addPlayer(S, pid, saved);
+  assert.equal(S.players[pid].ch.buddy.ai, "guard");
+  const legacy = structuredClone(L.removePlayer(S, pid));
+  delete legacy.buddy.ai;
+  L.addPlayer(S, pid, legacy);
+  assert.equal(S.players[pid].ch.buddy.ai, "neutral", "legacy buddy sheets default to neutral");
+}
+
+console.log("buddy: dialogue rotation, party lifecycle, bounded hunting, AI stances, five co-op jobs and replay rewards");
