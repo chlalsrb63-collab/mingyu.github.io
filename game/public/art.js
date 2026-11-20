@@ -566,28 +566,6 @@ export const charmIconUrl = (kind) => { const k = "url:" + kind; return charmCac
 /** Which icon a bag charm shows: nothing of a sealed one's grade leaks (it has none on the wire). */
 export const charmKind = (c) => (!c || !c.rev ? "sealed" : c.lg && CHARM_ART[c.lg] ? c.lg : `g${c.g || 1}`);
 
-/**
- * A copy of a weapon icon in the scouts' brass livery: every coloured pixel takes one amber hue at its own lightness
- * (greys lifted to a bronze), so the shape and shading stay and only the colour tells it apart. Outline and white glints stay.
- */
-function scoutTint(src) {
-  const [c, g] = canvas(src.width, src.height);
-  g.drawImage(src, 0, 0);
-  const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
-  for (let i = 0; i < d.length; i += 4) {
-    if (!d[i + 3]) continue;
-    const r = d[i] / 255, gr = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gr, b), mn = Math.min(r, gr, b);
-    const l = (mx + mn) / 2;
-    if (l < 0.2 || l > 0.92) continue;
-    let s = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1));
-    if (s < 0.3) s = 0.3;   // steel greys warm to bronze, so plain-metal weapons change too
-    const C = (1 - Math.abs(2 * l - 1)) * s, X = C * (1 - Math.abs(((38 / 60) % 2) - 1)), m = l - C / 2;   // hue 38°: C, X, 0
-    d[i] = Math.round((C + m) * 255); d[i + 1] = Math.round((X + m) * 255); d[i + 2] = Math.round(m * 255);
-  }
-  g.putImageData(img, 0, 0);
-  return c;
-}
-
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items, runes = {}) {
   const cv = { camp: campIcon(), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem(),
@@ -615,8 +593,6 @@ export function buildIcons(items, runes = {}) {
     const a = Assets.canvas("icon.item." + id);
     if (a) cv[id] = equipment.has(id) ? fitEquipmentIcon(a) : a;
   }
-  // 바람등호's scout issue is the shop weapon with lower attack: same art in the scouts' brass colours
-  for (const id of Object.keys(cv)) if (id.startsWith("w_ship_")) cv[id] = scoutTint(cv[id]);
   const url = {}, left = {};
   for (const id of Object.keys(cv)) { url[id] = cv[id].toDataURL(); left[id] = flip(cv[id]); }
   return { cv, url, left };

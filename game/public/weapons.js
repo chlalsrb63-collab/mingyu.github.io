@@ -1134,6 +1134,29 @@ function dressAsset(c, ink, we, front) {
   return c;
 }
 
+/**
+ * 바람등호's scout issue (`w_ship_*`, sent as `wl`) is the shop weapon with lower attack: the same art in the scouts'
+ * brass livery, in hand and in the bag: every coloured pixel takes one amber hue at its own lightness
+ * (greys lifted to a bronze), so the shape and shading stay and only the colour tells it apart. Outline and white glints stay.
+ */
+const isScout = (wl) => typeof wl === "string" && wl.startsWith("w_ship_");
+function scoutTint(c, keep = []) {
+  const g = c.getContext("2d"), k = new Set([...keep, GLOW7, GLOW10].filter(Boolean).map((h) => hexRgb(h).join()));   // rarity ink and +7/+10 glow stay
+  const img = g.getImageData(0, 0, c.width, c.height), d = img.data;
+  for (let i = 0; i < d.length; i += 4) {
+    if (!d[i + 3] || k.has(`${d[i]},${d[i + 1]},${d[i + 2]}`)) continue;
+    const r = d[i] / 255, gr = d[i + 1] / 255, b = d[i + 2] / 255, mx = Math.max(r, gr, b), mn = Math.min(r, gr, b);
+    const l = (mx + mn) / 2;
+    if (l < 0.2 || l > 0.92) continue;
+    let s = mx === mn ? 0 : (mx - mn) / (1 - Math.abs(2 * l - 1));
+    if (s < 0.3) s = 0.3;   // steel greys warm to bronze, so plain-metal weapons change too
+    const C = (1 - Math.abs(2 * l - 1)) * s, X = C * (1 - Math.abs(((38 / 60) % 2) - 1)), m = l - C / 2;   // hue 38°: C, X, 0
+    d[i] = Math.round((C + m) * 255); d[i + 1] = Math.round((X + m) * 255); d[i + 2] = Math.round(m * 255);
+  }
+  g.putImageData(img, 0, 0);
+  return c;
+}
+
 const cache = new Map();
 /**
  * The world sprite. `gear`: wt tier · wq rarity · we enhancement · wl legendary/set
@@ -1155,7 +1178,8 @@ export function bowSprite(gear = {}, pull = 0, arrow = false) {
 function sprite(kind, gear, o) {
   const wt = Math.max(1, Math.min(10, gear.wt | 0 || 1)), wq = Math.max(0, Math.min(5, gear.wq | 0)), we = gear.we | 0;
   const motif = MOTIF[gear.ws] ? gear.ws : MOTIF[gear.wl] ? gear.wl : "";
-  const key = `${kind}:${wt}:${wq}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}:${motif}${o ? `:${o.q}:${o.arrow ? 1 : 0}` : ""}`;
+  const scout = !motif && isScout(gear.wl);
+  const key = `${kind}:${wt}:${wq}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}:${motif}${scout ? ":scout" : ""}${o ? `:${o.q}:${o.arrow ? 1 : 0}` : ""}`;
   let c = cache.get(key);
   if (c) return c;
   if (motif === "porcelain") { c = porcelainWeaponSprite(kind, gear, o); cache.set(key, c); return c; }
@@ -1166,6 +1190,7 @@ function sprite(kind, gear, o) {
   if (ext) {
     // the striking part is past the guard: right of the hand by a third of the sprite
     c = dressAsset(ext, wq ? RARE_INK[wq] : null, we, (x) => book || x > ox + (W - ox) / 3);
+    if (scout) scoutTint(c, [RARE_INK[wq]]);
     cache.set(key, c);
     return c;
   }
@@ -1174,14 +1199,15 @@ function sprite(kind, gear, o) {
   // Rasterize at the held size so the outline stays one pixel wide at either scale.
   const scale = hammer ? 1.0 : book ? 0.85 : 1;
   c = paint(d, W, H, (s, t) => [ox + s * scale, oy + t * scale], (x, y) => [(x - ox) / scale, (y - oy) / scale], glow, we >= 10 ? [RARE_INK[wq] || INK, GLOW10] : [RARE_INK[wq] || INK]);
+  if (scout) scoutTint(c, [RARE_INK[wq], INK]);
   cache.set(key, c);
   return c;
 }
 
 /** The 32×32 bag icon: the same weapon laid corner to corner (a book upright), fitted to the square. */
 export function weaponIcon(kind, tier, o = {}) {
-  const motif = MOTIF[o.ws] ? o.ws : MOTIF[o.wl] ? o.wl : "", we = o.we | 0;
-  const key = `i:${kind}:${tier}:${motif}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}`;
+  const motif = MOTIF[o.ws] ? o.ws : MOTIF[o.wl] ? o.wl : "", we = o.we | 0, scout = !motif && isScout(o.wl);
+  const key = `i:${kind}:${tier}:${motif}:${we >= 10 ? 10 : we >= 7 ? 7 : 0}${scout ? ":scout" : ""}`;
   let c = cache.get(key);
   if (c) return c;
   if (motif === "porcelain") { c = porcelainWeaponIcon(kind, o); cache.set(key, c); return c; }
@@ -1189,6 +1215,7 @@ export function weaponIcon(kind, tier, o = {}) {
   if (ext) {
     // laid corner to corner: the striking part is the upper right
     c = dressAsset(fitEquipmentIcon(ext), null, we, (x, y) => kind === "book" || x - y > 2);
+    if (scout) scoutTint(c);
     cache.set(key, c);
     return c;
   }
@@ -1196,6 +1223,7 @@ export function weaponIcon(kind, tier, o = {}) {
   const glow = we >= 7 ? { blade: d.blade, col: GLOW7 } : null;
   const { xf, inv } = weaponIconProjection(kind, d.sh.concat(d.post));
   c = paint(d, EQUIP_ICON_SIZE, EQUIP_ICON_SIZE, xf, inv, glow, we >= 10 ? [ICON_INK, GLOW10] : [ICON_INK]);
+  if (scout) scoutTint(c, [ICON_INK]);
   cache.set(key, c);
   return c;
 }
@@ -1203,7 +1231,7 @@ const urls = new Map();
 /** A data URL for an item entry's icon when it looks different from its base item (legendary, set, +7, skin), else null. */
 export function entryIconUrl(entry, it) {
   if (!entry || !it || it.type !== "weapon") return null;
-  const wl = entry.lg || (MOTIF[it.id || entry.id] ? it.id || entry.id : ""), we = entry.enh | 0;
+  const own = it.id || entry.id, wl = entry.lg || (MOTIF[own] || isScout(own) ? own : ""), we = entry.enh | 0;
   if (!wl && we < 7) return null;
   const key = `${it.wk}:${it.tier}:${wl}:${we >= 10 ? 10 : 7 * (we >= 7)}`;
   if (!urls.has(key)) urls.set(key, weaponIcon(it.wk, it.tier, { wl, we }).toDataURL());
