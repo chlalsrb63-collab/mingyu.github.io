@@ -571,9 +571,37 @@ export const charmKind = (c) => (!c || !c.rev ? "sealed" : c.lg && CHARM_ART[c.l
 /** Armour tiers drawn as a colour variant of another tier's art: 성익 (9) borrows 화룡 (8)'s pieces in platinum. */
 const GEAR_LIVERY = { 9: { hue: 210, sat: 0.12, lift: 0.4 } };
 
+function scrollIcon(ribbon, glow) {
+  const [c, g] = canvas(16, 16);
+  paint(g, [
+    "....pppppp..", "...pPPPPPpp.", "...pPrrrrPp.", "...pPPgPPpp.", "...pPPPPPpp.",
+    "...pPPgPPpp.", "...pPrrrrPp.", "...pPPPPPpp.", "..ppPPPPPp..", "..ppppppp...",
+  ], { p: "#c8b28a", P: "#f4e6c8", r: ribbon, g: glow }, 2, 3);
+  outline(c, g, "#111118");
+  return c;
+}
+function toolIcon(kind) {
+  const [c, g] = canvas(16, 16);
+  if (kind === "hammer") {
+    paint(g, [
+      "...hhhhhh...", "..hHHHHHhh..", "..hHggggHh..", "...hsssss...", "......ww....",
+      "......ww....", ".....ww.....", ".....ww.....", "....ww......", "....ww......",
+    ], { h: "#7a52a8", H: "#b688ec", g: "#ffe47a", s: "#4a3068", w: "#9e6a3c" }, 2, 3);
+  } else {
+    paint(g, [
+      "......gg....", ".....gGGg...", ".....gGGg...", "......ss....", ".....sSSs...",
+      ".....sSSs...", ".....sSSs...", "......ss....", "......bb....", "......bb....",
+    ], { g: "#50c8e8", G: "#b8f4ff", s: "#8a98b0", S: "#d4dce8", b: "#586078" }, 2, 3);
+  }
+  outline(c, g, "#111118");
+  return c;
+}
+
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items, runes = {}) {
   const cv = { camp: campIcon(), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem(),
+    enc_atk: scrollIcon("#d84444", "#ff9a76"), enc_def: scrollIcon("#3ca45c", "#98f0a8"), enc_util: scrollIcon("#3e7ae0", "#9ad0ff"),
+    enc_hammer: toolIcon("hammer"), rune_chisel: toolIcon("chisel"),
     cafe_coffee: mugIcon("#f4ecdc", "#cfc4b2", "#5a3420", "#c8a070"), cafe_cocoa: mugIcon("#d86a6a", "#b04e56", "#8a4a2a", "#ffffff"), cafe_tea: mugIcon("#8ac0a0", "#6a9a80", "#c8b040", null),
     charm: charmIcon("sealed"), charm_nail: charmIcon("nail"),
     cafe_scone: bakeIcon("scone"), cafe_pie: bakeIcon("pie"), inn_stew: bakeIcon("stew"), inn_bread: bakeIcon("bread") };

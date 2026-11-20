@@ -111,7 +111,9 @@ const CHARM_SAY = {
   appraise: "여기, 테두리에 무늬가 보여요. 돌려 보면 작은 빈자리에도 맞겠어요.",
 };
 
-const charmsEmpty = () => ({ unlocked: false, openN: 0, intro: 0, fu: [0, 0], kn: 0, freeId: 0, nextUid: 1, placed: [], pending: null, rec: [] });
+const CHARM_PRESETS = 3;
+const CHARM_FUSE_COST = [0, 1500, 5000];
+const charmsEmpty = () => ({ unlocked: false, openN: 0, intro: 0, fu: [0, 0], kn: 0, freeId: 0, nextUid: 1, placed: [], pending: null, rec: [], presets: [null, null, null] });
 const isCharm = (s) => !!s && s.id === "charm";
 
 // ── shapes and the board
@@ -193,7 +195,8 @@ function charmAppraise(c) {
   const level = c.rv >= 2 ? charmIl(c) : 0;
   let g = x < odds[0] ? 1 : x < odds[0] + odds[1] ? 2 : 3, sh = level ? "bar2" : "pin", lg = "";
   if (c.fx) g = 1;
-  else if (g === 3 && CHARM_LG_LIVE.length) { lg = CHARM_LG_LIVE[Math.floor(pick * CHARM_LG_LIVE.length)]; sh = CHARM_LEGEND[lg].shape; }
+  else if (c.fg === 2 || c.fg === 3) g = c.fg;
+  if (g === 3 && CHARM_LG_LIVE.length) { lg = CHARM_LG_LIVE[Math.floor(pick * CHARM_LG_LIVE.length)]; sh = CHARM_LEGEND[lg].shape; }
   else {
     if (g === 3) g = 2;
     let roll = pick * 100;
@@ -233,6 +236,7 @@ function charmFix(g) {
   if (!isObj(g) || !Number.isInteger(g.uid) || g.uid < 1 || !num(g.seal)) return null;
   const out = { id: "charm", n: 1, uid: g.uid, seal: g.seal >>> 0, rv: clamp(g.rv | 0, 1, CHARM_V), tier: clamp(g.tier | 0, 1, TIER_MAX), src: clamp(g.src | 0, 0, CHARM_SRC.length - 1), rev: g.rev ? 1 : 0 };
   if (g.fx) out.fx = 1;
+  if (g.fg === 2 || g.fg === 3) out.fg = g.fg;
   if (!out.rev) return out;
   // an appraised charm is what its seal says: anything else on the sheet is put right
   const a = charmAppraise(out);
@@ -293,6 +297,12 @@ function charmsClean(ch) {
     seen.add(c.uid);
     cs.rec.push(c);
   }
+  cs.presets = Array.from({ length: CHARM_PRESETS }, (_, i) => {
+    const slot = Array.isArray(old.presets) ? old.presets[i] : null;
+    if (!Array.isArray(slot)) return null;
+    return slot.filter((e) => isObj(e) && Number.isInteger(e.uid) && e.uid >= 1 && Number.isInteger(e.x) && Number.isInteger(e.y) && Number.isInteger(e.r))
+      .map((e) => ({ uid: e.uid, x: clamp(e.x, 0, CHARM_SIZE - 1), y: clamp(e.y, 0, CHARM_SIZE - 1), r: e.r & 3 })).slice(0, 25);
+  });
   ch.charms = cs;
 }
 
@@ -516,6 +526,34 @@ function charmValidate(S, p, a) {
     case "charm_destroy":
       if (charmInBag(ch, a.uid) < 0) return bad("가방에 없는 참입니다");
       return a.ok === 1 ? OK : bad("참을 부수려면 확인이 필요합니다");
+    case "charm_preset": {
+      if (!cs.unlocked) return bad("아직 참 보드가 없습니다");
+      if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
+      if (!Number.isInteger(a.i) || a.i < 0 || a.i >= CHARM_PRESETS) return bad("잘못된 프리셋 번호입니다");
+      if (a.a === "save") return OK;
+      if (a.a === "load") {
+        const pre = cs.presets[a.i];
+        if (!Array.isArray(pre)) return bad("저장된 프리셋이 없습니다");
+        // Verify bag room for any currently placed charms that won't be re-placed
+        const keep = new Set(pre.map((e) => e.uid));
+        const returning = cs.placed.filter((e) => !keep.has(e.c.uid)).length;
+        const placing = pre.filter((e) => charmInBag(ch, e.uid) >= 0).length;
+        if (ch.inv.length + returning - placing > bagCap(ch)) return bad("가방 공간이 부족해 프리셋을 불러올 수 없습니다");
+        return OK;
+      }
+      return bad("잘못된 요청입니다");
+    }
+    case "charm_fuse": {
+      if (p.dead) return bad("쓰러진 상태입니다");
+      if (!npcNear(p, "charm")) return bad("주아나가 너무 멉니다");
+      const g = a.g | 0;
+      if (g !== 1 && g !== 2) return bad("매직 또는 레어 참만 합성할 수 있습니다");
+      const cost = CHARM_FUSE_COST[g];
+      if (ch.gold < cost) return bad(`골드가 부족합니다 (${gStr(cost)}G 필요)`);
+      const picks = charmFusePicks(ch, g, a.uids);
+      if (picks.length < 3) return bad(`가방에 감정된 ${CHARM_GRADE[g]} 참 3개가 필요합니다`);
+      return OK;
+    }
     default: return bad("알 수 없는 행동");
   }
 }
@@ -602,9 +640,69 @@ function charmApply(S, p, a) {
       toast(p, `[${charmName(c)}]${pp(charmName(c), "을를")} 부쉈습니다.`);
       break;
     }
+    case "charm_preset": {
+      if (a.a === "save") {
+        cs.presets[a.i] = cs.placed.map((e) => ({ uid: e.c.uid, x: e.x, y: e.y, r: e.r }));
+        toast(p, `참 보드 프리셋 ${a.i + 1}번에 저장했습니다 (${cs.placed.length}개).`);
+      } else {
+        const pre = cs.presets[a.i];
+        const pool = new Map();
+        for (const e of cs.placed) pool.set(e.c.uid, e.c);
+        cs.placed = [];
+        for (let i = ch.inv.length - 1; i >= 0; i--) {
+          if (isCharm(ch.inv[i])) { pool.set(ch.inv[i].uid, ch.inv[i]); ch.inv.splice(i, 1); }
+        }
+        let placedN = 0;
+        for (const e of pre) {
+          const c = pool.get(e.uid);
+          if (!c || !c.rev || ch.lvl < charmReq(c) || charmFit(cs, c.sh, e.x, e.y, e.r, 0)) continue;
+          cs.placed.push({ c, x: e.x, y: e.y, r: e.r });
+          pool.delete(e.uid);
+          placedN++;
+        }
+        for (const c of pool.values()) ch.inv.push(c);
+        afterGear(S, p);
+        toast(p, `참 보드 프리셋 ${a.i + 1}번을 불러왔습니다 (${placedN}개 배치).`);
+      }
+      break;
+    }
+    case "charm_fuse": {
+      const g = a.g | 0, cost = CHARM_FUSE_COST[g];
+      const picks = charmFusePicks(ch, g, a.uids);
+      ch.gold -= cost;
+      const maxTier = Math.max(...picks.map((c) => c.tier || 1));
+      const dropSet = new Set(picks.map((c) => c.uid));
+      ch.inv = ch.inv.filter((s) => !(isCharm(s) && dropSet.has(s.uid)));
+      const next = charmOwn(ch, charmSeal(S, p, 3, maxTier));
+      next.fg = g + 1;
+      const r = charmAppraise(next);
+      next.rev = 1; next.g = r.g; next.sh = r.sh; next.op = r.op;
+      if (r.lg) next.lg = r.lg;
+      ch.inv.push(next);
+      p.gain.push(["item", "charm", 1, next.g]);
+      S.maps[p.map].ev.push(["u", p.eid, 2]);
+      toast(p, `참 합성 성공! [${charmName(next)}] 획득! (-${gStr(cost)}G)`);
+      if (next.g === 3) sys(S, `${ch.name}님이 참 합성으로 전설 참 [${charmName(next)}]${pp(charmName(next), "을를")} 탄생시켰습니다!`);
+      break;
+    }
   }
   p.dirty = true;
   saveSoon(p);
+}
+
+/** Pick 3 appraised charms of grade `g` from bag (honouring explicit `uids` when given). */
+function charmFusePicks(ch, g, uids) {
+  if (Array.isArray(uids) && uids.length === 3) {
+    const out = [], seen = new Set();
+    for (const u of uids) {
+      if (seen.has(u)) return [];
+      const i = charmInBag(ch, u), c = ch.inv[i];
+      if (!c || !c.rev || c.g !== g) return [];
+      seen.add(u); out.push(c);
+    }
+    return out;
+  }
+  return ch.inv.filter((s) => isCharm(s) && s.rev && s.g === g).slice(0, 3);
 }
 
 // ── what the client is told
@@ -625,6 +723,7 @@ function charmSelf(p) {
     sum: { st: ST_ORDER.map((k) => cm.st[k]), hp: cm.hp, mp: cm.mp, atk: cm.atk, skd: cm.skd, skh: cm.skh },
     // the power at work, why it cannot go off just now ("" when it can), and how many legendaries lie on the board
     lg: cm.lg, lgWhy, lgN: cs.placed.filter((e) => e.c.lg).length,
+    presets: cs.presets.map((pr) => (Array.isArray(pr) ? pr.length : -1)),
   };
 }
 /** `defs().charms`: everything the board UI draws from. */
@@ -642,7 +741,7 @@ function charmDefs() {
     legend: Object.fromEntries(Object.keys(CHARM_LEGEND).map((id) => { const l = CHARM_LEGEND[id]; return [id, { name: l.name, shape: l.shape, sk: l.sk || "", cd: l.cd, off: l.off ? 1 : 0, desc: l.desc }]; })),
     expand: CHARM_EXPAND, expandCost: CHARM_EXPAND.map((_, k) => charmExpandCost(k)), nail: "charm_nail",
     // appraisal: round(idCost[0] + idCost[1] × the charm's tier) G; the first is free
-    idCost: [200, 12],
+    idCost: [200, 12], fuseCost: CHARM_FUSE_COST, presetN: CHARM_PRESETS,
     quests: CHARM_QUESTS.map(({ id, lv, n, title, text, reward }) => ({ id, lv, n, title, text, reward })), say: CHARM_SAY, npc: "town_charm_juana", role: "charm",
   };
 }

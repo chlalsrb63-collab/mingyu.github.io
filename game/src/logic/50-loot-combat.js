@@ -225,6 +225,7 @@ function lootFor(S, rt, mob, p) {
     else id = `${GEAR[type].pre}_${tier}`;
     let q = rollRarity(S, dropRank, st.mf + fx.mf);
     if (isJewel(id) && q === 0) q = 1;
+    if (q === 5 && UNIQ_ARMOR_BY[type]?.[tier]) id = UNIQ_ARMOR_BY[type][tier];
     out.push({ g: rollGear(S, id, q, mob.ecoLv || d.lv, dropRank) });
   }
   if (rnd(S) < runeDropChance(shownLv(mob.ecoLv || d.lv), dropRank) * (rain ? 1.25 : 1)) out.push({ it: rollRuneId(S, dropRank), n: 1 });
@@ -238,6 +239,11 @@ function lootFor(S, rt, mob, p) {
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   // Use the high end of the material roll without drawing more combat randomness.
   if (!d.chest && stoneRoll >= 1 - SOCK_DROP[rank]) out.push({ it: SOCK_ITEM, n: 1 });
+  else if (!d.chest && rank === 2 && stoneRoll >= 0.90) {
+    out.push({ it: stoneRoll >= 0.985 ? "enc_hammer" : stoneRoll >= 0.96 ? "rune_chisel" : stoneRoll >= 0.94 ? "enc_atk" : stoneRoll >= 0.92 ? "enc_def" : "enc_util", n: 1 });
+  } else if (!d.chest && rank === 1 && stoneRoll >= 0.955) {
+    out.push({ it: stoneRoll >= 0.985 ? "rune_chisel" : stoneRoll >= 0.975 ? "enc_atk" : stoneRoll >= 0.965 ? "enc_def" : "enc_util", n: 1 });
+  }
   // Crafting materials (herbs/ores/wood) matching this field's grade drop directly from monsters; rainy weather boosts material yield (WLD-03).
   if (!mob.dim) {
     const mats = rollHuntMats(S, mapOfS(S, rt.id), d, d.eco ? Math.max(1, rank) : rank);

@@ -95,6 +95,8 @@ function selfPayload(p) {
     lgOff: st.lgOff,
     // world map boss / field-boss live status per region (0 = alive/ready, >0 = respawn seconds left; WLD-06)
     fbMap: fbStatusMap(p.S),
+    // extracted legendary prefixes stored at the smithy (ITM-02)
+    enc: ch.enc || [],
   };
 }
 
@@ -353,6 +355,8 @@ export function defs() {
     life: lifeDefs(), npclife: npcLifeDefs(),
     // charms: shapes, options and caps, legendaries, the expansion order and prices, 주아나's quests (66-charms.js)
     charms: charmDefs(),
+    // enchant scrolls, extraction hammer & rune fusion/extraction (65-enchant.js)
+    enc: encDefs(),
     // 협동 아르바이트: the jobs, cut-offs, tools (68-coop.js)
     coop: coopDefs(),
     alba: albaDefs(),

@@ -684,7 +684,9 @@ export function applyAction(S, pid, a) {
       break;
     }
     // charms (66-charms.js)
-    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": charmApply(S, p, a); break;
+    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": case "charm_preset": case "charm_fuse": charmApply(S, p, a); break;
+    // enchant scrolls, extraction hammer & rune fusion/extraction (65-enchant.js, ITM-02 / ITM-08)
+    case "enc_apply": case "enc_extract": case "enc_craft": case "rune_fuse": case "rune_extract": encApply(S, p, a); break;
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": coopApply(S, p, a); break;
     case "ab_start": case "ab_act": case "ab_leave": case "ab_close": albaApply(S, p, a); break;

@@ -75,6 +75,8 @@ export function newChar(name, look, wk) {
     ...lifeFresh(),
     // charms (v13, 66-charms.js): the board, 주아나's quests, what waits with her
     charms: charmsEmpty(),
+    // extracted legendary prefixes stored at the smithy (ITM-02, 65-enchant.js)
+    enc: [],
     // 보스전리품 (v17): the field-boss kinds whose trophy this hero holds, in the order won (67-trophies.js)
     tro: [],
     // The dawnpillar rune's rescue cooldown survives a reconnect (v27).
@@ -250,6 +252,7 @@ function migrate(ch) {
   if (oldKit || fourClass) for (const id of qsStarter(ch)) qsLearn(ch, id);
   // the wardrobe (v7): owned cosmetics and the one worn in each slot
   ch.cos = cosClean(ch.cos, ch);
+  ch.enc = encClean(ch.enc);
   // 염색 (v25, P9): { id: dye 1–6 } for owned pieces only (65-cosmetics.js cosDyeClean)
   ch.cosDye = cosDyeClean(ch.cosDye, ch);
   // side quests from the world map editor (v8): what is under way and what is done

@@ -147,13 +147,38 @@ for (const type of Object.keys(GEAR)) {
 Object.assign(ITEMS, {
   veil_h: { ...ITEMS.h_4, name: "박쥐 가면" },
   veil_a: { ...ITEMS.a_4, name: "장막 망토" },
+  veil_g: { ...ITEMS.g_4, name: "박쥐 발톱 장갑", uniq: 1 },
+  veil_b: { ...ITEMS.b_4, name: "밤장막 장화", uniq: 1 },
   veil_r: { ...ITEMS.r_4, name: "송곳니 반지" },
   veil_n: { ...ITEMS.n_4, name: "흉곽 부적" },
   bloom_h: { ...ITEMS.h_5, name: "고래뼈 투구" },
   bloom_a: { ...ITEMS.a_5, name: "갈비 흉갑" },
+  bloom_g: { ...ITEMS.g_5, name: "혼꽃 손아귀", uniq: 1 },
+  bloom_b: { ...ITEMS.b_5, name: "고래뼈 각반", uniq: 1 },
   bloom_r: { ...ITEMS.r_5, name: "혼꽃 반지" },
   bloom_n: { ...ITEMS.n_5, name: "결정 심장" },
+  // T6–T10 고유 유니크 방어구 14종 (ITM-03: 장갑·신발 포함 전 구간 보강)
+  u_meteor_g: { ...ITEMS.g_6, name: "유성 철권", base: { atk: 12 }, uniq: 1 },
+  u_meteor_b: { ...ITEMS.b_6, name: "유성 도약화", base: { def: 8, spd: 7 }, uniq: 1 },
+  u_blood_g: { ...ITEMS.g_7, name: "혈월 갈퀴장갑", base: { atk: 15 }, uniq: 1 },
+  u_blood_b: { ...ITEMS.b_7, name: "혈월 그림자화", base: { def: 10, spd: 8 }, uniq: 1 },
+  u_blood_a: { ...ITEMS.a_7, name: "혈월 비늘갑옷", base: { def: 24, hp: 190 }, uniq: 1 },
+  u_sun_g: { ...ITEMS.g_8, name: "화룡 발톱장갑", base: { atk: 18 }, uniq: 1 },
+  u_sun_b: { ...ITEMS.b_8, name: "화룡 비늘각반", base: { def: 12, spd: 9 }, uniq: 1 },
+  u_sun_h: { ...ITEMS.h_8, name: "화룡 뿔투구", base: { def: 16, hp: 120 }, uniq: 1 },
+  u_star_g: { ...ITEMS.g_9, name: "성익 수호장갑", base: { atk: 21 }, uniq: 1 },
+  u_star_b: { ...ITEMS.b_9, name: "성익 바람신발", base: { def: 15, spd: 10 }, uniq: 1 },
+  u_dawn_g: { ...ITEMS.g_10, name: "태초의 여명장갑", base: { atk: 26 }, uniq: 1 },
+  u_dawn_b: { ...ITEMS.b_10, name: "태초의 여명장화", base: { def: 18, spd: 11 }, uniq: 1 },
+  u_dawn_h: { ...ITEMS.h_10, name: "태초의 성좌관", base: { def: 23, hp: 190 }, uniq: 1 },
+  u_dawn_a: { ...ITEMS.a_10, name: "태초의 성좌갑", base: { def: 44, hp: 380 }, uniq: 1 },
 });
+const UNIQ_ARMOR_BY = {
+  gloves: { 6: "u_meteor_g", 7: "u_blood_g", 8: "u_sun_g", 9: "u_star_g", 10: "u_dawn_g" },
+  boots: { 6: "u_meteor_b", 7: "u_blood_b", 8: "u_sun_b", 9: "u_star_b", 10: "u_dawn_b" },
+  helm: { 8: "u_sun_h", 10: "u_dawn_h" },
+  armor: { 7: "u_blood_a", 10: "u_dawn_a" },
+};
 
 /**
  * Affixes a dropped item can roll: [key, label, prefix word, min, max, per-tier growth].
@@ -649,10 +674,10 @@ const MOBS = {
   // design's tier-45 figures scaled to 크리온's row one band up), 꽃무덤 고래 at the cap; their adds: bats that feed it, hagfish
   // heads that shield it.
   cloakbat: { name: "벨모라", epithet: "밤장막 박쥐군주", lv: 25, hp: 21000, atk: 120, def: 22, spd: 36, xp: 7000, gold: [1200, 2000], aggro: 140, range: 30, cd: 1400, boss: true, gear: 1,
-    fan: 150, pool: 30, poolKind: 0, drops: [["veil_h", 0.03], ["veil_a", 0.03], ["veil_r", 0.03], ["veil_n", 0.03], ["w_ribbook", 0.04]] },
+    fan: 150, pool: 30, poolKind: 0, drops: [["veil_h", 0.03], ["veil_a", 0.03], ["veil_g", 0.03], ["veil_b", 0.03], ["veil_r", 0.03], ["veil_n", 0.03], ["w_ribbook", 0.04]] },
   nightbat: { name: "쪼로밤", epithet: "밤장막 흡혈박쥐", sp: "nightbat", lv: 25, hp: 500, atk: 40, def: 8, spd: 54, xp: 300, gold: [20, 40], aggro: 220, range: 18, cd: 1100, fly: true },
   bloomwhale: { name: "모비화", epithet: "꽃무덤 고래", lv: 50, hp: 56000, atk: 165, def: 52, spd: 30, xp: 90000, gold: [6000, 9000], aggro: 170, range: 34, cd: 1500, boss: true, gear: 1,
-    fan: 160, pool: 34, poolKind: 2, drops: [["bloom_h", 0.025], ["bloom_a", 0.025], ["bloom_r", 0.025], ["bloom_n", 0.025], ["w_whalebow", 0.015], ["w_bloomstaff", 0.015], ["pet_hagfish", 0.02]] },
+    fan: 160, pool: 34, poolKind: 2, drops: [["bloom_h", 0.025], ["bloom_a", 0.025], ["bloom_g", 0.025], ["bloom_b", 0.025], ["bloom_r", 0.025], ["bloom_n", 0.025], ["w_whalebow", 0.015], ["w_bloomstaff", 0.015], ["pet_hagfish", 0.02]] },
   hagfishhead: { name: "먹꾸물", epithet: "먹장어 머리", sp: "hagfishhead", lv: 50, hp: 9000, atk: 150, def: 30, spd: 8, xp: 2000, gold: [60, 120], aggro: 300, range: 76, cd: 1500, shot: true },
   // its phase-2 adds.
   bloodshard: { name: "루비침", epithet: "혈루 결정 전갈", sp: "bloodshard", lv: 41, hp: 1000, atk: 110, def: 20, spd: 40, xp: 420, gold: [20, 40], aggro: 140, range: 19, cd: 1100, slam: 34 },

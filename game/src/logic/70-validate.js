@@ -535,8 +535,10 @@ export function validateAction(S, pid, a) {
     case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": return lifeValidate(S, p, a);
     // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
     case "blk": case "w": case "wk": return socialValidate(S, p, a);
-    // charms (66-charms.js): 주아나's quests, appraisal, the board
-    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": return charmValidate(S, p, a);
+    // charms (66-charms.js): 주아나's quests, appraisal, the board, presets, fusion
+    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": case "charm_preset": case "charm_fuse": return charmValidate(S, p, a);
+    // enchant scrolls, extraction hammer & rune fusion/extraction (65-enchant.js, ITM-02 / ITM-08)
+    case "enc_apply": case "enc_extract": case "enc_craft": case "rune_fuse": case "rune_extract": return encValidate(S, p, a);
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": return coopValidate(S, p, a);
     case "fair_buy": return fairValidate(S, p, a);

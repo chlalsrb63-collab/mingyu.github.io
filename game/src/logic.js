@@ -701,13 +701,38 @@ for (const type of Object.keys(GEAR)) {
 Object.assign(ITEMS, {
   veil_h: { ...ITEMS.h_4, name: "박쥐 가면" },
   veil_a: { ...ITEMS.a_4, name: "장막 망토" },
+  veil_g: { ...ITEMS.g_4, name: "박쥐 발톱 장갑", uniq: 1 },
+  veil_b: { ...ITEMS.b_4, name: "밤장막 장화", uniq: 1 },
   veil_r: { ...ITEMS.r_4, name: "송곳니 반지" },
   veil_n: { ...ITEMS.n_4, name: "흉곽 부적" },
   bloom_h: { ...ITEMS.h_5, name: "고래뼈 투구" },
   bloom_a: { ...ITEMS.a_5, name: "갈비 흉갑" },
+  bloom_g: { ...ITEMS.g_5, name: "혼꽃 손아귀", uniq: 1 },
+  bloom_b: { ...ITEMS.b_5, name: "고래뼈 각반", uniq: 1 },
   bloom_r: { ...ITEMS.r_5, name: "혼꽃 반지" },
   bloom_n: { ...ITEMS.n_5, name: "결정 심장" },
+  // T6–T10 고유 유니크 방어구 14종 (ITM-03: 장갑·신발 포함 전 구간 보강)
+  u_meteor_g: { ...ITEMS.g_6, name: "유성 철권", base: { atk: 12 }, uniq: 1 },
+  u_meteor_b: { ...ITEMS.b_6, name: "유성 도약화", base: { def: 8, spd: 7 }, uniq: 1 },
+  u_blood_g: { ...ITEMS.g_7, name: "혈월 갈퀴장갑", base: { atk: 15 }, uniq: 1 },
+  u_blood_b: { ...ITEMS.b_7, name: "혈월 그림자화", base: { def: 10, spd: 8 }, uniq: 1 },
+  u_blood_a: { ...ITEMS.a_7, name: "혈월 비늘갑옷", base: { def: 24, hp: 190 }, uniq: 1 },
+  u_sun_g: { ...ITEMS.g_8, name: "화룡 발톱장갑", base: { atk: 18 }, uniq: 1 },
+  u_sun_b: { ...ITEMS.b_8, name: "화룡 비늘각반", base: { def: 12, spd: 9 }, uniq: 1 },
+  u_sun_h: { ...ITEMS.h_8, name: "화룡 뿔투구", base: { def: 16, hp: 120 }, uniq: 1 },
+  u_star_g: { ...ITEMS.g_9, name: "성익 수호장갑", base: { atk: 21 }, uniq: 1 },
+  u_star_b: { ...ITEMS.b_9, name: "성익 바람신발", base: { def: 15, spd: 10 }, uniq: 1 },
+  u_dawn_g: { ...ITEMS.g_10, name: "태초의 여명장갑", base: { atk: 26 }, uniq: 1 },
+  u_dawn_b: { ...ITEMS.b_10, name: "태초의 여명장화", base: { def: 18, spd: 11 }, uniq: 1 },
+  u_dawn_h: { ...ITEMS.h_10, name: "태초의 성좌관", base: { def: 23, hp: 190 }, uniq: 1 },
+  u_dawn_a: { ...ITEMS.a_10, name: "태초의 성좌갑", base: { def: 44, hp: 380 }, uniq: 1 },
 });
+const UNIQ_ARMOR_BY = {
+  gloves: { 6: "u_meteor_g", 7: "u_blood_g", 8: "u_sun_g", 9: "u_star_g", 10: "u_dawn_g" },
+  boots: { 6: "u_meteor_b", 7: "u_blood_b", 8: "u_sun_b", 9: "u_star_b", 10: "u_dawn_b" },
+  helm: { 8: "u_sun_h", 10: "u_dawn_h" },
+  armor: { 7: "u_blood_a", 10: "u_dawn_a" },
+};
 
 /**
  * Affixes a dropped item can roll: [key, label, prefix word, min, max, per-tier growth].
@@ -1203,10 +1228,10 @@ const MOBS = {
   // design's tier-45 figures scaled to 크리온's row one band up), 꽃무덤 고래 at the cap; their adds: bats that feed it, hagfish
   // heads that shield it.
   cloakbat: { name: "벨모라", epithet: "밤장막 박쥐군주", lv: 25, hp: 21000, atk: 120, def: 22, spd: 36, xp: 7000, gold: [1200, 2000], aggro: 140, range: 30, cd: 1400, boss: true, gear: 1,
-    fan: 150, pool: 30, poolKind: 0, drops: [["veil_h", 0.03], ["veil_a", 0.03], ["veil_r", 0.03], ["veil_n", 0.03], ["w_ribbook", 0.04]] },
+    fan: 150, pool: 30, poolKind: 0, drops: [["veil_h", 0.03], ["veil_a", 0.03], ["veil_g", 0.03], ["veil_b", 0.03], ["veil_r", 0.03], ["veil_n", 0.03], ["w_ribbook", 0.04]] },
   nightbat: { name: "쪼로밤", epithet: "밤장막 흡혈박쥐", sp: "nightbat", lv: 25, hp: 500, atk: 40, def: 8, spd: 54, xp: 300, gold: [20, 40], aggro: 220, range: 18, cd: 1100, fly: true },
   bloomwhale: { name: "모비화", epithet: "꽃무덤 고래", lv: 50, hp: 56000, atk: 165, def: 52, spd: 30, xp: 90000, gold: [6000, 9000], aggro: 170, range: 34, cd: 1500, boss: true, gear: 1,
-    fan: 160, pool: 34, poolKind: 2, drops: [["bloom_h", 0.025], ["bloom_a", 0.025], ["bloom_r", 0.025], ["bloom_n", 0.025], ["w_whalebow", 0.015], ["w_bloomstaff", 0.015], ["pet_hagfish", 0.02]] },
+    fan: 160, pool: 34, poolKind: 2, drops: [["bloom_h", 0.025], ["bloom_a", 0.025], ["bloom_g", 0.025], ["bloom_b", 0.025], ["bloom_r", 0.025], ["bloom_n", 0.025], ["w_whalebow", 0.015], ["w_bloomstaff", 0.015], ["pet_hagfish", 0.02]] },
   hagfishhead: { name: "먹꾸물", epithet: "먹장어 머리", sp: "hagfishhead", lv: 50, hp: 9000, atk: 150, def: 30, spd: 8, xp: 2000, gold: [60, 120], aggro: 300, range: 76, cd: 1500, shot: true },
   // its phase-2 adds.
   bloodshard: { name: "루비침", epithet: "혈루 결정 전갈", sp: "bloodshard", lv: 41, hp: 1000, atk: 110, def: 20, spd: 40, xp: 420, gold: [20, 40], aggro: 140, range: 19, cd: 1100, slam: 34 },
@@ -9007,6 +9032,8 @@ export function newChar(name, look, wk) {
     ...lifeFresh(),
     // charms (v13, 66-charms.js): the board, 주아나's quests, what waits with her
     charms: charmsEmpty(),
+    // extracted legendary prefixes stored at the smithy (ITM-02, 65-enchant.js)
+    enc: [],
     // 보스전리품 (v17): the field-boss kinds whose trophy this hero holds, in the order won (67-trophies.js)
     tro: [],
     // The dawnpillar rune's rescue cooldown survives a reconnect (v27).
@@ -9182,6 +9209,7 @@ function migrate(ch) {
   if (oldKit || fourClass) for (const id of qsStarter(ch)) qsLearn(ch, id);
   // the wardrobe (v7): owned cosmetics and the one worn in each slot
   ch.cos = cosClean(ch.cos, ch);
+  ch.enc = encClean(ch.enc);
   // 염색 (v25, P9): { id: dye 1–6 } for owned pieces only (65-cosmetics.js cosDyeClean)
   ch.cosDye = cosDyeClean(ch.cosDye, ch);
   // side quests from the world map editor (v8): what is under way and what is done
@@ -11167,6 +11195,7 @@ function lootFor(S, rt, mob, p) {
     else id = `${GEAR[type].pre}_${tier}`;
     let q = rollRarity(S, dropRank, st.mf + fx.mf);
     if (isJewel(id) && q === 0) q = 1;
+    if (q === 5 && UNIQ_ARMOR_BY[type]?.[tier]) id = UNIQ_ARMOR_BY[type][tier];
     out.push({ g: rollGear(S, id, q, mob.ecoLv || d.lv, dropRank) });
   }
   if (rnd(S) < runeDropChance(shownLv(mob.ecoLv || d.lv), dropRank) * (rain ? 1.25 : 1)) out.push({ it: rollRuneId(S, dropRank), n: 1 });
@@ -11180,6 +11209,11 @@ function lootFor(S, rt, mob, p) {
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   // Use the high end of the material roll without drawing more combat randomness.
   if (!d.chest && stoneRoll >= 1 - SOCK_DROP[rank]) out.push({ it: SOCK_ITEM, n: 1 });
+  else if (!d.chest && rank === 2 && stoneRoll >= 0.90) {
+    out.push({ it: stoneRoll >= 0.985 ? "enc_hammer" : stoneRoll >= 0.96 ? "rune_chisel" : stoneRoll >= 0.94 ? "enc_atk" : stoneRoll >= 0.92 ? "enc_def" : "enc_util", n: 1 });
+  } else if (!d.chest && rank === 1 && stoneRoll >= 0.955) {
+    out.push({ it: stoneRoll >= 0.985 ? "rune_chisel" : stoneRoll >= 0.975 ? "enc_atk" : stoneRoll >= 0.965 ? "enc_def" : "enc_util", n: 1 });
+  }
   // Crafting materials (herbs/ores/wood) matching this field's grade drop directly from monsters; rainy weather boosts material yield (WLD-03).
   if (!mob.dim) {
     const mats = rollHuntMats(S, mapOfS(S, rt.id), d, d.eco ? Math.max(1, rank) : rank);
@@ -20026,6 +20060,204 @@ function cosBossRare(S, p, why) {
   return giveCos(S, p, left[Math.floor(roll / COS_RARE_BOSS * left.length)], why);
 }
 
+// ───────────────────────────── enchant scrolls, extraction hammer & rune fusion (ITM-02, ITM-08) ─────────────────────────────
+// ITM-02: Red/Green/Blue enchant scrolls roll a live prefix (LEGEND) by category (O/D/U) onto equipped gear;
+//         추출의 마법망치 extracts a legendary/unique prefix from bag gear into ch.enc for 100% imprint onto another piece.
+// ITM-08: Fuse 3 runes of the same rarity (1→2, 2→3, 3→4) into a random rune of the next higher rarity;
+//         룬 해체석 extracts a socketed rune safely back into the bag without destroying it.
+
+Object.assign(ITEMS, {
+  enc_atk: { name: "붉은 인챈트 주문서", type: "tool", q: 2, price: 3000, desc: "대장장이에게 건네 장착한 희귀 이상 장비에 공격형(O) 전설 접두사를 부여하거나 변경합니다." },
+  enc_def: { name: "초록 인챈트 주문서", type: "tool", q: 2, price: 3000, desc: "대장장이에게 건네 장착한 희귀 이상 장비에 방어형(D) 전설 접두사를 부여하거나 변경합니다." },
+  enc_util: { name: "푸른 인챈트 주문서", type: "tool", q: 2, price: 3000, desc: "대장장이에게 건네 장착한 희귀 이상 장비에 유틸형(U) 전설 접두사를 부여하거나 변경합니다." },
+  enc_hammer: { name: "추출의 마법망치", type: "tool", q: 3, price: 8000, desc: "대장장이에게 건네 가방 속 전설·유니크 장비의 접두사를 추출해 보관합니다. (장비는 소멸)" },
+  rune_chisel: { name: "룬 해체석", type: "tool", q: 2, price: 2500, desc: "대장장이에게 건네 장착한 장비 소켓의 룬을 파괴하지 않고 가방으로 회수합니다." },
+});
+
+const ENC_CAT = { enc_atk: "O", enc_def: "D", enc_util: "U" };
+const ENC_SCROLLS = Object.keys(ENC_CAT);
+const ENC_MAX = 20;
+const ENC_COST = { scroll: 1500, imprint: 2500, extract: 3000, craft: 2000 };
+const RUNE_FUSE_COST = [0, 1000, 3000, 8000];
+const RUNE_EXTRACT_COST = 1000;
+
+/** Clean persisted extracted prefix list on a character sheet. */
+function encClean(v) {
+  if (!Array.isArray(v)) return [];
+  return v.filter((k) => typeof k === "string" && Object.hasOwn(LEGEND, k) && PFX[k] && PFX[k].on && !PFX[k].off).slice(0, ENC_MAX);
+}
+
+/** Live prefix keys eligible for gear type `type` and category `cat` ("O" | "D" | "U"). */
+function encPool(type, cat) {
+  const L = SLOT_L[type];
+  const live = (k) => PFX[k] && PFX[k].on && !PFX[k].off && LEGEND[k][3] === cat;
+  let pool = Object.keys(LEGEND).filter((k) => live(k) && (!L || LEGEND[k][2].includes(L)));
+  if (!pool.length) pool = Object.keys(LEGEND).filter(live);
+  return pool;
+}
+
+/** Count runes of rarity `q` in the bag (summing stacks). */
+function countRunesByRarity(ch, q) {
+  let n = 0;
+  for (const s of ch.inv) if (RUNES[s.id]?.q === q) n += s.n || 1;
+  return n;
+}
+
+/** All rune IDs belonging to rarity `q` (for q === 4, flatten all set-rune tiers). */
+function runePoolAll(q) {
+  if (q === 4) return [...RUNE_POOLS[4][2], ...RUNE_POOLS[4][3], ...RUNE_POOLS[4][4]];
+  return RUNE_POOLS[q] || [];
+}
+
+function encValidate(S, p, a) {
+  const ch = p.ch;
+  if (p.dead) return bad("쓰러진 상태입니다");
+  if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
+  switch (a.t) {
+    case "enc_apply": {
+      const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
+      if (!g) return bad("장착한 장비가 없습니다");
+      if (g.cu === 1) return bad("저주받은 장비는 인챈트할 수 없습니다");
+      if ((g.q | 0) < 2) return bad("희귀 등급 이상 장비만 인챈트할 수 있습니다");
+      const tier = ITEMS[g.id].tier || 1;
+      if (a.src === "imprint") {
+        const list = ch.enc || [];
+        if (!Number.isInteger(a.i) || a.i < 0 || a.i >= list.length) return bad("보관된 접두사가 없습니다");
+        const lg = list[a.i];
+        const L = SLOT_L[ITEMS[g.id].type];
+        if (!LEGEND[lg] || (L && !LEGEND[lg][2].includes(L))) return bad("이 장비 부위에는 이식할 수 없는 접두사입니다");
+        const cost = ENC_COST.imprint * tier;
+        return ch.gold < cost ? bad(`골드가 부족합니다 (${cost.toLocaleString()}G 필요)`) : OK;
+      }
+      if (!ENC_SCROLLS.includes(a.id)) return bad("인챈트 주문서가 아닙니다");
+      if (countItem(ch, a.id) < 1) return bad(`${ITEMS[a.id].name}가 부족합니다`);
+      const cost = ENC_COST.scroll * tier;
+      return ch.gold < cost ? bad(`골드가 부족합니다 (${cost.toLocaleString()}G 필요)`) : OK;
+    }
+    case "enc_extract": {
+      const g = invAt(ch, a.s);
+      if (!g || !isGear(g.id)) return bad("추출할 장비가 아닙니다");
+      if ((g.q | 0) < 3 || !g.lg || !Object.hasOwn(LEGEND, g.lg)) return bad("전설 접두사가 있는 장비만 추출할 수 있습니다");
+      if (g.cu === 1) return bad("저주받은 장비에서는 추출할 수 없습니다");
+      if (countItem(ch, "enc_hammer") < 1) return bad("추출의 마법망치가 없습니다");
+      if ((ch.enc || []).length >= ENC_MAX) return bad(`접두사 보관함이 가득 찼습니다 (최대 ${ENC_MAX}개)`);
+      const cost = ENC_COST.extract * (ITEMS[g.id].tier || 1);
+      return ch.gold < cost ? bad(`골드가 부족합니다 (${cost.toLocaleString()}G 필요)`) : OK;
+    }
+    case "enc_craft": {
+      if (!ENC_SCROLLS.includes(a.from) || !ENC_SCROLLS.includes(a.to) || a.from === a.to) return bad("변환할 주문서를 올바르게 선택하세요");
+      if (countItem(ch, a.from) < 2) return bad(`${ITEMS[a.from].name} 2장이 필요합니다`);
+      if (ch.gold < ENC_COST.craft) return bad(`골드가 부족합니다 (${ENC_COST.craft.toLocaleString()}G 필요)`);
+      return canAdd(ch, a.to, 1) ? OK : bad("가방이 가득 찼습니다");
+    }
+    case "rune_fuse": {
+      const q = a.q | 0;
+      if (q < 1 || q > 3) return bad("합성할 수 없는 룬 등급입니다");
+      if (countRunesByRarity(ch, q) < 3) return bad(`${RUNE_RARITY[q]} 룬 3개가 필요합니다`);
+      const cost = RUNE_FUSE_COST[q];
+      if (ch.gold < cost) return bad(`골드가 부족합니다 (${cost.toLocaleString()}G 필요)`);
+      // After removing 3 runes, at least 1 slot is guaranteed or bag has space
+      return ch.inv.length <= bagCap(ch) ? OK : bad("가방이 가득 찼습니다");
+    }
+    case "rune_extract": {
+      const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
+      if (!g) return bad("장착한 장비가 없습니다");
+      if (!Number.isInteger(a.i) || a.i < 0 || a.i >= g.ru.length || !g.ru[a.i]) return bad("회수할 룬이 없습니다");
+      if (countItem(ch, "rune_chisel") < 1) return bad("룬 해체석이 없습니다");
+      if (ch.gold < RUNE_EXTRACT_COST) return bad(`골드가 부족합니다 (${RUNE_EXTRACT_COST.toLocaleString()}G 필요)`);
+      const rid = runeSocketId(g.ru[a.i]), ril = runeSocketLevel(g.ru[a.i]);
+      return canAdd(ch, rid, 1, ril) ? OK : bad("가방이 가득 찼습니다");
+    }
+    default: return bad("잘못된 요청입니다");
+  }
+}
+
+function encApply(S, p, a) {
+  const ch = p.ch;
+  switch (a.t) {
+    case "enc_apply": {
+      const g = ch.eq[a.k], it = ITEMS[g.id], tier = it.tier || 1;
+      let nextLg = "";
+      if (a.src === "imprint") {
+        ch.gold -= ENC_COST.imprint * tier;
+        nextLg = ch.enc.splice(a.i, 1)[0];
+      } else {
+        ch.gold -= ENC_COST.scroll * tier;
+        takeItem(ch, a.id, 1);
+        const pool = encPool(it.type, ENC_CAT[a.id]);
+        const choices = pool.length > 1 ? pool.filter((k) => k !== g.lg) : pool;
+        nextLg = choices[ri(S, 0, choices.length - 1)];
+      }
+      g.lg = nextLg;
+      if ((g.q | 0) < 3) {
+        g.q = 3;
+        const used = new Set(g.af.map((x) => x[0]));
+        if (g.af.length < 4) g.af.push(rollGearLine(S, rollAffixKey(S, it.type, used), g));
+      }
+      afterGear(S, p);
+      S.maps[p.map].ev.push(["u", p.eid, 2]);
+      toast(p, `인챈트 완료: [${LEGEND[nextLg][0]} ${it.name}]!`);
+      break;
+    }
+    case "enc_extract": {
+      const g = ch.inv[a.s], it = ITEMS[g.id], lg = g.lg;
+      ch.gold -= ENC_COST.extract * (it.tier || 1);
+      ch.inv.splice(a.s, 1);
+      takeItem(ch, "enc_hammer", 1);
+      (ch.enc ||= []).push(lg);
+      S.maps[p.map].ev.push(["u", p.eid, 2]);
+      toast(p, `접두사 [${LEGEND[lg][0]}] 추출 완료! 대장간 보관함에 저장되었습니다.`);
+      break;
+    }
+    case "enc_craft": {
+      ch.gold -= ENC_COST.craft;
+      takeItem(ch, a.from, 2);
+      addItem(ch, a.to, 1);
+      p.gain.push(["item", a.to, 1, 2]);
+      toast(p, `[${ITEMS[a.to].name}] 1장으로 변환했습니다.`);
+      break;
+    }
+    case "rune_fuse": {
+      const q = a.q | 0;
+      ch.gold -= RUNE_FUSE_COST[q];
+      let need = 3, maxIl = 1;
+      for (let i = ch.inv.length - 1; i >= 0 && need > 0; i--) {
+        const s = ch.inv[i];
+        if (RUNES[s.id]?.q !== q) continue;
+        const take = Math.min(need, s.n || 1);
+        maxIl = Math.max(maxIl, runeIl(s.il));
+        s.n = (s.n || 1) - take;
+        if (s.n <= 0) ch.inv.splice(i, 1);
+        need -= take;
+      }
+      const pool = runePoolAll(q + 1);
+      const outId = pool[ri(S, 0, pool.length - 1)];
+      addItem(ch, outId, 1, maxIl);
+      foundItem(S, p, outId, 1);
+      S.maps[p.map].ev.push(["u", p.eid, 2]);
+      toast(p, `룬 합성 성공! [${RUNE_RARITY[q + 1]}] ${ITEMS[outId].name} (iLv.${maxIl}) 획득!`);
+      break;
+    }
+    case "rune_extract": {
+      const g = ch.eq[a.k], sock = g.ru[a.i];
+      const rid = runeSocketId(sock), ril = runeSocketLevel(sock);
+      ch.gold -= RUNE_EXTRACT_COST;
+      takeItem(ch, "rune_chisel", 1);
+      g.ru[a.i] = null;
+      addItem(ch, rid, 1, ril);
+      p.gain.push(["item", rid, 1, stackQuality(rid)]);
+      afterGear(S, p);
+      toast(p, `[${ITEMS[rid].name}]을(를) 손상 없이 회수했습니다.`);
+      break;
+    }
+  }
+  p.dirty = true;
+  saveSoon(p);
+}
+
+function encDefs() {
+  return { scrolls: ENC_SCROLLS, cat: ENC_CAT, max: ENC_MAX, cost: ENC_COST, runeFuse: RUNE_FUSE_COST, runeExtract: RUNE_EXTRACT_COST };
+}
 // ───────────────────────────── 일일 아르바이트: the solo mini-game shift engine ─────────────────────────────
 // docs/design/daily-alba-minigames-2026-11-16.md. A shift is `p.ab` (never saved): a seeded mini-game run on the SERVER for ~90 seconds,
 // shown in its own client window (public/alba.js + public/alba_<k>.js). The client only sends inputs (`ab_act`); the rules, the clock,
@@ -20372,7 +20604,9 @@ const CHARM_SAY = {
   appraise: "여기, 테두리에 무늬가 보여요. 돌려 보면 작은 빈자리에도 맞겠어요.",
 };
 
-const charmsEmpty = () => ({ unlocked: false, openN: 0, intro: 0, fu: [0, 0], kn: 0, freeId: 0, nextUid: 1, placed: [], pending: null, rec: [] });
+const CHARM_PRESETS = 3;
+const CHARM_FUSE_COST = [0, 1500, 5000];
+const charmsEmpty = () => ({ unlocked: false, openN: 0, intro: 0, fu: [0, 0], kn: 0, freeId: 0, nextUid: 1, placed: [], pending: null, rec: [], presets: [null, null, null] });
 const isCharm = (s) => !!s && s.id === "charm";
 
 // ── shapes and the board
@@ -20454,7 +20688,8 @@ function charmAppraise(c) {
   const level = c.rv >= 2 ? charmIl(c) : 0;
   let g = x < odds[0] ? 1 : x < odds[0] + odds[1] ? 2 : 3, sh = level ? "bar2" : "pin", lg = "";
   if (c.fx) g = 1;
-  else if (g === 3 && CHARM_LG_LIVE.length) { lg = CHARM_LG_LIVE[Math.floor(pick * CHARM_LG_LIVE.length)]; sh = CHARM_LEGEND[lg].shape; }
+  else if (c.fg === 2 || c.fg === 3) g = c.fg;
+  if (g === 3 && CHARM_LG_LIVE.length) { lg = CHARM_LG_LIVE[Math.floor(pick * CHARM_LG_LIVE.length)]; sh = CHARM_LEGEND[lg].shape; }
   else {
     if (g === 3) g = 2;
     let roll = pick * 100;
@@ -20494,6 +20729,7 @@ function charmFix(g) {
   if (!isObj(g) || !Number.isInteger(g.uid) || g.uid < 1 || !num(g.seal)) return null;
   const out = { id: "charm", n: 1, uid: g.uid, seal: g.seal >>> 0, rv: clamp(g.rv | 0, 1, CHARM_V), tier: clamp(g.tier | 0, 1, TIER_MAX), src: clamp(g.src | 0, 0, CHARM_SRC.length - 1), rev: g.rev ? 1 : 0 };
   if (g.fx) out.fx = 1;
+  if (g.fg === 2 || g.fg === 3) out.fg = g.fg;
   if (!out.rev) return out;
   // an appraised charm is what its seal says: anything else on the sheet is put right
   const a = charmAppraise(out);
@@ -20554,6 +20790,12 @@ function charmsClean(ch) {
     seen.add(c.uid);
     cs.rec.push(c);
   }
+  cs.presets = Array.from({ length: CHARM_PRESETS }, (_, i) => {
+    const slot = Array.isArray(old.presets) ? old.presets[i] : null;
+    if (!Array.isArray(slot)) return null;
+    return slot.filter((e) => isObj(e) && Number.isInteger(e.uid) && e.uid >= 1 && Number.isInteger(e.x) && Number.isInteger(e.y) && Number.isInteger(e.r))
+      .map((e) => ({ uid: e.uid, x: clamp(e.x, 0, CHARM_SIZE - 1), y: clamp(e.y, 0, CHARM_SIZE - 1), r: e.r & 3 })).slice(0, 25);
+  });
   ch.charms = cs;
 }
 
@@ -20777,6 +21019,34 @@ function charmValidate(S, p, a) {
     case "charm_destroy":
       if (charmInBag(ch, a.uid) < 0) return bad("가방에 없는 참입니다");
       return a.ok === 1 ? OK : bad("참을 부수려면 확인이 필요합니다");
+    case "charm_preset": {
+      if (!cs.unlocked) return bad("아직 참 보드가 없습니다");
+      if (!charmTown(p)) return bad("참 보드는 마을에서만 바꿀 수 있습니다");
+      if (!Number.isInteger(a.i) || a.i < 0 || a.i >= CHARM_PRESETS) return bad("잘못된 프리셋 번호입니다");
+      if (a.a === "save") return OK;
+      if (a.a === "load") {
+        const pre = cs.presets[a.i];
+        if (!Array.isArray(pre)) return bad("저장된 프리셋이 없습니다");
+        // Verify bag room for any currently placed charms that won't be re-placed
+        const keep = new Set(pre.map((e) => e.uid));
+        const returning = cs.placed.filter((e) => !keep.has(e.c.uid)).length;
+        const placing = pre.filter((e) => charmInBag(ch, e.uid) >= 0).length;
+        if (ch.inv.length + returning - placing > bagCap(ch)) return bad("가방 공간이 부족해 프리셋을 불러올 수 없습니다");
+        return OK;
+      }
+      return bad("잘못된 요청입니다");
+    }
+    case "charm_fuse": {
+      if (p.dead) return bad("쓰러진 상태입니다");
+      if (!npcNear(p, "charm")) return bad("주아나가 너무 멉니다");
+      const g = a.g | 0;
+      if (g !== 1 && g !== 2) return bad("매직 또는 레어 참만 합성할 수 있습니다");
+      const cost = CHARM_FUSE_COST[g];
+      if (ch.gold < cost) return bad(`골드가 부족합니다 (${gStr(cost)}G 필요)`);
+      const picks = charmFusePicks(ch, g, a.uids);
+      if (picks.length < 3) return bad(`가방에 감정된 ${CHARM_GRADE[g]} 참 3개가 필요합니다`);
+      return OK;
+    }
     default: return bad("알 수 없는 행동");
   }
 }
@@ -20863,9 +21133,69 @@ function charmApply(S, p, a) {
       toast(p, `[${charmName(c)}]${pp(charmName(c), "을를")} 부쉈습니다.`);
       break;
     }
+    case "charm_preset": {
+      if (a.a === "save") {
+        cs.presets[a.i] = cs.placed.map((e) => ({ uid: e.c.uid, x: e.x, y: e.y, r: e.r }));
+        toast(p, `참 보드 프리셋 ${a.i + 1}번에 저장했습니다 (${cs.placed.length}개).`);
+      } else {
+        const pre = cs.presets[a.i];
+        const pool = new Map();
+        for (const e of cs.placed) pool.set(e.c.uid, e.c);
+        cs.placed = [];
+        for (let i = ch.inv.length - 1; i >= 0; i--) {
+          if (isCharm(ch.inv[i])) { pool.set(ch.inv[i].uid, ch.inv[i]); ch.inv.splice(i, 1); }
+        }
+        let placedN = 0;
+        for (const e of pre) {
+          const c = pool.get(e.uid);
+          if (!c || !c.rev || ch.lvl < charmReq(c) || charmFit(cs, c.sh, e.x, e.y, e.r, 0)) continue;
+          cs.placed.push({ c, x: e.x, y: e.y, r: e.r });
+          pool.delete(e.uid);
+          placedN++;
+        }
+        for (const c of pool.values()) ch.inv.push(c);
+        afterGear(S, p);
+        toast(p, `참 보드 프리셋 ${a.i + 1}번을 불러왔습니다 (${placedN}개 배치).`);
+      }
+      break;
+    }
+    case "charm_fuse": {
+      const g = a.g | 0, cost = CHARM_FUSE_COST[g];
+      const picks = charmFusePicks(ch, g, a.uids);
+      ch.gold -= cost;
+      const maxTier = Math.max(...picks.map((c) => c.tier || 1));
+      const dropSet = new Set(picks.map((c) => c.uid));
+      ch.inv = ch.inv.filter((s) => !(isCharm(s) && dropSet.has(s.uid)));
+      const next = charmOwn(ch, charmSeal(S, p, 3, maxTier));
+      next.fg = g + 1;
+      const r = charmAppraise(next);
+      next.rev = 1; next.g = r.g; next.sh = r.sh; next.op = r.op;
+      if (r.lg) next.lg = r.lg;
+      ch.inv.push(next);
+      p.gain.push(["item", "charm", 1, next.g]);
+      S.maps[p.map].ev.push(["u", p.eid, 2]);
+      toast(p, `참 합성 성공! [${charmName(next)}] 획득! (-${gStr(cost)}G)`);
+      if (next.g === 3) sys(S, `${ch.name}님이 참 합성으로 전설 참 [${charmName(next)}]${pp(charmName(next), "을를")} 탄생시켰습니다!`);
+      break;
+    }
   }
   p.dirty = true;
   saveSoon(p);
+}
+
+/** Pick 3 appraised charms of grade `g` from bag (honouring explicit `uids` when given). */
+function charmFusePicks(ch, g, uids) {
+  if (Array.isArray(uids) && uids.length === 3) {
+    const out = [], seen = new Set();
+    for (const u of uids) {
+      if (seen.has(u)) return [];
+      const i = charmInBag(ch, u), c = ch.inv[i];
+      if (!c || !c.rev || c.g !== g) return [];
+      seen.add(u); out.push(c);
+    }
+    return out;
+  }
+  return ch.inv.filter((s) => isCharm(s) && s.rev && s.g === g).slice(0, 3);
 }
 
 // ── what the client is told
@@ -20886,6 +21216,7 @@ function charmSelf(p) {
     sum: { st: ST_ORDER.map((k) => cm.st[k]), hp: cm.hp, mp: cm.mp, atk: cm.atk, skd: cm.skd, skh: cm.skh },
     // the power at work, why it cannot go off just now ("" when it can), and how many legendaries lie on the board
     lg: cm.lg, lgWhy, lgN: cs.placed.filter((e) => e.c.lg).length,
+    presets: cs.presets.map((pr) => (Array.isArray(pr) ? pr.length : -1)),
   };
 }
 /** `defs().charms`: everything the board UI draws from. */
@@ -20903,7 +21234,7 @@ function charmDefs() {
     legend: Object.fromEntries(Object.keys(CHARM_LEGEND).map((id) => { const l = CHARM_LEGEND[id]; return [id, { name: l.name, shape: l.shape, sk: l.sk || "", cd: l.cd, off: l.off ? 1 : 0, desc: l.desc }]; })),
     expand: CHARM_EXPAND, expandCost: CHARM_EXPAND.map((_, k) => charmExpandCost(k)), nail: "charm_nail",
     // appraisal: round(idCost[0] + idCost[1] × the charm's tier) G; the first is free
-    idCost: [200, 12],
+    idCost: [200, 12], fuseCost: CHARM_FUSE_COST, presetN: CHARM_PRESETS,
     quests: CHARM_QUESTS.map(({ id, lv, n, title, text, reward }) => ({ id, lv, n, title, text, reward })), say: CHARM_SAY, npc: "town_charm_juana", role: "charm",
   };
 }
@@ -25555,8 +25886,10 @@ export function validateAction(S, pid, a) {
     case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": return lifeValidate(S, p, a);
     // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
     case "blk": case "w": case "wk": return socialValidate(S, p, a);
-    // charms (66-charms.js): 주아나's quests, appraisal, the board
-    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": return charmValidate(S, p, a);
+    // charms (66-charms.js): 주아나's quests, appraisal, the board, presets, fusion
+    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": case "charm_preset": case "charm_fuse": return charmValidate(S, p, a);
+    // enchant scrolls, extraction hammer & rune fusion/extraction (65-enchant.js, ITM-02 / ITM-08)
+    case "enc_apply": case "enc_extract": case "enc_craft": case "rune_fuse": case "rune_extract": return encValidate(S, p, a);
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": return coopValidate(S, p, a);
     case "fair_buy": return fairValidate(S, p, a);
@@ -26300,7 +26633,9 @@ export function applyAction(S, pid, a) {
       break;
     }
     // charms (66-charms.js)
-    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": charmApply(S, p, a); break;
+    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": case "charm_preset": case "charm_fuse": charmApply(S, p, a); break;
+    // enchant scrolls, extraction hammer & rune fusion/extraction (65-enchant.js, ITM-02 / ITM-08)
+    case "enc_apply": case "enc_extract": case "enc_craft": case "rune_fuse": case "rune_extract": encApply(S, p, a); break;
     // 협동 아르바이트 (68-coop.js)
     case "coop_start": case "coop_act": case "coop_leave": coopApply(S, p, a); break;
     case "ab_start": case "ab_act": case "ab_leave": case "ab_close": albaApply(S, p, a); break;
@@ -27131,6 +27466,8 @@ function selfPayload(p) {
     lgOff: st.lgOff,
     // world map boss / field-boss live status per region (0 = alive/ready, >0 = respawn seconds left; WLD-06)
     fbMap: fbStatusMap(p.S),
+    // extracted legendary prefixes stored at the smithy (ITM-02)
+    enc: ch.enc || [],
   };
 }
 
@@ -27389,6 +27726,8 @@ export function defs() {
     life: lifeDefs(), npclife: npcLifeDefs(),
     // charms: shapes, options and caps, legendaries, the expansion order and prices, 주아나's quests (66-charms.js)
     charms: charmDefs(),
+    // enchant scrolls, extraction hammer & rune fusion/extraction (65-enchant.js)
+    enc: encDefs(),
     // 협동 아르바이트: the jobs, cut-offs, tools (68-coop.js)
     coop: coopDefs(),
     alba: albaDefs(),

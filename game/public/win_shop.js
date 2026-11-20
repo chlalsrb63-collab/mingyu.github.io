@@ -79,9 +79,13 @@ export function renderSmith(s) {
   const stones = countItem("stone"), scrolls = countItem("uncurse");
   const drillItem = G.defs.sockItem, drillName = G.defs.items[drillItem]?.name;
   const drillStones = drillItem ? countItem(drillItem) : 0;
+  const chiselN = countItem("rune_chisel"), hammerN = countItem("enc_hammer");
+  const encAtk = countItem("enc_atk"), encDef = countItem("enc_def"), encUtil = countItem("enc_util");
+  const encCfg = G.defs.enc || { cost: { scroll: 1500, imprint: 2500, extract: 3000, craft: 2000 }, runeFuse: [0, 1000, 3000, 8000], runeExtract: 1000 };
+  const storedEnc = Array.isArray(s.enc) ? s.enc : [];
   const stock = $("#smith-socket-stock");
   stock.hidden = !drillName;
-  if (drillName) stock.textContent = `${drillName} ${drillStones.toLocaleString()}개 보유`;
+  if (drillName) stock.textContent = `${drillName} ${drillStones} · 해체석 ${chiselN} · 추출망치 ${hammerN} · 주문서(적${encAtk}/녹${encDef}/청${encUtil})`;
   let any = false;
   for (const k of G.defs.slots) {
     const g = s.eq[k];
@@ -127,10 +131,87 @@ export function renderSmith(s) {
       b.addEventListener("click", () => act({ t: "socket", k }));
       actions.append(b);
     }
+    // ITM-08: safe rune extraction with 룬 해체석
+    if (Array.isArray(g.ru)) g.ru.forEach((sock, idx) => {
+      if (!sock) return;
+      const rid = Array.isArray(sock) ? sock[0] : sock;
+      const rname = G.defs.items[rid]?.name || rid;
+      const b = el("button", "", `룬 회수(${idx + 1})`);
+      b.disabled = s.dead || chiselN < 1 || s.gold < encCfg.runeExtract;
+      b.title = `${rname} 회수 · 룬 해체석 1개 + ${encCfg.runeExtract.toLocaleString()}G`;
+      b.addEventListener("click", () => act({ t: "rune_extract", k, i: idx }));
+      actions.append(b);
+    });
+    // ITM-02: prefix enchant scrolls & stored prefix imprint
+    if ((g.q | 0) >= 2 && g.cu !== 1) {
+      const tier = (G.defs.items[g.id] || {}).tier || 1;
+      const scCost = encCfg.cost.scroll * tier;
+      for (const [sid, lbl, cnt] of [["enc_atk", "공격 인챈트", encAtk], ["enc_def", "방어 인챈트", encDef], ["enc_util", "유틸 인챈트", encUtil]]) {
+        if (cnt <= 0) continue;
+        const b = el("button", "", lbl);
+        b.disabled = s.dead || s.gold < scCost;
+        b.title = `${G.defs.items[sid]?.name} 1장 + ${scCost.toLocaleString()}G`;
+        b.addEventListener("click", () => act({ t: "enc_apply", k, src: "scroll", id: sid }));
+        actions.append(b);
+      }
+      if (storedEnc.length) {
+        const slotL = { weapon: "W", ring1: "R", ring2: "R", ring: "R", gloves: "G", armor: "A", boots: "B", amulet: "N", helm: "H" }[G.defs.items[g.id]?.type] || "";
+        const impCost = encCfg.cost.imprint * tier;
+        const idx = storedEnc.findIndex((lg) => !slotL || (G.defs.legend?.[lg]?.[2] || "").includes(slotL));
+        if (idx >= 0) {
+          const lg = storedEnc[idx], b = el("button", "", `이식:${G.defs.legend?.[lg]?.[0] || lg}`);
+          b.disabled = s.dead || s.gold < impCost;
+          b.title = `보관 접두사 [${G.defs.legend?.[lg]?.[0]}] 이식 · ${impCost.toLocaleString()}G`;
+          b.addEventListener("click", () => act({ t: "enc_apply", k, src: "imprint", i: idx }));
+          actions.append(b);
+        }
+      }
+    }
     hoverTip(img, (h) => itemTip(g, h, { worn: true }));
     list.append(row);
   }
   if (!any) list.append(el("div", "ds", "장비를 착용하면 강화하거나 소켓을 열 수 있습니다."));
+
+  // ITM-08: 룬 3개 합성 → 상위 등급 랜덤 획득
+  const runeCounts = [0, 0, 0, 0];
+  for (const sl of s.inv || []) {
+    const rq = G.defs.runes?.[sl.id]?.q;
+    if (rq >= 1 && rq <= 3) runeCounts[rq] += sl.n || 1;
+  }
+  list.append(el("div", "section", "룬 합성 (동일 등급 3개 → 상위 등급 랜덤)"));
+  const fuseRow = el("div", "btns");
+  for (const [q, label] of [[1, "고급 3→희귀"], [2, "희귀 3→전설"], [3, "전설 3→세트"]]) {
+    const cost = encCfg.runeFuse[q], cnt = runeCounts[q];
+    const b = el("button", "btn small", `${label} (${cnt}/3 · ${cost.toLocaleString()}G)`);
+    b.disabled = s.dead || cnt < 3 || s.gold < cost;
+    b.addEventListener("click", () => { act({ t: "rune_fuse", q }); Sound.play("quest"); });
+    fuseRow.append(b);
+  }
+  list.append(fuseRow);
+
+  // ITM-02: 추출의 마법망치 · 보관 접두사
+  list.append(el("div", "section", `접두사 추출 · 보관함 (${storedEnc.length}/${encCfg.max || 20})`));
+  if (storedEnc.length) {
+    list.append(el("div", "ds", `보관 중: ${storedEnc.map((lg) => G.defs.legend?.[lg]?.[0] || lg).join(", ")}`));
+  }
+  const extractable = (s.inv || []).map((g, idx) => [g, idx]).filter(([g]) => g && isGear(g.id) && (g.q | 0) >= 3 && g.lg && g.cu !== 1);
+  if (extractable.length) {
+    for (const [g, idx] of extractable.slice(0, 6)) {
+      const tier = (G.defs.items[g.id] || {}).tier || 1, cost = encCfg.cost.extract * tier;
+      const row = el("div", "it");
+      const img = el("img"); img.src = G.icons.url[g.id]; img.alt = "";
+      const tx = el("div", "tx", itemName(g));
+      tx.style.color = Art.RARITY_COL[g.q || 0];
+      tx.append(el("small", "", `추출 시 [${G.defs.legend?.[g.lg]?.[0] || g.lg}] 보관 (장비 소멸 · 망치 1개 + ${cost.toLocaleString()}G)`));
+      const b = el("button", "", "추출");
+      b.disabled = s.dead || hammerN < 1 || s.gold < cost || storedEnc.length >= (encCfg.max || 20);
+      b.addEventListener("click", () => ask(`[${itemName(g)}]에서 접두사 [${G.defs.legend?.[g.lg]?.[0] || g.lg}]를 추출할까요?\n(장비는 사라집니다 · ${cost.toLocaleString()}G)`, "추출", () => act({ t: "enc_extract", s: idx })));
+      row.append(img, tx, b);
+      list.append(row);
+    }
+  } else {
+    list.append(el("div", "ds", "가방에 접두사를 추출할 전설·유니크 장비가 없습니다."));
+  }
 }
 /**
  * The pity gauge of the step this piece is on (63-social-weekly.js PITY): from +5 each failure adds the

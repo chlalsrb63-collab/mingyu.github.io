@@ -420,6 +420,22 @@ export function renderBoard(s) {
   }
   const safe = safeHere();
   if (!safe) box.append(el("div", "cm-note", "마을에서만 변경 — 참 보드는 마을에서만 바꿀 수 있습니다"));
+  // ITM-09: 참 보드 3슬롯 프리셋 저장/불러오기
+  const pBar = el("div", "cm-bar");
+  const preN = d.presetN || 3, preMeta = cs.presets || [];
+  for (let i = 0; i < preN; i++) {
+    const saved = preMeta[i] >= 0;
+    const lb = el("button", "btn small", `프리셋${i + 1}${saved ? `(${preMeta[i]})` : ""}`);
+    lb.disabled = !safe || !saved;
+    lb.title = saved ? `프리셋 ${i + 1} 불러오기` : "저장된 프리셋 없음";
+    lb.addEventListener("click", () => { act({ t: "charm_preset", a: "load", i }); Sound.play("tab"); });
+    const sb = el("button", "btn small", "저장");
+    sb.disabled = !safe;
+    sb.title = `현재 보드 배치를 프리셋 ${i + 1}에 저장`;
+    sb.addEventListener("click", () => { act({ t: "charm_preset", a: "save", i }); Sound.play("ui"); });
+    pBar.append(lb, sb);
+  }
+  box.append(pBar);
   const grid = el("div", "cm-grid"); grid.id = "charm-grid";
   grid.style.gridTemplateColumns = `repeat(${d.size}, var(--cc))`;
   const op = open(cs), wait = st.wait && !st.wait.rm ? st.wait : null, wc = wait && findCharm(s, wait.uid);
@@ -621,6 +637,17 @@ export function renderJuana(s) {
     button(row, "받기", () => { act({ t: "charm_claim" }); Sound.play("ui"); }, far || (s.inv.length >= cap ? "가방이 가득 찼습니다" : ""));
     box.append(row);
   }
+  // ITM-09: 참 3개 합성 → 상위 등급 랜덤 획득
+  box.append(el("div", "section", "참 합성 (동일 등급 3개 → 상위 등급 랜덤)"));
+  const fuseCost = d.fuseCost || [0, 1500, 5000];
+  const revBag = charmsIn(s).filter((c) => c.rev);
+  const fRow = el("div", "btns");
+  for (const [g, label] of [[1, "매직 3→레어 랜덤"], [2, "레어 3→전설 랜덤"]]) {
+    const cnt = revBag.filter((c) => c.g === g).length, cost = fuseCost[g];
+    const why = far || (cnt < 3 ? `감정된 ${d.grades[g]} 참 3개 필요 (${cnt}/3)` : s.gold < cost ? `골드 부족 (${cost.toLocaleString()}G)` : "");
+    button(fRow, `${label} (${cnt}/3 · ${cost.toLocaleString()}G)`, () => { act({ t: "charm_fuse", g }); Sound.play("quest"); }, why);
+  }
+  box.append(fRow);
   // the next cell
   box.append(el("div", "section", "보드 확장"));
   const nx = cs.next;
