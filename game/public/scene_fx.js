@@ -379,7 +379,219 @@ export const fx = {
   /** A blade's crescent, centred on the attacker and opening toward `ang` (an angle on the ground). */
   slash(wx, wy, ang, color, size = 0.8, rev = false) { const [x, y] = iso(wx, wy); this.add({ k: "slash", x, y: y - 8, ang: sAng(Math.cos(ang), Math.sin(ang)), color, r: size * 30, rev, dur: 260, delay: 90 }); },
   beam(ax, ay, bx, by, color, h = 0.6) { const [x0, y0] = iso(ax, ay), [x1, y1] = iso(bx, by); this.add({ k: "beam", x0, y0: y0 - h * 22, x1, y1: y1 - h * 22, color, dur: 260 }); },
-  pillar(wx, wy) { const [x, y] = iso(wx, wy); this.add({ k: "pillar", x, y, dur: 900 }); this.sparkle(wx, wy, 0.5, "#ffd84a", 24); },
+  pillar(wx, wy, kind = "level") {
+    const [x, y] = iso(wx, wy);
+    this.add({ k: "pillar", x, y, kind, dur: kind === "achieve" ? 1150 : 980 });
+    this.ring(wx, wy, kind === "achieve" ? 28 : 24, "#ffd84a", 460, true);
+    this.wave(wx, wy, kind === "achieve" ? 38 : 34, "#fff6b0", 520, 90);
+    this.sparkle(wx, wy, 0.5, "#ffd84a", 26);
+    this.burst(wx, wy, 0.9, "#fff6b0", 16, 1.9);
+  },
+  /** Equipment & skill enhancement fanfare: state 1 success, 0 fail (lv < 0 = cursed), 2 uncursed (VFX-04). */
+  enhanceFx(wx, wy, state, lv = 0, isSkill = false) {
+    const [x, y] = iso(wx, wy);
+    const px = (c, a, b, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(a), Math.round(b), w, h); };
+    if (state === 1) {
+      const high = lv >= 7, col = isSkill ? "#7ae8ff" : "#ffd84a", hi = isSkill ? "#e0fbff" : "#fff8c0";
+      this.ring(wx, wy, high ? 30 : 20, col, 420, true);
+      if (high) {
+        this.wave(wx, wy, 42, hi, 520, 60);
+        this.zap(wx, wy, col, 280);
+        shake(4);
+      }
+      this.sparkle(wx, wy, 0.8, col, high ? 34 : 22);
+      this.burst(wx, wy, 0.7, hi, high ? 24 : 14, high ? 2.4 : 1.7);
+      this.add({ k: "custom", dur: high ? 900 : 650, draw: (c, k) => {
+        c.globalAlpha = 1 - k * 0.85;
+        const lift = y - 22 - k * (high ? 34 : 22);
+        // Ascending pixel anvil/star crown
+        for (const dy of [0, 7]) {
+          const w = Math.max(2, Math.round((high ? 13 : 9) * (1 - k * 0.4)));
+          px(c, x - w - 1, lift + dy - 1, w * 2 + 2, 4, "#2b2233");
+          px(c, x - w, lift + dy, w * 2, 2, col);
+          px(c, x - (w >> 1), lift + dy - 1, Math.max(2, w), 2, "#ffffff");
+        }
+        // 4-point star flare at top
+        const sr = Math.round((high ? 9 : 6) * Math.sin(k * Math.PI));
+        if (sr > 1) {
+          px(c, x - sr, lift - 6, sr * 2 + 1, 2, hi);
+          px(c, x - 1, lift - 6 - sr, 2, sr * 2 + 1, hi);
+        }
+      } });
+    } else if (state === 2) {
+      // Curse lifted: cyan-gold purifying wave + broken dark chain shards
+      this.ring(wx, wy, 24, "#8af8e0", 440, true);
+      this.wave(wx, wy, 32, "#ffd86a", 480, 60);
+      this.sparkle(wx, wy, 0.8, "#bfefff", 22);
+      this.add({ k: "custom", dur: 620, draw: (c, k) => {
+        c.globalAlpha = 1 - k;
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2 + k * 2, r = 6 + k * 22;
+          const cx = x + Math.cos(a) * r, cy = y - 16 + Math.sin(a) * r * 0.5 - k * 10;
+          px(c, cx - 2, cy - 1, 4, 3, "#2b2233");
+          px(c, cx - 1, cy, 2, 1, i % 2 ? "#8af8e0" : "#ffd86a");
+        }
+      } });
+    } else {
+      // Failure: cursed (lv < 0) drops dark-purple curse chains & skull; blessed/skill failure puffs slate smoke
+      const cursed = lv < 0;
+      this.burst(wx, wy, 0.65, cursed ? "#9a38d8" : "#7a7a8e", cursed ? 18 : 10, 1.5);
+      if (cursed) {
+        this.ring(wx, wy, 20, "#6a1c9a", 420, true);
+        this.crack(wx, wy, 18, "#a844e0", 520);
+      }
+      this.add({ k: "custom", dur: cursed ? 780 : 480, draw: (c, k) => {
+        c.globalAlpha = 1 - k;
+        const cy = y - 24 - (cursed ? -k * 8 : k * 12);
+        if (cursed) {
+          // Pixel curse skull & binding X-chains
+          px(c, x - 4, cy - 4, 9, 9, "#1c1026");
+          px(c, x - 3, cy - 3, 7, 5, "#b86aff");
+          px(c, x - 2, cy + 2, 5, 2, "#8a38c8");
+          px(c, x - 2, cy - 1, 2, 2, "#1c1026"); px(c, x + 1, cy - 1, 2, 2, "#1c1026");
+          for (let s = -9; s <= 9; s += 3) {
+            px(c, x + s, cy + s * 0.6 + 6, 2, 2, "#5a228a");
+            px(c, x + s, cy - s * 0.6 + 6, 2, 2, "#5a228a");
+          }
+        } else {
+          for (let i = 0; i < 4; i++) {
+            const ox = (i - 1.5) * (4 + k * 8);
+            px(c, x + ox - 2, cy - i * 2, 4, 4, "#5a5a6c");
+            px(c, x + ox - 1, cy - i * 2, 2, 2, "#9a9aae");
+          }
+        }
+      } });
+    }
+  },
+  /** Monster basic melee VFX (VFX-02): style "claw" (3 jagged arcs), "bite" (snapping fangs), or "smash" (heavy crescent). */
+  mobMelee(wx, wy, tx, ty, style = "claw", color = "#ff5a4a", scale = 1) {
+    if (document.hidden || this.list.length >= 100) return;
+    const [x0, y0] = iso(wx, wy), [x1, y1] = iso(tx, ty);
+    const mx = x0 + (x1 - x0) * 0.68, my = y0 + (y1 - y0) * 0.68 - 10;
+    const ang = sAng(tx - wx, ty - wy);
+    const px = (c, a, b, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(a), Math.round(b), w, h); };
+    if (style === "bite") {
+      this.add({ k: "custom", dur: 220, draw: (c, k) => {
+        const snap = Math.min(1, k * 2.2), gap = Math.round((1 - snap) * 11 * scale);
+        c.globalAlpha = k > 0.7 ? (1 - k) / 0.3 : 1;
+        for (let i = -2; i <= 2; i++) {
+          const fx = mx + i * 3.5 * scale, tooth = (2 - Math.abs(i)) + 2;
+          // upper fang pointing down
+          px(c, fx - 1, my - gap - tooth - 2, 3, tooth + 2, "#2b2233");
+          px(c, fx, my - gap - tooth - 1, 2, tooth, k < 0.35 ? "#ffffff" : "#f4efe0");
+          // lower fang pointing up
+          px(c, fx - 1, my + gap, 3, tooth + 2, "#2b2233");
+          px(c, fx, my + gap + 1, 2, tooth, k < 0.35 ? "#ffffff" : color);
+        }
+        if (snap >= 0.9) px(c, mx - 7 * scale, my - 1, Math.round(14 * scale), 2, "#ffffff");
+      } });
+    } else if (style === "smash") {
+      this.slash(wx, wy, Math.atan2(ty - wy, tx - wx), color, 0.72 * scale);
+      this.burst(tx, ty, 0.3, color, 6, 1.3);
+    } else {
+      // 3 parallel jagged pixel claw marks
+      const ux = Math.cos(ang), uy = Math.sin(ang), nx = -uy, ny = ux;
+      this.add({ k: "custom", dur: 210, draw: (c, k) => {
+        const run = Math.min(1, k * 2.4), fade = k > 0.65 ? (1 - k) / 0.35 : 1;
+        c.globalAlpha = fade;
+        const L = 12 * scale;
+        for (const off of [-4.5 * scale, 0, 4.5 * scale]) {
+          for (let s = -L * 0.5; s <= L * (run - 0.5); s += 1.5) {
+            const u = (s + L * 0.5) / L, curve = Math.sin(u * Math.PI) * 3 * scale;
+            const cx = mx + ux * (s + curve) + nx * off, cy = my + uy * (s + curve) * 0.75 + ny * off * 0.75;
+            px(c, cx - 1, cy - 1, 3, 3, "#2b2233");
+            px(c, cx, cy, 2, 2, u > 0.65 || k < 0.28 ? "#ffffff" : color);
+          }
+        }
+      } });
+    }
+  },
+  /** Monster directional pixel projectile (VFX-02): style "feather", "bone", "needle", or "orb". */
+  mobShot(ax, ay, ah, bx, by, bh, style = "orb", color = "#ff5a4a") {
+    const [x0, y00] = iso(ax, ay), [x1, y10] = iso(bx, by), far = Math.hypot(bx - ax, by - ay) * P;
+    const y0 = y00 - ah * 22, y1 = y10 - bh * 22, dur = Math.max(85, (far / (34 * 26)) * 1000);
+    const ang = Math.atan2(y1 - y0, x1 - x0), ux = Math.cos(ang), uy = Math.sin(ang), nx = -uy, ny = ux;
+    const px = (c, a, b, w, h, col) => { c.fillStyle = col; c.fillRect(Math.round(a), Math.round(b), w, h); };
+    this.add({
+      k: "custom", dur,
+      done: () => { this.spark(bx, by, color, 0.75); },
+      draw: (c, k) => {
+        const x = x0 + (x1 - x0) * k, y = y0 + (y1 - y0) * k - Math.sin(k * Math.PI) * Math.min(14, far * 0.04);
+        if (style === "feather") {
+          // Oriented pixel feather quill
+          for (let s = -4; s <= 4; s++) {
+            const qx = x + ux * s, qy = y + uy * s;
+            px(c, qx - 1, qy - 1, 3, 3, "#2b2233");
+            if (Math.abs(s) <= 2) {
+              px(c, qx + nx * 1.5, qy + ny * 1.5, 2, 2, color);
+              px(c, qx - nx * 1.5, qy - ny * 1.5, 2, 2, color);
+            }
+            px(c, qx, qy, 2, 2, s >= 2 ? "#ffffff" : "#f4efe0");
+          }
+        } else if (style === "bone") {
+          // Spinning pixel bone/spine shard
+          const rot = k * 14 + ax, rx = Math.cos(rot), ry = Math.sin(rot);
+          for (let s = -4; s <= 4; s++) {
+            const bx2 = x + rx * s, by2 = y + ry * s * 0.75;
+            px(c, bx2 - 1, by2 - 1, 3, 3, "#2b2233");
+            px(c, bx2, by2, 2, 2, Math.abs(s) >= 3 ? "#ffffff" : "#e4dcc8");
+          }
+        } else if (style === "needle") {
+          // Barbed venomous stinger
+          for (let s = -5; s <= 4; s++) {
+            const sx = x + ux * s, sy = y + uy * s;
+            px(c, sx - 1, sy - 1, 3, 3, "#2b2233");
+            px(c, sx, sy, s >= 2 ? 1 : 2, s >= 2 ? 1 : 2, s >= 2 ? "#ffffff" : color);
+          }
+          if (Math.random() < 0.65) parts.push({ x, y, vx: 0, vy: 8, life: 0.16, color, g: 40, s: 1 });
+        } else {
+          // Dark-rimmed elemental orb
+          px(c, x - 3, y - 3, 6, 6, "#2b2233");
+          px(c, x - 2, y - 2, 4, 4, color);
+          px(c, x - 1, y - 1, 2, 2, "#ffffff");
+          if (Math.random() < 0.7) parts.push({ x, y, vx: 0, vy: 0, life: 0.18, color, g: 0, s: 2 });
+        }
+      },
+    });
+  },
+  /** Tiered monster death VFX (VFX-02): normal (fragments), elite (shockwave + soul burst), boss (2s fissure + multi-explosion). */
+  mobDeath(wx, wy, h, col, rank = 0, isBoss = false) {
+    if (isBoss) {
+      // Boss: 2-second ground fissure + 4 staggered explosions + debris eruption + final shockwave
+      this.crack(wx, wy, 48, "#2b2233", 2300, true);
+      this.crack(wx, wy, 44, col, 2000);
+      this.ring(wx, wy, 38, col, 520, true);
+      this.wave(wx, wy, 56, "#ffffff", 480);
+      this.burst(wx, wy, h * 0.5, col, 44, 2.5);
+      this.burst(wx, wy, h * 0.6, "#fff4b8", 24, 2.2);
+      shake(8);
+      for (const [delay, dx, dy, r, sh] of [[320, -10, 6, 26, 4], [680, 11, -7, 30, 5], [1150, 0, 0, 48, 7]]) {
+        this.flash(wx + dx, wy + dy, 18, delay, 0.45);
+        this.ring(wx + dx, wy + dy, r, delay === 1150 ? "#ffd86a" : col, 420, true, delay);
+        this.wave(wx + dx, wy + dy, r * 1.45, "#ffffff", 440, delay);
+        this.add({ k: "custom", dur: 10, delay, done: () => {
+          this.burst(wx + dx, wy + dy, h * 0.55, col, delay === 1150 ? 48 : 22, 2.6);
+          if (delay === 1150) this.pillar(wx, wy);
+          shake(sh);
+        }, draw() {} });
+      }
+      return;
+    }
+    if (rank >= 1) {
+      // Elite / Guardian: expanding shockwave + inner ring + soul sparkles + heavier debris
+      const rCol = rank === 2 ? "#ff7ad8" : "#ffd84a";
+      this.ring(wx, wy, rank === 2 ? 26 : 18, rCol, 340, true);
+      this.wave(wx, wy, rank === 2 ? 38 : 28, "#ffffff", 360);
+      this.burst(wx, wy, h * 0.5, col, rank === 2 ? 36 : 24, 2.3);
+      this.sparkle(wx, wy, h * 0.6, rCol, rank === 2 ? 18 : 12);
+      shake(rank === 2 ? 4 : 2);
+      return;
+    }
+    // Normal monster: crisp fragment scatter + subtle dust ring
+    this.ring(wx, wy, 11, col, 210);
+    this.burst(wx, wy, h * 0.5, col, 14, 2.0);
+    this.burst(wx, wy, h * 0.4, "#e6e0d0", 5, 1.5);
+  },
   burst(wx, wy, h, color, n = 8, speed = 1.4) { const [x, y] = iso(wx, wy); for (let i = 0; i < n; i++) { const a = Math.random() * 6.28, v = speed * 34 * (0.3 + Math.random() * 0.7); parts.push({ x, y: y - h * 22, vx: Math.cos(a) * v, vy: Math.sin(a) * v * 0.7 - 30, life: 0.25 + Math.random() * 0.3, color, g: 220 }); } },
   sparkle(wx, wy, h, color, n = 10) { const [x, y] = iso(wx, wy); for (let i = 0; i < n; i++) parts.push({ x: x + Math.random() * 28 - 14, y: y - h * 22 + Math.random() * 18 - 6, vx: 0, vy: -26 - Math.random() * 34, life: 0.4 + Math.random() * 0.5, color, g: 0 }); },
   /** A skill's core flash: a white-hot disc for the first frame or two, a yellow one shrinking after (60 ms). */
@@ -625,7 +837,28 @@ export function drawFx(now, ground2) {
       g.globalAlpha = 1 - k; g.strokeStyle = f.color; g.lineWidth = 6; g.beginPath(); g.moveTo(f.x0, f.y0); g.lineTo(f.x1, f.y1); g.stroke();
       g.strokeStyle = "#ffffff"; g.lineWidth = 2; g.beginPath(); g.moveTo(f.x0, f.y0); g.lineTo(f.x1, f.y1); g.stroke();
     } else if (f.k === "pillar") {
-      g.globalAlpha = (1 - k) * 0.6; g.fillStyle = "#fff0a0"; g.fillRect(f.x - 14, f.y - 120, 28, 124); g.fillStyle = "#ffffff"; g.fillRect(f.x - 6, f.y - 120, 12, 124);
+      const a = 1 - k, w = Math.max(4, Math.round(28 * (1 - k * 0.55))), cw = Math.max(2, Math.round(12 * (1 - k * 0.45)));
+      const col = f.kind === "achieve" ? "#ffe066" : "#fff0a0";
+      g.globalAlpha = a * 0.62; g.fillStyle = col; g.fillRect(Math.round(f.x - w / 2), f.y - 132, w, 136);
+      g.globalAlpha = a * 0.92; g.fillStyle = "#ffffff"; g.fillRect(Math.round(f.x - cw / 2), f.y - 132, cw, 136);
+      // Ascending pixel wing-chevrons along the light column (VFX-04)
+      for (let i = 0; i < 3; i++) {
+        const u = ((k * 1.8 + i * 0.33) % 1), cy = Math.round(f.y - 12 - u * 95), span = Math.round((1 - u * 0.5) * 14);
+        g.globalAlpha = a * (1 - u);
+        for (let s = -span; s <= span; s += 2) {
+          const dy = Math.abs(s) * 0.45;
+          g.fillStyle = "#2b2233"; g.fillRect(Math.round(f.x + s - 1), Math.round(cy + dy - 1), 3, 3);
+          g.fillStyle = Math.abs(s) < 4 ? "#ffffff" : "#ffd84a"; g.fillRect(Math.round(f.x + s), Math.round(cy + dy), 2, 2);
+        }
+      }
+      if (f.kind === "achieve" && k < 0.75) {
+        // Ascending pixel laurel star crest above the hero
+        const cy = Math.round(f.y - 44 - k * 18);
+        g.globalAlpha = 1;
+        g.fillStyle = "#2b2233"; g.fillRect(f.x - 5, cy - 5, 11, 11);
+        g.fillStyle = "#ffd84a"; g.fillRect(f.x - 4, cy - 1, 9, 3); g.fillRect(f.x - 1, cy - 4, 3, 9);
+        g.fillStyle = "#ffffff"; g.fillRect(f.x - 1, cy - 1, 3, 3);
+      }
     } else if (f.k === "storm") {
       // short tapered arcs chasing each other round, fast at first and easing off
       const spin = f.a0 + (1 - (1 - k) * (1 - k)) * 7.5, n = 9;
@@ -750,4 +983,235 @@ export function drawAimArrow(t, dt, top) {
   g.globalAlpha = 0.86 + 0.14 * flash;
   g.drawImage(aimSprite(k), Math.round(fx + ux) - AIM_C, Math.round(fy + uy) - AIM_C);
   g.globalAlpha = 1;
+}
+
+// ───────────────────────────── VFX-02 / VFX-03 / VFX-04 scene helpers ─────────────────────────────
+
+/** Monster pre-attack crimson eye-glint telegraph (VFX-02): sharp pixel cross flare at head height. */
+export function drawEyeGlint(ctx, X, Y, hPx, fxSign, t, u = 0.5) {
+  const ex = Math.round(X + fxSign * 4), ey = Math.round(Y - hPx * 0.68);
+  const arm = Math.max(2, Math.round(4 + Math.sin(u * Math.PI) * 3));
+  ctx.save();
+  ctx.globalAlpha = Math.min(1, (1 - Math.abs(u - 0.45)) * 1.4);
+  ctx.fillStyle = "#2b2233";
+  ctx.fillRect(ex - arm - 1, ey - 1, arm * 2 + 3, 3);
+  ctx.fillRect(ex - 1, ey - arm - 1, 3, arm * 2 + 3);
+  ctx.fillStyle = "#ff2442";
+  ctx.fillRect(ex - arm, ey, arm * 2 + 1, 1);
+  ctx.fillRect(ex, ey - arm, 1, arm * 2 + 1);
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(ex - 1, ey - 1, 3, 3);
+  ctx.restore();
+}
+
+/** Distinct pixel-art visual aura for all 14 elite monster traits (VFX-03). */
+export function drawTraitAura(ctx, m, t, X, Y, span, hPx, partList) {
+  const tr = m.tr;
+  if (!tr || !tr.length) return;
+  const px = (x, y, w, h, col) => { ctx.fillStyle = col; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
+  const rx = span * 1.38, ry = span * 0.66;
+  ctx.save();
+  for (let idx = 0; idx < tr.length; idx++) {
+    const k = tr[idx], ph = t / 240 + m.id * 1.7 + idx * 2.1;
+    switch (k) {
+      case "fire": {
+        for (let i = 0; i < 4; i++) {
+          const a = ph + (i * Math.PI) / 2, fx2 = X + Math.cos(a) * rx, fy2 = Y + Math.sin(a) * ry;
+          const fl = ((i + Math.floor(t / 90)) & 1) ? 1 : 0;
+          px(fx2 - 2, fy2 - 5 - fl, 4, 6, "#2b2233");
+          px(fx2 - 1, fy2 - 3 - fl, 2, 3, "#ff5a20");
+          px(fx2 - 1, fy2 - 5 - fl, 2, 2, "#ffe852");
+        }
+        if (Math.random() < 0.08) partList.push({ x: X + (Math.random() - 0.5) * rx * 1.6, y: Y - 4, vx: 0, vy: -24, life: 0.45, color: "#ff7a2a", g: -10, s: 2 });
+        break;
+      }
+      case "poison": {
+        for (let i = 0; i < 4; i++) {
+          const a = -ph * 0.7 + (i * Math.PI) / 2, bob = ((t / 320 + i * 0.25) % 1);
+          const px2 = X + Math.cos(a) * rx * 0.9, py2 = Y + Math.sin(a) * ry * 0.9 - bob * 10;
+          px(px2 - 2, py2 - 2, 4, 4, "#2b2233");
+          px(px2 - 1, py2 - 1, 2, 2, "#7ae048");
+          px(px2 - 1, py2 - 1, 1, 1, "#d8ffb0");
+        }
+        break;
+      }
+      case "frost": {
+        for (let i = 0; i < 4; i++) {
+          const a = ph * 0.65 + (i * Math.PI) / 2, ix = X + Math.cos(a) * rx, iy = Y + Math.sin(a) * ry - 2;
+          px(ix - 2, iy - 2, 5, 5, "#2b2233");
+          px(ix - 2, iy, 5, 1, "#8ae8ff"); px(ix, iy - 2, 1, 5, "#8ae8ff");
+          px(ix, iy, 1, 1, "#ffffff");
+        }
+        break;
+      }
+      case "tough": {
+        for (let i = 0; i < 3; i++) {
+          const a = ph * 0.5 + (i * Math.PI * 2) / 3, sx = X + Math.cos(a) * rx, sy = Y - hPx * 0.35 + Math.sin(a) * ry;
+          px(sx - 3, sy - 3, 6, 7, "#2b2233");
+          px(sx - 2, sy - 2, 4, 5, "#8a9cb0");
+          px(sx - 2, sy - 2, 2, 4, "#d8e4f2");
+        }
+        break;
+      }
+      case "swift": {
+        for (let i = 0; i < 3; i++) {
+          const a = ph * 1.9 + (i * Math.PI * 2) / 3, sx = X + Math.cos(a) * rx, sy = Y + Math.sin(a) * ry;
+          px(sx - 2, sy - 1, 4, 3, "#2b2233");
+          px(sx - 1, sy, 3, 1, "#ffe85a");
+          px(sx, sy - 1, 2, 1, "#ffffff");
+        }
+        break;
+      }
+      case "vamp": {
+        for (let i = 0; i < 3; i++) {
+          const u = ((t / 550 + i / 3) % 1), a = ph + i * 2.1;
+          const vx = X + Math.cos(a) * rx * (1.2 - u * 0.7), vy = Y - u * hPx * 0.75 + Math.sin(a) * ry * 0.6;
+          px(vx - 1, vy - 2, 3, 4, "#2b2233");
+          px(vx, vy - 1, 2, 2, "#d82848");
+          px(vx, vy - 1, 1, 1, "#ff9aa8");
+        }
+        break;
+      }
+      case "burst": {
+        const blink = Math.sin(t / 75) > 0;
+        for (let i = 0; i < 4; i++) {
+          const a = ph * 1.1 + (i * Math.PI) / 2, bx = X + Math.cos(a) * rx * 0.85, by = Y - hPx * 0.3 + Math.sin(a) * ry * 0.75;
+          px(bx - 1, by - 1, 3, 3, "#2b2233");
+          px(bx, by, 2, 2, blink ? "#ffe866" : "#ff5a26");
+        }
+        break;
+      }
+      case "thorn": {
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2 + Math.sin(t / 400) * 0.15;
+          const tx2 = X + Math.cos(a) * rx * 1.05, ty2 = Y + Math.sin(a) * ry * 1.05;
+          px(tx2 - 1, ty2 - 3, 3, 4, "#2b2233");
+          px(tx2, ty2 - 2, 2, 3, "#e2dcc6");
+          px(tx2, ty2 - 2, 1, 1, "#ffffff");
+        }
+        break;
+      }
+      case "split": {
+        const off = Math.sin(t / 150 + m.id) * (span * 0.55);
+        for (const s of [-1, 1]) {
+          px(X + s * off - 2, Y - hPx * 0.45 - 2, 5, 5, "#1a382c");
+          px(X + s * off - 1, Y - hPx * 0.45 - 1, 3, 3, "#7ae8a0");
+        }
+        break;
+      }
+      case "siphon": {
+        for (let i = 0; i < 4; i++) {
+          const u = ((t / 600 + i * 0.25) % 1), a = -ph * 1.2 + i * 1.57;
+          const r = (1.45 - u * 0.95);
+          const sx = X + Math.cos(a) * rx * r, sy = Y - hPx * 0.35 * u + Math.sin(a) * ry * r;
+          px(sx - 1, sy - 1, 3, 3, "#2b2233");
+          px(sx, sy, 2, 2, u > 0.6 ? "#f0d8ff" : "#b47aff");
+        }
+        break;
+      }
+      case "reflect": {
+        for (let i = 0; i < 4; i++) {
+          const a = ph * 0.8 + (i * Math.PI) / 2;
+          const mx2 = X + Math.cos(a) * rx * 1.05, my2 = Y - hPx * 0.4 + Math.sin(a) * ry * 0.9;
+          px(mx2 - 2, my2 - 3, 5, 7, "#2b2233");
+          px(mx2 - 1, my2 - 2, 3, 5, "#ffd86a");
+          px(mx2 - 1, my2 - 2, 1, 4, "#ffffff");
+        }
+        break;
+      }
+      case "gravity": {
+        const u = (t / 680) % 1, grx = rx * (1.55 - u * 0.75), gry = ry * (1.55 - u * 0.75);
+        ctx.globalAlpha = 0.75 * (1 - Math.abs(u - 0.5) * 1.5);
+        ctx.strokeStyle = "#7a8aff"; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.ellipse(X, Y, grx, gry, 0, 0, 7); ctx.stroke();
+        ctx.globalAlpha = 1;
+        break;
+      }
+      case "berserk": {
+        const d = G.defs?.mobs?.[m.k], maxHp = d ? d.hp * (G.defs?.eliteHp?.[m.el | 0] || 1) : 0;
+        const enraged = maxHp > 0 && m.hp <= maxHp * 0.35;
+        const n = enraged ? 5 : 3;
+        for (let i = 0; i < n; i++) {
+          const a = ph * (enraged ? 2.2 : 1.1) + (i * Math.PI * 2) / n;
+          const bx = X + Math.cos(a) * rx * 0.9, by = Y - ((t / 90 + i * 7) % Math.max(12, hPx * 0.8));
+          px(bx - 1, by - 2, 3, 5, "#2b2233");
+          px(bx, by - 1, 2, 3, enraged && (i & 1) ? "#ffe066" : "#ff2438");
+        }
+        break;
+      }
+      case "goblin": {
+        for (let i = 0; i < 4; i++) {
+          const a = ph * 1.1 + (i * Math.PI) / 2, hop = Math.abs(Math.sin(t / 130 + i)) * 7;
+          const gx = X + Math.cos(a) * rx * 0.95, gy = Y - 4 - hop + Math.sin(a) * ry * 0.7;
+          px(gx - 2, gy - 2, 4, 4, "#2b2233");
+          px(gx - 1, gy - 1, 2, 2, "#ffd84a");
+          px(gx - 1, gy - 1, 1, 1, "#ffffff");
+        }
+        if (Math.random() < 0.14) partList.push({ x: X + (Math.random() - 0.5) * rx * 1.5, y: Y - 10, vx: (Math.random() - 0.5) * 18, vy: -28, life: 0.5, color: "#ffe866", g: 70, s: 2 });
+        break;
+      }
+    }
+  }
+  ctx.restore();
+}
+
+/** Rarity-tiered vertical pixel loot light pillar, ground rune, and star glints (VFX-04). */
+export function drawDropFx(ctx, d, x, y, t, partList, ic, rarityCols) {
+  const q = d.q | 0, col = rarityCols[q] || "#6aa8ff";
+  const px = (a, b, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(a), Math.round(b), w, h); };
+  ctx.fillStyle = "rgba(20,24,50,.26)";
+  ctx.beginPath(); ctx.ellipse(x, y, 8, 4, 0, 0, 7); ctx.fill();
+  if (q >= 1) {
+    const pulse = 0.5 + 0.5 * Math.sin(t / (q >= 3 ? 130 : 180) + d.id);
+    const h = q === 1 ? 26 : q === 2 ? 44 : q === 4 ? 64 : q === 5 ? 76 : 68;
+    const w = q === 1 ? 4 : q === 2 ? 6 : q >= 5 ? 10 : 8;
+    const accent = q === 5 ? "#c88aff" : q === 4 ? "#b8ffca" : q === 3 ? "#ffe87a" : "#ffffff";
+    // Landing pop ring when first dropped
+    const age = t - (d.born || 0);
+    if (age >= 0 && age < 340 && q >= 2) {
+      const u = age / 340;
+      ctx.globalAlpha = 1 - u;
+      ctx.strokeStyle = col; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.ellipse(x, y, 6 + u * (10 + q * 3), 3 + u * (5 + q * 1.5), 0, 0, 7); ctx.stroke();
+    }
+    // Pulsing ground diamond/ellipse beacon at the drop's base
+    ctx.globalAlpha = (q >= 3 ? 0.42 : 0.25) + pulse * 0.22;
+    ctx.strokeStyle = col; ctx.lineWidth = q >= 3 ? 1.5 : 1;
+    ctx.beginPath(); ctx.ellipse(x, y, 7 + q * 1.8, 3.5 + q * 0.9, 0, 0, 7); ctx.stroke();
+    // Outer vertical pixel beam (stepped taper from bottom to top)
+    for (let seg = 0; seg < 4; seg++) {
+      const u0 = seg / 4, u1 = (seg + 1) / 4;
+      const sy = Math.round(y - 6 - u1 * h), sh = Math.ceil((u1 - u0) * h);
+      const sw = Math.max(2, Math.round(w * (1 - u0 * 0.5)));
+      ctx.globalAlpha = ((q >= 3 ? 0.34 : 0.22) + 0.14 * pulse) * (1 - u0 * 0.65);
+      px(x - (sw >> 1), sy, sw, sh, q === 5 && (seg & 1) ? accent : col);
+    }
+    // Inner bright 2px pixel core for rare and above (q >= 2)
+    if (q >= 2) {
+      const ch = Math.round(h * 0.82);
+      ctx.globalAlpha = 0.58 + 0.26 * pulse;
+      px(x - 1, y - 6 - ch, 2, ch, accent);
+    }
+    // Rising pixel motes inside the beam + top 4-point star flare for Legendary / Set / Unique (q >= 3)
+    if (q >= 3) {
+      ctx.globalAlpha = 0.9;
+      for (let i = 0; i < 3; i++) {
+        const u = ((t / 520 + i / 3 + d.id * 0.17) % 1);
+        const mx2 = x + Math.sin(u * Math.PI * 2 + i) * 3, my2 = y - 10 - u * (h - 8);
+        px(mx2 - 1, my2 - 1, 2, 2, i === 0 ? "#ffffff" : accent);
+      }
+      // 4-point star flare near top of beam
+      const sy = Math.round(y - 10 - h * 0.78), sr = 3 + Math.round(pulse * 2);
+      px(x - sr, sy, sr * 2 + 1, 1, accent);
+      px(x, sy - sr, 1, sr * 2 + 1, accent);
+      px(x, sy, 1, 1, "#ffffff");
+      if (Math.random() < (q >= 5 ? 0.14 : 0.08)) {
+        partList.push({ x: x + (Math.random() - 0.5) * 10, y: y - 8 - Math.random() * 14, vx: 0, vy: -22 - Math.random() * 14, life: 0.48, color: Math.random() < 0.5 ? col : accent, g: 0, s: 1 });
+      }
+    } else if (q === 2 && Math.random() < 0.04) {
+      partList.push({ x: x + (Math.random() - 0.5) * 8, y: y - 10, vx: 0, vy: -18, life: 0.4, color: col, g: 0, s: 1 });
+    }
+    ctx.globalAlpha = 1;
+  }
+  if (ic) ctx.drawImage(ic, Math.round(x - 8), Math.round(y - 18 + Math.sin(t / 220 + d.id) * 2), 16, 16);
 }

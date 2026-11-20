@@ -278,7 +278,7 @@ export function applyAction(S, pid, a) {
         g.cu = 1;
         toast(p, `강화 실패... ${gearFull(g)}${pp(gearFull(g), "으로")} 내려가고 저주를 받았습니다. 저주 해제 주문서로 풀 수 있습니다.`);
       }
-      S.maps[p.map].ev.push(["e", p.eid, win ? 1 : 0]);
+      S.maps[p.map].ev.push(["e", p.eid, win ? 1 : 0, win ? g.enh : bless ? 0 : -1]);
       afterGear(S, p);
       break;
     }
@@ -288,6 +288,7 @@ export function applyAction(S, pid, a) {
       ch.gold -= UNCURSE_FEE * ITEMS[g.id].tier;
       g.cu = 2;
       toast(p, `${gearFull(g)}의 저주가 풀렸습니다 — 다음 강화는 성공 확률 +${ENH_UNCURSE}%p`);
+      S.maps[p.map].ev.push(["e", p.eid, 2]);
       afterGear(S, p);
       break;
     }

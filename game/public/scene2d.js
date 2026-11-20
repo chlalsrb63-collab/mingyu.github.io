@@ -48,7 +48,7 @@ import { g, vw, vh, G, iso, tI, K, clamp, cam, FLAT, T, playerLook, sAng, P, she
 import { drawSkirt, drawGround, drawLayer, drawPulseParts, lazyLeft, lazyTall } from "./scene_ground.js";
 import { wpLit, lights, map, ground, theme, artGround, drawWater, drawSunsetSea, pulseCv, pulseParts, falls, smokers, statics, npcs, OUTDOOR, emit, strings, critters, roomL, drawAmbient, camps } from "./scene_map.js";
 import { npcOut, npcService, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, makePerson, seatOf, drawPerson, drawJam } from "./scene_people.js";
-import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, fxFade, drawAimArrow, props, TRAIT_TINT, hooks, glows } from "./scene_fx.js";
+import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, fxFade, drawAimArrow, props, TRAIT_TINT, hooks, glows, drawEyeGlint, drawTraitAura, drawDropFx } from "./scene_fx.js";
 import { drawDepthGround, depthSprite } from "./scene_depth.js";
 import { frame as postFx } from "./postfx.js";
 
@@ -387,15 +387,23 @@ export function render(focusX, focusY, dt, t, snap) {
       g.fillStyle = "#2b2233"; g.fillRect(bx - 2, by - 4, 4, 5); g.fillStyle = "#ffffff"; g.fillRect(bx - 1, by - 3, 2, 1); g.fillStyle = "#e84a5a"; g.fillRect(bx - 1, by - 2, 2, 2);
     } else if (o.d) {
       const d = o.d, x = o.X, y = o.Y, ic = G.icons.cv[d.it];
-      g.fillStyle = "rgba(20,24,50,.26)"; g.beginPath(); g.ellipse(x, y, 8, 4, 0, 0, 7); g.fill();
-      if (d.q) { g.fillStyle = RARITY[d.q]; g.globalAlpha = 0.3 + 0.15 * Math.sin(t / 180 + d.id); g.fillRect(x - 2, y - 26 - d.q * 16, 4, d.q * 16 + 22); g.globalAlpha = 1; }
-      if (ic) g.drawImage(ic, Math.round(x - 8), Math.round(y - 18 + Math.sin(t / 220 + d.id) * 2), 16, 16);
+      drawDropFx(g, d, x, y, t, parts, ic, RARITY);
     } else if (o.m) {
       const m = o.m, kind = G.defs.mobs[m.k].sp, x = o.X, y = o.Y, el = m.el | 0;
       // an elite wears the colour of its first trait; a recoloured kind wears its own
       const tint = (m.tr && TRAIT_TINT[m.tr[0]]) || G.defs.mobs[m.k].tint || null;
       // the quarter-view cast: four facings and a pose for every moment (mobart.js)
-      if (MA.has(kind)) { MA.draw(g, m, G.defs.mobs[m.k], tint, state("m" + m.id, "q", () => ({})), t, x, y, parts, G); continue; }
+      if (MA.has(kind)) {
+        const ms = state("m" + m.id, "q", () => ({})), md = G.defs.mobs[m.k];
+        MA.draw(g, m, md, tint, ms, t, x, y, parts, G);
+        const hPx = (m.h3 || 1.3) * 26, span = Math.max(10, hPx * 0.36);
+        if (el && m.tr?.length) drawTraitAura(g, m, t, x, y, span, hPx, parts);
+        const a = t - m.atkT, w = m.windT ? t - m.windT : 1e9, windMs = m.windMs || 0;
+        if (!md.chest && (w < windMs || (a >= 0 && a < 160))) {
+          drawEyeGlint(g, x, y, hPx, ms.fx ? 1 : -1, t, w < windMs ? w / Math.max(1, windMs) : a / 160);
+        }
+        continue;
+      }
       const s = state("m" + m.id, kind + ":" + el + ":" + (tint || ""), () => { const z = SP.MOB_SIZE[kind] || [1, 0]; return { frames: SP.monsterSheet(kind, tint), size: z[0] * (el === 2 ? 2 : 1), hover: z[1] * (el === 2 ? 1.5 : 1), px: m.x, py: m.y }; });
       // sprites face left; they turn by which way they move across the screen
       const sdx = (m.x - s.px) - (m.y - (s.py ?? m.y));
@@ -410,6 +418,7 @@ export function render(focusX, focusY, dt, t, snap) {
         g.beginPath(); g.ellipse(x, y, w * 0.32, w * 0.16, 0, 0, 7); g.stroke();
         if (el === 2) { g.strokeStyle = `rgba(138,232,248,${pulse * 0.8})`; g.beginPath(); g.ellipse(x, y, w * 0.4 + Math.sin(t / 240) * 2, w * 0.2, 0, 0, 7); g.stroke(); }
         if (Math.random() < (el === 2 ? 0.3 : 0.1)) parts.push({ x: x + (Math.random() - 0.5) * w * 0.5, y: y - Math.random() * w * 0.4, vx: 0, vy: -22, life: 0.5, color: el === 2 ? "#ff8ae0" : "#ffe08a", g: 0, s: 1 });
+        drawTraitAura(g, m, t, x, y, w * 0.26, w * 0.72, parts);
       }
       g.save();
       const hk = (t - m.hurtT) / 200, rec = hk < 1 ? (1 - hk) * (1 - hk) : 0;
@@ -439,8 +448,8 @@ export function render(focusX, focusY, dt, t, snap) {
       const px = o.X, py = o.Y - (seat ? 3 : 0);
       // a giant grows (and shrinks back) over a quarter of a second
       const gz = o.p.gz = (o.p.gz || 1) + (((o.p.fl | 0) & 1 ? 1.6 : 1) - (o.p.gz || 1)) * Math.min(1, dt * 8);
-      if (gz > 1.01) { g.save(); g.translate(px, py); g.scale(gz, gz); g.translate(-px, -py); drawPerson(s, o.p, t, dt, px, py); g.restore(); }
-      else drawPerson(s, o.p, t, dt, px, py);
+      if (gz > 1.01) { g.save(); g.translate(px, py); g.scale(gz, gz); g.translate(-px, -py); drawPerson(s, o.p, t, dt, px, py, o.eid); g.restore(); }
+      else drawPerson(s, o.p, t, dt, px, py, o.eid);
       const jam = G.jams && G.jams.get(o.eid);
       if (jam && t - jam.t0 < 2600) drawJam(jam, s, t, px, py);
       o.p.h3 = s.h * gz;

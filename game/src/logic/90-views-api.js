@@ -84,6 +84,14 @@ function elementView(S, out, eid, entity) {
   const rows = elementStatusRows(S, entity);
   if (rows.length) (out.ail || (out.ail = [])).push([eid, rows]);
 }
+/** Compact bitmask of the 5 non-M-row combo states on `mob`: bit0 stg, bit1 frz, bit2 air, bits3..4 brn(0..3), bit5 drag (VFX-01). */
+function comboMask(S, mob) {
+  const now = S.now, air = mob.air > now ? 1 : 0, frz = mob.frz > now ? 1 : 0;
+  const stg = !air && !frz && (mob.stg > now || mob.stun > now) ? 1 : 0;
+  const brn = brnOf(S, mob) & 3;
+  const drag = mob.drag > now ? 1 : 0;
+  return stg | (frz << 1) | (air << 2) | (brn << 3) | (drag << 5);
+}
 
 /**
  * One player's slice of the world for this tick: only their map, only what is
@@ -141,6 +149,8 @@ export function viewFor(S, pid) {
     }
     out.M.push(row);
     if (mob.enchant) (out.enc || (out.enc = {}))[mob.id] = DAMAGE_TYPES.indexOf(mob.enchant);
+    const cm = comboMask(S, mob);
+    if (cm) (out.cb || (out.cb = {}))[mob.id] = cm;
     elementView(S, out, mob.id, mob);
     // a rift's toughness (64-dim.js hk: party size, level, tier) — only where it isn't 1, so the bar can show the real HP
     if (mob.hk && mob.hk !== 1) (out.HK || (out.HK = {}))[mob.id] = Math.round(mob.hk * 1000) / 1000;

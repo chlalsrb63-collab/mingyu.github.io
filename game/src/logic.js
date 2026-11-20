@@ -10525,13 +10525,14 @@ function skeValidate(S, p, a) {
   return { ok: true };
 }
 function skeApply(S, p, a) {
-  const ch = p.ch, n = skeOf(ch, a.id), name = SKILL[a.id].name;
+  const ch = p.ch, n = skeOf(ch, a.id), name = SKILL[a.id].name, ok = rnd(S) * 100 < SKE_RATE[n];
   takeItem(ch, SKE_ITEM, 1);
-  if (rnd(S) * 100 < SKE_RATE[n]) {
+  if (ok) {
     ch.ske[a.id] = n + 1;
     toast(p, `[${name}] +${n + 1} 강화 성공! 위력 +${(SKE_PCT * (n + 1)).toFixed(1)}%`);
     if (n + 1 >= 7) sys(S, `${ch.name}님이 [${name}] +${n + 1} 스킬 강화에 성공했습니다!`);
   } else toast(p, `[${name}] 강화 실패... 스킬 강화석만 사라지고 단계는 그대로입니다.`);
+  S.maps[p.map].ev.push(["e", p.eid, ok ? 1 : 0, ok ? n + 1 : 0, 1]);
   p.dirty = true;
 }
 // Damage components and temporary ailments shared by players and monsters.
@@ -25520,7 +25521,7 @@ export function applyAction(S, pid, a) {
         g.cu = 1;
         toast(p, `강화 실패... ${gearFull(g)}${pp(gearFull(g), "으로")} 내려가고 저주를 받았습니다. 저주 해제 주문서로 풀 수 있습니다.`);
       }
-      S.maps[p.map].ev.push(["e", p.eid, win ? 1 : 0]);
+      S.maps[p.map].ev.push(["e", p.eid, win ? 1 : 0, win ? g.enh : bless ? 0 : -1]);
       afterGear(S, p);
       break;
     }
@@ -25530,6 +25531,7 @@ export function applyAction(S, pid, a) {
       ch.gold -= UNCURSE_FEE * ITEMS[g.id].tier;
       g.cu = 2;
       toast(p, `${gearFull(g)}의 저주가 풀렸습니다 — 다음 강화는 성공 확률 +${ENH_UNCURSE}%p`);
+      S.maps[p.map].ev.push(["e", p.eid, 2]);
       afterGear(S, p);
       break;
     }
@@ -26740,6 +26742,14 @@ function elementView(S, out, eid, entity) {
   const rows = elementStatusRows(S, entity);
   if (rows.length) (out.ail || (out.ail = [])).push([eid, rows]);
 }
+/** Compact bitmask of the 5 non-M-row combo states on `mob`: bit0 stg, bit1 frz, bit2 air, bits3..4 brn(0..3), bit5 drag (VFX-01). */
+function comboMask(S, mob) {
+  const now = S.now, air = mob.air > now ? 1 : 0, frz = mob.frz > now ? 1 : 0;
+  const stg = !air && !frz && (mob.stg > now || mob.stun > now) ? 1 : 0;
+  const brn = brnOf(S, mob) & 3;
+  const drag = mob.drag > now ? 1 : 0;
+  return stg | (frz << 1) | (air << 2) | (brn << 3) | (drag << 5);
+}
 
 /**
  * One player's slice of the world for this tick: only their map, only what is
@@ -26797,6 +26807,8 @@ export function viewFor(S, pid) {
     }
     out.M.push(row);
     if (mob.enchant) (out.enc || (out.enc = {}))[mob.id] = DAMAGE_TYPES.indexOf(mob.enchant);
+    const cm = comboMask(S, mob);
+    if (cm) (out.cb || (out.cb = {}))[mob.id] = cm;
     elementView(S, out, mob.id, mob);
     // a rift's toughness (64-dim.js hk: party size, level, tier) — only where it isn't 1, so the bar can show the real HP
     if (mob.hk && mob.hk !== 1) (out.HK || (out.HK = {}))[mob.id] = Math.round(mob.hk * 1000) / 1000;

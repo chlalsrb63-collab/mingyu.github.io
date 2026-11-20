@@ -44,6 +44,20 @@ export const DUNGEONS = new Set(["crypt", "sewer", "abyss"]);
 const heightOf = (e) => e.h3 || 1.3;
 /** A monster's shot takes its element's colour (a plain one stays red: it is a threat, not a spark). */
 const shotColor = (k) => { const ty = G.defs.mobs[k]?.element; return ty && ty !== "physical" ? elementInfo(ty)?.color || "#ff5a4a" : "#ff5a4a"; };
+const FEATHER_MOBS = /^(eyecrow|eyegull|pigeonmass|owlstare|hollowowl|wingcrane|ribvulture|gorgecrane|ironowl|crownpeacock)/;
+const BONE_MOBS = /^(bonehound|cactushog|spoolsnipe|crabskull|stonegoat|cliffmonkey|ribdeer|twinhare_bone|serpentwing_bone)/;
+const NEEDLE_MOBS = /^(hydrasnake|mothface|dartbrood|eelknot|serpentwing|sanctummoth|gravrose|spiderhand|toadbrood|gutfrog|sanctumfrog)/;
+const BITE_MOBS = /^(lambmaw|gutfrog|toadbrood|leechmaw|gatorhalf|bearmaw|sandmaw|loggator|doghead|bonehound|moleworm|passbear|horsehalf|gigglehyena|sanctumfrog)/;
+const SMASH_MOBS = /^(meadowram|splitboar|ribdeer|fishwalker|crabskull|twingoat|shroomboar|coralturtle|rootwarden|rimewalrus|passboar|stonegoat|sanctumturtle|sanctumcrown|sanctumwarden|sanctumstag|rotstag)/;
+const mobShotStyle = (k) => { const sp = G.defs.mobs[k]?.sp || k; return FEATHER_MOBS.test(k) || FEATHER_MOBS.test(sp) ? "feather" : BONE_MOBS.test(k) || BONE_MOBS.test(sp) ? "bone" : NEEDLE_MOBS.test(k) || NEEDLE_MOBS.test(sp) ? "needle" : "orb"; };
+const mobMeleeStyle = (k) => { const sp = G.defs.mobs[k]?.sp || k; return BITE_MOBS.test(k) || BITE_MOBS.test(sp) ? "bite" : SMASH_MOBS.test(k) || SMASH_MOBS.test(sp) ? "smash" : "claw"; };
+function nearestPlayerTo(m) {
+  let best = null, bd = 85 * 85;
+  const check = (p) => { if (!p || p.dead) return; const d = (p.x - m.x) ** 2 + (p.y - m.y) ** 2; if (d < bd) { bd = d; best = p; } };
+  check(G.me);
+  for (const p of G.players.values()) check(p);
+  return best;
+}
 
 const hitVisualAt = new WeakMap();
 function drawDamageImpact(tgt, t, height, damage, parts, critical, heavy, grazing) {
@@ -58,7 +72,11 @@ function drawDamageImpact(tgt, t, height, damage, parts, critical, heavy, grazin
   }
   hitVisualAt.set(tgt, t);
   const color = element === "physical" ? (critical ? "#ffe075" : "#c6deef") : elementInfo(element)?.color || "#c6deef";
-  S3.fx.hitImpact(tgt.x, tgt.y, height * 0.55, element, color, heavy, grazing);
+  const d = tgt.k && G.defs?.mobs?.[tgt.k], bigHit = heavy || !!d?.boss || (tgt.el | 0) >= 2;
+  S3.fx.hitImpact(tgt.x, tgt.y, height * 0.55, element, color, bigHit, grazing);
+  if (!grazing && (d?.boss || (tgt.el | 0) >= 1)) {
+    S3.fx.burst(tgt.x, tgt.y, height * 0.5, color, d?.boss ? 10 : 6, bigHit ? 1.8 : 1.4);
+  }
 }
 
 export function onEvent(e, t) {
@@ -193,14 +211,27 @@ export function onEvent(e, t) {
     }
     case "k": {
       const m = G.mobs.get(e[1]) || G.gone.get(e[1]);
-      if (m) { G.gone.delete(e[1]); S3.fx.burst(m.x, m.y, heightOf(m) * 0.5, MOB_COL[m.k] || "#fff", G.defs.mobs[m.k]?.boss ? 70 : 16, 2.2); Sound.play(G.defs.mobs[m.k]?.boss ? "die_boss" : m.el ? "die_big" : "die_small"); G.mobs.delete(e[1]); }
+      if (m) {
+        G.gone.delete(e[1]);
+        const d = G.defs.mobs[m.k], col = MOB_COL[m.k] || MOB_COL[d?.sp] || "#fff";
+        S3.fx.mobDeath(m.x, m.y, heightOf(m), col, m.el | 0, !!d?.boss);
+        Sound.play(d?.boss ? "die_boss" : m.el ? "die_big" : "die_small");
+        G.mobs.delete(e[1]);
+      }
       break;
     }
     case "m": {
       const m = G.mobs.get(e[1]);
       if (m) {
         m.atkT = t;
-        if (e.length > 2) { S3.fx.proj(m.x, m.y, heightOf(m) * 0.75, e[2], e[3] + 8, 0.7, shotColor(m.k), 0.05, 34); Sound.play("mob_shot"); }
+        const col = shotColor(m.k), near = !G.me || dist(G.me.x, G.me.y, m.x, m.y) < 230;
+        if (e.length > 2) {
+          S3.fx.mobShot(m.x, m.y, heightOf(m) * 0.75, e[2], e[3] + 8, 0.7, mobShotStyle(m.k), col);
+          if (near) Sound.play("mob_shot");
+        } else if (near) {
+          const tgt = nearestPlayerTo(m), d = G.defs.mobs[m.k];
+          if (tgt) S3.fx.mobMelee(m.x, m.y, tgt.x, tgt.y, mobMeleeStyle(m.k), col, d?.boss ? 1.45 : m.el === 2 ? 1.3 : m.el ? 1.15 : 1);
+        }
       }
       break;
     }
@@ -250,7 +281,7 @@ export function onEvent(e, t) {
       if (e[1] === G.you) { banner(`업적 달성 · ${a.name}`, true); Sound.play("achieve"); addChat(`업적 [${a.name}] 달성! (+${a.pts}점${a.title ? ` · 칭호 「${a.title}」` : ""})`, "sys"); }
       else { const w = G.who.get(e[1]); if (w) addChat(`${w.name}님 업적 달성: [${a.name}]`, "sys"); }
       const p = entityPos(e[1]);
-      if (p) S3.fx.sparkle(p.x, p.y, 0.9, "#ffd84a", 20);
+      if (p) S3.fx.pillar(p.x, p.y, "achieve");
       break;
     }
     case "c": S3.fx.lane(e[2], e[3], e[4], e[5], e[6]); Sound.play("charge"); break;      // a charge is coming down this line
@@ -322,8 +353,8 @@ export function onEvent(e, t) {
     }
     case "e": {
       const p = entityPos(e[1]);
-      if (p) { S3.fx.sparkle(p.x, p.y, 0.8, e[2] ? "#ffd84a" : "#8a8a9a", e[2] ? 28 : 10); if (e[2]) S3.fx.ring(p.x, p.y, 20, "#ffd84a", 400); }
-      if (e[1] === G.you) Sound.play(e[2] ? "enh_ok" : "enh_fail");
+      if (p) S3.fx.enhanceFx(p.x, p.y, e[2] | 0, e[3] | 0, !!e[4]);
+      if (e[1] === G.you) Sound.play(e[2] === 2 ? "warp" : e[2] ? "enh_ok" : "enh_fail");
       break;
     }
   }

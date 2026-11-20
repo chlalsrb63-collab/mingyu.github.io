@@ -236,4 +236,25 @@ for (const [id, job, wk, beats, hpCost] of [["whirl", "swordsman", "sword", 17, 
   assert.ok(W.act({ t: "sk", id: wk === "sword" ? "slash" : "spiral", a: 0 }).ok);
   assert.equal(W.p.chan, 0, id + " is cut by another skill");
 }
+
+// ═════════ VFX-01: snapshot combo bitmask (out.cb) + M row mk/br carry all 7 combo states to the client
+{
+  const W = heroOf("sword", "표식비트");
+  const [m] = W.mobs([[24, 0]]);
+  prime(m, "stg", W.now);
+  let v = W.step();
+  assert.equal(v.cb?.[m.id] & 1, 1, "stagger bit (1) sent in snap.cb");
+  m.stg = 0; prime(m, "frz", W.now);
+  v = W.step();
+  assert.equal(v.cb?.[m.id] & 2, 2, "freeze bit (2) sent in snap.cb");
+  m.frz = 0; m.stun = 0; prime(m, "air", W.now);
+  v = W.step();
+  assert.equal(v.cb?.[m.id] & 4, 4, "airborne bit (4) sent in snap.cb");
+  m.air = 0; m.stun = 0; prime(m, "brn", W.now);
+  v = W.step();
+  assert.equal((v.cb?.[m.id] >> 3) & 3, 3, "burn stacks (3) sent in snap.cb bits 3..4");
+  m.brn = 0; prime(m, "drag", W.now);
+  v = W.step();
+  assert.equal(v.cb?.[m.id] & 32, 32, "drag bit (32) sent in snap.cb");
+}
 console.log("combos ok — every hook applies, spends for a bonus and runs out; wind-up, channel and the bar hold");

@@ -80,20 +80,164 @@ export function comboEvent(e, ctx) {
   if (near && skId && playJobNote) Sound.play("job_note", { job: skillOwner(skId), sig: kind >= 146 });
   return true;
 }
-/** A combo state cashed in on monster `m` (skill-combos.md §7): each its own payoff, a shake when it is near. */
+/** A combo state cashed in on monster `m` (skill-combos.md §7, VFX-01): each its own pixel payoff, a shake when it is near. */
 function payoff(G, B, f, m, code, col) {
   const x = m.x, y = m.y, near = !!G.me && Math.hypot(x - G.me.x, y - G.me.y) < 220;
+  const [sx, sy0] = S3.iso(x, y), sy = sy0 - Math.round((m.h3 || 1.3) * 14);
+  const px = (g, a, b, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(a), Math.round(b), w, h); };
+  // Immediately update client combo bitmask so the overhead badge pops off as it detonates
+  if (code === 1) m.cb = (m.cb | 0) & ~1;
+  else if (code === 2) m.cb = (m.cb | 0) & ~2;
+  else if (code === 3) m.cb = (m.cb | 0) & ~4;
+  else if (code === 4) m.mk = 0;
+  else if (code === 5) m.br = 0;
+  else if (code === 6) m.cb = (m.cb | 0) & ~(3 << 3);
+  else if (code === 7) m.cb = (m.cb | 0) & ~32;
+  else if (code === 9) m.cb = (m.cb | 0) | 4;
+
   switch (code) {
-    case 2: f.flash(x, y, 8); f.burst(x, y, 1, "#ffffff", 10, 2.8); f.burst(x, y, 0.7, col, 22, 2.4); f.ring(x, y, 22, "#e8f8ff", 280, true); if (near) Sound.play("cb_shatter"); break; // 파쇄
-    case 3: f.fall(x, y, col, 80); f.flash(x, y, 8); f.burst(x, y, 0.8, col, 14, 2.2); if (near) Sound.play("cb_aerial"); break;               // 추가타
-    case 6: f.flash(x, y, 10); f.burst(x, y, 0.5, "#ff5a26", 24, 2.6); f.burst(x, y, 1, "#ffe852", 12, 2); f.wave(x, y, 28, col, 320); if (near) Sound.play("ignite_burst"); break; // 점화
-    case 7: f.wave(x, y, 30, col, 260); f.ring(x, y, 14, "#ffffff", 200); f.burst(x, y, 0.3, col, 14, 1.6); if (near) Sound.play("cb_gather"); break; // 결집
-    case 9: f.burst(x, y, 0.2, col, 10, 1.6); S3.fx.sparkle(x, y, 1.2, "#ffffff", 6); if (near) Sound.play("cb_launch"); return;               // 띄우기
+    case 1: {
+      // 경직 강타! — 8-point golden star-burst impact + ground crack + shockwave
+      f.flash(x, y, 11);
+      f.crack(x, y, 22, col, 460);
+      f.wave(x, y, 26, "#fff6b0", 280);
+      f.burst(x, y, 0.55, col, 18, 2.4);
+      S3.fxCustom((g, k) => {
+        const r = 6 + k * 20, w = k < 0.4 ? 3 : 2;
+        g.globalAlpha = 1 - k;
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2, len = i % 2 ? r * 0.65 : r;
+          for (let d = 3; d <= len; d += 2) px(g, sx + Math.cos(a) * d - 1, sy + Math.sin(a) * d * 0.7 - 1, w, w, d > len - 3 ? "#ffffff" : col);
+        }
+      }, 260);
+      if (near) Sound.play("cb_stagger");
+      break;
+    }
+    case 2: {
+      // 파쇄! — flying pixel ice prism shards + twin frost rings + white-hot core flash
+      f.flash(x, y, 12);
+      f.burst(x, y, 1, "#ffffff", 12, 2.8);
+      f.burst(x, y, 0.7, col, 24, 2.5);
+      f.ring(x, y, 24, "#e8f8ff", 300, true);
+      S3.fxCustom((g, k) => {
+        g.globalAlpha = 1 - k * 0.85;
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2 + 0.3, d = 4 + k * 26;
+          const ix = Math.round(sx + Math.cos(a) * d), iy = Math.round(sy + Math.sin(a) * d * 0.65 - Math.sin(k * Math.PI) * 8);
+          px(g, ix - 2, iy - 2, 5, 5, "#2b2233");
+          px(g, ix - 1, iy - 1, 3, 3, "#7ad4ff");
+          px(g, ix - 1, iy - 1, 2, 2, "#ffffff");
+        }
+      }, 320);
+      if (near) Sound.play("cb_shatter");
+      break;
+    }
+    case 3: {
+      // 추가타! — downward sky-lance strikes + mid-air and ground sonic rings
+      f.fall(x, y, col, 80);
+      f.flash(x, y, 10);
+      f.burst(x, y, 0.85, col, 18, 2.4);
+      f.wave(x, y, 24, "#ffffff", 260);
+      S3.fxCustom((g, k) => {
+        g.globalAlpha = 1 - k;
+        for (const dx of [-7, 0, 7]) {
+          const topY = sy - 34 * (1 - k * 0.5), h = Math.max(4, Math.round(26 * (1 - k)));
+          px(g, sx + dx - 1, topY, 3, h, col);
+          px(g, sx + dx, topY, 1, h, "#ffffff");
+        }
+      }, 240);
+      if (near) Sound.play("cb_aerial");
+      break;
+    }
+    case 4: {
+      // 표식 폭발! — assassin X-cross blade slash detonation + diamond burst
+      f.flash(x, y, 10);
+      f.burst(x, y, 0.6, col, 20, 2.5);
+      f.ring(x, y, 22, "#ffd0ff", 280, true);
+      S3.fxCustom((g, k) => {
+        const L = Math.round(8 + k * 18);
+        g.globalAlpha = 1 - k;
+        for (let s = -L; s <= L; s += 2) {
+          const c = Math.abs(s) < 5 || k < 0.3 ? "#ffffff" : col;
+          px(g, sx + s - 1, sy + s * 0.65 - 1, 3, 3, "#2b2233");
+          px(g, sx + s - 1, sy - s * 0.65 - 1, 3, 3, "#2b2233");
+          px(g, sx + s, sy + s * 0.65, 2, 2, c);
+          px(g, sx + s, sy - s * 0.65, 2, 2, c);
+        }
+      }, 250);
+      if (near) Sound.play("cb_mark");
+      break;
+    }
+    case 5: {
+      // 낙인 폭발! — collapsing arcane rune seal + vertical violet light pillar
+      f.flash(x, y, 10);
+      f.burst(x, y, 0.65, col, 20, 2.3);
+      f.ring(x, y, 24, col, 300, true);
+      S3.fxCustom((g, k) => {
+        const w = Math.max(2, Math.round(12 * (1 - k))), h = Math.round(32 + k * 18);
+        g.globalAlpha = (1 - k) * 0.85;
+        px(g, sx - w / 2, sy0 - h, w, h, col);
+        px(g, sx - Math.max(1, w >> 2), sy0 - h, Math.max(1, w >> 1), h, "#ffffff");
+        for (let i = 0; i < 6; i++) {
+          const a = (i / 6) * Math.PI * 2 + k * 3, r = 18 * (1 - k * 0.6);
+          px(g, sx + Math.cos(a) * r - 1, sy + Math.sin(a) * r * 0.5 - 1, 2, 2, "#ffd0ff");
+        }
+      }, 300);
+      if (near) Sound.play("cb_brand");
+      break;
+    }
+    case 6: {
+      // 점화! — roaring pixel fire column + scorched ground crack + triple flame burst
+      f.flash(x, y, 12);
+      f.burst(x, y, 0.5, "#ff5a26", 26, 2.7);
+      f.burst(x, y, 1, "#ffe852", 14, 2.2);
+      f.crack(x, y, 20, "#ff7a2a", 450);
+      f.wave(x, y, 30, col, 320);
+      S3.fxCustom((g, k) => {
+        g.globalAlpha = 1 - k * 0.9;
+        for (let i = 0; i < 9; i++) {
+          const u = i / 8, h = u * (38 + k * 16), r = Math.max(2, Math.round((1 - u * 0.7) * 10 * (1 - k * 0.5)));
+          const wobble = Math.sin(k * 14 + i) * 3;
+          px(g, sx + wobble - r, sy0 - h - r, r * 2, r + 2, i < 3 ? "#ffe852" : i < 6 ? "#ff7a26" : "#c82818");
+          if (i < 4) px(g, sx + wobble - (r >> 1), sy0 - h - r + 1, Math.max(1, r), r, "#ffffff");
+        }
+      }, 320);
+      if (near) Sound.play("ignite_burst");
+      break;
+    }
+    case 7: {
+      // 결집! — inward vacuum implosion rings + emerald core snap
+      f.wave(x, y, 30, col, 260);
+      f.ring(x, y, 16, "#ffffff", 220);
+      f.burst(x, y, 0.4, col, 16, 1.8);
+      S3.fxCustom((g, k) => {
+        const r = Math.max(2, (1 - k) * 26);
+        g.globalAlpha = 0.9 * (1 - k * 0.5);
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2 + k * 4;
+          px(g, sx + Math.cos(a) * r - 1, sy + Math.sin(a) * r * 0.55 - 1, 3, 3, "#2b2233");
+          px(g, sx + Math.cos(a) * r, sy + Math.sin(a) * r * 0.55, 2, 2, i % 2 ? "#ffffff" : col);
+        }
+      }, 240);
+      if (near) Sound.play("cb_gather");
+      break;
+    }
+    case 9: {
+      // 띄우기 — rising spiral wind gust + upward white sparkles
+      f.burst(x, y, 0.2, col, 12, 1.7);
+      S3.fx.sparkle(x, y, 1.2, "#ffffff", 8);
+      S3.fxCustom((g, k) => {
+        g.globalAlpha = 1 - k;
+        for (let i = 0; i < 10; i++) {
+          const a = (i / 10) * Math.PI * 3 + k * 5, h = i * 2.5 + k * 16, r = 11 - i * 0.5;
+          px(g, sx + Math.cos(a) * r, sy0 - h + Math.sin(a) * r * 0.4, 2, 2, i % 2 ? "#ffffff" : col);
+        }
+      }, 260);
+      if (near) Sound.play("cb_launch");
+      return;
+    }
     default:
       f.burst(x, y, 0.6, col, 16, 2.2); f.ring(x, y, 18, col, 260);
-      if (code === 1) { f.crack(x, y, 18, col, 420); if (near) Sound.play("cb_stagger"); }
-      else if (code === 4 && near) Sound.play("cb_mark");
-      else if (code === 5 && near) Sound.play("cb_brand");
   }
   if (near) B.shake(code === 2 || code === 6 ? 5 : 3);
 }

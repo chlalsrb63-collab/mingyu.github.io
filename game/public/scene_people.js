@@ -230,7 +230,91 @@ function evalSkillMotion(e, t) {
  * weapon sprite is turned about its grip — swept through an arc, thrust, or
  * levelled and kicked back.
  */
-export function drawPerson(s, e, t, dt, x, y) {
+/**
+ * Render clean pixel particles & micro-auras around a character for elemental ailments
+ * (burn, poison, bleed, chill/freeze, shock, curse) and active buffs (campfire warmth, scrolls) (VFX-03).
+ */
+function drawPersonStatusFx(e, eid, t, x, y) {
+  if (!eid || e.dead || e.scr || !G || !G.defs) return;
+  const px = (a, b, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(a), Math.round(b), w, h); };
+  const mine = eid === G.you, bf = mine && G.buffEnd ? G.buffEnd : null;
+  let hasBurn = !!(bf && bf[5] > t), hasPoison = !!(bf && bf[6] > t), hasChill = !!(bf && bf[4] > t);
+  let hasFreeze = false, hasBleed = false, hasShock = false, hasCurse = false;
+  const rows = G.ailments?.get(eid), defs = G.defs.elements?.status;
+  if (rows && defs) {
+    for (const [index, until] of rows) {
+      if (until <= t) continue;
+      const id = defs[index]?.id;
+      if (id === "burn") hasBurn = true;
+      else if (id === "poison") hasPoison = true;
+      else if (id === "chill") hasChill = true;
+      else if (id === "freeze") { hasFreeze = true; hasChill = true; }
+      else if (id === "bleed") hasBleed = true;
+      else if (id === "shock") hasShock = true;
+      else if (id === "curse" || id === "shatter") hasCurse = true;
+    }
+  }
+  if (hasFreeze) {
+    g.globalAlpha = 0.36; g.fillStyle = "#bfe8ff"; g.fillRect(Math.round(x - 7), Math.round(y - 16), 14, 17);
+    g.globalAlpha = 0.85; g.strokeStyle = "#e8f8ff"; g.lineWidth = 1; g.strokeRect(Math.round(x - 7) + 0.5, Math.round(y - 16) + 0.5, 13, 16);
+    g.globalAlpha = 1;
+  }
+  if (hasBurn) {
+    const fl = Math.floor(t / 85) & 1;
+    for (const ox of [-5, 4]) {
+      const fy = y - 7 - ((ox > 0 ? fl : 1 - fl) * 2);
+      px(x + ox - 1, fy - 3, 3, 4, "#2b2233");
+      px(x + ox, fy - 2, 2, 2, "#ff6a22");
+      px(x + ox, fy - 3, 1, 2, "#ffe852");
+    }
+    if (Math.random() < 0.14) parts.push({ x: x + (Math.random() - 0.5) * 10, y: y - 6 - Math.random() * 8, vx: (Math.random() - 0.5) * 8, vy: -24, life: 0.38, color: Math.random() < 0.5 ? "#ff7a2a" : "#ffe852", g: -12, s: 1 });
+  }
+  if (hasPoison) {
+    const u = (t / 420) % 1, bx = x + Math.sin(t / 180) * 5, by = y - 5 - u * 13;
+    px(bx - 1, by - 1, 3, 3, "#2b2233");
+    px(bx, by, 2, 2, "#7ae048");
+    px(bx, by, 1, 1, "#e2ffc0");
+    if (Math.random() < 0.1) parts.push({ x: x + (Math.random() - 0.5) * 10, y: y - 5, vx: 0, vy: -18, life: 0.45, color: "#7ae048", g: -6, s: 2 });
+  }
+  if (hasBleed && Math.random() < 0.16) {
+    parts.push({ x: x + (Math.random() - 0.5) * 8, y: y - 8, vx: (Math.random() - 0.5) * 12, vy: -6, life: 0.34, color: "#d82848", g: 140, s: 2 });
+  }
+  if (hasChill) {
+    const a = t / 320, cx = x + Math.cos(a) * 7, cy = y - 8 + Math.sin(a) * 3;
+    px(cx - 1, cy - 1, 3, 3, "#2b2233");
+    px(cx, cy, 2, 2, "#8ae8ff");
+    px(cx, cy, 1, 1, "#ffffff");
+  }
+  if (hasShock && (Math.floor(t / 70) % 3 === 0)) {
+    const sx = x + ((Math.floor(t / 35) % 2) ? -5 : 4), sy = y - 10;
+    px(sx, sy, 2, 1, "#ffe85a"); px(sx + 1, sy + 1, 1, 2, "#ffffff"); px(sx - 1, sy + 2, 2, 1, "#8ae8ff");
+  }
+  if (hasCurse) {
+    const a = -t / 280, cx = x + Math.cos(a) * 7, cy = y - 11 + Math.sin(a) * 3;
+    px(cx - 1, cy - 1, 3, 3, "#1a1024");
+    px(cx, cy, 2, 2, "#b46aff");
+  }
+  // Campfire warmth & scroll buffs for the local hero (or flagged players)
+  if (bf) {
+    if (bf[2] > t && Math.random() < 0.07) {
+      parts.push({ x: x + (Math.random() - 0.5) * 9, y: y - 3, vx: (Math.random() - 0.5) * 6, vy: -16, life: 0.55, color: Math.random() < 0.5 ? "#ffb85a" : "#ffe8a0", g: -8, s: 1 });
+    }
+    const scrCols = [];
+    if (bf[7] > t || bf[0] > t) scrCols.push("#ff7a6a");
+    if (bf[8] > t) scrCols.push("#7ac4ff");
+    if (bf[9] > t) scrCols.push("#ffd86a");
+    if (bf[1] > t || bf[10] > t) scrCols.push("#9affc8");
+    for (let i = 0; i < scrCols.length; i++) {
+      const a = t / 360 + (i * Math.PI * 2) / scrCols.length;
+      const rx = x + Math.cos(a) * 8, ry = y - 6 + Math.sin(a) * 3.5;
+      px(rx - 1, ry - 1, 3, 3, "#2b2233");
+      px(rx, ry, 2, 2, scrCols[i]);
+      px(rx, ry, 1, 1, "#ffffff");
+    }
+  }
+}
+
+export function drawPerson(s, e, t, dt, x, y, eid) {
   // gathering (gather.js sets e.gat = {k, t0, end, fa}): bent to the herb, or a rhythm of raise and strike
   const gat = e.gat && !e.dead && !e.moving && t < e.gat.end ? e.gat : null;
   const mot = evalSkillMotion(e, t);
@@ -351,6 +435,7 @@ export function drawPerson(s, e, t, dt, x, y) {
       SP.drawPersonCrop(g, img, 0, cut, SP.SIZE, SP.SIZE - cut, -SP.FOOT[0], -SP.FOOT[1] + cut);
     } else g.drawImage(img, -SP.FOOT[0], -SP.FOOT[1], SP.SIZE, SP.SIZE);
     g.restore();
+    drawPersonStatusFx(e, eid, t, x, y - hop);
   };
   // Job props replace the weapon in the same hand layer as deliveries.
   if ((e.carry || e.aptBin || e.dinerItem || e.forgeTool || e.libraryBook) && !e.dead) {

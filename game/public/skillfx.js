@@ -1414,34 +1414,117 @@ function overlay(g, t) {
   const G = live.G;
   if (!G) return;
   for (const m of G.mobs.values()) {
-    const [mx, my] = at(m.x, m.y), top = my - (m.h3 || 1.3) * 26 - 4;
-    // a dagger's marks over each monster: little violet diamonds, one per stack
-    if (m.mk) {
-      const n = m.mk, w = n * 5 - 1, x0 = Math.round(mx - w / 2), y0 = Math.round(top - 4);
-      const hot = n >= 5 && Math.sin(t / 90) > 0;
-      for (let i = 0; i < n; i++) {
-        const x = x0 + i * 5;
-        px(g, x + 1, y0, 2, 1, INK); px(g, x, y0 + 1, 4, 2, INK); px(g, x + 1, y0 + 3, 2, 1, INK);
-        px(g, x + 1, y0 + 1, 2, 2, hot ? "#ffd0ff" : "#c070ff");
+    const [mx, my] = at(m.x, m.y), hPx = Math.max(18, (m.h3 || 1.3) * 26), top = my - hPx - 4;
+    const s = signs.get(m.id), cb = m.cb | 0;
+    const stg = (cb & 1) !== 0, frz = (cb & 2) !== 0 || (s && s.fz > t), air = (cb & 4) !== 0;
+    const brn = (cb >> 3) & 3, drag = (cb & 32) !== 0, vu = !!(s && s.vu > t);
+    const mk = m.mk | 0, br = m.br | 0;
+
+    // Body & ground combo state overlays (VFX-01)
+    if (frz) {
+      const w = 22, h = Math.max(18, (m.h3 || 1.3) * 22), x0 = Math.round(mx - w / 2), y0 = Math.round(my - h);
+      g.globalAlpha = 0.38; g.fillStyle = "#bfe8ff"; g.fillRect(x0, y0, w, h);
+      g.globalAlpha = 0.9; g.strokeStyle = "#e8f8ff"; g.lineWidth = 1; g.strokeRect(x0 + 0.5, y0 + 0.5, w - 1, h - 1);
+      g.globalAlpha = 1;
+      px(g, x0 + 3, y0 + 3, 2, 5, "#ffffff"); px(g, x0 + w - 5, y0 + h - 7, 2, 4, "#e8f8ff");
+    }
+    if (air) {
+      const bob = Math.sin(t / 70) * 2;
+      g.globalAlpha = 0.72; g.strokeStyle = "#fff2a8"; g.lineWidth = 1.5;
+      g.beginPath(); g.ellipse(mx, my - 2, 13, 5, 0, 0, 7); g.stroke();
+      g.globalAlpha = 1;
+      for (const dx of [-8, 7]) px(g, mx + dx, my - hPx * 0.55 + bob, 1, 7, "#e8f8ff");
+    }
+    if (drag) {
+      const pull = (t / 220) % 1, r = 16 - pull * 7;
+      for (let i = 0; i < 4; i++) {
+        const a = (i / 4) * Math.PI * 2 + t / 480;
+        const qx = Math.round(mx + Math.cos(a) * r), qy = Math.round(my - hPx * 0.45 + Math.sin(a) * r * 0.5);
+        px(g, qx - 1, qy - 1, 3, 3, INK); px(g, qx, qy, 2, 2, "#9fe0c0");
       }
     }
-    // a book's brand: a small burning sigil beside its head
-    if (m.br) {
-      const x = Math.round(mx - 14), y = Math.round(top + 1), f = Math.sin(t / 120) > 0;
-      px(g, x - 1, y - 1, 7, 9, INK); px(g, x, y, 5, 7, "#3a2a58"); px(g, x + 1, y + 1, 3, 1, "#c8a0ff"); px(g, x + 2, y + 2, 1, 3, f ? "#ff6a8a" : "#c8a0ff"); px(g, x + 1, y + 5, 3, 1, "#c8a0ff");
+    if (stg) {
+      for (let i = 0; i < 3; i++) {
+        const a = t / 180 + (i * Math.PI * 2) / 3;
+        const sx = Math.round(mx + Math.cos(a) * 10), sy = Math.round(top + 2 + Math.sin(a) * 3.5);
+        px(g, sx - 1, sy - 1, 3, 3, INK); px(g, sx, sy, 2, 2, i === 0 ? "#ffffff" : "#ffd86a");
+      }
     }
-    const s = signs.get(m.id);
-    if (!s) continue;
-    if (s.fz > t) {
-      const w = 22, h = Math.max(18, (m.h3 || 1.3) * 22);
-      g.globalAlpha = 0.38; g.fillStyle = "#bfe8ff"; g.fillRect(Math.round(mx - w / 2), Math.round(my - h), w, h);
-      g.globalAlpha = 0.9; g.strokeStyle = "#e8f8ff"; g.lineWidth = 1; g.strokeRect(Math.round(mx - w / 2) + 0.5, Math.round(my - h) + 0.5, w - 1, h - 1);
-      g.globalAlpha = 1; px(g, mx - w / 2 + 3, my - h + 3, 2, 5, "#ffffff");
+
+    // Non-overlapping horizontal pixel badge strip above the monster's head (VFX-01)
+    const badges = [];
+    if (mk > 0) {
+      const n = mk, w = n * 5 - 1, hot = n >= 5 && Math.sin(t / 90) > 0;
+      badges.push({ w, draw(x0, y0) {
+        for (let i = 0; i < n; i++) {
+          const x = x0 + i * 5, y = y0 + 2;
+          px(g, x + 1, y, 2, 1, INK); px(g, x, y + 1, 4, 2, INK); px(g, x + 1, y + 3, 2, 1, INK);
+          px(g, x + 1, y + 1, 2, 2, hot ? "#ffd0ff" : "#c070ff");
+        }
+      } });
     }
-    if (s.vu > t && Math.sin(t / 110) > -0.4) {
-      // a cracked shield: armour that will not hold
-      const x = Math.round(mx + 10), y = Math.round(top + 2);
-      px(g, x - 1, y - 1, 7, 8, INK); px(g, x, y, 5, 5, "#8ad8ff"); px(g, x + 1, y + 5, 3, 1, "#8ad8ff"); px(g, x + 2, y, 1, 3, INK); px(g, x + 1, y + 3, 1, 2, INK);
+    if (br) {
+      badges.push({ w: 7, draw(x, y) {
+        const f = Math.sin(t / 120) > 0;
+        px(g, x, y, 7, 9, INK); px(g, x + 1, y + 1, 5, 7, "#3a2a58");
+        px(g, x + 2, y + 2, 3, 1, "#c8a0ff"); px(g, x + 3, y + 3, 1, 3, f ? "#ff6a8a" : "#c8a0ff"); px(g, x + 2, y + 6, 3, 1, "#c8a0ff");
+      } });
+    }
+    if (brn > 0) {
+      const w = brn * 6 - 1;
+      badges.push({ w, draw(x0, y0) {
+        const fl = Math.floor(t / 95) & 1;
+        for (let i = 0; i < brn; i++) {
+          const x = x0 + i * 6, dy = ((i + fl) & 1) ? 0 : 1;
+          px(g, x, y0 + 1 + dy, 5, 7, INK);
+          px(g, x + 1, y0 + 4 + dy, 3, 3, "#e04818");
+          px(g, x + 1, y0 + 2 + dy, 3, 3, "#ff8a2a");
+          px(g, x + 2, y0 + 1 + dy, 1, 3, "#ffe852");
+        }
+      } });
+    }
+    if (stg) {
+      badges.push({ w: 7, draw(x, y) {
+        px(g, x, y + 1, 7, 7, INK);
+        px(g, x + 3, y + 2, 1, 5, "#ffd86a"); px(g, x + 1, y + 4, 5, 1, "#ffd86a");
+        px(g, x + 2, y + 3, 3, 3, "#fff6b0"); px(g, x + 3, y + 4, 1, 1, "#ffffff");
+      } });
+    }
+    if (frz) {
+      badges.push({ w: 7, draw(x, y) {
+        px(g, x, y + 1, 7, 7, INK);
+        px(g, x + 2, y + 2, 3, 5, "#7ad4ff"); px(g, x + 1, y + 3, 5, 3, "#bfe8ff");
+        px(g, x + 3, y + 2, 1, 5, "#ffffff"); px(g, x + 2, y + 4, 3, 1, "#ffffff");
+      } });
+    }
+    if (air) {
+      badges.push({ w: 7, draw(x, y) {
+        const lift = Math.sin(t / 80) > 0 ? 0 : 1;
+        px(g, x, y + lift, 7, 8, INK);
+        px(g, x + 3, y + 1 + lift, 1, 1, "#ffffff"); px(g, x + 2, y + 2 + lift, 3, 1, "#fff2a8"); px(g, x + 1, y + 3 + lift, 5, 1, "#ffd86a");
+        px(g, x + 3, y + 4 + lift, 1, 1, "#ffffff"); px(g, x + 2, y + 5 + lift, 3, 1, "#fff2a8");
+      } });
+    }
+    if (drag) {
+      badges.push({ w: 7, draw(x, y) {
+        px(g, x, y + 1, 7, 7, INK);
+        px(g, x + 1, y + 2, 5, 5, "#265c4e");
+        px(g, x + 1, y + 4, 2, 1, "#9fe0c0"); px(g, x + 4, y + 4, 2, 1, "#9fe0c0");
+        px(g, x + 3, y + 2, 1, 2, "#9fe0c0"); px(g, x + 3, y + 5, 1, 2, "#9fe0c0");
+        px(g, x + 3, y + 4, 1, 1, "#ffffff");
+      } });
+    }
+    if (vu && Math.sin(t / 110) > -0.4) {
+      badges.push({ w: 7, draw(x, y) {
+        px(g, x, y, 7, 8, INK); px(g, x + 1, y + 1, 5, 5, "#8ad8ff"); px(g, x + 2, y + 6, 3, 1, "#8ad8ff");
+        px(g, x + 3, y + 1, 1, 3, INK); px(g, x + 2, y + 4, 1, 2, INK);
+      } });
+    }
+    if (badges.length) {
+      const gap = 2, totW = badges.reduce((sum, b) => sum + b.w, 0) + (badges.length - 1) * gap;
+      let cx = Math.round(mx - totW / 2);
+      const cy = Math.round(top - 8);
+      for (const b of badges) { b.draw(cx, cy); cx += b.w + gap; }
     }
   }
   for (const [id, s] of signs) if (!(s.fz > t || s.vu > t)) signs.delete(id);

@@ -28,12 +28,13 @@ function skeValidate(S, p, a) {
   return { ok: true };
 }
 function skeApply(S, p, a) {
-  const ch = p.ch, n = skeOf(ch, a.id), name = SKILL[a.id].name;
+  const ch = p.ch, n = skeOf(ch, a.id), name = SKILL[a.id].name, ok = rnd(S) * 100 < SKE_RATE[n];
   takeItem(ch, SKE_ITEM, 1);
-  if (rnd(S) * 100 < SKE_RATE[n]) {
+  if (ok) {
     ch.ske[a.id] = n + 1;
     toast(p, `[${name}] +${n + 1} 강화 성공! 위력 +${(SKE_PCT * (n + 1)).toFixed(1)}%`);
     if (n + 1 >= 7) sys(S, `${ch.name}님이 [${name}] +${n + 1} 스킬 강화에 성공했습니다!`);
   } else toast(p, `[${name}] 강화 실패... 스킬 강화석만 사라지고 단계는 그대로입니다.`);
+  S.maps[p.map].ev.push(["e", p.eid, ok ? 1 : 0, ok ? n + 1 : 0, 1]);
   p.dirty = true;
 }
