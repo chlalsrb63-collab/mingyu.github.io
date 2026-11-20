@@ -64,14 +64,14 @@ function build() {
   });
   head.append(title, time, score, combo, quit);
   const stage = document.createElement("canvas"); stage.className = "ap-stage"; stage.width = 480; stage.height = 120;
-  const bar = el("div", "ap-bar"), fill = el("i", "ap-fill"); bar.append(fill);
+  const bar = el("div", "ap-bar"), fill = el("i", "ap-fill"), fev = el("i", "ap-fev"); bar.append(fill, fev);
   const marks = ["C", "B", "A", "S"].map((l) => { const m = el("span", "ap-mark", l); bar.append(m); return m; });
   const board = el("div", "ap-board"), res = el("div", "ap-res"); res.hidden = true;
   const hint = el("div", "ap-hint"), pops = el("div", "ap-pops");
   box.append(head, stage, bar, hint, board, res, pops);
   root.append(box);
   document.body.append(root);
-  st.dom = { root, box, pops, title, time, score, combo, stage, g: stage.getContext("2d"), bar, fill, marks, board, res, hint, quit };
+  st.dom = { root, box, pops, fev, title, time, score, combo, stage, g: stage.getContext("2d"), bar, fill, marks, board, res, hint, quit };
   st.dom.g.imageSmoothingEnabled = false;
   return st.dom;
 }
@@ -84,13 +84,14 @@ async function open(k) {
     const mod = GAMES[k] || (GAMES[k] = (await LOADERS[k]()).default);
     if (!st.ab || st.ab[0] !== k) return;   // the shift ended while the module loaded
     const d = build(), row = G.defs.alba.rows[k];
-    st.k = k; st.mod = mod; st.prevPhase = ""; st.act = 0; st.ph = 0; st.sAt = 0; st.parts.length = 0; st.react = null; st.result = null; st.shown = ""; st.disp = 0; st.last = { t: "", s: -1, c: -1 }; st.wasFever = false; st.wasRush = false; st.grade = -1; st.count = 0; d.pops.textContent = "";
+    st.k = k; st.mod = mod; st.prevPhase = ""; st.act = 0; st.ph = 0; st.sAt = 0; st.parts.length = 0; st.react = null; st.result = null; st.shown = ""; st.how = null; st.disp = 0; st.last = { t: "", s: -1, c: -1 }; st.wasFever = false; st.wasRush = false; st.grade = -1; st.count = 0; st.hi = { gain: 0, fevers: 0 }; st.fevEnd = 0; st.pulseAt = 0; d.pops.textContent = ""; d.fev.style.animation = "none";
     d.title.textContent = row.name; d.hint.textContent = row.hint; d.res.hidden = true; d.res.textContent = "";
     d.board.textContent = ""; d.root.hidden = false; d.quit.textContent = "그만두기"; delete d.quit.dataset.sure;
     const th = THEME[row.tool] || THEME.box; d.box.style.setProperty("--ap-acc", th[2]);
     d.marks.forEach((m, i) => { m.style.left = `${(G.defs.alba.cuts[i] / 1.1) * 100}%`; });
     st.host = el("div", "ap-host"); d.board.append(st.host);
     mod.mount(st.host, api);
+    howCard(k, row);
     document.body.classList.add("alba-open");
     if (st.pending) { mod.setState(st.pending, st.recv); st.pending = null; }
   } finally { st.loading = false; }
@@ -142,6 +143,7 @@ function showResult() {
   const rec = score > prev && score > 0 ? (prev ? `신기록! (이전 ${prev.toLocaleString()}점)` : "첫 기록!") : "";
   const lines = [
     `점수 ${score.toLocaleString()} (기준 ${par.toLocaleString()})`, `최고 기록 ${best.toLocaleString()} · 최대 콤보 ${maxc}`,
+    (st.hi.gain > 0 || st.hi.fevers > 0) && `하이라이트 · 한 번에 최고 +${st.hi.gain.toLocaleString()}${st.hi.fevers ? ` · 피버 ${st.hi.fevers}회` : ""}`,
     out && ["b", `큰 실수 ${G.defs.alba.rows[k].lives}번 — 근무가 일찍 끝났어요.`],
     rec && ["b", rec],
     code === 1 ? ["b", `보수 ${gold.toLocaleString()}G${hot ? " · 특근 보너스!" : ""}`] : "",
@@ -154,7 +156,8 @@ function showResult() {
   again.addEventListener("click", () => { act({ t: "ab_close" }); act({ t: "ab_start", k }); });   // the server takes them in order
   ok.addEventListener("click", () => act({ t: "ab_close" }));
   btns.append(again, ok);
-  d.res.append(stamp, ...lines.map((l) => (Array.isArray(l) ? el("p", "ap-rec", l[1]) : el("p", "", l))), btns);
+  d.res.append(stamp, ...lines.map((l, i) => { const p = Array.isArray(l) ? el("p", "ap-rec", l[1]) : el("p", "", l); p.style.setProperty("--i", i); return p; }), btns);
+  if (g) setTimeout(() => { if (st.shown) { api.sfx("alba_thud"); jolt(d.res, "slam"); } }, 260);   // the stamp lands
   d.quit.textContent = "닫기";
   api.sfx(g >= 3 ? "alba_win" : g ? "alba_big" : "alba_bad");
 }
@@ -249,6 +252,16 @@ function scorePop(dl, par, m) {
   jolt(d.score, dl > 0 ? "bump" : "drop");
   if (dl > 0) api.sfx("alba_gain", tier); else jolt(d.box, "shake");
 }
+/** The first shift of a game (per browser): a card over the board during the briefing says how the scoring works. */
+function howCard(k, row) {
+  const d = st.dom, key = `lumentale:alba-seen:${k}`;
+  d.pops.classList.remove("how");
+  try { if (localStorage.getItem(key)) return; localStorage.setItem(key, "1"); } catch { return; }
+  const c = el("div", "ap-how");
+  c.append(el("b", "", `처음 하는 알바 · ${row.name}`), el("p", "ap-how-main", row.hint));
+  for (const l of ["연속으로 성공하면 콤보! 콤보가 쌓일수록 점수 배율이 올라가요.", "콤보를 이어가면 피버 — 잠깐 동안 점수 ×2.", `♥ ${row.lives}개 · 큰 실수로 모두 잃으면 근무가 일찍 끝나요.`, "마지막 15초는 막판 러시 — 점수 ×1.5."]) c.append(el("p", "", l));
+  d.pops.append(c); d.pops.classList.add("how"); st.how = c;
+}
 /** One big centred word (countdown, healed heart) in the popup layer. */
 function pop(text, cls) { const b = el("b", `ap-word ${cls}`, text); st.dom.pops.append(b); setTimeout(() => b.remove(), 900); }
 /** The C/B/A/S marks: reached ones light up, the next one says how far it is; crossing one in play gets a banner. */
@@ -289,6 +302,7 @@ export function tick(t) {
   if (score !== st.last.s) {
     const dl = st.last.s >= 0 && phase !== "end" ? score - st.last.s : 0;
     st.last.s = score; d.fill.style.width = `${clamp(score / par / 1.1, 0, 1) * 100}%`;
+    if (dl > st.hi.gain) st.hi.gain = dl;
     if (dl) scorePop(dl, par, mult(combo - 1, fever > 0, rush));   // the points were counted before the combo stepped up
     else st.disp = score;
     gradeMarks(score, par, phase === "run");
@@ -300,7 +314,12 @@ export function tick(t) {
   if (st.disp !== score) st.disp = Math.abs(score - st.disp) < 1.5 ? score : st.disp + (score - st.disp) * 0.22;
   const shown = `${Math.round(st.disp).toLocaleString()}점`;
   if (shown !== d.score.textContent) d.score.textContent = shown;
-  if (fever > 0 && !st.wasFever && phase === "run") banner("피버! 점수 ×2", "fever");
+  if (fever > 0 && !st.wasFever && phase === "run") { banner("피버! 점수 ×2", "fever"); st.hi.fevers++; }
+  if (fever > 0 && phase === "run") {
+    if (Math.abs(st.feverEnd - st.fevEnd) > 400) { d.fev.style.animation = "none"; void d.fev.offsetWidth; d.fev.style.animation = `ap-fevbar ${Math.round(fever)}ms linear forwards`; }   // (re)started: the bar drains by itself
+    st.fevEnd = st.feverEnd;
+    if (t - st.pulseAt > 430 && st.k !== "rhythm") { st.pulseAt = t; api.sfx("alba_pulse"); }   // the rhythm game keeps its own beat
+  } else if (st.fevEnd) { st.fevEnd = 0; d.fev.style.animation = "none"; }
   if (rush && !st.wasRush) banner("막판 러시! 점수 ×1.5", "rush");
   st.wasFever = fever > 0; st.wasRush = rush;
   const ck = `${combo}|${fever > 0}|${left < G.defs.alba.rushMs}`;
@@ -312,7 +331,7 @@ export function tick(t) {
     if (combo > 1) jolt(d.combo, "bump");
     d.root.classList.toggle("fever", fever > 0);
   }
-  if (phase !== st.prevPhase) { if (phase === "run" && st.prevPhase === "brief") api.sfx("alba_go"); if (phase === "end" && st.prevPhase === "run") api.sfx("alba_end"); st.prevPhase = phase; }
+  if (phase !== st.prevPhase) { if (phase !== "brief" && st.how) { st.how.remove(); st.how = null; d.pops.classList.remove("how"); } if (phase === "run" && st.prevPhase === "brief") api.sfx("alba_go"); if (phase === "end" && st.prevPhase === "run") api.sfx("alba_end"); st.prevPhase = phase; }
   stage(t, phase);
   if (st.mod) st.mod.frame(t, { phase, left, toStart, score, combo, fever, rush: left < G.defs.alba.rushMs });
 }
@@ -333,9 +352,10 @@ export function renderList(s) {
   box.append(el("p", "hint", `S 도장 ${nS}/${D.order.length}${hot.length ? ` · 오늘의 특근: ${hot.map((k) => D.rows[k].name).join(", ")} (보수 +${Math.round((D.hot - 1) * 100)}%)` : ""}`));
   box.append(el("p", "hint", `한 번에 약 ${Math.round((D.runMs + D.briefMs) / 60000 * 10) / 10}분. 종류마다 하루 한 번 보수를 받고, 다시 하면 기록 연습이에요. 하루에 ${D.perDay}번까지 보수를 받을 수 있어요.`));
   for (const k of D.order) {
-    const r = D.rows[k], g = done[k], card = el("div", "dcard jb-card" + (g ? " done" : ""));
+    const r = D.rows[k], g = done[k], card = el("div", "dcard jb-card" + (g ? " done" : "") + (hot.includes(k) && !g ? " hot" : ""));
     const hd = el("div", "dh"), nm = el("b", "", r.name), tags = el("span", "");
     const tag = (txt, bg) => { const x = el("span", "tag", txt); if (bg) x.style.background = bg; x.style.marginLeft = "3px"; tags.append(x); };
+    if (!best[k]) tag("NEW", "#ff8ab0");
     if (hot.includes(k) && !g) tag(`특근 +${Math.round((D.hot - 1) * 100)}%`, "#ff9a3a");
     if (g) tag(`오늘 ${"CBAS"[g - 1]} 보수 받음`, "#5ee07a"); else if (!slots) tag("오늘 보수 끝", "#999");
     if (best[k]) tag(`최고 ${stampOf(k) ? "CBAS"[stampOf(k) - 1] + " · " : ""}${best[k].toLocaleString()}점`, stampOf(k) === 4 ? "#ffd84a" : "");

@@ -770,7 +770,7 @@ Object.assign(BOOST, {
   alba_step: 1.65, alba_zap: 1.7, alba_chime: 1.65, alba_buzz: 1.55,
   alba_n0: 1.65, alba_n1: 1.65, alba_n2: 1.65, alba_n3: 1.65,
   alba_go: 1.75, alba_end: 1.7, alba_win: 1.85,
-  alba_gain: 1.5, alba_hurt: 1.75,
+  alba_gain: 1.5, alba_hurt: 1.75, alba_pulse: 1.4,
 });
 for (const n of ["alba_go", "alba_end", "alba_win"]) IMPORTANT.add(n);
 
@@ -1168,6 +1168,8 @@ const SFX = {
     this.arp("sine", [1047, 1319, 1568, 2093], 0.048, 0.16, 0.045, 0.045);
     this.whoosh(0.24, 0.095, 1600, 5600, 0.45, 2.8, 0.02);
   },
+  /** The heartbeat under a fever (the shell plays it ~2.3×/s while points are doubled). */
+  alba_pulse() { this.tone("sine", 118, 62, 0.09, 0.07, 0, true); this.tone("triangle", 1568, 1480, 0.03, 0.018, 0.005); },
   alba_tick() {
     const p = this.vary();
     this.noise(0.014, 0.085, 4600 * p, "bandpass", 0, 2200 * p, 3.2, true);
