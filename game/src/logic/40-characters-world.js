@@ -1,7 +1,7 @@
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
-const SHEET_VERSION = 31;
+const SHEET_VERSION = 32;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -98,6 +98,15 @@ export function newChar(name, look, wk) {
 
 /** Ids that no longer exist, and what they became. */
 const OLD_ID = { c_1: "r_2", c_2: "n_3", c_3: "r_4" };
+/** One ordinary line of a sheet before v32 (AFFIX_V31): where it sat in its old range at its level, put at the same place of today's range. Other lines pass. */
+function affixV32(line, il, mul) {
+  if (!Array.isArray(line) || typeof line[0] !== "string" || !Object.hasOwn(AFFIX_BY_KEY, line[0]) || !Number.isFinite(line[1])) return line;
+  const old = AFFIX_V31[line[0].startsWith("dmg_") ? "dmg" : line[0]];
+  if (!old) return line;
+  const [min, max, grow] = old, b = grow * Math.min(TIER_MAX, toTier(il));
+  const at = clamp((line[1] / mul - min - b) / (max - min), 0, 1), [lo, hi] = affixRange(line[0], il);
+  return [line[0], Math.max(1, Math.round((lo + at * (hi - lo)) * mul))];
+}
 /** Bring a sheet saved by an older version up to the current shape. */
 function migrate(ch) {
   ch.buddy = buddyClean(ch.buddy);
@@ -131,17 +140,18 @@ function migrate(ch) {
     // item level (no sheet version bump: a missing `il` is derived, so an old piece asks what it always did — gearIl)
     out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, 200) : gearIl(out);
     if (LEGEND[g.lg]) out.lg = g.lg;
+    // (v32) flat lines became a share of the level's yardstick and 치명타 피해 % widened: an old line keeps its place in its old range
+    if ((ch.v | 0) < 32) out.af = out.af.map((line) => affixV32(line, out.il, AFFIX_MUL[out.q] || 1));
     // A retired set piece keeps its base item, item level, enhancement and existing ordinary lines.
     if (oldQ === 4 && !out.lg) {
       const seed = { seed: [...id].reduce((n, c) => (Math.imul(n, 31) + c.charCodeAt(0)) >>> 0, out.il + out.enh) };
       out.lg = pfxPick(seed, ITEMS[id].type);
       out.af = out.af.filter((line) => Array.isArray(line) && Object.hasOwn(AFFIX_BY_KEY, line[0]) && Number.isFinite(line[1]) && line[1] > 0);
       const used = new Set(out.af.map(([key]) => key));
-      const tier = toTier(out.il);
       while (out.af.length < RARITY_AFFIX[3][0]) {
         const stat = rollAffixKey(seed, ITEMS[id].type, used);
         used.add(stat);
-        out.af.push(rollLine(seed, stat, tier, AFFIX_MUL[3]));
+        out.af.push(rollLine(seed, stat, out.il, AFFIX_MUL[3]));
       }
     }
     // a 유니크 keeps its lines, `il` and power (`lg`); `un` (words of the first 유니크 sheets) is dropped. The first sheets had `un: [prefix, suffix]`

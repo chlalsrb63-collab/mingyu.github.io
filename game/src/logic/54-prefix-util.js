@@ -14,7 +14,7 @@
 
 Object.assign(PFX, {
   trace: { on: 1, xp: 15 },   // the shared prefix xp cap is +15 (prefix-effects §5): 25 only promised more than it gave
-  sage: { on: 1, xp: 8 },
+  sage: { on: 1, xp: 12 },   // (balance 2026-11-20: 8 → 12, still under the +15 cap with 추적자의)
   mercy: { on: 1, k: 0.5 },
   homing: { on: 1, k: 0.5 },
   clever: { on: 1, k: 0.85 },
@@ -25,7 +25,7 @@ Object.assign(PFX, {
   bile: { on: 1, p: 0.2, ms: 5000, k: 0.1, icd: 1000 },
   carap: { on: 1, k: 0.03, max: 0.15, ms: 10000 },
   bastion: { on: 1, calm: 5000, k: 0.12, ms: 8000, icd: 25000 },
-  halo: { on: 1, r: 150, k: 0.94, ms: 2000 },
+  halo: { on: 1, r: 150, k: 0.9, ms: 2000 },   // (balance 2026-11-20: −6 % → −10 %)
   pack: { on: 1, r: 200, k: 0.04, max: 0.12 },
   hellfire: { on: 1, p: 0.2, ms: 3000, every: 500, k: 0.25, r: 30 },
   blizzard: { on: 1, ms: 2500, every: 500, k: 0.2, r: 40, slow: 1500 },

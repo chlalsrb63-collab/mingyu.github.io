@@ -626,8 +626,7 @@ const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (i
 function weakAffix(g) {
   let best = -1, bv = Infinity;
   (g.af || []).forEach(([k, v], i) => {
-    const a = AFFIX_BY_KEY[k];
-    const r = a ? v / Math.max(1, a[4]) : 0;
+    const r = AFFIX_BY_KEY[k] ? v / Math.max(1, affixRange(k, gearIl(g))[1]) : 0;
     if (r < bv) { bv = r; best = i; }
   });
   return best;

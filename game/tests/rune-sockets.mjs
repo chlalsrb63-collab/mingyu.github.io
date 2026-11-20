@@ -11,7 +11,7 @@ const runeId = (set) => Object.keys(D.runes).find((id) => D.runes[id].set === se
 assert.equal(D.sets, undefined);
 assert.equal(D.runewords, undefined);
 assert.deepEqual(D.rarity.filter(Boolean), ["일반", "고급", "희귀", "전설", "유니크"]);
-assert.deepEqual(Object.values(D.runeSets).map((set) => set.need).sort(), [2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4]);
+assert.deepEqual(Object.values(D.runeSets).map((set) => set.need).sort(), [2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4]);
 const gearWords = new Set(Object.values(D.legend).map(([name]) => name.replace(/의$/, "")));
 for (const [id, r] of Object.entries(D.runes)) {
   assert.equal(D.items[id].rune, id);
@@ -244,7 +244,7 @@ for (const [rank, tries] of [[0, 100_000], [1, 40_000], [2, 20_000]]) {
   console.log(`rank ${rank} rune drops: ${runeDrops}/${tries} (${(runeDrops / tries * 100).toFixed(3)}%)`);
 }
 assert.deepEqual([...rarities].sort(), [1, 2, 3, 4]);
-assert.equal(foundSets.size, 15, "all rune sets occur in real drops");
+assert.equal(foundSets.size, 18, "all rune sets occur in real drops");
 assert.ok(pickUp(S, p, rabbitRune));
 assert.deepEqual(ch.inv.find((stack) => stack.id === rabbitRune.it), { id: rabbitRune.it, n: 1, il: 1 });
 

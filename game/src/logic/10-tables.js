@@ -155,11 +155,16 @@ Object.assign(ITEMS, {
   bloom_n: { ...ITEMS.n_5, name: "결정 심장" },
 });
 
-/** Affixes a dropped item can roll: [key, label, prefix word, min, max, per-item-level growth]. */
+/**
+ * Affixes a dropped item can roll: [key, label, prefix word, min, max, per-tier growth].
+ * A flat line (atk def hp mp, and the element dmg_* lines: AFFIX_REF) rolls min–max PERCENT of what a plain-geared hero of the
+ * item's level has (balance 2026-11-20): +공격력 3–6 % (of the yardstick, ≈ 4.5–6 % of a real hero) against 공격력 % 3–6 %, so neither the flat nor the % line wins at
+ * level 1 or at level 200. Before, a flat line was min–max + growth × tier: 15 % of a level-1 hero's attack, 0.4 % at 200.
+ */
 const AFFIX = [
-  ["atk", "공격력", "날카로운", 1, 3, 0.35], ["atkp", "공격력 %", "맹렬한", 3, 6, 0], ["def", "방어력", "단단한", 1, 2, 0.25],
-  ["hp", "최대 HP", "강인한", 8, 20, 2], ["mp", "최대 MP", "지혜의", 5, 12, 1], ["crit", "치명타 %", "예리한", 2, 5, 0],
-  ["critd", "치명타 피해 %", "잔혹한", 8, 20, 0], ["ls", "흡혈 %", "흡혈의", 1, 3, 0], ["spd", "이동속도 %", "신속의", 3, 7, 0],
+  ["atk", "공격력", "날카로운", 3, 6, 0], ["atkp", "공격력 %", "맹렬한", 3, 6, 0], ["def", "방어력", "단단한", 3, 6, 0],
+  ["hp", "최대 HP", "강인한", 3, 6, 0], ["mp", "최대 MP", "지혜의", 4, 8, 0], ["crit", "치명타 %", "예리한", 2, 5, 0],
+  ["critd", "치명타 피해 %", "잔혹한", 12, 28, 0], ["ls", "흡혈 %", "흡혈의", 1, 3, 0], ["spd", "이동속도 %", "신속의", 3, 7, 0],
   ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
 ];
 // Gear reserved index 4 in its saved format. The green rarity belongs to runes.
@@ -190,6 +195,40 @@ const IL_GAP = 10;
 // Double the displayed Lv.1 → Lv.200 weapon attack gap (6 → 2086). Per-mille values also drive client item comparisons.
 const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(22178 * (i / (MAXLV - 1)) ** 1.55));
 /**
+ * Armour defence (helm, armor, boots `def`) grows on its own, gentler line (balance 2026-11-20): a blow loses 0.6 × defence
+ * (hurtPlayer), and monster attack grows ~110× from level 1 to 200, so the weapon's 23× made a plain-geared hero shrug off 96 %
+ * of a normal blow at 200. With ×1 → ×11.8 the same hero turns about 36 % of a blow at level 1 and about 50 % at 200.
+ */
+const DEF_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(10800 * i / (MAXLV - 1)));
+/** A tier table read at an item level: straight between the tiers' first levels (G_REQ), flat past the last. */
+function tierLerp(arr, il) {
+  let t = 0;
+  while (t < G_REQ.length - 1 && G_REQ[t + 1] <= il) t++;
+  if (t === G_REQ.length - 1) return arr[t];
+  return arr[t] + (arr[t + 1] - arr[t]) * (il - G_REQ[t]) / (G_REQ[t + 1] - G_REQ[t]);
+}
+/**
+ * What a plain-geared hero of item level il has, the yardstick of a flat affix line (AFFIX min–max are % of it): attack ≈ 2.2 ×
+ * the weapon's base, defence = helm + armor + boots, HP and MP = the body's own plus helm, armor, amulet. One value per level 1–200.
+ */
+const AFFIX_REF = (() => {
+  const sum = (stat, types) => G_REQ.map((_, t) => types.reduce((n, k) => n + (GEAR[k].st[stat]?.[t] || 0), 0));
+  const defs = sum("def", ["helm", "armor", "boots"]), hps = sum("hp", ["helm", "armor", "amulet"]), mps = sum("mp", ["amulet"]);
+  const out = { atk: [], def: [], hp: [], mp: [] };
+  for (let il = 1; il <= MAXLV; il++) {
+    const g = GEAR_BASE_SCALE[il - 1] / 1000, d = DEF_BASE_SCALE[il - 1] / 1000;
+    out.atk.push(2.2 * tierLerp(W_ATK, il) * g);
+    out.def.push(tierLerp(defs, il) * d);
+    out.hp.push(150 + tierLerp(hps, il) * g);
+    out.mp.push(60 + tierLerp(mps, il) * g);
+  }
+  return out;
+})();
+/** The yardstick of a flat line's key (the element extra-damage lines go by attack), or undefined for a % line. */
+const affixRefOf = (key) => AFFIX_REF[key.startsWith("dmg_") ? "atk" : key];
+/** The ordinary lines of sheets before v32 were min–max + growth × tier: [min, max, growth] by key (dmg = every dmg_* line). migrate re-rolls them in place. */
+const AFFIX_V31 = { atk: [1, 3, 0.35], def: [1, 2, 0.25], hp: [8, 20, 2], mp: [5, 12, 1], critd: [8, 20, 0], dmg: [2, 6, 0.28] };
+/**
  * 접두사 고유 효과 (docs/design/prefix-effects.md): a 전설 or 유니크 piece carries ONE power `lg` no affix can give. Three tables per power,
  * all keyed by `lg`; the later parts 52+ extend them with Object.assign and never edit this file (the recipe is in 51-prefix.js):
  *   PFX     its numbers, the only place a number lives. `on: 1` lets it drop (rollGear), `off: 1` retires it (a piece loads inert);
@@ -202,11 +241,11 @@ const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.roun
 const PFX = {
   chain: { on: 1, p: 0.25, n: 2, k: 0.50, r: 70 },
   nova: { on: 1, k: 0.68, r: 34, n: 4, icd: 1200 },
-  haste: { on: 1, iv: 0.88 },
+  haste: { on: 1, iv: 0.9 },        // (balance 2026-11-20: 0.88 → 0.9, the one always-on attack power)
   giant: { on: 1, k: 1.20 },
   echo: { on: 1, p: 0.16, ms: 400, icd: 8000 },
   greed: { on: 1, gold: 60 },
-  thorn: { on: 1, k: 0.30 },
+  thorn: { on: 1, k: 0.30, a: 0.40, icd: 1000 },   // (balance 2026-11-20: + 40 % of attack; 30 % of a blow alone was nothing late)
   feast: { on: 1, k: 0.03 },
 };
 /** The roll weight of a power by rating (S 1 · M 2 · L 1), and the letter of each slot / item type (`ring` = the item type of both rings). */
@@ -225,7 +264,7 @@ const LEGEND = {
   nova: ["폭렬의", pfxText("nova", "적을 처치하면 주변 최대 {n}명에게 공격력의 {k:%}% 화염 피해 ({icd:s}초 간격)"), "WGR", "O", "M", "kill"],
   greed: ["황금손의", pfxText("greed", "골드 획득 +{gold}%"), "RG", "O", "M", "eco"],
   haste: ["질주의", pfxText("haste", "기본 공격 간격 -{iv:-%}%"), "WG", "O", "M", "pass"],
-  thorn: ["가시의", pfxText("thorn", "받은 피해의 {k:%}%를 공격한 적에게 되돌려 준다"), "ABH", "D", "M", "mit"],
+  thorn: ["가시의", pfxText("thorn", "피격 시 받은 피해의 {k:%}%와 공격력의 {a:%}%를 공격한 적에게 되돌려 준다 ({icd:s}초 간격)"), "ABH", "D", "M", "mit"],
   feast: ["포식자의", pfxText("feast", "적을 처치할 때마다 최대 HP의 {k:%}% 회복 (접두사·룬 회복 상한 적용)"), "ANH", "D", "L", "sus"],
   echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 남은 재사용 대기시간이 {ms:s}초로 줄어든다 ({icd:s}초 간격)"), "WRG", "O", "L", "skill"],
   giant: ["거인 사냥꾼의", pfxText("giant", "정예와 우두머리에게 주는 피해 +{k:+%}%"), "WRG", "O", "L", "pass"],

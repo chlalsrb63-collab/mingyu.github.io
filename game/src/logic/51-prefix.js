@@ -280,7 +280,7 @@ const PFX_FN = {
     },
   },
   // 가시의: part of what p takes goes back to the one who struck
-  thorn: { hurt(S, rt, p, st, mob, dmg) { if (mob) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * PFX.thorn.k)), 0); } },
+  thorn: { hurt(S, rt, p, st, mob, dmg) { if (mob && !mob.dead && pfxIcd(S, p, "thorn", PFX.thorn.icd)) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * PFX.thorn.k + st.atk * PFX.thorn.a)), 0); } },
   // 포식자의 shares the sustain budget with the other repeatable kill and hit heals.
   feast: { kill(S, rt, p, st) { if (!p.dead) pfxHeal(S, p, st, st.mhp * PFX.feast.k); } },
 };

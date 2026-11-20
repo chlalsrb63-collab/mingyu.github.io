@@ -648,11 +648,16 @@ Object.assign(ITEMS, {
   bloom_n: { ...ITEMS.n_5, name: "결정 심장" },
 });
 
-/** Affixes a dropped item can roll: [key, label, prefix word, min, max, per-item-level growth]. */
+/**
+ * Affixes a dropped item can roll: [key, label, prefix word, min, max, per-tier growth].
+ * A flat line (atk def hp mp, and the element dmg_* lines: AFFIX_REF) rolls min–max PERCENT of what a plain-geared hero of the
+ * item's level has (balance 2026-11-20): +공격력 3–6 % (of the yardstick, ≈ 4.5–6 % of a real hero) against 공격력 % 3–6 %, so neither the flat nor the % line wins at
+ * level 1 or at level 200. Before, a flat line was min–max + growth × tier: 15 % of a level-1 hero's attack, 0.4 % at 200.
+ */
 const AFFIX = [
-  ["atk", "공격력", "날카로운", 1, 3, 0.35], ["atkp", "공격력 %", "맹렬한", 3, 6, 0], ["def", "방어력", "단단한", 1, 2, 0.25],
-  ["hp", "최대 HP", "강인한", 8, 20, 2], ["mp", "최대 MP", "지혜의", 5, 12, 1], ["crit", "치명타 %", "예리한", 2, 5, 0],
-  ["critd", "치명타 피해 %", "잔혹한", 8, 20, 0], ["ls", "흡혈 %", "흡혈의", 1, 3, 0], ["spd", "이동속도 %", "신속의", 3, 7, 0],
+  ["atk", "공격력", "날카로운", 3, 6, 0], ["atkp", "공격력 %", "맹렬한", 3, 6, 0], ["def", "방어력", "단단한", 3, 6, 0],
+  ["hp", "최대 HP", "강인한", 3, 6, 0], ["mp", "최대 MP", "지혜의", 4, 8, 0], ["crit", "치명타 %", "예리한", 2, 5, 0],
+  ["critd", "치명타 피해 %", "잔혹한", 12, 28, 0], ["ls", "흡혈 %", "흡혈의", 1, 3, 0], ["spd", "이동속도 %", "신속의", 3, 7, 0],
   ["xp", "경험치 %", "깨달음의", 3, 8, 0], ["mf", "아이템 발견 %", "행운의", 5, 15, 0], ["gold", "골드 획득 %", "탐욕의", 8, 20, 0],
 ];
 // Gear reserved index 4 in its saved format. The green rarity belongs to runes.
@@ -683,6 +688,40 @@ const IL_GAP = 10;
 // Double the displayed Lv.1 → Lv.200 weapon attack gap (6 → 2086). Per-mille values also drive client item comparisons.
 const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(22178 * (i / (MAXLV - 1)) ** 1.55));
 /**
+ * Armour defence (helm, armor, boots `def`) grows on its own, gentler line (balance 2026-11-20): a blow loses 0.6 × defence
+ * (hurtPlayer), and monster attack grows ~110× from level 1 to 200, so the weapon's 23× made a plain-geared hero shrug off 96 %
+ * of a normal blow at 200. With ×1 → ×11.8 the same hero turns about 36 % of a blow at level 1 and about 50 % at 200.
+ */
+const DEF_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(10800 * i / (MAXLV - 1)));
+/** A tier table read at an item level: straight between the tiers' first levels (G_REQ), flat past the last. */
+function tierLerp(arr, il) {
+  let t = 0;
+  while (t < G_REQ.length - 1 && G_REQ[t + 1] <= il) t++;
+  if (t === G_REQ.length - 1) return arr[t];
+  return arr[t] + (arr[t + 1] - arr[t]) * (il - G_REQ[t]) / (G_REQ[t + 1] - G_REQ[t]);
+}
+/**
+ * What a plain-geared hero of item level il has, the yardstick of a flat affix line (AFFIX min–max are % of it): attack ≈ 2.2 ×
+ * the weapon's base, defence = helm + armor + boots, HP and MP = the body's own plus helm, armor, amulet. One value per level 1–200.
+ */
+const AFFIX_REF = (() => {
+  const sum = (stat, types) => G_REQ.map((_, t) => types.reduce((n, k) => n + (GEAR[k].st[stat]?.[t] || 0), 0));
+  const defs = sum("def", ["helm", "armor", "boots"]), hps = sum("hp", ["helm", "armor", "amulet"]), mps = sum("mp", ["amulet"]);
+  const out = { atk: [], def: [], hp: [], mp: [] };
+  for (let il = 1; il <= MAXLV; il++) {
+    const g = GEAR_BASE_SCALE[il - 1] / 1000, d = DEF_BASE_SCALE[il - 1] / 1000;
+    out.atk.push(2.2 * tierLerp(W_ATK, il) * g);
+    out.def.push(tierLerp(defs, il) * d);
+    out.hp.push(150 + tierLerp(hps, il) * g);
+    out.mp.push(60 + tierLerp(mps, il) * g);
+  }
+  return out;
+})();
+/** The yardstick of a flat line's key (the element extra-damage lines go by attack), or undefined for a % line. */
+const affixRefOf = (key) => AFFIX_REF[key.startsWith("dmg_") ? "atk" : key];
+/** The ordinary lines of sheets before v32 were min–max + growth × tier: [min, max, growth] by key (dmg = every dmg_* line). migrate re-rolls them in place. */
+const AFFIX_V31 = { atk: [1, 3, 0.35], def: [1, 2, 0.25], hp: [8, 20, 2], mp: [5, 12, 1], critd: [8, 20, 0], dmg: [2, 6, 0.28] };
+/**
  * 접두사 고유 효과 (docs/design/prefix-effects.md): a 전설 or 유니크 piece carries ONE power `lg` no affix can give. Three tables per power,
  * all keyed by `lg`; the later parts 52+ extend them with Object.assign and never edit this file (the recipe is in 51-prefix.js):
  *   PFX     its numbers, the only place a number lives. `on: 1` lets it drop (rollGear), `off: 1` retires it (a piece loads inert);
@@ -695,11 +734,11 @@ const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.roun
 const PFX = {
   chain: { on: 1, p: 0.25, n: 2, k: 0.50, r: 70 },
   nova: { on: 1, k: 0.68, r: 34, n: 4, icd: 1200 },
-  haste: { on: 1, iv: 0.88 },
+  haste: { on: 1, iv: 0.9 },        // (balance 2026-11-20: 0.88 → 0.9, the one always-on attack power)
   giant: { on: 1, k: 1.20 },
   echo: { on: 1, p: 0.16, ms: 400, icd: 8000 },
   greed: { on: 1, gold: 60 },
-  thorn: { on: 1, k: 0.30 },
+  thorn: { on: 1, k: 0.30, a: 0.40, icd: 1000 },   // (balance 2026-11-20: + 40 % of attack; 30 % of a blow alone was nothing late)
   feast: { on: 1, k: 0.03 },
 };
 /** The roll weight of a power by rating (S 1 · M 2 · L 1), and the letter of each slot / item type (`ring` = the item type of both rings). */
@@ -718,7 +757,7 @@ const LEGEND = {
   nova: ["폭렬의", pfxText("nova", "적을 처치하면 주변 최대 {n}명에게 공격력의 {k:%}% 화염 피해 ({icd:s}초 간격)"), "WGR", "O", "M", "kill"],
   greed: ["황금손의", pfxText("greed", "골드 획득 +{gold}%"), "RG", "O", "M", "eco"],
   haste: ["질주의", pfxText("haste", "기본 공격 간격 -{iv:-%}%"), "WG", "O", "M", "pass"],
-  thorn: ["가시의", pfxText("thorn", "받은 피해의 {k:%}%를 공격한 적에게 되돌려 준다"), "ABH", "D", "M", "mit"],
+  thorn: ["가시의", pfxText("thorn", "피격 시 받은 피해의 {k:%}%와 공격력의 {a:%}%를 공격한 적에게 되돌려 준다 ({icd:s}초 간격)"), "ABH", "D", "M", "mit"],
   feast: ["포식자의", pfxText("feast", "적을 처치할 때마다 최대 HP의 {k:%}% 회복 (접두사·룬 회복 상한 적용)"), "ANH", "D", "L", "sus"],
   echo: ["메아리의", pfxText("echo", "스킬 사용 시 {p:%}% 확률로 남은 재사용 대기시간이 {ms:s}초로 줄어든다 ({icd:s}초 간격)"), "WRG", "O", "L", "skill"],
   giant: ["거인 사냥꾼의", pfxText("giant", "정예와 우두머리에게 주는 피해 +{k:+%}%"), "WRG", "O", "L", "pass"],
@@ -2358,7 +2397,7 @@ const DEFENSE_ELEMENT_AFFIX = ["res_all"];
 const ELEMENT_AFFIX = { res_all: ["res", "all"] };
 const CHANCE_AILMENTS = new Set(["bleed", "fire", "dark", "light"]);
 const ELEMENT_AFFIX_TYPES = [
-  ["dmg", "damage", "추가 피해", 2, 6, 0.28],
+  ["dmg", "damage", "추가 피해", 3, 6, 0],   // % of the attack yardstick (AFFIX_REF); was 2–6 + 0.28 × tier flat
   ["pen", "pen", "관통 %", 3, 7, 0.05],
   ["proc", "proc", "상태이상 확률 %", 3, 7, 0.05],
   ["dur", "dur", "상태이상 지속시간 %", 6, 13, 0.10],
@@ -8374,7 +8413,7 @@ export function devPlace(ch, map, tx, ty) {
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
-const SHEET_VERSION = 31;
+const SHEET_VERSION = 32;
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -8471,6 +8510,15 @@ export function newChar(name, look, wk) {
 
 /** Ids that no longer exist, and what they became. */
 const OLD_ID = { c_1: "r_2", c_2: "n_3", c_3: "r_4" };
+/** One ordinary line of a sheet before v32 (AFFIX_V31): where it sat in its old range at its level, put at the same place of today's range. Other lines pass. */
+function affixV32(line, il, mul) {
+  if (!Array.isArray(line) || typeof line[0] !== "string" || !Object.hasOwn(AFFIX_BY_KEY, line[0]) || !Number.isFinite(line[1])) return line;
+  const old = AFFIX_V31[line[0].startsWith("dmg_") ? "dmg" : line[0]];
+  if (!old) return line;
+  const [min, max, grow] = old, b = grow * Math.min(TIER_MAX, toTier(il));
+  const at = clamp((line[1] / mul - min - b) / (max - min), 0, 1), [lo, hi] = affixRange(line[0], il);
+  return [line[0], Math.max(1, Math.round((lo + at * (hi - lo)) * mul))];
+}
 /** Bring a sheet saved by an older version up to the current shape. */
 function migrate(ch) {
   ch.buddy = buddyClean(ch.buddy);
@@ -8504,17 +8552,18 @@ function migrate(ch) {
     // item level (no sheet version bump: a missing `il` is derived, so an old piece asks what it always did — gearIl)
     out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, 200) : gearIl(out);
     if (LEGEND[g.lg]) out.lg = g.lg;
+    // (v32) flat lines became a share of the level's yardstick and 치명타 피해 % widened: an old line keeps its place in its old range
+    if ((ch.v | 0) < 32) out.af = out.af.map((line) => affixV32(line, out.il, AFFIX_MUL[out.q] || 1));
     // A retired set piece keeps its base item, item level, enhancement and existing ordinary lines.
     if (oldQ === 4 && !out.lg) {
       const seed = { seed: [...id].reduce((n, c) => (Math.imul(n, 31) + c.charCodeAt(0)) >>> 0, out.il + out.enh) };
       out.lg = pfxPick(seed, ITEMS[id].type);
       out.af = out.af.filter((line) => Array.isArray(line) && Object.hasOwn(AFFIX_BY_KEY, line[0]) && Number.isFinite(line[1]) && line[1] > 0);
       const used = new Set(out.af.map(([key]) => key));
-      const tier = toTier(out.il);
       while (out.af.length < RARITY_AFFIX[3][0]) {
         const stat = rollAffixKey(seed, ITEMS[id].type, used);
         used.add(stat);
-        out.af.push(rollLine(seed, stat, tier, AFFIX_MUL[3]));
+        out.af.push(rollLine(seed, stat, out.il, AFFIX_MUL[3]));
       }
     }
     // a 유니크 keeps its lines, `il` and power (`lg`); `un` (words of the first 유니크 sheets) is dropped. The first sheets had `un: [prefix, suffix]`
@@ -10434,7 +10483,7 @@ const gearReq = (g) => Math.max(1, gearIl(g) - IL_GAP);
 function gearBaseValue(g, stat) {
   const value = ITEMS[g.id].base[stat] || 0;
   if (stat === "spd" || stat === "crit") return value;
-  const scale = GEAR_BASE_SCALE[clamp(gearIl(g), 1, MAXLV) - 1] / 1000;
+  const scale = (stat === "def" ? DEF_BASE_SCALE : GEAR_BASE_SCALE)[clamp(gearIl(g), 1, MAXLV) - 1] / 1000;
   return value * scale * enhMul(g.enh);
 }
 /** A piece's name word comes from a legendary or unique power. */
@@ -10456,12 +10505,19 @@ function sellPrice(s) {
   if (!isGear(s.id)) return Math.floor(it.price * 0.4);
   return Math.floor(it.price * 0.05 * (1 + 0.8 * (s.q | 0)) * (1 + 0.3 * (s.enh | 0)));
 }
-/** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`. */
-function rollLine(S, key, tier, mul) {
-  const [, , , min, max, grow] = AFFIX_BY_KEY[key];
-  return [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * tier) * mul))];
+/** The [low, high] an ordinary line of `key` rolls at item level `il`, before the rarity factor: a flat line is min–max % of AFFIX_REF, a % line min–max + growth × tier. */
+function affixRange(key, il) {
+  const [, , , min, max, grow] = AFFIX_BY_KEY[key], ref = affixRefOf(key);
+  if (ref) { const r = ref[clamp(il | 0, 1, MAXLV) - 1] / 100; return [min * r, max * r]; }
+  const b = grow * Math.min(TIER_MAX, toTier(clamp(il | 0, 1, MAXLV)));
+  return [min + b, max + b];
 }
-const rollGearLine = (S, key, g) => rollLine(S, key, Math.min(TIER_MAX, toTier(gearIl(g))), AFFIX_MUL[g.q | 0]);
+/** One affix line [key, value] at item level `il`, times `mul` (the rarity's AFFIX_MUL); at least 1. */
+function rollLine(S, key, il, mul) {
+  const [lo, hi] = affixRange(key, il);
+  return [key, Math.max(1, Math.round((lo + rnd(S) * (hi - lo)) * mul))];
+}
+const rollGearLine = (S, key, g) => rollLine(S, key, gearIl(g), AFFIX_MUL[g.q | 0]);
 /**
  * Roll one piece of gear: rarity decides how many affixes, `ilvl` (a monster's tier, 1–50) how big and, shown, its item
  * level `il` (+ IL_RANK[rank] for an elite or boss). A 전설 or 유니크 also rolls one `lg` power of its item type's pool (a 유니크: 4 stronger lines, AFFIX_MUL[5]).
@@ -11397,7 +11453,7 @@ const PFX_FN = {
     },
   },
   // 가시의: part of what p takes goes back to the one who struck
-  thorn: { hurt(S, rt, p, st, mob, dmg) { if (mob) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * PFX.thorn.k)), 0); } },
+  thorn: { hurt(S, rt, p, st, mob, dmg) { if (mob && !mob.dead && pfxIcd(S, p, "thorn", PFX.thorn.icd)) dealMob(S, rt, mob, p, Math.max(1, Math.round(dmg * PFX.thorn.k + st.atk * PFX.thorn.a)), 0); } },
   // 포식자의 shares the sustain budget with the other repeatable kill and hit heals.
   feast: { kill(S, rt, p, st) { if (!p.dead) pfxHeal(S, p, st, st.mhp * PFX.feast.k); } },
 };
@@ -11420,6 +11476,10 @@ const RUNE_POWER = {
   dawnpillar: { heal: 0.35, ms: 2400, icd: 360000 },
   moonveil: { ms: 1700, ign: 0.38, icd: 8500 },
   blackstar: { chance: 0.16, damage: 1.08, splash: 0.40, radius: 84, targets: 5, icd: 4500 },
+  // balance 2026-11-20: a defence pair, an elite hunter's three and a caster's four
+  ironroot: { def: 1.12, poise: 0.15 },
+  falconer: { hit: 1.14 },
+  tidesong: { mp: 0.05, icd: 3000, full: 0.6, atk: 1.10 },
 };
 
 const runePct = (n) => +(n * 100).toFixed(1);
@@ -11439,6 +11499,9 @@ const RUNE_SETS = Object.fromEntries([
   ["astrolabe", "별의 궤도", 4, (c) => `스킬 사용 시 ${runePct(c.chance)}% 확률로 해당 스킬의 재사용 대기 초기화 (${runeSec(c.icd)}초 간격). 사용한 MP가 많을수록 ${runeSec(c.ms)}초 내 다음 공격 스킬의 피해 증가 (최대 ${runePct(c.cap)}%).`],
   ["dawnpillar", "새벽기둥", 4, (c) => `치명상을 입으면 살아남아 최대 HP의 ${runePct(c.heal)}%를 회복하고 ${runeSec(c.ms)}초간 무적 (재발동 ${c.icd / 60000}분).`],
   ["moonveil", "달그늘", 4, (c) => `회피나 이동기 사용 시 ${runeSec(c.ms)}초간 은신 (${runeSec(c.icd)}초 간격). 은신 중 첫 공격은 확정 치명타, 방어력 ${runePct(c.ign)}% 관통. 보스와 우두머리는 은신한 대상을 추적합니다.`],
+  ["ironroot", "쇠뿌리", 2, (c) => `방어력 +${runePct(c.def - 1)}%, 피격 경직 저항 +${runePct(c.poise)}%.`],
+  ["falconer", "매사냥꾼", 3, (c) => `정예와 우두머리에게 주는 피해 +${runePct(c.hit - 1)}%.`],
+  ["tidesong", "밀물노래", 4, (c) => `스킬 사용 시 최대 MP의 ${runePct(c.mp)}% 회복 (${runeSec(c.icd)}초 간격). MP가 ${runePct(c.full)}% 이상이면 공격력 +${runePct(c.atk - 1)}%.`],
   ["blackstar", "검은별", 4, (c) => `공격 시 ${runePct(c.chance)}% 확률로 적의 방어력을 무시하고 공격 피해 +${runePct(c.damage - 1)}%. 방어력을 무시하는 충격파가 주변 최대 ${c.targets}명에게 공격력의 ${runePct(c.splash)}% 피해 (${runeSec(c.icd)}초 간격).`],
 ].map(([id, name, need, desc]) => [id, { name, need, desc: desc(RUNE_POWER[id]) }]));
 
@@ -11533,6 +11596,12 @@ function runeShock(S, rt, p, x, y, first) {
 }
 
 const RUNE_SET_FN = {
+  ironroot: { sheet(p, c) { c.def = Math.round(c.def * RUNE_POWER.ironroot.def); c.poise = Math.min(0.85, c.poise + RUNE_POWER.ironroot.poise); } },
+  falconer: { mul(S, p, st, mob, d) { return mob.el || d.boss ? RUNE_POWER.falconer.hit : 1; } },
+  tidesong: {
+    skill(S, rt, p, st) { const c = RUNE_POWER.tidesong; if (pfxIcd(S, p, "tidesong", c.icd)) p.mp = Math.min(st.mmp, p.mp + st.mmp * c.mp); },
+    stat(p, st) { if (p.mp >= st.mmp * RUNE_POWER.tidesong.full) st.atk = Math.round(st.atk * RUNE_POWER.tidesong.atk); },
+  },
   willowwind: {
     sheet(p, c) { c.spd0 *= RUNE_POWER.willowwind.move; },
     evade(S, rt, p) { pfxPc(p).t.willowwind = S.now + RUNE_POWER.willowwind.ms; },
@@ -11693,6 +11762,7 @@ const SET_AFFIXES = {
   redanvil: ["hp", "atk", "atkp", "ls"], astrolabe: ["mp", "atkp", "critd", "spd"],
   dawnpillar: ["hp", "def", "ls", "crit"], moonveil: ["spd", "critd", "crit", "atk"],
   blackstar: ["atkp", "atk", "critd", "hp"],
+  ironroot: ["def", "hp", "ls", "spd"], falconer: ["crit", "atk", "critd", "mf"], tidesong: ["mp", "atkp", "crit", "hp"],
 };
 const MAGIC_AFFIX = Object.fromEntries(MAGIC_RUNES.map(([, , stat, n]) => [stat, n]));
 const SET_ELEMENT_LINE = { ashbloom: ["dmg_fire", 6], silverlake: ["res_cold", 8], stormsail: ["pen_lightning", 5], inkthorn: ["dur_poison", 8] };
@@ -11772,7 +11842,7 @@ Object.assign(LEGEND, { last: ["불굴의", pfxText("last", "HP {hp:%}% 이하�
 Object.assign(PFX_FN, { last: { miti(S, rt, p, st, mob, dmg, raw, r) { if (p.hp <= st.mhp * PFX.last.hp) r.f *= PFX.last.k; } } });
 
 // 굳건한
-Object.assign(PFX, { gran: { on: 1, k: 0.88 } });
+Object.assign(PFX, { gran: { on: 1, k: 0.85 } });   // (balance 2026-11-20: 0.88 → 0.85)
 Object.assign(LEGEND, { gran: ["굳건한", pfxText("gran", "정예와 우두머리에게 받는 피해 -{k:-%}%"), "AB", "D", "M", "mit"] });
 Object.assign(PFX_FN, { gran: { miti(S, rt, p, st, mob, dmg, raw, r) { if (mob && (mob.el || MOBS[mob.k].boss)) r.f *= PFX.gran.k; } } });
 
@@ -12070,7 +12140,7 @@ Object.assign(LEGEND, { pot: ["약사의", pfxText("pot", "물약 회복량 +{k:
 Object.assign(PFX_FN, { pot: { pot(S, p, st, amt) { return amt * PFX.pot.k; } } });
 
 // 달이는: a potion starts a few seconds of slow healing (pc.n.elixir counts the seconds left)
-Object.assign(PFX, { elixir: { on: 1, ms: 6000, k: 0.01 } });
+Object.assign(PFX, { elixir: { on: 1, ms: 6000, k: 0.015 } });   // (balance 2026-11-20: 6 % → 9 % a potion)
 Object.assign(LEGEND, { elixir: ["달이는", pfxText("elixir", "물약 사용 후 {ms:s}초간 매초 최대 HP의 {k:%}% 회복"), "N", "D", "S", "sus"] });
 Object.assign(PFX_FN, {
   elixir: {
@@ -12093,6 +12163,48 @@ Object.assign(PFX_FN, { med: { tick(S, rt, p, st, now) { if (now - p.mvAt > PFX.
 Object.assign(PFX, { moss: { on: 1, k: 0.015 } });
 Object.assign(LEGEND, { moss: ["이끼의", `5초 넘게 피격이 없으면 매초 HP ${pgPct(PFX.moss.k)}% 추가 회복`, "AN", "D", "S", "sus"] });
 Object.assign(PFX_FN, { moss: { tick(S, rt, p, st, now, calm) { if (calm) pfxHeal(S, p, st, st.mhp * PFX.moss.k); } } });
+// ───────────────────────────── 접두사 고유 효과: offense for the weapon, ring and gloves (balance 2026-11-20) ─────────────────────────────
+// The W, R and G pools had eight powers each against ~20 for every armour slot; these six give a damage build choices that are not
+// "always on" (질주의 is): a target's HP, the wearer's HP, a kill streak, one target struck again and again. Recipe: 51-prefix.js header.
+//   first 선공의 · exec 처단의 · fury 분노의 · focus 집중의 · combo 연격의 · rush 기세의
+
+Object.assign(PFX, {
+  first: { on: 1, k: 1.30 },                       // ×1.3 on a monster still at full HP
+  exec: { on: 1, hp: 0.35, k: 1.22 },              // ×1.22 on one at 35 % HP or less
+  fury: { on: 1, hp: 0.5, k: 1.16 },               // attack ×1.16 while the wearer is at half HP or less
+  focus: { on: 1, crit: 10 },                      // +10 %p crit chance on elites and bosses
+  combo: { on: 1, k: 0.04, max: 5 },               // +4 % a hit on the same target, up to 5 (a new target starts over)
+  rush: { on: 1, ms: 4000, k: 1.12 },              // attack ×1.12 for 4 s after a kill
+});
+
+Object.assign(LEGEND, {
+  first: ["선공의", pfxText("first", "HP가 가득한 적에게 주는 피해 +{k:+%}%"), "WG", "O", "M", "blow"],
+  exec: ["처단의", pfxText("exec", "HP {hp:%}% 이하인 적에게 주는 피해 +{k:+%}%"), "WR", "O", "M", "kill"],
+  fury: ["분노의", pfxText("fury", "HP가 {hp:%}% 이하일 때 공격력 +{k:+%}%"), "RG", "O", "M", "pass"],
+  focus: ["집중의", pfxText("focus", "정예와 우두머리에게 치명타 확률 +{crit}%"), "WR", "O", "S", "crit"],
+  combo: ["연격의", pfxText("combo", "같은 적을 연달아 맞힐 때마다 그 적에게 주는 피해 +{k:%}% (최대 {max}중첩, 대상을 바꾸면 초기화)"), "WG", "O", "M", "blow"],
+  rush: ["기세의", pfxText("rush", "적을 처치하면 {ms:s}초간 공격력 +{k:+%}%"), "RG", "O", "M", "kill"],
+});
+
+Object.assign(PFX_FN, {
+  first: { mul(S, p, st, mob) { return mob.hp >= mobMax(mob) ? PFX.first.k : 1; } },
+  exec: { mul(S, p, st, mob) { return mob.hp <= mobMax(mob) * PFX.exec.hp ? PFX.exec.k : 1; } },
+  fury: { stat(p, st) { if (p.hp <= st.mhp * PFX.fury.hp) st.atk = Math.round(st.atk * PFX.fury.k); } },
+  focus: { pre(S, p, st, mob, d, o, r) { if (mob.el || d.boss) r.crit += PFX.focus.crit; } },
+  combo: {
+    mul(S, p, st, mob) { const pc = pfxPc(p); return pc.v.combo === mob.id ? 1 + PFX.combo.k * (pc.n.combo || 0) : 1; },
+    hit(S, rt, p, st, mob, dmg, crit, killed) {
+      const pc = pfxPc(p);
+      if (killed) { pc.v.combo = 0; pc.n.combo = 0; return; }
+      if (pc.v.combo !== mob.id) { pc.v.combo = mob.id; pc.n.combo = 0; }
+      pfxStack(p, "combo", 1, PFX.combo.max);
+    },
+  },
+  rush: {
+    kill(S, rt, p) { pfxPc(p).t.rush = S.now + PFX.rush.ms; },
+    stat(p, st) { if ((p.pc?.t.rush || 0) > p.S.now) st.atk = Math.round(st.atk * PFX.rush.k); },
+  },
+});
 // ───────────────────────────── 접두사 고유 효과: helm utility (8) + phase-2 powers (8) ─────────────────────────────
 // docs/design/prefix-effects.md §3.3 and the `단` = 2 rows of §3; the recipe and hook signatures are in the header of 51-prefix.js.
 //   helm utility   trace 추적자의 · sage 현자의 · mercy 자비로운 · homing 귀소의 · clever 영리한 · treasure 보물눈의 · tame 길들이는 · hearth 화덕의
@@ -12109,7 +12221,7 @@ Object.assign(PFX_FN, { moss: { tick(S, rt, p, st, now, calm) { if (calm) pfxHea
 
 Object.assign(PFX, {
   trace: { on: 1, xp: 15 },   // the shared prefix xp cap is +15 (prefix-effects §5): 25 only promised more than it gave
-  sage: { on: 1, xp: 8 },
+  sage: { on: 1, xp: 12 },   // (balance 2026-11-20: 8 → 12, still under the +15 cap with 추적자의)
   mercy: { on: 1, k: 0.5 },
   homing: { on: 1, k: 0.5 },
   clever: { on: 1, k: 0.85 },
@@ -12120,7 +12232,7 @@ Object.assign(PFX, {
   bile: { on: 1, p: 0.2, ms: 5000, k: 0.1, icd: 1000 },
   carap: { on: 1, k: 0.03, max: 0.15, ms: 10000 },
   bastion: { on: 1, calm: 5000, k: 0.12, ms: 8000, icd: 25000 },
-  halo: { on: 1, r: 150, k: 0.94, ms: 2000 },
+  halo: { on: 1, r: 150, k: 0.9, ms: 2000 },   // (balance 2026-11-20: −6 % → −10 %)
   pack: { on: 1, r: 200, k: 0.04, max: 0.12 },
   hellfire: { on: 1, p: 0.2, ms: 3000, every: 500, k: 0.25, r: 30 },
   blizzard: { on: 1, ms: 2500, every: 500, k: 0.2, r: 40, slow: 1500 },
@@ -14701,8 +14813,7 @@ const lifeUse = (id) => typeof id === "string" && Object.hasOwn(ITEMS, id) && (i
 function weakAffix(g) {
   let best = -1, bv = Infinity;
   (g.af || []).forEach(([k, v], i) => {
-    const a = AFFIX_BY_KEY[k];
-    const r = a ? v / Math.max(1, a[4]) : 0;
+    const r = AFFIX_BY_KEY[k] ? v / Math.max(1, affixRange(k, gearIl(g))[1]) : 0;
     if (r < bv) { bv = r; best = i; }
   });
   return best;
@@ -25865,7 +25976,7 @@ export function defs() {
     //   max(1, entry.il − ilGap)   (what validateAction "eq" checks; an entry without `il` = items[id].req + ilGap, or 1 for req 1)
     // Gear `rarity` uses 0, 1, 2, 3 and 5, with 5 retained as the existing unique code.
     // Legendary and unique gear use their `lg` power's name prefix. Runes have a separate grade table.
-    ilGap: IL_GAP, gearBaseScale: GEAR_BASE_SCALE,
+    ilGap: IL_GAP, gearBaseScale: GEAR_BASE_SCALE, defBaseScale: DEF_BASE_SCALE,
     // the 아이템도감 (public/dex.js): the keys of `legend` that are live (can drop); the other rows are listed there as 준비 중
     pfxOn: Object.keys(LEGEND).filter((k) => PFX[k] && PFX[k].on && !PFX[k].off),
   };

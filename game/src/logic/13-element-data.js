@@ -42,7 +42,7 @@ const DEFENSE_ELEMENT_AFFIX = ["res_all"];
 const ELEMENT_AFFIX = { res_all: ["res", "all"] };
 const CHANCE_AILMENTS = new Set(["bleed", "fire", "dark", "light"]);
 const ELEMENT_AFFIX_TYPES = [
-  ["dmg", "damage", "추가 피해", 2, 6, 0.28],
+  ["dmg", "damage", "추가 피해", 3, 6, 0],   // % of the attack yardstick (AFFIX_REF); was 2–6 + 0.28 × tier flat
   ["pen", "pen", "관통 %", 3, 7, 0.05],
   ["proc", "proc", "상태이상 확률 %", 3, 7, 0.05],
   ["dur", "dur", "상태이상 지속시간 %", 6, 13, 0.10],

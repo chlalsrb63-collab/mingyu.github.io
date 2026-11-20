@@ -183,7 +183,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   const legacy = L.newChar("구형", [], "sword");
   Object.assign(legacy, { v: 30, lvl: 6, xp: 10, xpt: earned(6), st: { ...legacy.st, str: 8, wil: 7 } });
   const restored = world({ ch: legacy });
-  assert.deepEqual([restored.ch.v, restored.ch.lvl, restored.ch.st.str, restored.ch.st.wil, restored.ch.xp, restored.self().ap], [31, 6, 20, 15, 10, 0]);
+  assert.deepEqual([restored.ch.v, restored.ch.lvl, restored.ch.st.str, restored.ch.st.wil, restored.ch.xp, restored.self().ap], [32, 6, 20, 15, 10, 0]);
   const reload = world({ ch: JSON.parse(JSON.stringify(restored.ch)) });
   assert.deepEqual(reload.ch.st, restored.ch.st, "loading again does not multiply the points");
 }

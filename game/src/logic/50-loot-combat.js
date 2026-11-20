@@ -112,7 +112,7 @@ const gearReq = (g) => Math.max(1, gearIl(g) - IL_GAP);
 function gearBaseValue(g, stat) {
   const value = ITEMS[g.id].base[stat] || 0;
   if (stat === "spd" || stat === "crit") return value;
-  const scale = GEAR_BASE_SCALE[clamp(gearIl(g), 1, MAXLV) - 1] / 1000;
+  const scale = (stat === "def" ? DEF_BASE_SCALE : GEAR_BASE_SCALE)[clamp(gearIl(g), 1, MAXLV) - 1] / 1000;
   return value * scale * enhMul(g.enh);
 }
 /** A piece's name word comes from a legendary or unique power. */
@@ -134,12 +134,19 @@ function sellPrice(s) {
   if (!isGear(s.id)) return Math.floor(it.price * 0.4);
   return Math.floor(it.price * 0.05 * (1 + 0.8 * (s.q | 0)) * (1 + 0.3 * (s.enh | 0)));
 }
-/** One affix line [key, value]: the key's range plus its growth at level `ilvl`, times `mul`. */
-function rollLine(S, key, tier, mul) {
-  const [, , , min, max, grow] = AFFIX_BY_KEY[key];
-  return [key, Math.max(1, Math.round((min + rnd(S) * (max - min) + grow * tier) * mul))];
+/** The [low, high] an ordinary line of `key` rolls at item level `il`, before the rarity factor: a flat line is min–max % of AFFIX_REF, a % line min–max + growth × tier. */
+function affixRange(key, il) {
+  const [, , , min, max, grow] = AFFIX_BY_KEY[key], ref = affixRefOf(key);
+  if (ref) { const r = ref[clamp(il | 0, 1, MAXLV) - 1] / 100; return [min * r, max * r]; }
+  const b = grow * Math.min(TIER_MAX, toTier(clamp(il | 0, 1, MAXLV)));
+  return [min + b, max + b];
 }
-const rollGearLine = (S, key, g) => rollLine(S, key, Math.min(TIER_MAX, toTier(gearIl(g))), AFFIX_MUL[g.q | 0]);
+/** One affix line [key, value] at item level `il`, times `mul` (the rarity's AFFIX_MUL); at least 1. */
+function rollLine(S, key, il, mul) {
+  const [lo, hi] = affixRange(key, il);
+  return [key, Math.max(1, Math.round((lo + rnd(S) * (hi - lo)) * mul))];
+}
+const rollGearLine = (S, key, g) => rollLine(S, key, gearIl(g), AFFIX_MUL[g.q | 0]);
 /**
  * Roll one piece of gear: rarity decides how many affixes, `ilvl` (a monster's tier, 1–50) how big and, shown, its item
  * level `il` (+ IL_RANK[rank] for an elite or boss). A 전설 or 유니크 also rolls one `lg` power of its item type's pool (a 유니크: 4 stronger lines, AFFIX_MUL[5]).

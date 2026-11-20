@@ -8,6 +8,7 @@ const SET_AFFIXES = {
   redanvil: ["hp", "atk", "atkp", "ls"], astrolabe: ["mp", "atkp", "critd", "spd"],
   dawnpillar: ["hp", "def", "ls", "crit"], moonveil: ["spd", "critd", "crit", "atk"],
   blackstar: ["atkp", "atk", "critd", "hp"],
+  ironroot: ["def", "hp", "ls", "spd"], falconer: ["crit", "atk", "critd", "mf"], tidesong: ["mp", "atkp", "crit", "hp"],
 };
 const MAGIC_AFFIX = Object.fromEntries(MAGIC_RUNES.map(([, , stat, n]) => [stat, n]));
 const SET_ELEMENT_LINE = { ashbloom: ["dmg_fire", 6], silverlake: ["res_cold", 8], stormsail: ["pen_lightning", 5], inkthorn: ["dur_poison", 8] };

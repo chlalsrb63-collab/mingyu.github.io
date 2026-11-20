@@ -34,7 +34,7 @@ Object.assign(LEGEND, { last: ["불굴의", pfxText("last", "HP {hp:%}% 이하�
 Object.assign(PFX_FN, { last: { miti(S, rt, p, st, mob, dmg, raw, r) { if (p.hp <= st.mhp * PFX.last.hp) r.f *= PFX.last.k; } } });
 
 // 굳건한
-Object.assign(PFX, { gran: { on: 1, k: 0.88 } });
+Object.assign(PFX, { gran: { on: 1, k: 0.85 } });   // (balance 2026-11-20: 0.88 → 0.85)
 Object.assign(LEGEND, { gran: ["굳건한", pfxText("gran", "정예와 우두머리에게 받는 피해 -{k:-%}%"), "AB", "D", "M", "mit"] });
 Object.assign(PFX_FN, { gran: { miti(S, rt, p, st, mob, dmg, raw, r) { if (mob && (mob.el || MOBS[mob.k].boss)) r.f *= PFX.gran.k; } } });
 
@@ -332,7 +332,7 @@ Object.assign(LEGEND, { pot: ["약사의", pfxText("pot", "물약 회복량 +{k:
 Object.assign(PFX_FN, { pot: { pot(S, p, st, amt) { return amt * PFX.pot.k; } } });
 
 // 달이는: a potion starts a few seconds of slow healing (pc.n.elixir counts the seconds left)
-Object.assign(PFX, { elixir: { on: 1, ms: 6000, k: 0.01 } });
+Object.assign(PFX, { elixir: { on: 1, ms: 6000, k: 0.015 } });   // (balance 2026-11-20: 6 % → 9 % a potion)
 Object.assign(LEGEND, { elixir: ["달이는", pfxText("elixir", "물약 사용 후 {ms:s}초간 매초 최대 HP의 {k:%}% 회복"), "N", "D", "S", "sus"] });
 Object.assign(PFX_FN, {
   elixir: {

@@ -47,7 +47,7 @@ for (const [id, defensive] of groups) {
   assert.ok(typed.size >= (defensive ? 9 : 24), id);
 }
 
-for (const [i, n] of [20, 16, 16, 64].entries()) {
+for (const [i, n] of [20, 16, 16, 76].entries()) {   // (76: 18 sets × 4 + 4 element lines, balance 2026-11-20)
   const grade = i + 1, rows = Object.values(D.runes).filter((r) => r.q === grade);
   assert.equal(rows.length, n);
   assert.ok(rows.every((r) => r.af.length === (grade === 4 ? 1 : grade)));

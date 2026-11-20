@@ -13,6 +13,7 @@ element-combat
 prefix
 prefix-util
 prefix-guard
+prefix-strike
 life
 lifeskills
 jobaudit

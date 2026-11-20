@@ -17,6 +17,10 @@ const RUNE_POWER = {
   dawnpillar: { heal: 0.35, ms: 2400, icd: 360000 },
   moonveil: { ms: 1700, ign: 0.38, icd: 8500 },
   blackstar: { chance: 0.16, damage: 1.08, splash: 0.40, radius: 84, targets: 5, icd: 4500 },
+  // balance 2026-11-20: a defence pair, an elite hunter's three and a caster's four
+  ironroot: { def: 1.12, poise: 0.15 },
+  falconer: { hit: 1.14 },
+  tidesong: { mp: 0.05, icd: 3000, full: 0.6, atk: 1.10 },
 };
 
 const runePct = (n) => +(n * 100).toFixed(1);
@@ -36,6 +40,9 @@ const RUNE_SETS = Object.fromEntries([
   ["astrolabe", "별의 궤도", 4, (c) => `스킬 사용 시 ${runePct(c.chance)}% 확률로 해당 스킬의 재사용 대기 초기화 (${runeSec(c.icd)}초 간격). 사용한 MP가 많을수록 ${runeSec(c.ms)}초 내 다음 공격 스킬의 피해 증가 (최대 ${runePct(c.cap)}%).`],
   ["dawnpillar", "새벽기둥", 4, (c) => `치명상을 입으면 살아남아 최대 HP의 ${runePct(c.heal)}%를 회복하고 ${runeSec(c.ms)}초간 무적 (재발동 ${c.icd / 60000}분).`],
   ["moonveil", "달그늘", 4, (c) => `회피나 이동기 사용 시 ${runeSec(c.ms)}초간 은신 (${runeSec(c.icd)}초 간격). 은신 중 첫 공격은 확정 치명타, 방어력 ${runePct(c.ign)}% 관통. 보스와 우두머리는 은신한 대상을 추적합니다.`],
+  ["ironroot", "쇠뿌리", 2, (c) => `방어력 +${runePct(c.def - 1)}%, 피격 경직 저항 +${runePct(c.poise)}%.`],
+  ["falconer", "매사냥꾼", 3, (c) => `정예와 우두머리에게 주는 피해 +${runePct(c.hit - 1)}%.`],
+  ["tidesong", "밀물노래", 4, (c) => `스킬 사용 시 최대 MP의 ${runePct(c.mp)}% 회복 (${runeSec(c.icd)}초 간격). MP가 ${runePct(c.full)}% 이상이면 공격력 +${runePct(c.atk - 1)}%.`],
   ["blackstar", "검은별", 4, (c) => `공격 시 ${runePct(c.chance)}% 확률로 적의 방어력을 무시하고 공격 피해 +${runePct(c.damage - 1)}%. 방어력을 무시하는 충격파가 주변 최대 ${c.targets}명에게 공격력의 ${runePct(c.splash)}% 피해 (${runeSec(c.icd)}초 간격).`],
 ].map(([id, name, need, desc]) => [id, { name, need, desc: desc(RUNE_POWER[id]) }]));
 
@@ -130,6 +137,12 @@ function runeShock(S, rt, p, x, y, first) {
 }
 
 const RUNE_SET_FN = {
+  ironroot: { sheet(p, c) { c.def = Math.round(c.def * RUNE_POWER.ironroot.def); c.poise = Math.min(0.85, c.poise + RUNE_POWER.ironroot.poise); } },
+  falconer: { mul(S, p, st, mob, d) { return mob.el || d.boss ? RUNE_POWER.falconer.hit : 1; } },
+  tidesong: {
+    skill(S, rt, p, st) { const c = RUNE_POWER.tidesong; if (pfxIcd(S, p, "tidesong", c.icd)) p.mp = Math.min(st.mmp, p.mp + st.mmp * c.mp); },
+    stat(p, st) { if (p.mp >= st.mmp * RUNE_POWER.tidesong.full) st.atk = Math.round(st.atk * RUNE_POWER.tidesong.atk); },
+  },
   willowwind: {
     sheet(p, c) { c.spd0 *= RUNE_POWER.willowwind.move; },
     evade(S, rt, p) { pfxPc(p).t.willowwind = S.now + RUNE_POWER.willowwind.ms; },

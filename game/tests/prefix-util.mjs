@@ -68,12 +68,12 @@ const BOSS = Object.keys(X.MOBS).find((k) => X.MOBS[k].boss && !X.MOBS[k].still)
 
 // ── 1. the rows and the numbers of the design doc (every power of this part, exactly)
 const ROWS = {   // key: [word, slots, cat, rating, fam, PFX numbers, a piece of its tooltip]
-  trace: ["추적자의", "H", "U", "S", "xp", { xp: 15 }, "+15%"], sage: ["현자의", "H", "U", "S", "xp", { xp: 8 }, "+8%"], mercy: ["자비로운", "H", "U", "S", "util", { k: 0.5 }, "50%"],
+  trace: ["추적자의", "H", "U", "S", "xp", { xp: 15 }, "+15%"], sage: ["현자의", "H", "U", "S", "xp", { xp: 12 }, "+12%"], mercy: ["자비로운", "H", "U", "S", "util", { k: 0.5 }, "50%"],
   homing: ["귀소의", "H", "U", "S", "util", { k: 0.5 }, "50%"], clever: ["영리한", "H", "U", "M", "util", { k: 0.85 }, "-15%"], treasure: ["보물눈의", "H", "U", "S", "eco", { mf: 50 }, "+50%"],
   tame: ["길들이는", "H", "U", "S", "util", { sp: 2 }, "2배"], hearth: ["화덕의", "H", "U", "S", "util", { k: 0.5 }, "+50%"],
   bleed: ["출혈의", "WGR", "O", "M", "crit", { ms: 4000, k: 0.15 }, "4초간 출혈 (매초 공격력의 15%)"], bile: ["담즙의", "AB", "D", "M", "mit", { p: 0.2, ms: 5000, k: 0.1 }, "20% 확률"],
   carap: ["갑각의", "AN", "D", "M", "sus", { k: 0.03, max: 0.15, ms: 10000 }, "3% 보호막"], bastion: ["방벽의", "ANH", "D", "M", "mit", { calm: 5000, k: 0.12, ms: 8000, icd: 25000 }, "12% 보호막이 8초간"],
-  halo: ["후광의", "NH", "D", "S", "mit", { r: 150, k: 0.94 }, "-6%"], pack: ["무리의", "RG", "O", "M", "pass", { r: 200, k: 0.04, max: 0.12 }, "+4%"],
+  halo: ["후광의", "NH", "D", "S", "mit", { r: 150, k: 0.9 }, "-10%"], pack: ["무리의", "RG", "O", "M", "pass", { r: 200, k: 0.04, max: 0.12 }, "+4%"],
   hellfire: ["지옥불의", "WR", "O", "M", "kill", { p: 0.2, ms: 3000, every: 500, k: 0.25, r: 30 }, "공격력의 25%"], blizzard: ["눈보라의", "WR", "O", "M", "skill", { ms: 2500, every: 500, k: 0.2, r: 40 }, "공격력의 20%"],
 };
 for (const [k, [word, slots, cat, rating, fam, nums, tip]] of Object.entries(ROWS)) {
@@ -92,7 +92,7 @@ assert.equal(Object.keys(ROWS).length, 16);
   const base = xp(undefined), elite = xp(undefined, { mob: { el: 1 } });
   assert.ok(Math.abs(xp("trace", { mob: { el: 1 } }) / elite - 1.15) < 0.01, "trace on an elite: +15 %, the shared xp cap");
   assert.equal(xp("trace"), base, "trace: a plain monster gives nothing extra");
-  assert.ok(Math.abs(xp("sage", { party: true }) / xp(undefined, { party: true }) - 1.08) < 0.01, "sage: +8 % in a party"); assert.equal(xp("sage"), base, "sage alone: nothing");
+  assert.ok(Math.abs(xp("sage", { party: true }) / xp(undefined, { party: true }) - 1.12) < 0.01, "sage: +12 % in a party"); assert.equal(xp("sage"), base, "sage alone: nothing");
   const W = world("xp0", 2), [p, q] = W.ps, S = W.S;
   const bossMob = W.mob(BOSS, 230, 200), tr = (m, kind = "xp") => X.pfxLoot(S, W.rt, p, m, kind);
   W.wear("helm", "h_3", "trace");
@@ -100,9 +100,9 @@ assert.equal(Object.keys(ROWS).length, 16);
   assert.equal(tr(W.mob("twinhare", 230, 200)).xp, 0); assert.equal(tr(W.mob("twinhare", 230, 200, { el: 2 })).xp, 15);
   W.wear("helm", "h_3", "sage");
   const sg = () => X.pfxLoot(S, W.rt, p, W.mob("twinhare", 230, 200), "xp").xp;
-  assert.equal(sg(), 8, "sage in a party");
+  assert.equal(sg(), 12, "sage in a party");
   q.x = 200 + 500; assert.equal(sg(), 0, "a mate out of range"); q.x = 240; q.map = "forest"; assert.equal(sg(), 0, "a mate elsewhere"); q.map = "meadow";
-  q.dead = true; assert.equal(sg(), 0, "a fallen mate"); q.dead = false; const pid = p.party; p.party = 0; assert.equal(sg(), 0, "alone"); p.party = pid; assert.equal(sg(), 8);
+  q.dead = true; assert.equal(sg(), 0, "a fallen mate"); q.dead = false; const pid = p.party; p.party = 0; assert.equal(sg(), 0, "alone"); p.party = pid; assert.equal(sg(), 12);
   W.wear("helm", "h_3", "trace"); W.wear("amulet", "n_4", "sage");
   assert.equal(X.pfxLoot(S, W.rt, p, W.mob("twinhare", 230, 200, { el: 1 }), "xp").xp, 15, "trace + sage: +15 %, not +33 %");
 }
@@ -253,14 +253,14 @@ assert.equal(Object.keys(ROWS).length, 16);
   const plainP = hurtBy(W, p, 0.5), plainQ = hurtBy(W, q, 0.5), plainR = hurtBy(W, r, 0.5);
   S.parties[p.party].m = [p.pid, q.pid]; r.party = 0;   // r stands near but is no party member
   W.wear("helm", "h_3", "halo", 100, p); p.regenAt = W.now; q.regenAt = W.now; W.run(1000);
-  assert.equal(hurtBy(W, q, 0.5), Math.round(plainQ * 0.94), "a party mate in range takes 6 % less"); assert.equal(hurtBy(W, p, 0.5), Math.round(plainP * 0.94), "so does the wearer");
+  assert.equal(hurtBy(W, q, 0.5), Math.round(plainQ * 0.9), "a party mate in range takes 10 % less"); assert.equal(hurtBy(W, p, 0.5), Math.round(plainP * 0.9), "so does the wearer");
   assert.equal(hurtBy(W, r, 0.5), plainR, "a stranger in range does not");
-  W.wear("helm", "h_3", "halo", 100, q); W.run(1000); assert.equal(hurtBy(W, q, 0.5), Math.round(plainQ * 0.94), "two halos: still 6 % (no stacking)");
+  W.wear("helm", "h_3", "halo", 100, q); W.run(1000); assert.equal(hurtBy(W, q, 0.5), Math.round(plainQ * 0.9), "two halos: still 10 % (no stacking)");
   W.wear("helm", "h_3", undefined, 100, q); q.x = 800; W.run(2200); assert.equal(hurtBy(W, q, 0.5), plainQ, "out of range, the aura runs out");
-  q.x = 240; W.run(1000); assert.equal(hurtBy(W, q, 0.5), Math.round(plainQ * 0.94), "back in range");
+  q.x = 240; W.run(1000); assert.equal(hurtBy(W, q, 0.5), Math.round(plainQ * 0.9), "back in range");
   // with another mitigation: the factors multiply and floor at ×0.6 (a ×0.1 stub must not take it lower)
   const st = X.stats(q), at = (f) => { const orig = st.pfx.miti; st.pfx.miti = [(S2, rt, p2, st2, mob, dmg, raw, rr) => { rr.f *= f; }]; const out = X.pfxMiti(S, W.rt, q, st, null, 1000, 1000); st.pfx.miti = orig; return out; };
-  assert.equal(at(0.1), 680, "all prefix factors floor at ×0.68, the aura's included"); assert.equal(at(1), 940, "the aura alone: ×0.94");
+  assert.equal(at(0.1), 680, "all prefix factors floor at ×0.68, the aura's included"); assert.equal(at(1), 900, "the aura alone: ×0.9");
   W.skip(2100); assert.equal(hurtBy(W, q, 0.5), plainQ, "the aura ends 2 s after the wearer's last tick");
   q.dead = true; W.run(1100); assert.ok(!q.pc.aura || S.now >= q.pc.aura.until, "a fallen mate gets none"); q.dead = false;
   W.wear("helm", "h_3", undefined, 100, p); W.run(2100); assert.equal(hurtBy(W, p, 0.5), plainP, "not worn");

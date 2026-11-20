@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { PFX, ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ_P, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollGearAtLevel, rollRarity, lootFor, gearIl, gearBaseValue, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, gearBonus, countItem, stats, chainBlow, newMob, mobGearHp, mobGearAtk, mobLevelHp, mobLevelAtk, mobItemHp, mobItemAtk, gearDropChance, huntBandK, huntXpK, goldK };\n";
+  "\nexport const __t = { PFX, ITEMS, MOBS, AFFIX, AFFIX_MUL, RARITY_AFFIX, UNIQ_P, IL_RANK, IL_GAP, G_REQ, GEAR, WK_ID, plain, rollGear, rollGearAtLevel, rollRarity, lootFor, gearIl, gearBaseValue, gearReq, gearName, gearFull, sellPrice, pickUp, shownLv, migrate, sortSlots, junk, mapOfS, LEGEND, gearBonus, countItem, stats, chainBlow, newMob, mobGearHp, mobGearAtk, mobLevelHp, mobLevelAtk, mobItemHp, mobItemAtk, gearDropChance, huntBandK, huntXpK, goldK, affixRange, affixV32, AFFIX_REF, AFFIX_V31, DEF_BASE_SCALE, SHEET_VERSION };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs();
 const VERBOSE = process.argv.includes("-v");
@@ -13,7 +13,7 @@ const near = (a, b, eps, msg) => assert.ok(Math.abs(a - b) <= eps, `${msg}: ${a}
 
 // One line against the middle of its normal range at the printed level.
 const affixTier = (g) => Math.min(50, (g.il + 3) / 4);
-const rel = ([k, v], g) => { const a = X.AFFIX.find((x) => x[0] === k); return v / ((a[3] + a[4]) / 2 + a[5] * affixTier(g)); };
+const rel = ([k, v], g) => { const [lo, hi] = X.affixRange(k, g.il); return v / ((lo + hi) / 2); };
 const IDS = ["w_warrior_3", "w_bow_4", "h_2", "a_4", "g_2", "b_3", "r_3", "n_4", "w_mage_5", "a_6"];
 const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, ilvl);
 
@@ -59,7 +59,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
         const prev = X.gearBaseValue(variants[i - 1], stat), next = X.gearBaseValue(variants[i], stat);
         assert.ok(fixed ? next === prev : next > prev, `${id} ${stat}`);
       }
-      near(X.gearBaseValue({ ...old, il: 200, enh: 4 }, stat), value * (fixed ? 1 : 23.178 * (1 + D.enhPct[4] / 100)), 1e-8, "level and enhancement share the base");
+      near(X.gearBaseValue({ ...old, il: 200, enh: 4 }, stat), value * (fixed ? 1 : (stat === "def" ? 11.8 : 23.178) * (1 + D.enhPct[4] / 100)), 1e-8, "level and enhancement share the base");
       assert.equal(X.gearBaseValue({ ...old, il: undefined }, stat), X.gearBaseValue(old, stat), "old equipment uses its old level");
     }
   }
@@ -85,13 +85,43 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
 
   const q = 2, level = 69;
   assert.deepEqual(X.rollGear({ seed: 17 }, "g_2", q, 17, 1), X.rollGearAtLevel({ seed: 17 }, "g_2", q, level));
-  const growing = new Set(X.AFFIX.filter((a) => a[5]).map((a) => a[0]));
+  const growing = new Set(X.AFFIX.map((a) => a[0]).filter((k) => X.affixRange(k, 200)[0] > X.affixRange(k, 80)[0]));
   for (let seed = 1; seed <= 100; seed++) {
     const low = X.rollGearAtLevel({ seed }, "a_3", q, 80), high = X.rollGearAtLevel({ seed }, "a_3", q, 200);
     low.af.forEach(([k, v], i) => {
       assert.equal(k, high.af[i][0]);
       assert.ok(growing.has(k) ? high.af[i][1] > v : high.af[i][1] === v, k);
     });
+  }
+}
+
+// ── v32 (balance 2026-11-20): a flat line is a share of its level's yardstick; an old line keeps its place in its old range
+{
+  const old = L.hero("옛선", { lvl: 200, wk: "sword" });
+  old.v = 31;
+  const top = (k, q) => { const [a, b, g] = X.AFFIX_V31[k]; return Math.round((b + g * 50) * X.AFFIX_MUL[q]); };
+  old.eq.weapon = { id: "w_warrior_10", q: 3, enh: 0, il: 200, lg: "giant", sk: 0, ru: [],
+    af: [["atk", top("atk", 3)], ["critd", top("critd", 3)], ["crit", 4], ["dmg_fire", top("dmg", 3)]] };
+  old.eq.armor = { id: "a_10", q: 2, enh: 0, il: 200, sk: 0, ru: [], af: [["def", 13], ["hp", top("hp", 2)], ["atkp", 5]] };   // (13: under its old range, so the bottom)
+  const ch = X.migrate(JSON.parse(JSON.stringify(old)));
+  const [aLo, aHi] = X.affixRange("atk", 200), [, cHi] = X.affixRange("critd", 200), [, dHi] = X.affixRange("dmg_fire", 200);
+  assert.deepEqual(ch.eq.weapon.af, [["atk", Math.round(aHi * 1.3)], ["critd", Math.round(cHi * 1.3)], ["crit", 4], ["dmg_fire", Math.round(dHi * 1.3)]],
+    "the top of the old range lands on the top of the new one, the bottom on the bottom, a % line stays");
+  assert.ok(ch.eq.weapon.af[0][1] > 150 && aHi > aLo, `an endgame +공격력 line is worth having now (${ch.eq.weapon.af[0][1]})`);
+  assert.deepEqual(ch.eq.armor.af, [["def", Math.round(X.affixRange("def", 200)[0])], ["hp", Math.round(X.affixRange("hp", 200)[1])], ["atkp", 5]]);
+  assert.equal(ch.v, X.SHEET_VERSION);
+  assert.equal(JSON.stringify(X.migrate(JSON.parse(JSON.stringify(ch)))), JSON.stringify(ch), "a second pass changes nothing");
+  // what a flat line is worth next to 공격력 %: a mid +공격력 line is 3–9 % of a plain hero's attack at every level, 공격력 % is 4.5 %
+  for (const lv of [1, 40, 100, 160, 200]) {
+    const W = L.setup(), h = L.hero("잣대", { lvl: lv, wk: "sword", migrate: true }), il = Math.min(200, lv + 10);
+    const tier = X.G_REQ.filter((r) => r <= lv).length;
+    h.eq.weapon = { ...X.plain(`w_warrior_${tier}`), il };
+    for (const [slot, pre] of [["helm", "h"], ["armor", "a"], ["boots", "b"], ["gloves", "g"], ["ring1", "r"], ["amulet", "n"]]) h.eq[slot] = { ...X.plain(`${pre}_${tier}`), il };
+    L.addPlayer(W, "h", h);
+    const st = X.stats(W.players.h), [lo, hi] = X.affixRange("atk", il), share = Math.max(1, Math.round((lo + hi) / 2)) / st.atk;
+    assert.ok(share > 0.03 && share < 0.09, `Lv.${lv}: a mid +공격력 line is ${(share * 100).toFixed(1)} % of attack`);
+    const [dl, dh] = X.affixRange("def", il), ds = (dl + dh) / 2 / st.def;
+    assert.ok(ds > 0.03 && ds < 0.1, `Lv.${lv}: a mid +방어력 line is ${(ds * 100).toFixed(1)} % of defence`);
   }
 }
 
@@ -128,7 +158,10 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.ok(by[5].every((g) => g.un === undefined && !("un" in g)), "no un field");
   // owner 2026-11-16: a unique = a legendary's power + ~10–15 % stronger lines than a legendary of the same level
   const tot = (q) => mean(by[q].map((g) => g.af.reduce((s, a) => s + rel(a, g), 0)));
-  assert.ok(tot(5) > tot(3) * 1.10 && tot(5) < tot(3) * 1.15, `unique ${tot(5).toFixed(3)} vs legendary ${tot(3).toFixed(3)} = ${(tot(5) / tot(3)).toFixed(3)}`);
+  // (the design ratio is the multipliers'; the sample, with flat lines now rolling ±33 % of their middle, within 1.07–1.16)
+  const design = X.AFFIX_MUL[5] / X.AFFIX_MUL[3];
+  assert.ok(design > 1.10 && design < 1.15, `unique lines ×${design.toFixed(3)} of a legendary's`);
+  assert.ok(tot(5) > tot(3) * 1.07 && tot(5) < tot(3) * 1.16, `unique ${tot(5).toFixed(3)} vs legendary ${tot(3).toFixed(3)} = ${(tot(5) / tot(3)).toFixed(3)}`);
   assert.ok(tot(3) > tot(2) && tot(2) > tot(1));
   // Every power in these slots is drawn. Socket distribution is covered in rune-sockets.mjs.
   // (the pools follow the item type now, 51-prefix.js: the eight first powers are all drawn, along with the live ones that came later)
@@ -283,17 +316,20 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   old.wh = { items: [{ ...uq, il: 88 }, raw("w_bow_4", { q: 4, set: "rift" })], gold: 0 };
   const eqBefore = JSON.stringify(old.eq.weapon.af), tail = JSON.stringify(old.eq.armor.af);
   const ch = X.migrate(JSON.parse(JSON.stringify(old)));
-  assert.equal(JSON.stringify(ch.eq.weapon.af), eqBefore, "the old rare keeps its lines"); assert.equal(ch.eq.weapon.il, 51);
-  assert.equal(JSON.stringify(ch.eq.armor.af), tail, "so does the old magic one (one line)"); assert.equal(ch.eq.armor.il, 31);
+  // (v32) the flat lines are re-placed in today's range, the % lines stay
+  const v32 = (af, il, q) => JSON.stringify(JSON.parse(af).map((l) => X.affixV32(l, il, X.AFFIX_MUL[q])));
+  assert.equal(JSON.stringify(ch.eq.weapon.af), v32(eqBefore, 51, 2), "the old rare keeps its lines, re-placed"); assert.equal(ch.eq.weapon.il, 51);
+  assert.equal(ch.eq.weapon.af[1][1], 3, "its crit line is untouched");
+  assert.equal(JSON.stringify(ch.eq.armor.af), v32(tail, 31, 1), "so does the old magic one (one line)"); assert.equal(ch.eq.armor.il, 31);
   assert.equal(ch.inv[0].af.length, 4); assert.equal(ch.inv[0].il, 51); assert.equal(ch.inv[0].lg, "chain");
   assert.equal(ch.inv[1].il, 1, "a tier-1 piece");
   assert.deepEqual([ch.eq.weapon, ch.eq.armor, ...ch.inv.slice(0, 2)].map(X.gearReq), [41, 21, 41, 1], "the wear levels did not move");
   assert.equal(ch.eq.helm.q, 5); assert.equal(ch.eq.helm.lg, uq.lg); assert.equal(ch.eq.helm.un, undefined); assert.equal(ch.eq.helm.il, uq.il);
-  assert.equal(JSON.stringify(ch.eq.helm.af), JSON.stringify(uq.af), "a unique's lines come back as they were");
+  assert.equal(JSON.stringify(ch.eq.helm.af), v32(JSON.stringify(uq.af), uq.il, 5), "a unique's lines come back in their places");
   assert.equal(ch.inv[2].q, 2, "a q5 with no power to keep or derive is no unique"); assert.equal(ch.inv[2].un, undefined); assert.equal(ch.inv[2].lg, undefined);
   // the first-shape unique loads valid: the prefix index picks a power, un is dropped, the lines and the level are as they were
   assert.equal(ch.inv[7].q, 5); assert.equal(ch.inv[7].lg, "giant"); assert.equal(ch.inv[7].un, undefined); assert.equal(ch.inv[7].il, 80);
-  assert.equal(JSON.stringify(ch.inv[7].af), JSON.stringify([["atk", 21], ["hp", 70], ["crit", 4], ["def", 9]]), "its lines are not touched");
+  assert.equal(JSON.stringify(ch.inv[7].af), v32(JSON.stringify([["atk", 21], ["hp", 70], ["crit", 4], ["def", 9]]), 80, 5), "its lines are only re-placed (v32)");
   assert.equal(X.gearName(ch.inv[7]), `${X.LEGEND.giant[0]} ${X.ITEMS.a_3.name}`, "and it is named by its power only");
   assert.equal(ch.inv[7].lg === "giant" && X.gearBonus({ ...ch, eq: { armor: ch.inv[7] } }).lg.giant, 1, "the power it was given works");
   for (let i = 0; i < 10; i++) {   // every old prefix index lands on a real power
@@ -373,9 +409,8 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
       assert.ok(r.ok, r.error);
       assert.equal(g.af.length, 4); assert.equal(new Set(g.af.map((a) => a[0])).size, 4);
       for (const [key, value] of g.af) {
-        const [, , , min, max, grow] = X.AFFIX.find((a) => a[0] === key);
-        const bonus = grow * affixTier(g), mul = X.AFFIX_MUL[g.q];
-        assert.ok(value >= Math.round((min + bonus) * mul) && value <= Math.round((max + bonus) * mul), "whetstone respects the printed level");
+        const [lo, hi] = X.affixRange(key, g.il), mul = X.AFFIX_MUL[g.q];
+        assert.ok(value >= Math.max(1, Math.round(lo * mul)) && value <= Math.max(1, Math.round(hi * mul)), "whetstone respects the printed level");
       }
     }
     assert.equal(g.lg, lg0, "the power stays"); assert.notEqual(JSON.stringify(g.af), lines0, "the whetstone re-rolls the weakest of the four plain lines");

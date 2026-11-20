@@ -334,7 +334,7 @@ export function defs() {
     //   max(1, entry.il − ilGap)   (what validateAction "eq" checks; an entry without `il` = items[id].req + ilGap, or 1 for req 1)
     // Gear `rarity` uses 0, 1, 2, 3 and 5, with 5 retained as the existing unique code.
     // Legendary and unique gear use their `lg` power's name prefix. Runes have a separate grade table.
-    ilGap: IL_GAP, gearBaseScale: GEAR_BASE_SCALE,
+    ilGap: IL_GAP, gearBaseScale: GEAR_BASE_SCALE, defBaseScale: DEF_BASE_SCALE,
     // the 아이템도감 (public/dex.js): the keys of `legend` that are live (can drop); the other rows are listed there as 준비 중
     pfxOn: Object.keys(LEGEND).filter((k) => PFX[k] && PFX[k].on && !PFX[k].off),
   };

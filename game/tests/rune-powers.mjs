@@ -6,8 +6,8 @@ const { testRunes: X, ...L } = await import("data:text/javascript;base64," + Buf
   .catch((error) => { throw new Error(error.message); });
 
 const { RUNE_SETS: sets } = X;
-assert.equal(Object.keys(sets).length, 15);
-assert.deepEqual([2, 3, 4].map((size) => Object.values(sets).filter((set) => set.need === size).length), [5, 5, 5]);
+assert.equal(Object.keys(sets).length, 18);
+assert.deepEqual([2, 3, 4].map((size) => Object.values(sets).filter((set) => set.need === size).length), [6, 6, 6]);
 assert.equal(X.RUNE_SET_MAX, 2);
 assert.deepEqual(X.activeRuneSets({ willowwind: 6, ashbloom: 3, blackstar: 4, dawnpillar: 4 }), ["dawnpillar", "blackstar"]);
 assert.deepEqual(X.activeRuneSets({ duskfang: 4, moonveil: 3, astrolabe: 3 }), ["duskfang"]);
@@ -184,4 +184,4 @@ attempt(st, () => {
   return other.hp < beforeAttack;
 });
 assert.ok(!near.dead && !distant.dead, "an actual attack can proc a local shockwave");
-console.log("rune powers: all 15 effects, cooldowns and active set priority passed");
+console.log("rune powers: all 18 sets, the first 15 effects, cooldowns and active set priority passed");

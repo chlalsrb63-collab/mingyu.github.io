@@ -65,9 +65,11 @@ export function itemName(entry) {
 /** The piece's own stats with the server's level and enhancement curves. */
 function baseStats(entry) {
   const it = G.defs.items[entry.id], e = entry.enh || 0;
-  const level = (G.defs.gearBaseScale?.[ilOf(entry) - 1] ?? 1000) / 1000;
+  const i = ilOf(entry) - 1, level = (G.defs.gearBaseScale?.[i] ?? 1000) / 1000;
+  // armour defence has its own curve (10-tables.js DEF_BASE_SCALE)
+  const defLevel = (G.defs.defBaseScale?.[i] ?? G.defs.gearBaseScale?.[i] ?? 1000) / 1000;
   const enhancement = 1 + (G.defs.enhPct ? G.defs.enhPct[e] : 10 * e) / 100;
-  return Object.entries(it.base || {}).map(([k, value]) => [k, k === "spd" || k === "crit" ? value : Math.round(value * level * enhancement)]);
+  return Object.entries(it.base || {}).map(([k, value]) => [k, k === "spd" || k === "crit" ? value : Math.round(value * (k === "def" ? defLevel : level) * enhancement)]);
 }
 export function itemDesc(entry) {
   const it = G.defs.items[entry.id];
