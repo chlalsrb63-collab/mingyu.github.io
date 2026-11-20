@@ -22,6 +22,7 @@ const COLD = new Set(["#5ae4d0", "#72e6f4", "#b07aff", "#4aa8ff", "#ff6a7a"]);
 const CANOPY = new Set(["town", "meadow", "forest", "jungle", "autumn", "mist", "jianmen"]);
 const variants = new WeakMap();
 const VARIANT_LIMIT = 12;
+let budget = 2, budgetT = 0;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));
 const rgba = (color, alpha) => `rgba(${color.join(",")},${alpha})`;
 
@@ -140,6 +141,11 @@ export function depthSprite(g, sp, st, { y, focusY, height, theme, night }) {
   let cache = variants.get(sp);
   if (!cache) { cache = new Map(); variants.set(sp, cache); }
   if (cache.has(key)) return cache.get(key);
+  // walking moves many sprites across levels at once: build two variants per screen frame, the rest wait a frame
+  // or two showing a neighbouring level (or the plain sprite), so no single frame pays for a whole row of trees
+  const now = performance.now();
+  if (now - budgetT > 8) { budgetT = now; budget = 2; }
+  if (budget-- <= 0) return cache.get(`${theme}:${foreground}:${level - 1}:${dim}`) || cache.get(`${theme}:${foreground}:${level + 1}:${dim}`) || sp;
 
   const cv = g.canvas.ownerDocument.createElement("canvas");
   cv.width = sp.width;

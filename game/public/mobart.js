@@ -598,6 +598,23 @@ export function rig(kind, tint, sc = 1, habitat = "") {
 /** For the headless checks (tests/mobart.mjs): the builder, the poses, the cast and how big its canvases are. */
 export const _test = { Model, pose, BEASTS, CANVAS, PAD, GK, NFR };
 
+// A frame drawn on first use stalls that screen frame (a new pose mid-fight), so once a monster is on the
+// map its other frames are drawn in idle time, a few milliseconds at a time.
+const warm = [];
+let warming = false;
+const idle = globalThis.requestIdleCallback ? (f) => requestIdleCallback(f, { timeout: 300 }) : (f) => setTimeout(() => f({ timeRemaining: () => 4 }), 16);
+function warmUp(dl) {
+  const end = performance.now() + Math.max(1.5, Math.min(4, dl.timeRemaining()));
+  while (warm.length && performance.now() < end) { const [R, d, f] = warm.pop(); R.frame(d, f); }
+  if ((warming = warm.length > 0)) idle(warmUp);
+}
+function prewarm(R) {
+  if (R.warm) return;
+  R.warm = 1;
+  for (let f = NFR - 1; f >= 0; f--) for (let d = 3; d >= 0; d--) warm.push([R, d, f]); // popped from the end: idle and walk first
+  if (!warming) { warming = true; idle(warmUp); }
+}
+
 export function info(kind) { const d = BEASTS[ALIAS[kind] || kind]; return d ? { size: d.size, hover: d.hover || 0, glow: d.glow || null, death: d.death || "fall" } : null; }
 export const KINDS = () => Object.keys(BEASTS);
 
@@ -664,6 +681,7 @@ export function draw(g, m, d, tint, s, t, X, Y, parts, G) {
   const kind = artKind(d.sp, m);
   const habitat = habitatOf(G.map);
   const R = rig(kind, tint, sc, habitat), def = R.def;
+  prewarm(R);
   if (s.px === undefined) { s.px = m.x; s.py = m.y; s.fx = (m.id & 1); s.back = 0; s.dist = 0; s.mvT = -1e9; }
   const mx = m.x - s.px, my = m.y - s.py, step = Math.hypot(mx, my);
   if (step > 0.04) { s.mvT = t; s.dist += step; facing(s, mx, my); }
