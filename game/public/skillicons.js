@@ -584,11 +584,153 @@ const ICON = {
     ...arrow(22.5, 5, 21, 21, 3.0, 1.3),
     ["*", C(10, 24.5, 1.1), C(15.5, 25.5, 1.3), C(21, 24.5, 1.1)],
   ],
+  // ── job skills 2026-11-21 (one active + one passive per job)
+  warcry: [ // 광폭의 포효: a roaring maw, shout waves bursting out, a greatsword behind
+    ...sword(7, 26, 22, 7, 3.4, 4),
+    ["A", A(15.5, 16, 10.5, -50, 50, 1.4, 2.4), A(15.5, 16, 10.5, 130, 230, 1.4, 2.4)], ["L", A(15.5, 16, 7.5, -45, 45, 1, 1.6), A(15.5, 16, 7.5, 135, 225, 1, 1.6)],
+    ["m", E(15.5, 16, 5.6, 6)], ["k", E(15.5, 17.5, 3.8, 3.8)], ["*", R(11, 11, 2, 3), R(18, 11, 2, 3), R(13, 21, 5, 1)],
+  ],
+  runeburst: [ // 원소 마검: 뇌화 폭쇄: a sword planted point-down, lightning and flame bursting from it
+    ["m", E(15.5, 25, 8, 2.4)],
+    ...sword(15.5, 6, 15.5, 23, 3.2, 4),
+    ...flame(8.5, 18, 3.6, -100), ...flame(22.5, 18, 3.6, -80),
+    ["a", poly(2, 6, 6, 10, 11, 8, 14, 11, 19)], ["a", poly(2, 25, 6, 21, 11, 23, 14, 20, 19)],
+    ["*", C(15.5, 21, 1.6)],
+  ],
+  assassinate: [ // 그림자 암살: a dagger stabbing down behind a dark silhouette's back
+    ["d", C(14, 11, 3.8), P(8, 27, 9, 17, 12, 15, 16, 15, 19, 17, 20, 27)], ["k", L(11, 11, 17, 11, 1)],
+    ...dagger(21, 3, 15, 19),
+    ["*", star(22, 22, 3.6, 0.25)], ["a", L(15, 19, 14, 22, 1.4)],
+  ],
+  bladewaltz: [ // 칼날 왈츠: twin daggers trailing a swirling dash streak with blood drops
+    ["L", A(15.5, 16, 9.5, 150, 400, 1, 4)], ["W", A(15.5, 16, 9.5, 300, 400, 0.8, 2.4)],
+    ...dagger(5, 26, 17, 15), ...dagger(26, 8, 14, 18),
+    ["a", drop(9, 8, 2.4, -90), drop(23, 24, 2.4, -90), drop(25, 15, 1.6, -90)],
+  ],
+  javelin: [ // 천공 투창: a spear thrown diagonally, long speed lines, piercing through
+    ["L", L(5, 20, 14, 20, 1), L(5, 25, 17, 25, 1), L(7, 15, 12, 15, 1)],
+    ["A", ring(24, 8, 4, 1.4)],
+    ...spear(7, 24, 25, 7, 8, 6, 2.2),
+    ["*", C(24, 8, 1.4)],
+  ],
+  chainlance: [ // 뇌격 연쇄창: a spear tip, lightning jumping between three small points
+    ...spear(15.5, 28, 15.5, 11, 8, 6, 2),
+    ["a", poly(2, 6, 7, 10, 11, 8, 14, 12, 12), poly(2, 25, 7, 21, 11, 23, 14, 19, 12)],
+    ["*", star(6, 7, 2.2, 0.3), star(25, 7, 2.2, 0.3), star(15.5, 6, 2.6, 0.3)], ["A", poly(1.6, 10, 8, 15.5, 7, 21, 8)],
+  ],
+  blink: [ // 블링크: 서리 잔영: a fading afterimage, frost where it left, an arrow to the new spot
+    ["S", E(9, 17, 3.4, 6), C(9, 9.5, 2.8)], ["L", poly(1, 5, 21, 7, 24), poly(1, 12, 21, 11, 24)],
+    ["l", star(8, 24, 3.2, 0.3)], ["W", star(8, 24, 1.6, 0.4)],
+    ["a", L(13, 15, 19, 15, 2)], ["a", head(23, 15, 0, 6, 7)],
+    ["m", E(25, 20, 2.6, 5), C(25, 12.5, 2.4)], ["*", C(25, 12, 1)],
+  ],
+  luckydice: [ // 행운의 주사위: two tumbling dice with pips, sparkles
+    ["l", P(6, 12, 15, 9, 18, 18, 9, 21)], ["k", C(10, 14, 1), C(14, 13, 1), C(13, 18, 1), C(9, 18, 1)],
+    ["m", P(16, 17, 25, 15, 26, 24, 17, 26)], ["*", C(19.5, 20.5, 1.2), C(22.5, 19.5, 1.2), C(21, 23, 1.2)], ["k", C(21, 21.5, 0.6)],
+    ["A", star(22, 8, 3.2, 0.28), star(7, 25, 2.2, 0.3)], ["*", C(22, 8, 1)],
+  ],
+  wraith: [ // 망령 소환: a hooded ghost rising from an open book
+    ...book(15.5, 20, 9, 4),
+    ["l", P(15.5, 4, 22, 9, 23, 19, 20, 17, 17.5, 20, 15.5, 17, 13.5, 20, 11, 17, 8, 19, 9, 9)],
+    ["k", E(15.5, 11, 3.4, 3.8)], ["*", C(14, 11, 0.9), C(17, 11, 0.9)],
+  ],
+  sealrune: [ // 봉인의 룬: a glowing rune circle with chains and a lock sigil
+    ["M", ring(15.5, 15.5, 10, 2)], ["A", L(6, 6, 10, 10, 2), L(25, 6, 21, 10, 2), L(6, 25, 10, 21, 2), L(25, 25, 21, 21, 2)],
+    ["l", D(R(11.5, 14, 9, 8), R(13.5, 16, 5, 4))], ["l", D(ring(15.5, 14, 3.4, 2), R(10, 14, 12, 10))],
+    ["*", R(15, 17, 2, 3)],
+  ],
+  barrage: [ // 사냥꾼의 속사: a bow with a fan of quick arrows streaming out
+    ["m", A(9, 16, 11, -70, 70, 2.4)], ["L", L(11.5, 6, 11.5, 26, 0.8)],
+    ...arrow(10, 16, 27, 7, 2.6, 1), ...arrow(10, 16, 28, 16, 2.8, 1.2), ...arrow(10, 16, 27, 25, 2.6, 1),
+  ],
+  viperarrow: [ // 독사의 관통 화살: a fang-headed arrow dripping green poison
+    ...arrow(5, 25, 24, 8, 2, 1.3),
+    ["*", P(22, 4, 27, 9, 23, 8)], ["l", P(23, 6, 27, 6, 26, 12)], ["l", P(26, 9, 28, 14, 23, 11)],
+    ["a", drop(10, 19, 2.4, 90), drop(16, 21, 2, 90), drop(21, 24, 2.2, 90)],
+  ],
+  aftershock: [ // 지각 붕괴: a hammer slamming down, three shockwave rings and cracks
+    ["M", D(E(15.5, 24, 11, 3.4), E(15.5, 24, 9.2, 2.4)), D(E(15.5, 24, 7.5, 2.4), E(15.5, 24, 5.8, 1.4))],
+    ["k", poly(1, 5, 27, 9, 25, 7, 23), poly(1, 26, 27, 22, 25, 24, 23)],
+    ...hammer(15.5, 2, 15.5, 11, 14, 8),
+    ["W", rays(15.5, 18, 3, 6, [-150, -30], 1.4)],
+  ],
+  aegis: [ // 신의 방패: a radiant holy shield, cross emblem, light rays
+    ["A", rays(15.5, 15.5, 11, 14, [-90, -50, -130, -10, 190, 10, 170], 1.6)],
+    ["m", P(7, 7, 24, 7, 24, 16, 15.5, 26, 7, 16)], ["l", P(9, 9, 22, 9, 22, 15.5, 15.5, 23, 9, 15.5)],
+    ["*", R(14.5, 10, 2, 10), R(11, 13, 9, 2)],
+  ],
+
+  swordsman_bloodlust: [ // 피의 갈증: a blood drop with a heart and fangs
+    ["a", drop(15.5, 17, 8.5, -90)], ["*", heart(15.5, 15, 0.8)],
+    ["l", P(10, 20, 12.5, 20, 11.2, 26), P(19, 20, 21.5, 20, 20.2, 26)],
+  ],
+  spellblade_resonance: [ // 원소 공명검: fire on one edge, lightning on the other
+    ...sword(15.5, 27, 15.5, 5, 4, 4, 4.5),
+    ...flame(8.5, 14, 3.4, -100), ["a", poly(2, 23, 6, 20, 11, 24, 14, 21, 20)],
+    ["*", star(15.5, 14, 2.2, 0.3)],
+  ],
+  thief_biggame: [ // 거물 사냥꾼: a crowned boss skull with a dagger through it
+    ["l", C(15.5, 15, 6.4), R(11.5, 18, 8, 5)], ["a", P(9, 9, 11, 4, 13.5, 8, 15.5, 3, 17.5, 8, 20, 4, 22, 9)],
+    ["k", C(12.8, 15.5, 1.6), C(18.2, 15.5, 1.6), R(14, 20, 1, 2), R(16, 20, 1, 2)],
+    ...dagger(5, 27, 25, 7),
+  ],
+  bladedancer_feast: [ // 피의 향연: blood drops leaping in an arc from one target to another
+    ["A", A(15.5, 24, 10, 205, 335, 1, 1)], ["m", C(7, 22, 3.4)], ["m", C(24, 22, 3.4)],
+    ["a", drop(10, 12, 2.6, -60), drop(15.5, 8, 2.8, -90), drop(21, 12, 2.6, -120)],
+    ["*", C(15.5, 7.5, 0.8)],
+  ],
+  lancer_bulwark: [ // 불굴의 창진: crossed spears in front of a small shield
+    ...spear(6, 27, 24, 6, 7, 5, 2), ...spear(25, 27, 7, 6, 7, 5, 2),
+    ["m", P(10.5, 14, 20.5, 14, 20.5, 19, 15.5, 25, 10.5, 19)], ["l", P(12, 15.5, 19, 15.5, 19, 18.5, 15.5, 22.5, 12, 18.5)], ["*", R(15, 16, 1, 5)],
+  ],
+  spellspear_frostbite: [ // 동상: a snowflake with a bite mark
+    ["L", rays(15.5, 15.5, 0, 10.5, [-90, -30, 30, 90, 150, 210], 2)], ["W", rays(15.5, 15.5, 4, 8, [-60, -120, 0, 60, 120, 180], 1.2)],
+    ["l", C(15.5, 15.5, 3)], [".", C(24, 21, 4)], ["k", P(21, 18, 23, 21, 21, 24)],
+  ],
+  wizard_manashield: [ // 마나 보호막: a blue hexagonal barrier bubble
+    ["M", ring(15.5, 15.5, 10.5, 2)], ["L", ...[0, 1, 2, 3, 4, 5].map((i) => L(15.5 + cos(i * 60 - 90) * 9.5, 15.5 + sin(i * 60 - 90) * 9.5, 15.5 + cos(i * 60 - 30) * 9.5, 15.5 + sin(i * 60 - 30) * 9.5, 1.6))],
+    ["m", C(15.5, 15.5, 3)], ["*", C(14.5, 14.5, 1.2)],
+  ],
+  trickster_sleight: [ // 손속임: a playing card with a sparkle and a small clock hand
+    ["l", P(8, 8, 19, 6, 22, 21, 11, 23)], ["k", L(10, 10, 17, 9, 0.8)], ["a", heart(15, 15, 0.6)],
+    ["M", ring(22, 22, 5, 2)], ["W", C(22, 22, 3.5)], ["k", L(22, 22, 22, 19.5, 1), L(22, 22, 24, 23, 1)],
+    ["*", star(8, 24, 2.4, 0.3)],
+  ],
+  warlock_thirst: [ // 금서의 갈증: a book mouth drinking a purple soul wisp
+    ...book(15.5, 17, 9, 5),
+    ["k", P(7, 19, 15.5, 22, 24, 19, 15.5, 25)], ["*", R(10, 19, 1, 2), R(13, 20, 1, 2), R(18, 20, 1, 2), R(21, 19, 1, 2)],
+    ["a", drop(15.5, 9, 3.2, -90)], ["*", C(15.5, 8, 1)], ["A", L(15.5, 12, 15.5, 16, 1)],
+  ],
+  runearcher_lastward: [ // 최후의 룬: a cracked heart behind a rune shield
+    ["a", heart(15.5, 11, 1.1)], ["k", poly(1, 15.5, 5, 14, 9, 17, 12)],
+    ["m", P(9, 14, 22, 14, 22, 20, 15.5, 27, 9, 20)], ["l", P(11, 16, 20, 16, 20, 19.5, 15.5, 24.5, 11, 19.5)], ["*", L(15.5, 17, 15.5, 22, 1.2), L(13, 19, 18, 19, 1.2)],
+  ],
+  archer_deadeye: [ // 명사수: a bullseye with an arrow in the centre
+    ["M", ring(15.5, 15.5, 10.5, 2)], ["L", ring(15.5, 15.5, 6.5, 2)], ["a", C(15.5, 15.5, 2.4)],
+    ...arrow(26, 5, 16, 15, 2.4, 1.2),
+  ],
+  tracker_venom: [ // 사냥감의 흔적: green poisoned paw prints
+    ["l", E(10, 20, 4, 3.2), C(6.5, 15.5, 1.4), C(9, 13.5, 1.4), C(12, 13.5, 1.4), C(14.5, 15.5, 1.4)],
+    ["m", E(21, 11, 3.4, 2.8), C(18, 7, 1.2), C(20.5, 5.5, 1.2), C(23, 5.5, 1.2), C(25.5, 7, 1.2)],
+    ["a", drop(21, 25, 2.4, 90), drop(26, 20, 1.6, 90)],
+  ],
+  destroyer_crusher: [ // 분쇄자: a cracked armour plate breaking apart
+    ["m", P(6, 8, 14.5, 6, 14, 17, 17, 22, 8, 22)], ["l", P(17.5, 7, 26, 9, 24, 23, 19, 19, 18.5, 12)],
+    ["k", poly(1.4, 15.5, 5, 15, 10, 17, 14, 16, 18, 18, 23)],
+    ["L", C(8, 26, 1.2), C(22, 26, 1.4), C(26, 5, 1.2)],
+  ],
+  paladin_blessed: [ // 축복받은 갑옷: a breastplate with a halo and wings
+    ["A", ring(15.5, 6.5, 3.6, 1.4)],
+    ["L", P(4, 11, 9, 9, 10, 15, 6, 20), P(27, 11, 22, 9, 21, 15, 25, 20)],
+    ["m", P(10, 11, 21, 11, 22, 18, 15.5, 27, 9, 18)], ["l", P(12, 13, 19, 13, 20, 17.5, 15.5, 24, 11, 17.5)], ["*", R(15, 14, 1, 7), R(13, 16, 5, 1)],
+  ],
 };
 
 // a few mastery passives have no prefix in the id but are passives all the same
 const BASE_PASSIVE = new Set(["inertia", "vitals", "tip", "reso", "brand", "hawk"]);
-const kindOf = (id) => skillDef(id)?.kind || (BASE_PASSIVE.has(id) || /\d0$/.test(id) ? "p" : "a");
+// without game data (preview pages): job passives are named "<job>_<word>"
+const JOB_PASSIVE = /^(swordsman|spellblade|thief|bladedancer|lancer|spellspear|wizard|trickster|warlock|runearcher|archer|tracker|destroyer|paladin)_/;
+const kindOf = (id) => skillDef(id)?.kind || (BASE_PASSIVE.has(id) || /\d0$/.test(id) || JOB_PASSIVE.test(id) ? "p" : "a");
 
 // ── the frame shapes: per pixel, its depth in from the edge (0 outside): 1 ink, 2–3 rim, 4 inner line, 5+ backing
 const SQUARE = [3, 2, 1, ...Array(26).fill(0), 1, 2, 3];

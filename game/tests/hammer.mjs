@@ -191,7 +191,7 @@ const impact = () => rt.ev.find(e => e[0] === "hm");
     assert.equal(item?.wk, "hammer");
     assert.equal(item.tier, tier);
   }
-  assert.equal(Object.values(D.skills).filter(sk => sk.wk === "hammer" && sk.kind === "p").length, 5);
+  assert.equal(Object.values(D.skills).filter(sk => sk.wk === "hammer" && sk.kind === "p" && !sk.job).length, 5);
 }
 
 // Identical level, stats, tier/rarity and mastery. Frozen mobs isolate range and cadence.

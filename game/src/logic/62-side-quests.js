@@ -248,7 +248,6 @@ function sqApply(S, p, a) {
   if (q.repeat === "week") ch.sq.t[q.id] = nextWeek(S.now);
   if (q.choice) ch.sq.flags[q.id] = a.pick;
   const rw = sqPay(q, a.pick);
-  if (q.id === JF_QUEST) afterGear(S, p);
   if (rw.gold) { ch.gold += rw.gold; p.gain.push(["gold", rw.gold]); }
   for (const [id, n] of rw.items) if (addItem(ch, id, n)) foundItem(S, p, id, n);
   toast(p, `퀘스트 완료: ${q.title}`);

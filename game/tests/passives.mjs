@@ -24,12 +24,12 @@ const T = 16;
   assert.equal(D.skillJob.crimson, "spellblade");
 }
 
-// ── every passive is felt: no stat passive under 6 %, every triggered one has a proc code and a borrow
+// ── every passive is felt: no stat passive under 6 %, every triggered one has a proc code
 for (const id of D.skillOrder) {
   const sk = D.skills[id];
   if (sk.kind !== "p" || sk.wk === "hammer") continue;
   if (sk.perk) assert.ok(sk.perk[1] >= 6, `${id}: ${sk.perk[1]}% is too small to feel`);
-  if (sk.ps) assert.ok(sk.borrow && sk.ps >= 140, id + " proc code and borrowed effect");
+  if (sk.ps) assert.ok(sk.ps >= 140, id + " proc code");
 }
 
 function world(o) {

@@ -330,17 +330,16 @@ function skillRows(box, s, k) {
     hoverTip(basic, (n) => { n.append(el("div", "nm", `기본 공격 · ${wk.name || "공격"}`), skillElements(basicType), el("div", "", description)); });
     box.append(basic);
   }
-  // the single job of this weapon, and a two-weapon job that carries it once it is yours — sorted by mastery level ascending (lowest at top)
+  // this weapon's own skills and the current job's (owner 2026-11-21: another job's skills live in 전직의 길) — sorted by mastery level ascending
   const orderIdx = new Map(G.defs.skillOrder.map((id, i) => [id, i]));
   const ids = G.defs.skillOrder.filter((id) => {
     const sk = SK[id];
     if (!sk.job) return sk.wk === k;
-    const j = jobs[sk.job];
-    return j.kind === "single" ? j.wk[0] === k : sk.job === s.job && j.wk.includes(k);
+    return sk.job === s.job && jobs[sk.job].wk.includes(k);
   }).sort((a, b) => {
     const sa = SK[a], sb = SK[b];
-    const na = sa.job ? (sa.need || 25) : (sa.need || 0);
-    const nb = sb.job ? (sb.need || 25) : (sb.need || 0);
+    const na = sa.job ? 100 + (sa.jl || 5) : (sa.need || 0);   // job skills after the weapon's, by job level
+    const nb = sb.job ? 100 + (sb.jl || 5) : (sb.need || 0);
     if (na !== nb) return na - nb;
     return (orderIdx.get(a) ?? 0) - (orderIdx.get(b) ?? 0);
   });
@@ -348,7 +347,7 @@ function skillRows(box, s, k) {
     const sk = SK[id], w = G.skw && G.skw.get(id), pas = sk.kind === "p";
     const enh = (s.ske && s.ske[id]) | 0;
     const rank = sk.job === s.job ? JobTree.signatureProgress(G.defs, s.jp?.[0]) : null;
-    const why = pas ? (w ? (w[3] ? "" : "이 무기를 들면 켜집니다") : `숙련 ${sk.need}에 배웁니다`) : sk.job && s.job !== sk.job ? `[${jobs[sk.job].name}] 전직 기술` : QS.skillWhy(id);
+    const why = pas ? (w ? (w[3] ? "" : "이 무기를 들면 켜집니다") : sk.job ? `직업 Lv.${sk.jl}에 배웁니다` : `숙련 ${sk.need}에 배웁니다`) : QS.skillWhy(id);
     const row = el("div", "skill" + (why ? " locked" : "") + (sk.job ? " ult" : ""));
     const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(id);
     const hd = el("div", "hd");
@@ -360,7 +359,7 @@ function skillRows(box, s, k) {
     // at a glance: ⏲ cooldown · 위력 · cost and when it is learned; the rest behind 상세보기
     const meta = JobTree.skillStats(sk, w, enh);
     const detail = [rank?.current, why].filter(Boolean).join(" · ");
-    meta.append(el("span", "sk-req", detail || (sk.job ? "전직 기술" : `숙련 ${sk.need}`)));
+    meta.append(el("span", "sk-req", detail || (pas && w ? "늘 켜짐" : sk.job ? "전직 기술" : `숙련 ${sk.need}`)));
     if (!pas && w && w[3] === 0) { row.classList.add("off"); meta.append(el("span", "sk-req", "스킬 칸에 없음")); }
     const desc = el("div", "sk-desc");
     if (armorPen) desc.append(el("p", "skill-armor-pen", armorPen));

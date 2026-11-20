@@ -69,24 +69,26 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
 
 // ═════════ the tables
 {
-  assert.equal(D.skillOrder.length, 96, "61 actives (incl. all 14 job Lv.30 signatures and the 11 of the first new wave) and 35 mastery passives");
+  assert.equal(D.skillOrder.length, 124, "75 actives (incl. all 14 job Lv.30 signatures, the 11 of the first new wave and the 14 job Lv.20 actives) and 49 passives (35 mastery + 14 job)");
   assert.deepEqual(Object.keys(SK), D.skillOrder);
   for (const wk of D.wkOrder) {
-    const perks = Object.values(SK).filter((sk) => sk.wk === wk && sk.kind === "p");
+    const perks = Object.values(SK).filter((sk) => sk.wk === wk && sk.kind === "p" && !sk.job);
     assert.deepEqual(perks.map((sk) => sk.need).sort((a, b) => a - b), [10, 20, 30, 40, 50], wk + " mastery milestones");
-    for (const sk of perks) assert.ok(sk.perk || sk.borrow, sk.id + " transfers a real effect");
   }
   for (const id of D.skillOrder) {
     const s = SK[id];
     assert.equal(s.id, id);
     assert.ok(s.name && s.desc && s.desc.length > 20, id + " is named and described in Korean");
-    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 136) || (s.fx >= 140 && s.fx <= 166)), id + " costs, waits and has an fx code");
+    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 136) || (s.fx >= 140 && s.fx <= 166) || (s.fx >= 170 && s.fx <= 183)), id + " costs, waits and has an fx code");
     if (s.kind === "j") { assert.equal(D.jobs[s.job].kind, "single"); assert.equal(D.jobs[s.job].wk[0], s.wk); assert.equal(s.need, D.jobWm); }
     if (s.kind === "h") { assert.equal(D.jobs[s.job].kind, "hybrid"); assert.equal(s.need, D.hybWm, id + " grows from mastery 15"); }
   }
   for (const j of Object.keys(D.jobs)) if (D.jobs[j].kind !== "none") {
     assert.equal(D.skillOrder.filter((id) => SK[id].job === j && !SK[id].jl).length, 1, j + " has one Lv.5 signature");
     assert.equal(D.skillOrder.filter((id) => SK[id].job === j && SK[id].jl === 30).length, 1, j + " has one Lv.30 signature");
+    // owner 2026-11-21: one more active at job Lv.20 and one passive at job Lv.10 for every job
+    assert.equal(D.skillOrder.filter((id) => SK[id].job === j && SK[id].jl === 20 && SK[id].kind === "j").length, 1, j + " has one Lv.20 active");
+    assert.equal(D.skillOrder.filter((id) => SK[id].job === j && SK[id].jl === 10 && SK[id].kind === "p" && SK[id].ps >= 155).length, 1, j + " has one Lv.10 passive");
     assert.ok(D.jobTraits[j] && D.jobTraits[j].max >= 4, j + " has a job identity trait gauge");
   }
   const codes = D.skillOrder.filter((id) => SK[id].kind !== "p").map((id) => SK[id].fx);
@@ -103,7 +105,7 @@ for (const [id, hand] of CASTS) {
   const W = world("시전" + id + hand, { wk, wm: { [wk]: Math.max(30, s.need), ...(s.kind === "h" ? { [HYB[s.job][1 - hand]]: 30 } : {}) }, job: s.job || undefined });
   const p = W.p;
   // a weapon with more actives than the five slots: the one under test goes on the bar
-  if (s.kind === "a" && s.need !== 1 && s.need !== 10 && s.need !== 25 && !s.support) W.ch.lo[W.ch.job] = { a: [id], p: [], x: "", y: "" };
+  if ((s.kind === "a" && s.need !== 1 && s.need !== 10 && s.need !== 25 && !s.support) || s.jl === 20) W.ch.lo[W.ch.job] = { a: [id] };
   if (s.support) p.hp = 10;
   if (s.jl) p.ch.jp.lv = s.jl;   // a job Lv.30 skill (돌개바람, 무쌍난무)
   // a crowd in front (the aim is east), spread a little: something is in reach of every skill

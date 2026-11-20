@@ -2,6 +2,11 @@
 
 Goal (owner): one character can eventually play every job. Builds on Codex's job levels (`self.jp`, `45-jobs.js`).
 
+> **Owner change 2026-11-21:** the passive slots and the two cross-weapon (borrowed) passive slots are removed, with the
+> Lv.150 quest that improved them (`sq_job_free`). Every learned passive is always on while its weapon is in hand; the
+> loadout keeps only the five actives, picked from the weapon in hand (sheet v33 drops old `p`, `x`, `y`). Items 6 and the
+> cross-slot notes below are history.
+
 ## Owner decisions
 1. **No mastery cap on hybrids.** A weapon mastery above 15 never blocks choosing a two-weapon (hybrid) job.
 2. **전직 초기화 (job reset)**: allowed. Every job's job XP and job level are kept per job (switching back resumes it).

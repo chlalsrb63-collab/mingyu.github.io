@@ -102,17 +102,6 @@
       "repeat": false
     },
     {
-      "id": "sq_job_free",
-      "giver": "town_job_arsen",
-      "title": "경계 너머의 길",
-      "text": "레벨 150에 이르면 다른 무기에서 가져온 기운을 더 깊게 다룰 수 있네. 단풍 왕도의 우드득 30마리를 쓰러뜨리고 오게.",
-      "done": "좋네. 두 교차 패시브의 보너스가 원래 효과의 50%에서 60%로 늘어난다네.",
-      "goal": { "type": "kill", "mob": "stumpmaw", "n": 30 },
-      "req": { "lv": 150, "quest": null },
-      "reward": { "xp": 0, "gold": 0, "items": [] },
-      "repeat": false
-    },
-    {
       "id": "sq_lantern_fence",
       "giver": "trail_fence",
       "title": "울타리에 걸린 두 방향",

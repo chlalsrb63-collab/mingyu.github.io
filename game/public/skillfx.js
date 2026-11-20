@@ -2354,6 +2354,22 @@ export function triggerSkillMotion(src, kind, tx, ty, t, extra = 0, wind = 0) {
     case 166: // 추적자 맹독 혈우: 사냥감 낙인 (천공 독화살 발사)
       set({ type: "sky_bow", dur: 400, h: 8, wep: "sky" });
       return;
+
+    // ── JOB-02: 14 more job actives (fx 170–183)
+    case 170: set({ type: "heavy_overhead", dur: 460, h: 10, dist: 4, wep: "raise" }); return;
+    case 171: set({ type: "leap_slam", dur: 480, h: 22, dist: 6, apex: 0.6, wep: "slam" }); return;
+    case 172: set({ type: "blink_dash", dur: 260, dist: 20, alpha: 0.34, ghosts: 3 }); return;
+    case 173: set({ type: "blink_dash", dur: 300, dist: Math.min(30, extra || 24), alpha: 0.4, ghosts: 3, cross: true }); return;
+    case 174: set({ type: "heavy_overhead", dur: 420, h: 6, dist: 8, wep: "raise" }); return;
+    case 175: set({ type: "blink_dash", dur: 240, dist: 14, alpha: 0.5, ghosts: 2 }); return;
+    case 176: set({ type: "backflip", dur: 360, h: 14, dist: -12, alpha: 0.4, ghosts: 3 }); return;
+    case 177: set({ type: "backflip", dur: 340, h: 12, dist: -6 }); return;
+    case 178: if (extra) return; set({ type: "elevated_cast", dur: 520, h: 14, wep: "raise" }); return;
+    case 179: set({ type: "elevated_cast", dur: 480, h: 10, wep: "raise" }); return;
+    case 180: set({ type: "recoil_shot", dur: 200, dist: -5, h: 1 }); return;
+    case 181: set({ type: "sky_bow", dur: 380, h: 6, wep: "sky" }); return;
+    case 182: if (extra > 40) return; set({ type: "leap_slam", dur: 500, h: 18, dist: 4, apex: 0.6, wep: "slam" }); return;
+    case 183: set({ type: "elevated_cast", dur: 520, h: 12, wep: "raise" }); return;
   }
 }
 
@@ -3242,9 +3258,91 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       if (mine) text(G, "맹독 혈우!", src.x, src.y, 2.2, "#a5ef66", true);
       break;
     }
+    // ── JOB-02: 14 more job actives (fx 170–183)
+    case 170: // 광폭의 포효 (바바리안)
+      f.ring(src.x, src.y, extra || 80, "#ff7a3a", 460, true); f.ring(src.x, src.y, (extra || 80) * 0.6, "#ff3a2a", 340);
+      f.burst(src.x, src.y, 0.4, "#ff5a2a", 28, 3.2); f.crack(src.x, src.y, (extra || 80) * 0.6, "#ffb060", 520);
+      B.shake(11); play("crimson");
+      if (mine) text(G, "광폭의 포효!", src.x, src.y, 2.3, "#ff9a5a", true);
+      break;
+    case 171: // 원소 마검: 뇌화 폭쇄 (스펠블레이드)
+      f.ring(src.x, src.y, extra || 64, "#ffe46a", 420, true); f.burst(src.x, src.y, 0.35, "#ff7a2a", 24, 3);
+      for (let i = 0; i < 4; i++) { const a = ang + i * Math.PI / 2 + 0.4, r = (extra || 64) * 0.9; chainLightningArc(src.x, src.y, src.x + Math.cos(a) * r, src.y + Math.sin(a) * r * 0.6); }
+      f.crack(src.x, src.y, 40, "#ffd070", 480); B.shake(8); play("bolt");
+      if (mine) text(G, "뇌화 폭쇄!", src.x, src.y, 2.2, "#ffe46a", true);
+      break;
+    case 172: // 그림자 암살 (도적)
+      flurrySlash(tx, ty, ang); f.burst(tx, ty, 0.4, "#6a2a9a", 14, 2.2); f.ring(tx, ty, 22, "#b070f0", 260, true);
+      shadowAfterimage(tx, ty, 260); B.shake(5); play("cross_cut");
+      if (mine) text(G, "그림자 암살!", src.x, src.y, 2.2, "#b070f0", true);
+      break;
+    case 173: // 칼날 왈츠 (블레이드댄서)
+      streakWake(src.x, src.y, tx, ty, "#7a1030", "#ff4a6a", 3);
+      for (const o of [-0.5, 0.5]) flurrySlash(tx, ty, ang + o);
+      f.burst(tx, ty, 0.4, "#fb4b85", 18, 2.6); B.shake(6); play("cross_cut");
+      if (mine) text(G, "칼날 왈츠!", src.x, src.y, 2.2, "#ff6a8a", true);
+      break;
+    case 174: // 천공 투창 (창술사)
+      f.proj(src.x, src.y, 0.8, tx, ty, 0.4, "#fff2c0", 0.08, 60); f.beam(src.x, src.y, tx, ty, "#ffe8a0", 0.4);
+      f.burst(tx, ty, 0.3, "#ffe498", 18, 2.8); f.ring(tx, ty, 30, "#ffe498", 320, true); f.sparkle(tx, ty, 0.6, "#ffffff", 8);
+      B.shake(7); play("pierce");
+      if (mine) text(G, "천공 투창!", src.x, src.y, 2.2, "#ffe498", true);
+      break;
+    case 175: // 뇌격 연쇄창 (마창사): hops are the server's "ln 4"
+      f.spark(tx, ty, "#ffe46a", 1.4); f.ring(tx, ty, 20, "#9ad8ff", 260, true); f.burst(tx, ty, 0.3, "#ffe46a", 12, 2.2);
+      B.shake(4); play("bolt");
+      if (mine) text(G, "뇌격 연쇄창!", src.x, src.y, 2.1, "#9ad8ff", true);
+      break;
+    case 176: // 블링크: 서리 잔영 (마법사); (tx, ty) is where the caster left
+      frostNovaRing(tx, ty, extra || 54); shadowAfterimage(tx, ty, 360); f.sparkle(src.x, src.y, 0.8, "#bfeaff", 10);
+      B.shake(4); play("sanctuary");
+      if (mine) text(G, "서리 잔영!", src.x, src.y, 2.1, "#87e4ff", true);
+      break;
+    case 177: { // 행운의 주사위 (트릭스터): extra = die face
+      const big = extra === 6, c = big ? "#ffd84a" : "#d4a0ff";
+      f.sparkle(src.x, src.y, 1, c, big ? 24 : 8 + extra * 2); f.ring(src.x, src.y, big ? 40 : 26, c, 320, true);
+      if (big) f.burst(src.x, src.y, 0.5, "#fff07a", 20, 2.6);
+      B.shake(big ? 5 : 2); play("dance");
+      if (mine) text(G, big ? "주사위 6! 대박!" : `주사위 ${extra}!`, src.x, src.y, big ? 2.4 : 2.0, c, true);
+      break;
+    }
+    case 178: // 망령 소환 (마도사): extra 0 = summon, 1 = one wraith bolt
+      if (!extra) {
+        f.burst(src.x, src.y, 0.5, "#8a5ac8", 22, 2.6); f.sparkle(src.x, src.y, 0.9, "#a5ef66", 14); f.ring(src.x, src.y, 34, "#9a66f0", 380, true);
+        B.shake(5); play("pact"); if (mine) text(G, "망령 소환!", src.x, src.y, 2.2, "#c8a0ff", true);
+      } else { f.proj(src.x, src.y, 0.7, tx, ty, 0.5, "#6a3aa8", 0.08, 50); f.burst(tx, ty, 0.3, "#a5ef66", 6, 1.4); B.shake(1); }
+      break;
+    case 179: // 봉인의 룬 (룬브레이커)
+      f.ring(tx, ty, extra || 40, "#8ad8ff", 520, true); f.ring(tx, ty, (extra || 40) * 0.6, "#ffffff", 420);
+      f.sparkle(tx, ty, 0.9, "#b0e8ff", 16); f.crack(tx, ty, (extra || 40) * 0.8, "#6ac0f0", 520); B.shake(5); play("inkshot");
+      if (mine) text(G, "봉인!", tx, ty, 2.2, "#8ad8ff", true);
+      break;
+    case 180: { // 사냥꾼의 속사: one light arrow per event
+      SkillFx_bow(G, src, false); f.beam(src.x, src.y, tx, ty, "#fff2a6", 0.25); f.spark(tx, ty, "#fff2a6", 0.8); play("leapshot");
+      const last = rapidAt.get(eid) || -1e9; rapidAt.set(eid, now());
+      if (mine && now() - last > 2000) text(G, "속사!", src.x, src.y, 2.0, "#9ae062", true);
+      break;
+    }
+    case 181: // 독사의 관통 화살 (추적자)
+      SkillFx_bow(G, src, true); streakWake(src.x, src.y, tx, ty, "#2a5a1a", "#8ef060", 2);
+      f.proj(src.x, src.y, 0.8, tx, ty, 0.5, "#a5ef66", 0.09, 60); f.burst(tx, ty, 0.3, "#a5ef66", 18, 2.4); f.ring(tx, ty, 26, "#8ef060", 300, true);
+      B.shake(6); play("pierce");
+      if (mine) text(G, "관통 화살!", src.x, src.y, 2.1, "#a5ef66", true);
+      break;
+    case 182: // 지각 붕괴 (파괴자): one event per ring (extra = ring radius)
+      f.ring(tx, ty, extra || 36, "#ffb060", 420, true); f.crack(tx, ty, (extra || 36) * 0.9, "#c88a4a", 560);
+      f.burst(tx, ty, 0.2, "#b08050", 12 + (extra || 36) / 6, 2.4); B.shake(extra <= 40 ? 11 : 6); play("crimson");
+      if (mine && extra <= 40) text(G, "지각 붕괴!", tx, ty, 2.3, "#ffb060", true);
+      break;
+    case 183: // 신의 방패 (성기사)
+      f.flash(src.x, src.y, 16); f.ring(src.x, src.y, extra || 100, "#ffe498", 520, true); f.ring(src.x, src.y, (extra || 100) * 0.6, "#ffffff", 380);
+      f.sparkle(src.x, src.y, 1.1, "#fff4c0", 22); B.shake(5); play("sanctuary");
+      if (mine) text(G, "신의 방패!", src.x, src.y, 2.3, "#ffe498", true);
+      break;
   }
   jobBeat(kind, src, tx, ty, p, near);
 }
+const rapidAt = new Map(); // eid → last 사냥꾼의 속사 arrow time (the word shows once per volley)
 /** The job's own note under every skill (skills-v2.md §6): accent motes at the target, a signature's palette ring. */
 function jobBeat(kind, src, tx, ty, p, near) {
   const id = fxSkill(kind), sig = /^[jh]$/.test(skillDef(id)?.kind || "");
@@ -3261,12 +3359,15 @@ const PS = {
   144: ["dagger_edge40", "빈틈!"], 145: ["dagger_fang50", "피의 갈증"], 146: ["spear_advance30", ""], 147: ["spear_edge50", "일점!"],
   148: ["staff_chant30", "증폭!"], 149: ["staff_spark40", "집중!"], 150: ["staff_flood50", ""], 151: ["book_clause30", "낙인 전염"],
   152: ["book_return50", ""], 153: ["bow_string30", ""], 154: ["bow_quill50", "약점 포착!"],
+  155: ["swordsman_bloodlust", "피의 갈증"], 158: ["bladedancer_feast", ""], 162: ["trickster_sleight", ""],
+  163: ["warlock_thirst", ""], 164: ["runearcher_lastward", "최후의 룬!"],
 };
 const PS_SOUND = {
   140: "inertia_full", 141: "quake", 142: "edge_cut", 143: "reso_ready",
   144: "tip", 145: "bleed", 146: "spear_cd", 147: "tip",
   148: "reso_ready", 149: "reso_ready", 150: "mana_surge", 151: "brand",
   152: "brand", 153: "double_nock", 154: "hawk_eye",
+  155: "bleed", 158: "bleed", 162: "reso_ready", 163: "brand", 164: "sanctuary",
 };
 function procFx(G, e) {
   const [, eid, code, x, y] = e, d = PS[code];
@@ -3288,6 +3389,11 @@ function procFx(G, e) {
     case 152: if (who) f.proj(x, y, 0.6, who.x, who.y, 0.8, p.a, 0.04, 30); break;
     case 153: f.spark(x, y, p.l, 0.9); break;
     case 154: f.ring(x, y, 14, p.a, 280, true); f.spark(x, y, p.a, 1.2); break;
+    case 155: if (who) { f.sparkle(who.x, who.y, 0.9, "#ff6a8a", 10); f.ring(who.x, who.y, 18, "#fb4b85", 300, true); } break;
+    case 158: f.spark(x, y, "#fb4b85", 1.3); f.burst(x, y, 0.4, "#c0204a", 8, 1.8); break;
+    case 162: if (who) { f.sparkle(who.x, who.y, 0.7, "#e0b0ff", 6); f.ring(who.x, who.y, 12, "#ffe47a", 220); } break;
+    case 163: if (who) { f.sparkle(who.x, who.y, 0.8, "#8ab8ff", 8); f.ring(who.x, who.y, 14, "#9a66f0", 260); } break;
+    case 164: if (who) { f.ring(who.x, who.y, 26, "#8ad8ff", 420, true); f.sparkle(who.x, who.y, 1, "#ffffff", 12); } break;
   }
   const word = d[1], at0 = code === 144 || code === 147 || code === 154 || code === 151 ? [x, y] : who ? [who.x, who.y] : [x, y];
   if (mine || skillNear(G, at0[0], at0[1])) procPfx(code, at0[0], at0[1], who ? Math.atan2(y - who.y, x - who.x) : 0, p);

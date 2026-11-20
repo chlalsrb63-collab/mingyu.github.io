@@ -99,83 +99,73 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   assert.equal(W.act({ t: "lv_reset" }).error, "이미 레벨 1입니다");
 }
 
-// ── 4–5. the loadout: 5 actives + 4 passives, town or campfire only; only what is in it works
+// ── 4–5. the loadout: 5 actives of the weapon in hand, town or campfire only; only what is in it works.
+// Every learned passive of the hand is always on (owner 2026-11-21: no passive slots).
 {
   const W = world({ wk: "sword", wk2: "staff", lvl: 40, wm: { sword: 30, staff: 15, spear: 10 }, job: "spellblade" });
   const ch = W.ch;
   ch.jp = { lv: 5, xp: 0 }; ch.jobs = { spellblade: ch.jp };
   const lo0 = W.self().lo;
   assert.deepEqual(lo0[0].sort(), ["cleave", "crimson", "rend", "shoulder", "slash"], "default: five sword actives including signature");
-  assert.deepEqual(lo0[1].sort(), ["inertia", "sword_fortify30", "sword_steadfast20", "tip"], "four passives (sword first, then learned)"); assert.equal(lo0[3], 0, "not set yet");
-  assert.equal(D.jf.lo[0], 5); assert.equal(D.jf.lo[1], 4);
+  assert.equal(lo0[1], 0, "not set yet");
+  assert.deepEqual(D.jf.lo, [5]);
+  const row0 = (id) => W.self().sk.find((r) => r[0] === id);
+  for (const id of ["inertia", "sword_steadfast20", "sword_fortify30"]) assert.equal(row0(id)[3], 1, id + ": a learned sword passive is on by itself");
+  assert.equal(row0("tip")[3], 0, "the spear's passive waits for a spear in hand");
   W.go("meadow");
-  assert.equal(W.act({ t: "lo", a: ["slash"], p: [] }).error, "스킬 칸은 마을이나 모닥불 곁에서만 바꿀 수 있습니다");
+  assert.equal(W.act({ t: "lo", a: ["slash"] }).error, "스킬 칸은 마을이나 모닥불 곁에서만 바꿀 수 있습니다");
   const rt = W.S.maps.meadow;
   rt.fires.push({ id: W.S.nextId++, x: Math.round(W.p.x), y: Math.round(W.p.y) - 14, until: W.S.now + 600000 });
-  assert.ok(W.act({ t: "lo", a: ["slash"], p: [] }).ok, "beside a campfire");
+  assert.ok(W.act({ t: "lo", a: ["slash"] }).ok, "beside a campfire");
   rt.fires.pop();
   W.npc("job");
-  assert.equal(W.act({ t: "lo", a: ["slash", "rend", "fireball", "frostring", "crimson", "spiral"], p: [] }).error, "액티브 5개, 패시브 4개까지 넣을 수 있습니다");
-  assert.equal(W.act({ t: "lo", a: ["inertia"], p: [] }).error, "액티브와 패시브 칸이 맞지 않습니다");
-  assert.equal(W.act({ t: "lo", a: ["verdict"], p: [] }).error, "배우지 않은 스킬입니다");
-  assert.equal(W.act({ t: "lo", a: ["slash", "slash"], p: [] }).error, "잘못된 스킬입니다");
-  assert.ok(W.act({ t: "lo", a: ["slash"], p: ["inertia"] }).ok, "in town");
+  assert.equal(W.act({ t: "lo", a: ["slash", "rend", "cleave", "shoulder", "crimson", "parry"] }).error, "액티브 스킬은 5개까지 넣을 수 있습니다");
+  assert.equal(W.act({ t: "lo", a: ["inertia"] }).error, "패시브는 칸에 넣지 않아도 늘 켜져 있습니다");
+  assert.equal(W.act({ t: "lo", a: ["verdict"] }).error, "배우지 않은 스킬입니다");
+  assert.equal(W.act({ t: "lo", a: ["fireball"] }).error, "지금 든 무기로 쓸 수 없는 스킬입니다");
+  assert.equal(W.act({ t: "lo", a: ["slash", "slash"] }).error, "잘못된 스킬입니다");
+  assert.ok(W.act({ t: "lo", a: ["slash"], p: ["inertia"], x: "tip" }).ok, "in town (an old client's passive fields are ignored)");
   const v = W.self();
-  assert.deepEqual(v.lo.slice(0, 4), [["slash"], ["inertia"], "", 1]);
+  assert.deepEqual(v.lo, [["slash"], 1]);
   const row = (id) => v.sk.find((r) => r[0] === id);
-  assert.equal(row("rend")[3], 0, "out of the loadout: not usable"); assert.equal(row("sword_steadfast20")[3], 0, "passive off");
-  assert.equal(row("inertia")[3], 1, "native sword passive in the loadout is active");
+  assert.equal(row("rend")[3], 0, "out of the loadout: not usable");
+  assert.equal(row("sword_steadfast20")[3], 1, "passives stay on whatever the loadout");
   W.p.mp = 9999;
   assert.equal(W.act({ t: "sk", id: "rend", a: 0 }).error, "스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
   assert.notEqual(W.act({ t: "sk", id: "slash", a: 0 }).error, "스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
-  assert.deepEqual(ch.lo.spellblade, { a: ["slash"], p: ["inertia"], x: "", y: "" }, "saved for this job");
+  assert.deepEqual(ch.lo.spellblade, { a: ["slash"] }, "saved for this job");
 }
 
-// ── 6. A job opens both cross-weapon slots; mastery is the only requirement for another weapon.
+// ── 6. passives follow the hand, never another weapon's; a v32 sheet's passive and cross slots are dropped
 {
   const W = world({ wk: "dagger", wk2: "sword", lvl: 150, wm: { dagger: 20, sword: 20, bow: 10 }, job: "thief" });
   const ch = W.ch;
+  const speed = W.p.stc.spd0;
   W.npc("job");
-  const load = { t: "lo", a: [], p: ["vitals"] };
-  assert.ok(W.act(load).ok);
-  const baseline = W.p.stc.atk0, speed = W.p.stc.spd0;
-  assert.deepEqual(W.self().lo.slice(4), [1, "", 50], "first job opens the slots at 50%");
-  assert.match(W.act({ ...load, x: "vitals" }).error, /두 번/);
-  assert.match(W.act({ ...load, p: [], x: "vitals" }).error, /현재 직업의 무기군 외/);
-  assert.match(W.act({ ...load, x: "inertia", y: "inertia" }).error, /두 번/);
-  assert.match(W.act({ ...load, y: "bow_quill50" }).error, /배운 패시브/);
-  assert.ok(W.act({ ...load, p: ["vitals", "dagger_shade20"], x: "inertia", y: "hawk" }).ok);
-  assert.ok(Math.abs(W.p.stc.atk0 / baseline - 1.04) < 1e-9, "two attack perks at half their 4% values");
-  assert.ok(Math.abs(W.p.stc.spd0 / speed - 1.10) < 1e-9, "native dagger passive adds its full bonus (10%)");
-  const v = W.self();
-  assert.deepEqual([v.lo[2], v.lo[5]], ["inertia", "hawk"]);
-  for (const id of ["inertia", "hawk", "vitals", "dagger_shade20"]) assert.equal(v.sk.find((r) => r[0] === id)[3], 1);
-  assert.ok(W.act({ ...load, x: "inertia" }).ok, "legacy loadout action with no y remains valid");
-  assert.equal(W.self().lo[5], "hawk", "legacy action preserves the second slot");
+  assert.ok(W.act({ t: "lo", a: ["ambush"] }).ok);
+  const s0 = W.self(), on = (s, id) => s.sk.find((r) => r[0] === id)[3];
+  for (const id of ["vitals", "dagger_shade20"]) assert.equal(on(s0, id), 1, id + " on with a dagger in hand");
+  for (const id of ["inertia", "hawk"]) assert.equal(on(s0, id), 0, id + " belongs to another weapon: off");
+  assert.ok(Math.abs(W.p.stc.spd0 / speed - 1) < 1e-9, "the dagger's walk perk was already counted with no slot set");
   assert.ok(W.act({ t: "wsw" }).ok, "gear swap");
-  const s = W.self();
-  assert.equal(s.sk.find((r) => r[0] === "inertia")[3], 1, "off-job passive survives the swap");
-  assert.equal(s.sk.find((r) => r[0] === "vitals")[3], 0, "the native dagger passive stops");
+  const s1 = W.self();
+  assert.equal(on(s1, "inertia"), 1, "the sword in hand turns its passives on");
+  assert.equal(on(s1, "vitals"), 0, "the dagger's stop");
+  assert.deepEqual(s1.lo[0].filter((id) => D.skills[id].wk !== "sword"), [], "the dagger loadout does not fit a sword: the sword's own actives stand in");
   W.step(1000);
   assert.ok(W.act({ t: "wsw" }).ok);
-
-  assert.ok(W.act({ t: "sq", a: "take", id: D.jf.quest }).ok, "taken at the 전직관");
-  ch.sq.on[D.jf.quest] = 30;
-  assert.ok(W.act({ t: "sq", a: "done", id: D.jf.quest }).ok, "handed in");
-  assert.equal(W.self().lo[6], 60, "the quest improves both borrowed bonuses");
-  assert.ok(Math.abs(W.p.stc.atk0 / baseline - 1.048) < 1e-9, "the quest invalidates the cached stats immediately");
+  assert.deepEqual(W.self().lo[0], ["ambush"], "back to the dagger: the set loadout again");
+  assert.equal(D.jf.quest, undefined, "the old cross-passive quest is gone");
+  assert.ok(!D.sq || !JSON.stringify(D.sq).includes("sq_job_free"));
   const old = JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID)));
-  old.v = 20; delete old.lo.thief.y;
+  old.v = 32;
+  old.lo.thief = { a: ["ambush", "inertia", "nope"], p: ["vitals"], x: "inertia", y: "hawk" };
+  old.sq.on.sq_job_free = 12; old.sq.done.sq_job_free = 1;
   const migrated = world({ ch: old });
-  assert.deepEqual(migrated.ch.lo.thief, { a: [], p: ["vitals"], x: "inertia", y: "" });
-  assert.equal(migrated.self().lo[6], 60, "earned legacy quest credit is retained");
-  assert.ok(W.act({ ...load, x: "", y: "hawk" }).ok);
-  const saved = world({ ch: JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID))) });
-  assert.deepEqual([saved.self().lo[2], saved.self().lo[5]], ["", "hawk"], "slot placement survives reconnect");
-  const W2 = world({ wk: "dagger", lvl: 140 });
-  W2.npc("job");
-  assert.equal(W2.act({ t: "lo", a: [], p: [], y: "hawk" }).error, "전직하면 교차 패시브 칸이 열립니다");
-  assert.equal(W2.act({ t: "sq", a: "take", id: D.jf.quest }).error, "레벨 150 이상이어야 합니다");
+  assert.deepEqual(migrated.ch.lo.thief, { a: ["ambush"] }, "only the actives stay");
+  assert.equal(migrated.ch.v, L.newChar("현재양식", []).v);
+  assert.ok(!("sq_job_free" in migrated.ch.sq.on), "the removed quest is no longer under way");
+  assert.equal(on(migrated.self(), "vitals"), 1);
 }
 
 // ── 7. a v17 sheet: its job level moves into the per-job map

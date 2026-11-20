@@ -1,7 +1,7 @@
 // ───────────────────────────── characters ─────────────────────────────
 
 const NAME_RE = /^[가-힣A-Za-z0-9]{2,10}$/;
-const SHEET_VERSION = 32;
+const SHEET_VERSION = 33;   // v33 (2026-11-21): ch.lo[job] = { a } only, passives always on
 export function validName(name) {
   return typeof name === "string" && NAME_RE.test(name);
 }
@@ -439,6 +439,7 @@ function stats(p) {
   // the powers that change the moment's numbers (51-prefix.js); `pspd` = what they did to the walk, for the client's own steps (wire `pspd`)
   if (c.pfx.stat.length) { const spd = out.spd; pfxStat(p, out); if (spd > 0 && out.spd !== spd) out.pspd = out.spd / spd; }
   jobTraitStat(p, out);
+  jobSkillStat(p, out);
   return out;
 }
 

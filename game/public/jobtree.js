@@ -216,17 +216,20 @@ function chip(s, id) {
   return c;
 }
 
-let wsel = "";
-export const weaponKey = () => wsel;
-/** The weapon whose skills are listed: the one picked, else the hand, else the first. */
-export const pickedWeapon = (s) => (D().wkOrder.includes(wsel) ? wsel : D().wkOrder.includes(s.wk) && s.eq.weapon ? s.wk : D().wkOrder[0]);
+let wsel = "", wall = false;   // wall: the other weapons' rows unfolded
+export const weaponKey = () => wsel + wall;
+/** The weapons shown without unfolding (owner 2026-11-21): the one in hand and the one on the back; bare hands, all. */
+const shownWeapons = (s) => { const k = D().wkOrder.filter((w) => (w === s.wk && s.eq.weapon) || w === s.wk2); return k.length ? k : D().wkOrder; };
+/** The weapon whose skills are listed: the one picked (if it is shown), else the hand, else the first shown. */
+export const pickedWeapon = (s) => (D().wkOrder.includes(wsel) && (wall || shownWeapons(s).includes(wsel)) ? wsel : D().wkOrder.includes(s.wk) && s.eq.weapon ? s.wk : shownWeapons(s)[0]);
 
 /** Six weapon rows into `box`; `skills(host, k)` draws the picked weapon's skill rows. */
 export function renderWeapons(box, s, { skills }) {
-  const d = D(), cur = pickedWeapon(s);
+  const d = D(), cur = pickedWeapon(s), shown = shownWeapons(s);
   box.textContent = "";
   const list = el("div", "wp-list");
   for (const k of d.wkOrder) {
+    if (!wall && !shown.includes(k)) continue;
     const [lv, xp, need] = wmOf(s, k);
     const hand = k === s.wk && !!s.eq.weapon, back = s.wk2 === k;
     const row = el("button", "wp-row" + (hand ? " hand" : "") + (k === cur ? " sel" : ""));
@@ -250,6 +253,12 @@ export function renderWeapons(box, s, { skills }) {
     if (k === cur) { const sec = el("div", "wp-skills"); skills(sec, cur); list.append(sec); }
   }
   box.append(list);
+  const rest = d.wkOrder.length - shown.length;
+  if (rest > 0) {
+    const more = el("button", "btn small", wall ? "다른 무기 숨기기" : `다른 무기 숙련 보기 (${rest})`);
+    more.addEventListener("click", () => { wall = !wall; C.Sound.play("tab"); C.redraw(); });
+    box.append(more);
+  }
   box.append(legend());
 }
 /** One line under the rows: what the chips are (the long explanation is the H window's 직업과 숙련 topic, helptext.js). */

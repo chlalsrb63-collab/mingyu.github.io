@@ -25,16 +25,14 @@ function skWhy(ch, sk) {
   return "";
 }
 /**
- * Is weapon passive `id` working now? Its weapon is in hand with the mastery for it; a hybrid keeps
- * both of its weapons' passives on whichever of the two it holds.
+ * Is passive `id` working now? Every learned passive is always on (owner 2026-11-21: no passive slots) while its
+ * weapon is in hand; a hybrid keeps both of its weapons' passives on whichever of the two it holds.
  */
-function pasNative(ch, id, load, hand = inHand(ch)) {
+function pasNative(ch, id, hand = inHand(ch)) {
   const sk = SKILL[id];
-  if (!hand || ch.wm[sk.wk].lv < sk.need) return false;
+  if (!hand || !skLearned(ch, sk)) return false;
   const j = JOBS[ch.job];
-  if (hand !== sk.wk && !(j && j.kind === "hybrid" && j.wk.includes(sk.wk) && j.wk.includes(hand))) return false;
-  // the loadout last: building one is the dear part (pasOn runs on every snapshot)
-  return (load || loOf(ch)).p.includes(id);
+  return hand === sk.wk || !!(j && j.kind === "hybrid" && j.wk.includes(sk.wk) && j.wk.includes(hand));
 }
 const pasOn = (p, id) => pasNative(p.ch, id);
 /** Skill power from mastery past the skill's need (a hybrid signature: the lower of its two weapons). */
@@ -109,6 +107,21 @@ function lineFirst(rt, x, y, ux, uy, len, half, n) {
   const along = (o) => (o.x - x) * ux + (o.y - y) * uy;
   return mobsInLine(rt, x, y, ux, uy, len, half).sort((a, b) => along(a) - along(b)).slice(0, n);
 }
+
+/** Freeze a monster in place for `ms` (half on an elite; bosses and champions shrug it off). */
+function freezeMob(S, rt, o, ms) {
+  if (elementFirm(o)) return;
+  const now = S.now, hold = ms * (o.el ? 0.5 : 1);
+  o.stun = Math.max(o.stun, now + hold);
+  o.frz = Math.max(o.frz || 0, now + hold);
+  elementTimed(S, o, "freeze", Math.max(hold, (o.ail?.freeze?.until || 0) - now));
+  rt.ev.push(["fz", o.id, hold]);
+}
+/** The live monster nearest (x, y) within `r` (ties by id, so the rules stay deterministic). */
+const nearestMob = (rt, x, y, r, skip = []) => mobsWithin(rt, x, y, r).filter((o) => !skip.includes(o) && !MOBS[o.k].chest)
+  .sort((a, b) => dist(x, y, a.x, a.y) - dist(x, y, b.x, b.y) || a.id - b.id)[0];
+/** 행운의 주사위: is one of these faces (or the 6, which is all of them) rolling for `p` now? */
+const diceOn = (p, ...faces) => !!p.dice && p.dice.until > p.S.now && (p.dice.f === 6 || faces.includes(p.dice.f));
 
 /** Take a share `f` off a scripted boss's stagger gauge while it gathers its marked cast (56-boss-script.js). */
 function gaugeHit(S, rt, o, f) {
@@ -295,6 +308,34 @@ function propPulse(S, rt, m, p, o, now) {
       const mob = rt.mobs.find((q) => q.id === o.tgt && !q.dead);
       if (mob && dist(mob.x, mob.y, o.x, o.y) < 90) healP(rt, p, dealt(p, [mob], () => hit(mob, o.mult)) * o.heal);
       return true;
+    }
+    case "wraith": {
+      // 망령 소환: floats at the caster's shoulder, a dark bolt at the nearest monster each beat
+      o.x = p.x; o.y = p.y;
+      const mob = nearestMob(rt, p.x, p.y, o.r);
+      if (mob) {
+        rt.ev.push(["a", p.eid, o.sk.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir, 2, 1]);
+        hit(mob, o.mult * (mob.brand > now ? 1 + o.sk.brandK : 1));
+      }
+      return false;
+    }
+    case "barrage": {
+      // 사냥꾼의 속사: an arrow a beat at whatever is nearest the archer now, walking or not
+      const mob = nearestMob(rt, p.x, p.y, o.r);
+      if (mob) { rt.ev.push(["a", p.eid, o.sk.fx, Math.round(mob.x), Math.round(mob.y - 6), p.dir, 2, 1]); hit(mob, o.mult); }
+      return --o.left <= 0;
+    }
+    case "quake": {
+      // 지각 붕괴: one ring further out each beat; each monster takes only the first ring that reaches it
+      const sk = o.sk, r = sk.rings[o.i];
+      rt.ev.push(["a", p.eid, sk.fx, Math.round(o.x), Math.round(o.y - 6), p.dir, 2, r]);
+      for (const mob of mobsWithin(rt, o.x, o.y, r)) {
+        if (o.hit.has(mob.id)) continue;
+        o.hit.add(mob.id);
+        if (!MOBS[mob.k].boss && mob.el !== 2) { holdMob(S, mob, sk.stag); mob.stg = now + STG_MS; }
+        hit(mob, o.k * sk.ks[o.i], o.i ? null : { forceAilment: "physical" });
+      }
+      return ++o.i >= sk.rings.length;
     }
     case "grav": {
       rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
@@ -665,7 +706,7 @@ function skWire(p, now) {
   const ch = p.ch, lo = loOf(ch), hand = inHand(ch);
   return skillsFor(ch).map((id) => {
     const sk = SKILL[id];
-    if (sk.kind === "p") return [id, 0, 0, pasNative(ch, id, lo, hand) || loOff(ch, id, lo) ? 1 : 0];
+    if (sk.kind === "p") return [id, 0, 0, pasNative(ch, id, hand) ? 1 : 0];
     const row = [id, skMp(p, sk), Math.max(0, (p.cds[id] || 0) - now), skWhy(ch, sk) || !lo.a.includes(id) ? 0 : 1];
     if (sk.hpPct || sk.job) row.push(skillHpCost(p, sk));
     if (sk.job) row.push(skCooldown(p, sk));
@@ -795,6 +836,140 @@ function skStrike(S, p, id, k, cost, tgt) {
       const mend = (ally, share) => healSupport(rt, p, ally, (stats(ally).mhp * sk.heal + st.atk * sk.atkHeal) * k * share, HIT_CUE.binding, sk.creditMs);
       if (injured.length) injured.slice(0, 2).forEach((ally, i) => mend(ally, i ? 0.5 : 1));
       else mend(p, 0.5);
+      break;
+    }
+    // ── job skills 2026-11-21: one more active for each job (03-skills.js, fx 170–183)
+    case "warcry": {
+      ev(sk.fx, p.x, p.y - 6, sk.r);
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        if (!MOBS[o.k].boss && o.el !== 2) { holdMob(S, o, o.el ? sk.stag[1] : sk.stag[0]); o.stg = now + STG_MS; }
+        hit(o, sk.mult);
+      }
+      jobTraitGain(S, rt, p, JOB_TRAIT.swordsman.max, false);
+      p.cryAt = now + sk.ms;
+      break;
+    }
+    case "runeburst": {
+      // the charge it carries counts, not spent (a full gauge was already spent on this cast: count it full)
+      const n = jt ? JOB_TRAIT.spellblade.max : jobTraitVal(p, now);
+      ev(sk.fx, p.x, p.y - 6, sk.r);
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) hit(o, sk.mult * (1 + sk.per * n));
+      break;
+    }
+    case "assassinate": {
+      // one target only, from behind: the 도적 stays a single-target job
+      const mob = aimMob(rt, p, sk.at, AIM_CONE) || nearestMob(rt, p.x, p.y, sk.at);
+      const ox = p.x, oy = p.y;
+      if (mob) {
+        const [ux, uy] = aimVec(p, mob);
+        for (const d of [16, 8, 0]) { const nx = mob.x + ux * d, ny = mob.y + uy * d; if (canStand(m, nx, ny)) { p.x = nx; p.y = ny; break; } }
+        p.aim = aimIdx(mob.x - p.x, mob.y - p.y);
+        face(p, mob);
+      } else {
+        const far = stepTo(m, ox, oy, aimX, aimY, 40);
+        p.x += aimX * far; p.y += aimY * far;
+      }
+      if (p.x !== ox || p.y !== oy) runeMoveSkill(S, p);
+      p.fix = true; p.mvAt = now;
+      rt.ev.push(["ln", 6, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      if (!mob) break;
+      ev(sk.fx, mob.x, mob.y - 6, 0);
+      hit(mob, sk.mult * (mob.hp < mobMax(mob) * sk.low ? 1 + sk.lowK : 1), { crit: sk.crit });
+      p.hide = Math.max(p.hide || 0, now + sk.hide);
+      break;
+    }
+    case "bladewaltz": {
+      const ox = p.x, oy = p.y, len = stepTo(m, ox, oy, aimX, aimY, sk.len);
+      const passed = mobsInLine(rt, ox, oy, aimX, aimY, len + 10, sk.half);
+      p.x += aimX * len; p.y += aimY * len; p.fix = true; p.mvAt = now;
+      if (len > 0) runeMoveSkill(S, p);
+      rt.ev.push(["ln", 5, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(sk.fx, p.x, p.y - 6, len);
+      for (const o of passed) { hit(o, sk.mult, { forceAilment: "bleed" }); addMarks(S, o, sk.marks); }
+      break;
+    }
+    case "javelin": {
+      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len));
+      ev(sk.fx, p.x + aimX * far, p.y + aimY * far - 6, far);
+      for (const o of mobsInLine(rt, p.x, p.y, aimX, aimY, far + 6, sk.half)) {
+        const tip = (o.x - p.x) * aimX + (o.y - p.y) * aimY >= far * sk.far;
+        if (!MOBS[o.k].boss && o.el !== 2) knock(m, o, aimX, aimY, sk.knock * (o.el ? 0.5 : 1));
+        hit(o, sk.mult * (tip ? 1 + sk.farK : 1));
+      }
+      break;
+    }
+    case "chainlance": {
+      // the thrust finds one; the lightning leaps on to the nearest not yet struck, weaker each leap
+      const first = lineFirst(rt, p.x, p.y, aimX, aimY, sk.len, sk.half, 1)[0];
+      if (!first) { ev(sk.fx, ...ahead(sk.len * 0.6), 0); break; }
+      const chain = [first];
+      while (chain.length <= sk.n) {
+        const o = chain[chain.length - 1], next = nearestMob(rt, o.x, o.y, sk.hop, chain);
+        if (!next) break;
+        rt.ev.push(["ln", 4, Math.round(o.x), Math.round(o.y - 6), Math.round(next.x), Math.round(next.y - 6)]);
+        chain.push(next);
+      }
+      ev(sk.fx, first.x, first.y - 6, chain.length - 1);
+      chain.forEach((o, i) => hit(o, sk.mult * sk.decay ** i));
+      weave(S, rt, p, "l", first.x, first.y, k);
+      break;
+    }
+    case "blink": {
+      const ox = p.x, oy = p.y, far = stepTo(m, ox, oy, aimX, aimY, sk.len);
+      p.x += aimX * far; p.y += aimY * far; p.fix = true; p.mvAt = now;
+      if (far > 0) runeMoveSkill(S, p);
+      ev(sk.fx, ox, oy - 6, sk.r);
+      for (const o of mobsWithin(rt, ox, oy, sk.r)) { freezeMob(S, rt, o, sk.freeze); hit(o, sk.mult); }
+      weave(S, rt, p, "i", ox, oy, k);
+      break;
+    }
+    case "luckydice": {
+      const face = 1 + Math.floor(rnd(S) * 6);
+      p.dice = { f: face, until: now + sk.ms };
+      if (face === 6) jobTraitGain(S, rt, p, JOB_TRAIT.trickster.max, false);
+      ev(sk.fx, p.x, p.y - 6, face);
+      break;
+    }
+    case "wraith": {
+      // one wraith at a time: a new call sends the old one off
+      for (const q of rt.props || []) if (q.pid === p.pid && q.kind === "wraith") q.until = now;
+      ev(sk.fx, p.x, p.y - 6, 0);
+      prop({ kind: "wraith", x: p.x, y: p.y, r: sk.r, every: sk.every, next: now + 300, until: now + sk.ms, mult: sk.mult * k });
+      break;
+    }
+    case "sealrune": {
+      const [x, y] = aimPoint(rt, m, p, sk.at);
+      ev(sk.fx, x, y - 6, sk.r);
+      for (const o of mobsWithin(rt, x, y, sk.r)) {
+        if (!elementFirm(o)) o.stun = Math.max(o.stun, now + sk.root * (o.el ? 0.5 : 1));
+        o.vuln = Math.max(o.vuln || 0, now + sk.vuln);
+        hit(o, sk.mult);
+      }
+      break;
+    }
+    case "barrage": {
+      for (const q of rt.props || []) if (q.pid === p.pid && q.kind === "barrage") q.until = now;
+      prop({ kind: "barrage", x: p.x, y: p.y, r: sk.range, left: sk.n, every: sk.every, next: now, until: now + sk.every * sk.n + 100, mult: sk.mult * k });
+      break;
+    }
+    case "viperarrow": {
+      const far = Math.max(16, reach(m, p.x, p.y, aimX, aimY, sk.len));
+      ev(sk.fx, p.x + aimX * far, p.y + aimY * far - 6, far);
+      const struck = lineFirst(rt, p.x, p.y, aimX, aimY, far, sk.half, sk.n);
+      for (const o of struck) hit(o, sk.mult, { forceAilment: "poison" });
+      if (struck.length) jobTraitGain(S, rt, p, Math.min(sk.prey, struck.length), false);
+      break;
+    }
+    case "aftershock": {
+      // the rings go out from where it struck, one a beat (skillProps "quake")
+      prop({ kind: "quake", x: p.x, y: p.y, i: 0, hit: new Set(), every: sk.every, next: now, until: now + sk.every * sk.rings.length + 100 });
+      break;
+    }
+    case "aegis": {
+      ev(sk.fx, p.x, p.y - 6, sk.r);
+      p.aegisAt = now + sk.ms;
+      for (const ally of allies(S, p, sk.r)) elementWard(S, ally, stats(ally).mhp * sk.ward, sk.wardMs);
+      jobTraitGain(S, rt, p, sk.vow, false);
       break;
     }
     // ── 대검
@@ -1302,13 +1477,7 @@ function skStrike(S, p, id, k, cost, tgt) {
         const tip = (o.x - p.x) * aimX + (o.y - p.y) * aimY >= far * sk.far;
         if (tip) {
           rt.ev.push(["tip", o.id]);
-          if (!elementFirm(o)) {
-            const hold = sk.freeze * (o.el ? 0.5 : 1);
-            o.stun = Math.max(o.stun, now + hold);
-            o.frz = Math.max(o.frz || 0, now + hold);
-            elementTimed(S, o, "freeze", Math.max(hold, (o.ail?.freeze?.until || 0) - now));
-            rt.ev.push(["fz", o.id, hold]);
-          }
+          freezeMob(S, rt, o, sk.freeze);
         }
         o.slow = Math.max(o.slow || 0, now + 3000);
         hit(o, sk.mult * (tip ? SKILL.tip.mult : 1), tip ? pasTip(S, rt, p) : null);

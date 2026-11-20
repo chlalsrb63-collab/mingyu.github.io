@@ -2,18 +2,18 @@
 // The weapon passives at mastery 30/40/50 (and a few at 20) that used to add 3–8 % to a stat now each change
 // how a fight goes: a low-HP rally, a finisher shockwave, an execute, cooldown refunds on kills, a sure first
 // crit, a tip-crit spear, amplified reactions, a standing-still focus, a full-mana bonus, spreading brands,
-// a brand drain, a double arrow, an exposed target. Their data is SKILL[id] (03-skills.js, `ps` = the proc
-// code the client draws in the ["ps", eid, code, x, y] event); a borrowed copy still only gives `borrow`.
+// a brand drain, a double arrow, an exposed target; and since 2026-11-21 one passive per job (job Lv.10).
+// Their data is SKILL[id] (03-skills.js, `ps` = the proc code the client draws in the ["ps", eid, code, x, y] event).
+// Every learned passive is always on while its weapon is in hand (no passive slots, no borrowed copies).
 
 /** The triggered weapon passives (they carry a proc code `ps`). */
 const PAS_TRIG = SKILL_ORDER.filter((id) => SKILL[id].kind === "p" && SKILL[id].ps);
-/** The triggered passives working for `p` now; cached against the derived stats (rebuilt with the sheet, the hand or the loadout). */
+/** The triggered passives working for `p` now; cached against the derived stats (rebuilt with the sheet or the hand). */
 function pasSet(p) {
   const st = deriveStats(p);
   if (p.psK !== st) {
-    const lo = loOf(p.ch);
     p.psK = st;
-    p.psC = new Set(PAS_TRIG.filter((id) => pasNative(p.ch, id, lo)));
+    p.psC = new Set(PAS_TRIG.filter((id) => pasNative(p.ch, id)));
   }
   return p.psC;
 }
@@ -29,7 +29,13 @@ const pasFocus = (p, ps, now) => ps.has("staff_spark40") && now - Math.max(p.mvA
 function pasHurtK(S, p, mob, st, opt) {
   const ps = pasSet(p);
   let k = jobTraitHurtK(S, p, mob, opt);
+  if (diceOn(p, 5)) k *= 1 + SKILL.luckydice.dmg;
   if (!ps.size) return k;
+  if (ps.has("spellblade_resonance") && opt?.sk && (elementActive(S, mob, "burn") || elementActive(S, mob, "shock"))) k *= 1 + SKILL.spellblade_resonance.k;
+  if (ps.has("thief_biggame") && (mob.el || MOBS[mob.k].boss)) k *= 1 + SKILL.thief_biggame.k;
+  if (ps.has("spellspear_frostbite") && (mob.frz > S.now || elementActive(S, mob, "freeze") || elementActive(S, mob, "chill"))) k *= 1 + SKILL.spellspear_frostbite.k;
+  if (ps.has("tracker_venom") && elementActive(S, mob, "poison")) k *= 1 + SKILL.tracker_venom.k;
+  if (ps.has("destroyer_crusher") && elementActive(S, mob, "shatter")) k *= 1 + SKILL.destroyer_crusher.k;
   if (ps.has("sword_edge50") && mob.hp < mobMax(mob) * SKILL.sword_edge50.below) k *= 1 + SKILL.sword_edge50.k;
   if (ps.has("staff_flood50") && p.mp >= st.mmp * SKILL.staff_flood50.at) k *= 1 + SKILL.staff_flood50.k;
   if (ps.has("bow_quill50") && mob.expAt > S.now && mob.expBy === p.pid) k *= 1 + SKILL.bow_quill50.k;
@@ -50,7 +56,30 @@ function pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand, opt) {
     mob.expAt = now + SKILL.bow_quill50.ms; mob.expBy = p.pid;
   }
   if (brand > now && ps.has("book_return50") && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round(dmg * SKILL.book_return50.k)) * elementHealFactor(S, p));
+  if (crit && ps.has("trickster_sleight") && p.slAct !== p.actN) {
+    p.slAct = p.actN;
+    let cut = false;
+    for (const id of Object.keys(p.cds)) if (SKILL[id] && skOf(SKILL[id], "staff") && p.cds[id] > now) { p.cds[id] = Math.max(now, p.cds[id] - SKILL.trickster_sleight.cut); cut = true; }
+    if (cut) { p.dirty = true; pasFx(rt, p, "trickster_sleight", p.x, p.y); }
+  }
   if (!killed) return;
+  if (ps.has("swordsman_bloodlust")) {
+    healP(rt, p, st.mhp * SKILL.swordsman_bloodlust.heal);
+    jobTraitGain(S, rt, p, 1, false);
+    pasFx(rt, p, "swordsman_bloodlust", p.x, p.y);
+  }
+  if (brand > now && ps.has("warlock_thirst") && p.mp < st.mmp) {
+    p.mp = Math.min(st.mmp, p.mp + Math.round(st.mmp * SKILL.warlock_thirst.mp));
+    pasFx(rt, p, "warlock_thirst", p.x, p.y);
+  }
+  if (ps.has("bladedancer_feast") && elementActive(S, mob, "bleed")) {
+    const c = SKILL.bladedancer_feast, next = nearestMob(rt, mob.x, mob.y, c.r, [mob]);
+    if (next) {
+      addMarks(S, next, c.marks);
+      elementInflict(S, rt, p, next, "bleed", dmg);
+      pasFx(rt, p, "bladedancer_feast", next.x, next.y);
+    }
+  }
   if (ps.has("dagger_snap30")) {
     let cut = false;
     for (const id of Object.keys(p.cds)) {
@@ -79,14 +108,32 @@ function pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand, opt) {
 /** Attack-interval multiplier (the sword's low-HP rally, the dagger's kill rush, job identity gauges). */
 function pasAspd(p) {
   let k = jobTraitAspd(p);
+  if (p.cryAt > p.S.now) k *= 1 - SKILL.warcry.aspd;
+  if (diceOn(p, 1, 2)) k *= 1 - SKILL.luckydice.aspd;
   const ps = pasSet(p);
   if (!ps.size) return k;
   if (pasLow(p, ps)) k *= 1 - SKILL.sword_fortify30.aspd;
   if (ps.has("dagger_fang50") && p.fangAt > p.S.now) k *= 1 - SKILL.dagger_fang50.aspd;
   return k;
 }
-/** Damage-taken multiplier (the sword's low-HP rally + barbarian rage / paladin vow). */
-const pasGuard = (p) => (pasLow(p, pasSet(p)) ? 1 - SKILL.sword_fortify30.guard : 1) * jobTraitGuard(p);
+/** Damage-taken multiplier (the sword's low-HP rally, barbarian rage / paladin vow, the job passives, 신의 방패). */
+function pasGuard(p) {
+  const ps = pasSet(p), now = p.S.now;
+  let k = (pasLow(p, ps) ? 1 - SKILL.sword_fortify30.guard : 1) * jobTraitGuard(p);
+  if (p.aegisAt > now) k *= 1 - SKILL.aegis.guard;
+  if (!ps.size) return k;
+  if (ps.has("lancer_bulwark")) k *= 1 - SKILL.lancer_bulwark.per * jobTraitVal(p, now);
+  if (ps.has("wizard_manashield") && p.mp >= stats(p).mmp * SKILL.wizard_manashield.at) k *= 1 - SKILL.wizard_manashield.guard;
+  if (ps.has("paladin_blessed")) k *= 1 - SKILL.paladin_blessed.guard - (jobTraitVal(p, now) >= JOB_TRAIT.paladin.max ? SKILL.paladin_blessed.full : 0);
+  return k;
+}
+/** The job skills' moment numbers on the sheet: 광폭의 포효 lifesteal, 행운의 주사위 crit, 명사수 crit damage (stats()). */
+function jobSkillStat(p, out) {
+  const now = p.S.now;
+  if (p.cryAt > now) out.ls = Math.min(20, out.ls + SKILL.warcry.ls);
+  if (diceOn(p, 3, 4)) out.crit = Math.min(SFX.critCap, out.crit + SKILL.luckydice.crit);
+  if (p.ch.job === "archer" && jobTraitVal(p, now) >= SKILL.archer_deadeye.at && pasHas(p, "archer_deadeye")) out.critd += SKILL.archer_deadeye.critd;
+}
 /** Every tick: a changed attack interval or expired job trait reaches the client. */
 function pasTick(S, rt, p) {
   jobTraitTick(S, p);
@@ -95,6 +142,13 @@ function pasTick(S, rt, p) {
     const low = pasLow(p, ps);
     if (low && !p.psLow) pasFx(rt, p, "sword_fortify30", p.x, p.y);
     p.psLow = low;
+    // 최후의 룬: the rune shield comes up by itself when HP falls low, once in a while
+    const lw = SKILL.runearcher_lastward;
+    if (ps.has("runearcher_lastward") && !p.dead && S.now >= (p.lwAt || 0) && p.hp < stats(p).mhp * lw.below) {
+      p.lwAt = S.now + lw.every;
+      elementWard(S, p, stats(p).mhp * lw.ward, lw.wardMs);
+      pasFx(rt, p, "runearcher_lastward", p.x, p.y);
+    }
   }
   if (as !== (p.psAs || 1)) { p.psAs = as; p.dirty = true; }
 }

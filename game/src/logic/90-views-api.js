@@ -41,7 +41,7 @@ function selfPayload(p) {
     jobs: Object.keys(ch.jobs).map((j) => [j, ch.jobs[j].lv, ch.jobs[j].xp]),
     // skill enhancement { [id]: +n } (48-skill-enh.js)
     ske: ch.ske,
-    lo: (() => { const lo = loOf(ch); return [lo.a, lo.p, lo.x, ch.lo[ch.job] ? 1 : 0, loOpen(ch) ? 1 : 0, lo.y, loPower(ch)]; })(),
+    lo: [loOf(ch).a, ch.lo[ch.job] ? 1 : 0],
     gold: ch.gold, ttok: ch.ttok || 0,
     mhp: st.mhp, mmp: st.mmp, atk: st.atk, def: st.def, crit: r1(st.crit), critd: Math.round(st.critd * 100), ls: st.ls, xpb: st.xp, mf: Math.round(st.mf), spd: st.spd0,
     goldb: st.gold, lg: Object.keys(st.lg), wk: weaponKind(ch), acd: atkCd(p), range: atkRange(p),
@@ -326,7 +326,7 @@ export function defs() {
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
     ske: { rate: SKE_RATE, pct: SKE_PCT, max: SKE_MAX, item: SKE_ITEM },
-    jf: { lo: [LO_MAX.a, LO_MAX.p], borrow: LO_BORROW, scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST, respecItem: RESPEC_ITEM },
+    jf: { lo: [LO_MAX.a], scroll: JF_SCROLL, cost: JF_COST, respecItem: RESPEC_ITEM },
     affix, runes: RUNES, runeScale: RUNE_SCALE, runeStatCaps: RUNE_STAT_CAP, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
     elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, reactions: ELEMENT_REACTIONS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
     elementPrefixes: ELEMENT_PREFIX_AFFIX,
