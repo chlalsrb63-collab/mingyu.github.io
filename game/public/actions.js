@@ -238,9 +238,8 @@ export function interact() {
   if (!panel) { talkTo(n); return; }
   if (n.role === "shop" || n.role === "smith") { openWin(panel); openWin("inv"); }
   else if (n.role === "elder") {
-    tutTry("talk");
     if (G.self && G.self.q && G.self.q.i === 0 && G.self.q.st === 0) { talkTo(n); return; }
-    openWin(panel);
+    openWin(panel); tutTry("talk");
   }
   else if (n.role === "dim") Dim.openKeeper();
   else if (n.role === "house") { Housing.openAgent(); openWin("inv"); }
@@ -297,13 +296,22 @@ const talkHasQuest = () => !!$("#w-talk .talk-sq > *, #w-talk .talk-jb > *");
 function talkMode(m) { talk.mode = m; if (m === "chat") talk.i = talk.lines.length > 1 ? 1 : 0; talkShow(); }
 /** Keep the menu's 퀘스트 button in step with the cards (hud.js redraws them after the window opens). */
 export function talkMenuSync() {
-  const q = $("#talk-q");
+  const q = $("#talk-q"), mq = $("#talk-mainq");
   if (!q || !talk.npc) return;
+  const isElder = talk.npc.role === "elder";
+  const mainQ = isElder && G.self && G.defs?.quests?.[G.self.q?.i];
+  const mainReady = !!mainQ && (G.self.q.st === 0 || G.self.q.n >= mainQ.n);
+  if (mq) {
+    mq.hidden = !mainQ;
+    const mk = !mainQ ? "" : G.self.q.st === 0 ? " !" : G.self.q.n >= mainQ.n ? " ?" : "";
+    mq.textContent = `[${K("talkNext")}] 주요 의뢰${mk}`;
+    mq.classList.toggle("gold", mainReady);
+  }
   const has = talkHasQuest(), mark = SideQ.mark(talk.npc, G.self);
   q.hidden = !has;
-  q.textContent = `[${K("talkNext")}] 퀘스트${mark ? " " + mark : ""}`;
+  q.textContent = `${mainReady ? "" : `[${K("talkNext")}] `}퀘스트${mark ? " " + mark : ""}`;
   q.classList.toggle("gold", !!mark);
-  $("#talk-chat").textContent = has ? "잡담하기" : `[${K("talkNext")}] 잡담하기`;
+  $("#talk-chat").textContent = has || mainReady ? "잡담하기" : `[${K("talkNext")}] 잡담하기`;
   // the quest page with nothing left on it (the last card handed in) goes back to the menu
   if (talk.mode === "quest" && !has) talkMode("home");
 }
@@ -314,8 +322,12 @@ export function talkMenuSync() {
 export function talkKey(a) {
   if (a === "talkEnd") { if (talk.mode === "home") closeWin("talk"); else talkMode("home"); Sound.play("ui"); return; }
   if (now() - talk.at < 250) return;          // the F that opened the window must not skip its first line
-  // the menu: F opens the quests when there are any, else the chat
-  if (talk.mode === "home") { talkMode(talkHasQuest() ? "quest" : "chat"); Sound.play("blip"); return; }
+  // the menu: F opens main quest at Elderwin when ready, else side quests, else chat
+  if (talk.mode === "home") {
+    const mq = $("#talk-mainq");
+    if (mq && !mq.hidden && mq.classList.contains("gold")) { mq.click(); return; }
+    talkMode(talkHasQuest() ? "quest" : "chat"); Sound.play("blip"); return;
+  }
   if (talk.mode === "quest") {
     const go = $("#w-talk").querySelector(".talk-sq .btn.gold:not(:disabled), .talk-jb .btn.gold:not(:disabled)");
     if (go) go.click(); else talkMode("home");
@@ -375,6 +387,13 @@ function talkShow() {
     menu = el("div", "talk-menu"); menu.id = "talk-menu";
     const b = (id, cls, fn) => { const x = el("button", cls, ""); x.id = id; x.addEventListener("click", () => { fn(); Sound.play("blip"); }); menu.append(x); return x; };
     b("talk-chat", "btn", () => talkMode("chat"));
+    b("talk-mainq", "btn", () => {
+      const npc = talk.npc;
+      closeWin("talk");
+      tutTry("talk");
+      openWin("quest");
+      if (npc) setServiceTalk("quest", npc);
+    });
     b("talk-q", "btn", () => talkMode("quest"));
     b("talk-bye", "btn", () => closeWin("talk")).textContent = `[${K("talkEnd")}] 닫기`;
     $("#talk-text").after(menu);

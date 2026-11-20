@@ -257,7 +257,8 @@ function tracker(s) {
       qt.append(t, goal(G.defs.mobs[quest.mob].name, s.q.n, quest.n, "완료! 엘더윈에게 돌아가세요"));
       if (quest.fb && s.q.n < quest.n) qt.append(el("div", "qp", `우두머리 [${G.defs.mobs[quest.mob].name}] 홀로 쓰러뜨리기 — 그 자리로 가세요`));
     } else if (quest) {
-      const t = el("div", "qt"); t.dataset.sec = "main"; t.append(Info.questMark("main"), "엘더윈에게 새 의뢰가 있습니다"); tb(t, `main:${s.q.i}`, "새 의뢰");
+      const label = s.q.i === 0 ? "버드나무광장의 엘더윈을 찾아가세요" : "엘더윈에게 새 의뢰가 있습니다";
+      const t = el("div", "qt"); t.dataset.sec = "main"; t.append(Info.questMark("main"), label); tb(t, `main:${s.q.i}`, s.q.i === 0 ? "엘더윈 찾아가기" : "새 의뢰");
       qt.append(t);
     }
     if (s.bq) {
