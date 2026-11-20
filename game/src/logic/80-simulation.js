@@ -686,6 +686,7 @@ export function endTick(S) {
     rt.ev.length = 0;
     rt.who = false;
     if (rt.npcRows?.length) rt.npcRows = null;
+    rt.mv = null;   // the monster rows viewFor shared this tick (90-views-api.js mobViews)
   }
   S.chat.length = 0;
 }

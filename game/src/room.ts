@@ -45,6 +45,8 @@ import { Social } from "./social.js";
 
 const TICK_MS = 100;
 const SAVE_MS = 15_000;
+/** The 15 s save is spread over this many ticks, so a full room never exports every character in one tick. */
+const SAVE_SPREAD = 10;
 /** Progress the logic flags (quest, enhancement, level-up…) is saved within this, batched. */
 const SAVE_SOON_MS = 1_000;
 /** A character counts as "in another channel" until its lock is this stale. */
@@ -115,6 +117,8 @@ export class Room extends DurableObject<Env> {
   private roomName = "";
   private lastSave = 0;
   private lastQuickSave = 0;
+  private saveQueue: string[] = [];
+  private saveStep = 1;
   private nextTick = 0;
   /** The account service; only ever created in the vault instance. */
   private accounts: Accounts | null = null;
@@ -512,15 +516,20 @@ export class Room extends DurableObject<Env> {
       }
       logic.endTick(world);
 
-      if (now - this.lastSave >= SAVE_MS) {
+      const due = now - this.lastSave >= SAVE_MS;
+      if (due) {
         this.lastSave = this.lastQuickSave = now;
+        this.saveQueue = live.map(([, pid]) => pid);
+        this.saveStep = Math.ceil(this.saveQueue.length / SAVE_SPREAD);
+      }
+      if (due || this.saveQueue.length) {
         const list: Array<{ pid: string; char: Char }> = [];
-        for (const [, pid] of live) {
-          const char = logic.exportChar(world, pid);
+        for (const pid of this.saveQueue.splice(0, this.saveStep)) {
+          const char = logic.exportChar(world, pid);   // null once they have left (leaving saves them itself)
           if (char) list.push({ pid, char });
         }
-        // Not awaited: a save must never stall the tick.
-        this.ctx.waitUntil(this.callVault("save", { room: this.roomName, list, release: [], n: live.length }));
+        // Not awaited: a save must never stall the tick. The due tick always calls, so the head count n stays fresh.
+        if (due || list.length) this.ctx.waitUntil(this.callVault("save", { room: this.roomName, list, release: [], n: live.length }));
       } else if (now - this.lastQuickSave >= SAVE_SOON_MS) {
         // Progress the rules flagged (quest, enhancement, level-up, skills, wardrobe, warehouse):
         // one batched vault call at most once a second, only for the characters that asked.

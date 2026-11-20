@@ -48,8 +48,12 @@ export function makePerson(look) {
   const wk = SP.weaponKind(look.cls, look.gear);
   return { cls: look.cls, wk, sheet: SP.personSheet(SP.playerLook(look.cls, look.look, look.gear)), weapon: SP.weaponSprite(wk, look.gear), gear: look.gear || {}, h: 0.62 };
 }
+// a who-entry is replaced whole (net.js) when anything in it changes, so its fresh gear object can carry the key
+const lookKeys = new WeakMap();
 export function personState(id, look) {
-  return state(id, JSON.stringify(look), () => makePerson(look));
+  let key = look.gear && lookKeys.get(look.gear);
+  if (!key) { key = JSON.stringify(look); if (look.gear) lookKeys.set(look.gear, key); }
+  return state(id, key, () => makePerson(look));
 }
 /** Glow by rarity: none, magic, rare, legendary, set, unique. */
 export const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30", "#5fd47a", "#d2b48c"];
@@ -485,11 +489,11 @@ export function drawPerson(s, e, t, dt, x, y, eid) {
     const book = () => {
       g.save();
       if (mot && mot.alpha < 1) g.globalAlpha *= mot.alpha;
-      if ((P && k > Sw.WIND * 0.8 && k < 0.4) || castOrbit > 0.3) { g.shadowColor = "#fff2b0"; g.shadowBlur = 10; } else if (glow) { g.shadowColor = glow; g.shadowBlur = 5; }
+      const lit = (P && k > Sw.WIND * 0.8 && k < 0.4) || castOrbit > 0.3, gi = lit ? glowOf(s.weapon, "#fff2b0", 10) : glow ? glowOf(s.weapon, glow, 5) : null;
       g.translate(Math.round(bx), Math.round(by));
       if (P) g.rotate(sg * P.roll);
       else if (castOrbit) g.rotate(Math.sin(t / 70) * 0.22 * castOrbit);
-      g.drawImage(s.weapon, -16, -16);
+      if (gi) g.drawImage(gi, -16 - gi.pad, -16 - gi.pad); else g.drawImage(s.weapon, -16, -16);
       g.restore();
     };
     // The lifted book travels behind the caster's head during the wind-up.
@@ -652,8 +656,8 @@ export function drawPerson(s, e, t, dt, x, y, eid) {
     g.translate(Math.round(hx), Math.round(hy));
     g.rotate(s.ang);
     if (Math.cos(s.ang) < 0) g.scale(1, -1);
-    if (glow) { g.shadowColor = glow; g.shadowBlur = s.gear.we >= 7 ? 9 : 5; }
-    g.drawImage(wimg, -SP.GRIP[0], -SP.GRIP[1]);
+    const gi = glow && glowOf(wimg, glow, s.gear.we >= 7 ? 9 : 5);
+    if (gi) g.drawImage(gi, -SP.GRIP[0] - gi.pad, -SP.GRIP[1] - gi.pad); else g.drawImage(wimg, -SP.GRIP[0], -SP.GRIP[1]);
     g.restore();
     // the finisher's overdraw: the arrowhead catches the light, a four-point glint blinking at full draw
     if (bs && bs.glint && Math.floor(t / 45) % 2 === 0) {
@@ -774,6 +778,22 @@ export function tintWhite(img, col = "#ffffff") {
   x.globalCompositeOperation = "source-in";
   x.fillStyle = col; x.fillRect(0, 0, img.width, img.height);
   m.set(col, c);
+  return c;
+}
+// Made once per image: a live canvas filter or shadow blur on every draw is a slow path, paid each frame.
+const looks = (img) => { let m = silCache.get(img); if (!m) { m = new Map(); silCache.set(img, m); } return m; };
+/** `img` brightened (a struck monster's blink). */
+export function brightOf(img) {
+  const m = looks(img);
+  let c = m.get("bright"), x;
+  if (!c) { [c, x] = sheet(img.width, img.height); x.filter = "brightness(1.8)"; x.drawImage(img, 0, 0); m.set("bright", c); }
+  return c;
+}
+/** `img` with a soft glow of `col` round it, on a canvas `pad` px larger on every side. */
+export function glowOf(img, col, blur) {
+  const m = looks(img), id = col + "/" + blur;
+  let c = m.get(id), x;
+  if (!c) { const pad = blur * 2; [c, x] = sheet(img.width + pad * 2, img.height + pad * 2); x.shadowColor = col; x.shadowBlur = blur; x.drawImage(img, pad, pad); c.pad = pad; m.set(id, c); }
   return c;
 }
 

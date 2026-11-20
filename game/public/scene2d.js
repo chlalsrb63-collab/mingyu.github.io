@@ -47,7 +47,7 @@ import * as NPC from "./npclife.js";
 import { g, vw, vh, G, iso, tI, K, clamp, cam, FLAT, T, playerLook, sAng, P, sheet, setWorldTransform } from "./scene_view.js";
 import { drawSkirt, drawGround, drawLayer, drawPulseParts, lazyLeft, lazyTall } from "./scene_ground.js";
 import { wpLit, lights, map, ground, theme, artGround, drawWater, drawSunsetSea, pulseCv, pulseParts, falls, smokers, statics, npcs, OUTDOOR, emit, strings, critters, roomL, drawAmbient, camps } from "./scene_map.js";
-import { npcOut, npcService, petsNow, ents, RARITY, state, tintWhite, drawPet, personState, makePerson, seatOf, drawPerson, drawJam } from "./scene_people.js";
+import { npcOut, npcService, petsNow, ents, RARITY, state, tintWhite, brightOf, glowOf, drawPet, personState, makePerson, seatOf, drawPerson, drawJam } from "./scene_people.js";
 import { parts, setShake, shakeAmt, kick, setFxClock, drawFx, fxFade, drawAimArrow, props, TRAIT_TINT, hooks, glows, drawEyeGlint, drawTraitAura, drawDropFx } from "./scene_fx.js";
 import { drawDepthGround, depthSprite } from "./scene_depth.js";
 import { frame as postFx } from "./postfx.js";
@@ -430,9 +430,14 @@ export function render(focusX, focusY, dt, t, snap) {
       g.scale(s.face * (1 + rec * 0.24), 1 - rec * 0.2);
       // struck: pure white for the first frames (and through a hitstop), then a bright blink
       const hw = t - m.hurtT, white = hw >= 0 && hw < 36 + (m.hsMs || 0);
-      if (!white && hw >= 0 && hw < 110) g.filter = "brightness(1.8)";
-      else if (!white && el) { g.shadowColor = el === 2 ? "#ff5ad0" : "#ffc040"; g.shadowBlur = el === 2 ? 8 : 4; }
-      g.drawImage(white ? tintWhite(img) : img, -w / 2, -w * (SP.FOOT[1] / SP.SIZE), w, w);
+      const top = -w * (SP.FOOT[1] / SP.SIZE);
+      if (white) g.drawImage(tintWhite(img), -w / 2, top, w, w);
+      else if (hw >= 0 && hw < 110) g.drawImage(brightOf(img), -w / 2, top, w, w);
+      else if (el) {
+        // an elite's glow, its blur kept the size it had on screen when it was a live shadow
+        const sc = w / img.width, gi = glowOf(img, el === 2 ? "#ff5ad0" : "#ffc040", Math.max(1, Math.round((el === 2 ? 8 : 4) / sc))), p = gi.pad * sc;
+        g.drawImage(gi, -w / 2 - p, top - p, w + p * 2, w + p * 2);
+      } else g.drawImage(img, -w / 2, top, w, w);
       g.restore();
       m.h3 = (w * (G.defs.mobs[m.k].boss ? 0.92 : 0.72) + s.hover) / 26;
     } else if (o.pr) {

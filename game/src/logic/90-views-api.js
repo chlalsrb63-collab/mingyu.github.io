@@ -105,6 +105,33 @@ function elementView(S, out, eid, entity) {
   const rows = elementStatusRows(S, entity);
   if (rows.length) (out.ail || (out.ail = [])).push([eid, rows]);
 }
+/** The snapshot rows of a map's monsters, the same for every viewer (viewFor keeps the near ones): fb = field bosses for the radar. */
+function mobViews(S, rt) {
+  const fb = [], list = [];
+  for (const mob of rt.mobs) {
+    // a field boss (or the rift invasion's lord) is shown on the radar wherever it stands on the map
+    if (mob.temp && mob.el === 2 && !mob.dim && !mob.dead) fb.push([Math.round(mob.x), Math.round(mob.y)]);
+    // (a burrowing monster is underground: not shown until it comes up, 80-simulation.js special)
+    if (mob.dead || (mob.dive && !bsDef(mob))) continue;
+    // then, only when there is one: the dagger's marks on it, and 1 when it bears a book's brand
+    const mk = marksOf(S, mob), br = mob.brand > S.now ? 1 : 0;
+    const row = [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || []];
+    // a scripted boss (56-boss-script.js) always carries both, then its phase, 0 · 1 marked cast · 2 dived out of reach,
+    // and while it casts the stagger gauge still to break (%)
+    if (bsDef(mob)) row.push(mk || 0, br, mob.bs ? mob.bs.ph : 1, mob.dive ? 2 : mob.cast ? 1 : 0, mob.cast ? Math.ceil(100 * (1 - mob.cast.got / mob.cast.need)) : 0);
+    else {
+      if (mk || br) row.push(mk);
+      if (br) row.push(1);
+    }
+    const ail = elementStatusRows(S, mob);
+    list.push({
+      mob, row, enc: mob.enchant ? DAMAGE_TYPES.indexOf(mob.enchant) : undefined, cm: comboMask(S, mob), ail: ail.length ? [mob.id, ail] : null,
+      // a rift's toughness (64-dim.js hk: party size, level, tier) — only where it isn't 1, so the bar can show the real HP
+      hk: mob.hk && mob.hk !== 1 ? Math.round(mob.hk * 1000) / 1000 : 0,
+    });
+  }
+  return { fb, list };
+}
 /** Compact bitmask of the 5 non-M-row combo states on `mob`: bit0 stg, bit1 frz, bit2 air, bits3..4 brn(0..3), bit5 drag (VFX-01). */
 function comboMask(S, mob) {
   const now = S.now, air = mob.air > now ? 1 : 0, frz = mob.frz > now ? 1 : 0;
@@ -153,28 +180,17 @@ export function viewFor(S, pid) {
     if (b.map === p.map && near(b)) out.P.push([b.eid, Math.round(b.x), Math.round(b.y), b.dir, 0, 1, 1, 0, 0]);
   }
   buddyView(p, out);
-  for (const mob of rt.mobs) {
-    // a field boss (or the rift invasion's lord) is shown on the radar wherever it stands on the map
-    if (mob.temp && mob.el === 2 && !mob.dim && !mob.dead) (out.fb || (out.fb = [])).push([Math.round(mob.x), Math.round(mob.y)]);
-    // (a burrowing monster is underground: not shown until it comes up, 80-simulation.js special)
-    if (mob.dead || !near(mob) || (mob.dive && !bsDef(mob))) continue;
-    // then, only when there is one: the dagger's marks on it, and 1 when it bears a book's brand
-    const mk = marksOf(S, mob), br = mob.brand > S.now ? 1 : 0;
-    const row = [mob.id, mob.k, Math.round(mob.x), Math.round(mob.y), mob.dir, Math.ceil(mob.hp), mob.el, mob.tr || []];
-    // a scripted boss (56-boss-script.js) always carries both, then its phase, 0 · 1 marked cast · 2 dived out of reach,
-    // and while it casts the stagger gauge still to break (%)
-    if (bsDef(mob)) row.push(mk || 0, br, mob.bs ? mob.bs.ph : 1, mob.dive ? 2 : mob.cast ? 1 : 0, mob.cast ? Math.ceil(100 * (1 - mob.cast.got / mob.cast.need)) : 0);
-    else {
-      if (mk || br) row.push(mk);
-      if (br) row.push(1);
-    }
-    out.M.push(row);
-    if (mob.enchant) (out.enc || (out.enc = {}))[mob.id] = DAMAGE_TYPES.indexOf(mob.enchant);
-    const cm = comboMask(S, mob);
-    if (cm) (out.cb || (out.cb = {}))[mob.id] = cm;
-    elementView(S, out, mob.id, mob);
-    // a rift's toughness (64-dim.js hk: party size, level, tier) — only where it isn't 1, so the bar can show the real HP
-    if (mob.hk && mob.hk !== 1) (out.HK || (out.HK = {}))[mob.id] = Math.round(mob.hk * 1000) / 1000;
+  // what a monster shows is the same for every viewer: built once a tick for the map (endTick drops it), each viewer
+  // keeps the near ones
+  if (!rt.mv || rt.mvAt !== S.now) { rt.mv = mobViews(S, rt); rt.mvAt = S.now; }
+  if (rt.mv.fb.length) out.fb = rt.mv.fb;
+  for (const v of rt.mv.list) {
+    if (!near(v.mob)) continue;
+    out.M.push(v.row);
+    if (v.enc !== undefined) (out.enc || (out.enc = {}))[v.mob.id] = v.enc;
+    if (v.cm) (out.cb || (out.cb = {}))[v.mob.id] = v.cm;
+    if (v.ail) (out.ail || (out.ail = [])).push(v.ail);
+    if (v.hk) (out.HK || (out.HK = {}))[v.mob.id] = v.hk;
   }
   for (const dr of rt.drops) {
     if (near(dr) && (dr.own === pid || S.now >= dr.freeAt)) out.D.push([dr.id, dr.it, Math.round(dr.x), Math.round(dr.y), dr.q]);
