@@ -2473,3 +2473,51 @@ body[data-lay="full"] #side::after {
   padding: 14px 16px; margin-bottom: 14px; color: #ebe2d2;
 }
 .ending-foot { font-size: 11px; color: #a89c84; margin-bottom: 14px; }
+
+/* Laputa-style silent tapestry opening cinematic & 11s Willow Plaza camera pan (intro.js) */
+body.introcam #hud > *, body.introcam #windows > .window, body.introcam #tip, body.introcam #prompt {
+  opacity: 0 !important; pointer-events: none !important; transition: opacity .8s ease-out;
+}
+body.introcam::before, body.introcam::after { height: 9vh; transition: height .8s ease-out; }
+.intro-overlay {
+  position: fixed; inset: 0; z-index: 980; background: #07060a; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.intro-stage {
+  position: relative; width: 100%; height: 100%; overflow: hidden;
+  box-shadow: inset 0 9vh 0 #050408, inset 0 -9vh 0 #050408;
+}
+.intro-plate {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; opacity: 0; will-change: transform, opacity;
+  filter: contrast(1.04) saturate(0.95);
+}
+.intro-grain {
+  position: absolute; inset: 0; pointer-events: none; z-index: 2;
+  background: radial-gradient(ellipse at center, transparent 58%, rgba(8, 5, 14, 0.55) 100%);
+  box-shadow: inset 0 9vh 0 #050408, inset 0 -9vh 0 #050408;
+}
+.intro-spores { position: absolute; inset: 0; pointer-events: none; z-index: 3; opacity: 0; transition: opacity 1.2s ease; }
+.intro-spores.on { opacity: 1; }
+.intro-spores i {
+  position: absolute; width: 4px; height: 4px; border-radius: 50%;
+  background: #d85078; box-shadow: 0 0 8px 2px rgba(176, 48, 120, 0.8);
+  animation: introSpore 4.2s linear infinite;
+}
+@keyframes introSpore {
+  0% { transform: translate(0, 12px) scale(0.6); opacity: 0; }
+  25% { opacity: 0.9; }
+  80% { opacity: 0.7; }
+  100% { transform: translate(-40px, -90px) scale(1.2); opacity: 0; }
+}
+.intro-fade {
+  position: fixed; inset: 0; z-index: 970; pointer-events: none;
+  background: rgba(6, 5, 10, 1);
+}
+.intro-skip {
+  position: fixed; right: 18px; bottom: 22px; z-index: 990; pointer-events: auto;
+  padding: 5px 12px; font: 11px var(--pix); color: rgba(244, 232, 200, 0.65);
+  background: rgba(16, 12, 24, 0.55); border: 1px solid rgba(212, 178, 108, 0.35);
+  cursor: pointer; transition: opacity .2s, color .2s, border-color .2s;
+}
+.intro-skip:hover { color: #ffe8a8; border-color: #e2b85c; background: rgba(24, 18, 36, 0.85); }

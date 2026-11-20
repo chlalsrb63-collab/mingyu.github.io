@@ -64,11 +64,12 @@ export function setWorldTransform(a = 1, b = 0, c = 0, d = 1, x = 0, y = 0) {
 }
 /** Fit the world to a W×H screen rect (the HUD passes the play viewport; default the whole window). */
 let baseZ = 2, zoomMul = 1, lW = 0, lH = 0, lZoom = 0;
-/** The zoom for a close-up (talkcam.js): the resting zoom times `m`, rounded up to whole device pixels; re-sizes only when that changes. */
+/** The zoom for a close-up (talkcam.js) or wide long-shot (intro.js): rounded to whole device pixels; re-sizes only when that changes. */
 export function setZoomMul(m) {
   zoomMul = m;
   const D = window.devicePixelRatio || 1;
-  if (lW && !lZoom && (m > 1 ? Math.ceil(baseZ * D * m) / D : baseZ) !== Z) resize(lW, lH, lZoom);
+  const target = m > 1 ? Math.ceil(baseZ * D * m) / D : m < 1 ? Math.max(1, Math.round(baseZ * D * m)) / D : baseZ;
+  if (lW && !lZoom && target !== Z) resize(lW, lH, lZoom);
 }
 export function resize(W = innerWidth, H = innerHeight, zoom = 0) {
   if (!cv) return;
@@ -83,6 +84,7 @@ export function resize(W = innerWidth, H = innerHeight, zoom = 0) {
   Z = Math.max(1, Math.round(Z * D)) / D;
   baseZ = Z;
   if (zoomMul > 1) Z = Math.ceil(Z * D * zoomMul) / D;
+  else if (zoomMul < 1) Z = Math.max(1, Math.round(Z * D * zoomMul)) / D;
   if (zoom) Z = zoom;                    // preview pages ask for a fixed zoom (1 = the whole map at world size)
   vw = Math.ceil(W / Z); vh = Math.ceil(H / Z);
   if (!zoom) { cam.x += (ovw - vw) / 2; cam.y += (ovh - vh) / 2; }   // keep the view centred across a zoom step

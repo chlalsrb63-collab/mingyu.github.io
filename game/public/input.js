@@ -18,8 +18,9 @@ import { G, $, dist, T, clamp, world, now, resize } from "./state.js";
 import { act } from "./net.js";
 import { usePotion, interact, stoneNear, aimAtPoint, attack, dash, talkKey } from "./actions.js";
 import { autoSt } from "./update.js";
-import { toggleWin, closeTop, openWin, toast, isOpen, replyWhisper } from "./windows.js";
+import { toggleWin, closeTop, closeAll, openWin, toast, isOpen, replyWhisper } from "./windows.js";
 import * as TalkCam from "./talkcam.js";
+import * as Intro from "./intro.js";
 import * as Track from "./track.js";
 import * as PMenu from "./pmenu.js";
 import * as SX from "./sxwin.js";
@@ -338,6 +339,7 @@ export function setupInput() {
   $("#btn-aim").addEventListener("click", () => { setAimArrow(!G.aimArrow); Sound.play("ui"); });
   TalkCam.load(); showTalkCam();
   $("#btn-talkcam").addEventListener("click", () => { TalkCam.setEnabled(!TalkCam.enabled); showTalkCam(); Sound.play("ui"); });
+  $("#btn-intro-replay")?.addEventListener("click", () => { closeAll(); Sound.play("ui"); Intro.start(); });
   let mb = false; try { mb = localStorage.getItem("lumentale:mybar") === "1"; } catch { /* private mode */ }
   setMyBars(mb);
   $("#btn-mybar").addEventListener("click", () => { setMyBars(!G.myBars); Sound.play("ui"); });

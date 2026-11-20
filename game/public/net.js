@@ -14,6 +14,7 @@ import { iconImg, CLASS_ICON } from "./uiicons.js";
 import * as Growth from "./growth.js";
 import * as Wardrobe from "./wardrobe_ui.js";
 import * as FairMkt from "./fairmkt.js";
+import * as Intro from "./intro.js";
 import * as QS from "./quickslots.js";
 import * as SideQ from "./sidequests.js";
 import * as SkillFx from "./skillfx.js";
@@ -285,6 +286,7 @@ function onSnap(s) {
     refreshUi();
     restoreOpen();                               // the windows open when this character last left (once per game, windows.js)
     Growth.onSelf(s.self);
+    Intro.maybeStart(s.self);
     if (isOpen("guild")) renderGuild();
   }
   if (s.fm) FairMkt.onFm(s.fm);              // a 장날 merchant's list, when asked for or after a purchase (fairmkt.js)
