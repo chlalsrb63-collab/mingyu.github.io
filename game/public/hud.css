@@ -2240,16 +2240,20 @@ body[data-lay="full"].playing #w-dex:not(.docked) { height: var(--win-h); }
 #alba-play .ap-mul { margin-left: .3em; padding: 0 .35em; border-radius: 3px; background: #d4520a; color: #fff6da; font-size: .95em; }
 #alba-play.fever .ap-mul { background: #ff2a6a; box-shadow: 0 0 6px #ffb040; }
 #alba-play .ap-pops { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 3; }
-#alba-play .ap-pop { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font: 900 30px/1 var(--pix); color: #ffe24a; -webkit-text-stroke: 2px #3a2208; paint-order: stroke fill; text-shadow: 0 3px 0 #3a2208, 0 0 12px rgba(255,200,60,.7); animation: ap-pop 1.1s cubic-bezier(.2,.9,.3,1) forwards; }
+#alba-play .ap-pop { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; font: 900 30px/1 var(--pix); color: #ffe24a; -webkit-text-stroke: 2px #3a2208; paint-order: stroke fill; text-shadow: 0 3px 0 #3a2208, 0 0 12px rgba(255,200,60,.7); animation: ap-pop 1.1s cubic-bezier(.2,.9,.3,1) forwards; will-change: transform, opacity; }
 #alba-play .ap-pop.t1 { font-size: 38px; } #alba-play .ap-pop.t2 { font-size: 48px; color: #fff07a; } #alba-play .ap-pop.t3 { font-size: 60px; color: #fff; text-shadow: 0 3px 0 #3a2208, 0 0 18px #ffb020, 0 0 34px #ff7a20; }
 #alba-play .ap-pop small { margin-left: .2em; font-size: .5em; color: #ffb04a; vertical-align: .35em; }
 #alba-play .ap-pop.neg { color: #ff5a4a; -webkit-text-stroke-color: #3a0a08; text-shadow: 0 3px 0 #3a0a08, 0 0 12px rgba(255,60,40,.7); animation-name: ap-neg; }
 #alba-play .ap-banner { position: absolute; left: 50%; top: 34%; transform: translate(-50%, -50%); padding: 10px 26px; white-space: nowrap; font: 900 34px/1 var(--pix); color: #fff; -webkit-text-stroke: 2px #4a1a08; paint-order: stroke fill; background: linear-gradient(90deg, transparent, rgba(255,110,30,.9) 18%, rgba(255,60,90,.9) 82%, transparent); animation: ap-banner 1.6s ease-out forwards; }
+#alba-play .ap-banner.grade { top: 22%; font-size: 30px; background: linear-gradient(90deg, transparent, rgba(40,150,80,.9) 18%, rgba(30,120,170,.9) 82%, transparent); }
+#alba-play .ap-banner.g4 { background: linear-gradient(90deg, transparent, rgba(230,160,16,.95) 18%, rgba(255,110,40,.95) 82%, transparent); }
+#alba-play .ap-word { position: absolute; left: 50%; top: 52%; transform: translate(-50%, -50%); font: 900 72px/1 var(--pix); color: #fff; -webkit-text-stroke: 3px #3a2208; paint-order: stroke fill; text-shadow: 0 4px 0 #3a2208; animation: ap-pop .9s cubic-bezier(.2,.9,.3,1) forwards; will-change: transform, opacity; }
+#alba-play .ap-word.go { color: #ffe24a; } #alba-play .ap-word.heal { top: 30%; font-size: 34px; color: #ff6a8a; -webkit-text-stroke-color: #4a0a1a; }
 #alba-play .ap-banner.rush { background: linear-gradient(90deg, transparent, rgba(60,120,255,.9) 18%, rgba(140,60,255,.9) 82%, transparent); }
 #alba-play .ap-box.shake { animation: ap-shake .3s linear; }
 #alba-play .ap-box.hurt { animation: ap-shake .4s linear; }
 #alba-play .ap-box.hurt .ap-board { animation: ap-hurt .5s ease-out; }
-#alba-play .ap-time.lost { animation: ap-drop .5s ease-out; }
+#alba-play .ap-time.lost { animation: ap-drop .5s ease-out; } #alba-play .ap-time { display: inline-block; } #alba-play .ap-time.bump { animation: ap-bump .4s ease-out; }
 @keyframes ap-pop { 0% { opacity: 0; transform: translate(-50%, -30%) scale(.35); } 14% { opacity: 1; transform: translate(-50%, -50%) scale(1.35); } 26% { transform: translate(-50%, -55%) scale(1); } 70% { opacity: 1; transform: translate(-50%, -110%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -160%) scale(.9); } }
 @keyframes ap-neg { 0% { opacity: 0; transform: translate(-50%, -50%) scale(1.8); } 12% { opacity: 1; transform: translate(-56%, -50%) scale(1.1); } 22% { transform: translate(-44%, -50%) scale(1.1); } 32% { transform: translate(-50%, -50%) scale(1); } 70% { opacity: 1; transform: translate(-50%, -30%); } 100% { opacity: 0; transform: translate(-50%, 0%) scale(.9); } }
 @keyframes ap-banner { 0% { opacity: 0; transform: translate(-50%, -50%) scale(2.2); } 12% { opacity: 1; transform: translate(-50%, -50%) scale(.95); } 20% { transform: translate(-50%, -50%) scale(1.05); } 78% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -80%) scale(1); } }
@@ -2258,11 +2262,12 @@ body[data-lay="full"].playing #w-dex:not(.docked) { height: var(--win-h); }
 @keyframes ap-shake { 0%, 100% { transform: none; } 20% { transform: translate(-5px, 2px); } 40% { transform: translate(5px, -2px); } 60% { transform: translate(-3px, 1px); } 80% { transform: translate(3px, 0); } }
 @keyframes ap-hurt { 0% { box-shadow: inset 0 0 0 2px #5a5284, inset 0 0 60px 20px rgba(255,40,30,.85); } 100% { box-shadow: inset 0 0 0 2px #5a5284, inset 0 0 0 0 rgba(255,40,30,0); } }
 @keyframes ap-fade { 0%, 70% { opacity: 1; } 100% { opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { #alba-play .ap-pop, #alba-play .ap-banner { animation-name: ap-fade; } #alba-play .ap-box.shake, #alba-play .ap-box.hurt { animation: none; } }
+@media (prefers-reduced-motion: reduce) { #alba-play .ap-pop, #alba-play .ap-banner, #alba-play .ap-word { animation-name: ap-fade; } #alba-play .ap-box.shake, #alba-play .ap-box.hurt { animation: none; } }
 #alba-play .ap-stage { width: auto; max-width: 100%; height: auto; max-height: 17vh; align-self: center; aspect-ratio: 4 / 1; image-rendering: pixelated; border: 2px solid #3a2a18; box-shadow: 0 0 0 2px #d9b665; background: #cfe8f8; }
 #alba-play .ap-bar { position: relative; height: 12px; background: #fff6da; border: 2px solid #3a2a18; border-radius: 2px; margin: 4px 0 8px; }
 #alba-play .ap-fill { display: block; height: 100%; width: 0; background: var(--ap-acc); transition: width .12s linear; }
-#alba-play .ap-mark { position: absolute; top: 12px; transform: translateX(-50%); font: 700 10px/1 var(--pix); color: #6a5230; }
+#alba-play .ap-mark { position: absolute; top: 12px; transform: translateX(-50%); font: 700 10px/1 var(--pix); color: #6a5230; white-space: nowrap; }
+#alba-play .ap-mark.on { color: #1f7a3a; text-shadow: 0 0 4px #9af0a0; } #alba-play .ap-mark.next { color: #c0560a; } #alba-play .ap-mark.bump { animation: ap-bump .5s ease-out; }
 #alba-play .ap-hint { font: 400 var(--t11)/1.3 var(--pix); color: #6a5230; min-height: 1.3em; }
 #alba-play .ap-board { position: relative; flex: 1 1 auto; min-height: 200px; overflow: auto; display: flex; justify-content: center; align-items: flex-start; background: #3d3760; border: 2px solid #3a2a18; box-shadow: inset 0 0 0 2px #5a5284; touch-action: none; user-select: none; }
 #alba-play .ap-host { width: 100%; display: flex; justify-content: center; }

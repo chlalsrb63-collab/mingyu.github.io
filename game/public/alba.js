@@ -84,7 +84,7 @@ async function open(k) {
     const mod = GAMES[k] || (GAMES[k] = (await LOADERS[k]()).default);
     if (!st.ab || st.ab[0] !== k) return;   // the shift ended while the module loaded
     const d = build(), row = G.defs.alba.rows[k];
-    st.k = k; st.mod = mod; st.prevPhase = ""; st.act = 0; st.ph = 0; st.sAt = 0; st.parts.length = 0; st.react = null; st.result = null; st.shown = ""; st.disp = 0; st.last = { t: "", s: -1, c: -1 }; st.wasFever = false; st.wasRush = false; d.pops.textContent = "";
+    st.k = k; st.mod = mod; st.prevPhase = ""; st.act = 0; st.ph = 0; st.sAt = 0; st.parts.length = 0; st.react = null; st.result = null; st.shown = ""; st.disp = 0; st.last = { t: "", s: -1, c: -1 }; st.wasFever = false; st.wasRush = false; st.grade = -1; st.count = 0; d.pops.textContent = "";
     d.title.textContent = row.name; d.hint.textContent = row.hint; d.res.hidden = true; d.res.textContent = "";
     d.board.textContent = ""; d.root.hidden = false; d.quit.textContent = "그만두기"; delete d.quit.dataset.sure;
     const th = THEME[row.tool] || THEME.box; d.box.style.setProperty("--ap-acc", th[2]);
@@ -146,7 +146,7 @@ function showResult() {
     rec && ["b", rec],
     code === 1 ? ["b", `보수 ${gold.toLocaleString()}G${hot ? " · 특근 보너스!" : ""}`] : "",
     ["C 등급에 닿지 못했어요. 오늘 다시 도전할 수 있어요.", "오늘의 보수를 받았습니다!", "오늘 이 알바의 보수는 이미 받았어요 (연습 기록).", "오늘 받을 수 있는 보수 횟수를 모두 썼어요."][code],
-    `다음 등급까지: ${g >= 4 ? "최고 등급!" : `${["C", "B", "A", "S"][g]} ${cuts[g].toLocaleString()}점`}`,
+    g >= 4 ? ["b", "최고 등급 S!"] : `${"CBAS"[g]} 등급까지 ${(cuts[g] - score).toLocaleString()}점 남았어요 (기준 ${cuts[g].toLocaleString()}점)`,
   ].filter(Boolean);
   const btns = el("div", "ap-btns");
   const again = el("button", "btn", "한 번 더"), ok = el("button", "btn gold", "닫기");
@@ -249,10 +249,23 @@ function scorePop(dl, par, m) {
   jolt(d.score, dl > 0 ? "bump" : "drop");
   if (dl > 0) api.sfx("alba_gain", tier); else jolt(d.box, "shake");
 }
+/** One big centred word (countdown, healed heart) in the popup layer. */
+function pop(text, cls) { const b = el("b", `ap-word ${cls}`, text); st.dom.pops.append(b); setTimeout(() => b.remove(), 900); }
+/** The C/B/A/S marks: reached ones light up, the next one says how far it is; crossing one in play gets a banner. */
+function gradeMarks(score, par, run) {
+  const cuts = G.defs.alba.cuts.map((c) => Math.round(par * c)), g = cuts.filter((c) => score >= c).length;
+  st.dom.marks.forEach((m, i) => {
+    m.classList.toggle("on", i < g); m.classList.toggle("next", i === g);
+    const txt = i === g ? `${"CBAS"[i]}까지 ${(cuts[i] - score).toLocaleString()}` : "CBAS"[i];
+    if (m.textContent !== txt) m.textContent = txt;
+  });
+  if (run && st.grade >= 0 && g > st.grade) { banner(`${"CBAS"[g - 1]} 등급 달성!`, `grade g${g}`); jolt(st.dom.marks[g - 1], "bump"); }
+  st.grade = g;
+}
 function banner(text, cls) {
   const b = el("div", `ap-banner ${cls}`, text);
   st.dom.pops.append(b); setTimeout(() => b.remove(), 1700);
-  api.sfx(cls === "fever" ? "alba_fever" : "alba_big");
+  api.sfx(cls === "fever" ? "alba_fever" : cls.startsWith("grade") ? "alba_win" : "alba_big");
 }
 
 // ── every animation frame
@@ -270,14 +283,19 @@ export function tick(t) {
   }
   const lives = st.ab[11] || 0, hearts = lives ? " " + "♥".repeat(Math.max(0, lives - (st.ab[10] || 0))) + "♡".repeat(Math.min(lives, st.ab[10] || 0)) : "";
   const txt = (ended ? "종료" : phase === "brief" ? `준비 ${Math.ceil(toStart / 1000)}` : mmss(left)) + hearts;
-  if (txt !== st.last.t) { d.time.textContent = txt; st.last.t = txt; if (phase === "run" && left < 10500 && left > 0) api.sfx("alba_tick"); if (st.last.h !== undefined && hearts.length && st.ab[10] > st.last.h) { api.sfx("alba_hurt"); jolt(d.box, "hurt"); jolt(d.time, "lost"); } st.last.h = st.ab[10] || 0; }
+  if (txt !== st.last.t) { d.time.textContent = txt; st.last.t = txt; if (phase === "run" && left < 10500 && left > 0) api.sfx("alba_tick"); if (st.last.h !== undefined && hearts.length && st.ab[10] > st.last.h) { api.sfx("alba_hurt"); jolt(d.box, "hurt"); jolt(d.time, "lost"); }
+    else if (st.last.h !== undefined && hearts.length && (st.ab[10] || 0) < st.last.h && phase === "run") { pop("♥ +1", "heal"); api.sfx("alba_chime"); jolt(d.time, "bump"); } st.last.h = st.ab[10] || 0; }
   const rush = left < G.defs.alba.rushMs && phase === "run";
   if (score !== st.last.s) {
     const dl = st.last.s >= 0 && phase !== "end" ? score - st.last.s : 0;
     st.last.s = score; d.fill.style.width = `${clamp(score / par / 1.1, 0, 1) * 100}%`;
     if (dl) scorePop(dl, par, mult(combo - 1, fever > 0, rush));   // the points were counted before the combo stepped up
     else st.disp = score;
+    gradeMarks(score, par, phase === "run");
   }
+  // 3 · 2 · 1 before the shift starts
+  const cnt = phase === "brief" ? Math.ceil(toStart / 1000) : 0;
+  if (cnt !== st.count) { st.count = cnt; if (cnt >= 1 && cnt <= 3) { pop(String(cnt), "count"); api.sfx(`alba_n${3 - cnt}`); } else if (!cnt && phase === "run") pop("시작!", "count go"); }
   // the score counts up to the server's number instead of jumping
   if (st.disp !== score) st.disp = Math.abs(score - st.disp) < 1.5 ? score : st.disp + (score - st.disp) * 0.22;
   const shown = `${Math.round(st.disp).toLocaleString()}점`;
