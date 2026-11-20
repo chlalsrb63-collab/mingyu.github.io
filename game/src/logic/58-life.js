@@ -238,50 +238,43 @@ const nodeMat = (n) => `m_${NODE_KINDS[n[0]]}${n[1]}`;
 const nodeLv = (n) => (n[0] === 3 ? CROP[n[1] - 1][1] : GRADE_LV[n[1] - 1]);
 const nodeG = (n) => (n[0] === 3 ? CROP[n[1] - 1][2] : n[1]);
 /**
- * A map's gathering nodes [kind 0..2 (herb ore wood), grade, tx, ty], placed once from the map's id and kept on
- * the map (the wire sends this list as `map.nodes`). Only hunting grounds have them: reachable tiles at least
- * NODE.gap apart and NODE.clear from doors, signs, waypoint stones, NPCs and fires; one per NODE.per open tiles
- * (clamped to NODE.min..max); hidden pockets weigh double; kinds by the theme's NODE_W. An editor map's hand-placed
- * crops come first, safe or not ([3, crop, x, y]).
+ * A map's gathering nodes. Wild field nodes (herb/ore/wood) are retired — hunting monsters drop those
+ * materials by map grade instead (rollHuntMats). Only hand-placed village crops (`m.crops`, kind 3) stay.
  */
 function lifeNodes(m) {
   if (m.nodes) return m.nodes;
   m.nodes = (m.crops || []).map(([x, y, c]) => [3, c, x, y]);
-  if (m.safe || !m.reach || !Object.hasOwn(MAP_META, m.id)) return m.nodes;
-  const W = m.w, H = m.h, g = gradeOfMap(m), wt = NODE_W[m.theme] || NODE_W.meadow, c = NODE.clear;
-  const busy = new Uint8Array(W * H);
-  const keep = (x, y) => {
-    for (let dy = -c; dy <= c; dy++) for (let dx = -c; dx <= c; dx++) if (inMap(m, x + dx, y + dy)) busy[(y + dy) * W + x + dx] = 1;
-  };
-  for (const pt of m.portals) keep(pt.x, pt.y);
-  for (const k of m.marks || []) keep(k.x, k.y);
-  for (const n of m.npcs || []) keep(n.x, n.y);
-  for (const s of m.stones || []) keep(s.x, s.y);
-  for (const [fx, fy] of FIRES[m.id] || []) keep(fx, fy);
-  const box = { seed: (strHash(m.id) ^ 0x6e0d) | 0 };
-  let open = 0;
-  const cand = [];
-  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
-    const i = y * W + x;
-    if (!m.reach[i]) continue;
-    open++;
-    // a weighted shuffle (key u^(1/w)): hidden pockets come up twice as often
-    if (!busy[i]) cand.push([Math.pow(rnd(box), 1 / (m.zone && m.zone[i] === Z_HIDDEN ? NODE.hidden : 1)), i]);
+  return m.nodes;
+}
+/** Material grade (1..5) for a monster kill: the map's configured grade, falling back to mob level in rifts. */
+function matDropGrade(m, d) {
+  if (m && (Number.isInteger(m.grade) || Object.hasOwn(GRADE_MAP, m.id) || m.band || (m.id && Object.hasOwn(MAP_META, m.id) && MAP_META[m.id].band))) {
+    return gradeOfMap(m);
   }
-  cand.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
-  const want = clamp(Math.round(open / NODE.per), NODE.min, NODE.max), got = [];
-  for (const [, i] of cand) {
-    if (got.length >= want) break;
-    const x = i % W, y = (i - x) / W;
-    if (got.some(([gx, gy]) => (gx - x) ** 2 + (gy - y) ** 2 < NODE.gap * NODE.gap)) continue;
-    got.push([x, y]);
+  let g = 0;
+  for (const t of GRADE_TIER) if ((d.lv || 1) >= t) g++;
+  return Math.max(1, g);
+}
+/** Roll crafting materials (`m_h<g>`, `m_o<g>`, `m_w<g>`) dropped by a slain monster on map `m`. */
+function rollHuntMats(S, m, d, rank) {
+  const rk = clamp(rank | 0, 0, 2);
+  // Dedicated deterministic RNG stream so material drops never perturb combat or rift world RNG.
+  const box = S.matRng || (S.matRng = { seed: ((S.seed || 1) ^ 0x6d2b79f5) | 0 });
+  if (rnd(box) >= MAT_DROP.chance[rk]) return [];
+  const g = matDropGrade(m, d), wt = (m && NODE_W[m.theme]) || [0.34, 0.33, 0.33], [lo, hi] = MAT_DROP.qty[rk];
+  const out = [];
+  if (rk === 2) {
+    // Field bosses and bosses guarantee all three crafting material kinds of their zone's grade.
+    for (let k = 0; k < 3; k++) out.push({ it: `m_${NODE_KINDS[k]}${g}`, n: ri(box, lo, hi), dx: ri(box, -14, 14), dy: ri(box, -8, 10) });
+    return out;
   }
-  for (const [x, y] of got) {
+  const nRolls = MAT_DROP.rolls[rk];
+  for (let i = 0; i < nRolls; i++) {
     let r = rnd(box), k = 0;
     while (k < 2 && (r -= wt[k]) >= 0) k++;
-    m.nodes.push([k, g, x, y]);
+    out.push({ it: `m_${NODE_KINDS[k]}${g}`, n: ri(box, lo, hi), dx: ri(box, -14, 14), dy: ri(box, -8, 10) });
   }
-  return m.nodes;
+  return out;
 }
 /** When node `i` of the player's map is ready for them again (0 = now). */
 const nodeReady = (p, i) => (p.ng && p.ng[p.map] && p.ng[p.map][i]) || 0;

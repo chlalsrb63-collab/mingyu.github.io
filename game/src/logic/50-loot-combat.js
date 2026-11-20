@@ -235,12 +235,14 @@ function lootFor(S, rt, mob, p) {
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   // Use the high end of the material roll without drawing more combat randomness.
   if (!d.chest && stoneRoll >= 1 - SOCK_DROP[rank]) out.push({ it: SOCK_ITEM, n: 1 });
+  // Crafting materials (herbs/ores/wood) matching this field's grade drop directly from monsters.
+  if (!mob.dim) for (const mat of rollHuntMats(S, mapOfS(S, rt.id), d, rank)) out.push(mat);
   for (const o of out) {
     const atCorpse = o.it === SOCK_ITEM;
     rt.drops.push({
       id: S.nextId++, it: o.g ? o.g.id : o.it, g: o.g || null, n: o.n || 1, q: o.g ? o.g.q : stackQuality(o.it),
       ...(RUNES[o.it] ? { il: runeIl(shownLv(d.lv) + IL_RANK[rank]) } : {}),
-      x: mob.x + (atCorpse ? 0 : ri(S, -14, 14)), y: mob.y + (atCorpse ? 0 : ri(S, -8, 10)),
+      x: mob.x + (atCorpse ? 0 : o.dx !== undefined ? o.dx : ri(S, -14, 14)), y: mob.y + (atCorpse ? 0 : o.dy !== undefined ? o.dy : ri(S, -8, 10)),
       own: p.pid, freeAt: S.now + 20000, dieAt: S.now + 60000,
     });
   }

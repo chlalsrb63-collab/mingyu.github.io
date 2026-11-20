@@ -293,7 +293,7 @@ export function mapDetail(host, d, ctx) {
   addRow(body, "몬스터", (d.mobs || []).filter(id => !defs.mobs?.[id]?.boss && !defs.mobs?.[id]?.chest).map(mobName).filter(Boolean).join(", "));
   addRow(body, "보스", (d.bosses || []).map(mobName).filter(Boolean).join(", "));
   const grade = defs.life?.mapGrade?.[d.id];
-  if (grade && d.kind !== "in") addRow(body, "채집", `${grade}등급`);
+  if (grade && d.kind !== "in") addRow(body, "재료 드랍", `${grade}등급`);
   addRow(body, "의뢰", quests.get(d.id)?.join(", "));
   const doors = E("div", "", "map-detail-buttons");
   for (const id of chart.graph.get(d.id)) {

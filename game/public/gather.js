@@ -252,11 +252,11 @@ export function renderPouch(box, s, opts = {}) {
   const key = "lumentale:pouch:" + (opts.where || "inv"), open = localStorage.getItem(key) !== "0";
   const hd = el("button", "pouch-hd" + (open ? " open" : ""));
   hd.append(A.iconImg("bag", "#e2c486"), el("b", "", "재료 주머니"), el("span", "", ids.length ? `${ids.length}종` : "비어 있음"));
-  hd.title = `채집한 재료와 주괴, 식재료·빈 병이 가방 칸을 쓰지 않고 이곳에 모입니다 (종류마다 ${max}개까지)`;
+  hd.title = `사냥이나 텃밭 수확으로 모은 재료와 주괴, 식재료·빈 병이 가방 칸을 쓰지 않고 이곳에 모입니다 (종류마다 ${max}개까지)`;
   hd.addEventListener("click", () => { localStorage.setItem(key, open ? "0" : "1"); A.Sound.play("ui"); renderPouch(box, s, opts); });
   box.append(hd);
   if (!open) return;
-  if (!ids.length) { box.append(el("p", "hint", `사냥터의 약초 · 광맥 · 통나무 곁에서 ${K("interact")} — 모은 재료가 여기에 쌓입니다.`)); return; }
+  if (!ids.length) { box.append(el("p", "hint", `사냥터 몬스터에게서 얻은 제작 재료나 버드나무 마을 텃밭에서 수확한 작물이 여기에 쌓입니다.`)); return; }
   const grid = el("div", "grid pouch-grid");
   for (const id of ids) {
     // at a shop: a click sells one, Shift+click all of them (the server checks the counter and the count)

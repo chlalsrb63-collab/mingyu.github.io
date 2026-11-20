@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
   "\nexport const __t = { JB_RETIRED, FISH_LOCAL, FISH_CM, FISH_BOOK, fbookN, lifeBuff, gatBonus, lifeStepText, LIFE_STEP, gainLife, lifeOdds, lifeTime, lifeGrade, lifeXp, gradeOfMap, fishLand, fishWait, cookDish, cookBurnt, lifeSheetClean, RECIPES, FISH_G, RXP, GRADE_LV, NPC_ROLES, NPC_MAP, ITEMS," +
   // L2
-  " lifeNodes, mapOf, mapPayload, MAP_META, FIRES, NODE, nodeMat, lifeTick, gatDone, craftOnce, JB, JB_PAY, jbOffers, jbOffersOf, jbRoll, jbNeed, jbQual, jbSit, jbGold, JB_GRADE, JB_RUSH, isNight, MOBS, jbRoute, jbLimit, parcelSpd, addRep, REP_TIER, REP_PERK," +
+  " lifeNodes, matDropGrade, rollHuntMats, MAT_DROP, lootFor, pickUp, mapOf, mapPayload, MAP_META, FIRES, NODE, nodeMat, lifeTick, gatDone, craftOnce, JB, JB_PAY, jbOffers, jbOffersOf, jbRoll, jbNeed, jbQual, jbSit, jbGold, JB_GRADE, JB_RUSH, isNight, MOBS, jbRoute, jbLimit, parcelSpd, addRep, REP_TIER, REP_PERK," +
   " CRAFT, GEAR_CRAFT, SHOP, sellPrice, POUCH_MAX, addItem, takeItem, countItem, canAdd, stats, dayOf, lifeNeed, ENH_RATE, ENH_BLESS, AFFIX, rollGear, CNT_KEYS, ACH, DAILY_OTHER, LIFE_MASTER, exportChar, CHORES, CHORE, chorePool, choreSpots, walk, canStand, waterNear };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, D = L.defs(), T = 16;
@@ -250,46 +250,62 @@ const give = (id, n) => assert.ok(X.addItem(ch, id, n), "room for " + id);
 const wipe = (id) => X.takeItem(ch, id, X.countItem(ch, id));
 const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
 
-// ── nodes (B.4): placed from the map's id, counted by open ground, reachable, apart, clear of doors/signs/NPCs/fires
+// ── field gathering retired: hunting grounds spawn zero wild nodes; only village crops (kind 3) stay; monsters drop crafting materials by map grade
 {
-  const t0 = Date.now();
-  const fresh2 = L.atlas(true, ["meadow", "crypt"]).maps;
   for (const id of Object.keys(X.MAP_META)) {
     const m = X.mapOf(id), ns = X.lifeNodes(m);
-    // safe places grow only what a map plants by hand (the farm's crops, kind 3)
-    if (X.MAP_META[id].safe) { assert.ok(ns.every((n) => n[0] === 3), id + ": no wild nodes in safe places"); continue; }
-    let open = 0;
-    for (let y = 2; y < m.h - 2; y++) for (let x = 2; x < m.w - 2; x++) if (m.reach[y * m.w + x]) open++;
-    const want = Math.min(X.NODE.max, Math.max(X.NODE.min, Math.round(open / X.NODE.per)));
-    assert.equal(ns.length, want, `${id}: one node per ${X.NODE.per} open tiles (${open}), clamped`);
-    const g = D.life.mapGrade[id];
-    const busy = [...m.portals, ...(m.marks || []), ...m.npcs, ...(m.stones || []), ...(X.FIRES[id] || []).map(([x, y]) => ({ x, y }))];
-    ns.forEach(([k, gr, x, y], i) => {
-      assert.ok(k >= 0 && k <= 2 && gr === g, `${id} node ${i}: kind ${k}, grade ${gr} (map ${g})`);
-      assert.ok(m.reach[y * m.w + x], `${id} node ${i} reachable`);
-      for (const b of busy) assert.ok(Math.max(Math.abs(b.x - x), Math.abs(b.y - y)) > X.NODE.clear, `${id} node ${i} clear of (${b.x},${b.y})`);
-      for (let j = 0; j < i; j++) assert.ok((ns[j][2] - x) ** 2 + (ns[j][3] - y) ** 2 >= X.NODE.gap ** 2, `${id} nodes ${j},${i} apart`);
-    });
-    if (fresh2[id]) assert.deepEqual(X.lifeNodes(fresh2[id]), ns, id + ": the same nodes on a fresh build (deterministic)");
-    if (VERBOSE) console.log(id.padEnd(8), "open", open, "nodes", ns.length, "kinds", [0, 1, 2].map((k) => ns.filter((n) => n[0] === k).length).join("/"));
+    if (!X.MAP_META[id].safe) {
+      assert.equal(ns.length, 0, `${id}: hunting ground has no wild gathering nodes`);
+      assert.deepEqual(X.mapPayload(m).nodes, [], `${id}: payload carries empty nodes`);
+    } else {
+      assert.ok(ns.every((n) => n[0] === 3), id + ": safe places carry crops only");
+    }
   }
-  // the 4× grounds are capped: the biggest gets NODE.max, a small ground (the frost keep, ≈ 2,500 open) far fewer
-  assert.equal(X.lifeNodes(X.mapOf("meadow")).length, X.NODE.max);
-  assert.ok(X.lifeNodes(X.mapOf("frostkeep")).length < X.NODE.max);
-  assert.deepEqual(X.mapPayload(X.mapOf("meadow")).nodes, X.lifeNodes(X.mapOf("meadow")), "the map payload carries them");
-  if (VERBOSE) console.log("nodes checked in", Date.now() - t0, "ms");
+  // Monster material drops match each map's configured grade (1..5), all 3 kinds drop, and bosses drop all 3 kinds at once
+  for (const [mapId, wantG, mobK] of [["meadow", 1, "twinhare"], ["forest", 2, "splitboar"], ["city", 3, "doghead"], ["cave", 4, "bearmaw"], ["maple", 5, "ribdeer_gold"]]) {
+    const m = X.mapOf(mapId), d = X.MOBS[mobK];
+    assert.equal(X.matDropGrade(m, d), wantG, `${mapId} grade ${wantG}`);
+    const seen = new Set();
+    let hits = 0;
+    for (let k = 0; k < 600; k++) {
+      const drops = X.rollHuntMats(S, m, d, 0);
+      if (drops.length) hits++;
+      for (const o of drops) {
+        assert.ok(o.it.endsWith(String(wantG)), `${mapId} normal drop grade: ${o.it}`);
+        assert.ok(/^m_[how][1-5]$/.test(o.it), `${mapId} crafting material id: ${o.it}`);
+        seen.add(o.it);
+      }
+    }
+    near(hits / 600, X.MAT_DROP.chance[0], 0.06, `${mapId} normal drop rate`);
+    assert.deepEqual([...seen].sort(), [`m_h${wantG}`, `m_o${wantG}`, `m_w${wantG}`], `${mapId}: all three material kinds drop`);
+    const bossDrops = X.rollHuntMats(S, m, d, 2);
+    assert.deepEqual(bossDrops.map((o) => o.it), [`m_h${wantG}`, `m_o${wantG}`, `m_w${wantG}`], `${mapId}: boss guarantees all three kinds`);
+    assert.ok(bossDrops.every((o) => o.n >= 2 && o.n <= 3), `${mapId}: boss material qty 2..3`);
+  }
+  // Real lootFor integration: killing a boss drops crafting materials that pickUp stores in ch.pouch
+  to("forest");
+  const rtF = L.runtime(S, "forest");
+  rtF.drops.length = 0;
+  for (const id of ["m_h2", "m_o2", "m_w2"]) wipe(id);
+  X.lootFor(S, rtF, { k: "splitboar", el: 2, x: p.x, y: p.y }, p);
+  const matDrops = rtF.drops.filter((dr) => /^m_[how]2$/.test(dr.it));
+  assert.equal(matDrops.length, 3, "forest field-boss loot includes grade-2 herb/ore/wood drops");
+  for (const dr of matDrops) assert.ok(X.pickUp(S, p, dr), "material drop picks up cleanly");
+  assert.ok(ch.pouch.m_h2 >= 2 && ch.pouch.m_o2 >= 2 && ch.pouch.m_w2 >= 2, "picked materials land in the 재료 주머니");
+  for (const id of ["m_h2", "m_o2", "m_w2"]) wipe(id);
+  rtF.drops.length = 0;
 }
 
-// ── gathering (B.4): range, own cooldown, grade lock, fighting, the channel and its interruptions, the tap, yields
+// ── gathering engine on village crops (willow): range, own cooldown, level lock, fighting, channel, interruptions, tap, yields
 {
   fresh();
   ch.life.gather = { lv: 1, xp: 0 };
-  const m = X.mapOf("meadow"), ns = X.lifeNodes(m), i = 0, n = ns[i], mat = X.nodeMat(n);
-  standAt("meadow", n[2] + 3, n[3]);
+  const m = X.mapOf("willow"), ns = X.lifeNodes(m), i = ns.findIndex((q) => q[1] === 1), n = ns[i], mat = X.nodeMat(n);
+  standAt("willow", n[2] + 3, n[3]);
   assert.equal(act({ t: "gat", i }).error, "너무 멉니다");
   assert.equal(act({ t: "gat", i: 999 }).ok, false);
   assert.equal(act({ t: "gat", i: "0" }).ok, false);
-  standAt("meadow", n[2], n[3]);
+  standAt("willow", n[2], n[3]);
   p.hitAt = now - 1000;
   assert.equal(act({ t: "gat", i }).error, "싸우는 중에는 채집할 수 없습니다");
   p.hitAt = -1e9;
@@ -336,40 +352,32 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   assert.equal(p.gat, null); assert.equal(evs("ga")[0][3], -1);
   assert.ok(p.toast.includes("채집이 끊겼습니다."));
   for (const hit of [() => { p.hitAt = now + 1; }, () => { p.atkAt = now + 1; }, () => { p.sit = true; }]) {
-    fresh(); standAt("meadow", n[2], n[3]); p.ng = {};
+    fresh(); standAt("willow", n[2], n[3]); p.ng = {};
     assert.ok(act({ t: "gat", i }).ok);
     hit(); tickLife(100);
     assert.equal(p.gat, null, "interrupted");
   }
   fresh();
-  // the grade lock: the forest is grade 2 (Lv 10)
-  const fn = X.lifeNodes(X.mapOf("forest"))[0];
-  standAt("forest", fn[2], fn[3]);
-  assert.equal(act({ t: "gat", i: 0 }).error, "채집 레벨이 부족합니다 (Lv.10 필요)");
-  ch.life.gather = { lv: 10, xp: 0 };
-  assert.ok(act({ t: "gat", i: 0 }).ok);
-  p.gat = null;
-  // 대성공 by the formula (B.2): a master on grade 1 with a tap 75 %, without 60 %; a beginner 3 %; bonus items 4 %
-  standAt("meadow", n[2], n[3]);
+  // 대성공 by the formula (B.2): a master on grade 1 with a tap 75 %, without 60 %; a beginner 3 %; bonus crop 4 %
+  standAt("willow", n[2], n[3]);
   const runs = (lv, extra, N2) => {
     let great = 0, bonus = 0;
     for (let k = 0; k < N2; k++) {
       ch.life.gather = { lv, xp: 0 };
-      wipe("stone"); wipe("camp"); wipe("m_h2"); wipe(mat); wipe(X.nodeMat(ns[1]));   // (whatever node 1 yields: its pile must not fill the pouch)
-      p.gat = { i: 1, k: ns[1][0], map: "meadow", x: p.x, y: p.y, at: now, end: now, tapAt: now, sent: true, tapped: true, extra };
+      wipe("m_c1"); wipe("m_c2");
+      p.gat = { i, k: n[0], map: "willow", x: p.x, y: p.y, at: now, end: now, tapAt: now, sent: true, tapped: true, extra };
       clearEv();
       X.gatDone(S, p);
       if (evs("ga")[0][3] === 1) great++;
-      if (X.countItem(ch, "stone") + X.countItem(ch, "camp") + X.countItem(ch, "m_h2") > 0) bonus++;
+      if (X.countItem(ch, "m_c2") > 0) bonus++;
     }
     return [great / N2, bonus / N2];
   };
-  const mat1 = X.nodeMat(ns[1]);
   near(runs(50, 15, 2000)[0], 0.75, 0.04, "master + tap");
   near(runs(50, 0, 2000)[0], 0.6, 0.04, "master");
   const [g1, b1] = runs(1, 0, 3000);
-  near(g1, 0.03, 0.015, "beginner"); near(b1, 0.04, 0.015, "bonus item");
-  wipe(mat1); p.ng = {}; p.gat = null; clearEv();
+  near(g1, 0.03, 0.015, "beginner"); near(b1, 0.04, 0.015, "bonus crop");
+  wipe("m_c1"); wipe("m_c2"); p.ng = {}; p.gat = null; clearEv();
 }
 
 // ── the farm (H10): 감자's plot in 버드나무 마을 — crop nodes on open tiles, levels, yields, each player's own

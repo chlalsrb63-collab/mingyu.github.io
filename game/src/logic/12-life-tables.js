@@ -49,7 +49,7 @@ const LMAT_KIND = { h: "약초", o: "광석", w: "목재" };
 const LMAT_SELL = [6, 14, 30, 60, 110];
 for (const k of Object.keys(LMAT)) LMAT[k].forEach((name, i) => {
   ITEMS[`m_${k}${i + 1}`] = { name, type: "lmat", grade: i + 1, mk: k, price: Math.round(LMAT_SELL[i] / 0.4),
-    desc: `${GRADE_NAME[i]} ${LMAT_KIND[k]}. 생활 기술의 재료로 쓰인다.` };
+    desc: `${GRADE_NAME[i]} ${LMAT_KIND[k]}. 사냥터 몬스터에게서 얻으며 생활 기술의 재료로 쓰인다.` };
 });
 
 // ── fish by grade (B.3, B.5): the zone and the angler's level decide what can bite
@@ -101,11 +101,15 @@ const NODE_NAME = ["약초", "광맥", "통나무", "작물"];
  * hit: no gathering this long after being hit (ms) · move: px of movement that breaks the channel.
  */
 const NODE = { cd: 300000, ch: 2400, range: 24, tap: 700, lag: 250, tapAt: [0.35, 0.75], tapBonus: 15, bonus: 0.04, gap: 6, clear: 3, per: 150, min: 8, max: 60, hidden: 2, hit: 3000, move: 6 };
-/** Kind weights per theme [herb, ore, wood]. */
+/** Kind weights per theme [herb, ore, wood] for hunting crafting-material drops. */
 const NODE_W = {
-  meadow: [0.5, 0.2, 0.3], forest: [0.4, 0.15, 0.45], crypt: [0.3, 0.5, 0.2], city: [0.2, 0.55, 0.25], sewer: [0.2, 0.55, 0.25],
-  cave: [0.3, 0.6, 0.1], abyss: [0.3, 0.6, 0.1], autumn: [0.4, 0.15, 0.45],
+  meadow: [0.45, 0.25, 0.3], forest: [0.4, 0.2, 0.4], crypt: [0.3, 0.5, 0.2], city: [0.25, 0.5, 0.25], sewer: [0.25, 0.5, 0.25],
+  cave: [0.3, 0.55, 0.15], abyss: [0.3, 0.55, 0.15], autumn: [0.4, 0.2, 0.4],
+  jungle: [0.45, 0.2, 0.35], coast: [0.35, 0.4, 0.25], desert: [0.25, 0.5, 0.25], oasis: [0.45, 0.25, 0.3],
+  snow: [0.3, 0.45, 0.25], temple: [0.4, 0.35, 0.25], canyon: [0.25, 0.55, 0.2], lake: [0.45, 0.25, 0.3],
 };
+/** Hunting material drops by monster rank (0 normal, 1 elite/chest, 2 field boss/boss). */
+const MAT_DROP = { chance: [0.38, 0.85, 1], rolls: [1, 2, 3], qty: [[1, 1], [1, 2], [2, 3]] };
 /**
  * Crops (H10 farm): an editor map's `crops` [[x, y, crop 1..6]…] become nodes [3, crop, x, y] (lifeNodes), even in a
  * safe village; the same channel, tap and per-player cooldown ("they regrow") as every node. Each crop: its name,

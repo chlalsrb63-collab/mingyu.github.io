@@ -32,6 +32,10 @@ const srcs = {};
 const add = (id, s) => (srcs[id] ||= []).push(s);
 for (const [id, m] of reach) {
   for (const n of X.lifeNodes(m)) add(X.nodeMat(n), { how: n[0] === 3 ? "텃밭" : "node", sk: "gather", lv: X.nodeLv(n), map: id, cl: minLv(id) });
+  if (!X.MAP_META[id].safe && (X.MAP_META[id].kinds || []).length) {
+    const g = X.gradeOfMap(m);
+    for (const k of ["h", "o", "w"]) add(`m_${k}${g}`, { how: "hunt", sk: null, lv: 0, map: id, cl: minLv(id) });
+  }
   if (m.g.some((row) => row.includes("w"))) {
     const g = X.gradeOfMap(m);
     for (let k = 1; k <= g; k++) add(X.FISH_G[k - 1], { how: "fish", sk: "fish", lv: X.GRADE_LV[k - 1], map: id, cl: minLv(id) });
@@ -106,9 +110,9 @@ for (const [id, t] of Object.entries(X.JB)) {
 const KIND = { h: "약초", o: "광석", w: "목재", c: "작물" };
 const gaps = [];
 for (const k of ["h", "o", "w"]) for (let g = 1; g <= 5; g++) {
-  const id = `m_${k}${g}`, s = (srcs[id] || []).filter((x) => x.how === "node");
+  const id = `m_${k}${g}`, s = (srcs[id] || []).filter((x) => x.how === "hunt");
   if (VERBOSE) console.log(`  ${KIND[k]} ${g}등급 ${id}: ${s.length ? [...new Set(s.map((x) => `${x.map}[${X.MAP_META[x.map].band || "-"}]${x.cl ? `(Lv.${x.cl}+)` : ""}`))].join(" ") : "—"}`);
-  if (!s.length) gaps.push(`${KIND[k]} ${g}등급 (${id}, gather Lv.${X.GRADE_LV[g - 1]}+): no node`);
+  if (!s.length) gaps.push(`${KIND[k]} ${g}등급 (${id}): no hunting ground drop`);
 }
 for (const [g, id] of X.FISH_G.entries()) {
   const s = (srcs[id] || []).filter((x) => x.how === "fish");

@@ -1637,7 +1637,7 @@ const LMAT_KIND = { h: "약초", o: "광석", w: "목재" };
 const LMAT_SELL = [6, 14, 30, 60, 110];
 for (const k of Object.keys(LMAT)) LMAT[k].forEach((name, i) => {
   ITEMS[`m_${k}${i + 1}`] = { name, type: "lmat", grade: i + 1, mk: k, price: Math.round(LMAT_SELL[i] / 0.4),
-    desc: `${GRADE_NAME[i]} ${LMAT_KIND[k]}. 생활 기술의 재료로 쓰인다.` };
+    desc: `${GRADE_NAME[i]} ${LMAT_KIND[k]}. 사냥터 몬스터에게서 얻으며 생활 기술의 재료로 쓰인다.` };
 });
 
 // ── fish by grade (B.3, B.5): the zone and the angler's level decide what can bite
@@ -1689,11 +1689,15 @@ const NODE_NAME = ["약초", "광맥", "통나무", "작물"];
  * hit: no gathering this long after being hit (ms) · move: px of movement that breaks the channel.
  */
 const NODE = { cd: 300000, ch: 2400, range: 24, tap: 700, lag: 250, tapAt: [0.35, 0.75], tapBonus: 15, bonus: 0.04, gap: 6, clear: 3, per: 150, min: 8, max: 60, hidden: 2, hit: 3000, move: 6 };
-/** Kind weights per theme [herb, ore, wood]. */
+/** Kind weights per theme [herb, ore, wood] for hunting crafting-material drops. */
 const NODE_W = {
-  meadow: [0.5, 0.2, 0.3], forest: [0.4, 0.15, 0.45], crypt: [0.3, 0.5, 0.2], city: [0.2, 0.55, 0.25], sewer: [0.2, 0.55, 0.25],
-  cave: [0.3, 0.6, 0.1], abyss: [0.3, 0.6, 0.1], autumn: [0.4, 0.15, 0.45],
+  meadow: [0.45, 0.25, 0.3], forest: [0.4, 0.2, 0.4], crypt: [0.3, 0.5, 0.2], city: [0.25, 0.5, 0.25], sewer: [0.25, 0.5, 0.25],
+  cave: [0.3, 0.55, 0.15], abyss: [0.3, 0.55, 0.15], autumn: [0.4, 0.2, 0.4],
+  jungle: [0.45, 0.2, 0.35], coast: [0.35, 0.4, 0.25], desert: [0.25, 0.5, 0.25], oasis: [0.45, 0.25, 0.3],
+  snow: [0.3, 0.45, 0.25], temple: [0.4, 0.35, 0.25], canyon: [0.25, 0.55, 0.2], lake: [0.45, 0.25, 0.3],
 };
+/** Hunting material drops by monster rank (0 normal, 1 elite/chest, 2 field boss/boss). */
+const MAT_DROP = { chance: [0.38, 0.85, 1], rolls: [1, 2, 3], qty: [[1, 1], [1, 2], [2, 3]] };
 /**
  * Crops (H10 farm): an editor map's `crops` [[x, y, crop 1..6]…] become nodes [3, crop, x, y] (lifeNodes), even in a
  * safe village; the same channel, tap and per-player cooldown ("they regrow") as every node. Each crop: its name,
@@ -10606,12 +10610,14 @@ function lootFor(S, rt, mob, p) {
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   // Use the high end of the material roll without drawing more combat randomness.
   if (!d.chest && stoneRoll >= 1 - SOCK_DROP[rank]) out.push({ it: SOCK_ITEM, n: 1 });
+  // Crafting materials (herbs/ores/wood) matching this field's grade drop directly from monsters.
+  if (!mob.dim) for (const mat of rollHuntMats(S, mapOfS(S, rt.id), d, rank)) out.push(mat);
   for (const o of out) {
     const atCorpse = o.it === SOCK_ITEM;
     rt.drops.push({
       id: S.nextId++, it: o.g ? o.g.id : o.it, g: o.g || null, n: o.n || 1, q: o.g ? o.g.q : stackQuality(o.it),
       ...(RUNES[o.it] ? { il: runeIl(shownLv(d.lv) + IL_RANK[rank]) } : {}),
-      x: mob.x + (atCorpse ? 0 : ri(S, -14, 14)), y: mob.y + (atCorpse ? 0 : ri(S, -8, 10)),
+      x: mob.x + (atCorpse ? 0 : o.dx !== undefined ? o.dx : ri(S, -14, 14)), y: mob.y + (atCorpse ? 0 : o.dy !== undefined ? o.dy : ri(S, -8, 10)),
       own: p.pid, freeAt: S.now + 20000, dieAt: S.now + 60000,
     });
   }
@@ -14425,50 +14431,43 @@ const nodeMat = (n) => `m_${NODE_KINDS[n[0]]}${n[1]}`;
 const nodeLv = (n) => (n[0] === 3 ? CROP[n[1] - 1][1] : GRADE_LV[n[1] - 1]);
 const nodeG = (n) => (n[0] === 3 ? CROP[n[1] - 1][2] : n[1]);
 /**
- * A map's gathering nodes [kind 0..2 (herb ore wood), grade, tx, ty], placed once from the map's id and kept on
- * the map (the wire sends this list as `map.nodes`). Only hunting grounds have them: reachable tiles at least
- * NODE.gap apart and NODE.clear from doors, signs, waypoint stones, NPCs and fires; one per NODE.per open tiles
- * (clamped to NODE.min..max); hidden pockets weigh double; kinds by the theme's NODE_W. An editor map's hand-placed
- * crops come first, safe or not ([3, crop, x, y]).
+ * A map's gathering nodes. Wild field nodes (herb/ore/wood) are retired — hunting monsters drop those
+ * materials by map grade instead (rollHuntMats). Only hand-placed village crops (`m.crops`, kind 3) stay.
  */
 function lifeNodes(m) {
   if (m.nodes) return m.nodes;
   m.nodes = (m.crops || []).map(([x, y, c]) => [3, c, x, y]);
-  if (m.safe || !m.reach || !Object.hasOwn(MAP_META, m.id)) return m.nodes;
-  const W = m.w, H = m.h, g = gradeOfMap(m), wt = NODE_W[m.theme] || NODE_W.meadow, c = NODE.clear;
-  const busy = new Uint8Array(W * H);
-  const keep = (x, y) => {
-    for (let dy = -c; dy <= c; dy++) for (let dx = -c; dx <= c; dx++) if (inMap(m, x + dx, y + dy)) busy[(y + dy) * W + x + dx] = 1;
-  };
-  for (const pt of m.portals) keep(pt.x, pt.y);
-  for (const k of m.marks || []) keep(k.x, k.y);
-  for (const n of m.npcs || []) keep(n.x, n.y);
-  for (const s of m.stones || []) keep(s.x, s.y);
-  for (const [fx, fy] of FIRES[m.id] || []) keep(fx, fy);
-  const box = { seed: (strHash(m.id) ^ 0x6e0d) | 0 };
-  let open = 0;
-  const cand = [];
-  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
-    const i = y * W + x;
-    if (!m.reach[i]) continue;
-    open++;
-    // a weighted shuffle (key u^(1/w)): hidden pockets come up twice as often
-    if (!busy[i]) cand.push([Math.pow(rnd(box), 1 / (m.zone && m.zone[i] === Z_HIDDEN ? NODE.hidden : 1)), i]);
+  return m.nodes;
+}
+/** Material grade (1..5) for a monster kill: the map's configured grade, falling back to mob level in rifts. */
+function matDropGrade(m, d) {
+  if (m && (Number.isInteger(m.grade) || Object.hasOwn(GRADE_MAP, m.id) || m.band || (m.id && Object.hasOwn(MAP_META, m.id) && MAP_META[m.id].band))) {
+    return gradeOfMap(m);
   }
-  cand.sort((a, b) => b[0] - a[0] || a[1] - b[1]);
-  const want = clamp(Math.round(open / NODE.per), NODE.min, NODE.max), got = [];
-  for (const [, i] of cand) {
-    if (got.length >= want) break;
-    const x = i % W, y = (i - x) / W;
-    if (got.some(([gx, gy]) => (gx - x) ** 2 + (gy - y) ** 2 < NODE.gap * NODE.gap)) continue;
-    got.push([x, y]);
+  let g = 0;
+  for (const t of GRADE_TIER) if ((d.lv || 1) >= t) g++;
+  return Math.max(1, g);
+}
+/** Roll crafting materials (`m_h<g>`, `m_o<g>`, `m_w<g>`) dropped by a slain monster on map `m`. */
+function rollHuntMats(S, m, d, rank) {
+  const rk = clamp(rank | 0, 0, 2);
+  // Dedicated deterministic RNG stream so material drops never perturb combat or rift world RNG.
+  const box = S.matRng || (S.matRng = { seed: ((S.seed || 1) ^ 0x6d2b79f5) | 0 });
+  if (rnd(box) >= MAT_DROP.chance[rk]) return [];
+  const g = matDropGrade(m, d), wt = (m && NODE_W[m.theme]) || [0.34, 0.33, 0.33], [lo, hi] = MAT_DROP.qty[rk];
+  const out = [];
+  if (rk === 2) {
+    // Field bosses and bosses guarantee all three crafting material kinds of their zone's grade.
+    for (let k = 0; k < 3; k++) out.push({ it: `m_${NODE_KINDS[k]}${g}`, n: ri(box, lo, hi), dx: ri(box, -14, 14), dy: ri(box, -8, 10) });
+    return out;
   }
-  for (const [x, y] of got) {
+  const nRolls = MAT_DROP.rolls[rk];
+  for (let i = 0; i < nRolls; i++) {
     let r = rnd(box), k = 0;
     while (k < 2 && (r -= wt[k]) >= 0) k++;
-    m.nodes.push([k, g, x, y]);
+    out.push({ it: `m_${NODE_KINDS[k]}${g}`, n: ri(box, lo, hi), dx: ri(box, -14, 14), dy: ri(box, -8, 10) });
   }
-  return m.nodes;
+  return out;
 }
 /** When node `i` of the player's map is ready for them again (0 = now). */
 const nodeReady = (p, i) => (p.ng && p.ng[p.map] && p.ng[p.map][i]) || 0;
