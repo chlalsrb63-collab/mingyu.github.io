@@ -237,7 +237,11 @@ export function interact() {
   const panel = SERVICE_WINDOWS[n.role];
   if (!panel) { talkTo(n); return; }
   if (n.role === "shop" || n.role === "smith") { openWin(panel); openWin("inv"); }
-  else if (n.role === "elder") { openWin(panel); tutTry("talk"); }
+  else if (n.role === "elder") {
+    tutTry("talk");
+    if (G.self && G.self.q && G.self.q.i === 0 && G.self.q.st === 0) { talkTo(n); return; }
+    openWin(panel);
+  }
   else if (n.role === "dim") Dim.openKeeper();
   else if (n.role === "house") { Housing.openAgent(); openWin("inv"); }
   else if (STATION_ROLE.has(n.role)) Station.open(n.role, n.thing ? n.name : "");

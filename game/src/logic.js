@@ -26539,12 +26539,6 @@ export function applyAction(S, pid, a) {
       break;
     }
     case "tut": {
-      // the first talk with 엘더윈 also takes on the first main quest: no button to miss
-      if (a.s === "talk" && ch.q.i === 0 && ch.q.st === 0 && QUESTS[0]) {
-        ch.q.st = 1; ch.q.n = 0;
-        toast(p, `의뢰 수락: ${QUESTS[0].title}`);
-        p.dirty = true;
-      }
       tutStep(S, p, a.s);
       break;
     }

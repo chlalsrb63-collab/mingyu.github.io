@@ -279,21 +279,23 @@ function renderSheet(s) {
 }
 
 function renderElementStats(host, totals) {
-  if (!totals) return;
-  const types = G.defs.elements.types;
+  const types = G.defs.elements?.types;
+  if (!types || !types.length) return;
   const table = el("div", "element-sheet");
-  const columns = [["damage", "피해", ""], ["pen", "관통", "%"], ["res", "저항", "%"], ["proc", "발동 확률", "%"], ["dur", "지속시간", "%"]];
+  const extraCols = [["pen", "관통", "%"], ["proc", "발동", "%"], ["dur", "지속", "%"]];
   for (const type of types) {
-    const entries = columns.filter(([key]) => totals[key]?.[type]).map(([key, label, unit]) => {
-      const n = totals[key][type];
-      return `${label} ${n < 0 ? "−" : "+"}${Math.abs(n)}${unit}`;
-    });
-    if (!entries.length) continue;
-    const meta = elementInfo(type), name = el("b", "", meta.name);
+    const dmg = totals?.damage?.[type] || 0;
+    const res = totals?.res?.[type] || 0;
+    const extras = extraCols.filter(([k]) => totals?.[k]?.[type]).map(([k, l, u]) => `${l} ${totals[k][type] > 0 ? "+" : ""}${totals[k][type]}${u}`);
+    const meta = elementInfo(type);
+    const cell = el("div", "el-cell");
+    const name = el("b", "el-nm", meta.name);
     name.style.color = meta.color;
-    table.append(name, el("span", "", entries.join(" · ")));
+    const vals = el("span", "el-v", `공 ${dmg >= 0 ? "+" : ""}${dmg} · 저 ${res >= 0 ? "+" : ""}${res}%${extras.length ? ` · ${extras.join(" ")}` : ""}`);
+    cell.append(name, vals);
+    table.append(cell);
   }
-  if (table.firstChild) host.append(section("속성 능력치", "burst"), table);
+  host.append(section("속성 공격력 · 저항", "burst"), table);
 }
 
 // ── K: 무기 · 스킬 and 전직의 길 (jobtree.js draws the weapon rows and the tree; the skill rows are here, with the quick-slot drag) ──

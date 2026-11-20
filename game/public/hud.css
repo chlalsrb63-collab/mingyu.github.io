@@ -1546,21 +1546,32 @@ img.ji { width: 16px; height: 16px; flex: none; image-rendering: pixelated; vert
 .window .stats .grp span.chip, .sw-dv span.chip {
   display: flex; align-items: center; justify-content: flex-start; gap: 4px;
   min-width: 0; width: auto; height: auto; padding: 2px 5px;
-  background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(110, 82, 38, 0.08); border: 1px solid rgba(110, 82, 38, 0.22);
   cursor: pointer;
 }
 .window .stats .grp span.chip img.gi, .sw-dv span.chip img.gi { width: 12px; height: 12px; flex: none; }
 .window .stats .grp span.chip .lbl, .sw-dv span.chip .lbl {
-  font: var(--t10) var(--pix); color: var(--tx2, #cfc4d8);
+  font: var(--t10) var(--pix); color: #5c452d;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .window .stats .grp span.chip b, .sw-dv span.chip b {
-  margin-left: auto; font: var(--t11) var(--pix); color: #fff4d8; white-space: nowrap;
+  margin-left: auto; font: var(--t11) var(--pix); color: #24160b; white-space: nowrap;
 }
 .window .stats .grp span.chip:hover, .sw-dv span.chip:hover, .sw-row .nm.info:hover {
-  background: var(--sf3, #2c2537); border-color: rgba(232, 198, 120, 0.4);
+  background: rgba(207, 159, 85, 0.25); border-color: rgba(154, 108, 42, 0.55);
 }
 .sw-dv { grid-template-columns: repeat(2, 1fr); gap: 3px 6px; }
+.element-sheet {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 3px 6px;
+  padding: 5px 6px; background: var(--scr); border: 2px solid var(--ink);
+  box-shadow: inset 2px 2px 0 var(--sf0, #07060b), inset -2px -2px 0 var(--sf3, #2a2433);
+}
+.element-sheet .el-cell {
+  display: flex; align-items: center; justify-content: space-between; gap: 4px;
+  padding: 2px 5px; background: rgba(110, 82, 38, 0.08); border: 1px solid rgba(110, 82, 38, 0.2);
+}
+.element-sheet .el-nm { font: var(--t10) var(--pix); white-space: nowrap; text-shadow: 0 1px 0 rgba(255,255,255,0.45); }
+.element-sheet .el-v { font: var(--t10) var(--pix); color: #2b1d12; white-space: nowrap; }
 .sw-head { display: flex; align-items: center; gap: 6px; }
 .sw-head .xpn { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; }
 .sw-row { grid-template-columns: 1fr auto 34px auto; grid-template-rows: auto; }
@@ -2407,16 +2418,16 @@ body.talkq #w-talk .talk-me[data-ok="1"] { display: block; }
   content: ""; position: absolute; pointer-events: none; z-index: 3; image-rendering: pixelated; background-repeat: no-repeat;
 }
 .window:not(.docked)::before {
-  left: -14px; top: -11px; bottom: -10px; width: 84px;
+  left: -26px; top: -22px; bottom: -16px; width: 58px;
   background-image: url("assets/ui/vine_tl.png"), url("assets/ui/vine_bl.png");
   background-position: left top, left bottom;
-  background-size: 84px 51px, 64px 39px;
+  background-size: 58px 35px, 46px 28px;
 }
 .window:not(.docked)::after {
-  right: -14px; top: -11px; bottom: -10px; width: 72px;
+  right: -26px; top: -22px; bottom: -16px; width: 52px;
   background-image: url("assets/ui/vine_tr.png"), url("assets/ui/vine_br.png");
   background-position: right top, right bottom;
-  background-size: 72px 51px, 56px 39px;
+  background-size: 52px 35px, 42px 28px;
 }
 /* bottom HUD bar: all 4 corners + slim centered top garland draped right across the top brass bar */
 body:not([data-lay="land"]) #dock::before, body:not([data-lay="land"]) #dock::after {

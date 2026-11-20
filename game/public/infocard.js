@@ -208,6 +208,12 @@ const SHORT_LABEL = {
   eva: "회피", aspd: "공속", cdr: "쿨감", res: "상태저항", poise: "강인도", kbr: "밀림저항", burst: "원소폭발", wm: "무기숙련",
   str: "힘", wil: "의지", dex: "민첩", int: "지능", wis: "지혜", luk: "행운",
 };
+const STAT_COL = {
+  atk: "#c0382e", crit: "#d06818", critd: "#b8364e", acd: "#7a52a8", ls: "#a82442",
+  def: "#2c60a4", mhp: "#c83244", mmp: "#2864c4",
+  xpb: "#2c8a48", mf: "#b07a14", goldb: "#b88210", kills: "#5a4a58",
+  eva: "#2a8a68", aspd: "#2c74b0", cdr: "#6e48b0", res: "#387898", poise: "#6a5844", kbr: "#7a5838", burst: "#d04820", wm: "#b87818",
+};
 /**
  * A number on a sheet as a glyph, concise Korean label and value: hover shows full label, click opens its info card.
  * `name` overrides the title (공격력(마법)).
@@ -217,7 +223,7 @@ export function statChip(key, value, name) {
   const label = name || (six ? (row ? row[1] : key) : STAT_INFO[key][1]);
   const short = name && name.length <= 6 ? name : SHORT_LABEL[key] || label;
   const sp = el("span", "chip");
-  sp.append(iconImg(six ? six[0] : STAT_INFO[key][0], six ? six[1] : undefined), el("span", "lbl", short), el("b", "", String(value)));
+  sp.append(iconImg(six ? six[0] : STAT_INFO[key][0], six ? six[1] : STAT_COL[key]), el("span", "lbl", short), el("b", "", String(value)));
   return bind(sp, `${label} ${value}`, () => ({ ...statCard(key, value), ...(name ? { title: name } : {}) }));
 }
 

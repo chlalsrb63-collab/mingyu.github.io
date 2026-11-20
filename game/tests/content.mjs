@@ -400,10 +400,12 @@ assert.equal(D.tutorial[7].id, "level", "the stat-point step is appended (indice
   W.p.x = elder.x * T + 8; W.p.y = elder.y * T + 30;
   assert.equal(me.q.st, 0);
   assert.ok(W.act({ t: "tut", s: "talk" }).ok, "talking to the elder");
+  me = W.self();
+  assert.equal(me.q.st, 0, "talking opens dialogue without silently auto-accepting the quest");
+  assert.ok(W.act({ t: "quest", a: "accept" }).ok, "player explicitly accepts the first main quest");
   assert.ok(W.p.toast.some((s) => s.includes("의뢰 수락: 초원의 토비또")));
   me = W.self();
-  assert.equal(me.q.st, 1, "the first talk also accepts the first main quest");
-  assert.equal(W.act({ t: "quest", a: "accept" }).error, "이미 진행 중입니다", "nothing left to accept");
+  assert.equal(me.q.st, 1, "first main quest is now active");
   // the old dagger in hand does not count: a 모험가 picks a weapon at 수련관 카이 and puts it on
   assert.equal(D.tutorial[me.tut.i].id, "equip", "talk → equip");
   const kai = town.npcs.find((n) => n.role === "train");
