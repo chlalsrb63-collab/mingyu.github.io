@@ -2242,6 +2242,9 @@ body[data-lay="full"].playing :is(#w-skill, #w-life, #w-alba, #w-charm, #w-troph
 .buddy-line.outgoing { margin-left: auto; text-align: right; }
 .buddy-line.outgoing p { background: #773f5a; border-radius: 7px 7px 2px 7px; text-align: left; }
 .buddy-label { display: block; margin-bottom: 4px; }
+.buddy-job-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.buddy-job-row .buddy-label { margin: 0; flex: 0 0 auto; }
+.buddy-job-row select { flex: 1 1 auto; min-width: 0; }
 .buddy-compose input { flex: 1 1 0; min-width: 0; padding: 6px 7px; color: #fff4f7; background: #282232; border: 1px solid #8b647e; font: inherit; }
 #buddy-cooldown { margin: 6px 0 2px; }
 body[data-lay="full"].playing #w-dex:not(.docked) { height: var(--win-h); }

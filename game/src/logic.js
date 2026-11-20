@@ -24965,12 +24965,12 @@ function coopDefs() {
 
 const BUDDY_COOLDOWN = 60 * 60000;
 const BUDDY_PARTY_NOTICE = "다른 유저와 파티를 하여, 짝꿍은 집으로 돌아갑니다";
-const BUDDY_ASSIST = { share: 0.15, bossShare: 0.08, perHit: 0.18, duration: 4200, range: 120, maxTargets: 5, guardRange: 64, guardHealCd: 10000, guardHealRate: 0.06 };
+const BUDDY_ASSIST = { share: 0.15, bossShare: 0.08, perHit: 0.18, duration: 4200, range: 120, maxTargets: 5, guardRange: 64 };
 const BUDDY_MODES = ["neutral", "attack", "guard", "passive"];
 const BUDDY_AI_LINES = {
   attack: "알겠어! 주변 몬스터는 내가 먼저 앞장서서 상대할게!",
   neutral: "좋아, 네가 먼저 노리는 녀석부터 맞춰서 도울게.",
-  guard: "맡겨 줘! 다가오는 적을 막아 주고 네 체력도 챙길게.",
+  guard: "맡겨 줘! 다가오는 적부터 내가 단단히 막아 줄게.",
   passive: "응, 전투는 잠시 쉬고 옆에서 조용히 따라갈게.",
 };
 const BUDDY_NAMES = ["보리", "솔이", "두리", "단비", "포포", "모루", "여울", "라온", "콩이", "나루", "초리", "새봄", "밤톨", "하루", "별이"];
@@ -25036,6 +25036,7 @@ function buddyValidate(S, p, a) {
   if (p.dead || inDim(p) || p.ab) return bad("현재 활동을 마치고 짝꿍에게 연락해 주세요.");
   if (p.buddyCall) return bad("짝꿍이 메시지를 확인하고 있어요.");
   if (a.k === "leave") return b?.active ? OK : bad("곁에 있는 짝꿍이 없어요.");
+  if (a.job != null && a.job !== "" && !BUDDY_JOBS.includes(a.job)) return bad("알 수 없는 직업이에요.");
   if (typeof a.m !== "string" || !a.m.trim() || a.m.length > 60 || /[\x00-\x1f\x7f]/.test(a.m)) return bad("메시지를 1~60자로 써 주세요.");
   if (a.k === "call") return b?.active ? bad("짝꿍이 이미 곁에 있어요.") : OK;
   return b && S.now < b.nextAt ? bad("새 짝꿍에게 연락하기까지 아직 시간이 남았어요.") : OK;
@@ -25054,13 +25055,18 @@ function buddyApply(S, p, a) {
     p.ch.buddy.active = false;
     buddyRemove(S, p);
   } else {
+    const pickedJob = a.job && BUDDY_JOBS.includes(a.job) ? a.job : null;
     if (!p.ch.buddy || a.k === "new") {
       const prevAi = BUDDY_MODES.includes(p.ch.buddy?.ai) ? p.ch.buddy.ai : "neutral";
       buddyRemove(S, p);
-      const job = BUDDY_JOBS[ri(S, 0, BUDDY_JOBS.length - 1)], kit = JOBS[job].wk;
+      const job = pickedJob || BUDDY_JOBS[ri(S, 0, BUDDY_JOBS.length - 1)], kit = JOBS[job].wk;
       const names = BUDDY_NAMES.filter((name) => name !== p.ch.name && name !== p.ch.buddy?.name);
       const look = LOOK_MAX.map((max, slot) => ri(S, slot === 8 ? 1 : 0, max));
       p.ch.buddy = { name: names[ri(S, 0, names.length - 1)], job, wk: kit[ri(S, 0, kit.length - 1)], look, nextAt: S.now + BUDDY_COOLDOWN, active: false, ai: prevAi };
+    } else if (pickedJob && pickedJob !== p.ch.buddy.job) {
+      const kit = JOBS[pickedJob].wk;
+      p.ch.buddy.job = pickedJob;
+      p.ch.buddy.wk = kit[0];
     }
     p.ch.buddy.active = false;
     p.buddyCall = { replyAt: S.now + 850, arriveAt: S.now + 1800 };
@@ -25234,16 +25240,6 @@ function buddyFight(S, p, b, rt, m, dt) {
   }
   if (mode === "passive") { b.target = null; b.engaged.clear(); return false; }
   const st = stats(p);
-  if (mode === "guard" && p.hp > 0 && p.hp < st.mhp * 0.65 && S.now >= (b.healAt || 0)) {
-    const heal = Math.min(st.mhp - p.hp, Math.max(1, Math.round(st.mhp * BUDDY_ASSIST.guardHealRate * elementHealFactor(S, p))));
-    if (heal > 0) {
-      p.hp += heal;
-      b.healAt = S.now + BUDDY_ASSIST.guardHealCd;
-      rt.ev.push(["h", p.eid, heal, 1, 0]);
-      p.buddySay = [b.eid, "괜찮아? 내가 잠깐 회복해 줄게!"];
-      p.dirty = true;
-    }
-  }
   const mob = b.target = buddyTarget(S, p, b, rt, mode);
   if (!mob) return false;
   const w = WKIND[b.ch.wk], reach = (w.shot ? Math.min(86, w.range) : w.range) - 3;

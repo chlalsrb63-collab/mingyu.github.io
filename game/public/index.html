@@ -283,6 +283,10 @@
           </div>
           <div id="buddy-messages" class="sunk buddy-messages" role="log" aria-label="짝꿍과의 메시지"></div>
           <form id="buddy-form">
+            <div class="buddy-job-row">
+              <label class="buddy-label" for="buddy-job">소환 직업</label>
+              <select id="buddy-job" class="sel"><option value="">무작위 (현재 유지)</option></select>
+            </div>
             <label class="buddy-label" for="buddy-message">메시지</label>
             <div class="buddy-compose"><input id="buddy-message" type="text" maxlength="60" autocomplete="off" required value="지금 어디야? 혹시 같이 갈래?"><button class="btn gold" type="submit" value="call" id="buddy-send">보내기</button></div>
             <p id="buddy-cooldown" class="hint"></p>

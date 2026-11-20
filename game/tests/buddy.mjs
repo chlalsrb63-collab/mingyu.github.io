@@ -369,11 +369,13 @@ for (const seed of [20251111, 808093]) {
   const hpAfterPassive = mob.hp;
   step(2000);
   assert.equal(mob.hp, hpAfterPassive, "passive mode never attacks");
-  // guard mode heals low-HP owner and intercepts close threats
+  // guard mode intercepts close threats without healing owner
   assert.ok(act("buddy", { k: "ai", ai: "guard" }).ok);
   p.hp = 10;
+  p.hitAt = S.now;
+  const beforeFrames = w.frames.length;
   step(2000);
-  assert.ok(p.hp > 10, "guard mode heals hurt owner");
+  assert.ok(!w.frames.slice(beforeFrames).some((f) => f.bs && /회복/.test(f.bs[1])), "guard mode does not heal owner");
   assert.ok(mob.hp < hpAfterPassive, "guard mode intercepts close threats");
   // persists across reconnect and old sheets without ai default to neutral
   const saved = structuredClone(L.removePlayer(S, pid));
@@ -384,6 +386,21 @@ for (const seed of [20251111, 808093]) {
   delete legacy.buddy.ai;
   L.addPlayer(S, pid, legacy);
   assert.equal(S.players[pid].ch.buddy.ai, "neutral", "legacy buddy sheets default to neutral");
+}
+
+// Job selection when summoning a buddy
+{
+  const w = session(), { p, S, act, step } = w;
+  assert.equal(act("buddy", { k: "call", m: message, job: "invalid_job" }).ok, false);
+  assert.ok(act("buddy", { k: "call", m: message, job: "wizard" }).ok);
+  step(1900);
+  assert.equal(p.ch.buddy.job, "wizard");
+  assert.equal(X.buddyOf(S, p).ch.job, "wizard");
+  assert.ok(act("buddy", { k: "leave" }).ok);
+  assert.ok(act("buddy", { k: "call", m: message, job: "paladin" }).ok);
+  step(1900);
+  assert.equal(p.ch.buddy.job, "paladin");
+  assert.equal(X.buddyOf(S, p).ch.wk, "hammer");
 }
 
 console.log("buddy: dialogue rotation, party lifecycle, bounded hunting, AI stances, five co-op jobs and replay rewards");

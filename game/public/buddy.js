@@ -7,16 +7,34 @@ const GREETING = "지금 어디야? 혹시 같이 갈래?";
 const AI_DESC = {
   attack: "주변 몬스터를 먼저 적극적으로 공격",
   neutral: "내가 공격한 적만 맞춰서 보조",
-  guard: "다가오는 적 요격 · 위급 시 응원 회복",
+  guard: "나를 노리거나 가까이 다가온 적을 우선 요격",
   passive: "공격하지 않고 곁에서 조용히 동행",
 };
-let contact = null, refreshAt = 0, availableAt = 0;
+const WK_KO = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활", hammer: "해머" };
+let contact = null, refreshAt = 0, availableAt = 0, jobsFilled = false;
+
+function fillJobs() {
+  const jobs = G.defs?.jobs || G.defs?.classes;
+  if (jobsFilled || !jobs) return;
+  const sel = $("#buddy-job");
+  if (!sel) return;
+  for (const [id, info] of Object.entries(jobs)) {
+    if (!info?.wk?.length) continue;
+    const opt = document.createElement("option");
+    opt.value = id;
+    const wk = info.wk.map((w) => WK_KO[w] || w).join("/");
+    opt.textContent = wk ? `${info.name} (${wk})` : info.name;
+    sel.append(opt);
+  }
+  jobsFilled = true;
+}
 
 export function setup() {
   $("#buddy-form").addEventListener("submit", (ev) => {
     ev.preventDefault();
     const m = $("#buddy-message").value.trim();
-    if (m) act({ t: "buddy", k: ev.submitter?.value || "call", m });
+    const job = $("#buddy-job")?.value || "";
+    if (m) act({ t: "buddy", k: ev.submitter?.value || "call", m, ...(job ? { job } : {}) });
   });
   $("#buddy-leave").addEventListener("click", () => act({ t: "buddy", k: "leave" }));
   $("#buddy-ai").addEventListener("click", (ev) => {
@@ -34,11 +52,13 @@ export function reset() {
 }
 
 function render(t) {
+  fillJobs();
   const [name, job, lv, active, , busy, ai = "neutral"] = contact || [];
   const grouped = G.party.some(([eid]) => eid !== G.you);
   const canSend = !!G.playing && !grouped && !G.me.dead && !G.map?.id.startsWith("dim:") && !G.ab;
   $("#buddy-name").textContent = name || "짝꿍에게 연락하기";
-  const detail = name ? `Lv.${lv} · ${G.defs?.classes?.[job]?.name || ""} · ` : "";
+  const jobs = G.defs?.jobs || G.defs?.classes;
+  const detail = name ? `Lv.${lv} · ${jobs?.[job]?.name || ""} · ` : "";
   $("#buddy-status").textContent = detail + (grouped ? "파티 중" : busy ? "답장 기다리는 중…" : active ? "곁에 있어요" : name ? "연락할 수 있어요" : "메시지를 보내면 모험을 함께할 짝꿍이 찾아와요.");
   $("#buddy-leave").hidden = !active || !!busy;
   $("#buddy-leave").disabled = !canSend;
@@ -51,6 +71,8 @@ function render(t) {
     btn.setAttribute("aria-pressed", on ? "true" : "false");
     btn.disabled = !G.playing || !!G.me.dead;
   }
+  const jobSel = $("#buddy-job");
+  if (jobSel) jobSel.disabled = !canSend || !!busy || (!!active && availableAt > t);
   $("#buddy-message").disabled = !canSend || !!busy;
   $("#buddy-send").disabled = !canSend || !!active || !!busy;
   const seconds = Math.max(0, Math.ceil((availableAt - t) / 1000));
