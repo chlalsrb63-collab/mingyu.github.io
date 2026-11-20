@@ -27,32 +27,27 @@ const freshWm = () => Object.fromEntries(WK_ORDER.map((k) => [k, { lv: 1, xp: 0 
 const r1 = (v) => Math.round(v * 10) / 10;
 const freshSt = () => Object.fromEntries(ST_ORDER.map((k) => [k, ST_BASE]));
 
-/** How the weapon kind `wk` scales for this character: { stat: coefficient } (job and hybrid adjusted). */
+/** How the weapon kind `wk` scales for this character: { stat: coefficient }. */
 function scaleOf(ch, wk) {
   const job = JOBS[ch.job];
-  // a hybrid scales both hands alike; `hand` lifts one side (runearcher's bow, owner 2026-11-15)
-  if (job && job.kind === "hybrid" && job.wk.includes(wk)) return { ...job.scale, ...(job.hand && job.hand[wk]) };
+  if (job && job.scale && job.wk.includes(wk)) return { ...job.scale, ...(job.hand && job.hand[wk]) };
   const out = {}, g = SCALE[wk] || {};
   for (const k of Object.keys(g)) out[k] = GRADE[g[k]] + (job && job.kind === "single" && job.wk[0] === wk ? JOB_PLUS : 0);
   return out;
 }
-/** The hybrid job a pair of weapon kinds opens, if any. */
-function hybridOf(a, b) {
-  for (const id of Object.keys(JOBS)) { const j = JOBS[id]; if (j.kind === "hybrid" && j.wk.includes(a) && j.wk.includes(b) && a !== b) return id; }
-  return null;
-}
+/** Legacy helper (two-weapon hybrids were replaced by single-weapon Lv.30 branches). */
+function hybridOf() { return null; }
 /** Why `ch` may not take job `j` right now ("" when it may; place and gold are checked by the action). */
 function jobOk(ch, j) {
   const job = Object.hasOwn(JOBS, j) ? JOBS[j] : null;
   if (!job || job.kind === "none") return "없는 직업입니다";
   if (ch.job !== "adventurer") return "모험가만 전직할 수 있습니다";
-  const [a, b] = job.wk;
-  if (job.kind === "single") return ch.wm[a].lv >= JOB_WM ? "" : `[${WK_NAME[a]}] 숙련 ${JOB_WM}이 필요합니다`;
-  return ch.wm[a].lv >= HYB_WM && ch.wm[b].lv >= HYB_WM ? "" : `[${WK_NAME[a]}]${pp(WK_NAME[a], "과와")} [${WK_NAME[b]}] 숙련이 모두 ${HYB_WM} 이상이어야 합니다`;
+  const [a] = job.wk;
+  return ch.wm[a].lv >= JOB_WM ? "" : `[${WK_NAME[a]}] 숙련 ${JOB_WM}이 필요합니다`;
 }
-/** The mastery a job asks of each of its weapons. */
-const jobWmOf = (j) => (JOBS[j] && JOBS[j].kind === "hybrid" ? HYB_WM : JOB_WM);
-const isHybrid = (ch) => !!JOBS[ch.job] && JOBS[ch.job].kind === "hybrid";
+/** The mastery a job asks of its weapon. */
+const jobWmOf = () => JOB_WM;
+const isHybrid = () => false;
 
 const jobNeed = lv => 24 + 12 * lv + 2 * lv * lv;
 const jobSkillRank = lv => JOB_SKILL_RANKS.findLastIndex(rank => lv >= rank.lv);
@@ -176,13 +171,8 @@ function wmAdd(S, p, wk, n, bonus) {
     const act = skLearnNew(p, opened.filter((id) => SKILL[id].kind !== "p")), pas = opened.filter((id) => SKILL[id].kind === "p").map((id) => `[${SKILL[id].name}]`);
     toast(p, `[${WK_NAME[wk]}] 숙련 ${r.lv}!${act.length ? ` 새 스킬 ${act.join(", ")}` : ""}${pas.length ? ` · 패시브 ${pas.join(", ")}` : ""}`);
     if (r.lv === JOB_WM && ch.job === "adventurer") {
-      const j = Object.keys(JOBS).find((id) => JOBS[id].kind === "single" && JOBS[id].wk[0] === wk);
-      toast(p, `[${WK_NAME[wk]}] 숙련 ${JOB_WM}! 전직관 아르센에게 가면 [${JOBS[j].name}]${pp(JOBS[j].name, "으로")} 전직할 수 있습니다.`);
-    }
-    if (r.lv === HYB_WM && ch.job === "adventurer") {
-      // the two-weapon jobs this level opens: every pair whose other weapon is already there
-      const open = WK_ORDER.filter((k) => k !== wk && ch.wm[k].lv >= HYB_WM).map((k) => hybridOf(wk, k)).filter(Boolean).map((id) => JOBS[id].name);
-      if (open.length) toast(p, `[${WK_NAME[wk]}] 숙련 ${HYB_WM}! 두 갈래 길 [${open.join("], [")}]${pp(open[open.length - 1], "이가")} 열렸습니다 — 전직관 아르센에게 가 보세요.`);
+      const names = Object.keys(JOBS).filter((id) => JOBS[id].kind === "single" && JOBS[id].wk[0] === wk).map((id) => JOBS[id].name);
+      if (names.length) toast(p, `[${WK_NAME[wk]}] 숙련 ${JOB_WM}! 전직관 아르센에게 가면 [${names.join("] 또는 [")}]${pp(names[names.length - 1], "으로")} 전직할 수 있습니다.`);
     }
   }
   if (r.lv >= WM_MAX) r.xp = 0;

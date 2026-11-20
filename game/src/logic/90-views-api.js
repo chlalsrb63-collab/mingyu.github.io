@@ -285,7 +285,7 @@ export function defs() {
   const jobs = {};
   for (const id of Object.keys(JOBS)) {
     const j = JOBS[id];
-    jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.kind === "hybrid" ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {}, wm: j.kind === "none" ? 0 : jobWmOf(id), sig: JOB_SKILL[id] || "" };
+    jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.scale ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {}, wm: j.kind === "none" ? 0 : jobWmOf(id), sig: JOB_SKILL[id] || "" };
   }
   return {
     worldName: "루넬샤대륙",

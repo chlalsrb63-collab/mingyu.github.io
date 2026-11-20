@@ -670,7 +670,7 @@ function castSkill(S, p, id) {
   p.swordBeat = null;
   p.dirty = true;
   p.chan = 0;   // any skill cuts a channel
-  if (sk.wk === "hammer" && !sk.stomp) { startHammer(S, p, sk, sk, k, hpSpent); return; }
+  if (sk.wk === "hammer" && sk.wind) { startHammer(S, p, sk, sk, k, hpSpent); return; }
   if (sk.tiers) {
     // held (E1): full inertia starts it a tier up, and is spent
     const inert = pasOn(p, "inertia") && inertOf(p) >= SKILL.inertia.max;
@@ -1188,6 +1188,7 @@ function skStrike(S, p, id, k, cost, tgt) {
         knock(m, o, vx, vy, 12);
         hit(o, sk.mult, { secondaryType: null, forceAilment: sk.damageType });
       }
+      weave(S, rt, p, "i", p.x, p.y, k);
       prop({ kind: "field", wire: 1, x: p.x, y: p.y, r: sk.field, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.drain * k, heal: sk.heal * charmSkh(p, id) });
       break;
     }
@@ -1206,7 +1207,7 @@ function skStrike(S, p, id, k, cost, tgt) {
 
     // ── the hybrid expansion (fx 120–128)
     case "crosscut": {
-      // the great blade sweeps and marks; the dagger goes into every one it swept, cashing the marks in
+      // Bladedancer's twin-dagger cross cut: first arc carves two marks, follow-up cross-slash cashes them in
       ev(120, ...ahead(sk.r * 0.5), sk.r);
       const list = mobsWithin(rt, p.x, p.y, sk.r).filter((o) => inArc(p, o, sk.arc));
       const flanked = new Set(list.filter((o) => o.tgt !== p.pid));
@@ -1217,7 +1218,6 @@ function skStrike(S, p, id, k, cost, tgt) {
         o.mk = 0;
         hit(o, sk.stab + sk.per * n, flanked.has(o) ? { sure: true } : { crit: sk.crit });
       }
-      if (pasOn(p, "inertia")) { p.inert = SKILL.inertia.max; p.inertAt = now; ev(110, p.x, p.y - 6); }
       break;
     }
     case "elemfan": {

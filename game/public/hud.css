@@ -1150,8 +1150,33 @@ body.touch #wm .wm-tab { display: none; }
 .jt-near .jt-need { margin: 0; }
 .jt-more { display: flex; justify-content: flex-end; margin-top: 6px; }
 
-/* 전직의 길 as a weapon table (H2): six weapons across and down, a job where two meet — the diagonal is
-   the six single jobs (mastery 20), under it the fifteen two-weapon jobs (15 and 15) */
+/* 전직의 길: 7 weapons × 2 branches at mastery 30 */
+.jt-branches { display: flex; flex-direction: column; gap: 3px; margin-top: 6px; }
+.jt-brow { display: grid; grid-template-columns: 92px 1fr 1fr; gap: 4px; align-items: stretch; }
+.jt-bw { display: grid; grid-template-columns: 16px 1fr; grid-template-rows: 14px 10px 4px; gap: 1px 4px; align-items: center; padding: 3px 5px;
+  background: var(--scr); border: 2px solid #3a3146; box-sizing: border-box; }
+.jt-bw .wi { width: 16px; height: 16px; grid-row: 1 / 3; image-rendering: pixelated; }
+.jt-bw b { font: var(--t10)/1.1 var(--pix); color: #e8dcb8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jt-bw small { font: var(--t10)/1 var(--pix9); color: #9db0c8; white-space: nowrap; }
+.jt-bw .bar { grid-column: 1 / -1; position: relative; height: 4px; background: #000; }
+.jt-bw .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: #8fe0b4; }
+.jt-brow.ready .jt-bw { border-color: #b88a3a; }
+.jt-brow.ready .jt-bw b, .jt-brow.ready .jt-bw small { color: #f4d27a; }
+.jt-brow.ready .jt-bw .bar i { background: #f4d27a; }
+.jt-brow.hand .jt-bw { box-shadow: inset 0 0 0 1px #8f6b2a; }
+.window .jt-bnode { display: flex; align-items: center; gap: 5px; padding: 3px 6px; cursor: pointer; text-align: left;
+  color: #c8b896; background: #1e1928; border: 2px solid #3e3450; box-shadow: inset 2px 2px 0 #2e263c, inset -2px -2px 0 #0e0b14; font: inherit; }
+.jt-bnode img { width: 20px; height: 20px; flex: none; image-rendering: pixelated; }
+.jt-bnode b { font: var(--t12)/1.1 var(--pix); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jt-bnode small { margin-left: auto; font: var(--t10)/1 var(--pix9); color: #f4d27a; }
+.window .jt-bnode.ok { color: #d4ffe4; border-color: #4ac06a; background: #18301f; }
+.window .jt-bnode.cur { color: #2a1806; background: var(--b-mid); border-color: var(--ink); box-shadow: inset 2px 2px 0 var(--b-hi), inset -2px -2px 0 var(--b-lo); }
+.window .jt-bnode.cur small { color: #2a1806; }
+.window .jt-bnode.shut { opacity: .48; }
+.window .jt-bnode.sel { outline: 2px solid var(--b-hi); outline-offset: 0; z-index: 1; }
+.window .jt-bnode:hover { filter: brightness(1.18); }
+
+/* legacy grid rules kept for preview compatibility */
 .jt-grid { display: grid; grid-template-columns: 30px repeat(var(--weapon-count, 6), minmax(0, 1fr)); grid-template-rows: 34px repeat(var(--weapon-count, 6), 38px); gap: 2px; flex: 1 1 auto; width: 100%; max-width: 402px; box-sizing: border-box; }
 .jt-grid .jt-node.long b { letter-spacing: -2px; }
 .jt-grid > * { min-width: 0; box-sizing: border-box; }

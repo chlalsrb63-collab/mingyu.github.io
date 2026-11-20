@@ -93,35 +93,26 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.deepEqual(D.scale.bow, { dex: "A", luk: "C" });
   const singles = Object.keys(D.jobs).filter((j) => D.jobs[j].kind === "single");
   const hybrids = Object.keys(D.jobs).filter((j) => D.jobs[j].kind === "hybrid");
-  assert.deepEqual(singles, ["swordsman", "thief", "lancer", "wizard", "warlock", "archer", "destroyer"]);
-  assert.deepEqual(hybrids, ["spellblade", "tracker", "dragoon", "hexblade", "darkknight",
-    "bladedancer", "trickster", "spellspear", "runesage", "runearcher", "mercenary", "paladin"]);
-  assert.deepEqual(singles.map((j) => D.jobs[j].wk[0]), D.wkOrder, "one single job per weapon");
-  // Each supported pair is unique. The five retired combinations have no job.
-  const pairs = hybrids.map((j) => D.jobs[j].wk.slice().sort().join("+"));
-  assert.equal(new Set(pairs).size, 12);
-  for (const pair of ["spear+sword", "dagger+spear", "bow+sword", "bow+spear", "bow+staff"]) assert.ok(!pairs.includes(pair), pair);
-  for (const j of hybrids) {
-    const [a, b] = D.jobs[j].wk;
-    assert.ok(a !== b && D.wkOrder.includes(a) && D.wkOrder.includes(b), j + " pairs two different weapons");
-    assert.equal(D.jobs[j].cost, 5000, j + " costs 5,000 G");
-    assert.equal(D.jobs[j].wm, 15, j + " asks mastery 15 of both");
-    // the scale budget: real stats, nothing above 0.9; 2.2 for two different mains, less when the pair shares one (1.4–2.2)
-    const sc = D.jobs[j].scale, sum = Object.values(sc).reduce((x, y) => x + y, 0);
-    assert.ok(Object.keys(sc).every((k) => ST.includes(k)) && Object.values(sc).every((v) => v > 0 && v <= 0.9), j + " scales on real stats");
-    assert.ok(sum >= 1.4 - 1e-9 && sum <= 2.2 + 1e-9, `${j} scale budget ${sum}`);
-    for (const k of [a, b]) assert.ok(Object.keys(D.scale[k]).some((st) => sc[st] >= 0.5), `${j} scales with ${k}'s stats`);
-    assert.ok(D.jobs[j].sig && D.skills[D.jobs[j].sig].job === j && D.skills[D.jobs[j].sig].kind === "h", j + " names its signature");
+  assert.deepEqual(singles, [
+    "swordsman", "spellblade", "thief", "bladedancer", "lancer", "spellspear",
+    "wizard", "trickster", "warlock", "runearcher", "archer", "tracker", "destroyer", "paladin",
+  ]);
+  assert.deepEqual(hybrids, []);
+  assert.deepEqual([...new Set(singles.map((j) => D.jobs[j].wk[0]))], D.wkOrder, "two single jobs per weapon");
+  for (const wk of D.wkOrder) assert.equal(singles.filter((j) => D.jobs[j].wk[0] === wk).length, 2, wk + " has two branches");
+  for (const j of singles) {
+    assert.equal(D.jobs[j].cost, 1000);
+    assert.equal(D.jobs[j].wm, 30, j + " asks mastery 30");
+    assert.ok(D.jobs[j].sig && D.skills[D.jobs[j].sig].job === j && D.skills[D.jobs[j].sig].kind === "j", j + " names its signature");
   }
-  for (const j of singles) { assert.equal(D.jobs[j].cost, 1000); assert.equal(D.jobs[j].wm, 20, j + " asks mastery 20"); }
-  assert.equal(D.jobWm, 20); assert.equal(D.hybWm, 15, "defs carry both thresholds");
+  assert.equal(D.jobWm, 30); assert.equal(D.hybWm, 30, "defs carry unified Lv.30 threshold");
   // ids and names are all different
   const names = Object.values(D.jobs).map((j) => j.name);
   assert.equal(new Set(names).size, names.length, "every job has its own name");
-  assert.ok(names.every((n) => /^[가-힣]{2,5}$/.test(n)), "short Korean names");
-  assert.deepEqual(D.jobs.swordsman.scale, { str: 0.95, wil: 0.6 }, "a single job adds 0.1 to its weapon's two grades");
-  assert.deepEqual(D.jobs.spellblade.scale, { str: 0.9, int: 0.9, wil: 0.2, wis: 0.2 }, "skills-v2: its attack stats lifted inside the same budget");
-  assert.equal(D.jobs.swordsman.cost, 1000); assert.equal(D.jobs.tracker.cost, 5000);
+  assert.ok(names.every((n) => /^[가-힣]{2,6}$/.test(n)), "short Korean names");
+  assert.deepEqual(D.jobs.swordsman.scale, { str: 0.95, wil: 0.6 }, "a primary branch adds 0.1 to its weapon's two grades");
+  assert.deepEqual(D.jobs.spellblade.scale, { str: 0.9, int: 0.9, wil: 0.2, wis: 0.2 }, "spellblade keeps its str+int scaling");
+  assert.equal(D.jobs.swordsman.cost, 1000); assert.equal(D.jobs.tracker.cost, 1000);
   assert.equal(D.jobs.adventurer.name, "모험가");
   assert.equal(D.wmNeed.length, 50); assert.equal(D.wmNeed[0], 22); assert.equal(D.wmNeed[9], 2200); assert.equal(D.wmNeed[48], 52822);
   // the bow: a real weapon kind, five tiers, sold at tier 1, legendary and set looks roll on it
@@ -246,9 +237,9 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
     return world({ ch }).self().atk;
   };
   const attackStat = 5 + (eff(40) - 5) * (1 + 0.65 * 70 / 199);
-  near(atkJob("swordsman", "sword") - atkJob("adventurer", "sword"), 0.1 * attackStat, 1, "대검전사 +0.1 STR on the sword");
+  near(atkJob("swordsman", "sword") - atkJob("adventurer", "sword"), 0.1 * attackStat, 1, "바바리안 +0.1 STR on the sword");
   assert.equal(atkJob("swordsman", "staff"), atkJob("adventurer", "staff"), "but nothing on a staff");
-  near(atkJob("spellblade", "staff") - atkJob("adventurer", "staff"), (0.9 + 0.9 - 0.85) * attackStat + (0.2 - 0.5) * 5 + 0.2 * 5, 1, "마검사's table on the staff");
+  near(atkJob("spellblade", "sword") - atkJob("adventurer", "sword"), (0.9 + 0.9 - 0.85) * attackStat + (0.2 - 0.5) * 5 + 0.2 * 5, 1, "스펠블레이드's table on the sword");
 }
 
 // ═════════ weapon mastery (B.10) ═════════
@@ -288,22 +279,16 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(ch.wm.sword.lv, 10);
   assert.ok(v.ev.some((e) => e[0] === "wm" && e[1] === W.p.eid && e[2] === 0 && e[3] === 10));
   assert.ok(W.p.toast.some((t) => t.includes("[대검] 숙련 10!")) || (v.toast || []).some((t) => t.includes("[대검] 숙련 10!")));
-  ch.wm.sword = { lv: 19, xp: 22 * 361 - 1 };
+  ch.wm.sword = { lv: 29, xp: 22 * 841 - 1 };
   ready(W); reach(); m2.hp = 50000; W.act({ t: "atk", a: 0 }); v = W.step();
-  assert.ok((v.toast || []).some((t) => t.includes("전직관 아르센") && t.includes("[대검전사]")), "at 20 the job is offered");
-  assert.deepEqual(ch.wm.sword, { lv: 20, xp: 0 }, "the overflow past 20 goes back to the normal rate");
+  assert.ok((v.toast || []).some((t) => t.includes("전직관 아르센") && t.includes("[바바리안]") && t.includes("[스펠블레이드]")), "at 30 both branches are offered");
+  assert.deepEqual(ch.wm.sword, { lv: 30, xp: 0 }, "the overflow past 30 goes back to the normal rate");
   ch.wm.sword = { lv: 50, xp: 0 };
   ready(W); reach(); W.act({ t: "atk", a: 0 }); W.step();
   assert.deepEqual(ch.wm.sword, { lv: 50, xp: 0 }, "capped at 50");
-  ch.wm.sword = { lv: 20, xp: 0 };
+  ch.wm.sword = { lv: 30, xp: 0 };
   ready(W); reach(); W.act({ t: "atk", a: 0 }); W.step();
   assert.equal(ch.wm.sword.xp, 1, "ordinary mastery rate after job mastery");
-  // at 15 the two-weapon jobs whose other weapon is already at 15 are named
-  ch.wm.sword = { lv: 14, xp: 22 * 196 - 1 }; ch.wm.bow.lv = 15; ch.wm.staff.lv = 18; ch.wm.dagger.lv = 14;
-  ready(W); m2.hp = 50000; W.act({ t: "atk", a: 0 }); v = W.step();
-  assert.equal(ch.wm.sword.lv, 15);
-  const t15 = (v.toast || []).find((t) => t.includes("두 갈래 길"));
-  assert.ok(t15 && t15.includes("[마검사]") && !t15.includes("[검궁사]") && !t15.includes("[검무사]"), "at 15 only eligible pairings are named: " + t15);
   // monsters far below you teach nothing; a skill teaches 2
   const W2 = world({ wk: "sword", lvl: 157, wm: { sword: 12 } });
   const mobs2 = arena(W2);
@@ -420,7 +405,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 
 // ═════════ profession signature ranks ═════════
 {
-  const W = world({ wk: "book", lvl: 45, job: "paladin", wm: { hammer: 20, book: 20 } });
+  const W = world({ wk: "hammer", lvl: 45, job: "paladin", wm: { hammer: 30, book: 30 } });
   const id = "oathward", sk = D.skills[id], act = { t: "sk", id, a: 0 };
   assert.deepEqual(D.jobSkillRanks.map(r => r.lv), [5, 20, 35, 50]);
   W.ch.jp = { lv: 4, xp: 0 };
@@ -434,7 +419,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
     const mp = Math.ceil(sk.mp * (100 - mpCut) / 100);
     const cd = Math.round(sk.cd * (1 - W.p.stc.cdr) * (100 - cdCut) / 100);
     assert.deepEqual(row, [id, mp, 0, 1, 0, cd], `job level ${lv} effective cost and cooldown`);
-    assert.deepEqual(rows.find(r => r[0] === "soulbolt"), ["soulbolt", D.skills.soulbolt.mp, 0, 1]);
+    assert.deepEqual(rows.find(r => r[0] === "hammer_stamp"), ["hammer_stamp", D.skills.hammer_stamp.mp, 0, 1, Math.ceil(W.p.stc.mhp * D.skills.hammer_stamp.hpPct)]);
     W.p.mp = mp - 1;
     assert.equal(W.act(act).error, "MP가 부족합니다");
     W.p.mp = mp;
@@ -447,40 +432,34 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 
 // ═════════ jobs (C.3, C.4) ═════════
 {
-  const W = world({ wk: "sword", wm: { sword: 19, staff: 20 } });
+  const W = world({ wk: "sword", wm: { sword: 29, staff: 30 } });
   const ch = W.ch;
   ch.gold = 1e6;
-  assert.equal(W.act({ t: "job_change", j: "swordsman" }).error, "[대검] 숙련 20이 필요합니다");
-  ch.wm.sword.lv = 20;
+  assert.equal(W.act({ t: "job_change", j: "swordsman" }).error, "[대검] 숙련 30이 필요합니다");
+  ch.wm.sword.lv = 30;
   assert.equal(W.act({ t: "job_change", j: "swordsman" }).error, "전직관이 너무 멉니다");
   W.npc("job");
   assert.equal(W.map.npcs.find((n) => n.role === "job").name, "전직관 아르센", "전직관 아르센 stands in town");
   assert.equal(W.act({ t: "job_change", j: "emperor" }).error, "없는 직업입니다");
   assert.equal(W.act({ t: "job_change", j: "adventurer" }).error, "없는 직업입니다");
-  assert.equal(W.act({ t: "job_change", j: "thief" }).error, "[단검] 숙련 20이 필요합니다");
-  assert.equal(W.act({ t: "job_change", j: "darkknight" }).error, "[대검]과 [마도서] 숙련이 모두 15 이상이어야 합니다");
+  assert.equal(W.act({ t: "job_change", j: "thief" }).error, "[단검] 숙련 30이 필요합니다");
+  assert.equal(W.act({ t: "job_change", j: "darkknight" }).error, "없는 직업입니다");
   ch.gold = D.jobs.swordsman.cost - 1;
   assert.equal(W.act({ t: "job_change", j: "swordsman" }).error, "골드가 부족합니다");
   ch.gold = 30000;
-  // two weapons at 15 open the hybrid of the pair (a single job still asks 20)
-  ch.wm.sword.lv = 15; ch.wm.staff.lv = 14;
-  assert.equal(W.act({ t: "job_change", j: "spellblade" }).error, "[대검]과 [스태프] 숙련이 모두 15 이상이어야 합니다", "15 + 14 is not enough");
-  assert.equal(W.act({ t: "job_change", j: "swordsman" }).error, "[대검] 숙련 20이 필요합니다", "a single job still asks 20");
-  ch.wm.staff.lv = 15;
-  assert.ok(W.act({ t: "job_change", j: "spellblade" }).ok, "sword 15 + staff 15 → 마검사");
+  assert.ok(W.act({ t: "job_change", j: "spellblade" }).ok, "sword 30 → 스펠블레이드");
   assert.equal(ch.job, "spellblade"); assert.equal(ch.gold, 30000 - D.jobs.spellblade.cost);
   assert.deepEqual(ch.jp, { lv: 1, xp: 0 });
   assert.match(W.act({ t: "sk", id: "crimson" }).error, /직업 Lv\.5/);
   let v = W.step();
   assert.ok(v.ev.some((e) => e[0] === "jc" && e[1] === W.p.eid));
-  assert.ok(ch.ach.includes("job1") && ch.ach.includes("job2"));
+  assert.ok(ch.ach.includes("job1"));
   assert.ok(W.S.chat.length === 0 || true);
-  // irreversible
+  // irreversible without reset scroll
   assert.equal(W.act({ t: "job_change", j: "swordsman" }).error, "모험가만 전직할 수 있습니다");
-  // the swap: hybrids only, a second weapon of the pair, Tab-quick but not instant
+  // weapon2 swap works for everyone
   ch.inv.push({ id: "w_mage_1", q: 0, enh: 0, af: [], sk: 0, ru: [] }, { id: "w_bow_1", q: 0, enh: 0, af: [], sk: 0, ru: [] });
   assert.equal(W.act({ t: "wsw" }).error, "Ⅱ에 장착한 무기가 없습니다");
-  assert.equal(W.act({ t: "eq", s: ch.inv.findIndex((s) => s.id === "w_bow_1"), k: "weapon2" }).error, "대검이나 스태프만 들 수 있습니다");
   assert.ok(W.act({ t: "eq", s: ch.inv.findIndex((s) => s.id === "w_mage_1"), k: "weapon2" }).ok);
   assert.equal(ch.eq.weapon.id, "w_warrior_1"); assert.equal(ch.eq.weapon2.id, "w_mage_1");
   const atkSword = W.self().atk;
@@ -493,7 +472,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   for (let i = 0; i < 9; i++) W.step();
   assert.ok(W.act({ t: "wsw" }).ok);
   assert.equal(W.self().atk, atkSword, "the second weapon adds nothing while on the back");
-  // §9: a single job holds any second weapon too, and swaps it like a re-equip
+  // §9: any job holds any second weapon too, and swaps it like a re-equip
   const W2 = world({ wk: "dagger", job: "thief" });
   W2.ch.inv.push({ id: "w_bow_1", q: 0, enh: 0, af: [], sk: 0, ru: [] }, { id: "h_1", q: 0, enh: 0, af: [], sk: 0, ru: [] });
   assert.equal(W2.act({ t: "eq", s: W2.ch.inv.length - 1, k: "weapon2" }).error, "무기만 Ⅱ에 장착할 수 있습니다");
@@ -501,18 +480,18 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.ok(W2.act({ t: "wsw" }).ok);
   assert.equal(W2.ch.eq.weapon.id, "w_bow_1"); assert.equal(W2.ch.eq.weapon2.id, "w_rogue_1");
   assert.equal(W2.step().self.wk2, "dagger");
-  // a single job: one weapon at 20; the job adds to that weapon
-  const W3 = world({ wk: "bow", wm: { bow: 20 } });
+  // single weapon Lv.30: bow 30 → 헌터
+  const W3 = world({ wk: "bow", wm: { bow: 30 } });
   W3.ch.gold = D.jobs.archer.cost;
   W3.npc("job");
-  assert.ok(W3.act({ t: "job_change", j: "archer" }).ok, "bow 20 → 궁수");
+  assert.ok(W3.act({ t: "job_change", j: "archer" }).ok, "bow 30 → 헌터");
   assert.equal(W3.ch.gold, 0);
-  assert.equal(W3.act({ t: "job_change", j: "tracker" }).error, "모험가만 전직할 수 있습니다", "a single job never becomes a hybrid");
+  assert.equal(W3.act({ t: "job_change", j: "tracker" }).error, "모험가만 전직할 수 있습니다", "cannot take a second job without reset");
 }
 
-// ═════════ saved hybrids load as they were (no sheet change: a job is an id) ═════════
+// ═════════ saved jobs load as they were (no sheet change: a job is an id) ═════════
 {
-  for (const [job, wk, wk2, lv] of [["tracker", "dagger", "bow", 20], ["spellspear", "spear", "staff", 15], ["runearcher", "bow", "book", 31]]) {
+  for (const [job, wk, wk2, lv] of [["tracker", "bow", "dagger", 30], ["spellspear", "spear", "staff", 30], ["runearcher", "book", "bow", 31]]) {
     const W = world({ wk, wk2, wm: { [wk]: lv, [wk2]: lv }, job });
     const saved = JSON.parse(JSON.stringify(L.exportChar(W.S, W.PID)));
     const W2 = world({ ch: saved });
@@ -524,18 +503,16 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 }
 
 {
-  const retired = { stormrider: "thunder", breaker: "breach", arcblade: "qiarrow", shadowlance: "shadowpierce", spellarcher: "tristar" };
-  for (const [job, skill] of Object.entries(retired)) {
-    const ch = L.hero("복구", { wk: "spear", wk2: "bow", wm: { spear: 24, bow: 26 } });
-    ch.job = job; ch.qs[3] = ["s", skill];
+  // removed jobs (both earlier retired and the 5 deleted hybrid jobs) safely reset to adventurer on load
+  const removed = ["darkknight", "hexblade", "mercenary", "runesage", "dragoon", "stormrider"];
+  for (const job of removed) {
+    const ch = L.hero("복구", { wk: "spear", wk2: "bow", wm: { spear: 32, bow: 31 } });
+    ch.job = job;
     const W = world({ ch });
     assert.equal(W.ch.job, "adventurer");
-    assert.deepEqual([W.ch.wm.spear.lv, W.ch.wm.bow.lv], [24, 26]);
-    assert.equal(W.ch.eq.weapon2.id, "w_bow_1");
-    assert.equal(W.ch.qs[3], null);
+    assert.deepEqual([W.ch.wm.spear.lv, W.ch.wm.bow.lv], [32, 31]);
     W.npc("job");
     assert.equal(W.act({ t: "job_change", j: job }).error, "없는 직업입니다");
-    assert.match(W.act({ t: "sk", id: skill }).error, /^없는 스킬/);
   }
 }
 

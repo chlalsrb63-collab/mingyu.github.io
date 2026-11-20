@@ -654,7 +654,7 @@ export function applyAction(S, pid, a) {
       afterGear(S, p);
       S.maps[p.map].ev.push(["jc", p.eid]);
       sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
-      toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 두 무기를 Ⅰ/Ⅱ에 하나씩 장착하고 Tab으로 바꿔 듭니다.` : `[${job.name}] 전직!`);
+      toast(p, `[${job.name}] 전직!`);
       // the job's signature skill onto the bar
       const signature = SKILL[JOB_SKILL[a.j]];
       if (back) toast(p, `[${job.name}] 직업 Lv.${back.lv}부터 이어서 걷습니다.`);

@@ -17,16 +17,12 @@
 export const WK_COLOR = { sword: "#f0705a", dagger: "#b98cf5", spear: "#4fd8c8", staff: "#ffb84a", book: "#7a9cff", bow: "#8fe070", hammer: "#ff7eb0" };
 const PALE = "#e6e0d0", BRASS = "#e2a84a", OUT = "#1c1420", HI = "#fff6dc";
 
-/** job id → [first weapon, second weapon | null, 14 rows, what the mark is (Korean, for the detail card)] */
+/** job id → [weapon | null, accent hex | null, 14 rows, what the mark is (Korean, for the detail card)] */
 export const ART = {
-  mercenary: ["hammer", "spear", [
-    "..........oo..", ".........ooo..", "........oooo..", "........oo=...", ".......oo=....", "..####oo=.....", "..##*##=......",
-    "..#####.......", "...###-.......", "....##-.......", "...#-.........", "..#-..........", ".#-...........", ".-............",
-  ], "창으로 길을 뚫고 해머로 내리치는 용병의 표식"],
-  paladin: ["hammer", "book", [
+  paladin: ["hammer", null, [
     "....##..##....", "...###..###...", "...########...", "...########...", ".ooo####ooooo.", ".ooo####ooooo.", ".oooo##oooooo.",
     ".oooo##oooooo.", "..ooo##ooooo..", "..ooo##ooooo..", "...oo##oooo...", "....ooo===....", ".....oo==.....", "......o=......",
-  ], "서약이 적힌 책을 감싼 성문의 해머 문장"],
+  ], "성광의 방패와 해머 — 성기사"],
   adventurer: [null, null, [
     "......##......", "......##......", ".....#--#.....", "..o..#--#..o..", "...oo#--#oo...", "..####oo####..", "###---oo---###",
     "###---oo---###", "..####oo####..", "...oo#--#oo...", "..o..#--#..o..", ".....#--#.....", "......##......", "......##......",
@@ -34,7 +30,7 @@ export const ART = {
   swordsman: ["sword", null, [
     "...........###", "..........####", ".........###*-", "........###*-.", ".......###*-..", "......###*-...", ".o...###*-....",
     ".oo.###*-.....", "..oo###-......", "...ooo-.......", "..=oooo.......", ".==..ooo......", "==....oo......", "=.............",
-  ], "비스듬히 세운 큰 대검"],
+  ], "비스듬히 세운 큰 대검 — 바바리안"],
   thief: ["dagger", null, [
     "......oo......", ".....o..o.....", "......oo......", "......oo......", "..oooooooooo..", "..o.######.o..", "....##*###....",
     "....##*##-....", ".....#*##-....", ".....#*##-....", ".....####.....", "......##-.....", "......##......", "......#.......",
@@ -54,53 +50,47 @@ export const ART = {
   archer: ["bow", null, [
     "..##..........", "..=.##........", "..=...##......", "..=....##.....", "..=.....##.o..", "o.=......#..o.", "oooooooooooooo",
     "o.=......#..o.", "..=.....##.o..", "..=....##.....", "..=...##......", "..=.##........", "..##..........", "..............",
-  ], "시위를 당긴 활과 메긴 화살"],
-  spellblade: ["sword", "staff", [
+  ], "시위를 당긴 활과 메긴 화살 — 헌터"],
+  spellblade: ["sword", null, [
     "......##......", "..o...##...o..", "..oo..##..oo..", ".ooo..##..ooo.", ".oo.o.##.o.oo.", ".oo.oo##oo.oo.", "..ooo.##.ooo..",
     "...oo.##.oo...", "......##......", "...########...", "......--......", "......--......", ".....####.....", "..............",
-  ], "불길이 감싼 검 — 홍련참"],
-  tracker: ["dagger", "bow", [
+  ], "불길이 감싼 대검 — 스펠블레이드"],
+  tracker: ["bow", null, [
     ".....oooo.....", "...oo....oo...", "..o........o..", ".o......##..o.", ".o.....###..o.", "o.....###....o", "o....###.....o",
     "o..#.##......o", "o..###.......o", ".o..##......o.", ".o.#.##.....o.", "..o........o..", "...oo....oo...", ".....oooo.....",
-  ], "조준 고리 안의 단검 — 놓치지 않는 사냥감"],
-  dragoon: ["spear", "book", [
-    "......##......", ".....####.....", ".....####.....", "o.....##.....o", "oo....##....oo", "ooo...##...ooo", "oooo.o##o.oooo",
-    "oooooo##oooooo", "o.oo.o##o.oo.o", "o..o..##..o..o", "......##......", "......##......", "......##......", "......##......",
-  ], "용의 날개를 편 창 — 드래곤 다이브"],
-  hexblade: ["dagger", "book", [
-    "......##......", ".....####.....", "......##......", "....oo##oo....", "..oo..##..oo..", ".o....##....o.", "o....####....o",
-    ".o...####...o.", "..oo..##..oo..", "....oo##oo....", "......##......", "......##......", "......#.......", "..............",
-  ], "저주의 눈을 꿰뚫은 단검"],
-  darkknight: ["sword", "book", [
-    "o............o", "oo..........oo", "ooo..oooo..ooo", ".oooooooooooo.", "..oooooooooo..", "..oooooooooo..", "..o##oooo##o..",
-    "..oo##oo##oo..", "..oooooooooo..", "..ooo=oo=ooo..", "..ooo=oo=ooo..", "...oo=oo=oo...", "....o=oo=o....", "..............",
-  ], "붉은 눈빛의 뿔 투구"],
-  bladedancer: ["sword", "dagger", [
+  ], "조준 고리와 그림자 덫 — 추적자"],
+  bladedancer: ["dagger", null, [
     "...........###", "..........###.", ".oo......###..", ".ooo....###...", "..ooo..###....", "...ooo###.....", "....o###......",
     "....###oo.....", "...###.ooo....", "#.###...oo.o..", ".###.....ooo..", ".##.......oo..", "#.##.....o..o.", "..............",
-  ], "엇갈린 대검과 단검 — 십자 난도"],
-  trickster: ["dagger", "staff", [
+  ], "엇갈린 쌍단검 — 블레이드댄서"],
+  trickster: ["staff", null, [
     "......##......", "o.....##.....o", ".#....##....#.", ".##...##...##.", "..##..##..##..", "..###.##.###..", "...##.##.##...",
     "...###--###...", "....##--##....", "....-####-....", ".....oooo.....", "......oo......", ".....oooo.....", "..............",
-  ], "부채처럼 펼친 세 자루 비수 — 원소 비수"],
-  spellspear: ["spear", "staff", [
+  ], "세 원소 환영탄을 부리는 스태프 — 트릭스터"],
+  spellspear: ["spear", null, [
     "..........####", "..........####", ".........####.", "........###.#.", ".......##.....", "......##......", ".....##.......",
     "....##........", ".ooo#.........", "ooooo.........", "oo*oo.........", "ooooo.........", ".ooo..........", "..............",
-  ], "한쪽은 창날, 한쪽은 마력 구슬인 창"],
-  runesage: ["staff", "book", [
-    "....oooooo....", "..oooooooooo..", ".ooooo##ooooo.", ".o#ooo##ooo#o.", ".oo#oo##oo#oo.", ".ooo#o##o#ooo.", ".oooo####oooo.",
-    ".ooooo##ooooo.", ".ooooo##ooooo.", ".ooooo##ooooo.", ".ooooo##ooooo.", ".oooooooooooo.", ".============.", "..............",
-  ], "룬을 새긴 석판 — 메아리 법진"],
-  runearcher: ["book", "bow", [
+  ], "한쪽은 창날, 한쪽은 빙결 구슬인 창 — 마창사"],
+  runearcher: ["book", null, [
     "......oo......", ".....oooo.....", "....oooooo....", "...ooo##ooo...", "..oooo##oooo..", ".ooo######ooo.", "oooooo##oooooo",
     "ooo.oo##oo.ooo", "o....oooo....o", "......oo......", "..#...oo...#..", ".###..oo..###.", "..#...oo...#..", "..............",
-  ], "룬을 새긴 큰 화살촉과 먹물 방울"],
+  ], "룬 각인과 먹빛 마력 — 룬브레이커"],
   destroyer: ["hammer", null, [
     "......oo......", "......oo......", "......oo......", "......oo......", "......oo......", ".############.", ".#*##########.",
     ".#*##########.", ".############.", ".##--------##.", ".############.", "..............", "-.-...--...-.-", ".-....-.....-.",
   ], "땅을 내리찍는 양손해머와 갈라지는 바닥"],
 };
 export const ALL = Object.keys(ART);
+/** Distinct accent colour for each weapon's second branch so all 14 emblems have unique colour pairs. */
+const BRANCH_ACCENT = {
+  spellblade: "#ffe066",
+  bladedancer: "#f0679e",
+  spellspear: "#66d6ff",
+  trickster: "#36d1b4",
+  runearcher: "#ffd166",
+  tracker: "#9353d3",
+  paladin: "#f2dc7a",
+};
 /** The old class names some saved rows still carry. */
 const ALIAS = { warrior: "swordsman", rogue: "thief", mage: "wizard", ranger: "lancer" };
 export const jobId = (id) => (ART[id] ? id : ART[ALIAS[id]] ? ALIAS[id] : "adventurer");
@@ -114,9 +104,9 @@ const shade = (hex, k = 0.58) => {
 };
 /** [first colour, second colour] of a job's mark. */
 export function colorsOf(id) {
-  const [a, b] = ART[jobId(id)];
+  const key = jobId(id), [a, b] = ART[key];
   if (!a) return [PALE, BRASS];
-  return [WK_COLOR[a] || PALE, b ? WK_COLOR[b] || BRASS : PALE];
+  return [WK_COLOR[a] || PALE, BRANCH_ACCENT[key] || (b ? WK_COLOR[b] || BRASS : PALE)];
 }
 /** The filled cells of a mark, as 14 strings of `1`/`0` (the silhouette; tests compare these). */
 export const mask = (id) => ART[jobId(id)][2].map((r) => [...r].map((c) => (c === "." ? "0" : "1")).join(""));

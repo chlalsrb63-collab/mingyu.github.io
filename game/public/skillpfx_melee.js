@@ -5,47 +5,45 @@
  * PROC: a weapon passive's proc (skillfx.js PS codes), played where the proc happened.
  */
 export const CAST = {
-  // ── 대검 (swordsman)
-  80: [{ fx: "impacts/hit-spark", up: 10, cut: 0.22, speed: 1.6, pal: "metal" }, { fx: "melee/sword-slash", aim: true, up: 8, pal: "metal", speed: 2.2, cut: 0.4 }],
-  81: [{ fx: "impacts/hit-spark", at: "tgt", up: 2, pal: "dust", cut: 0.22, speed: 1.7 }, { fx: "impacts/heavy-landing", at: "tgt", pal: "dust", cut: 0.5, alpha: 0.6, delay: 120 }],
-  83: [{ fx: "holy/sunburst", up: 12, speed: 1.8, cut: 0.8 }, { fx: "fire/flame-pillar", up: 2, pal: "fire", speed: 1.8, cut: 0.8, alpha: 0.85, delay: 120 }],
-  140: [{ fx: "lightning/spark-arc", on: "wind", up: 14, pal: "metal", cut: 1.2 }, { fx: "melee/sword-slash", at: "tgt", up: 14, speed: 1.6 }, { fx: "impacts/crit-hit", at: "tgt", up: 10, delay: 150 }],
-  146: [{ fx: "spawn/poof", on: "wind", pal: "dust", cut: 1 }, { fx: "melee/spin-slash", pal: "job", speed: 1.4 }, { fx: "melee/sword-slash", aim: true, up: 8, pal: "job", speed: 1.8, delay: 150 }],
+  // ── 대검 (바바리안 / 스펠블레이드)
+  80: [{ fx: "impacts/hit-spark", up: 10, cut: 0.22, speed: 1.6, pal: "metal" }, { fx: "melee/sword-slash", aim: true, up: 8, pal: "metal", speed: 2.2, cut: 0.45 }],
+  81: [{ fx: "impacts/heavy-landing", at: "tgt", pal: "dust", cut: 0.55, alpha: 0.72 }, { fx: "nature/quake", at: "tgt", pal: "earth", speed: 1.7, cut: 0.65, alpha: 0.68, delay: 90 }],
+  83: [{ fx: "melee/heavy-cleave", aim: true, up: 6, pal: "fire", speed: 1.9, cut: 0.9 }, { fx: "fire/flame-pillar", up: 2, pal: "fire", speed: 1.8, cut: 0.85, alpha: 0.85, delay: 110 }],
+  97: [{ fx: "fire/flame-pillar", up: 2, pal: "fire", speed: 1.8, cut: 0.5, alpha: 0.68 }, { fx: "melee/heavy-cleave", aim: true, up: 8, pal: "fire", speed: 2.0, cut: 0.75 }, { fx: "lightning/zap-hit", at: "tgt", up: 10, pal: "volt", speed: 1.6, delay: 110 }],
+  140: [{ fx: "lightning/spark-arc", on: "wind", up: 14, pal: "metal", cut: 1.2 }, { fx: "melee/heavy-cleave", at: "tgt", up: 10, pal: "metal", speed: 1.9, cut: 0.85 }, { fx: "impacts/crit-hit", at: "tgt", up: 10, delay: 140 }],
+  146: [{ fx: "spawn/poof", on: "wind", pal: "dust", cut: 1 }, { fx: "melee/spin-slash", pal: "job", speed: 1.4 }, { fx: "fire/fire-tornado", up: 4, pal: "job", ms: 460, speed: 1.6, alpha: 0.58, delay: 100 }],
   153: [{ fx: "spawn/poof", on: "wind", pal: "dust", cut: 1 }, { fx: "melee/sword-slash", aim: true, up: 8, speed: 1.8 }, { fx: "impacts/blunt-hit", at: "tgt", up: 10, delay: "flight" }],
   158: [{ fx: "impacts/shield-block", on: "wind", up: 14, cut: 1 }, { fx: "impacts/parry", up: 14, pal: "metal" }, { fx: "impacts/ricochet", at: "tgt", up: 12, delay: 120, cut: 1 }],
-  159: [{ fx: "holy/sunburst", on: "wind", up: 9, pal: "gold", cut: 0.65, alpha: 0.55 }, { fx: "impacts/ground-slam", at: "tgt", speed: 2.2, cut: 0.42, alpha: 0.56 }],
-  // ── 단검 (thief)
-  84: [{ fx: "spawn/poof", pal: "arcane", cut: 0.44, speed: 1.6, alpha: 0.48 }, { fx: "melee/claw-swipe", at: "tgt", up: 10, pal: "arcane", speed: 1.9, cut: 0.4, delay: 80 }],
-  85: [{ fx: "lightning/spark-arc", up: 10, pal: "arcane", cut: 0.36, speed: 1.6 }, { fx: "melee/dagger-flurry", aim: true, up: 8, pal: "arcane", speed: 2.2, cut: 0.5 }],
-  86: [{ fx: "spawn/poof", pal: "arcane", cut: 0.44, speed: 1.6, alpha: 0.48 }, { fx: "melee/dagger-flurry", aim: true, up: 8, pal: "arcane", speed: 1.6, cut: 1, delay: 120 }],
-  141: [{ fx: "shadow/shadow-tendrils", on: "wind", up: 4, pal: "blood", cut: 0.6, speed: 1.6, alpha: 0.55 }, { fx: "melee/claw-swipe", at: "tgt", up: 10, pal: "blood", speed: 1.5, cut: 0.5 }],
+  159: [{ fx: "holy/sunburst", on: "wind", up: 9, pal: "gold", cut: 0.65, alpha: 0.55 }, { fx: "melee/heavy-cleave", aim: true, up: 8, pal: "gold", speed: 1.9, cut: 0.8 }, { fx: "impacts/ground-slam", at: "tgt", speed: 2.0, cut: 0.5, alpha: 0.66, delay: 80 }],
+  // ── 단검 (도적 / 블레이드댄서)
+  84: [{ fx: "spawn/poof", pal: "shadow", cut: 0.44, speed: 1.6, alpha: 0.52 }, { fx: "melee/claw-swipe", at: "tgt", up: 10, pal: "arcane", speed: 1.9, cut: 0.45, delay: 70 }],
+  85: [{ fx: "lightning/spark-arc", up: 10, pal: "arcane", cut: 0.36, speed: 1.6 }, { fx: "melee/dagger-flurry", aim: true, up: 8, pal: "shadow", speed: 2.2, cut: 0.55 }],
+  86: [{ fx: "spawn/poof", pal: "shadow", cut: 0.44, speed: 1.6, alpha: 0.5 }, { fx: "melee/dagger-flurry", aim: true, up: 8, pal: "arcane", speed: 1.7, cut: 1.0, delay: 100 }, { fx: "impacts/crit-hit", at: "tgt", up: 10, pal: "blood", delay: 200 }],
+  100: [{ fx: "melee/scythe-reap", at: "tgt", up: 8, pal: "blood", speed: 2.1, cut: 0.85 }, { fx: "shadow/dark-explosion", at: "tgt", up: 6, pal: "blood", speed: 1.8, cut: 0.7, alpha: 0.72, delay: 140 }],
+  120: [{ fx: "melee/double-slash", aim: true, at: "tgt", up: 8, pal: "job", speed: 1.9, cut: 0.65 }, { fx: "melee/dagger-flurry", aim: true, at: "tgt", up: 8, pal: "blood", speed: 2.0, cut: 0.65, delay: 110 }],
+  141: [{ fx: "shadow/shadow-tendrils", on: "wind", up: 4, pal: "blood", cut: 0.55, speed: 1.6, alpha: 0.55 }, { fx: "melee/scythe-reap", at: "tgt", up: 10, pal: "blood", speed: 2.2, cut: 0.65 }],
   155: [{ fx: "lightning/spark-arc", on: "wind", up: 12, pal: "metal", cut: 1.2 }, { fx: "melee/spin-slash", pal: "metal" }, { fx: "melee/dagger-flurry", up: 8, pal: "metal", delay: 200, cut: 1.4 }],
-  157: [{ fx: "spawn/poof", on: "wind", pal: "arcane", cut: 0.48, alpha: 0.46 }, { fx: "spawn/poof", at: "tgt", pal: "arcane", cut: 0.65, speed: 1.5, alpha: 0.54 }],
-  // ── 창 (lancer)
-  87: [{ fx: "impacts/hit-spark", up: 10, pal: "metal", cut: 0.18, speed: 1.5 }, { fx: "melee/thrust", aim: true, up: 8, pal: "metal", speed: 2, cut: 0.4 }],
-  88: [{ fx: "impacts/hit-spark", at: "tgt", up: 3, pal: "gold", cut: 0.28, speed: 1.5 }, { fx: "melee/thrust", aim: true, up: 8, pal: "gold", speed: 1.8, cut: 0.5 }],
-  89: [{ fx: "lightning/spark-arc", at: "tgt", up: 10, pal: "volt", cut: 0.7, speed: 1.5 }, { fx: "lightning/lightning-strike", at: "tgt", pal: "volt", speed: 1.6, cut: 0.9, delay: 150 }],
+  157: [{ fx: "spawn/poof", on: "wind", pal: "shadow", cut: 0.48, alpha: 0.46 }, { fx: "explosions/smoke-bomb", at: "tgt", pal: "shadow", speed: 1.5, cut: 1.2, alpha: 0.68 }],
+  // ── 창 (창술사 / 마창사)
+  87: [{ fx: "impacts/hit-spark", up: 10, pal: "metal", cut: 0.18, speed: 1.5 }, { fx: "melee/thrust", aim: true, up: 8, pal: "metal", speed: 2, cut: 0.45 }],
+  88: [{ fx: "impacts/hit-spark", at: "tgt", up: 3, pal: "ember", cut: 0.28, speed: 1.5 }, { fx: "melee/thrust", aim: true, up: 8, pal: "fire", speed: 1.8, cut: 0.55 }],
+  89: [{ fx: "lightning/storm-cloud", at: "tgt", up: 28, pal: "volt", ms: 650, alpha: 0.72 }, { fx: "lightning/lightning-strike", at: "tgt", pal: "volt", speed: 1.6, cut: 0.95, delay: 110 }],
+  99: [{ fx: "ice/icicle-fall", at: "tgt", up: 14, pal: "ice", speed: 2.0, cut: 0.85 }, { fx: "ice/ice-shatter", at: "tgt", up: 6, pal: "ice", speed: 1.8, cut: 0.75, delay: 100 }, { fx: "lightning/lightning-strike", at: "tgt", pal: "ice", speed: 1.7, cut: 0.8, delay: 60 }],
   135: [{ fx: "holy/sunburst", up: 18, pal: "gold", speed: 1.4, cut: 1.5 }, { fx: "holy/feather-burst", size: 2, speed: 1.4, cut: 2.4, delay: 150 }],
   142: [{ fx: "spawn/poof", on: "wind", pal: "dust", cut: 0.55, alpha: 0.55 }, { fx: "melee/whip-crack", aim: true, up: 10, cut: 0.65, speed: 1.5 }],
   147: [{ fx: "lightning/spark-arc", on: "wind", up: 12, pal: "gold", cut: 1.2 }, { fx: "melee/spear-sweep", aim: true, up: 6, pal: "job" }, { fx: "melee/double-slash", aim: true, up: 10, pal: "job", delay: 100 }],
-  // ── 해머 (destroyer)
-  130: [{ fx: "impacts/hit-spark", at: "tgt", up: 1, pal: "metal", speed: 1.5, cut: 0.28 }, { fx: "impacts/blunt-hit", at: "tgt", up: 8, speed: 1.8, cut: 0.35 }],
-  131: [{ fx: "impacts/hit-spark", at: "tgt", up: 1, pal: "gold", speed: 1.5, cut: 0.28 }, { fx: "nature/earth-spike", at: "tgt", up: 0, pal: "dust", speed: 1.8, cut: 0.6, alpha: 0.7 }],
-  132: [{ fx: "holy/sunburst", at: "tgt", up: 2, pal: "gold", speed: 2, cut: 0.58, alpha: 0.64, opts: { size: 0.6 } }, { fx: "impacts/ground-slam", at: "tgt", speed: 1.8, cut: 0.6, alpha: 0.7, delay: 60 }],
-  148: [{ fx: "spawn/poof", on: "wind", pal: "dust", cut: 0.45, alpha: 0.45 }, { fx: "impacts/hit-spark", up: 2, pal: "gold", speed: 1.7, cut: 0.28 }],
-  // ── passive marks on the cast channel (inertia full, dagger mark) and the dagger vortex scatter
+  // ── 양손해머 (파괴자 / 성기사)
+  102: [{ fx: "holy/holy-pillar", pal: "holy", speed: 1.35, cut: 2.4 }, { fx: "holy/heal-aoe", up: 4, pal: "gold", speed: 1.4, cut: 1.8, delay: 120 }, { fx: "holy/sunburst", up: 14, pal: "gold", delay: 220, cut: 1.4 }],
+  130: [{ fx: "melee/hammer-smash", at: "tgt", up: 4, pal: "metal", speed: 2.0, cut: 0.55 }, { fx: "impacts/blunt-hit", at: "tgt", up: 8, speed: 1.8, cut: 0.35, delay: 60 }],
+  131: [{ fx: "nature/quake", at: "tgt", up: 0, pal: "earth", speed: 1.7, cut: 0.75, alpha: 0.72 }, { fx: "nature/earth-spike", at: "tgt", up: 0, pal: "gold", speed: 1.8, cut: 0.65, alpha: 0.75, delay: 60 }],
+  132: [{ fx: "melee/hammer-smash", at: "tgt", up: 6, pal: "gold", speed: 1.8, cut: 0.8 }, { fx: "impacts/ground-slam", at: "tgt", pal: "fire", speed: 1.8, cut: 0.65, alpha: 0.75, delay: 70 }, { fx: "holy/sunburst", at: "tgt", up: 8, pal: "gold", speed: 2, cut: 0.55, alpha: 0.62, opts: { size: 0.65 }, delay: 100 }],
+  133: [{ fx: "melee/hammer-smash", at: "tgt", up: 6, pal: "ember", speed: 1.9, cut: 0.75 }, { fx: "impacts/ground-slam", at: "tgt", pal: "ember", speed: 1.8, cut: 0.58, alpha: 0.7, delay: 120 }],
+  134: [{ fx: "holy/smite", at: "tgt", up: 6, pal: "gold", speed: 1.7, cut: 0.9 }, { fx: "holy/heal-aoe", up: 4, pal: "holy", speed: 1.5, cut: 1.6, delay: 120 }],
+  148: [{ fx: "spawn/poof", on: "wind", pal: "dust", cut: 0.45, alpha: 0.45 }, { fx: "nature/quake", up: 0, pal: "dust", speed: 1.8, cut: 0.65, alpha: 0.68 }],
+  // ── passive marks on the cast channel & dagger vortex scatter
   110: [{ fx: "holy/sunburst", up: 16, pal: "gold", cut: 0.5, speed: 1.8, alpha: 0.55, opts: { size: 0.5 } }],
   111: [{ fx: "impacts/hit-spark", at: "tgt", up: 8, pal: "blood", speed: 1.8, cut: 0.2 }],
   156: [{ fx: "melee/dagger-flurry", aim: true, up: 8, pal: "metal", speed: 1.8, cut: 1 }],
-  // ── 혼합 직업 (근접)
-  97: [{ fx: "fire/flame-pillar", up: 2, pal: "fire", speed: 1.8, cut: 0.44, alpha: 0.62 }, { fx: "melee/sword-slash", aim: true, up: 8, pal: "fire", speed: 1.8, cut: 0.5 }],
-  99: [{ fx: "shadow/shadow-tendrils", at: "tgt", up: 4, cut: 0.75, speed: 1.6, alpha: 0.68 }, { fx: "lightning/lightning-strike", at: "tgt", pal: "volt", speed: 1.6, cut: 0.9 }],
-  100: [{ fx: "melee/claw-swipe", at: "tgt", up: 10, pal: "blood", speed: 1.6, cut: 0.55 }, { fx: "shadow/shadow-flames", at: "tgt", pal: "blood", cut: 0.55, alpha: 0.62 }],
-  102: [{ fx: "holy/holy-pillar", speed: 1.3, cut: 3 }, { fx: "holy/sunburst", up: 14, pal: "gold", delay: 200, cut: 1.5 }, { fx: "holy/feather-burst", up: 6, speed: 1.4, cut: 2.4, delay: 350 }],
-  120: [{ fx: "melee/sword-slash", aim: true, at: "tgt", up: 8, speed: 1.8, cut: 0.55 }, { fx: "melee/double-slash", aim: true, at: "tgt", up: 8, pal: "blood", speed: 1.8, cut: 0.6, delay: 120 }],
-  124: [{ fx: "arcane/mana-burst", up: 12, pal: "volt", cut: 0.8 }, { fx: "melee/dagger-flurry", aim: true, up: 10, pal: "volt" }, { fx: "lightning/zap-hit", at: "tgt", up: 10, pal: "volt", delay: "flight" }],
-  133: [{ fx: "impacts/shield-block", up: 9, pal: "metal", cut: 0.56, alpha: 0.72 }, { fx: "impacts/ground-slam", at: "tgt", speed: 1.8, cut: 0.5, alpha: 0.65, delay: 150 }],
-  134: [{ fx: "holy/sunburst", up: 10, pal: "gold", cut: 1 }, { fx: "holy/feather-burst", up: 6, speed: 1.4, cut: 2.4, delay: 150 }],
 };
 
 export const PROC = {

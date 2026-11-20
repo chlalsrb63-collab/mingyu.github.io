@@ -144,9 +144,9 @@ const TIER_MAX = 50;
 /** Weapon kinds in wire order (`wm`, `["wm", eid, kindIndex, lv]`), and the mastery cap. */
 const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow", "hammer"], WM_MAX = 50;
 const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활", hammer: "양손해머" };
-/** Mastery a single job asks for in its weapon; a hybrid asks HYB_WM in both of its two. */
-const JOB_WM = 20, HYB_WM = 15;
-const JOB_COST = 1000, HYB_COST = 5000;
+/** Mastery every job asks for in its weapon (simplified single-weapon branching at Lv.30). */
+const JOB_WM = 30, HYB_WM = 30;
+const JOB_COST = 1000, HYB_COST = 1000;
 const JOB_PROGRESS = { cap: 50, signature: 5, hp: 0.003, mp: 0.002, atk: 0.0024, def: 0.002 };
 const JOB_SKILL_RANKS = [
   { lv: JOB_PROGRESS.signature, mp: 0, cd: 0 },
@@ -172,34 +172,33 @@ const SCALE = {
 /** A single job adds this to both of its weapon's coefficients. */
 const JOB_PLUS = 0.1;
 /**
- * The jobs. `single`: one weapon, mastery 20 (JOB_WM), 1,000 G. `hybrid`: stay a 모험가 until both weapons
- * of the pair reach 15 (HYB_WM), 5,000 G; `scale` replaces the table for both weapons. Only the listed pairs can advance. Scale budget: two weapons with different main stats → 0.8 + 0.8 and the two second stats
- * 0.3 each (≈ 2.2); a shared main or second stat folds into fewer, bigger coefficients (≈ 1.6–2.2).
- * `handK` multiplies one hand's attack for hybrids whose stat scaling alone falls below the weapon's intended pace.
- * Ids are frozen (persisted).
+ * The jobs (14 single-weapon jobs, 2 branches per weapon at mastery 30, plus adventurer).
+ * Each weapon's primary branch adds JOB_PLUS to its default weapon scaling; the alternate branch supplies
+ * its own `scale` profile for distinct build identity. Ids are frozen (persisted).
  */
 const JOBS = {
   adventurer: { name: "모험가", kind: "none", wk: [], cost: 0 },
-  swordsman: { name: "대검전사", kind: "single", wk: ["sword"], cost: JOB_COST },
+  // ── 대검 (sword)
+  swordsman: { name: "바바리안", kind: "single", wk: ["sword"], cost: JOB_COST },
+  spellblade: { name: "스펠블레이드", kind: "single", wk: ["sword"], scale: { str: 0.9, int: 0.9, wil: 0.2, wis: 0.2 }, cost: JOB_COST },
+  // ── 단검 (dagger)
   thief: { name: "도적", kind: "single", wk: ["dagger"], cost: JOB_COST },
+  bladedancer: { name: "블레이드댄서", kind: "single", wk: ["dagger"], scale: { dex: 0.9, luk: 0.65, str: 0.25 }, cost: JOB_COST },
+  // ── 창 (spear)
   lancer: { name: "창술사", kind: "single", wk: ["spear"], cost: JOB_COST },
+  spellspear: { name: "마창사", kind: "single", wk: ["spear"], scale: { str: 0.85, int: 0.8, wis: 0.55 }, cost: JOB_COST },
+  // ── 스태프 (staff)
   wizard: { name: "마법사", kind: "single", wk: ["staff"], cost: JOB_COST },
+  trickster: { name: "트릭스터", kind: "single", wk: ["staff"], scale: { int: 0.9, wis: 0.5, luk: 0.45 }, cost: JOB_COST },
+  // ── 마도서 (book)
   warlock: { name: "마도사", kind: "single", wk: ["book"], cost: JOB_COST },
-  archer: { name: "궁수", kind: "single", wk: ["bow"], cost: JOB_COST },
+  runearcher: { name: "룬브레이커", kind: "single", wk: ["book"], scale: { int: 0.95, wis: 0.45, wil: 0.45 }, cost: JOB_COST },
+  // ── 활 (bow)
+  archer: { name: "헌터", kind: "single", wk: ["bow"], cost: JOB_COST },
+  tracker: { name: "추적자", kind: "single", wk: ["bow"], scale: { dex: 0.9, luk: 0.75, wis: 0.2 }, cost: JOB_COST },
+  // ── 양손해머 (hammer)
   destroyer: { name: "파괴자", kind: "single", wk: ["hammer"], cost: JOB_COST },
-  spellblade: { name: "마검사", kind: "hybrid", wk: ["sword", "staff"], scale: { str: 0.9, int: 0.9, wil: 0.2, wis: 0.2 }, cost: HYB_COST },
-  tracker: { name: "추적자", kind: "hybrid", wk: ["dagger", "bow"], scale: { dex: 0.75, luk: 0.8 }, handK: { dagger: 1.1 }, cost: HYB_COST },
-  dragoon: { name: "용기사", kind: "hybrid", wk: ["spear", "book"], scale: { str: 0.8, int: 0.8, wil: 0.3, wis: 0.3 }, cost: HYB_COST },
-  hexblade: { name: "주술암살자", kind: "hybrid", wk: ["dagger", "book"], scale: { dex: 0.5, int: 0.78, luk: 0.3, wil: 0.3 }, handK: { dagger: 1.07 }, cost: HYB_COST },
-  darkknight: { name: "암흑기사", kind: "hybrid", wk: ["sword", "book"], scale: { wil: 0.9, str: 0.9, int: 0.4 }, cost: HYB_COST },
-  // Additional hybrid pairings (docs/design/jobs-and-stats.md).
-  bladedancer: { name: "검무사", kind: "hybrid", wk: ["sword", "dagger"], scale: { str: 0.68, dex: 0.5, wil: 0.3, luk: 0.3 }, handK: { dagger: 1.1 }, cost: HYB_COST },
-  trickster: { name: "환술사", kind: "hybrid", wk: ["dagger", "staff"], scale: { dex: 0.5, int: 0.75, luk: 0.3, wis: 0.3 }, cost: HYB_COST },
-  spellspear: { name: "마창사", kind: "hybrid", wk: ["spear", "staff"], scale: { str: 0.8, int: 0.8, wis: 0.6 }, cost: HYB_COST },
-  runesage: { name: "룬술사", kind: "hybrid", wk: ["staff", "book"], scale: { int: 0.9, wis: 0.4, wil: 0.4 }, cost: HYB_COST },
-  runearcher: { name: "각인궁사", kind: "hybrid", wk: ["book", "bow"], scale: { int: 0.8, dex: 0.8, wil: 0.3, luk: 0.3 }, hand: { bow: { dex: 0.95, luk: 0.45 } }, cost: HYB_COST },
-  mercenary: { name: "머서너리", kind: "hybrid", wk: ["hammer", "spear"], scale: { str: 0.9, wil: 0.5, wis: 0.4 }, cost: HYB_COST },
-  paladin: { name: "성기사", kind: "hybrid", wk: ["hammer", "book"], scale: { str: 0.7, int: 0.7, wil: 0.5, wis: 0.3 }, cost: HYB_COST },
+  paladin: { name: "성기사", kind: "single", wk: ["hammer"], scale: { str: 0.8, wil: 0.7, wis: 0.55 }, cost: JOB_COST },
 };
 
 /**
@@ -354,47 +353,46 @@ const SKILL = {
   bow_quill50: { kind: "p", wk: "bow", need: 50, name: "약점 포착", ps: 154, ms: 4000, k: 0.15, borrow: ["atk", 5],
     desc: "치명타를 맞힌 적은 4초 동안 나에게 받는 피해가 15% 늘어난다." },
 
-  // ── single-job signatures
-  verdict: { kind: "j", job: "swordsman", wk: "sword", need: 20, name: "단죄의 일격", mp: 16, hpPct: 0.05, autoHp: 0.35, cd: 36000, r: 70, mult: 1.3, miss: 0.9, inert: 0.1, knock: 20, secondaryDamageType: "fire", fx: 83,
-    desc: "대검전사의 기술 · 불을 두른 대검으로 주변을 벤다. 잃은 HP가 많을수록 강하고(최대 +90%), 쌓인 관성을 모두 터뜨려 관성 1당 피해가 10% 늘어난다. 관성을 가득 채우면 살아남은 적에게 화상을 남긴다." },
-  flurry: { kind: "j", job: "thief", wk: "dagger", need: 20, name: "무영난무", mp: 18, hpPct: 0.035, autoHp: 0.35, cd: 36000, n: 7, every: 220, r: 90, mult: 1.2, per: 0.3, bleedMarks: 3, fx: 86,
+  // ── job signatures (job Lv.5; secondary job Lv.30 skills carry `jl: 30`)
+  verdict: { kind: "j", job: "swordsman", wk: "sword", need: JOB_WM, name: "단죄의 일격", mp: 16, hpPct: 0.05, autoHp: 0.35, cd: 36000, r: 70, mult: 1.3, miss: 0.9, inert: 0.1, knock: 20, secondaryDamageType: "fire", fx: 83,
+    desc: "바바리안의 기술 · 불을 두른 대검으로 주변을 벤다. 잃은 HP가 많을수록 강하고(최대 +90%), 쌓인 관성을 모두 터뜨려 관성 1당 피해가 10% 늘어난다. 관성을 가득 채우면 살아남은 적에게 화상을 남긴다." },
+  flurry: { kind: "j", job: "thief", wk: "dagger", need: JOB_WM, name: "무영난무", mp: 18, hpPct: 0.035, autoHp: 0.35, cd: 36000, n: 7, every: 220, r: 90, mult: 1.2, per: 0.3, bleedMarks: 3, fx: 86,
     desc: "도적의 기술 · 그림자가 되어 주변의 적 사이를 일곱 번 넘나들며 벤다(표식 있는 적부터, 표식 1개당 +30%). 표식을 3개 이상 소모하면 출혈을 남긴다. 그동안 피해를 입지 않는다." },
-  dragon: { kind: "j", job: "lancer", wk: "spear", need: 20, name: "뇌룡승천", mp: 17, hpPct: 0.04, autoHp: 0.35, cd: 32000, at: 80, r: 64, pull: 20, pulsePull: 7, n: 3, every: 400, mult: 0.4, fin: 0.8, stun: [1500, 600], el: "l", fx: 89,
+  dragon: { kind: "j", job: "lancer", wk: "spear", need: JOB_WM, name: "뇌룡승천", mp: 17, hpPct: 0.04, autoHp: 0.35, cd: 32000, at: 80, r: 64, pull: 20, pulsePull: 7, n: 3, every: 400, mult: 0.4, fin: 0.8, stun: [1500, 600], el: "l", fx: 89,
     desc: "창술사의 기술 · 앞쪽에 번개 용의 기둥을 세워 매 박동 적을 중심으로 끌어당긴 뒤, 마지막 일격으로 기절시킨다. 번개 원소." },
-  meteor: { kind: "j", job: "wizard", wk: "staff", need: 20, name: "메테오 스톰", mp: 42, cd: 40000, at: 120, r: 80, n: 6, every: 400, hr: 30, mult: 0.6, chain: 0.35, el: "f", mag: 1, fx: 90,
+  meteor: { kind: "j", job: "wizard", wk: "staff", need: JOB_WM, name: "메테오 스톰", mp: 42, cd: 40000, at: 120, r: 80, n: 6, every: 400, hr: 30, mult: 0.6, chain: 0.35, el: "f", mag: 1, fx: 90,
     desc: "마법사의 기술 · 앞쪽에 운석 여섯 개를 떨어뜨린다. 운석마다 번개가 한 적에게 튀어 원소 반응을 일으킨다." },
-  pact: { kind: "j", job: "warlock", wk: "book", need: 20, name: "심연의 계약", mp: 40, cd: 38000, ms: 6000, every: 600, bite: 0.8, r: 80, mult: 2.2, brandK: 0.25, mag: 1, fx: 93,
+  pact: { kind: "j", job: "warlock", wk: "book", need: JOB_WM, name: "심연의 계약", mp: 40, cd: 38000, ms: 6000, every: 600, bite: 0.8, r: 80, mult: 2.2, brandK: 0.25, mag: 1, fx: 93,
     desc: "마도사의 기술 · 6초간 심연의 짐승을 불러낸다. 짐승은 사거리 안에서 낙인 찍힌 적부터 물어뜯고, 사라질 때 저주를 터뜨린다(낙인 찍힌 적에게 +25%)." },
-  rain: { kind: "j", job: "archer", wk: "bow", need: 20, name: "화살비", mp: 34, cd: 30000, at: 110, r: 70, ms: 3000, every: 300, mult: 0.25, centerK: 1.2, armorPenPct: 25, fx: 96,
-    desc: "궁수의 기술 · 하늘로 쏘아 올린 화살이 3초간 앞쪽에 비처럼 쏟아져 안의 적을 느리게 한다. 중심부에서는 피해가 20% 더 들어간다." },
+  rain: { kind: "j", job: "archer", wk: "bow", need: JOB_WM, name: "화살비", mp: 34, cd: 30000, at: 110, r: 70, ms: 3000, every: 300, mult: 0.25, centerK: 1.2, armorPenPct: 25, fx: 96,
+    desc: "헌터의 기술 · 하늘로 쏘아 올린 화살이 3초간 앞쪽에 비처럼 쏟아져 안의 적을 느리게 한다. 중심부에서는 피해가 20% 더 들어간다." },
 
-  // ── hybrid signatures (either weapon of the pair)
-  crimson: { kind: "h", job: "spellblade", need: 15, name: "원소 마검: 홍련참", mp: 40, cd: 34000, len: 160, half: 20, mult: 1.6, primedK: 1.15, el: "f", fx: 97,
-    desc: "마검사의 기술 · 불꽃을 두른 검기를 일직선으로 날린다. 맞은 적마다 번개가 겹쳐 과부하 폭발이 일어난다. 이미 화상이나 감전에 걸린 적에서 터진 폭발은 15% 강하다." },
-  traps: { kind: "h", job: "tracker", need: 15, name: "사방의 그림자 덫", mp: 38, cd: 36000, hide: 3000, back: 40, n: 4, ring: 45, ms: 8000, trig: 14, root: 1500, stab: 0.35, splashK: 0.4, shot: 0.45, fx: 98,
-    desc: "추적자의 기술 · 3초간 모습을 감추고(이동 속도 +40%) 뒤로 물러나며, 선 자리 둘레에 그림자 덫 넷을 깐다. 밟은 적은 묶이고, 튀어나온 분신이 세 번 찌르고 두 번 쏜다. 옆에 있던 일반 적에게 독이 퍼진다." },
-  dive: { kind: "h", job: "dragoon", need: 15, name: "심연의 강림", mp: 44, cd: 40000, at: 120, ghost: 800, r: 110, mult: 2.0, field: 70, ms: 4000, every: 500, drain: 0.2, heal: 0.3, secondaryDamageType: "dark", mag: 1, fx: 99,
-    desc: "용기사의 기술 · 하늘로 솟구쳐(0.8초 무적) 착지하며 번개 충격파로 적을 감전시킨다. 착지 지점에 4초간 어둠 장판을 남기고, 장판이 준 피해의 30%만큼 자신의 HP를 회복한다." },
-  bloodburst: { kind: "h", job: "hexblade", need: 15, name: "혈흔 폭발", mp: 36, cd: 30000, r: 100, root: 1200, base: 0.95, bleed: 0.55, moreBleed: 0.16, mark: 0.4, brand: 0.6, fx: 100,
-    desc: "주술암살자의 기술 · 주변의 적을 1.2초간 묶은 뒤 피를 터뜨린다 — 물리 방어를 무시하는 출혈 피해(공격력의 95% + 첫 출혈 55% 및 추가 중첩당 16%, 최대 3중첩 + 표식당 40% + 낙인 60%). 표식·출혈·낙인은 사라진다." },
-  sanctuary: { kind: "h", job: "darkknight", need: 15, name: "불멸의 성역", mp: 20, hpCost: 0.2, cd: 45000, r: 90, ms: 8000, every: 1000, guard: 0.25, mult: 0.2, autoHp: 0.6, mendBelow: 0.25, mend: 0.65, fx: 102,
-    desc: "암흑기사의 기술 · 현재 HP의 20%를 바쳐 8초간 피의 성역을 편다. 안의 파티원은 받는 피해 -25%, 안의 적은 매초 피해를 입고 그 피해의 50%만큼 가장 다친 파티원을 치유한다. 대상의 HP가 25% 미만이면 65%를 치유한다." },
-  // the hybrid expansion (docs/design/jobs-and-stats.md "Hybrid expansion"): fx 120–128
-  crosscut: { kind: "h", job: "bladedancer", need: 15, name: "십자 난도", mp: 36, cd: 32000, r: 64, arc: 100, mult: 1.0, marks: 2, stab: 0.6, per: 0.2, crit: 30, armorPenPct: 25, secondaryDamageType: "bleed", fx: 120,
-    desc: "검무사의 기술 · 대검으로 앞을 휩쓸어 표식 둘을 새기고, 단검으로 파고들어 출혈 피해를 더한다(표식 1개당 +20%, 나를 노리지 않던 적에게는 반드시 치명타). 관성이 가득 찬다." },
-  elemfan: { kind: "h", job: "trickster", need: 15, name: "원소 비수", mp: 36, cd: 30000, len: 140, half: 12, spread: 18, mult: 0.9, rx: 3, slow: 2000, mag: 1, secondaryDamageType: "dark", fx: 124,
-    desc: "환술사의 기술 · 가운데는 번개, 양쪽은 어둠을 주 피해로 하는 비수를 던져 표식을 남긴다. 비수마다 붙은 불·얼음·번개 문양 중 둘이 한 적에 겹치면 원소 반응이 터진다(적 셋까지). 얼음 문양은 적을 느리게 한다." },
-  frostspire: { kind: "h", job: "spellspear", need: 15, name: "빙결창", mp: 36, cd: 30000, len: 150, half: 14, mult: 1.4, far: 0.72, freeze: 1000, r: 44, burst: 1.0, el: "i", fx: 125,
+  // ── second-branch job signatures + recycled Job Lv.30 signatures
+  crimson: { kind: "j", job: "spellblade", wk: "sword", need: JOB_WM, name: "원소 마검: 홍련참", mp: 40, cd: 34000, len: 160, half: 20, mult: 1.6, primedK: 1.15, el: "f", fx: 97,
+    desc: "스펠블레이드의 기술 · 불꽃을 두른 대검의 검기를 일직선으로 날린다. 맞은 적마다 번개가 겹쳐 과부하 폭발이 일어난다. 이미 화상이나 감전에 걸린 적에서 터진 폭발은 15% 강하다." },
+  traps: { kind: "j", job: "tracker", wk: "bow", need: JOB_WM, name: "사방의 그림자 덫", mp: 38, cd: 36000, hide: 3000, back: 40, n: 4, ring: 45, ms: 8000, trig: 14, root: 1500, stab: 0.35, splashK: 0.4, shot: 0.45, fx: 98,
+    desc: "추적자의 기술 · 3초간 모습을 감추고(이동 속도 +40%) 뒤로 물러나며, 선 자리 둘레에 그림자 덫 넷을 깐다. 밟은 적은 묶이고, 튀어나온 분신이 속사 세 발과 강사 두 발을 퍼붓는다. 옆에 있던 일반 적에게 독이 퍼진다." },
+  dive: { kind: "j", job: "spellspear", wk: "spear", need: JOB_WM, jl: 30, name: "빙결 강림", mp: 42, cd: 38000, at: 120, ghost: 800, r: 110, mult: 2.0, field: 70, ms: 4000, every: 500, drain: 0.2, heal: 0.3, el: "i", secondaryDamageType: "lightning", mag: 1, fx: 99,
+    desc: "마창사의 기술 (직업 Lv.30) · 하늘로 솟구쳐(0.8초 무적) 얼음 창을 내리꽂으며 냉기·번개 충격파로 적을 강타한다. 착지 지점에 4초간 서리 장판을 남기고, 장판이 준 피해의 30%만큼 자신의 HP를 회복한다." },
+  bloodburst: { kind: "j", job: "bladedancer", wk: "dagger", need: JOB_WM, jl: 30, name: "혈흔 폭발", mp: 36, cd: 30000, r: 100, root: 1200, base: 0.95, bleed: 0.55, moreBleed: 0.16, mark: 0.4, brand: 0.6, fx: 100,
+    desc: "블레이드댄서의 기술 (직업 Lv.30) · 주변의 적을 1.2초간 묶은 뒤 새겨 둔 표식과 출혈을 한꺼번에 터뜨린다 — 물리 방어를 무시하는 출혈 피해(공격력의 95% + 첫 출혈 55% 및 추가 중첩당 16%, 최대 3중첩 + 표식당 40% + 낙인 60%). 표식·출혈·낙인은 사라진다." },
+  sanctuary: { kind: "j", job: "paladin", wk: "hammer", need: JOB_WM, jl: 30, name: "성광의 성역", mp: 30, cd: 42000, r: 90, ms: 8000, every: 1000, guard: 0.25, mult: 0.2, mendBelow: 0.25, mend: 0.65, fx: 102,
+    desc: "성기사의 기술 (직업 Lv.30) · 8초간 황금빛 성광의 성역을 편다. 안의 파티원은 받는 피해 -25%, 안의 적은 매초 빛 피해를 입고 그 피해의 50%만큼 가장 다친 파티원을 치유한다. 대상의 HP가 25% 미만이면 65%를 치유한다." },
+  crosscut: { kind: "j", job: "bladedancer", wk: "dagger", need: JOB_WM, name: "십자 난도", mp: 36, cd: 32000, r: 64, arc: 100, mult: 1.0, marks: 2, stab: 0.6, per: 0.2, crit: 30, armorPenPct: 25, secondaryDamageType: "bleed", fx: 120,
+    desc: "블레이드댄서의 기술 · 단검으로 앞을 휩쓸어 표식 둘을 새기고, 곧바로 십자 교차 참격으로 파고들어 출혈 피해를 더한다(표식 1개당 +20%, 나를 노리지 않던 적에게는 반드시 치명타)." },
+  elemfan: { kind: "j", job: "trickster", wk: "staff", need: JOB_WM, name: "원소 환영탄", mp: 36, cd: 30000, len: 140, half: 12, spread: 18, mult: 0.9, rx: 3, slow: 2000, mag: 1, secondaryDamageType: "dark", fx: 124,
+    desc: "트릭스터의 기술 · 스태프로 불·얼음·번개 문양이 깃든 환영 원소탄 세 발을 부채꼴로 날린다. 가운데는 번개, 양쪽은 어둠 피해로 표식을 남기며 두 문양이 한 적에 겹치면 원소 반응이 터진다(적 셋까지). 얼음 문양은 적을 느리게 한다." },
+  frostspire: { kind: "j", job: "spellspear", wk: "spear", need: JOB_WM, name: "빙결창", mp: 36, cd: 30000, len: 150, half: 14, mult: 1.4, far: 0.72, freeze: 1000, r: 44, burst: 1.0, el: "i", fx: 125,
     desc: "마창사의 기술 · 얼음을 두른 창을 일직선으로 내지른다. 맞은 적은 느려지고, 창끝(끝 28%)에 걸린 적은 1초간 얼어붙는다. 창끝이 닿은 자리에서 얼음 기둥이 솟아 주변을 친다. 얼음 원소." },
-  runecircle: { kind: "h", job: "runesage", need: 15, name: "메아리 법진", mp: 46, cd: 45000, at: 80, r: 64, ms: 5000, every: 1000, mult: 0.2, rxK: 0.5, ward: 0.03, wardMs: 2400, mag: 1, fx: 126,
-    desc: "룬술사의 기술 · 앞쪽에 5초간 룬 법진을 새긴다. 1초마다 안의 적을 치고 낙인을 새기며, 불·얼음·번개가 번갈아 깃들어 두 박동마다 원소 반응을 일으킨다. 반응이 일어나면 안에 있는 파티원은 2.4초 동안 자기 최대 HP의 3%만큼 보호막을 얻는다." },
-  inkshot: { kind: "h", job: "runearcher", need: 15, name: "룬 먹화살", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.8, per: 2, brandK: 0.4, coldCrit: 12, mag: 1, secondaryDamageType: "dark", fx: 128,
-    desc: "각인궁사의 기술 · 냉기와 어둠을 담은 룬 화살 다섯 대를 부채꼴로 쏜다. 적에게 오한과 낙인을 남기고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 낙인과 오한 또는 빙결이 함께 걸린 적에게는 치명타 확률이 12%p 높다. 한 적은 최대 두 대까지 맞는다." },
+  runecircle: { kind: "j", job: "runearcher", wk: "book", need: JOB_WM, jl: 30, name: "메아리 법진", mp: 44, cd: 42000, at: 80, r: 64, ms: 5000, every: 1000, mult: 0.2, rxK: 0.5, ward: 0.03, wardMs: 2400, mag: 1, fx: 126,
+    desc: "룬브레이커의 기술 (직업 Lv.30) · 앞쪽에 5초간 룬 법진을 새긴다. 1초마다 안의 적을 치고 낙인을 새기며, 불·얼음·번개가 번갈아 깃들어 두 박동마다 원소 반응을 일으킨다. 반응이 일어나면 안에 있는 파티원은 2.4초 동안 자기 최대 HP의 3%만큼 보호막을 얻는다." },
+  inkshot: { kind: "j", job: "runearcher", wk: "book", need: JOB_WM, name: "룬 파쇄탄", mp: 36, cd: 30000, n: 5, spread: 24, len: 170, r: 8, mult: 0.8, per: 2, brandK: 0.4, coldCrit: 12, mag: 1, secondaryDamageType: "dark", fx: 128,
+    desc: "룬브레이커의 기술 · 마도서를 펼쳐 냉기와 어둠을 담은 룬 탄환 다섯 발을 부채꼴로 방출한다. 적에게 오한과 낙인을 남기고, 이미 낙인 찍힌 적은 +40% 피해를 입는다. 낙인과 오한 또는 빙결이 함께 걸린 적에게는 치명타 확률이 12%p 높다. 한 적은 최대 두 발까지 맞는다." },
   hammer_stamp: { kind: "a", wk: "hammer", need: 1, name: "쐐기찍기", mp: 3, hpPct: 0.02, autoHp: 0.35, cd: 6000, center: 23, r: 28, wind: 200, mult: 2.55, splashMult: 1, stun: 180, fx: 130,
     desc: "앞쪽을 내려찍어 가장 가까운 적에게 정타를 가하고 두 적까지 충격을 준다. 맞은 일반 적은 잠깐 휘청인다." },
   hammer_fault: { kind: "a", wk: "hammer", need: 10, name: "금맥 벌리기", mp: 5, hpPct: 0.03, autoHp: 0.35, cd: 10000, center: 24, r: 31, wind: 200, mult: 2.85, splashMult: 1.10, crackMult: 1.25, hpRefund: 0.5, fx: 131,
     desc: "해머로 땅을 갈라 세 적까지 맞힌다. 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 25% 늘고 소모한 HP의 절반을 돌려받는다." },
-  hammer_final: { kind: "j", job: "destroyer", wk: "hammer", need: 20, name: "파성추", mp: 10, hpPct: 0.05, autoHp: 0.35, cd: 32000, center: 22, r: 36, wind: 400, mult: 4.5, splashMult: 1.60, crackMult: 1.35, hpRefund: 0.5, brace: 0.25, shatter: true, armorPenPct: 35, fx: 132,
+  hammer_final: { kind: "j", job: "destroyer", wk: "hammer", need: JOB_WM, name: "파성추", mp: 10, hpPct: 0.05, autoHp: 0.35, cd: 32000, center: 22, r: 36, wind: 400, mult: 4.5, splashMult: 1.60, crackMult: 1.35, hpRefund: 0.5, brace: 0.25, shatter: true, armorPenPct: 35, fx: 132,
     desc: "파괴자의 기술. 준비 중 경직이 25% 줄어든다. 내가 새긴 균열 두 개를 터뜨리면 정타 피해가 35% 늘고 소모한 HP의 절반을 돌려받으며, 적의 방어구를 파쇄한다." },
   hammer_crack: { kind: "p", wk: "hammer", need: 10, name: "균열 새기기", max: 2, ms: 5000, borrow: ["atk", 4],
     desc: "해머 기본 공격 정타에 맞은 적에게 5초 동안 내 균열을 남긴다. 최대 두 개까지 쌓인다." },
@@ -406,10 +404,10 @@ const SKILL = {
     desc: "해머 기술의 HP 소모가 최대 HP의 1%만큼 줄어든다. 최소 소모량은 최대 HP의 1%다." },
   hammer_heart: { kind: "p", wk: "hammer", need: 50, name: "심철의 파문", bonus: 1.08, borrow: ["critd", 8],
     desc: "해머 기술로 내 균열 두 개를 실제로 터뜨리면 정타 피해가 추가로 8% 늘어난다." },
-  ironsiege: { kind: "h", job: "mercenary", need: HYB_WM, name: "철쇄 돌진", mp: 24, cd: 28000, len: 48, half: 11, r: 23, mult: 2.45, sweep: 1.05, armorPenPct: 30, fx: 133,
-    desc: "창으로 열린 길을 따라 전진하고 끝에서 해머를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다. 돌진에 맞은 일반 적에게 끌림 상태를 남겨 후속 기술을 연계할 수 있다." },
-  oathward: { kind: "h", job: "paladin", need: HYB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, creditMs: 10000, wardBelow: 0.35, ward: 0.06, wardMs: 3000, fx: 134,
-    desc: "주변을 내리치고 자신과 반경 88 안의 파티원에게 최대 HP 10% + 성기사 공격력의 30%를 회복시킨다. 회복 전 HP가 35% 미만이면 3초 동안 최대 HP의 6%만큼 보호막도 얻는다. 회복한 파티원이 10초 안에 처치에 기여하면 성기사도 직업 경험치를 받는다." },
+  ironsiege: { kind: "j", job: "destroyer", wk: "hammer", need: JOB_WM, jl: 30, name: "철쇄 돌진", mp: 24, cd: 28000, len: 48, half: 11, r: 23, mult: 2.45, sweep: 1.05, armorPenPct: 30, fx: 133,
+    desc: "파괴자의 기술 (직업 Lv.30) · 해머를 앞세워 철쇄처럼 전진하고 끝에서 대지를 내려친다. 돌진과 충격에 동시에 걸린 적은 정타 한 번을 받는다. 돌진에 맞은 일반 적에게 끌림 상태를 남겨 후속 기술을 연계할 수 있다." },
+  oathward: { kind: "j", job: "paladin", wk: "hammer", need: JOB_WM, name: "성문 서약", mp: 26, cd: 26000, r: 34, mult: 1.55, healR: 88, heal: 0.10, atkHeal: 0.30, creditMs: 10000, wardBelow: 0.35, ward: 0.06, wardMs: 3000, fx: 134,
+    desc: "성기사의 기술 · 해머로 주변을 내리치고 자신과 반경 88 안의 파티원에게 최대 HP 10% + 성기사 공격력의 30%를 회복시킨다. 회복 전 HP가 35% 미만이면 3초 동안 최대 HP의 6%만큼 보호막도 얻는다. 회복한 파티원이 10초 안에 처치에 기여하면 성기사도 직업 경험치를 받는다." },
   // ── the combo actives (docs/design/skill-combos.md, fx 140–145): mastery 25, after the signatures so a fresh bar keeps them
   cleave: { kind: "a", wk: "sword", need: 25, name: "처형 내려베기", mp: 8, hpPct: 0.03, autoHp: 0.35, cd: 16000, wind: 500, len: 56, half: 18, n: 3, mult: 2.4, eat: { stg: 0.6, air: 0.5, frz: 0.6 }, fx: 140,
     desc: "0.5초 동안 대검을 치켜들었다가 앞의 적 셋까지 내려벤다. 경직된 적 +60%, 공중에 뜬 적 +50%, 얼어붙은 적 +60% — 그 상태는 풀린다." },
@@ -424,9 +422,9 @@ const SKILL = {
   snipe: { kind: "a", wk: "bow", need: 25, name: "저격", mp: 12, cd: 18000, wind: 700, len: 220, half: 8, n: 2, mult: 1.8, eat: { stg: 0.5, air: 0.6, frz: 0.5 }, fx: 145,
     desc: "0.7초 시위를 끝까지 당겨 아주 멀리 일직선으로 쏜다(앞의 둘까지). 경직된 적 +50%, 공중에 뜬 적 +60%, 얼어붙은 적 +50%." },
   // ── job Lv.30 spins (owner, 2026-11-15): held whirls that follow the caster and pay their cost every beat (`spin` prop, 57)
-  whirl: { kind: "j", job: "swordsman", wk: "sword", need: 20, jl: 30, name: "돌개바람", mp: 6, hpPct: 0.02, autoHp: 0.35, cd: 12000, ms: 5000, every: 300, r: 46, mult: 0.33, mpT: 0.03, hpT: 0.0047, fx: 146,
-    desc: "대검전사의 기술 (직업 Lv.30) · 5초 동안 대검을 들고 회오리처럼 돌며 움직이고, 주변의 모든 적을 0.3초마다 벤다. 도는 동안 마나와 HP를 조금씩 쓰며, 마나가 모자라거나 다른 스킬을 쓰면 멈춘다." },
-  musou: { kind: "j", job: "lancer", wk: "spear", need: 20, jl: 30, name: "무쌍난무", mp: 8, cd: 10000, ms: 3000, every: 200, r: 52, mult: 0.32, mpT: 0.04, fx: 147,
+  whirl: { kind: "j", job: "swordsman", wk: "sword", need: JOB_WM, jl: 30, name: "돌개바람", mp: 6, hpPct: 0.02, autoHp: 0.35, cd: 12000, ms: 5000, every: 300, r: 46, mult: 0.33, mpT: 0.03, hpT: 0.0047, fx: 146,
+    desc: "바바리안의 기술 (직업 Lv.30) · 5초 동안 대검을 들고 회오리처럼 돌며 움직이고, 주변의 모든 적을 0.3초마다 벤다. 도는 동안 마나와 HP를 조금씩 쓰며, 마나가 모자라거나 다른 스킬을 쓰면 멈춘다." },
+  musou: { kind: "j", job: "lancer", wk: "spear", need: JOB_WM, jl: 30, name: "무쌍난무", mp: 8, cd: 10000, ms: 3000, every: 200, r: 52, mult: 0.32, mpT: 0.04, fx: 147,
     desc: "창술사의 기술 (직업 Lv.30) · 3초 동안 창을 휘휘 돌리며 움직이고, 창 길이만큼 둘러싼 모든 적을 0.2초마다 찌른다. 도는 동안 마나를 조금씩 쓰며, 마나가 모자라거나 다른 스킬을 쓰면 멈춘다." },
   // ── the first wave of new weapon skills (docs/design/skill-ideas.md §9, fx 148–159); after everything older so a fresh bar keeps its old skills
   stomp: { kind: "a", wk: "hammer", need: 40, name: "땅울림 발구르기", mp: 2, hpPct: 0.015, autoHp: 0.35, cd: 4000, stomp: true, r: 52, mult: 0.5, air: 600, stg: 600, gauge: 0.1, fx: 148,
@@ -474,23 +472,18 @@ const WK_PASSIVE = Object.fromEntries(WK_ORDER.map(wk => [wk, WK_SKILLS[wk].find
 const JOB_PAL = {
   adventurer: { name: "길 위의 첫걸음", c: ["#c8a46a", "#f0dcae", "#5e4626", "#7fb6d9"] },
   swordsman: { name: "강철과 불꽃", c: ["#e2413b", "#ff9a80", "#6a1418", "#c9d2dc"] },
-  thief: { name: "그림자와 독", c: ["#9353d3", "#cfa8f5", "#2c1648", "#7ee07a"] },
-  lancer: { name: "천둥 기병", c: ["#3f86e8", "#a8d0ff", "#14345e", "#ffe066"] },
-  wizard: { name: "원소의 불씨", c: ["#ff8c2e", "#ffd29a", "#6e2c06", "#6fe3ff"] },
-  warlock: { name: "심연의 낙인", c: ["#cf3fa0", "#f5a6d6", "#4a0f36", "#5be3b0"] },
-  archer: { name: "숲의 바람", c: ["#62c25a", "#bdf0ae", "#1d4a22", "#f0c850"] },
-  destroyer: { name: "용광로와 금맥", c: ["#e8b830", "#ffe68a", "#5c4208", "#ff5a2a"] },
   spellblade: { name: "홍련과 뇌전", c: ["#ff6a4a", "#ffbfa6", "#6e1c12", "#ffe066"] },
-  tracker: { name: "밤숲의 덫", c: ["#8fb83a", "#d6ee9e", "#33441a", "#9353d3"] },
-  dragoon: { name: "심연의 비룡", c: ["#5c5ee6", "#b4b6ff", "#1c1d5a", "#cf3fa0"] },
-  hexblade: { name: "피의 주술", c: ["#b02a48", "#f0889e", "#3c0a16", "#c48cff"] },
-  darkknight: { name: "검은 성역", c: ["#9aa4b8", "#dfe5f0", "#262b38", "#e2413b"] },
+  thief: { name: "그림자와 독", c: ["#9353d3", "#cfa8f5", "#2c1648", "#7ee07a"] },
   bladedancer: { name: "칼바람 춤", c: ["#f0679e", "#ffb8d8", "#66183e", "#c9d2dc"] },
-  trickster: { name: "환영의 세 원소", c: ["#36d1b4", "#a8f5e4", "#0c4a40", "#ff8c2e"] },
+  lancer: { name: "천둥 기병", c: ["#3f86e8", "#a8d0ff", "#14345e", "#ffe066"] },
   spellspear: { name: "빙결의 창", c: ["#66d6ff", "#d2f4ff", "#164c68", "#3f86e8"] },
-  runesage: { name: "메아리 법진", c: ["#b49cff", "#e4dcff", "#3a2c6e", "#ffd166"] },
-  runearcher: { name: "먹과 룬의 화살", c: ["#e6dcc0", "#fffbea", "#2b2620", "#62c25a"] },
-  mercenary: { name: "녹슨 철쇄", c: ["#b07850", "#e8c4a4", "#46281a", "#6fa8e0"] },
+  wizard: { name: "원소의 불씨", c: ["#ff8c2e", "#ffd29a", "#6e2c06", "#6fe3ff"] },
+  trickster: { name: "환영의 세 원소", c: ["#36d1b4", "#a8f5e4", "#0c4a40", "#ff8c2e"] },
+  warlock: { name: "심연의 낙인", c: ["#cf3fa0", "#f5a6d6", "#4a0f36", "#5be3b0"] },
+  runearcher: { name: "먹과 룬의 서", c: ["#6e8cff", "#ccd9ff", "#1c2552", "#ffd166"] },
+  archer: { name: "숲의 바람", c: ["#62c25a", "#bdf0ae", "#1d4a22", "#f0c850"] },
+  tracker: { name: "밤숲의 덫", c: ["#8fb83a", "#d6ee9e", "#33441a", "#9353d3"] },
+  destroyer: { name: "용광로와 금맥", c: ["#e8b830", "#ffe68a", "#5c4208", "#ff5a2a"] },
   paladin: { name: "성문의 빛", c: ["#f2dc7a", "#fff7cc", "#74601c", "#8fd6ff"] },
 };
 /** Each skill's palette owner: a signature's job, a weapon skill's single job of that weapon. */
@@ -2340,11 +2333,11 @@ const SKILL_ELEMENT_GROUPS = {
   physical: ["slash", "rend", "spiral", "pierce", "leapshot", "verdict", "rain", "hammer_stamp", "hammer_fault", "hammer_final", "ironsiege", "crosscut", "cleave", "hook", "snipe", "whirl", "musou", "stomp", "dragonpierce", "rollshot", "shoulder", "parry", "mountain", "sword_weight40"],
   bleed: ["ambush", "flurry", "bloodburst", "rupture", "bladevortex"],
   fire: ["comet", "mortar"],
-  cold: ["inkshot"],
-  lightning: ["elemfan", "dive"],
+  cold: ["inkshot", "dive"],
+  lightning: ["elemfan"],
   poison: ["traps", "snare"],
-  dark: ["shade", "soulbolt", "gravity", "pact", "sanctuary", "drain"],
-  light: ["oathward", "runecircle"],
+  dark: ["shade", "soulbolt", "gravity", "pact", "drain"],
+  light: ["oathward", "runecircle", "sanctuary"],
 };
 const SKILL_ELEMENTS = Object.fromEntries(Object.entries(SKILL_ELEMENT_GROUPS).flatMap(([type, ids]) => ids.map((id) => [id, type])));
 const SKILL_WITHOUT_DAMAGE = new Set(["rally_banner", "revive_binding", "smoke"]);
@@ -9235,32 +9228,27 @@ const freshWm = () => Object.fromEntries(WK_ORDER.map((k) => [k, { lv: 1, xp: 0 
 const r1 = (v) => Math.round(v * 10) / 10;
 const freshSt = () => Object.fromEntries(ST_ORDER.map((k) => [k, ST_BASE]));
 
-/** How the weapon kind `wk` scales for this character: { stat: coefficient } (job and hybrid adjusted). */
+/** How the weapon kind `wk` scales for this character: { stat: coefficient }. */
 function scaleOf(ch, wk) {
   const job = JOBS[ch.job];
-  // a hybrid scales both hands alike; `hand` lifts one side (runearcher's bow, owner 2026-11-15)
-  if (job && job.kind === "hybrid" && job.wk.includes(wk)) return { ...job.scale, ...(job.hand && job.hand[wk]) };
+  if (job && job.scale && job.wk.includes(wk)) return { ...job.scale, ...(job.hand && job.hand[wk]) };
   const out = {}, g = SCALE[wk] || {};
   for (const k of Object.keys(g)) out[k] = GRADE[g[k]] + (job && job.kind === "single" && job.wk[0] === wk ? JOB_PLUS : 0);
   return out;
 }
-/** The hybrid job a pair of weapon kinds opens, if any. */
-function hybridOf(a, b) {
-  for (const id of Object.keys(JOBS)) { const j = JOBS[id]; if (j.kind === "hybrid" && j.wk.includes(a) && j.wk.includes(b) && a !== b) return id; }
-  return null;
-}
+/** Legacy helper (two-weapon hybrids were replaced by single-weapon Lv.30 branches). */
+function hybridOf() { return null; }
 /** Why `ch` may not take job `j` right now ("" when it may; place and gold are checked by the action). */
 function jobOk(ch, j) {
   const job = Object.hasOwn(JOBS, j) ? JOBS[j] : null;
   if (!job || job.kind === "none") return "없는 직업입니다";
   if (ch.job !== "adventurer") return "모험가만 전직할 수 있습니다";
-  const [a, b] = job.wk;
-  if (job.kind === "single") return ch.wm[a].lv >= JOB_WM ? "" : `[${WK_NAME[a]}] 숙련 ${JOB_WM}이 필요합니다`;
-  return ch.wm[a].lv >= HYB_WM && ch.wm[b].lv >= HYB_WM ? "" : `[${WK_NAME[a]}]${pp(WK_NAME[a], "과와")} [${WK_NAME[b]}] 숙련이 모두 ${HYB_WM} 이상이어야 합니다`;
+  const [a] = job.wk;
+  return ch.wm[a].lv >= JOB_WM ? "" : `[${WK_NAME[a]}] 숙련 ${JOB_WM}이 필요합니다`;
 }
-/** The mastery a job asks of each of its weapons. */
-const jobWmOf = (j) => (JOBS[j] && JOBS[j].kind === "hybrid" ? HYB_WM : JOB_WM);
-const isHybrid = (ch) => !!JOBS[ch.job] && JOBS[ch.job].kind === "hybrid";
+/** The mastery a job asks of its weapon. */
+const jobWmOf = () => JOB_WM;
+const isHybrid = () => false;
 
 const jobNeed = lv => 24 + 12 * lv + 2 * lv * lv;
 const jobSkillRank = lv => JOB_SKILL_RANKS.findLastIndex(rank => lv >= rank.lv);
@@ -9384,13 +9372,8 @@ function wmAdd(S, p, wk, n, bonus) {
     const act = skLearnNew(p, opened.filter((id) => SKILL[id].kind !== "p")), pas = opened.filter((id) => SKILL[id].kind === "p").map((id) => `[${SKILL[id].name}]`);
     toast(p, `[${WK_NAME[wk]}] 숙련 ${r.lv}!${act.length ? ` 새 스킬 ${act.join(", ")}` : ""}${pas.length ? ` · 패시브 ${pas.join(", ")}` : ""}`);
     if (r.lv === JOB_WM && ch.job === "adventurer") {
-      const j = Object.keys(JOBS).find((id) => JOBS[id].kind === "single" && JOBS[id].wk[0] === wk);
-      toast(p, `[${WK_NAME[wk]}] 숙련 ${JOB_WM}! 전직관 아르센에게 가면 [${JOBS[j].name}]${pp(JOBS[j].name, "으로")} 전직할 수 있습니다.`);
-    }
-    if (r.lv === HYB_WM && ch.job === "adventurer") {
-      // the two-weapon jobs this level opens: every pair whose other weapon is already there
-      const open = WK_ORDER.filter((k) => k !== wk && ch.wm[k].lv >= HYB_WM).map((k) => hybridOf(wk, k)).filter(Boolean).map((id) => JOBS[id].name);
-      if (open.length) toast(p, `[${WK_NAME[wk]}] 숙련 ${HYB_WM}! 두 갈래 길 [${open.join("], [")}]${pp(open[open.length - 1], "이가")} 열렸습니다 — 전직관 아르센에게 가 보세요.`);
+      const names = Object.keys(JOBS).filter((id) => JOBS[id].kind === "single" && JOBS[id].wk[0] === wk).map((id) => JOBS[id].name);
+      if (names.length) toast(p, `[${WK_NAME[wk]}] 숙련 ${JOB_WM}! 전직관 아르센에게 가면 [${names.join("] 또는 [")}]${pp(names[names.length - 1], "으로")} 전직할 수 있습니다.`);
     }
   }
   if (r.lv >= WM_MAX) r.xp = 0;
@@ -13478,7 +13461,7 @@ function castSkill(S, p, id) {
   p.swordBeat = null;
   p.dirty = true;
   p.chan = 0;   // any skill cuts a channel
-  if (sk.wk === "hammer" && !sk.stomp) { startHammer(S, p, sk, sk, k, hpSpent); return; }
+  if (sk.wk === "hammer" && sk.wind) { startHammer(S, p, sk, sk, k, hpSpent); return; }
   if (sk.tiers) {
     // held (E1): full inertia starts it a tier up, and is spent
     const inert = pasOn(p, "inertia") && inertOf(p) >= SKILL.inertia.max;
@@ -13996,6 +13979,7 @@ function skStrike(S, p, id, k, cost, tgt) {
         knock(m, o, vx, vy, 12);
         hit(o, sk.mult, { secondaryType: null, forceAilment: sk.damageType });
       }
+      weave(S, rt, p, "i", p.x, p.y, k);
       prop({ kind: "field", wire: 1, x: p.x, y: p.y, r: sk.field, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.drain * k, heal: sk.heal * charmSkh(p, id) });
       break;
     }
@@ -14014,7 +13998,7 @@ function skStrike(S, p, id, k, cost, tgt) {
 
     // ── the hybrid expansion (fx 120–128)
     case "crosscut": {
-      // the great blade sweeps and marks; the dagger goes into every one it swept, cashing the marks in
+      // Bladedancer's twin-dagger cross cut: first arc carves two marks, follow-up cross-slash cashes them in
       ev(120, ...ahead(sk.r * 0.5), sk.r);
       const list = mobsWithin(rt, p.x, p.y, sk.r).filter((o) => inArc(p, o, sk.arc));
       const flanked = new Set(list.filter((o) => o.tgt !== p.pid));
@@ -14025,7 +14009,6 @@ function skStrike(S, p, id, k, cost, tgt) {
         o.mk = 0;
         hit(o, sk.stab + sk.per * n, flanked.has(o) ? { sure: true } : { crit: sk.crit });
       }
-      if (pasOn(p, "inertia")) { p.inert = SKILL.inertia.max; p.inertAt = now; ev(110, p.x, p.y - 6); }
       break;
     }
     case "elemfan": {
@@ -15446,7 +15429,7 @@ const ACH = [
   ["lv30", "성장", "베테랑 모험가", "레벨 120 달성", 15, (c) => c.lvl >= 120, "베테랑"],
   ["lv50", "성장", "전설의 모험가", "레벨 200 달성", 40, (c) => c.lvl >= 200, "전설의 모험가", [["hp", 80]]],
   ["job1", "성장", "첫 전직", "전직관 아르센에게서 전직하기", 10, (c) => c.job !== "adventurer"],
-  ["job2", "성장", "두 갈래 길", "두 무기의 길(혼합 직업)로 전직하기", 20, (c) => !!JOBS[c.job] && JOBS[c.job].kind === "hybrid"],
+  ["job2", "성장", "두 번째 길", "직업 레벨 30 달성 또는 두 개 이상의 직업 경험하기", 20, (c) => (c.jp?.lv || 0) >= 30 || Object.keys(c.jobs || {}).length >= 2],
   ["daily1", "성장", "성실한 하루", "토벌 의뢰 보상 상자 받기", 5, (c) => c.cnt.daily >= 1],
   ["daily30", "성장", "성실한 모험가", "토벌 의뢰 보상 상자 30번 받기", 20, (c) => c.cnt.daily >= 30, "성실한 모험가", [["gold", 10]]],
 ].map(([id, cat, name, desc, pts, test, title, bonus, gone]) => ({ id, cat, name, desc, pts, test, title: title || null, bonus: bonus || null, gone: !!gone }));
@@ -24857,7 +24840,7 @@ export function applyAction(S, pid, a) {
       afterGear(S, p);
       S.maps[p.map].ev.push(["jc", p.eid]);
       sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
-      toast(p, job.kind === "hybrid" ? `[${job.name}] 전직! 두 무기를 Ⅰ/Ⅱ에 하나씩 장착하고 Tab으로 바꿔 듭니다.` : `[${job.name}] 전직!`);
+      toast(p, `[${job.name}] 전직!`);
       // the job's signature skill onto the bar
       const signature = SKILL[JOB_SKILL[a.j]];
       if (back) toast(p, `[${job.name}] 직업 Lv.${back.lv}부터 이어서 걷습니다.`);
@@ -25833,7 +25816,7 @@ export function defs() {
   const jobs = {};
   for (const id of Object.keys(JOBS)) {
     const j = JOBS[id];
-    jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.kind === "hybrid" ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {}, wm: j.kind === "none" ? 0 : jobWmOf(id), sig: JOB_SKILL[id] || "" };
+    jobs[id] = { name: j.name, kind: j.kind, wk: j.wk.slice(), cost: j.cost, scale: j.scale ? { ...j.scale } : j.kind === "single" ? scaleOf({ job: id }, j.wk[0]) : {}, wm: j.kind === "none" ? 0 : jobWmOf(id), sig: JOB_SKILL[id] || "" };
   }
   return {
     worldName: "루넬샤대륙",

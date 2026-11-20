@@ -130,23 +130,22 @@ export const bagCard = () => {
 };
 
 // ── jobs ──
-const KIND = { none: "아직 직업 없음", single: "한 무기 직업", hybrid: "두 갈래 직업" };
+const KIND = { none: "아직 직업 없음", single: "전직 직업", hybrid: "전직 직업" };
 /** The card of the job `id`: what it is, its weapons, what it asks, its own skill. */
 export function jobCard(id) {
   // the rules' own row when they know the id (even one without a mark yet), else the old name's job, else 모험가
   const d = G.defs, key = d.jobs && d.jobs[id] ? id : jobId(id), job = (d.jobs && d.jobs[key]) || { name: "모험가", kind: "none", wk: [] };
-  const wkName = d.wkName || {}, need = job.wm || (job.kind === "hybrid" && d.hybWm) || d.jobWm;
-  const sig = (d.skillOrder || []).find((s) => d.skills[s].job === key);
+  const wkName = d.wkName || {}, need = job.wm || d.jobWm;
+  const sigs = (d.skillOrder || []).filter((s) => d.skills[s].job === key);
   const rows = [];
   if (job.wk.length) rows.push(["무기", job.wk.map((k) => wkName[k] || k).join(" + ")]);
   if (job.kind !== "none") rows.push(["전직 조건", `${job.wk.map((k) => `${wkName[k]} 숙련 ${need}`).join(" · ")}`], ["전직 비용", coin(job.cost)]);
-  if (sig) rows.push(["고유 기술", d.skills[sig].name]);
+  if (sigs.length) rows.push(["고유 기술", sigs.map((s) => d.skills[s].name).join(" · ")]);
   const names = Object.fromEntries((d.stats || []).map(([k, n]) => [k, n]));
   if (job.scale && Object.keys(job.scale).length) rows.push(["공격력을 올리는 능력치", Object.entries(job.scale).sort((a, b) => b[1] - a[1]).map(([k]) => names[k] || k).join(" · ")]);
   const text = jobId(key) === key ? [jobMotif(key) + "."] : [];
-  if (job.kind === "none") text.push(`어떤 무기든 들 수 있습니다. 한 무기의 숙련이 ${d.jobWm}이 되면 그 무기의 직업, 두 무기가 ${d.hybWm || d.jobWm}씩이면 두 갈래 직업으로 전직할 수 있습니다.`);
-  else if (job.kind === "single") text.push(`${wkName[job.wk[0]]} 하나에 모든 것을 건 직업입니다. 그 무기의 공격력 계수가 더 오르고 고유 기술을 배웁니다.`);
-  else text.push(`${job.wk.map((k) => wkName[k]).join("와(과) ")}, 두 무기를 ${K("swap")}으로 바꿔 가며 싸우는 직업입니다.`);
+  if (job.kind === "none") text.push(`어떤 무기든 들 수 있습니다. 한 무기의 숙련이 ${d.jobWm}이 되면 그 무기의 두 갈래 직업 중 하나로 전직할 수 있습니다.`);
+  else text.push(`${wkName[job.wk[0]]}을(를) 다루는 전직 직업입니다. 전용 능력치 보정과 고유 기술을 배웁니다.`);
   return {
     icon: jobImg(key), title: job.name, tag: KIND[job.kind] || "", text, rows,
     how: "전직관 아르센 앞에서 합니다. 전직 초기화 주문서로 되돌릴 수 있고, 걸었던 직업은 그 레벨을 이어받습니다.", howLabel: "전직",

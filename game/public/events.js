@@ -77,15 +77,17 @@ export function onEvent(e, t) {
     G.hitFrom = [src.x, src.y];
     const hRad = e[2] === 132 ? 36 : e[2] === 131 ? 31 : e[2] === 130 ? 28 : 24;
     SkillFx.hammerWindup?.(x, y, hRad, wind, src.hammerYaw);
+    if (e[2] >= 130 && e[2] <= 132) SkillFx.triggerSkillMotion?.(src, e[2], x, y, t, 0, wind);
     if (eid === G.you || dist(G.me.x, G.me.y, x, y) < 180) Sound.play("swing_hammer");
     return;
   }
-  if (e[0] === "bw" && e[4] === 9 && G.defs.skills.dive.damageType === "lightning") {
+  if (e[0] === "bw" && e[4] === 9 && (G.defs.skills.dive.damageType === "cold" || G.defs.skills.dive.damageType === "lightning")) {
     const [, x, y, radius] = e;
-    const color = elementInfo("lightning").color;
-    S3.fx.zap(x, y, color, 220);
-    S3.fx.wave(x, y, radius, color, 380);
-    S3.fx.crack(x, y, radius * 0.68, color, 420);
+    const frost = elementInfo("cold").color, bolt = elementInfo("lightning").color;
+    S3.fx.zap(x, y, bolt, 240);
+    S3.fx.wave(x, y, radius, frost, 400);
+    S3.fx.crack(x, y, radius * 0.72, frost, 460);
+    S3.fx.burst(x, y, 0.3, "#e4f8ff", 22, 2.8);
     if (G.me && dist(G.me.x, G.me.y, x, y) < 180) Sound.play("thunder");
     return;
   }
@@ -140,7 +142,7 @@ export function onEvent(e, t) {
       if (dmg < 0) {
         floatText(`+${-dmg}`, tgt.x, tgt.y, h + 0.3, "#8cff8c");
         if (cue === HIT_CUE.oath || cue === HIT_CUE.sanctuary) {
-          const oath = cue === HIT_CUE.oath, color = oath ? "#a8f6cd" : "#e99bba";
+          const oath = cue === HIT_CUE.oath, color = oath ? "#a8f6cd" : "#ffe888";
           S3.fx.wave(tgt.x, tgt.y, oath ? 15 : 10, color, 350);
           S3.fx.burst(tgt.x, tgt.y, 0.3, color, oath ? 7 : 4, 1.1);
           if (id === G.you) Sound.play(oath ? "oath_heal" : "heal");

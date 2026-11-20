@@ -537,7 +537,7 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
     const baseLvl = Math.min(197, 4 * L0 - 3);
     assert.equal(ch.lvl, L0 === 1 ? 2 : baseLvl, tag + ": legacy level plus eligible banked experience");
     assert.equal(ST.reduce((s, k) => s + ch.st[k] - 5, 0), (baseLvl - 1) * 5, tag + ": every legacy point expands to five");
-    assert.equal(ch.job, L0 >= 20 ? SH[cls][1] : "adventurer", tag + ": the class's job from old level 20");
+    assert.equal(ch.job, L0 >= 30 ? SH[cls][1] : "adventurer", tag + ": the class's job from old level 30");
     assert.equal(ch.wm[SH[cls][0]].lv, L0, tag + ": the class weapon's mastery = the old level");
     assert.equal(ch.xp + ch.xpt, L.hero("누적", { lvl: baseLvl }).xpt + 123, tag + ": banked experience conserved");
     assert.equal(ch.rs, 1, tag + ": one free reset"); assert.equal(ch.sw, 1, tag + ": no starter pick");
@@ -546,8 +546,8 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
     assert.equal(ch.eq.weapon.id, `w_${cls}_1`, tag + ": the weapon stays");
     assert.deepEqual(ch.qs[1], ["i", "hp_s"], tag + ": items stay on the bar");
     const sks = ch.qs.filter((v) => v && v[0] === "s").map((v) => v[1]);
-    // 25: the combo active (docs/design/skill-combos.md); 5/15/30/40: the first new wave (docs/design/skill-ideas.md §9)
-    const unlocks = { warrior: [1, 5, 10, 15, 20, 25, 30], rogue: [1, 5, 10, 20, 25, 40], lancer: [1, 10, 15, 20, 25], mage: [1, 10, 15, 20, 25] }[cls];
+    // 25: the combo active (docs/design/skill-combos.md); 5/15/30/40: the first new wave (docs/design/skill-ideas.md §9); 30: job signature
+    const unlocks = { warrior: [1, 5, 10, 15, 25, 30, 30], rogue: [1, 5, 10, 25, 30, 40], lancer: [1, 10, 15, 25, 30], mage: [1, 10, 15, 25, 30] }[cls];
     assert.equal(sks.length, unlocks.filter((lv) => lv <= L0).length, tag + ": the old kit's entries go, the weapon's skills the mastery holds (and the job's signature) come onto the bar");
     assert.ok(sks.every((id) => typeof id === "string" && D.skills[id]), tag + ": skills on the bar by id");
   }
@@ -565,10 +565,10 @@ function oldSheet(name, cls, lvl = 1, extra = {}) {
   assert.equal(sf.job, "wizard");
   assert.deepEqual([sf.wm.staff.lv, sf.wm.book.lv], [30, 18]);
   // old ranger and archer sheets were lancers already; their guns became spears
-  const rg = join(oldSheet("옛사수", "ranger", 25, { eq: { weapon: { id: "w_ranger_3", q: 2, enh: 4, af: [["atk", 3]], sk: 0, ru: [] } } }));
-  assert.equal(rg.job, "lancer"); assert.equal(rg.wm.spear.lv, 25); assert.equal(rg.eq.weapon.id, "w_lancer_3"); assert.equal(rg.eq.weapon.enh, 4);
+  const rg = join(oldSheet("옛사수", "ranger", 30, { eq: { weapon: { id: "w_ranger_3", q: 2, enh: 4, af: [["atk", 3]], sk: 0, ru: [] } } }));
+  assert.equal(rg.job, "lancer"); assert.equal(rg.wm.spear.lv, 30); assert.equal(rg.eq.weapon.id, "w_lancer_3"); assert.equal(rg.eq.weapon.enh, 4);
   // a weapon of another class is no longer swapped for a rusty one
-  const mm = join(oldSheet("엉뚱", "warrior", 22, { eq: { weapon: { id: "w_mage_3", q: 3, enh: 7, af: [], sk: 1, ru: [], lg: "chain" } }, inv: [{ id: "w_rogue_2", q: 1, enh: 0, af: [], sk: 0, ru: [] }] }));
+  const mm = join(oldSheet("엉뚱", "warrior", 30, { eq: { weapon: { id: "w_mage_3", q: 3, enh: 7, af: [], sk: 1, ru: [], lg: "chain" } }, inv: [{ id: "w_rogue_2", q: 1, enh: 0, af: [], sk: 0, ru: [] }] }));
   assert.equal(mm.eq.weapon.id, "w_mage_3"); assert.equal(mm.eq.weapon.lg, "chain"); assert.equal(mm.eq.weapon.enh, 7);
   assert.deepEqual(mm.inv.map((s) => s.id), ["w_rogue_2"]);
   assert.equal(mm.job, "swordsman", "the job follows the class, whatever is in hand");

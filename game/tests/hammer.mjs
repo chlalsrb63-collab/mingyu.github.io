@@ -34,13 +34,13 @@ function player(id, wk, wm, level = 61) {
   H.changeMap(S, p, "meadow", ox, oy);
   return p;
 }
-const p = player("first", "hammer", 19), rt = S.maps.meadow;
+const p = player("first", "hammer", 29), rt = S.maps.meadow;
 const NPC = H.mapOf("town").npcs.find(n => n.role === "job");
 assert.ok(NPC, "Arsene is reachable");
 const tryJob = () => actions(p, { t: "job_change", j: "destroyer" });
 H.changeMap(S, p, "town", NPC.x * 16 + 8, NPC.y * 16 + 12);
-assert.match(tryJob().why || tryJob().error || "", /20/);
-p.ch.wm.hammer.lv = 20;
+assert.match(tryJob().why || tryJob().error || "", /30/);
+p.ch.wm.hammer.lv = 30;
 const initialGold = p.ch.gold;
 assert.ok(tryJob().ok);
 assert.equal(p.ch.job, "destroyer");
@@ -231,12 +231,11 @@ for (const duo of [false, true]) {
     H.changeMap(S, who, "town", NPC.x * 16 + 8, NPC.y * 16 + 12);
     return () => actions(who, { t: "job_change", j: job });
   };
-  const merc = player("merc", "hammer", 15, 29), paladin = player("paladin", "hammer", 15, 29);
-  for (const [who, job, secondary] of [[merc, "mercenary", "spear"], [paladin, "paladin", "book"]]) {
+  const merc = player("merc", "hammer", 29, 29), paladin = player("paladin", "hammer", 29, 29);
+  for (const [who, job] of [[merc, "destroyer"], [paladin, "paladin"]]) {
     const change = promote(who, job);
-    who.ch.wm[secondary].lv = 14;
     assert.equal(change().ok, false);
-    who.ch.wm[secondary].lv = 15;
+    who.ch.wm.hammer.lv = 30;
     assert.ok(change().ok);
     assert.deepEqual(who.ch.jp, { lv: 1, xp: 0 });
     H.changeMap(S, who, "meadow", ox, oy);
@@ -245,14 +244,14 @@ for (const duo of [false, true]) {
   const prey = m(16, 0, "gutfrog"); prey.hp = 1;
   const skill = { t: "sk", id: "ironsiege", a: 0 };
   const level = merc.ch.lvl, masteryBefore = merc.ch.wm.hammer.xp;
-  merc.ch.jp = { lv: 4, xp: H.jobNeed(4) - 1 };
+  merc.ch.jp = { lv: 29, xp: H.jobNeed(29) - 1 };
   ready(merc);
   const before = H.stats(merc), beforeAtk = H.deriveStats(merc).atk0;
-  assert.match(actions(merc, skill).error, /직업 Lv\.5/);
+  assert.match(actions(merc, skill).error, /직업 Lv\.30/);
   assert.ok(actions(merc, atk).ok);
   advance(200);
   assert.ok(prey.dead);
-  assert.deepEqual(merc.ch.jp, { lv: 5, xp: 3 });
+  assert.deepEqual(merc.ch.jp, { lv: 30, xp: 3 });
   assert.equal(merc.ch.lvl, level);
   assert.ok(merc.ch.wm.hammer.xp > masteryBefore);
   assert.deepEqual(paladin.ch.jp, { lv: 1, xp: 0 }, "no credit for idle players");
@@ -270,7 +269,7 @@ for (const duo of [false, true]) {
   const base = H.stats(merc);
   H.gainJob(S, merc, 1e7);
   assert.deepEqual(merc.ch.jp, { lv: 50, xp: 0 });
-  assert.ok(H.stats(merc).atk > base.atk && H.stats(merc).def > base.def);
+  assert.ok(H.stats(merc).atk > base.atk && H.stats(merc).mhp > base.mhp);
   assert.deepEqual(L.viewFor(S, merc.pid).self.jp, [50, 0, 0]);
 
   const expert = merc.ch.wm.hammer.lv, deep = { k: "moleworm" };

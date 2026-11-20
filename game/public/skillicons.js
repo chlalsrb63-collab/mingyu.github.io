@@ -401,39 +401,44 @@ const ICON = {
     ["l", poly(1.3, 9, 16, 10.5, 13.8, 12, 16, 13.5, 13.8, 15, 16, 16.5, 13.8, 18, 16, 19.5, 13.8, 21, 16, 22.5, 13.8)],
     ["a", diamond(15.5, 6, 2.2), diamond(25.5, 16, 2.2), diamond(15.5, 26, 2.2), diamond(5.5, 16, 2.2)],
   ],
-  dive: [ // 심연의 강림: a lance plunging down, the landing breaking open
+  dive: [ // 빙결 강림 (마창사): a frost lance plunging down, ice shards bursting open
     ["M", L(10.5, 5, 10.5, 11, 1), L(20.5, 5, 20.5, 10, 1), L(13, 4, 13, 7, 1)],
-    ["A", rays(15.5, 22, 3, 8.5, [190, 215, 240, 300, 325, 350], 1.6)],
+    ["A", rays(15.5, 22, 3, 9, [190, 215, 240, 300, 325, 350], 1.6)],
+    ["l", P(6, 25, 9, 18, 12, 25), P(20, 25, 23, 18, 26, 25)],
     ["m", D(R(5, 23, 22, 3), P(13, 22.5, 18, 22.5, 15.5, 26))],
-    ...spear(15.5, 4, 15.5, 21, 7, 6),
+    ...spear(15.5, 4, 15.5, 21, 7, 6), ["*", C(15.5, 21, 1.3)],
   ],
-  bloodburst: [ // 혈흔 폭발: a mark split open, blood flying out round it
+  bloodburst: [ // 혈흔 폭발 (블레이드댄서): a mark split open, crimson blades & blood bursting out
     ...[-90, -30, 30, 90, 150, 210].map((a) => ["m", drop(15.5 + cos(a + 30) * 8, 15.5 + sin(a + 30) * 8, 1.7, a + 30)]),
     ["a", D(diamond(15.5, 15.5, 5.5), L(12.5, 9, 18.5, 22, 1.6))],
   ],
-  sanctuary: [ // 불멸의 성역: a ring of steel round a drop of blood
-    ["l", A(15.5, 16, 9.5, 12, 78, 2.8), A(15.5, 16, 9.5, 102, 168, 2.8), A(15.5, 16, 9.5, 192, 258, 2.8), A(15.5, 16, 9.5, 282, 348, 2.8)],
-    ["a", drop(15.5, 18.5, 4.2, -90)], ["*", C(14, 18, 0.6)],
+  sanctuary: [ // 성광의 성역 (성기사): a golden ring of light round a radiant holy cross
+    ["l", A(15.5, 15.5, 10, 12, 78, 2.6), A(15.5, 15.5, 10, 102, 168, 2.6), A(15.5, 15.5, 10, 192, 258, 2.6), A(15.5, 15.5, 10, 282, 348, 2.6)],
+    ["a", R(14, 9, 3, 13), R(10, 13.5, 11, 3)], ["*", R(15, 10, 1, 11), R(11, 14.5, 9, 1)],
   ],
-  crosscut: [ // 십자 난도: a great sweep all the way round, two daggers crossed inside it
-    ["L", A(15.5, 15.5, 10.5, 120, 410, 1, 3.6)], ["W", A(15.5, 15.5, 10.5, 300, 400, 0.8, 1.6)],
+  crosscut: [ // 십자 난도 (블레이드댄서): twin daggers crossing in a rapid blade-dance arc
+    ["L", A(15.5, 15.5, 10.5, 120, 410, 1, 3.2)], ["W", A(15.5, 15.5, 10.5, 300, 400, 0.8, 1.6)],
     ...dagger(9, 22, 21, 10), ...dagger(22, 22, 10, 10),
   ],
-  elemfan: [ // 원소 비수: three knives fanned upward, flame, frost and lightning at their points
-    ...dagger(14, 26, 8, 13), ...dagger(15.5, 26, 15.5, 11), ...dagger(17, 26, 21, 14),
-    ["a", drop(7.5, 10.5, 2, -90)], ["l", star(15.5, 7.5, 2.8, 0.3)], ["A", poly(1.2, 22, 9.5, 24, 11, 22, 12, 24, 13.5)],
+  elemfan: [ // 원소 환영탄 (트릭스터): a staff fanning three elemental arcane shards (flame, frost, lightning)
+    ["m", L(15.5, 27, 15.5, 18, 2.2)], ["a", C(15.5, 17, 2.4)],
+    ["L", L(15.5, 17, 8, 9, 1.2, 2.2), L(15.5, 17, 15.5, 7, 1.2, 2.2), L(15.5, 17, 23, 9, 1.2, 2.2)],
+    ["a", drop(7.5, 8.5, 2.3, -120)], ["*", star(15.5, 6.5, 3, 0.3)], ["A", poly(1.4, 21.5, 6.5, 24.5, 8.5, 22, 10, 25, 12)],
   ],
-  frostspire: [ // 빙결창: a spear's thrust, ice standing up where its point stopped
+  frostspire: [ // 빙결창 (마창사): a spear's thrust, ice standing up where its point stopped
     ["L", L(5, 15, 10, 15, 1), L(6, 25.5, 11, 25.5, 1)],
     ...spear(4, 20.5, 16, 20.5, 6, 5),
     ["l", P(17, 25, 19.5, 11, 22, 25)], ["l", P(21, 25, 24.5, 14, 27, 25)], ["m", P(15, 25, 16.5, 17, 18.5, 25)], ["a", R(14, 25, 14, 2)],
   ],
-  runecircle: [ // 메아리 법진: a circle cut with a triangle, its echo ringing outward
+  runecircle: [ // 메아리 법진 (룬브레이커): a circle cut with a triangle, its echo ringing outward
     ["S", ring(15.5, 15.5, 11.5, 1)], ["m", ring(15.5, 15.5, 8.5, 2)],
     ["a", D(P(15.5, 8, 22.5, 20, 8.5, 20), P(15.5, 11.5, 19.5, 18.5, 11.5, 18.5))], ["l", C(15.5, 16, 1.2)],
   ],
-  inkshot: [ // 룬 먹화살: an arrow loosed, a drop of ink falling off it
-    ...arrow(5, 24, 25, 6, 3.4), ["d", drop(12.5, 22, 2.6, -90)], ["S", C(8, 26, 1), C(17, 26, 0.8)],
+  inkshot: [ // 룬 파쇄탄 (룬브레이커): an open runic tome loosing fanned ink-rune bolts
+    ...book(15.5, 18, 9, 5),
+    ["L", L(15.5, 18, 7, 7, 1.2, 2.2), L(15.5, 18, 15.5, 5.5, 1.4, 2.4), L(15.5, 18, 24, 7, 1.2, 2.2)],
+    ["a", diamond(7, 7, 2.5), diamond(15.5, 5.5, 2.8), diamond(24, 7, 2.5)],
+    ["*", C(7, 7, 0.9), C(15.5, 5.5, 1), C(24, 7, 0.9)],
   ],
 
   // ── 망치 (destroyer)

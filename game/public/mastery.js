@@ -16,7 +16,7 @@ export const WK_ORDER = ["sword", "dagger", "spear", "staff", "book", "bow", "ha
 const WK_NAME = { sword: "대검", dagger: "단검", spear: "창", staff: "스태프", book: "마도서", bow: "활", hammer: "양손해머" };
 /** The mastery-10 active of each weapon (C.2), when `defs.skills` is not there yet. */
 const L10 = { sword: "대지 가르기", dagger: "그림자 칼날", spear: "유성창", staff: "서리 고리", book: "중력 왜곡진", bow: "도약 사격", hammer: "금맥 벌리기" };
-const JOB_WM = 20, WM_MAX = 50;
+const JOB_WM = 30, WM_MAX = 50;
 
 const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; };
 /** The short weapon names of the mastery/job design (대검 단검 창 스태프 마도서 활), not the item-kind names. */

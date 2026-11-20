@@ -17,11 +17,11 @@ const SKILL_ELEMENT_GROUPS = {
   physical: ["slash", "rend", "spiral", "pierce", "leapshot", "verdict", "rain", "hammer_stamp", "hammer_fault", "hammer_final", "ironsiege", "crosscut", "cleave", "hook", "snipe", "whirl", "musou", "stomp", "dragonpierce", "rollshot", "shoulder", "parry", "mountain", "sword_weight40"],
   bleed: ["ambush", "flurry", "bloodburst", "rupture", "bladevortex"],
   fire: ["comet", "mortar"],
-  cold: ["inkshot"],
-  lightning: ["elemfan", "dive"],
+  cold: ["inkshot", "dive"],
+  lightning: ["elemfan"],
   poison: ["traps", "snare"],
-  dark: ["shade", "soulbolt", "gravity", "pact", "sanctuary", "drain"],
-  light: ["oathward", "runecircle"],
+  dark: ["shade", "soulbolt", "gravity", "pact", "drain"],
+  light: ["oathward", "runecircle", "sanctuary"],
 };
 const SKILL_ELEMENTS = Object.fromEntries(Object.entries(SKILL_ELEMENT_GROUPS).flatMap(([type, ids]) => ids.map((id) => [id, type])));
 const SKILL_WITHOUT_DAMAGE = new Set(["rally_banner", "revive_binding", "smoke"]);

@@ -18,7 +18,7 @@
 <script type="module">
 import * as J from "./jobicons.js";
 // names as the rules have them (tests/jobicons.mjs checks this list against defs().jobs)
-const NAME = { adventurer: "모험가", swordsman: "대검전사", thief: "도적", lancer: "창술사", wizard: "마법사", warlock: "마도사", archer: "궁수", spellblade: "마검사", tracker: "추적자", dragoon: "용기사", hexblade: "주술암살자", darkknight: "암흑기사", bladedancer: "검무사", trickster: "환술사", spellspear: "마창사", runesage: "룬술사", runearcher: "각인궁사", destroyer: "파괴자", mercenary: "머서너리", paladin: "성기사" };
+const NAME = { adventurer: "모험가", swordsman: "바바리안", spellblade: "스펠블레이드", thief: "도적", bladedancer: "블레이드댄서", lancer: "창술사", spellspear: "마창사", wizard: "마법사", trickster: "트릭스터", warlock: "마도사", runearcher: "룬브레이커", archer: "헌터", tracker: "추적자", destroyer: "파괴자", paladin: "성기사" };
 const img = (id, px, opt) => { const im = new Image(); im.src = J.jobIconUrl(id, opt); im.width = im.height = px; return im; };
 const g = document.getElementById("g");
 for (const id of J.ALL) {

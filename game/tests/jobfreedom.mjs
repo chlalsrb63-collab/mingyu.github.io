@@ -40,7 +40,7 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
 
 // ── 2. job reset keeps every job's progress; going back resumes it, free
 {
-  const W = world({ wk: "sword", lvl: 60, wm: { sword: 25, dagger: 22 } });
+  const W = world({ wk: "sword", lvl: 60, wm: { sword: 30, dagger: 30 } });
   const ch = W.ch;
   ch.gold = 50000;
   W.npc("job");
@@ -101,12 +101,12 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
 
 // ── 4–5. the loadout: 5 actives + 4 passives, town or campfire only; only what is in it works
 {
-  const W = world({ wk: "sword", wk2: "staff", lvl: 40, wm: { sword: 15, staff: 15, spear: 10 }, job: "spellblade" });
+  const W = world({ wk: "sword", wk2: "staff", lvl: 40, wm: { sword: 30, staff: 15, spear: 10 }, job: "spellblade" });
   const ch = W.ch;
   ch.jp = { lv: 5, xp: 0 }; ch.jobs = { spellblade: ch.jp };
   const lo0 = W.self().lo;
-  assert.deepEqual(lo0[0].sort(), ["crimson", "fireball", "frostring", "rend", "slash"], "default: the five the hybrid uses");
-  assert.deepEqual(lo0[1].sort(), ["inertia", "reso", "tip"], "every passive learned (three fit in four)"); assert.equal(lo0[3], 0, "not set yet");
+  assert.deepEqual(lo0[0].sort(), ["cleave", "crimson", "rend", "shoulder", "slash"], "default: five sword actives including signature");
+  assert.deepEqual(lo0[1].sort(), ["inertia", "sword_fortify30", "sword_steadfast20", "tip"], "four passives (sword first, then learned)"); assert.equal(lo0[3], 0, "not set yet");
   assert.equal(D.jf.lo[0], 5); assert.equal(D.jf.lo[1], 4);
   W.go("meadow");
   assert.equal(W.act({ t: "lo", a: ["slash"], p: [] }).error, "스킬 칸은 마을이나 모닥불 곁에서만 바꿀 수 있습니다");
@@ -119,16 +119,16 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   assert.equal(W.act({ t: "lo", a: ["inertia"], p: [] }).error, "액티브와 패시브 칸이 맞지 않습니다");
   assert.equal(W.act({ t: "lo", a: ["verdict"], p: [] }).error, "배우지 않은 스킬입니다");
   assert.equal(W.act({ t: "lo", a: ["slash", "slash"], p: [] }).error, "잘못된 스킬입니다");
-  assert.ok(W.act({ t: "lo", a: ["slash"], p: ["reso"] }).ok, "in town");
+  assert.ok(W.act({ t: "lo", a: ["slash"], p: ["inertia"] }).ok, "in town");
   const v = W.self();
-  assert.deepEqual(v.lo.slice(0, 4), [["slash"], ["reso"], "", 1]);
+  assert.deepEqual(v.lo.slice(0, 4), [["slash"], ["inertia"], "", 1]);
   const row = (id) => v.sk.find((r) => r[0] === id);
-  assert.equal(row("rend")[3], 0, "out of the loadout: not usable"); assert.equal(row("inertia")[3], 0, "passive off");
-  assert.equal(row("reso")[3], 1, "a hybrid keeps its pair's passive in the loadout");
+  assert.equal(row("rend")[3], 0, "out of the loadout: not usable"); assert.equal(row("sword_steadfast20")[3], 0, "passive off");
+  assert.equal(row("inertia")[3], 1, "native sword passive in the loadout is active");
   W.p.mp = 9999;
   assert.equal(W.act({ t: "sk", id: "rend", a: 0 }).error, "스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
   assert.notEqual(W.act({ t: "sk", id: "slash", a: 0 }).error, "스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
-  assert.deepEqual(ch.lo.spellblade, { a: ["slash"], p: ["reso"], x: "", y: "" }, "saved for this job");
+  assert.deepEqual(ch.lo.spellblade, { a: ["slash"], p: ["inertia"], x: "", y: "" }, "saved for this job");
 }
 
 // ── 6. A job opens both cross-weapon slots; mastery is the only requirement for another weapon.

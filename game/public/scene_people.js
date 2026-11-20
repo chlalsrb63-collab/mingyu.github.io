@@ -55,6 +55,177 @@ export function personState(id, look) {
 export const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30", "#5fd47a", "#d2b48c"];
 
 /**
+ * Evaluate the active character skill motion (`e.skMot`, triggered by skillfx.js) at clock `t`.
+ * Returns screen-space offsets, vertical jump height, translucency, squash/stretch, spin facing,
+ * body tilt/roll, afterimage ghost count, and weapon pose cues without touching server position.
+ */
+function evalSkillMotion(e, t) {
+  const m = e.skMot;
+  if (!m || e.dead || e.scr) return null;
+  if (t >= m.until) { e.skMot = null; return null; }
+  const dur = Math.max(1, m.dur || (m.until - m.t0));
+  const u = Math.max(0, Math.min(1, (t - m.t0) / dur));
+  const ca = Math.cos(m.sa || 0), sa = Math.sin(m.sa || 0);
+  const out = { type: m.type, u, dx: 0, dy: 0, jump: 0, alpha: 1, sq: 0, rot: 0, fr: null, fa: null, wep: m.wep || null, ghosts: 0, sa: m.sa || 0 };
+
+  switch (m.type) {
+    case "spin": {
+      const ang = (m.sa || 0) + ((t - m.t0) / 1000) * (m.rate || 14);
+      out.fa = ang;
+      out.jump = Math.abs(Math.sin((t - m.t0) / 68)) * 2.5;
+      out.sq = -0.07;
+      out.fr = "stretch";
+      out.wep = "spin";
+      return out;
+    }
+    case "blink_dash": {
+      const dist = m.dist || 20;
+      let shift, side = 0;
+      if (m.cross) {
+        shift = Math.sin(u * Math.PI * 2) * dist * 0.72;
+        side = Math.sin(u * Math.PI) * 9;
+      } else {
+        shift = Math.sin(u * Math.PI) * dist;
+      }
+      out.dx = ca * shift - sa * side;
+      out.dy = (sa * shift + ca * side) * 0.65;
+      const mid = 1 - Math.abs(2 * u - 1);
+      out.alpha = 1 - (1 - (m.alpha ?? 0.38)) * (0.35 + 0.65 * mid);
+      out.jump = Math.sin(u * Math.PI) * 3;
+      out.sq = -0.1 * mid;
+      out.fr = "stretch";
+      out.ghosts = m.ghosts || 2;
+      out.wep = "thrust";
+      return out;
+    }
+    case "leap_slam": {
+      const apex = m.apex || 0.56, land = Math.min(0.88, apex + 0.25);
+      const h = m.h || 22, dist = m.dist || 0;
+      if (u < apex) {
+        const p = u / apex;
+        out.jump = h * Math.sin(p * Math.PI * 0.5);
+        out.sq = -0.14 * Math.sin(p * Math.PI * 0.5);
+        out.fr = "stretch";
+        out.wep = m.wep === "plunge" && p > 0.62 ? "plunge_aim" : "raise";
+      } else if (u < land) {
+        const p = (u - apex) / (land - apex);
+        out.jump = h * Math.cos(p * Math.PI * 0.5);
+        out.sq = -0.12 * (1 - p);
+        out.fr = "stretch";
+        out.wep = m.wep === "plunge" ? "plunge" : "slam";
+      } else {
+        const p = (u - land) / Math.max(0.01, 1 - land);
+        out.jump = 0;
+        out.sq = 0.28 * (1 - p);
+        out.fr = "crouch";
+        out.wep = "slam_land";
+      }
+      if (dist) {
+        const fwd = u < land ? Math.sin((u / land) * Math.PI) * dist : 0;
+        out.dx = ca * fwd;
+        out.dy = sa * fwd * 0.6;
+      }
+      return out;
+    }
+    case "backflip": {
+      const h = m.h || 14, dist = m.dist || -12;
+      const arc = Math.sin(u * Math.PI);
+      out.jump = h * arc;
+      out.dx = ca * dist * arc;
+      out.dy = sa * dist * arc * 0.6;
+      if (m.roll) out.rot = (ca >= 0 ? -1 : 1) * u * Math.PI * 2;
+      else out.rot = (ca >= 0 ? -1 : 1) * (m.tilt || 0.32) * arc;
+      if (m.alpha) out.alpha = 1 - (1 - m.alpha) * arc;
+      out.sq = u > 0.8 ? 0.16 * (1 - (u - 0.8) / 0.2) : -0.08 * arc;
+      out.fr = u > 0.8 ? "crouch" : "stretch";
+      out.ghosts = m.ghosts || 0;
+      return out;
+    }
+    case "lunge": {
+      const dist = m.dist || 16;
+      const curve = m.yank
+        ? (u < 0.45 ? Math.sin((u / 0.45) * Math.PI * 0.5) : Math.cos(((u - 0.45) / 0.55) * Math.PI))
+        : Math.sin(u * Math.PI);
+      out.dx = ca * dist * curve;
+      out.dy = sa * dist * curve * 0.62;
+      out.jump = (m.h || 0) * Math.sin(u * Math.PI);
+      if (m.alpha) out.alpha = 1 - (1 - m.alpha) * Math.sin(u * Math.PI);
+      out.sq = -0.1 * Math.abs(curve);
+      out.fr = "stretch";
+      out.ghosts = m.ghosts || 0;
+      return out;
+    }
+    case "heavy_overhead": {
+      const h = m.h || 11, dist = m.dist || 6;
+      if (u < 0.24) {
+        const p = u / 0.24;
+        out.sq = 0.14 * p;
+        out.fr = "crouch";
+        out.wep = "raise";
+      } else if (u < 0.76) {
+        const p = (u - 0.24) / 0.52;
+        out.jump = h * Math.sin(p * Math.PI);
+        out.dx = ca * dist * Math.sin(p * Math.PI);
+        out.dy = sa * dist * Math.sin(p * Math.PI) * 0.6;
+        out.sq = -0.1 * Math.sin(p * Math.PI);
+        out.fr = "stretch";
+        out.wep = p < 0.45 ? "raise" : "slam";
+      } else {
+        const p = (u - 0.76) / 0.24;
+        out.sq = 0.22 * (1 - p);
+        out.fr = "crouch";
+        out.wep = "slam_land";
+      }
+      return out;
+    }
+    case "stomp_hop": {
+      const h = m.h || 12;
+      if (u < 0.62) {
+        const p = u / 0.62;
+        out.jump = h * Math.sin(p * Math.PI);
+        out.sq = -0.12 * Math.sin(p * Math.PI);
+        out.fr = "stretch";
+        out.wep = "raise";
+      } else {
+        const p = (u - 0.62) / 0.38;
+        out.sq = (m.sq || 0.28) * (1 - p);
+        out.fr = "crouch";
+        out.wep = "slam_land";
+      }
+      if (m.alpha) out.alpha = 1 - (1 - m.alpha) * Math.sin(u * Math.PI);
+      return out;
+    }
+    case "raise_cast": {
+      const env = Math.sin(u * Math.PI);
+      out.jump = (m.h || 8) * env;
+      if (m.dist) { out.dx = ca * m.dist * env; out.dy = sa * m.dist * env * 0.6; }
+      out.sq = -0.1 * env;
+      out.fr = "stretch";
+      out.wep = "raise";
+      return out;
+    }
+    case "recoil_shot": {
+      const kick = Math.sin(Math.min(1, u * 1.4) * Math.PI) * (1 - u * 0.35);
+      const dist = m.dist || -8;
+      out.dx = ca * dist * kick;
+      out.dy = sa * dist * kick * 0.6;
+      out.jump = (m.h || 0) * Math.sin(u * Math.PI);
+      out.sq = 0.1 * kick;
+      out.fr = u < 0.45 ? "crouch" : "stretch";
+      return out;
+    }
+    case "brace": {
+      const env = Math.sin(u * Math.PI);
+      out.sq = (m.crouch || 0.16) * (0.4 + 0.6 * env);
+      out.dx = m.tremble ? ((Math.floor(t / 35) % 2) ? 1 : -1) : 0;
+      out.fr = "crouch";
+      return out;
+    }
+  }
+  return null;
+}
+
+/**
  * Draw a person and the weapon in their hand. Attacks are not frames: the
  * weapon sprite is turned about its grip — swept through an arc, thrust, or
  * levelled and kicked back.
@@ -62,6 +233,7 @@ export const RARITY = [null, "#6aa8ff", "#ffd84a", "#ff8a30", "#5fd47a", "#d2b48
 export function drawPerson(s, e, t, dt, x, y) {
   // gathering (gather.js sets e.gat = {k, t0, end, fa}): bent to the herb, or a rhythm of raise and strike
   const gat = e.gat && !e.dead && !e.moving && t < e.gat.end ? e.gat : null;
+  const mot = evalSkillMotion(e, t);
   // a brisk, bouncy stride; the feet kick up whatever they walk on (stepLife, below)
   if (e.moving) s.walk += dt * 8;
   const life = e.scr || e.dead ? null : stepLife(s, e, t, dt, x, y);
@@ -91,6 +263,7 @@ export function drawPerson(s, e, t, dt, x, y) {
     if (gat && gat.fa !== undefined) fa = gat.fa;              // gathering: turned to the node (gather.js)
     if (hammerYaw !== undefined) fa = sAng(Math.cos(hammerYaw), Math.sin(hammerYaw));
     else if (engaged && (!e.moving || atk < 0.5) && Math.hypot(e.aim[0] - e.x, e.aim[1] - e.y) > 2) fa = sAng(e.aim[0] - e.x, e.aim[1] - e.y);
+    if (mot && mot.fa !== null) fa = mot.fa;                   // spinning skills cycle through all 8 screen facings
     // eight ways on screen: straight down shows the face, the three ways up show the back,
     // and everything else is the three-quarter turn, mirrored for the left
     const sec = ((Math.round(fa / (Math.PI / 4)) % 8) + 8) % 8;
@@ -131,24 +304,43 @@ export function drawPerson(s, e, t, dt, x, y) {
   if (P) s.lean = P.pre !== undefined ? s.fromLean + (P.lean - s.fromLean) * Sw.eOut(P.pre) : P.lean;
   else s.lean = (s.lean || 0) * Math.max(0, 1 - dt * 7);
   if (s.lean) { x += Math.cos(aimS) * s.lean; y += Math.sin(aimS) * s.lean * 0.75; }
+  if (mot) { x += mot.dx; y += mot.dy; }
   // the weight shows in the body: crouched on the wind-up and the landing, stretched at full reach
   if (P?.fr && !e.sit && (!e.moving || Sw.MELEE_FEEL[s.wk])) frame = P.fr === "crouch" ? F.breathe : F.stretch;
+  if (mot?.fr && !e.sit) frame = mot.fr === "crouch" ? F.breathe : F.stretch;
   // facing the camera shows the full face; walking sideways turns it three-quarters
   const img = s.sheet[view][frame];
   s.img = img;
-  g.fillStyle = "rgba(20,24,50,.26)";
-  g.beginPath(); g.ellipse(Sw.MELEE_FEEL[s.wk] ? footX : x, Sw.MELEE_FEEL[s.wk] ? footY : y, 5, 2, 0, 0, 7); g.fill();
+  const shScale = mot && mot.jump > 0 ? Math.max(0.42, 1 - mot.jump / 56) : 1;
+  g.fillStyle = `rgba(20,24,50,${(0.26 * shScale * (mot ? mot.alpha : 1)).toFixed(3)})`;
+  const shX = mot ? x : (Sw.MELEE_FEEL[s.wk] ? footX : x), shY = mot ? y : (Sw.MELEE_FEEL[s.wk] ? footY : y);
+  g.beginPath(); g.ellipse(shX, shY, 5 * shScale, 2 * shScale, 0, 0, 7); g.fill();
   const fl = e.fl | 0;
-  // walking: a 1-px hop on the stretched steps; a short squash when they stop or turn
-  const hop = life && e.moving && !e.sit && frame === F.stretch ? 1 : 0;
+  // walking: a 1-px hop on the stretched steps; skill motions add parabolic leap or hover height
+  const hop = (life && e.moving && !e.sit && frame === F.stretch ? 1 : 0) + (mot ? mot.jump : 0);
   const body = () => {
     if (life) drawTrail(s, t);
+    // translucent sprite afterimages trailing behind dash/blink/lunge skills
+    if (mot && mot.ghosts > 0 && (Math.abs(mot.dx) > 1.5 || Math.abs(mot.dy) > 1.5)) {
+      for (let gi = mot.ghosts; gi >= 1; gi--) {
+        const frac = (gi / (mot.ghosts + 0.4));
+        g.save();
+        g.translate(Math.round(x - mot.dx * frac), Math.round(y - hop - mot.dy * frac));
+        g.globalAlpha = (0.34 / gi) * (1 - mot.u * 0.45);
+        g.scale(sg, 1);
+        g.drawImage(img, -SP.FOOT[0], -SP.FOOT[1], SP.SIZE, SP.SIZE);
+        g.restore();
+      }
+    }
     g.save();
     g.translate(Math.round(x), Math.round(y - hop));
     if (e.dead) { g.rotate(sg * 1.45); g.globalAlpha = 0.6; }
     else if (fl & 64) g.globalAlpha = 0.4;             // slipped away behind a puppet
     else if (fl & 16) g.globalAlpha = 0.55 + 0.25 * Math.sin(t / 40);   // a shadow, blinking about
-    const sq = P && Sw.MELEE_FEEL[s.wk] ? P.squash : life?.sq || 0;
+    if (mot && mot.alpha < 1) g.globalAlpha *= mot.alpha;
+    if (mot && mot.rot) { g.translate(0, -8); g.rotate(mot.rot); g.translate(0, 8); }
+    const baseSq = P && Sw.MELEE_FEEL[s.wk] ? P.squash : life?.sq || 0;
+    const sq = mot ? (mot.sq || baseSq) : baseSq;
     // sitting: tucked down a little; picking herbs: crouched; at a vein or a log: a dip on each strike
     const tuck = e.sit && !e.dead ? 0.8 : gat ? (gat.k === 0 ? 0.84 : gatBeat >= 0.55 && gatBeat < 0.75 ? 0.92 : 1) : 1;
     g.scale(sg * (1 + sq * 0.9), tuck * (1 - sq));
@@ -202,13 +394,16 @@ export function drawPerson(s, e, t, dt, x, y) {
     // The book arcs across the reader on the charge and turns toward the target on release.
     const out = P ? P.out * hold.push : 0;
     const cross = P ? sg * P.cross : 0;
-    const bx = x + sg * 13 + Math.cos(aimS) * out - Math.sin(aimS) * cross;
-    const by = y - 8 + Math.sin(t / 380 + s.ph) * 1.2 + Math.sin(aimS) * out + Math.cos(aimS) * cross + bob - (P?.lift || 0);
+    const castOrbit = mot && mot.wep === "raise" ? Math.sin(mot.u * Math.PI) : 0;
+    const bx = x + sg * 13 + Math.cos(aimS) * out - Math.sin(aimS) * cross + (castOrbit ? Math.cos(t / 90) * 4 * castOrbit : 0);
+    const by = y - 8 + Math.sin(t / 380 + s.ph) * 1.2 + Math.sin(aimS) * out + Math.cos(aimS) * cross + bob - (P?.lift || 0) - castOrbit * 7;
     const book = () => {
       g.save();
-      if (P && k > Sw.WIND * 0.8 && k < 0.4) { g.shadowColor = "#fff2b0"; g.shadowBlur = 10; } else if (glow) { g.shadowColor = glow; g.shadowBlur = 5; }
+      if (mot && mot.alpha < 1) g.globalAlpha *= mot.alpha;
+      if ((P && k > Sw.WIND * 0.8 && k < 0.4) || castOrbit > 0.3) { g.shadowColor = "#fff2b0"; g.shadowBlur = 10; } else if (glow) { g.shadowColor = glow; g.shadowBlur = 5; }
       g.translate(Math.round(bx), Math.round(by));
       if (P) g.rotate(sg * P.roll);
+      else if (castOrbit) g.rotate(Math.sin(t / 70) * 0.22 * castOrbit);
       g.drawImage(s.weapon, -16, -16);
       g.restore();
     };
@@ -249,27 +444,98 @@ export function drawPerson(s, e, t, dt, x, y) {
     push = (s.push || 0) * Math.max(0, 1 - dt * 6);
     lift = (s.lift || 0) * Math.max(0, 1 - dt * 6);
   }
+  // Skill motion weapon overrides (spin orbit, aerial plunge, skyward bow, elevated cast, dash thrust)
+  let motSpin = false;
+  if (mot && mot.wep) {
+    if (mot.wep === "spin" && mot.fa !== null) {
+      motSpin = true;
+      s.ang = mot.fa;
+      push = 6;
+      lift = 1;
+      depth = Math.sin(mot.fa);
+    } else if (mot.wep === "plunge_aim") {
+      s.ang = Math.PI / 2;
+      push = 2;
+      lift = 6;
+      depth = 0.5;
+    } else if (mot.wep === "plunge") {
+      s.ang = Math.PI / 2;
+      push = 7;
+      lift = -2;
+      depth = 0.6;
+    } else if (mot.wep === "sky" && bowy) {
+      s.ang = sg > 0 ? -1.12 : -Math.PI + 1.12;
+      push = 3;
+      lift = 5;
+      depth = 0.3;
+    } else if (mot.wep === "raise" && !(hammer && live)) {
+      s.ang = -Math.PI / 2 + sg * 0.14;
+      push = Math.max(push, 2);
+      lift = Math.max(lift, 7);
+      depth = 0.25;
+    } else if (mot.wep === "slam" && !(hammer && live)) {
+      s.ang = sg > 0 ? 0.52 : Math.PI - 0.52;
+      push = Math.max(push, 5);
+      lift = -1;
+      depth = 0.45;
+    } else if (mot.wep === "slam_land" && !(hammer && live)) {
+      s.ang = sg > 0 ? 0.78 : Math.PI - 0.78;
+      push = Math.max(push, 4);
+      lift = -3;
+      depth = 0.4;
+    } else if (mot.wep === "thrust" && !bowy) {
+      s.ang = mot.sa;
+      push = Math.max(push, 6);
+      depth = Math.sin(mot.sa);
+    }
+  }
   s.push = push;
   s.lift = lift;
   // a greatsword is slung across the back between fights, and comes off it to fight
-  s.sl = (s.sl ?? 1) + ((hold.style === "sweep" && resting && !held ? 1 : 0) - (s.sl ?? 1)) * Math.min(1, dt * 8);
+  s.sl = motSpin ? 0 : (s.sl ?? 1) + ((hold.style === "sweep" && resting && !held && !mot ? 1 : 0) - (s.sl ?? 1)) * Math.min(1, dt * 8);
   // with no arms, the weapon simply floats at the body's side; a bow's pivot is the drawing hand:
   // at the cheek while shooting (the riser out ahead of it), dropped to the hip at rest
   // (raised at once — a shot has no wind-up to spare — and lowered unhurried)
-  if (bowy) s.bw = P ? 1 : (s.bw ?? 0) + ((held ? 1 : 0) - (s.bw ?? 0)) * Math.min(1, dt * 8);
-  const hx0 = bowy ? x - sg * 1.5 * (1 - s.bw) + Math.cos(aimS) * 3 * s.bw : x + sg * (hammer ? 5 : 7 - 4 * s.sl);
-  const hy0 = bowy ? y - 5 - 2 * s.bw + Math.sin(aimS) * 1.5 * s.bw + bob : y - (3 + 2 * s.sl) + bob;
+  if (bowy) s.bw = (P || mot?.wep === "sky") ? 1 : (s.bw ?? 0) + ((held ? 1 : 0) - (s.bw ?? 0)) * Math.min(1, dt * 8);
+  const hx0 = motSpin ? x : bowy ? x - sg * 1.5 * (1 - s.bw) + Math.cos(aimS) * 3 * s.bw : x + sg * (hammer ? 5 : 7 - 4 * s.sl);
+  const hy0 = motSpin ? y - 6 + bob : bowy ? y - 5 - 2 * s.bw + Math.sin(aimS) * 1.5 * s.bw + bob : y - (3 + 2 * s.sl) + bob;
   const hx = hx0 + Math.cos(s.ang) * push, hy = hy0 + Math.sin(s.ang) * push - lift;
   const long = Sw.bladeLen(s.weapon, SP.GRIP);
   // the bow at this moment of its shot: the string's pull and whether an arrow is on it
   const bs = bowy ? P || (held ? Sw.BOW_READY : null) : null;
   const wimg = bowy ? SP.bowSprite(s.gear, bs ? bs.pull : 0, bs ? bs.arrow : false) : s.weapon;
   const weapon = () => {
+    // 360° blade smear ribbon trailing behind spinning weapons (돌개바람, 무쌍난무, 칼날 소용돌이)
+    if (motSpin) {
+      const rOut = push + long, rIn = push + long * 0.56, arc = 1.85;
+      g.save();
+      g.beginPath();
+      for (let j = 0; j <= 8; j++) {
+        const a = s.ang - (arc * j) / 8;
+        const px = hx0 + Math.cos(a) * rOut, py = hy0 + Math.sin(a) * rOut * 0.65 - lift;
+        if (j === 0) g.moveTo(px, py); else g.lineTo(px, py);
+      }
+      for (let j = 8; j >= 0; j--) {
+        const a = s.ang - (arc * j) / 8;
+        g.lineTo(hx0 + Math.cos(a) * rIn, hy0 + Math.sin(a) * rIn * 0.65 - lift);
+      }
+      g.closePath();
+      g.globalAlpha = 0.42; g.fillStyle = glow || "#e5edff"; g.fill();
+      g.globalAlpha = 0.78; g.strokeStyle = "#ffffff"; g.lineWidth = 1;
+      g.beginPath();
+      for (let j = 0; j <= 8; j++) {
+        const a = s.ang - (arc * j) / 8;
+        const px = hx0 + Math.cos(a) * rOut, py = hy0 + Math.sin(a) * rOut * 0.65 - lift;
+        if (j === 0) g.moveTo(px, py); else g.lineTo(px, py);
+      }
+      g.stroke();
+      g.restore();
+    }
     // the smear: the band the blade's outer half swept through in the last few hundredths of a
     // second, sampled along the stroke itself so it bends with the arc as the view shows it
     const thrust = hold.style === "stab" && beat !== 1;
     const hammerFall = hammer && live && atk * 1000 >= wind - 37 && atk * 1000 <= wind + 24;
-    if (hammerFall || (P?.strike && !bowy && hold.style !== "cast" && (thrust ? k >= Sw.IMPACT && k < Sw.IMPACT + 0.044 / stroke : k < 0.37))) {
+    if (!motSpin && (hammerFall || (P?.strike && !bowy && hold.style !== "cast" && (thrust ? k >= Sw.IMPACT && k < Sw.IMPACT + 0.044 / stroke : k < 0.37)))) {
       const pts = [], inner = [], span = thrust ? 0.035 : hammer ? 0.044 : 0.06;
       for (let j = 0; j <= 6; j++) {
         const sample = atk - span * j / 6;
@@ -295,6 +561,9 @@ export function drawPerson(s, e, t, dt, x, y) {
       }
     }
     g.save();
+    if (fl & 64) g.globalAlpha = 0.4;
+    else if (fl & 16) g.globalAlpha = 0.55 + 0.25 * Math.sin(t / 40);
+    if (mot && mot.alpha < 1) g.globalAlpha *= mot.alpha;
     g.translate(Math.round(hx), Math.round(hy));
     g.rotate(s.ang);
     if (Math.cos(s.ang) < 0) g.scale(1, -1);
@@ -309,7 +578,7 @@ export function drawPerson(s, e, t, dt, x, y) {
     }
   };
   // a slung greatsword sits behind the body; in a stroke, a blade pointing away from the camera does too
-  const behind = resting && !held ? (hold.style === "sweep") !== back : depth < -0.35 || (Math.sin(s.ang) < -0.45 && depth < 0.2);
+  const behind = motSpin ? depth < -0.15 : (resting && !held && !mot ? (hold.style === "sweep") !== back : depth < -0.35 || (Math.sin(s.ang) < -0.45 && depth < 0.2));
   if (behind) { weapon(); body(); } else { body(); weapon(); }
   // the blow lands: a burst of sword-qi as big as the weapon, at the snap (once per stroke)
   // (a bow throws no qi: the string snaps, and the arrow is the blow — fx.arrow, from the server's shot)

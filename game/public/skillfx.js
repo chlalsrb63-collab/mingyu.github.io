@@ -33,7 +33,7 @@ let PAL = jobPal("adventurer");
 /** Which job's palette a line ("ln" kind) or a placed thing ("pr" kind) is drawn in. */
 const LN_JOB = { 2: "lancer", 3: "lancer", 4: "wizard", 5: "thief", 6: "thief", 7: "trickster", 8: "archer", 9: "swordsman", 10: "warlock" };
 const PROP_JOB = { grav: "warlock", phantom: "warlock", rain: "archer", trap: "tracker", pillar: "lancer", meteor: "wizard", storm: "lancer",
-  field: "dragoon", burst: "hexblade", sanct: "darkknight", rune: "runesage", banner: "lancer" };
+  field: "spellspear", burst: "bladedancer", sanct: "paladin", rune: "runearcher", banner: "lancer" };
 
 /** After every snapshot: flags and the gauge number on the rows, marks and brands on monsters. */
 export function onSnap(s, G, t) {
@@ -1406,13 +1406,13 @@ function overlay(g, t) {
     }
   }
   for (const [id, s] of signs) if (!(s.fz > t || s.vu > t)) signs.delete(id);
-  // blood sanctuaries round their knights
+  // holy sanctuaries round their paladins
   for (const [id, o] of follow) {
     if (t > o.until) { follow.delete(id); continue; }
     const e = o.eid === G.you ? G.me : G.players.get(o.eid);
     if (!e) continue;
     const [x, y] = at(e.x, e.y), a = Math.min(1, (t - o.t0) / 200, (o.until - t) / 200), rx = o.r * Math.SQRT2, ry = o.r / Math.SQRT2;
-    const p = jobPal("darkknight");
+    const p = jobPal("paladin");
     g.globalAlpha = 0.14 * a; g.fillStyle = p.d; g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.fill();
     g.globalAlpha = 0.7 * a; g.strokeStyle = p.m; g.lineWidth = 2; g.setLineDash([6, 6]); g.lineDashOffset = -t / 40;
     g.beginPath(); g.ellipse(x, y, rx, ry, 0, 0, 7); g.stroke(); g.setLineDash([]);
@@ -1976,8 +1976,236 @@ export function bloodhornJet(x0, y0, pts, r = 13, ms = 900) {
   }, totalMs, false);
 }
 
+const DIR_W = [[0, 1], [-1, 0], [1, 0], [0, -1]];
+
+/**
+ * Character body & weapon skill motions rendered by scene_people.js (`e.skMot`).
+ * Maps every active skill FX code (70–159) to a distinct kinetic motion:
+ * 8-way spins, semi-transparent dash-and-return blinks, parabolic leap slams,
+ * backflip shots, forward lunges, elevated raise-casts, heavy chops, stomps, and recoils.
+ */
+export function triggerSkillMotion(src, kind, tx, ty, t, extra = 0, wind = 0) {
+  if (!src || src.dead) return;
+  const clk = t || now();
+  const dx = tx - src.x, dy = ty - src.y;
+  const d = Math.hypot(dx, dy);
+  const [wdx, wdy] = d > 2 ? [dx, dy] : DIR_W[src.dir | 0] || [0, 1];
+  const sa = S3.sAng(wdx, wdy);
+  const set = (m) => { src.skMot = { t0: clk, sa, ...m, until: clk + m.dur }; };
+
+  switch (kind) {
+    // ── 8-direction continuous spins (hero + weapon whirl together)
+    case 146: // 바바리안 돌개바람
+    case 147: { // 창술사 무쌍난무
+      const rate = kind === 146 ? 13.5 : 16.5;
+      const keep = extra === 2 ? 190 : kind === 146 ? 410 : 310;
+      if (src.skMot && src.skMot.type === "spin" && src.skMot.kind === kind && clk < src.skMot.until + 80) {
+        src.skMot.until = clk + keep;
+        src.skMot.dur = Math.max(src.skMot.dur, src.skMot.until - src.skMot.t0);
+      } else {
+        src.skMot = { type: "spin", kind, t0: clk, dur: keep, until: clk + keep, sa, rate };
+      }
+      return;
+    }
+    case 155: // 단검 칼날 소용돌이
+      if (!extra) return;
+      if (src.skMot && src.skMot.type === "spin" && src.skMot.kind === 155 && clk < src.skMot.until + 60) {
+        src.skMot.until = clk + 260;
+      } else {
+        set({ type: "spin", kind: 155, dur: 300, rate: 20 });
+      }
+      return;
+
+    // ── Semi-transparent dash toward target & snap back with ghost afterimages
+    case 86: // 도적 무영난무
+      set({ type: "blink_dash", dur: 220, dist: 22, alpha: 0.36, ghosts: 2 });
+      return;
+    case 84: // 단검 암습
+      set({ type: "blink_dash", dur: 270, dist: 20, alpha: 0.40, ghosts: 2 });
+      return;
+    case 120: // 블레이드댄서 십자 난도
+      set({ type: "blink_dash", dur: 340, dist: 22, alpha: 0.48, ghosts: 2, cross: true });
+      return;
+    case 141: // 단검 표식 파열
+      if (!extra) return;
+      set({ type: "blink_dash", dur: 230, dist: 15, alpha: 0.56, ghosts: 1 });
+      return;
+
+    // ── Parabolic jump up into the air & overhead slam down
+    case 99: // 마창사 빙결 강림 (0.8s aerial rise + frost-lance plunge)
+      set({ type: "leap_slam", dur: 840, h: 40, dist: 10, apex: 0.72, wep: "plunge" });
+      return;
+    case 81: // 대검 대지 가르기
+      set({ type: "leap_slam", dur: 420, h: 22, dist: 9, apex: 0.56, wep: "slam" });
+      return;
+    case 132: // 파괴자 파성추 (wind-up leap -> crushing impact)
+      set({ type: "leap_slam", dur: Math.max(420, (wind || 400) + 150), h: 27, dist: 6, apex: 0.68, wep: "slam" });
+      return;
+    case 133: // 파괴자 철쇄 돌진
+      set({ type: "leap_slam", dur: 360, h: 16, dist: 14, apex: 0.50, wep: "slam" });
+      return;
+    case 134: // 성기사 성문 서약
+      set({ type: "leap_slam", dur: 400, h: 19, dist: 4, apex: 0.54, wep: "slam" });
+      return;
+
+    // ── Nimble backflip / evasive shadow hop
+    case 95: // 활 도약 사격
+      set({ type: "backflip", dur: 340, h: 15, dist: -14, tilt: 0.35 });
+      return;
+    case 151: // 활 구르며 쏘기
+      if (!extra) return;
+      set({ type: "backflip", dur: 310, h: 12, dist: -12, roll: true });
+      return;
+    case 98: // 추적자 사방의 그림자 덫
+      set({ type: "backflip", dur: 380, h: 15, dist: -11, alpha: 0.42, ghosts: 2 });
+      return;
+    case 157: // 단검 연막탄
+      if (!extra) return;
+      set({ type: "backflip", dur: 300, h: 12, dist: -10, alpha: 0.48, ghosts: 1 });
+      return;
+
+    // ── Explosive forward lunges & thrusts
+    case 87: // 창 나선 찌르기
+      set({ type: "lunge", dur: 300, dist: 18, ghosts: 1, wep: "thrust" });
+      return;
+    case 88: // 창 유성창
+      set({ type: "lunge", dur: 320, dist: 19, h: 4, ghosts: 2, wep: "thrust" });
+      return;
+    case 125: // 마창사 빙결창
+      set({ type: "lunge", dur: 290, dist: 16, ghosts: 1, wep: "thrust" });
+      return;
+    case 85: // 단검 그림자 칼날
+      set({ type: "lunge", dur: 250, dist: 12, alpha: 0.65, ghosts: 1 });
+      return;
+    case 153: // 어깨 돌파
+      if (!extra) return;
+      set({ type: "lunge", dur: 290, dist: 19, h: 4, ghosts: 1 });
+      return;
+    case 142: // 창 갈고리 끌어당기기
+      if (!extra) return;
+      set({ type: "lunge", dur: 320, dist: 11, yank: true, wep: "thrust" });
+      return;
+    case 156: // 단검 칼날 흩뿌리기
+      if (!extra) return;
+      set({ type: "lunge", dur: 250, dist: 11 });
+      return;
+
+    // ── Heavy overhead cleaves & wind-up charges
+    case 83: // 바바리안 단죄의 일격
+      set({ type: "heavy_overhead", dur: 370, h: 12, dist: 7, wep: "slam" });
+      return;
+    case 97: // 스펠블레이드 홍련참
+      set({ type: "heavy_overhead", dur: 350, h: 11, dist: 9, wep: "slam" });
+      return;
+    case 80: // 대검 파워 슬래쉬
+      set({ type: "heavy_overhead", dur: 270, h: 6, dist: 7 });
+      return;
+    case 130: // 해머 쐐기찍기
+      set({ type: "heavy_overhead", dur: Math.max(300, (wind || 200) + 130), h: 10, dist: 4, wep: "slam" });
+      return;
+    case 131: // 해머 금맥 벌리기
+      set({ type: "heavy_overhead", dur: Math.max(320, (wind || 200) + 140), h: 13, dist: 5, wep: "slam" });
+      return;
+    case 140: // 대검 처형 내려베기
+      if (!extra) set({ type: "brace", dur: 420, crouch: 0.16, tremble: true });
+      else set({ type: "heavy_overhead", dur: 350, h: 13, dist: 8, wep: "slam" });
+      return;
+    case 159: // 대검 산 가르기
+      if (!extra) set({ type: "brace", dur: 520, crouch: 0.2, tremble: true });
+      else set({ type: "heavy_overhead", dur: 380, h: 15, dist: 9, wep: "slam" });
+      return;
+    case 158: // 대검 칼등 받아치기
+      if (!extra) set({ type: "brace", dur: 520, crouch: 0.14 });
+      else set({ type: "lunge", dur: 260, dist: 11, h: 5 });
+      return;
+
+    // ── Snappy stomp hops
+    case 148: // 해머 땅울림 발구르기
+      if (!extra) return;
+      set({ type: "stomp_hop", dur: 340, h: 12, sq: 0.30 });
+      return;
+    case 100: // 블레이드댄서 혈흔 폭발
+      set({ type: "stomp_hop", dur: 350, h: 11, sq: 0.24, alpha: 0.72 });
+      return;
+
+    // ── Elevated raise-casts (hover / raise staff, book, spear, hammer skyward)
+    case 71: // 서리 고리
+      set({ type: "raise_cast", dur: 340, h: 7, wep: "raise" });
+      return;
+    case 89: // 창술사 뇌룡승천
+      set({ type: "raise_cast", dur: 430, h: 11, wep: "raise" });
+      return;
+    case 90: // 마법사 메테오 스톰
+      set({ type: "raise_cast", dur: 480, h: 12, wep: "raise" });
+      return;
+    case 91: // 마도서 영혼 화살
+      set({ type: "raise_cast", dur: 270, h: 5, dist: -4, wep: "raise" });
+      return;
+    case 92: // 마도서 중력 왜곡진
+    case 93: // 마도사 심연의 계약
+      set({ type: "raise_cast", dur: 420, h: 10, wep: "raise" });
+      return;
+    case 102: // 성기사 성광의 성역
+      set({ type: "raise_cast", dur: 440, h: 11, wep: "raise" });
+      return;
+    case 126: // 룬브레이커 메아리 법진
+      set({ type: "raise_cast", dur: 420, h: 10, wep: "raise" });
+      return;
+    case 128: // 룬브레이커 룬 파쇄탄
+      set({ type: "raise_cast", dur: 320, h: 6, dist: -5, wep: "raise" });
+      return;
+    case 135: // 창 전열 구호기
+    case 136: // 마도서 되살림 제본
+      set({ type: "raise_cast", dur: 380, h: 9, wep: "raise" });
+      return;
+    case 143: // 스태프 점화 폭발
+      if (!extra) set({ type: "raise_cast", dur: 380, h: 5, wep: "raise" });
+      else set({ type: "raise_cast", dur: 340, h: 9, wep: "raise" });
+      return;
+    case 144: // 마도서 영혼 흡수
+      set({ type: "raise_cast", dur: 280, h: 5, wep: "raise" });
+      return;
+    case 152: // 스태프 연쇄 번개
+      if (!extra) return;
+      set({ type: "raise_cast", dur: 270, h: 6, wep: "raise" });
+      return;
+
+    // ── Recoil & skyward volley shots
+    case 70: // 스태프 파이어볼
+      set({ type: "recoil_shot", dur: 240, dist: -6, h: 3 });
+      return;
+    case 94: // 활 관통 화살
+      set({ type: "recoil_shot", dur: 270, dist: -8 });
+      return;
+    case 96: // 헌터 화살비 (aim skyward!)
+      set({ type: "recoil_shot", dur: 380, dist: -4, h: 6, wep: "sky" });
+      return;
+    case 124: // 트릭스터 원소 환영탄
+      set({ type: "recoil_shot", dur: 290, dist: -7, h: 5 });
+      return;
+    case 145: // 활 저격
+      if (!extra) set({ type: "brace", dur: 460, crouch: 0.14 });
+      else set({ type: "recoil_shot", dur: 310, dist: -11 });
+      return;
+    case 149: // 활 곡사 폭약 화살
+      if (extra === 1) set({ type: "recoil_shot", dur: 300, dist: -5, h: 4, wep: "sky" });
+      return;
+    case 150: // 활 용뼈 관통 사격
+      if (!extra) return;
+      set({ type: "recoil_shot", dur: 340, dist: -13, h: 3 });
+      return;
+    case 154: // 활 올무 화살
+      if (!extra) return;
+      set({ type: "recoil_shot", dur: 250, dist: -6 });
+      return;
+  }
+}
+
 export function skillEvent(e, ctx) {
-  if (e[0] === "cb" || (e[0] === "a" && e[2] >= 140 && e[2] <= 159)) return comboEvent(e, ctx);
+  if (e[0] === "cb" || (e[0] === "a" && e[2] >= 140 && e[2] <= 159)) {
+    if (e[0] === "a") triggerSkillMotion(ctx.entityPos(e[1]), e[2], e[3], e[4] + 6, ctx.t, e[7] || 0);
+    return comboEvent(e, ctx);
+  }
   const { G, entityPos } = ctx;
   // the skills' effects go through the scaled-up set (scene2d big): denser, bigger, a core flash, shockwaves
   const B = S3.big(), f = B.fx, t = ctx.t;
@@ -2011,6 +2239,7 @@ export function skillEvent(e, ctx) {
       const [, eid, , tx, ty] = e;
       const src = entityPos(eid);
       if (!src) return true;
+      if (!PASSIVE.has(kind)) triggerSkillMotion(src, kind, tx, ty + 6, t, e[7] || 0);
       // the pixelfx layers (skillpfx.js), over the game's own marks below (combo skills 140–159 call it in skillfx_combo.js)
       if (eid === G.you || skillNear(G, src.x, src.y) || skillNear(G, tx, ty)) castPfx(kind, src, tx, ty + 6, e[7], Math.atan2(ty + 6 - src.y, tx - src.x), fxPal(kind, G, eid));
       if (kind === 135 || kind === 136) {
@@ -2644,8 +2873,9 @@ function cast(kind, src, eid, tx, ty, extra, G) {
     case 98: f.burst(tx, ty, 0.6, p.d, 30, 1.6); f.ring(tx, ty, 45, p.m, 400); play("decoy"); break;
     case 99: {
       abyssDive(tx, ty, extra || 110);
+      iceSpire(tx, ty);
       B.shake(10); play("dive");
-      if (mine) text(G, "심연의 강림!", src.x, src.y, 2.3, p.l, true);
+      if (mine) text(G, "빙결 강림!", src.x, src.y, 2.3, p.l, true);
       break;
     }
     case 100: f.ring(src.x, src.y, extra || 100, p.m, 400); f.sparkle(src.x, src.y, 0.8, p.m, 16); play("blood_bind"); break;
@@ -2720,12 +2950,12 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       break;
     }
     case 124: {
-      // 원소 비수: the three blades are the "ln 7"s that follow (the ln case colours them); here, the throw
+      // 원소 환영탄 (트릭스터 · 스태프): arcane cast ring + three elemental bolts ("ln 7")
       fan.n = 3; fan.at = now();
-      [1, 2, 3].forEach((el, j) => { const a = ang + (j - 1) * 0.32; S3.fx.spark(src.x + Math.cos(a) * 12, src.y + Math.sin(a) * 12, ELEM_COL[el], 0.8); });
-      f.slash(src.x, src.y, ang, p.w, 0.9);
+      S3.fx.ring(src.x, src.y, 18, p.l, 260, true);
+      [1, 2, 3].forEach((el, j) => { const a = ang + (j - 1) * 0.32; S3.fx.spark(src.x + Math.cos(a) * 14, src.y + Math.sin(a) * 14, ELEM_COL[el], 1.0); });
       B.shake(5); play("element_dagger");
-      if (mine) text(G, "원소 비수!", src.x, src.y, 2.2, p.w, true);
+      if (mine) text(G, "원소 환영탄!", src.x, src.y, 2.2, p.w, true);
       break;
     }
     case 125: {
@@ -2748,15 +2978,14 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       break;
     }
     case 128: {
-      // 룬 먹화살: five arrows as "ar" kind 7; here ink thrown off the string
-      SkillFx_bow(G, src, false);
-      f.burst(src.x, src.y, 0.6, p.d, 14, 1.8); S3.fx.sparkle(src.x, src.y, 0.9, p.m, 8);
-      S3.fx.ring(src.x, src.y, 16, p.m, 280);
+      // 룬 파쇄탄 (룬브레이커 · 마도서): open-tome runic burst loosing five ink-rune bolts ("ar" kind 7)
+      f.burst(src.x, src.y, 0.7, p.m, 16, 2.0); S3.fx.sparkle(src.x, src.y, 1.0, p.l, 10);
+      S3.fx.ring(src.x, src.y, 22, p.l, 320, true);
       B.shake(5); play("inkshot");
-      if (mine) text(G, "룬 먹화살!", src.x, src.y, 2.2, p.l, true);
+      if (mine) text(G, "룬 파쇄탄!", src.x, src.y, 2.2, p.l, true);
       break;
     }
-    case 102: f.ring(src.x, src.y, extra || 90, p.m, 500, true); f.sparkle(src.x, src.y, 1, p.m, 20); B.shake(5); play("sanctuary"); if (mine) text(G, "불멸의 성역", src.x, src.y, 2.2, p.l, true); break;
+    case 102: f.ring(src.x, src.y, extra || 90, p.l, 520, true); f.sparkle(src.x, src.y, 1.1, p.a, 22); B.shake(5); play("sanctuary"); if (mine) text(G, "성광의 성역!", src.x, src.y, 2.2, p.l, true); break;
   }
   jobBeat(kind, src, tx, ty, p, near);
 }

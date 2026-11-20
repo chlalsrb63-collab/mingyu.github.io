@@ -54,7 +54,9 @@ assert.deepEqual([p.x, p.y], [x, y], "the server refuses positional change while
 function jobArena(id, front, targetKind) {
   const world = L.setup(), job = D.skills[id].job, [wk, wk2] = D.jobs[job].wk;
   world.now = 1_000_000;
-  L.addPlayer(world, pid, L.hero("전직속성시험", { wk, wk2, lvl: 157, job, wm: { [wk]: 30, [wk2]: 30 } }));
+  const ch = L.hero("전직속성시험", { wk, wk2, lvl: 157, job, wm: { [wk]: 30, ...(wk2 ? { [wk2]: 30 } : {}) } });
+  if (D.skills[id].jobNeed) ch.jp = { lv: D.skills[id].jobNeed, xp: 0 };
+  L.addPlayer(world, pid, ch);
   const hero = world.players[pid], [tx, ty] = arena(L, world, X.mapOf("meadow"));
   X.changeMap(world, hero, "meadow", tx * X.T + 8, ty * X.T + 10);
   const map = L.runtime(world, hero.map);
@@ -90,7 +92,7 @@ for (const [id, pct] of [["rain", 25], ["hammer_final", 35], ["crosscut", 25], [
   assert.equal(D.skills[id].armorPenPct, pct, `${id}: armor penetration visible to the client`);
 }
 
-for (const [id, primary, secondary] of [["verdict", "physical", "fire"], ["crosscut", "physical", "bleed"], ["inkshot", "cold", "dark"], ["elemfan", "lightning", "dark"], ["dive", "lightning", "dark"]]) {
+for (const [id, primary, secondary] of [["verdict", "physical", "fire"], ["crosscut", "physical", "bleed"], ["inkshot", "cold", "dark"], ["elemfan", "lightning", "dark"], ["dive", "cold", "lightning"]]) {
   const skill = D.skills[id];
   assert.deepEqual([skill.damageType, skill.secondaryDamageType], [primary, secondary], `${id}: both types visible to the client`);
 }
@@ -121,16 +123,16 @@ try {
   const types = (e) => e[7].map(([type]) => D.elements.types[type]);
   castJobSkill(world, "dive");
   assert.equal(hits().length, 1, "landing hits once");
-  assert.ok(types(hits()[0]).includes("lightning") && !types(hits()[0]).includes("dark"), "landing carries lightning");
+  assert.ok(types(hits()[0]).includes("cold") && !types(hits()[0]).includes("lightning"), "landing carries cold");
   const ailments = L.viewFor(world, pid).ail.find(([id]) => id === target.id)[1];
-  assert.ok(ailments.some(([i, left]) => D.elements.status[i].id === "shock" && left > 0), "landing applies shock");
+  assert.ok(ailments.some(([i, left]) => D.elements.status[i].id === "chill" && left > 0), "landing applies chill");
   for (let elapsed = 100; elapsed < 500; elapsed += 100) L.tick(world, start + elapsed);
   assert.equal(hits().length, 1, "field waits for its first 500 ms pulse");
   assert.deepEqual(heals(), [], "landing does not steal life");
   const before = target.hp;
   L.tick(world, start + 500);
   assert.equal(hits().length, 2);
-  assert.ok(types(hits()[1]).includes("dark") && !types(hits()[1]).includes("lightning"), "field carries dark damage");
+  assert.ok(types(hits()[1]).includes("lightning") && !types(hits()[1]).includes("cold"), "field carries lightning damage");
   assert.deepEqual(heals(), [Math.round((before - target.hp) * 0.3)], "field heals 30% of damage exactly once");
 
   target.hp = 9;

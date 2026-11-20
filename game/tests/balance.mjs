@@ -22,13 +22,12 @@ export const BASE = {
 const VS = { sword: ["warrior"], dagger: ["rogue"], spear: ["lancer"], staff: ["mage"], book: ["mage"], bow: ["warrior", "rogue", "lancer", "mage"] };
 
 // Plain equipment after the gear level and monster pressure curves, averaged across the three arena seeds below.
-// Re-measured 2026-11-20 after expanding gear to 10 tiers (20 iLv per tier, iLv 1–200): T13/T25 shop gear sits closer
-// to its band's item level, while T40 (Lv.157 in T8 iLv.151 plain gear) sits slightly below.
+// Re-measured 2026-11-20 after expanding gear to 10 tiers (20 iLv per tier) and moving job advancement to mastery 30.
 const ELEMENT_BASE = {
-  sword: [30.83, 33.17, 15.67, 12.50], dagger: [29.17, 36.17, 18.67, 18.33],
-  spear: [29.00, 29.17, 13.00, 6.83], staff: [27.17, 35.33, 20.17, 17.00],
-  book: [30.50, 34.67, 19.00, 14.00], bow: [25.00, 30.00, 16.67, 12.67],
-  hammer: [30.00, 34.17, 15.00, 9.50],
+  sword: [30.83, 33.17, 15.00, 12.50], dagger: [29.17, 36.17, 17.17, 18.17],
+  spear: [29.00, 29.17, 11.00, 7.50], staff: [27.17, 35.33, 18.50, 16.67],
+  book: [30.50, 34.67, 15.83, 14.00], bow: [25.00, 30.00, 14.50, 12.83],
+  hammer: [30.00, 34.17, 13.67, 9.50],
 };
 
 /** A borderline single run can change when the loot stream takes different draws. On a miss,

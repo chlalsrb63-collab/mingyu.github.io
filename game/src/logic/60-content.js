@@ -225,7 +225,7 @@ const ACH = [
   ["lv30", "성장", "베테랑 모험가", "레벨 120 달성", 15, (c) => c.lvl >= 120, "베테랑"],
   ["lv50", "성장", "전설의 모험가", "레벨 200 달성", 40, (c) => c.lvl >= 200, "전설의 모험가", [["hp", 80]]],
   ["job1", "성장", "첫 전직", "전직관 아르센에게서 전직하기", 10, (c) => c.job !== "adventurer"],
-  ["job2", "성장", "두 갈래 길", "두 무기의 길(혼합 직업)로 전직하기", 20, (c) => !!JOBS[c.job] && JOBS[c.job].kind === "hybrid"],
+  ["job2", "성장", "두 번째 길", "직업 레벨 30 달성 또는 두 개 이상의 직업 경험하기", 20, (c) => (c.jp?.lv || 0) >= 30 || Object.keys(c.jobs || {}).length >= 2],
   ["daily1", "성장", "성실한 하루", "토벌 의뢰 보상 상자 받기", 5, (c) => c.cnt.daily >= 1],
   ["daily30", "성장", "성실한 모험가", "토벌 의뢰 보상 상자 30번 받기", 20, (c) => c.cnt.daily >= 30, "성실한 모험가", [["gold", 10]]],
 ].map(([id, cat, name, desc, pts, test, title, bonus, gone]) => ({ id, cat, name, desc, pts, test, title: title || null, bonus: bonus || null, gone: !!gone }));
