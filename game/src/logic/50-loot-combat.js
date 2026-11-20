@@ -535,7 +535,7 @@ function killMob(S, rt, mob) {
       ? HUNT_EARLY.extra * clamp((HUNT_EARLY.end - ch.lvl) / (HUNT_EARLY.end - HUNT_EARLY.full), 0, 1)
       : 0;
     const band = field ? huntBandK(ch.lvl, mob.ecoLv || d.lv) : 1;
-    gainXp(S, p, xp * band * (1 + pfxLoot(S, rt, p, mob, "xp").xp / 100) * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
+    gainXp(S, p, xp * band * (1 + pfxLoot(S, rt, p, mob, "xp").xp / 100) * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * STREAK_STEP + rank * 0.02 + guildNear(S, p) * GUILD_XP));
     if (mob.k === "moonspirit") {
       p.atkBuff = Math.max(p.atkBuff || 0, S.now + 300000);
       p.spdBuff = Math.max(p.spdBuff || 0, S.now + 300000);

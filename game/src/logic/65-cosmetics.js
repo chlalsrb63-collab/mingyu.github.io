@@ -285,6 +285,8 @@ const COSMETICS = Object.fromEntries([
   ["top_out_tennis", 236, "top", "테니스 케이블 베스트", 1, "shop", 3800, "그린 스트라이프가 산뜻한 화이트 브이넥 케이블 니트 베스트.", "gorp_idol"],
   ["hat_out_idol", 237, "hat", "아이돌 체인 베레모", 2, "shop", 6500, "별빛 실버 핀과 체인이 반짝이는 블랙 무대 베레모.", "gorp_idol"],
   ["top_out_idol", 238, "top", "아이돌 무대 블레이저", 2, "shop", 7800, "실버 체인과 스타 브로치가 화려한 블랙 테일러드 무대 재킷.", "gorp_idol"],
+  // 루넬샤 본편 대단원 에필로그 보상 외형 (QST-03)
+  ["back_lunelsha_seal", 239, "back", "루넬샤 여명의 망토", 3, "ach", "t_sq_lunelsha_end_5", "루넬샤의 어두운 역사를 마주하고 새벽을 연 모험가에게 수여되는 금빛 테두리 망토."],
 
 
 ].map(([id, n, slot, name, q, src, price, desc, set]) => [id, { n, slot, name, q, src, price: src === "shop" || src === "token" ? price : 0, ach: src === "ach" ? price : "", desc, set: set || "" }]));

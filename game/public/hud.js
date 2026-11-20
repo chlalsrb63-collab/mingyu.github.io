@@ -222,7 +222,7 @@ function tracker(s) {
   // while the first steps are unfinished the daily tasks stay out of the tracker (첫걸음 and the main quest only)
   const tutOn = !!(s.tut && s.tut.i < (G.defs.tutorial || []).length);
   const dl = !tutOn && s.daily && s.daily.tasks.filter((d) => !d.claimed);
-  const chapter = G.defs.side?.find((q) => q.mainChapter && s.sq?.some(([id, state]) => id === q.id && state === 2));
+  const chapter = G.defs.side?.find((q) => q.mainChapter && s.sq?.some(([id, state]) => id === q.id && (state === 2 || state === 3)));
   const sideOn = (G.defs.side || []).filter((q) => !q.mainChapter && s.sq?.some(([id, state]) => id === q.id && (state === 2 || state === 3))).slice(0, 3);
   const key = JSON.stringify([s.q, s.bq, dl, Board.trackKey(s), chapter?.id, s.sq]);
   setOnce($("#quest-track"), key, (qt) => {
@@ -426,7 +426,8 @@ export function hudTick(t) {
     if (sb.dataset.v !== want) {
       sb.dataset.v = want;
       $("#streak-n").textContent = `연속 처치 ${k.n}`;
-      $("#streak-b").textContent = `EXP +${Math.min(G.defs.streak[1], k.n - 1) * 2}%`;
+      const step = G.defs.streak[2] || 1;
+      $("#streak-b").textContent = `EXP +${Math.min(G.defs.streak[1], k.n - 1) * step}%`;
       sb.classList.remove("pop"); void sb.offsetWidth; sb.classList.add("pop");
     }
     $("#streak-bar").style.width = `${clamp((k.end - t) / G.defs.streak[0], 0, 1) * 100}%`;

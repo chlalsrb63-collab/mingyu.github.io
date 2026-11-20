@@ -183,7 +183,12 @@ export function renderTalk(box, npc, s, say) {
       q.choice.forEach((o, i) => {
         const b = el("button", "btn gold", `${i + 1}. ${o.label}`);
         if (o.reward) b.title = rewardText(o.reward);
-        b.addEventListener("click", () => { act({ t: "sq", a: "done", id: q.id, pick: i }); if (say && (o.done || q.done)) say(o.done || q.done); Sound.play("quest"); });
+        b.addEventListener("click", () => {
+          act({ t: "sq", a: "done", id: q.id, pick: i });
+          if (say && (o.done || q.done)) say(o.done || q.done);
+          Sound.play("quest");
+          if (q.id === "sq_lunelsha_end_5") showEndingCredits(s, o.label);
+        });
         pick.append(b);
       });
       card.append(pick);
@@ -240,6 +245,11 @@ export function detail(det, id, s) {
   if (!q || !v) return;
   if (q.mainChapter && v.st === 4) {
     det.append(el("div", "q-title", q.title), el("p", "say", q.done), el("p", "ds", "완료한 주요 의뢰입니다."));
+    if (q.id === "sq_lunelsha_end_5") {
+      const btns = el("div", "btns"), rb = el("button", "btn gold", "에필로그 크레딧 다시 보기");
+      rb.addEventListener("click", () => { Sound.play("tab"); showEndingCredits(s); });
+      btns.append(rb); det.append(btns);
+    }
     return;
   }
   det.append(el("div", "q-title", `[${kindName(q)}] ${q.title}`), el("p", "say", q.text), goalRow(q, v));
@@ -251,12 +261,57 @@ export function detail(det, id, s) {
     : v.st === 1 ? `${q.giverMap}의 ${q.giverName}에게 말을 걸어 의뢰를 받으세요.`
     : `의뢰인: ${q.giverName} (${q.giverMap})`));
   if (v.st === 1 && !q.mainChapter) return;   // not taken yet: nothing to give up; [추적] is added by the window
+  if (q.mainChapter && v.st === 3 && q.choice) {
+    const pick = el("div", "sq-choice");
+    const near = C.G.near?.id === turnIn(q);
+    q.choice.forEach((o, i) => {
+      const b = el("button", "btn gold", `${i + 1}. ${o.label}`);
+      b.disabled = !near;
+      b.addEventListener("click", () => {
+        act({ t: "sq", a: "done", id, pick: i });
+        Sound.play("quest");
+        if (id === "sq_lunelsha_end_5") showEndingCredits(s, o.label);
+      });
+      pick.append(b);
+    });
+    det.append(pick);
+    return;
+  }
   const action = q.mainChapter && v.st === 1 ? "take" : q.mainChapter && v.st === 3 ? "done" : "drop";
   const btns = el("div", "btns"), b = el("button", action === "drop" ? "btn" : "btn gold", { take: "수락", done: "완료", drop: "포기" }[action]);
-  if (action !== "drop") b.disabled = C.G.near?.id !== q.giver;
+  if (action !== "drop") b.disabled = C.G.near?.id !== turnIn(q);
   b.addEventListener("click", () => { act({ t: "sq", a: action, id }); Sound.play(action === "take" ? "board_take" : action === "done" ? "quest" : "close"); });
   btns.append(b);
   det.append(btns);
+}
+
+/** Lunelsha Main Story Epilogue Ending Credits overlay (QST-03). */
+export function showEndingCredits(s, chosen) {
+  const { el, Sound } = C;
+  document.getElementById("ending-credits")?.remove();
+  const overlay = el("div", "ending-overlay");
+  overlay.id = "ending-credits";
+  const card = el("div", "ending-card");
+  card.append(
+    el("div", "ending-tag", "TALES TALES · EPILOGUE"),
+    el("h2", "ending-title", "루넬샤의 새벽"),
+    el("p", "ending-sub", "본편 대단원 — 「주문을 깨운 자」 완결"),
+    el("div", "ending-body",
+      "천 년 전 땅밑 고대 신전에 봉인되었던 변이의 핵은 마침내 잠잠해졌다.\n"
+      + "네온 시티의 잿더미와 속삭임 숲의 안개, 단풍 왕도의 서리를 지나\n"
+      + "버드나무광장의 등불은 이제 작은꼬리들의 새벽을 비추는 불빛이 되었다.\n\n"
+      + (chosen ? `당신의 선택: 「${chosen}」\n` : "")
+      + `모험가 ${s?.name || "작은꼬리"} · Lv.${s?.lvl || 200} · 칭호 [새벽을 여는 자]\n`
+      + "특별 보상 외형: [루넬샤 여명의 망토]가 옷장에 지급되었습니다."
+    ),
+    el("div", "ending-foot", "테일즈테일즈 (Tales Tales) — 여정은 계속됩니다"),
+  );
+  const close = el("button", "btn gold", "여정을 계속하기");
+  close.addEventListener("click", () => { Sound.play("close"); overlay.remove(); });
+  card.append(close);
+  overlay.append(card);
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) { Sound.play("close"); overlay.remove(); } });
+  document.body.append(overlay);
 }
 
 /** The 도감's 기념품 tab: every keepsake kept, with the story it came from. */

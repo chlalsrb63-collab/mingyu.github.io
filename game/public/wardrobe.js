@@ -2071,6 +2071,8 @@ export const ART = {
   top_out_tennis: ["top", "cableKnit", { c: "#f6f8f6", b: "#2e8852", r: "#dce4de" }],
   hat_out_idol: ["hat", "beret", { c: "#24242e", b: "#e2e8f4" }],
   top_out_idol: ["top", "suit", { c: "#24242e", b: "#e2e8f4", s: "#8ec8ff" }],
+  // 루넬샤 본편 대단원 에필로그 보상 외형 (QST-03)
+  back_lunelsha_seal: ["back", "cape", { c: "#2b3c72", b: "#f4ce64" }],
   // the co-op part-time jobs' S grades
   hat_kerchief: ["hat", "kerchief", { c: "#5a9ae0", b: "#f6f4fa" }],
   back_tray: ["back", "tray", { c: "#d8dce8", b: "#a8acb8" }],

@@ -360,7 +360,7 @@ export function defs() {
     sx: sxDefs(),
     // boss trophies: { list: { kind: { name, fx } }, cap, p, gold, story: { r, limit } } (67-trophies.js)
     trophies: trophyDefs(),
-    streak: [STREAK_MS, STREAK_MAX], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: worldMapDefs(),
+    streak: [STREAK_MS, STREAK_MAX, Math.round(STREAK_STEP * 100)], guildCost: GUILD_COST, guildXp: GUILD_XP, fireR: FIRE_R, lookCost: LOOK_COST, lookMax: LOOK_MAX, emotes: EMOTES, dim: dimDefs(), maps: worldMapDefs(),
     // ITEM LEVEL (owner 2026-11-16). A gear entry on the wire carries `il` (shown 1–200 scale); the level it can be worn from is
     //   max(1, entry.il − ilGap)   (what validateAction "eq" checks; an entry without `il` = items[id].req + ilGap, or 1 for req 1)
     // Gear `rarity` uses 0, 1, 2, 3 and 5, with 5 retained as the existing unique code.

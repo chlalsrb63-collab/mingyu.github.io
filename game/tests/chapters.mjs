@@ -59,7 +59,7 @@ assert.ok(spawns("coast").has("eyegull") && spawns("coast").has("coralturtle"), 
 assert.ok(spawns("mesa").has("twingoat_blood") && X.FIELD_BOSS.mesa === "crownpeacock", "the mesa steps hunt the mesa and its field boss");
 assert.ok(idx("eyegull") === idx("loggator", 1) + 1 && idx("twingoat_blood") === idx("abyssboss") + 1, "after the jungle boss, after the 어미");
 const beats = Q.map((q, i) => [i, q.sq]).filter(([, id]) => id);
-assert.equal(beats.length, 6);
+assert.equal(beats.length, 12);
 const goals = new Set();
 for (const [i, id] of beats) {
   const b = D.side.find((o) => o.id === id);
@@ -70,7 +70,7 @@ for (const [i, id] of beats) {
   const lvRow = D.mobs[Q[i - 1].mob].lv;
   assert.ok(b.req.lv <= lvRow, `${id} is open by the time row ${i - 1} is done (Lv.${b.req.lv} ≤ ${lvRow})`);
 }
-assert.deepEqual([...goals].sort(), ["deliver", "talk", "visit"], "beats are not kill quests");
+assert.deepEqual([...goals].sort(), ["choice", "deliver", "make", "talk", "visit"], "beats are not kill quests");
 // rewards on the curve: the new rows pay like their neighbours (XP over a level's worth, kill rows 1.1–1.5, boss rows 1.4–1.9)
 for (const q of Q.filter((o) => o.v24)) {
   const r = q.xp / X.tierXp(X.toTier(D.mobs[q.mob].lv));
@@ -92,9 +92,10 @@ for (const [i, id] of beats) {
   if (b.goal.type === "talk") { W.meet(b.goal.npc); W.ok({ t: "sq", a: "talk", npc: b.goal.npc }); W.meet("elder"); }
   if (b.goal.type === "visit") { X.changeMap(W.S, W.p, b.goal.map, 40 * T, 40 * T); W.meet("elder"); }
   if (b.goal.type === "deliver") { assert.equal(W.ch.inv.filter((s) => s.id === b.goal.item).length, 1, "the letter in the bag"); W.meet(b.goal.npc); }
+  if (b.goal.type === "make") { W.ch.sq.on[id] = b.goal.n; W.meet("elder"); }
   assert.equal(sqSt(W, id), 3, `${id} ready`);
   const xp0 = W.ch.xp, g0 = W.ch.gold;
-  W.ok({ t: "sq", a: "done", id });
+  W.ok(b.choice ? { t: "sq", a: "done", id, pick: 0 } : { t: "sq", a: "done", id });
   assert.ok(W.ch.sq.done[id] && W.ch.gold === g0 + b.reward.gold && (W.ch.xp !== xp0 || W.ch.lvl > b.req.lv), `${id} paid`);
   if (b.goal.type === "deliver") assert.ok(!W.ch.inv.some((s) => s.id === b.goal.item), "the letter handed over");
   W.meet("elder");
@@ -190,3 +191,41 @@ for (const q of Q.slice(-3)) assert.ok(Object.values(L.atlas().maps).some((m) =>
   }
 }
 console.log("chapters honors: ok");
+
+// ── streak cap (+15% max, +1% per step)
+assert.deepEqual(D.streak, [8000, 15, 1], "kill streak bonus capped at +15% (+1% per kill)");
+
+// ── QST-01: Lv.85-99 and Lv.191-199 gap-fill arcs
+{
+  const gapIds = [
+    "sq_preair_1", "sq_preair_2", "sq_preair_3", "sq_preair_4", "sq_preair_5", "sq_preair_6",
+    "sq_jianmen_1", "sq_jianmen_2", "sq_jianmen_3", "sq_jianmen_4", "sq_jianmen_5",
+    "sq_sanctum_1", "sq_sanctum_2", "sq_sanctum_3",
+  ];
+  for (const id of gapIds) assert.ok(X.SQ_BY[id], `gap quest ${id} loaded`);
+  const lv191_199 = D.side.filter((q) => q.req.lv >= 191 && q.req.lv <= 199);
+  assert.ok(lv191_199.length >= 10, `Lv.191-199 has >= 10 side quests (got ${lv191_199.length})`);
+}
+
+// ── QST-03: Lv.200 Lunelsha 5-step epilogue chain + exclusive cosmetic reward
+{
+  const W = world({ ...at(Q.length, 200) });
+  W.ch.sq.done.sq_lunelsha_tablet = 1;
+  const steps = ["sq_lunelsha_end_1", "sq_lunelsha_end_2", "sq_lunelsha_end_3", "sq_lunelsha_end_4", "sq_lunelsha_end_5"];
+  for (const id of steps) {
+    const q = X.SQ_BY[id];
+    assert.ok(q && q.mainChapter && q.req.main && q.req.lv === 200, `${id} is Lv.200 main epilogue`);
+    assert.equal(sqSt(W, id), 1, `${id} opens in order`);
+    W.meet(q.giver);
+    W.ok({ t: "sq", a: "take", id });
+    if (q.goal.type === "talk") { W.meet(q.goal.npc); W.ok({ t: "sq", a: "talk", npc: q.goal.npc }); W.meet(q.giver); }
+    else if (q.goal.type === "visit") { X.changeMap(W.S, W.p, q.goal.map, 40 * T, 40 * T); W.meet(q.giver); }
+    else if (q.goal.type === "fb") { W.ch.sq.on[id] = 1; W.meet(q.giver); }
+    assert.equal(sqSt(W, id), 3, `${id} ready to hand in`);
+    W.ok(q.choice ? { t: "sq", a: "done", id, pick: 0 } : { t: "sq", a: "done", id });
+    assert.ok(W.ch.sq.done[id], `${id} completed`);
+  }
+  assert.ok(W.ch.ach.includes("t_sq_lunelsha_end_5"), "epilogue title achievement earned");
+  assert.ok(W.ch.cos.own.includes("back_lunelsha_seal"), "epilogue cosmetic back_lunelsha_seal granted");
+}
+console.log("QST-01/02/03 & streak cap: ok");
