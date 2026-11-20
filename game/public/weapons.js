@@ -547,7 +547,24 @@ const HAMMER = [
   ], "black", "starfire"),
 ];
 
-export const DESIGNS = { sword: SWORD, dagger: DAGGER, spear: SPEAR, staff: STAFF, book: BOOK, bow: BOW, hammer: HAMMER };
+// Tier 7–10 procedural fallbacks (used only when manifest PNGs are absent; all 7 kinds × T7–T10 have PNGs in manifest.json).
+const T7_10_THEMES = [
+  { meteor: "oxblood", starfire: "red", star: "ruby", gold: "red", blue: "oxblood" },       // T7 혈월
+  { meteor: "gold", starfire: "orange", star: "spark", blue: "red", dark: "oxblood" },     // T8 화룡
+  { meteor: "bright", starfire: "blue", star: "sapph", dark: "steel", black: "blue" },     // T9 성익
+  { meteor: "starfire", starfire: "gold", star: "white", dark: "gold", black: "brass" },   // T10 태초
+];
+const extendTiers = (arr) => {
+  const base = arr[arr.length - 1];
+  return arr.concat(T7_10_THEMES.map((map) => () => {
+    const d = base();
+    return { ...d, sh: d.sh.map((s) => (s.m && map[s.m] ? { ...s, m: map[s.m] } : s)), blade: (d.blade || []).map((b) => map[b] || b) };
+  }));
+};
+export const DESIGNS = {
+  sword: extendTiers(SWORD), dagger: extendTiers(DAGGER), spear: extendTiers(SPEAR),
+  staff: extendTiers(STAFF), book: extendTiers(BOOK), bow: extendTiers(BOW), hammer: extendTiers(HAMMER),
+};
 
 // Legendary silhouettes share each weapon's grip position and canvas.
 export const SIL = {

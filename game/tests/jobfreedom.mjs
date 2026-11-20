@@ -92,10 +92,10 @@ const has = (ch, id) => ch.inv.filter((s) => s.id === id).reduce((a, s) => a + (
   assert.equal(JSON.stringify(ch.wm), wm, "masteries kept"); assert.equal(JSON.stringify(ch.tro), tro); assert.equal(JSON.stringify(ch.cos), cos);
   assert.equal(ch.job, "swordsman"); assert.deepEqual(ch.jobs.thief, { lv: 4, xp: 2 }); assert.equal(ch.jp.lv, 9, "job levels kept");
   assert.equal(ch.sq.done.sq_willow_letter, 1, "quests kept");
-  assert.equal(ch.eq.armor, null, "Lv.61 armour comes off");
+  assert.equal(ch.eq.armor, null, "Lv.41 armour comes off");
   const s = ch.inv.findIndex((x) => x.id === "a_3");
   assert.ok(s >= 0, "into the bag");
-  assert.equal(W.act({ t: "eq", s }).error, "레벨 61부터 착용할 수 있습니다", "and cannot be worn until the level is back");
+  assert.equal(W.act({ t: "eq", s }).error, "레벨 41부터 착용할 수 있습니다", "and cannot be worn until the level is back");
   assert.equal(W.act({ t: "lv_reset" }).error, "이미 레벨 1입니다");
 }
 

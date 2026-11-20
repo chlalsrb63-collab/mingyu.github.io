@@ -181,7 +181,7 @@ function rollRarity(S, rank, mf) {
   return r < top + rare ? 2 : r < top + rare + magic ? 1 : 0;
 }
 function tierFor(lv) {
-  return lv < 8 ? 1 : lv < 16 ? 2 : lv < 26 ? 3 : lv < 38 ? 4 : lv < 46 ? 5 : 6;
+  return clamp(Math.ceil(shownLv(lv) / 20), 1, G_REQ.length);
 }
 /** Which kind of piece drops: weapons most often, jewellery least. */
 const DROP_TYPES = [["weapon", 24], ["helm", 13], ["armor", 15], ["gloves", 13], ["boots", 13], ["ring", 13], ["amulet", 9]];

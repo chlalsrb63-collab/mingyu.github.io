@@ -1450,6 +1450,36 @@
       "src": "assets/cosmetics/top_out_idol.png?v=52144ec7",
       "w": 32,
       "h": 32
+    },
+    "icon.item.h_9": {
+      "src": "assets/gear/helm/h_8.png?v=e28e98a2",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.a_9": {
+      "src": "assets/gear/armor/a_8.png?v=3047c3b9",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.g_9": {
+      "src": "assets/gear/gloves/g_8.png?v=e6e99224",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.b_9": {
+      "src": "assets/gear/boots/b_8.png?v=8a94276a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.r_9": {
+      "src": "assets/gear/ring/r_8.png?v=f747d9c2",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.n_9": {
+      "src": "assets/gear/amulet/n_8.png?v=ba7fe3f8",
+      "w": 32,
+      "h": 32
     }
   },
   "audio": {},

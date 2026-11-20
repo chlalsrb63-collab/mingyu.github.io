@@ -130,7 +130,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   for (const id of ["w_warrior_1", "w_rogue_1", "w_lancer_1", "w_mage_1", "w_book_1", "w_bow_1"]) assert.ok(D.shop.includes(id), "the shop sells " + id);
   assert.ok(!D.shop.includes("W1"));
   assert.ok(Object.values(D.items).every((it) => !("cls" in it)), "no item is locked to a class");
-  assert.deepEqual([1, 2, 3, 4, 5, 6].map((t) => D.items[`h_${t}`].req), [1, 29, 61, 101, 149, 181], "gear asks for levels on the 1–200 scale");
+  assert.deepEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((t) => D.items[`h_${t}`].req), [1, 21, 41, 61, 81, 101, 121, 141, 161, 181], "gear asks for levels on the 1–200 scale (20 iLv per tier)");
 }
 
 // ═════════ Auto level-up, points and reallocation ═════════

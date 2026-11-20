@@ -58,7 +58,7 @@ function flatArena(m, A) {
   Object.assign(m, { g: g.map((r) => r.join("")), o: o.map((r) => r.join("")), solid, reach });
   return () => Object.assign(m, keep);
 }
-const tierFor = (lv) => (lv < 8 ? 1 : lv < 16 ? 2 : lv < 26 ? 3 : lv < 38 ? 4 : lv < 46 ? 5 : 6);
+const tierFor = (lv) => Math.max(1, Math.min(10, Math.ceil((4 * lv - 3) / 20)));
 const WID = { sword: "warrior", dagger: "rogue", spear: "lancer", staff: "mage", book: "book", bow: "bow", hammer: "h" };
 const plain = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
 /** The template stat shares of each weapon kind (mirrors logic BUILD), for a hybrid's half-and-half build. */
@@ -91,7 +91,7 @@ export function probe(L, who, tier, secs = PROBE.secs, o = {}) {
   let now = 1_000_000;
   S.now = now;
   const PID = "pid-probe";
-  const tg = o.gt || Math.min(D.items.h_6 ? 6 : 5, tierFor(tier));            // o.gt: dress the hero in another gear tier (tier 5 vs 6 at Lv.181+)
+  const tg = o.gt || Math.min(D.items.h_10 ? 10 : D.items.h_6 ? 6 : 5, tierFor(tier));            // o.gt: dress the hero in another gear tier
   const fresh = !!L.hero;
   const wk = fresh ? who : null;
   const ch = fresh ? L.hero("탐침", { wk, lvl: Math.min(197, 4 * tier - 3), migrate: true, ...(o.job ? hybridHero(D, o.job, wk, tier) : {}) }) : L.newChar("탐침", who, []);

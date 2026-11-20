@@ -66,7 +66,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   const W = L.setup();
   L.addPlayer(W, "hero", L.hero("곡선", { lvl: 200, wk: "sword", wm: { sword: 50 } }));
   const p = W.players.hero;
-  const g = { ...X.plain("w_warrior_6"), enh: 4 };
+  const g = { ...X.plain("w_warrior_10"), enh: 4 };
   const lateBase = [181, 200].map((il) => Math.round(X.gearBaseValue({ ...g, il, enh: 0 }, "atk")));
   assert.deepEqual(lateBase, [1798, 2086], "upgrading the drop within the final base adds 288 displayed attack");
   assert.equal(X.gearBaseValue(X.plain("w_warrior_1"), "atk"), 6, "the starter weapon keeps its attack");
@@ -206,7 +206,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.equal(X.rollGear({ seed: 1 }, "h_2", 1, 12).il, 45, "crafts: shown 4·12 − 3");
   assert.equal(X.rollGear({ seed: 1 }, "h_2", 1, 12, 2).il, 53, "+ a boss's 8");
   assert.equal(X.rollGear({ seed: 1 }, "h_6", 1, 50, 2).il, 200, "capped");
-  assert.equal(X.rollGear({ seed: 1 }, "h_4", 1, 1).il, 101, "never below its base's own level");
+  assert.equal(X.rollGear({ seed: 1 }, "h_6", 1, 1).il, 101, "never below its base's own level");
   assert.ok(Array.from({ length: 200 }, (_, i) => X.rollGear({ seed: i }, "h_2", 1, 1 + (i % 50)).il).every((il) => il >= 1 && il <= 200));
 }
 
@@ -228,7 +228,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
     assert.ok(it.type === type && it.tier === tier && it.set === undefined && it.base && it.req === X.G_REQ[tier - 1], id);
     assert.ok(gearIds.includes(id) && X.gearReq(X.rollGear({ seed: 4 }, id, 3, 38)) === 139, `${id}: a drop at tier 38 asks Lv.139`);
   }
-  assert.equal(X.gearIl({ id: "a_3", il: 0 }), 71, "il 0 = not set");
+  assert.equal(X.gearIl({ id: "a_3", il: 0 }), 51, "il 0 = not set");
   // an entry with il: il − 10, whatever its base says
   assert.equal(X.gearReq({ ...X.plain("a_5"), il: 100 }), 90);
   assert.equal(X.gearReq({ ...X.plain("a_1"), il: 5 }), 1);
@@ -254,10 +254,10 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.equal(wear({ ...X.plain("h_5"), il: 100 }, 89).ok, false); assert.equal(wear({ ...X.plain("h_5"), il: 100 }, 90).ok, true);
   // legacy entries (no il at all, as a hand-made old sheet and the shop's stock): the old rule, to the level
   const raw = (id) => ({ id, q: 0, enh: 0, af: [], sk: 0, ru: [] });
-  assert.equal(wear(raw("h_3"), 60).error, "레벨 61부터 착용할 수 있습니다");
-  assert.equal(wear(raw("h_3"), 61).ok, true);
+  assert.equal(wear(raw("h_3"), 40).error, "레벨 41부터 착용할 수 있습니다");
+  assert.equal(wear(raw("h_3"), 41).ok, true);
   assert.equal(wear(raw("h_1"), 1).ok, true);
-  assert.equal(wear(raw("h_6"), 180).ok, false); assert.equal(wear(raw("h_6"), 181).ok, true);
+  assert.equal(wear(raw("h_10"), 180).ok, false); assert.equal(wear(raw("h_10"), 181).ok, true);
   // the unique and its kin follow the same rule
   const u = X.rollGear({ seed: 3 }, "h_3", 5, 20); u.il = 70;
   assert.equal(wear(u, 59).ok, false); assert.equal(wear(u, 60).ok, true);
@@ -283,11 +283,11 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   old.wh = { items: [{ ...uq, il: 88 }, raw("w_bow_4", { q: 4, set: "rift" })], gold: 0 };
   const eqBefore = JSON.stringify(old.eq.weapon.af), tail = JSON.stringify(old.eq.armor.af);
   const ch = X.migrate(JSON.parse(JSON.stringify(old)));
-  assert.equal(JSON.stringify(ch.eq.weapon.af), eqBefore, "the old rare keeps its lines"); assert.equal(ch.eq.weapon.il, 71);
-  assert.equal(JSON.stringify(ch.eq.armor.af), tail, "so does the old magic one (one line)"); assert.equal(ch.eq.armor.il, 39);
-  assert.equal(ch.inv[0].af.length, 4); assert.equal(ch.inv[0].il, 71); assert.equal(ch.inv[0].lg, "chain");
+  assert.equal(JSON.stringify(ch.eq.weapon.af), eqBefore, "the old rare keeps its lines"); assert.equal(ch.eq.weapon.il, 51);
+  assert.equal(JSON.stringify(ch.eq.armor.af), tail, "so does the old magic one (one line)"); assert.equal(ch.eq.armor.il, 31);
+  assert.equal(ch.inv[0].af.length, 4); assert.equal(ch.inv[0].il, 51); assert.equal(ch.inv[0].lg, "chain");
   assert.equal(ch.inv[1].il, 1, "a tier-1 piece");
-  assert.deepEqual([ch.eq.weapon, ch.eq.armor, ...ch.inv.slice(0, 2)].map(X.gearReq), [61, 29, 61, 1], "the wear levels did not move");
+  assert.deepEqual([ch.eq.weapon, ch.eq.armor, ...ch.inv.slice(0, 2)].map(X.gearReq), [41, 21, 41, 1], "the wear levels did not move");
   assert.equal(ch.eq.helm.q, 5); assert.equal(ch.eq.helm.lg, uq.lg); assert.equal(ch.eq.helm.un, undefined); assert.equal(ch.eq.helm.il, uq.il);
   assert.equal(JSON.stringify(ch.eq.helm.af), JSON.stringify(uq.af), "a unique's lines come back as they were");
   assert.equal(ch.inv[2].q, 2, "a q5 with no power to keep or derive is no unique"); assert.equal(ch.inv[2].un, undefined); assert.equal(ch.inv[2].lg, undefined);
@@ -307,10 +307,10 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.equal(ch.inv[12].q, 5); assert.equal(JSON.stringify(ch.inv[12]), JSON.stringify({ id: "a_3", q: 5, enh: 0, af: [["atkp", 9]], sk: 0, ru: [], il: ch.inv[12].il, lg: "nova" }), "the current shape retains its power while the high attack line is capped");
   assert.equal(ch.inv[3].q, 2, "q 9 is cut to the top (5) and, with no power, is no unique");
   assert.equal(ch.inv[4].il, 200, "an il is clamped");
-  assert.equal(ch.inv[5].il, 111, "a negative il is derived (tier 4 → 101 + 10)");
+  assert.equal(ch.inv[5].il, 71, "a negative il is derived (tier 4 → 61 + 10)");
   assert.deepEqual(ch.inv[6], { id: "hp_s", n: 3 });
   assert.equal(ch.wh.items[0].q, 5); assert.equal(ch.wh.items[0].il, 88); assert.equal(ch.wh.items[0].lg, uq.lg, "the warehouse keeps a unique");
-  assert.equal(ch.wh.items[1].set, undefined); assert.equal(ch.wh.items[1].il, 111);
+  assert.equal(ch.wh.items[1].set, undefined); assert.equal(ch.wh.items[1].il, 71);
   assert.equal(ch.wh.items[1].q, 3); assert.ok(X.LEGEND[ch.wh.items[1].lg]);
   assert.equal(ch.v, L.newChar("현재양식", []).v, "the rune migration upgraded the sheet");
   // a second pass changes nothing
@@ -319,7 +319,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   const S = L.setup();
   S.now = 1000;
   L.addPlayer(S, "o@s1", JSON.parse(JSON.stringify(old)));
-  assert.equal(S.players["o@s1"].ch.eq.weapon.il, 71);
+  assert.equal(S.players["o@s1"].ch.eq.weapon.il, 51);
   assert.equal(S.players["o@s1"].ch.eq.helm.q, 5);
 }
 
@@ -474,6 +474,6 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
 // ── sorting the bag: the higher item level of the same kind and rarity first
 {
   const a = { ...X.plain("h_3"), il: 40 }, b = { ...X.plain("h_3"), il: 90 }, c = { ...X.plain("h_3") };
-  assert.deepEqual(X.sortSlots([a, c, b]).map((g) => g.il), [90, 71, 40]);
+  assert.deepEqual(X.sortSlots([a, c, b]).map((g) => g.il), [90, 51, 40]);
 }
 console.log("itemlevel ok");

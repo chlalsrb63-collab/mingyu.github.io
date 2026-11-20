@@ -9,9 +9,9 @@ const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
   "\nexport const __t = { MOBS, ITEMS, FIELD_BOSS, TROPHIES, ELITE, MOB_HARD, mobGearHp, mobLevelHp, mobItemHp, mobStatHp, mobMax, dealMob, killMob, bsHit, DIM_CHAL, CHAL_KEYS, DIM_TOWN, T, SKILL, SKILL_ORDER, stats, atkRange, aimIdx, tierFor, rollGear, GEAR, WK_ID, checkAch, dmgBoard };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t;
-// gear tier 6 (운철, req. Lv.181) drops from tier-46+ monsters (Lv.181+), bosses included; a tier-45 elite may roll one up
-assert.deepEqual([37, 38, 45, 46, 50].map(X.tierFor), [4, 5, 5, 6, 6], "the drop tier by monster tier");
-assert.ok(X.ITEMS.w_rogue_6.req === 181 && X.ITEMS.a_6.base.def > X.ITEMS.a_5.base.def, "tier 6 out-stats tier 5");
+// gear tiers 1–10 span 20 item levels each (iLv 1–200): tier 10 (태초, req. Lv.181) drops from tier-46+ monsters (Lv.181+)
+assert.deepEqual([37, 38, 45, 46, 50].map(X.tierFor), [8, 8, 9, 10, 10], "the drop tier by monster tier");
+assert.ok(X.ITEMS.w_rogue_10.req === 181 && X.ITEMS.a_10.base.def > X.ITEMS.a_9.base.def && X.ITEMS.a_6.base.def > X.ITEMS.a_5.base.def, "higher tiers out-stat lower tiers");
 
 const S = L.setup();
 let now = 1_000_000;

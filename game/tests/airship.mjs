@@ -51,7 +51,7 @@ assert.equal(maps.airship.spawns.length, 0);
 const armorer = maps.airship.npcs.find((npc) => npc.role === "shop");
 const stock = armorer.goods.filter((id) => D.items[id].type === "weapon");
 assert.equal(stock.length, 14);
-assert.deepEqual([...new Set(stock.map((id) => D.items[id].req))], [101, 149]);
+assert.deepEqual([...new Set(stock.map((id) => D.items[id].req))], [61, 81]);
 for (const id of stock) {
   const model = D.items[id.replace("w_ship_", "w_")];
   assert.ok(D.items[id].base.atk < model.base.atk, "crafted and dropped weapons keep the stronger stats");

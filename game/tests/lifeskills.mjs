@@ -611,11 +611,12 @@ const tickLife = (ms) => { now += ms; S.now = now; X.lifeTick(S, p, now); };
   assert.ok(qs[1] > 0 && qs[2] > 0, "both rarities: " + qs);
   assert.equal(Object.keys(X.RECIPES).filter((id) => X.RECIPES[id].gear).length, 65, "seven weapon kinds + six pieces × five tiers");
   assert.deepEqual([...new Set(Object.values(X.RECIPES).filter((r) => r.gear).map((r) => r.lv))], [12, 22, 32, 42, 50]);
-  // tier 6 (운철, Lv.181): every piece kind exists, out-stats tier 5, and is crafted from grade-5 materials at twice the count
+  // tier 6 (운철, Lv.101) through tier 10 (태초, Lv.181): every piece kind exists, out-stats the previous tier, and tier 6 is crafted from grade-5 materials
   for (const pre of ["w_warrior", "w_rogue", "w_lancer", "w_mage", "w_book", "w_bow", "w_h", "h", "a", "g", "b", "r", "n"]) {
-    const a5 = X.ITEMS[`${pre}_5`], a6 = X.ITEMS[`${pre}_6`];
-    assert.ok(a6 && a6.tier === 6 && a6.req === 181 && a6.price > a5.price, pre);
-    for (const k of Object.keys(a5.base)) assert.ok(a6.base[k] > a5.base[k], `${pre}_6 ${k}`);
+    const a5 = X.ITEMS[`${pre}_5`], a6 = X.ITEMS[`${pre}_6`], a10 = X.ITEMS[`${pre}_10`];
+    assert.ok(a6 && a6.tier === 6 && a6.req === 101 && a6.price > a5.price, pre);
+    assert.ok(a10 && a10.tier === 10 && a10.req === 181 && a10.price > a6.price, pre);
+    for (const k of Object.keys(a5.base)) assert.ok(a6.base[k] > a5.base[k] && a10.base[k] > a6.base[k], `${pre}_6..10 ${k}`);
     assert.deepEqual(X.RECIPES[`gr_${pre}_6`].in, [["ing_5", 8], ["m_w5", 4]], pre);
   }
 }

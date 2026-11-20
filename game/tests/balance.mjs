@@ -22,13 +22,13 @@ export const BASE = {
 const VS = { sword: ["warrior"], dagger: ["rogue"], spear: ["lancer"], staff: ["mage"], book: ["mage"], bow: ["warrior", "rogue", "lancer", "mage"] };
 
 // Plain equipment after the gear level and monster pressure curves, averaged across the three arena seeds below.
-// Re-measured 2026-11-19 after the owner's wider item-level gap (GEAR_BASE_SCALE ×11.6, mobItemHp/Atk): the probe's shop
-// gear sits below its band's item level, so T25 (Lv.97 in Lv.50-ish gear) fell 15–35 % — out-of-date gear is meant to hurt.
+// Re-measured 2026-11-20 after expanding gear to 10 tiers (20 iLv per tier, iLv 1–200): T13/T25 shop gear sits closer
+// to its band's item level, while T40 (Lv.157 in T8 iLv.151 plain gear) sits slightly below.
 const ELEMENT_BASE = {
-  sword: [31.00, 27.67, 12.50, 14.33], dagger: [28.17, 29.33, 13.33, 20.00],
-  spear: [29.17, 23.17, 10.33, 9.17], staff: [27.33, 27.17, 15.17, 18.50],
-  book: [30.50, 28.67, 11.33, 16.50], bow: [25.00, 25.50, 9.83, 15.17],
-  hammer: [30.17, 25.33, 9.50, 11.67],
+  sword: [30.83, 33.17, 15.67, 12.50], dagger: [29.17, 36.17, 18.67, 18.33],
+  spear: [29.00, 29.17, 13.00, 6.83], staff: [27.17, 35.33, 20.17, 17.00],
+  book: [30.50, 34.67, 19.00, 14.00], bow: [25.00, 30.00, 16.67, 12.67],
+  hammer: [30.00, 34.17, 15.00, 9.50],
 };
 
 /** A borderline single run can change when the loot stream takes different draws. On a miss,
