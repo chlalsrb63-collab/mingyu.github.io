@@ -29,7 +29,7 @@ const VERSION = "Alpha 1.0.1";
 const LAST = "tales:last";                    // the last channel played: "s1-ch2"
 
 let C = null;
-/** title · auth · servers · create · game */
+/** title (the three-item menu) · auth · set · cred · servers · create · game */
 let view = "title";
 let pending = null;                           // { ch, why: "play" | "create" | "switch", tries }
 let retryT = 0;
@@ -76,20 +76,28 @@ export function init(ctx) {
   drawLogo();
   addEventListener("resize", () => { drawLogo(); sizeStage(); });
   $("#t-ver").textContent = `${VERSION} · © 2026 테일즈테일즈`;
-  // press start: a click, a tap or any key
-  const start = (e) => {
-    if (view !== "title" || !intro.hidden) return;
-    if (e && e.type === "keydown" && (e.metaKey || e.ctrlKey || e.altKey || e.key === "Tab" || /^F\d+$/.test(e.key))) return;
+  // the title menu: 로그인 · 설정 · 만든이
+  const syncSet = wireLobbySettings();
+  for (const b of $$("#t-menu button")) b.addEventListener("click", () => {
     Sound.unlock(); Sound.play("ok");
-    if (Account.session()) showServers(); else showAuth("login");
-  };
-  $("#t-press").addEventListener("click", start);
-  $("#title-cv").addEventListener("pointerdown", (e) => { if (view === "title") { e.preventDefault(); start(e); } });
-  addEventListener("keydown", (e) => {
-    if (!intro.hidden) return;
-    if (view === "title" && !$("#title").hidden && !e.metaKey && !e.ctrlKey && !e.altKey && !/^F\d+$/.test(e.key)) { e.preventDefault(); start(e); }
-    else if (e.key === "Escape" && view === "auth") show("title");
+    const go = b.dataset.go;
+    if (go === "login") { if (Account.session()) showServers(); else showAuth("login"); }
+    else { if (go === "set") syncSet(); show(go); }
   });
+  for (const b of $$(".t-home")) b.addEventListener("click", () => { Sound.play("ui"); show("title"); });
+  addEventListener("keydown", (e) => {
+    if (!intro.hidden || $("#title").hidden) return;
+    if (view === "title") {
+      // ↑↓ move the cursor (keyboard focus); Enter / Space press the focused item as any button does
+      const bs = $$("#t-menu button"), i = bs.indexOf(document.activeElement);
+      const d = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
+      if (d || (i < 0 && e.key === "Enter")) { e.preventDefault(); bs[i < 0 ? 0 : (i + d + bs.length) % bs.length].focus(); if (d) Sound.play("ui"); }
+    } else if (e.key === "Escape" && (view === "auth" || view === "set" || view === "cred")) show("title");
+  });
+  // the character phones wear the in-game phone's skin (phone.js buildSkin paints it on #phone first, and again on a HUD theme change)
+  const skin = () => { const ph = $("#phone"); if (ph) for (const v of ["--ph-bezel", "--ph-home", "--ph-spk", "--ph-cam", "--ph-wall"]) for (const b of [$("#t-servers"), $("#create")]) b.style.setProperty(v, ph.style.getPropertyValue(v)); };
+  skin();
+  addEventListener("hud-skin", skin);
   wireAuth();
   wireCreate();
   $("#sv-re").addEventListener("click", () => { Sound.play("ui"); refreshServers(); });
@@ -127,18 +135,36 @@ function playStudioIntro(video) {
 }
 
 /** Show one of the lobby's screens (or none: "game"). */
+const TITLE_VIEWS = ["title", "auth", "set", "cred", "servers"];
 function show(v, msg) {
   view = v;
-  const inTitle = v === "title" || v === "auth" || v === "servers";
+  const inTitle = TITLE_VIEWS.includes(v);
   $("#title").hidden = !inTitle;
   $("#create").hidden = v !== "create";
-  $("#t-press").hidden = v !== "title";
-  $("#t-credits").hidden = v !== "title";
+  $("#t-menu").hidden = v !== "title";
   $("#t-auth").hidden = v !== "auth";
+  $("#t-set").hidden = v !== "set";
+  $("#t-cred").hidden = v !== "cred";
   $("#t-servers").hidden = v !== "servers";
   document.body.dataset.lobby = inTitle ? v : v === "create" ? "create" : "";
   setMsg(msg || "");
   if (v === "create") requestAnimationFrame(sizeStage);
+  if (v === "title" && matchMedia("(pointer: fine)").matches) setTimeout(() => { if (view === "title") $("#t-menu button").focus(); }, 30);
+}
+/**
+ * The lobby's 설정: the same controls as the game's settings window, driven through them (input.js owns
+ * the CRT toggle and the sound buttons, audio.js the saved volumes), so both always show one saved value.
+ * Returns the function that copies the game's current values onto the lobby's controls.
+ */
+function wireLobbySettings() {
+  const toggles = [["#ls-sound", "#btn-sound"], ["#ls-crt", "#btn-crt"]], ranges = [["#ls-bgm", "#vol-bgm"], ["#ls-sfx", "#vol-sfx"]];
+  const sync = () => {
+    for (const [a, b] of toggles) { const on = !$(b).classList.contains("off"); $(a).textContent = $(b).textContent; $(a).classList.toggle("off", !on); $(a).setAttribute("aria-pressed", String(on)); }
+    for (const [a, b] of ranges) $(a).value = $(b).value;
+  };
+  for (const [a, b] of toggles) $(a).addEventListener("click", () => { Sound.unlock(); $(b).click(); sync(); });
+  for (const [a, b] of ranges) for (const ev of ["input", "change"]) $(a).addEventListener(ev, () => { $(b).value = $(a).value; $(b).dispatchEvent(new Event(ev)); });
+  return sync;
 }
 function setMsg(text, kind = "err") {
   const m = $("#title-msg");
@@ -555,7 +581,7 @@ function wireCreate() {
   $("#c-name").addEventListener("input", nameCheck);
   $("#c-name").addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.isComposing) { e.preventDefault(); $("#b-create").click(); } });
   $("#b-create").addEventListener("click", create);
-  $("#cr-back").addEventListener("click", () => { Sound.play("ui"); pending = null; C.disconnect(); showServers(); });
+  for (const id of ["#cr-back", "#cr-home"]) $(id).addEventListener("click", () => { Sound.play("ui"); pending = null; C.disconnect(); showServers(); });
   // preview controls
   for (const b of $$("#cr-modes button")) b.addEventListener("click", () => { pv.mode = b.dataset.m; pv.t0 = performance.now(); pv.atkT = -1e9; pv.next = 0; markModes(); Sound.play("ui"); });
   $("#cr-left").addEventListener("click", () => turn(1));
@@ -675,7 +701,7 @@ function pose(t) {
 
 /** One frame of whichever lobby screen is up. */
 export function frame(t, dt) {
-  if (view === "title" || view === "auth" || view === "servers") TS.render(t, dt);
+  if (TITLE_VIEWS.includes(view)) TS.render(t, dt);
   else if (view === "create") {
     const key = draft.wk + draft.look.join();
     if (key !== figKey) { figKey = key; fig = S3.figure(S3.playerLook("", draft.look.slice(), { wk: draft.wk })); }

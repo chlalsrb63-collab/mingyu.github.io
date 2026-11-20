@@ -150,7 +150,7 @@ try {
     }, [JSON.stringify(s), process.env.SHOT_HUD || ""]);
     console.log(`open ${BASE} as ${s.id}`);
     await pg.goto(BASE + String(opt.path || ""));
-    await pg.click("#t-press");
+    await pg.click("#t-menu [data-go=login]");
     await pg.waitForSelector("#sv-list .sv-ch:not([disabled])", { timeout: 15000 });
     await pg.click("#sv-list .sv-ch >> nth=0");
     await pg.waitForFunction(() => (window.__game && window.__game.G.playing) || !document.querySelector("#create").hidden, null, { timeout: 15000 });
