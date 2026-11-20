@@ -14,19 +14,19 @@ const ELEMENTS = {
 const WEAPON_ELEMENT = { staff: "lightning", book: "dark" };
 const WEAVE_ELEMENT = { f: "fire", i: "cold", l: "lightning" };
 const SKILL_ELEMENT_GROUPS = {
-  physical: ["slash", "rend", "spiral", "pierce", "leapshot", "verdict", "rain", "hammer_stamp", "hammer_fault", "hammer_final", "ironsiege", "crosscut", "cleave", "hook", "snipe", "whirl", "musou", "stomp", "dragonpierce", "rollshot", "shoulder", "parry", "mountain", "sword_weight40"],
+  physical: ["slash", "rend", "spiral", "pierce", "leapshot", "verdict", "rain", "hammer_stamp", "hammer_fault", "hammer_final", "ironsiege", "crosscut", "cleave", "hook", "snipe", "whirl", "musou", "stomp", "dragonpierce", "rollshot", "shoulder", "parry", "mountain", "sword_weight40", "galevolley"],
   bleed: ["ambush", "flurry", "bloodburst", "rupture", "bladevortex"],
   fire: ["comet", "mortar"],
   cold: ["inkshot", "dive"],
-  lightning: ["elemfan"],
-  poison: ["traps", "snare"],
-  dark: ["shade", "soulbolt", "gravity", "pact", "drain"],
-  light: ["oathward", "runecircle", "sanctuary"],
+  lightning: ["elemfan", "cataclysm"],
+  poison: ["traps", "snare", "venomrain"],
+  dark: ["shade", "soulbolt", "gravity", "pact", "drain", "shadowexec", "mirageburst", "soulharvest"],
+  light: ["oathward", "runecircle", "sanctuary", "aetherblade"],
 };
 const SKILL_ELEMENTS = Object.fromEntries(Object.entries(SKILL_ELEMENT_GROUPS).flatMap(([type, ids]) => ids.map((id) => [id, type])));
 const SKILL_WITHOUT_DAMAGE = new Set(["rally_banner", "revive_binding", "smoke"]);
 for (const [id, sk] of Object.entries(SKILL)) {
-  sk.damageType = WEAVE_ELEMENT[sk.el] || SKILL_ELEMENTS[id] || (sk.kind === "p" || SKILL_WITHOUT_DAMAGE.has(id) ? null : WEAPON_ELEMENT[sk.wk] || "physical");
+  sk.damageType = SKILL_ELEMENTS[id] || WEAVE_ELEMENT[sk.el] || (sk.kind === "p" || SKILL_WITHOUT_DAMAGE.has(id) ? null : WEAPON_ELEMENT[sk.wk] || "physical");
 }
 
 /** Skill objects and ids use the same table, including delayed spell hits. */

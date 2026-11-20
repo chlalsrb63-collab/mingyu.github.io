@@ -91,7 +91,17 @@ const ELEM = { f: "불", i: "얼음", l: "번개" };
 /** What two elements make together (either order). */
 const REACT = {
   fi: { id: "steam", name: "증기 폭발", r: 62, mult: 1.3 },
-  il: { id: "super", name: "초전도", r: 56, mult: 0.6, vuln: 6000 },
+  il: { id: "super", name: "초전도", r: 56, mult: 0.7, vuln: 6000 },
   fl: { id: "over", name: "과부하", r: 50, mult: 1.1, knock: 26 },
 };
+/** Cross-elemental ailment reactions for the 8-element combat system (codes 4–9 on the "rx" wire event). */
+const ELEMENT_REACTIONS = [
+  { code: 4, id: "purify", name: "정화 작열", a: "light", b: "fire", ailsA: ["blind"], ailsB: ["burn"], elem: "light", r: 48, mult: 0.50, shatter: 3000, ward: 0.03, wardMs: 2400 },
+  { code: 5, id: "blightfrost", name: "동상 부식", a: "poison", b: "cold", ailsA: ["poison"], ailsB: ["chill", "freeze"], elem: "poison", r: 46, mult: 0.45, vuln: 4000, chillAdd: 1 },
+  { code: 6, id: "voidrift", name: "공허 파열", a: "dark", b: "lightning", ailsA: ["curse"], ailsB: ["shock"], elem: "dark", r: 50, mult: 0.52, pull: 12 },
+  { code: 7, id: "eclipse", name: "일식 붕괴", a: "dark", b: "light", ailsA: ["curse"], ailsB: ["blind"], elem: "light", r: 48, mult: 0.55, heal: 0.025 },
+  { code: 8, id: "venombleed", name: "부패 출혈", a: "poison", b: "bleed", ailsA: ["poison"], ailsB: ["bleed"], elem: "bleed", r: 44, mult: 0.44, extendMs: 1500 },
+  { code: 9, id: "cauterize", name: "혈염 소각", a: "fire", b: "bleed", ailsA: ["burn"], ailsB: ["bleed"], elem: "fire", r: 46, mult: 0.48 },
+];
+const ELEMENT_RX_CD = 6000;
 const pairKey = (a, b) => [a, b].sort().join("");

@@ -40,6 +40,9 @@ export const CAST = {
   133: [{ fx: "melee/hammer-smash", at: "tgt", up: 6, pal: "ember", speed: 1.9, cut: 0.75 }, { fx: "impacts/ground-slam", at: "tgt", pal: "ember", speed: 1.8, cut: 0.58, alpha: 0.7, delay: 120 }],
   134: [{ fx: "holy/smite", at: "tgt", up: 6, pal: "gold", speed: 1.7, cut: 0.9 }, { fx: "holy/heal-aoe", up: 4, pal: "holy", speed: 1.5, cut: 1.6, delay: 120 }],
   148: [{ fx: "spawn/poof", on: "wind", pal: "dust", cut: 0.45, alpha: 0.45 }, { fx: "nature/quake", up: 0, pal: "dust", speed: 1.8, cut: 0.65, alpha: 0.68 }],
+  // ── JOB-01 melee Lv.30 signatures (스펠블레이드 / 도적)
+  160: [{ fx: "holy/holy-pillar", at: "tgt", up: 2, pal: "gold", speed: 1.8, cut: 1.2 }, { fx: "fire/flame-pillar", at: "tgt", up: 2, pal: "fire", speed: 1.9, cut: 0.9, alpha: 0.82, delay: 70 }, { fx: "impacts/ground-slam", at: "tgt", pal: "gold", speed: 1.8, cut: 0.7, delay: 90 }],
+  161: [{ fx: "spawn/poof", pal: "shadow", cut: 0.5, speed: 1.8, alpha: 0.58 }, { fx: "melee/double-slash", aim: true, at: "tgt", up: 8, pal: "shadow", speed: 2.1, cut: 0.85 }, { fx: "impacts/crit-hit", at: "tgt", up: 10, pal: "blood", delay: 110 }],
   // ── passive marks on the cast channel & dagger vortex scatter
   110: [{ fx: "holy/sunburst", up: 16, pal: "gold", cut: 0.5, speed: 1.8, alpha: 0.55, opts: { size: 0.5 } }],
   111: [{ fx: "impacts/hit-spark", at: "tgt", up: 8, pal: "blood", speed: 1.8, cut: 0.2 }],

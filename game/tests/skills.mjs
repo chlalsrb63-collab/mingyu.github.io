@@ -69,7 +69,7 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
 
 // ═════════ the tables
 {
-  assert.equal(D.skillOrder.length, 89, "54 actives (incl. the job Lv.30 spins and the 11 of the first new wave) and 35 mastery passives");
+  assert.equal(D.skillOrder.length, 96, "61 actives (incl. all 14 job Lv.30 signatures and the 11 of the first new wave) and 35 mastery passives");
   assert.deepEqual(Object.keys(SK), D.skillOrder);
   for (const wk of D.wkOrder) {
     const perks = Object.values(SK).filter((sk) => sk.wk === wk && sk.kind === "p");
@@ -80,11 +80,15 @@ const run = (W, n = 40, ms = 100) => { const vs = []; for (let i = 0; i < n; i++
     const s = SK[id];
     assert.equal(s.id, id);
     assert.ok(s.name && s.desc && s.desc.length > 20, id + " is named and described in Korean");
-    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 136) || (s.fx >= 140 && s.fx <= 159)), id + " costs, waits and has an fx code");
+    if (s.kind !== "p") assert.ok(s.mp > 0 && s.cd >= 3500 && ((s.fx >= 70 && s.fx <= 102) || (s.fx >= 120 && s.fx <= 128) || (s.fx >= 130 && s.fx <= 136) || (s.fx >= 140 && s.fx <= 166)), id + " costs, waits and has an fx code");
     if (s.kind === "j") { assert.equal(D.jobs[s.job].kind, "single"); assert.equal(D.jobs[s.job].wk[0], s.wk); assert.equal(s.need, D.jobWm); }
     if (s.kind === "h") { assert.equal(D.jobs[s.job].kind, "hybrid"); assert.equal(s.need, D.hybWm, id + " grows from mastery 15"); }
   }
-  for (const j of Object.keys(D.jobs)) if (D.jobs[j].kind !== "none") assert.equal(D.skillOrder.filter((id) => SK[id].job === j && !SK[id].jl).length, 1, j + " has one signature");
+  for (const j of Object.keys(D.jobs)) if (D.jobs[j].kind !== "none") {
+    assert.equal(D.skillOrder.filter((id) => SK[id].job === j && !SK[id].jl).length, 1, j + " has one Lv.5 signature");
+    assert.equal(D.skillOrder.filter((id) => SK[id].job === j && SK[id].jl === 30).length, 1, j + " has one Lv.30 signature");
+    assert.ok(D.jobTraits[j] && D.jobTraits[j].max >= 4, j + " has a job identity trait gauge");
+  }
   const codes = D.skillOrder.filter((id) => SK[id].kind !== "p").map((id) => SK[id].fx);
   assert.equal(new Set(codes).size, codes.length, "one fx code each");
 }
@@ -478,5 +482,36 @@ for (const [id, hand] of CASTS) {
     assert.equal(use, SK[id].wk === "staff" ? 1 : 0, id + " usable only with the staff in hand");
   }
   assert.ok(!("legacyCls" in D) && D.mech && !("grit" in D.mech), "no class kit left in defs");
+  assert.deepEqual(s.jt, { job: "wizard", id: "arcanum", v: 0, max: 5 }, "job identity gauge on self payload");
 }
-console.log(`skills ok — ${D.skillOrder.length} skills, ${Object.keys(HYB).length} hybrids, the bar and the wire`);
+
+// ═════════ JOB-03: job identity gauges charge, boost, spend on cast, and decay
+{
+  // Barbarian: hits build rage (up to 5), boosting combat damage and spending on skill cast
+  const W = world("분노시험", { wk: "sword", wm: { sword: 30 }, job: "swordsman", lvl: 80 });
+  const p = W.p, m = W.mobs([[18, 0]])[0];
+  for (let i = 0; i < 5; i++) {
+    p.atkAt = 0; m.x = p.x + 18; m.y = p.y;
+    assert.ok(W.act({ t: "atk", a: 0 }).ok);
+    W.step(50);
+  }
+  const fullSnap = W.step(50);
+  assert.equal(fullSnap.jt, 5, "swordsman rage fills to 5 stacks");
+  assert.ok(W.act({ t: "sk", id: "slash", a: 0 }).ok);
+  const afterSpend = W.step(50);
+  assert.equal(afterSpend.jt, 0, "maxed rage is spent by the next skill cast");
+
+  // Wizard: casting skills charges arcanum up to 5; maxed cast restores 25% max MP
+  const Wz = world("비전시험", { wk: "staff", wm: { staff: 30 }, job: "wizard", lvl: 80 });
+  Wz.mobs([[45, 0]]);
+  Wz.p.jt = 5; Wz.p.jtAt = Wz.S.now;
+  Wz.p.mp = 50;
+  assert.ok(Wz.act({ t: "sk", id: "fireball", a: 0 }).ok);
+  assert.ok(Wz.p.mp > 50, "maxed wizard arcanum restores MP on cast");
+  assert.equal(Wz.step(50).jt, 0);
+
+  // Decay after out-of-combat window
+  Wz.p.jt = 3; Wz.p.jtAt = Wz.S.now;
+  assert.equal(Wz.step(D.jobTraits.wizard.ms + 500).jt, 0, "job trait stacks decay out of combat");
+}
+console.log(`skills ok — ${D.skillOrder.length} skills, ${Object.keys(HYB).length} hybrids, 14 job traits, the bar and the wire`);

@@ -15,13 +15,13 @@ const ELEMENT_STATUS = [
 
 const ELEMENT_RULE = {
   physical: { chance: 1, duration: 2800 },
-  bleed: { chance: 0.36, duration: 4200, dot: 0.21, cap: 5 },
-  fire: { chance: 0.40, duration: 3400, dot: 0.32 },
+  bleed: { chance: 0.42, duration: 4200, dot: 0.24, cap: 5 },
+  fire: { chance: 0.42, duration: 3600, dot: 0.34 },
   cold: { chance: 1, duration: 2600 },
-  lightning: { chance: 1, duration: 2300 },
-  poison: { chance: 1, duration: 6300, dot: 0.12 },
-  dark: { chance: 0.34, duration: 3800 },
-  light: { chance: 0.34, duration: 2400 },
+  lightning: { chance: 1, duration: 2400 },
+  poison: { chance: 1, duration: 6300, dot: 0.14 },
+  dark: { chance: 0.38, duration: 4000 },
+  light: { chance: 0.42, duration: 2800 },
 };
 const ELEMENT_DOTS = [["bleed", "bleed"], ["burn", "fire"], ["poison", "poison"]];
 const NO_ELEMENT_ROWS = Object.freeze([]);
@@ -43,7 +43,7 @@ function elementResist(S, target, type, penetration = 0) {
   const res = elementMob(target) ? monsterElement(target.k).res : elementGear(target)?.res;
   let n = res?.[type] || 0;
   if (n > 0) n = Math.max(0, n - Math.max(0, penetration));
-  if (elementActive(S, target, "curse")) n -= 14;
+  if (elementActive(S, target, "curse")) n -= 15;
   return 1 - clamp(n, -65, 90) / 100;
 }
 
@@ -81,7 +81,7 @@ function elementDamage(S, source, target, raw, armor, options = {}) {
 }
 
 const elementTaken = (S, target) => elementActive(S, target, "shock") ? 1.10 : 1;
-const elementOutgoing = (S, source) => (elementActive(S, source, "poison") || source?.poison?.until > S.now) ? 0.92 : 1;
+const elementOutgoing = (S, source) => (elementActive(S, source, "poison") || source?.poison?.until > S.now) ? 0.90 : 1;
 const elementHealFactor = (S, target) => (elementActive(S, target, "burn") || target?.burn?.until > S.now) ? 0.63 : 1;
 const elementFrozen = (S, target) => elementActive(S, target, "freeze") || elementActive(S, target, "stagger");
 const elementChill = (S, target) => elementActive(S, target, "chill") ? target.ail.chill.stacks : 0;
@@ -272,8 +272,53 @@ function elementInflict(S, rt, source, target, type, damage, options = {}) {
   return true;
 }
 
+/** Trigger one of the 6 cross-elemental reactions when an incoming player hit collides with an existing ailment on a monster. */
+function elementCrossReact(S, rt, source, target, parts, preAil) {
+  if (!source?.ch || !elementMob(target) || target.dead || MOBS[target.k]?.chest || (target.elRxAt || 0) > S.now || !preAil.size) return null;
+  const incoming = new Set();
+  for (const [type, amount] of parts) if (amount > 0 && type !== "physical") incoming.add(type);
+  if (!incoming.size) return null;
+  const rx = ELEMENT_REACTIONS.find((r) =>
+    (incoming.has(r.a) && r.ailsB.some((id) => preAil.has(id))) ||
+    (incoming.has(r.b) && r.ailsA.some((id) => preAil.has(id))));
+  if (!rx) return null;
+  target.elRxAt = S.now + ELEMENT_RX_CD;
+  const x = target.x, y = target.y, now = S.now, m = mapOfS(S, source.map);
+  rt.ev.push(["rx", rx.code, Math.round(x), Math.round(y), rx.r]);
+  const st = stats(source), amp = (1 + st.burst) * (pasHas(source, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1);
+  for (const o of mobsWithin(rt, x, y, rx.r)) {
+    if (rx.shatter) elementTimed(S, o, "shatter", rx.shatter);
+    if (rx.vuln) { o.vuln = Math.max(o.vuln || 0, now + rx.vuln); rt.ev.push(["vu", o.id, rx.vuln]); }
+    if (rx.chillAdd) elementCold(S, o, ELEMENT_RULE.cold.duration, 1, false);
+    if (rx.pull && o !== target) tug(m, o, x, y, rx.pull);
+    if (rx.extendMs && o.ail) {
+      for (const dotId of ["bleed", "poison"]) {
+        const dot = o.ail[dotId];
+        if (!dot || dot.until <= now) continue;
+        dot.until += rx.extendMs;
+        if (dot.sources) for (const byEnd of dot.sources.values()) {
+          const moved = [];
+          for (const [end, bucket] of byEnd) moved.push([end + rx.extendMs, bucket]);
+          byEnd.clear();
+          for (const [end, bucket] of moved) byEnd.set(end, bucket);
+        }
+      }
+    }
+    hurtMob(S, rt, o, source, rx.mult * amp, false, { mag: 1, elem: rx.elem, secondaryType: null, px: 1, noRx: true });
+  }
+  if (rx.ward) {
+    for (const q of allies(S, source)) if (!q.dead && dist(q.x, q.y, x, y) <= rx.r + 36) elementWard(S, q, stats(q).mhp * rx.ward, rx.wardMs);
+  }
+  if (rx.heal && !source.dead) elementRestore(S, rt, source, stats(source).mhp * rx.heal);
+  if (source.ch.job === "wizard" || source.ch.job === "runearcher") jobTraitGain(S, rt, source, 1, false);
+  return rx;
+}
+
 function elementApplyHit(S, rt, source, target, parts, options = {}) {
   if (!target || MOBS[target.k]?.chest || (options.proc === false && !options.forceAilment)) return;
+  const preAil = !options.noRx && source?.ch && elementMob(target)
+    ? new Set(ELEMENT_STATUS.map((s) => s.id).filter((id) => elementActive(S, target, id) || (id === "burn" && target.brnAt > S.now) || (id === "bleed" && target.dot?.until > S.now)))
+    : null;
   const gear = elementGear(source, options.element);
   // Multiple enemies often attack together. Their elemental precision is lower than a player's.
   const precision = elementMob(source) ? (source.el || MOBS[source.k]?.boss ? 0.65 : 0.40) : 1;
@@ -288,6 +333,7 @@ function elementApplyHit(S, rt, source, target, parts, options = {}) {
     const chance = forced ? 1 : (ELEMENT_RULE[type].chance + (gear?.proc?.[type] || 0) / 100) * precision;
     elementInflict(S, rt, source, target, type, damage, { chance, crit: options.crit, element: gear });
   }
+  if (preAil && preAil.size) elementCrossReact(S, rt, source, target, parts, preAil);
 }
 
 function elementDotHit(S, rt, target, type, pid, amount) {

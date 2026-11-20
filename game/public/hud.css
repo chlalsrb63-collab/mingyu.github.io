@@ -204,6 +204,20 @@ body.chat-folded #chat-fold::before { content: "▴"; }
 #cg-box { position: fixed; left: calc(var(--vpw) / 2); top: calc(var(--vph) - 130px); transform: translateX(-50%); z-index: 7; pointer-events: none; background: rgba(18, 15, 24, .82); line-height: 0; border-width: 2px; border-image-width: 2px; }
 #cg-box[hidden] { display: none; }
 #cgauge { width: 240px; height: 40px; image-rendering: pixelated; display: block; }
+/* job identity trait gauge in unit frame (JOB-03) */
+.jt-bar { display: flex; align-items: center; gap: 4px; margin-top: 2px; padding: 1px 4px; background: rgba(16, 13, 24, .75); border: 1px solid #3c344a; font: var(--t10)/12px var(--pix9); cursor: default; }
+.jt-bar[hidden] { display: none; }
+.jt-bar b { color: var(--jt-c, #ffd468); font-weight: normal; white-space: nowrap; text-shadow: 1px 1px 0 #000; }
+.jt-bar #jt-pips { display: flex; gap: 2px; flex: 1; align-items: center; }
+.jt-bar #jt-pips i { flex: 1; height: 6px; background: #262130; border: 1px solid #120e18; box-shadow: inset 0 1px 0 rgba(255,255,255,.06); }
+.jt-bar #jt-pips i.on { background: var(--jt-c, #ffd468); box-shadow: inset 0 1px 0 var(--jt-c2, #fff); }
+.jt-bar.max { border-color: var(--jt-c, #ffd468); box-shadow: 0 0 6px var(--jt-c, #ffd468); }
+.jt-bar.max #jt-pips i.on { background: var(--jt-c2, #fff); }
+.jt-bar em { font-style: normal; color: #ddd6c8; min-width: 20px; text-align: right; }
+.jt-trait { margin: 5px 0; padding: 5px 7px; background: rgba(20, 16, 28, .65); border: 1px solid rgba(255,255,255,.12); border-left: 3px solid var(--jt-c, #ffd468); }
+.jt-trait b { color: var(--jt-c, #ffd468); font-size: 11px; }
+.jt-trait span { display: inline-block; margin-left: 5px; padding: 0 4px; font-size: 9px; background: rgba(255,255,255,.08); color: #efe7d6; }
+.jt-trait p { margin: 3px 0 0; font-size: 10px; line-height: 1.45; color: #d8d0c0; }
 #st-buffs { flex: 1 1 60px; display: flex; flex-wrap: wrap; gap: 2px; min-width: 0; max-height: 38px; overflow: hidden; }
 #st-buffs:empty { display: none; }
 #st-buffs span { display: inline-flex; align-items: center; gap: 2px; padding: 0 3px; height: 18px; font: var(--t10) var(--pix9); color: var(--tx-hd, var(--b-hi)); background: var(--scr-a, var(--scr)); border: 2px solid var(--ink); }

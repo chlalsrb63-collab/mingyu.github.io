@@ -38,6 +38,12 @@ export const CAST = {
   115: [{ fx: "holy/sunburst", up: 22, ms: 700, pal: "gold", opts: { size: 0.5 } }],
   // ── 마창사 빙결창
   125: [{ fx: "ice/ice-lance", to: "tgt", aim: true, up: [10, 8], pal: "ice", speed: 1.8 }, { fx: "ice/ice-spikes", at: "tgt", up: 2, pal: "ice", speed: 1.9, cut: 0.85, alpha: 0.76, delay: "flight" }],
+  // ── JOB-01 caster/ranged Lv.30 signatures (마법사 / 트릭스터 / 마도사 / 헌터 / 추적자)
+  162: [{ fx: "arcane/rune-circle", at: "tgt", up: 2, pal: "volt", ms: 900, speed: 1.6, alpha: 0.78 }, { fx: "fire/flame-pillar", at: "tgt", up: 4, pal: "fire", speed: 1.9, cut: 0.85 }, { fx: "lightning/lightning-strike", at: "tgt", pal: "volt", speed: 1.8, cut: 0.9, delay: 140 }],
+  163: [{ fx: "arcane/mana-burst", up: 10, pal: "arcane", cut: 0.85 }, { fx: "lightning/spark-arc", up: 12, pal: "volt", speed: 1.9, cut: 0.75, delay: 70 }],
+  164: [{ fx: "melee/scythe-reap", up: 8, pal: "shadow", speed: 1.9, cut: 0.95 }, { fx: "shadow/dark-explosion", up: 4, pal: "poison", speed: 1.7, cut: 0.8, alpha: 0.76, delay: 110 }],
+  165: [{ fx: "holy/sunburst", up: 14, pal: "gold", cut: 0.55, speed: 1.9, alpha: 0.55 }, { fx: "projectiles/arrow", to: "tgt", aim: true, up: [10, 8], pal: "ice", speed: 2.1 }],
+  166: [{ fx: "nature/poison-cloud", at: "tgt", up: 4, pal: "poison", speed: 1.6, cut: 1.2, alpha: 0.75 }, { fx: "nature/thorns", at: "tgt", pal: "blood", speed: 1.8, delay: 90 }],
 };
 
 export const PROC = {

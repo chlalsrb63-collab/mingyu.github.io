@@ -538,6 +538,52 @@ const ICON = {
     ["*", C(14, 15, 1), C(18.5, 17, 0.8)],
     ...sword(15.5, 17, 15.5, 3, 3.6, 4),
   ],
+  // ── JOB-01: remaining 7 Lv.30 job signatures
+  aetherblade: [ // 성광 마검: 유성낙하 — a blazing greatsword plunging from a starburst into a radiant impact ring
+    ["A", rays(15.5, 8, 2, 10, [-155, -120, -60, -25, 25, 155], 1.4)],
+    ["a", E(15.5, 25, 10.5, 3)], ["W", E(15.5, 25, 6, 1.5)],
+    ...sword(15.5, 5, 15.5, 25, 3.8, 4.2, 5.2),
+    ["*", star(15.5, 12, 4.2, 0.28)],
+  ],
+  shadowexec: [ // 칠흑의 사형선고 — twin shadow daggers crossing over a crimson execution seal
+    ["d", ring(15.5, 15.5, 10, 2.2)], ["A", L(7, 24, 24, 7, 1.8), L(7, 7, 24, 24, 1.8)],
+    ...dagger(6, 25, 23, 8),
+    ...dagger(25, 25, 8, 8),
+    ["*", star(15.5, 15.5, 3.6, 0.25)],
+  ],
+  cataclysm: [ // 삼원소 대격변 — tri-elemental arcane vortex (fire, frost, lightning) converging on a magic circle
+    ["M", ring(15.5, 15.5, 10.5, 1.6)],
+    ...flame(15.5, 8.5, 3.2, -90),
+    ["l", star(9, 20.5, 4.2, 0.35)],
+    ["a", poly(2, 23, 15, 19.5, 20.5, 23.5, 20.5, 20, 26)],
+    ["*", C(15.5, 15.5, 2.6)], ["W", rays(15.5, 15.5, 3, 7, [-90, 30, 150], 1.2)],
+  ],
+  mirageburst: [ // 환영 만화경 — six-way prism shards radiating from a mirror diamond
+    ["A", rays(15.5, 15.5, 4, 12, sixAngles, 1.6)],
+    ["m", diamond(15.5, 15.5, 7)], ["l", diamond(15.5, 15.5, 4.5)],
+    ["a", ...sixAngles.map((a) => C(15.5 + cos(a) * 10.5, 15.5 + sin(a) * 10.5, 1.8))],
+    ["*", star(15.5, 15.5, 3, 0.28)],
+  ],
+  soulharvest: [ // 금서 해방: 영혼 수확 — an open grimoire unleashing a sweeping spectral scythe arc
+    ["A", A(16, 15, 10.5, 165, 350, 1.4, 4.2)], ["L", A(16, 15, 10.5, 200, 340, 0.8, 2.2)],
+    ...book(15.5, 19, 8.5, 5),
+    ["a", drop(10.5, 11, 2.2, -90), drop(20.5, 10, 2.2, -90)],
+    ["*", star(15.5, 13, 3.5, 0.28)],
+  ],
+  galevolley: [ // 질풍 연사: 천궁의 화살 — three piercing wind-feathered arrows streaking through a gale ring
+    ["L", A(13, 18, 9, 130, 320, 1.2, 2.6)],
+    ...arrow(5, 21, 23, 5, 3.2, 1.3),
+    ...arrow(5, 27, 27, 9, 3.5, 1.5),
+    ...arrow(10, 27, 27, 15, 3.2, 1.3),
+    ["*", star(25, 10, 2.8, 0.25)],
+  ],
+  venomrain: [ // 맹독 혈우: 사냥감 낙인 — three downward poisoned arrows plunging into a toxic crimson ring
+    ["a", E(15.5, 25.5, 10, 3)], ["m", E(15.5, 25.5, 6.2, 1.8)],
+    ...arrow(8.5, 5, 10, 21, 3.0, 1.3),
+    ...arrow(15.5, 4, 15.5, 22, 3.4, 1.5),
+    ...arrow(22.5, 5, 21, 21, 3.0, 1.3),
+    ["*", C(10, 24.5, 1.1), C(15.5, 25.5, 1.3), C(21, 24.5, 1.1)],
+  ],
 };
 
 // a few mastery passives have no prefix in the id but are passives all the same

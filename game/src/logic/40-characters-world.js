@@ -432,6 +432,7 @@ function stats(p) {
   out.spd *= p.slowed > now ? Math.min(1, cold / SLOW) : cold;
   // the powers that change the moment's numbers (51-prefix.js); `pspd` = what they did to the walk, for the client's own steps (wire `pspd`)
   if (c.pfx.stat.length) { const spd = out.spd; pfxStat(p, out); if (spd > 0 && out.spd !== spd) out.pspd = out.spd / spd; }
+  jobTraitStat(p, out);
   return out;
 }
 

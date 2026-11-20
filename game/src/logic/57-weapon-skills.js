@@ -205,8 +205,9 @@ function react(S, rt, p, key, x, y, k) {
     if (rx.vuln) { o.vuln = now + rx.vuln; rt.ev.push(["vu", o.id, rx.vuln]); }
     if (rx.knock) { const d = dist(x, y, o.x, o.y) || 1; knock(m, o, (o.x - x) / d, (o.y - y) / d, rx.knock); }
     const elem = rx.id === "steam" ? "fire" : rx.id === "super" ? "cold" : "lightning";
-    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst) * (pasHas(p, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1), false, { mag: 1, elem });
+    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst) * (pasHas(p, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1), false, { mag: 1, elem, noRx: true });
   }
+  if (p?.ch && (p.ch.job === "wizard" || p.ch.job === "runearcher")) jobTraitGain(S, rt, p, 1, false);
   return rx;
 }
 /** A spell of element `e` landing at (x, y): if another element is still held the two react there; else `e` is held next. */
@@ -251,6 +252,7 @@ function healP(rt, p, n, cue) {
 /** A healed ally's next nearby kill can share job XP with the caster. */
 function healSupport(rt, healer, ally, amount, cue, creditMs) {
   const restored = healP(rt, ally, amount, cue);
+  if (restored && healer.ch.job === "paladin") jobTraitGain(healer.S, rt, healer, 1, true);
   if (restored && ally !== healer && healer.party && healer.party === ally.party) {
     const now = healer.S.now;
     let support = healer.healCredit;
@@ -501,6 +503,52 @@ function propPulse(S, rt, m, p, o, now) {
       if (low && got > 0) healP(rt, low, got * (low.hp < stats(low).mhp * o.sk.mendBelow ? o.sk.mend : 0.5), HIT_CUE.sanctuary);
       return false;
     }
+    case "aether": {
+      rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) hit(mob, o.mult, { elem: "fire", secondaryType: "light" });
+      return false;
+    }
+    case "cataclysm": {
+      const step = o.step++;
+      const last = step >= o.n;
+      rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y), step]);
+      const list = mobsWithin(rt, o.x, o.y, o.r);
+      if (step === 1) {
+        for (const mob of list) { mob.slow = Math.max(mob.slow || 0, now + 2200); hit(mob, o.mult, { elem: "cold", secondaryType: null }); }
+        weave(S, rt, p, "i", o.x, o.y, o.k);
+      } else if (step === 2) {
+        for (const mob of list) hit(mob, o.mult, { elem: "lightning", secondaryType: null });
+        weave(S, rt, p, "l", o.x, o.y, o.k);
+      } else {
+        rt.ev.push(["bw", Math.round(o.x), Math.round(o.y), o.r, 9]);
+        for (const mob of list) hit(mob, o.fin, { elem: "lightning", secondaryType: "fire" });
+        weave(S, rt, p, "f", o.x, o.y, o.k);
+      }
+      return last;
+    }
+    case "gale": {
+      if (p.chan !== o.id) return true;
+      const [ux, uy] = AIM_V[p.aim | 0], last = --o.left <= 0;
+      const hawk = pasOn(p, "hawk") ? 1 + SKILL.hawk.k : 1;
+      const cnt = last ? 5 : 3, a0 = Math.atan2(uy, ux), spread = o.sk.spread;
+      const mult = (last ? o.fin : o.mult) * hawk;
+      rt.ev.push(["a", p.eid, o.sk.fx, Math.round(p.x + ux * 80), Math.round(p.y + uy * 80 - 6), p.dir, 2, last ? 2 : 1]);
+      for (let j = 0; j < cnt; j++) {
+        const a = a0 + ((j - (cnt - 1) / 2) * spread * Math.PI) / 180;
+        fireArrow(S, rt, p, null, mult, 99, last ? 5 : 3, { len: o.sk.len, ux: Math.cos(a), uy: Math.sin(a), opt: last ? { ...opt, forceAilment: "cold" } : opt });
+      }
+      if (last) p.chan = 0;
+      return last;
+    }
+    case "venomrain": {
+      rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) {
+        mob.slow = Math.max(mob.slow || 0, now + 1400);
+        hit(mob, o.mult, { crit: o.sk.crit });
+        addMarks(S, mob, 1);
+      }
+      return false;
+    }
   }
   return true;
 }
@@ -574,7 +622,7 @@ function weaponTick(S, p, now) {
 /** Whatever a hand had going that does not survive a fall or a change of map. */
 function weaponReset(p, death) {
   p.dance = null; p.hide = 0; p.inert = 0; p.weave = null; p.charge = null; p.chan = 0; p.hold = null; p.parry = null;
-  p.hammer = null; p.hammerCracks = null;
+  p.hammer = null; p.hammerCracks = null; p.jt = 0; p.jtAt = 0; p.jtCast = null;
   if (death) { p.reso = 0; p.sanctAt = 0; }
 }
 /** The bits other players see: 4 untouchable in the air, 16 dancing, 32 resonance full, 64 hidden, 128 focused, 256 holding a charge (its tier × 512). */
@@ -665,6 +713,9 @@ function castSkill(S, p, id) {
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1, 1]); } }
   // WIS shortens every wait; a prefix power (메아리의) may give it straight back
   p.cds[id] = now + skCooldown(p, sk);
+  const jt = jobTraitSpend(S, rt, p, st, sk, id, cost);
+  if (jt?.mult) k *= jt.mult;
+  p.jtCast = jt;
   pfxSkill(S, rt, p, st, sk, id, cost);
   p.atkAt = now;
   p.swordBeat = null;
@@ -692,9 +743,11 @@ function castSkill(S, p, id) {
 function skStrike(S, p, id, k, cost, tgt) {
   const sk = SKILL[id], st = stats(p), rt = S.maps[p.map], m = mapOfS(p.S, p.map), now = S.now;
   const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
-  const opt = { mag: sk.mag, sk };
+  const jt = p.jtCast || null;
+  p.jtCast = null;
+  const opt = { mag: sk.mag, sk, ...(jt?.armorPenPct ? { armorPenPct: jt.armorPenPct } : {}), ...(jt?.forceAilment ? { forceAilment: jt.forceAilment } : {}) };
   // a consumer (sk.eat) spends the combo states on its first hit of each monster
-  const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult * k * comboK(S, rt, mob, sk.eat), !!(more && more.sure), more ? { ...opt, ...more } : opt);
+  const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult * k * comboK(S, rt, mob, sk.eat), !!(jt?.sure || (more && more.sure)), more ? { ...opt, ...more } : opt);
   const [aimX, aimY] = AIM_V[p.aim | 0];
   const ahead = (n) => [p.x + aimX * n, p.y + aimY * n];
   const prop = (o) => addProp(S, rt, p, { sk, mag: sk.mag, k, ...o });
@@ -1278,6 +1331,142 @@ function skStrike(S, p, id, k, cost, tgt) {
         const a = a0 + ((j - (sk.n - 1) / 2) * ((2 * sk.spread) / (sk.n - 1)) * Math.PI) / 180;
         fireArrow(S, rt, p, null, sk.mult * k, 99, 7, { len: sk.len, r: sk.r, ux: Math.cos(a), uy: Math.sin(a), cap, opt, brandK: sk.brandK });
       }
+      break;
+    }
+
+    // ── remaining seven job Lv.30 secondary signatures (JOB-01, fx 160–166)
+    case "aetherblade": {
+      // 스펠블레이드 Lv.30: 성광·화염 유성낙하 + 관성 소모 + 잔광 장판
+      const [tx, ty] = aimPoint(rt, m, p, sk.at), d = dist(p.x, p.y, tx, ty) || 1;
+      const ux = (tx - p.x) / d, uy = (ty - p.y) / d;
+      let far = Math.min(d, reach(m, p.x, p.y, ux, uy, sk.at));
+      while (far > 0 && !canStand(m, p.x + ux * far, p.y + uy * far)) far -= 3;
+      const ox = p.x, oy = p.y;
+      p.x += ux * Math.max(0, far); p.y += uy * Math.max(0, far);
+      if (far > 0) runeMoveSkill(S, p);
+      p.fix = true; p.mvAt = now;
+      const inert = pasOn(p, "inertia") ? inertOf(p) : 0;
+      if (inert) { p.inert = 0; ev(110, p.x, p.y - 6); }
+      rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(sk.fx, p.x, p.y - 6, sk.r);
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 2]);
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        hit(o, sk.mult * (1 + sk.inert * inert), { forceAilment: "light" });
+        addBrn(S, o);
+      }
+      weave(S, rt, p, "f", p.x, p.y, k);
+      prop({ kind: "aether", wire: 1, x: p.x, y: p.y, r: sk.field, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.pulse * k });
+      break;
+    }
+    case "shadowexec": {
+      // 도적 Lv.30: 칠흑의 사형선고 — 등 뒤 순간이동 + 표식 폭발 + 처치 시 쿨타임 반환 및 은신
+      const mob = aimMob(rt, p, sk.len, AIM_CONE) || mobsWithin(rt, p.x, p.y, sk.len).sort((a, b) => marksOf(S, b) - marksOf(S, a) || dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y))[0];
+      const ox = p.x, oy = p.y;
+      if (!mob) {
+        const far = stepTo(m, ox, oy, aimX, aimY, Math.round(sk.len * 0.45));
+        p.x += aimX * far; p.y += aimY * far; p.fix = true; p.mvAt = now;
+        if (far > 0) runeMoveSkill(S, p);
+        rt.ev.push(["ln", 6, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+        ev(sk.fx, p.x, p.y - 6, 0);
+        for (const o of mobsWithin(rt, p.x, p.y, sk.r)) hit(o, sk.mult * 0.7, { crit: sk.crit });
+        break;
+      }
+      const sure = mob.tgt !== p.pid, [ux, uy] = aimVec(p, mob);
+      for (const d of [16, 8, 0, -16]) { const nx = mob.x + ux * d, ny = mob.y + uy * d; if (canStand(m, nx, ny)) { p.x = nx; p.y = ny; break; } }
+      if (p.x !== ox || p.y !== oy) runeMoveSkill(S, p);
+      p.fix = true; p.mvAt = now;
+      p.aim = aimIdx(mob.x - p.x, mob.y - p.y);
+      face(p, mob);
+      const n = marksOf(S, mob);
+      mob.mk = 0;
+      rt.ev.push(["ln", 6, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(sk.fx, mob.x, mob.y - 6, n);
+      hit(mob, sk.mult * (1 + sk.per * n), { ...(sure ? { sure: true } : { crit: sk.crit }), forceAilment: "dark" });
+      for (const o of mobsWithin(rt, mob.x, mob.y, Math.round(sk.r * 0.7))) if (o !== mob) hit(o, sk.mult * 0.45, { crit: sk.crit });
+      if (mob.dead) {
+        if (p.cds[id] > now) p.cds[id] = now + Math.round((p.cds[id] - now) * (1 - sk.killCut));
+        p.hide = Math.max(p.hide || 0, now + sk.hide);
+        p.spdBuff = Math.max(p.spdBuff, now + sk.hide);
+        p.dirty = true;
+      }
+      break;
+    }
+    case "cataclysm": {
+      // 마법사 Lv.30: 삼원소 대격변 — 화염 즉시 폭격 + 냉기→번개→대폭발 3단 연쇄 원소 반응
+      const [x, y] = aimPoint(rt, m, p, sk.at);
+      ev(sk.fx, x, y - 6, sk.r);
+      for (const o of mobsWithin(rt, x, y, sk.r)) { hit(o, sk.mult, { elem: "fire", secondaryType: null }); addBrn(S, o); }
+      weave(S, rt, p, "f", x, y, k);
+      prop({ kind: "cataclysm", wire: 1, x, y, r: sk.r, n: sk.n, step: 1, every: sk.every, next: now + sk.every, until: now + sk.every * sk.n + 50, mult: sk.mult * k, fin: sk.fin * k });
+      break;
+    }
+    case "mirageburst": {
+      // 트릭스터 Lv.30: 환영 만화경 — 분신 잔류 + 후방 도약 은신 + 6방향 환영탄 + 1.2초 분신 폭발
+      const ox = p.x, oy = p.y, a0 = Math.atan2(aimY, aimX);
+      p.hide = Math.max(p.hide || 0, now + sk.hide);
+      p.spdBuff = Math.max(p.spdBuff, now + sk.hide);
+      const far = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
+      p.x = ox - aimX * far; p.y = oy - aimY * far;
+      if (far > 0) runeMoveSkill(S, p);
+      p.fix = true; p.mvAt = now;
+      rt.ev.push(["ln", 8, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(sk.fx, ox, oy - 6, sk.n);
+      for (let j = 0; j < sk.n; j++) {
+        const a = a0 + (j * Math.PI * 2) / sk.n, ux = Math.cos(a), uy = Math.sin(a);
+        const len = Math.max(16, reach(m, ox, oy, ux, uy, sk.len));
+        rt.ev.push(["ln", 7, Math.round(ox), Math.round(oy), Math.round(ox + ux * len), Math.round(oy + uy * len)]);
+        for (const o of mobsInLine(rt, ox, oy, ux, uy, len, sk.half)) {
+          hit(o, sk.mult, j % 2 === 0 ? { elem: "dark", secondaryType: "lightning" } : { elem: "lightning", secondaryType: "dark" });
+          addMarks(S, o, 1);
+        }
+      }
+      if (!rt.decoys) rt.decoys = [];
+      const dc = { id: S.nextId++, x: ox, y: oy, until: now + sk.popMs, pid: p.pid, r: sk.popR, mult: sk.popMult * k };
+      rt.decoys.push(dc);
+      rt.ev.push(["dc", dc.id, p.eid, Math.round(ox), Math.round(oy), sk.popMs]);
+      break;
+    }
+    case "soulharvest": {
+      // 마도사 Lv.30: 금서 해방: 영혼 수확 — 광역 암흑/독 낫 + 상태이상 비례 증폭 + HP/MP 흡수
+      ev(sk.fx, p.x, p.y - 6, sk.r);
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 15]);
+      const list = mobsWithin(rt, p.x, p.y, sk.r);
+      const got = dealt(p, list, () => {
+        for (const o of list) {
+          const cond = (o.brand > now ? 1 : 0) + (elementActive(S, o, "curse") ? 1 : 0) + (elementActive(S, o, "poison") || o.poison?.until > now ? 1 : 0);
+          hit(o, sk.mult * (1 + sk.perStatus * cond), { forceAilment: "poison" });
+          if (!o.dead && !MOBS[o.k].chest) o.brand = Math.max(o.brand || 0, now + SKILL.brand.ms);
+        }
+      });
+      if (got > 0) {
+        healP(rt, p, got * sk.heal);
+        p.mp = Math.min(st.mmp, p.mp + Math.max(1, Math.round(got * sk.mpGain)));
+      }
+      break;
+    }
+    case "galevolley": {
+      // 헌터 Lv.30: 질풍 연사 — 즉시 3연사 + 이동 가능 5연속 질풍 화살(막타 냉기 5연사)
+      const hawk = pasOn(p, "hawk") ? 1 + SKILL.hawk.k : 1;
+      const a0 = Math.atan2(aimY, aimX);
+      ev(sk.fx, ...ahead(70), 1);
+      for (let j = 0; j < 3; j++) {
+        const a = a0 + ((j - 1) * sk.spread * Math.PI) / 180;
+        fireArrow(S, rt, p, null, sk.mult * k * hawk, 99, 3, { len: sk.len, ux: Math.cos(a), uy: Math.sin(a), opt });
+      }
+      p.chan = prop({ kind: "gale", x: p.x, y: p.y, left: sk.n, every: sk.every, next: now + sk.every,
+        until: now + sk.every * (sk.n + 1) + 50, mult: sk.mult * k, fin: sk.fin * k }).id;
+      break;
+    }
+    case "venomrain": {
+      // 추적자 Lv.30: 맹독 혈우 — 착탄 + 4초간 맹독/출혈/표식 사냥터 결계
+      const [x, y] = aimPoint(rt, m, p, sk.at);
+      ev(sk.fx, x, y - 6, sk.r);
+      for (const o of mobsWithin(rt, x, y, sk.r)) {
+        o.slow = Math.max(o.slow || 0, now + 1800);
+        hit(o, sk.impact, { crit: sk.crit, forceAilment: "bleed" });
+        addMarks(S, o, 1);
+      }
+      prop({ kind: "venomrain", wire: 1, x, y, r: sk.r, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.mult * k });
       break;
     }
   }

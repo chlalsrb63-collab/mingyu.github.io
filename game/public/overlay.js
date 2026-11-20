@@ -347,6 +347,20 @@ function renderText(t) {
       tg.drawImage($("#cgauge"), Math.round((fx - w / 2) * dpr), Math.round(y * dpr), w * dpr, h * dpr);
       tg.imageSmoothingEnabled = false;
     }
+    // job identity gauge pips right under the weapon gauge whenever stacks are active (JOB-03)
+    const jtv = G.me.jt | 0, jtr = !me.dead && G.self?.job && G.defs?.jobTraits?.[G.self.job];
+    if (jtr && jtv > 0) {
+      const [fx, fy] = at(me.x, me.y, 0), y = fy + (G.myBars ? 19 : 7) + (G.self?.cr ? 12 : 0);
+      const max = jtr.max || 5, pw = 6, gap = 2, tot = max * pw + (max - 1) * gap, x0 = fx - tot / 2;
+      const full = jtv >= max && Math.sin(t / 90) > 0;
+      for (let i = 0; i < max; i++) {
+        const px = Math.round((x0 + i * (pw + gap)) * dpr), py = Math.round(y * dpr);
+        tg.fillStyle = "#120e18";
+        tg.fillRect(px - dpr, py - dpr, (pw + 2) * dpr, 5 * dpr);
+        tg.fillStyle = i < jtv ? (full ? jtr.color2 : jtr.color) : "#2a2434";
+        tg.fillRect(px, py, pw * dpr, 3 * dpr);
+      }
+    }
   }
   for (const b of G.bobs.values()) if (b.bite) { const [x, y] = at(b.x, b.y, 0.9); label("!", x, y + Math.sin(t / 60) * 2, "#ffe04a", 20); }
   for (const [eid, b] of G.bubbles) {

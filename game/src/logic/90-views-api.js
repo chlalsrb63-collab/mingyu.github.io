@@ -36,8 +36,8 @@ function selfPayload(p) {
     // knockback resist %, elemental burst %, item find from luck %, graze chance on a monster of your own tier %
     dv: [st.mag, r1(st.eva), r1(st.aspd * 100), r1(st.cdr * 100), r1(st.res * 100), r1(st.poise * 100), r1(st.kbr * 100), r1(st.burst * 100),
       r1(Math.min(SFX.mf[1], SFX.mf[0] * eff(ch.st.luk))), clamp(SFX.graze[0] - (ch.eq.weapon ? ch.wm[weaponKind(ch)].lv : 0), 0, SFX.graze[3])],
-    // the weapon passive's gauge (57 crView), and every skill learned: [id, MP now, cooldown left ms, usable in hand 1/0]
-    cr: crView(p, now), sk: skWire(p, now),
+    // the weapon passive's gauge (57 crView), job identity trait (55 jobTraitView), and every skill learned
+    cr: crView(p, now), jt: jobTraitView(p, now), sk: skWire(p, now),
     inv: charmBag(ch.inv), eq: ch.eq, q: ch.q, kills: ch.kills || 0, enh, qs: ch.qs,
     bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     // attack up, speed up, warmth, food — then what monsters leave on you: slowed, burning, poisoned —
@@ -105,12 +105,13 @@ export function viewFor(S, pid) {
   // me[12] / a P row's [9]: the carry code (58-life.js carryOf), only while something is held
   const held = carryOf(p);
   if (held) out.me.push(held);
+  if (p.ch.job !== "adventurer") out.jt = jobTraitVal(p, S.now);
   albaView(S, p, out);   // the 일일 아르바이트 shift in hand (66-alba.js)
   elementView(S, out, p.eid, p);
   const elementSpeed = elementFrozen(S, p) ? 0 : elementMoveFactor(S, p);
   if (elementSpeed !== 1) out.elspd = elementSpeed;
-  // a prefix power speeding the walk for a moment (질주·추격 …): only while it does, so the client's own steps keep up with the rules'
-  if (deriveStats(p).pfx.stat.length) { const ps = stats(p).pspd; if (ps) out.pspd = Math.round(ps * 1000) / 1000; }
+  // a prefix power or job trait speeding the walk for a moment: only while it does, so the client's own steps keep up with the rules'
+  { const ps = stats(p).pspd; if (ps && ps !== 1) out.pspd = Math.round(ps * 1000) / 1000; }
   for (const oid of Object.keys(S.players)) {
     const o = S.players[oid];
     if (o === p || o.map !== p.map || !near(o)) continue;
@@ -290,13 +291,13 @@ export function defs() {
   return {
     worldName: "루넬샤대륙",
     items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, jobPal: JOB_PAL, skillJob: SKILL_JOB, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
-    jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, statGrowth: { perLevel: AP_PER_LEVEL, cap: ST_CAP, soft: ST_SOFT },
+    jobs, jobTraits: JOB_TRAIT, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, statGrowth: { perLevel: AP_PER_LEVEL, cap: ST_CAP, soft: ST_SOFT },
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
     ske: { rate: SKE_RATE, pct: SKE_PCT, max: SKE_MAX, item: SKE_ITEM },
     jf: { lo: [LO_MAX.a, LO_MAX.p], borrow: LO_BORROW, scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST, respecItem: RESPEC_ITEM },
     affix, runes: RUNES, runeScale: RUNE_SCALE, runeStatCaps: RUNE_STAT_CAP, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
-    elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
+    elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, reactions: ELEMENT_REACTIONS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
     elementPrefixes: ELEMENT_PREFIX_AFFIX,
     rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     fieldParty: { tiles: FIELD_PARTY_RANGE / T, share: PARTY_SHARE },

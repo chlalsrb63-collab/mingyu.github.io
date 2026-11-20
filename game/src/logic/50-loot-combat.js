@@ -403,7 +403,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const parts = elementDamage(S, p, mob, raw, defence, {
     type: o.elem || skillDamageType(o.sk, st.wk),
     secondaryType: o.secondaryType === undefined ? o.sk?.secondaryDamageType : o.secondaryType,
-    armorPenPct: o.sk?.armorPenPct,
+    armorPenPct: (o.sk?.armorPenPct || 0) + (o.armorPenPct || 0) + jobTraitArmorPen(S, p),
     element: st.element, extraScale: o.px ? 0 : mult * (graze ? SFX.grazeK : 1), pure, crit, typedOnly: o.typedOnly,
   });
   let dmg = damageTotal(parts);
@@ -416,7 +416,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (mob.vuln > S.now) dmg *= 1.3;
   // 금서의 낙인: a branded monster takes more from everyone
   if (mob.brand > S.now) dmg *= 1 + SKILL.brand.k;
-  dmg *= pasHurtK(S, p, mob, st);   // the felt passives (55-passives.js)
+  dmg *= pasHurtK(S, p, mob, st, o);   // the felt passives + job identity trait (55-passives.js)
   // a sword hit builds inertia, once an action
   if (st.wk === "sword" && p.inAct !== p.actN && pasOn(p, "inertia")) {
     p.inAct = p.actN;
@@ -444,11 +444,11 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (!o.px && (!pure || o.forceAilment) && lost > 0) {
     elementApplyHit(S, rt, p, mob, parts, {
       crit, element: st.element, proc: !graze && !pure, forceAilment: o.forceAilment,
-      noDarkLeech: o.noDarkLeech, scale: lost / Math.max(1, damageTotal(parts)),
+      noDarkLeech: o.noDarkLeech, noRx: o.noRx, scale: lost / Math.max(1, damageTotal(parts)),
     });
   }
   if (pure) runeShock(S, rt, p, x, y, mob);
-  pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand);
+  pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand, o);
   if (!o.px) pfxHit(S, rt, p, st, mob, dmg, crit, killed, o);   // the powers that answer a blow landing (chance, status, crit)
   if (!killed) {
     // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
@@ -600,6 +600,7 @@ function hurtPlayer(S, rt, p, raw, mob, type) {
   if (mob) p.blame = blameOf(mob);
   damageEvent(rt, p.eid, dmg, dmg ? 0 : 3, 1, 0, parts);
   pfxHurt(S, rt, p, st, mob, dmg, raw);   // the powers that answer a hurt (thorn gives back 40%)
+  if (p.hp > 0 && dmg && mob && (p.ch.job === "swordsman" || p.ch.job === "paladin")) jobTraitGain(S, rt, p, 1, false);
   if (p.hp > 0 && dmg && mob) elementApplyHit(S, rt, mob, p, parts, { scale: Math.min(before, dmg) / Math.max(1, damageTotal(parts)) });
   else if (p.hp <= 0 && !pfxLethal(S, rt, p, st, mob, dmg)) fall(S, rt, p);
   return dmg;

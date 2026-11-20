@@ -148,6 +148,13 @@ function jobCard(s, j, atJob) {
   if (STATE_TEXT[st]) hd.append(el("em", st, STATE_TEXT[st]));
   card.append(hd);
   card.append(needLines(s, j));
+  const trait = d.jobTraits?.[j];
+  if (trait) {
+    const tr = el("div", "jt-trait");
+    tr.style.setProperty("--jt-c", trait.color);
+    tr.append(el("b", "", trait.name), el("span", "", `고유 특성 · 최대 ${trait.max}중첩`), el("p", "", trait.desc));
+    card.append(tr);
+  }
   sigs.forEach((sig, idx) => {
     const sk = d.skills[sig], r = el("div", "jt-sig");
     const rank = idx === 0 ? signatureProgress(d, st === "cur" ? s.jp?.[0] : 0) : null;

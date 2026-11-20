@@ -78,6 +78,42 @@ const JOBS = {
 };
 
 /**
+ * Job-unique identity passive traits and live combat gauges (JOB-03).
+ * Every single-weapon branch owns a distinct stackable gauge (`0..max`, decays after `ms` out of combat)
+ * so the two jobs sharing a weapon feel unmistakably different in cadence and payoff.
+ */
+const JOB_TRAIT = {
+  swordsman:   { id: "rage",      name: "광전사의 분노", short: "분노", max: 5, ms: 7000,  color: "#ff5a3c", color2: "#ffd27a",
+    desc: "공격 적중이나 피격 시 분노 +1(최대 5). 중첩당 피해 +1%, 최대 시 받는 피해 -10% 및 다음 스킬이 분노를 소모해 피해 +15%." },
+  spellblade:  { id: "arccharge", name: "마검 충전",     short: "마검", max: 4, ms: 8000,  color: "#ff9b42", color2: "#fff2a8",
+    desc: "공격이나 스킬 적중 시 마검 충전 +1(최대 4). 중첩당 원소/스킬 피해 +1.5%, 최대 시 다음 스킬이 충전을 소모해 피해 +16%·MP 30% 환급." },
+  thief:       { id: "shadow",    name: "암영의 기세",   short: "암영", max: 5, ms: 8000,  color: "#b46aff", color2: "#f0d4ff",
+    desc: "치명타나 등 뒤 타격 시 암영 +1(최대 5). 중첩당 치명타 피해 +2.5%, 최대 시 다음 스킬이 암영을 소모해 확정 치명타·피해 +16%." },
+  bladedancer: { id: "bloodstep", name: "선혈의 춤사위", short: "선혈", max: 5, ms: 7000,  color: "#f04878", color2: "#ffb8cc",
+    desc: "표식·출혈 적 타격이나 스킬 적중 시 선혈 +1(최대 5). 중첩당 공격 속도 +1.5%·이동 속도 +2%, 최대 중첩 유지 중 타격마다 최대 HP 1.5% 흡수." },
+  lancer:      { id: "spirit",    name: "창극의 기백",   short: "기백", max: 4, ms: 8000,  color: "#52d8c0", color2: "#d8fff6",
+    desc: "창끝 일격이나 스킬 적중 시 기백 +1(최대 4). 중첩당 방어 관통 +3%, 최대 시 다음 스킬이 기백을 소모해 피해 +16%·쿨타임 1.5초 단축." },
+  spellspear:  { id: "frostvolt", name: "빙뢰 공명",     short: "빙뢰", max: 4, ms: 8000,  color: "#72d4ff", color2: "#fff098",
+    desc: "냉기·번개 타격이나 스킬 적중 시 빙뢰 +1(최대 4). 중첩당 피해 +1.5%, 최대 시 다음 스킬이 빙뢰를 소모해 피해 +15% 및 주변 냉기·번개 파동 방출." },
+  wizard:      { id: "arcanum",   name: "대마도사의 비전", short: "비전", max: 5, ms: 9000, color: "#7a9cff", color2: "#e8f2ff",
+    desc: "스킬 시전이나 원소 반응 시 비전 +1(최대 5). 중첩당 스킬 피해 +1.5%, 최대 시 다음 스킬이 비전을 소모해 피해 +18%·최대 MP 25% 회복." },
+  trickster:   { id: "wilddeck",  name: "트릭 카드",     short: "카드", max: 4, ms: 8500,  color: "#d47aff", color2: "#ffe47a",
+    desc: "치명타나 스킬 적중 시 카드 +1(최대 4). 중첩당 치명타 +2.5%p·회피 +2%p, 최대 시 다음 스킬이 카드를 소모해 피해 +15%·쿨타임 25% 즉시 반환." },
+  warlock:     { id: "souls",     name: "영혼의 잔재",   short: "영혼", max: 5, ms: 9000,  color: "#9a66f0", color2: "#d4ff9c",
+    desc: "낙인 적 타격이나 처치 시 영혼 +1(최대 5). 중첩당 피해 +1.5%·흡혈 +0.6%, 최대 시 다음 스킬이 영혼을 소모해 피해 +16%·최대 HP 8% 회복." },
+  runearcher:  { id: "runeseal",  name: "룬 각인",       short: "룬",   max: 4, ms: 9000,  color: "#68c8ff", color2: "#ffca83",
+    desc: "스킬 시전이나 원소 반응 시 룬 각인 +1(최대 4). 중첩당 재사용 대기 감소 +2%p, 최대 시 다음 스킬이 각인을 소모해 피해 +16%·최대 HP 8% 신성 보호막." },
+  archer:      { id: "focus",     name: "사냥꾼의 집중", short: "집중", max: 5, ms: 8000,  color: "#9ae062", color2: "#fff2a8",
+    desc: "원거리 공격이나 스킬 적중 시 집중 +1(최대 5). 중첩당 피해 +1.5%·공격 속도 +2%, 최대 시 다음 스킬이 집중을 소모해 피해 +18%·방어 관통 +20%." },
+  tracker:     { id: "prey",      name: "사냥감 추적",   short: "추적", max: 5, ms: 8500,  color: "#76d65c", color2: "#f07298",
+    desc: "표식·독·덫 적중 시 추적 +1(최대 5). 중첩당 치명타 +2%p·이동 속도 +2%, 최대 시 다음 스킬이 추적을 소모해 피해 +18%·중독 확정 부여." },
+  destroyer:   { id: "quake",     name: "파쇄의 여진",   short: "여진", max: 4, ms: 8000,  color: "#e88a42", color2: "#ffe0a0",
+    desc: "해머 정타나 스킬 적중 시 여진 +1(최대 4). 중첩당 피해 +2.5%·경직 저항 +4%p, 최대 시 다음 스킬이 여진을 소모해 피해 +20%·방어구 파쇄 확정 부여." },
+  paladin:     { id: "vow",       name: "신성의 서약",   short: "서약", max: 4, ms: 9000,  color: "#ffd468", color2: "#fff8d8",
+    desc: "공격·회복·피격 시 서약 +1(최대 4). 중첩당 받는 피해 -2.5%, 최대 시 다음 스킬이 서약을 소모해 자신과 주변 파티원 HP 5% 회복·5% 신성 보호막." },
+};
+
+/**
  * Derived-stat constants (B.4), one table so tuning is data-only. Each formula reads eff(stat).
  *   hp = hp[0] + hp[1]·lv + hp[2]·WIL;  mp = mp[0] + mp[1]·lv + mp[2]·WIS + mp[3]·INT;  def = def[0]·lv + def[1]·WIL
  *   atk core = atk[0] + atk[1]·lv;  weapon attack × (1 + wm·wmAtk);  crit = crit[0] + kind crit + crit[1]·LUK

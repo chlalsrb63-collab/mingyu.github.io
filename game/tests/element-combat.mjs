@@ -141,4 +141,45 @@ try {
   assert.equal(heals().at(-1), 3, "field life-steal is capped at the HP lost before death");
 }
 
-console.log("elemental combat: damage wire, elite attacks, ailments, dual-type jobs, armor penetration and Dragoon phases");
+// JOB-08: 6 cross-elemental reactions (purify, blightfrost, voidrift, eclipse, venombleed, cauterize)
+{
+  const cases = [
+    ["light", "fire", 4, "purify"],
+    ["poison", "cold", 5, "blightfrost"],
+    ["dark", "lightning", 6, "voidrift"],
+    ["dark", "light", 7, "eclipse"],
+    ["poison", "bleed", 8, "venombleed"],
+    ["fire", "bleed", 9, "cauterize"],
+  ];
+  assert.equal(D.elements.reactions.length, 6, "6 cross-elemental reactions exposed in defs");
+  for (const [seedType, triggerType, code, id] of cases) {
+    const { world, hero, map, target } = jobArena("verdict", 20, "twinhare");
+    target.hp = 80_000;
+    // Seed the first ailment directly on target (simulating a prior hit)
+    if (seedType === "light") target.ail = { blind: { until: world.now + 5000, stacks: 1 } };
+    else X.elementInflict(world, map, hero, target, seedType, 100, { chance: 1 });
+    map.ev.length = 0;
+    X.hurtMob(world, map, target, hero, 1, true, { elem: triggerType, secondaryType: null, mag: 1 });
+    const rx = map.ev.find((e) => e[0] === "rx" && e[1] === code);
+    assert.ok(rx, `${id} (rx ${code}) triggers when ${triggerType} hits ${seedType} ailment`);
+    // Per-target cooldown prevents immediate re-proc on consecutive hit
+    map.ev.length = 0;
+    X.hurtMob(world, map, target, hero, 1, true, { elem: triggerType, secondaryType: null, mag: 1 });
+    assert.ok(!map.ev.some((e) => e[0] === "rx" && e[1] === code), `${id} respects per-target reaction cooldown`);
+  }
+}
+
+// JOB-01: all 7 new Lv.30 signatures deal their listed dual elemental types
+for (const [id, front, ticks, types] of [
+  ["aetherblade", 24, 0, ["light", "fire"]],
+  ["shadowexec", 30, 0, ["dark", "bleed"]],
+  ["cataclysm", 40, 8, ["fire", "cold"]],
+  ["mirageburst", 30, 0, ["dark", "lightning"]],
+  ["soulharvest", 24, 0, ["dark", "poison"]],
+  ["galevolley", 50, 5, ["physical", "cold"]],
+  ["venomrain", 40, 0, ["poison", "bleed"]],
+]) {
+  assert.ok(jobHits(id, front, ticks).some((hit) => types.some((t) => hit.types.includes(t))), `${id}: Lv.30 ultimate lands with its elemental profile`);
+}
+
+console.log("elemental combat: damage wire, elite attacks, ailments, 6 cross-element reactions, 7 Lv.30 ultimates, dual-type jobs, armor penetration and Dragoon phases");

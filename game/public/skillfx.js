@@ -33,13 +33,16 @@ let PAL = jobPal("adventurer");
 /** Which job's palette a line ("ln" kind) or a placed thing ("pr" kind) is drawn in. */
 const LN_JOB = { 2: "lancer", 3: "lancer", 4: "wizard", 5: "thief", 6: "thief", 7: "trickster", 8: "archer", 9: "swordsman", 10: "warlock" };
 const PROP_JOB = { grav: "warlock", phantom: "warlock", rain: "archer", trap: "tracker", pillar: "lancer", meteor: "wizard", storm: "lancer",
-  field: "spellspear", burst: "bladedancer", sanct: "paladin", rune: "runearcher", banner: "lancer" };
+  field: "spellspear", burst: "bladedancer", sanct: "paladin", rune: "runearcher", banner: "lancer",
+  aether: "spellblade", cataclysm: "wizard", venomrain: "tracker" };
 
 /** After every snapshot: flags and the gauge number on the rows, marks and brands on monsters. */
 export function onSnap(s, G, t) {
   live.G = G;
   G.me.fl = s.me[8] | 0;
   G.me.cv = s.me[9] | 0;
+  if (s.jt !== undefined) G.me.jt = s.jt | 0;
+  else if (s.self && !s.self.jt) G.me.jt = 0;
   if (s.self) G.selfAt = t;
   for (const r of s.P) { const e = G.players.get(r[0]); if (e) e.fl = r[8] | 0; }
   for (const r of s.M) { const e = G.mobs.get(r[0]); if (e) { e.mk = r[8] | 0; e.br = r[9] | 0; } }
@@ -1245,6 +1248,9 @@ function placeProp(G, B, f, id, kind, x, y, r, ms, eid) {
     case "sanct": follow.set(id, { eid, r, until: now() + ms, t0: now() }); break;
     case "rune": runeCircle(placed.get(id), x, y, r, ms); break;
     case "banner": rallyPennant(placed.get(id), id, ms); break;
+    case "aether": groundRing(x, y, r, ms, "#ffe498", 0.16); break;
+    case "cataclysm": runeCircle(placed.get(id), x, y, r, ms); break;
+    case "venomrain": groundRing(x, y, r, ms, "#88e85a", 0.18); arrowRain(x, y, r, ms); break;
   }
 }
 /** The six marks of 메아리 법진, 3×3 each (a few strokes apiece: never a letter of any real script). */
@@ -1349,6 +1355,39 @@ function propBeat(G, B, f, e) {
       B.shake(9); play("blood_burst");
       break;
     }
+    case "aether": {
+      S3.fx.wave(x, y, o.r, "#ffe498", 300);
+      f.burst(x, y, 0.25, "#ff9a46", 12, 2.0);
+      f.sparkle(x, y, 0.5, "#fff6c8", 8);
+      play("ember");
+      break;
+    }
+    case "cataclysm": {
+      const step = extra | 0;
+      o.el = step === 1 ? 2 : step === 2 ? 3 : 1;
+      o.beatNew = true;
+      if (step === 1) {
+        frostNovaRing(x, y, o.r);
+        B.shake(5); play("frost");
+      } else if (step === 2) {
+        for (let i = 0; i < 4; i++) { const a = (i / 4) * 6.28 + 0.4; B.fx.zap(x + Math.cos(a) * o.r * 0.45, y + Math.sin(a) * o.r * 0.45, "#fff07a", 240, i * 40); }
+        S3.fx.wave(x, y, o.r, "#fff07a", 320);
+        B.shake(6); play("thunder");
+      } else {
+        B.fx.ring(x, y, o.r, "#ffffff", 420, true);
+        B.fx.ring(x, y, o.r * 0.72, "#ff9246", 340);
+        f.crack(x, y, o.r * 0.7, "#b8a0ff", 620);
+        f.burst(x, y, 0.35, "#ffe08a", 34, 3.2);
+        B.shake(10); play("overload");
+      }
+      break;
+    }
+    case "venomrain": {
+      S3.fx.wave(x, y, o.r, "#8ef060", 280);
+      f.burst(x, y, 0.2, "#fb4b85", 8, 1.5);
+      f.sparkle(x, y, 0.4, "#a5ef66", 6);
+      break;
+    }
   }
 }
 function propEnd(G, B, f, e) {
@@ -1450,7 +1489,18 @@ function orb(g, x, y, e, t) {
 
 // ───────────────────────────── events ─────────────────────────────
 
-const REACT_NAME = [null, ["증기 폭발!", "#ffffff"], ["초전도!", "#b8a0ff"], ["과부하!", "#ffb04a"]];
+const REACT_NAME = [
+  null,
+  ["증기 폭발!", "#ffffff"],
+  ["초전도!", "#b8a0ff"],
+  ["과부하!", "#ffb04a"],
+  ["정화 작열!", "#ffe498"],
+  ["동상 부식!", "#7cf0b8"],
+  ["공허 파열!", "#c078ff"],
+  ["일식 붕괴!", "#f0d8ff"],
+  ["부패 출혈!", "#e86888"],
+  ["혈염 소각!", "#ff6248"],
+];
 /** Passive flashes: no swing of the weapon, only a sign where it happened. */
 const PASSIVE = new Set([110, 111, 113, 114, 115]);
 
@@ -2198,6 +2248,29 @@ export function triggerSkillMotion(src, kind, tx, ty, t, extra = 0, wind = 0) {
       if (!extra) return;
       set({ type: "recoil_shot", dur: 250, dist: -6 });
       return;
+
+    // ── JOB-01: remaining 7 Lv.30 job signatures
+    case 160: // 스펠블레이드 성광 마검: 유성낙하 (도약 수직 강타)
+      set({ type: "leap_slam", dur: 520, h: 32, dist: 12, apex: 0.62, wep: "slam" });
+      return;
+    case 161: // 도적 칠흑의 사형선고 (반투명 고속 암살 돌진 + X자 잔상)
+      set({ type: "blink_dash", dur: 320, dist: 24, alpha: 0.34, ghosts: 3, cross: true });
+      return;
+    case 162: // 마법사 삼원소 대격변 (공중 부양 대마법 영창)
+      set({ type: "elevated_cast", dur: 560, h: 16, wep: "raise" });
+      return;
+    case 163: // 트릭스터 환영 만화경 (반투명 후방 공중제비 + 잔상)
+      set({ type: "backflip", dur: 380, h: 16, dist: -13, alpha: 0.38, ghosts: 3 });
+      return;
+    case 164: // 마도사 금서 해방: 영혼 수확 (부유 후 암흑 낫 휩쓸기)
+      set({ type: "heavy_overhead", dur: 440, h: 14, dist: 6, wep: "raise" });
+      return;
+    case 165: // 헌터 질풍 연사: 천궁의 화살 (연속 강사 반동)
+      set({ type: "recoil_shot", dur: extra === 2 ? 340 : 240, dist: extra === 2 ? -11 : -6, h: extra === 2 ? 4 : 1 });
+      return;
+    case 166: // 추적자 맹독 혈우: 사냥감 낙인 (천공 독화살 발사)
+      set({ type: "sky_bow", dur: 400, h: 8, wep: "sky" });
+      return;
   }
 }
 
@@ -2356,9 +2429,30 @@ export function skillEvent(e, ctx) {
       const [, id, x, y, r] = e;
       if (id === 1) { f.ring(x, y, r, "#ffffff", 420, true); for (let i = 0; i < 18; i++) f.sparkle(x + (Math.random() - 0.5) * r, y + (Math.random() - 0.5) * r * 0.6, 0.2, "#eef4ff", 2); f.burst(x, y, 0.3, "#d8e8f0", 30, 2.4); B.shake(5); Sound.play("steam"); }
       else if (id === 2) { f.ring(x, y, r, "#b8a0ff", 360, true); f.ring(x, y, r * 0.6, "#9fe8ff", 300); for (let i = 0; i < 4; i++) { const a = Math.random() * 6.28; f.bolt(x, y, x + Math.cos(a) * r, y + Math.sin(a) * r * 0.8, "#c8b0ff", 260); } Sound.play("supercon"); }
-      else { f.ring(x, y, r, "#ffb04a", 340, true); f.ring(x, y, r * 1.2, "#ffe86a", 300); f.crack(x, y, r * 0.7, "#ffb04a", 500); f.burst(x, y, 0.4, "#ffd84a", 30, 3.6); B.shake(8); Sound.play("overload"); }
-      const [s, c] = REACT_NAME[id];
+      else if (id === 3) { f.ring(x, y, r, "#ffb04a", 340, true); f.ring(x, y, r * 1.2, "#ffe86a", 300); f.crack(x, y, r * 0.7, "#ffb04a", 500); f.burst(x, y, 0.4, "#ffd84a", 30, 3.6); B.shake(8); Sound.play("overload"); }
+      else if (id === 4) { f.ring(x, y, r, "#ffe498", 380, true); f.ring(x, y, r * 0.65, "#ff9246", 300); f.sparkle(x, y, 0.7, "#fff8d8", 16); f.burst(x, y, 0.35, "#ffca6a", 24, 2.8); B.shake(6); Sound.play("overload"); }
+      else if (id === 5) { f.ring(x, y, r, "#7cf0b8", 380, true); f.ring(x, y, r * 0.62, "#87e4ff", 300); f.burst(x, y, 0.3, "#96f070", 24, 2.4); f.sparkle(x, y, 0.5, "#bfe8ff", 14); B.shake(5); Sound.play("supercon"); }
+      else if (id === 6) { f.ring(x, y, r, "#c078ff", 380, true); for (let i = 0; i < 5; i++) { const a = (i / 5) * 6.28 + 0.3; f.bolt(x, y, x + Math.cos(a) * r, y + Math.sin(a) * r * 0.8, i % 2 ? "#fff07a" : "#c078ff", 260); } f.burst(x, y, 0.35, "#8a5ad8", 26, 2.8); B.shake(7); Sound.play("supercon"); }
+      else if (id === 7) { f.ring(x, y, r, "#f0d8ff", 400, true); f.ring(x, y, r * 0.6, "#ffca83", 320); f.burst(x, y, 0.4, "#3a2a58", 22, 2.8); f.sparkle(x, y, 0.8, "#fff8d8", 16); B.shake(7); Sound.play("overload"); }
+      else if (id === 8) { f.ring(x, y, r, "#e86888", 360, true); f.ring(x, y, r * 0.65, "#a5ef66", 280); f.burst(x, y, 0.3, "#fb4b85", 22, 2.5); B.shake(5); Sound.play("blood_burst"); }
+      else { f.ring(x, y, r, "#ff6248", 380, true); f.crack(x, y, r * 0.6, "#fb4b85", 460); f.burst(x, y, 0.35, "#ff9246", 26, 3.0); B.shake(6); Sound.play("steam"); }
+      const [s, c] = REACT_NAME[id] || REACT_NAME[3];
       text(G, s, x, y, 1.6, c, true);
+      return true;
+    }
+    case "jt": {
+      const [, eid, phase] = e, src = entityPos(eid);
+      if (!src) return true;
+      const mine = eid === G.you;
+      const job = mine ? G.self?.job : G.who?.get(eid)?.cls;
+      const tr = G.defs?.jobTraits?.[job];
+      const col = tr?.color || "#ffe08a", col2 = tr?.color2 || "#ffffff";
+      S3.fx.ring(src.x, src.y, phase === 2 ? 32 : 22, phase === 2 ? col : col2, phase === 2 ? 360 : 280, phase === 2);
+      S3.fx.sparkle(src.x, src.y, 0.7, col2, phase === 2 ? 12 : 6);
+      if (mine && tr) {
+        text(G, phase === 2 ? `${tr.name} 해방!` : `${tr.short} 최대!`, src.x, src.y, 2.0, phase === 2 ? col : col2, phase === 2);
+        Sound.play(phase === 2 ? "reso_ready" : "buff");
+      }
       return true;
     }
     case "dc": lure(e[1], e[2], e[3], e[4], e[5]); f.burst(e[3], e[4], 0.6, "#3a2a58", 30, 1.4); return true;
@@ -2986,6 +3080,85 @@ function cast(kind, src, eid, tx, ty, extra, G) {
       break;
     }
     case 102: f.ring(src.x, src.y, extra || 90, p.l, 520, true); f.sparkle(src.x, src.y, 1.1, p.a, 22); B.shake(5); play("sanctuary"); if (mine) text(G, "성광의 성역!", src.x, src.y, 2.2, p.l, true); break;
+    // ── JOB-01: remaining 7 Lv.30 job signatures (fx 160–166)
+    case 160: {
+      // 성광 마검: 유성낙하 (스펠블레이드)
+      const r = extra || 68;
+      f.fall(tx, ty, "#ffe498", 110);
+      f.ring(tx, ty, r, "#ffe498", 440, true);
+      f.ring(tx, ty, r * 0.65, "#ff9246", 340);
+      f.crack(tx, ty, r * 0.7, "#ffca6a", 620);
+      f.burst(tx, ty, 0.35, "#ff9a46", 28, 3.2);
+      f.sparkle(tx, ty, 0.8, "#fff8d8", 18);
+      B.shake(10); play("crimson");
+      if (mine) text(G, "유성낙하!", src.x, src.y, 2.3, "#ffe498", true);
+      break;
+    }
+    case 161: {
+      // 칠흑의 사형선고 (도적)
+      flurrySlash(tx, ty, ang);
+      flurrySlash(tx, ty, ang + Math.PI / 2);
+      f.ring(tx, ty, 38, "#d4a0ff", 360, true);
+      f.burst(tx, ty, 0.45, "#fb4b85", 22, 2.8);
+      f.sparkle(tx, ty, 0.7, "#f0d4ff", 12);
+      B.shake(8); play("cross_cut");
+      if (mine) text(G, "사형선고!", src.x, src.y, 2.3, "#d4a0ff", true);
+      break;
+    }
+    case 162: {
+      // 삼원소 대격변 (마법사)
+      const r = extra || 76;
+      f.ring(tx, ty, r, "#ff9246", 440, true);
+      f.ring(tx, ty, r * 0.6, "#87e4ff", 340);
+      f.burst(tx, ty, 0.35, "#ff9246", 28, 3.0);
+      f.sparkle(src.x, src.y, 1.2, "#fff07a", 16);
+      B.shake(8); play("meteor_cast");
+      if (mine) text(G, "삼원소 대격변!", src.x, src.y, 2.3, "#fff07a", true);
+      break;
+    }
+    case 163: {
+      // 환영 만화경 (트릭스터)
+      f.ring(tx, ty, 44, "#d47aff", 380, true);
+      f.ring(tx, ty, 24, "#fff07a", 300);
+      f.burst(tx, ty, 0.5, "#c890ff", 24, 2.4);
+      f.sparkle(tx, ty, 0.7, "#ffe47a", 14);
+      B.shake(6); play("element_dagger");
+      if (mine) text(G, "환영 만화경!", src.x, src.y, 2.2, "#e0b0ff", true);
+      break;
+    }
+    case 164: {
+      // 금서 해방: 영혼 수확 (마도사)
+      const r = extra || 88;
+      f.ring(src.x, src.y, r, "#9a66f0", 460, true);
+      f.ring(src.x, src.y, r * 0.65, "#a5ef66", 340);
+      f.burst(src.x, src.y, 0.4, "#4a2a78", 30, 3.0);
+      f.sparkle(src.x, src.y, 0.9, "#d4ff9c", 18);
+      B.shake(8); play("pact");
+      if (mine) text(G, "영혼 수확!", src.x, src.y, 2.3, "#c8a0ff", true);
+      break;
+    }
+    case 165: {
+      // 질풍 연사: 천궁의 화살 (헌터)
+      SkillFx_bow(G, src, extra === 2);
+      f.flash(src.x, src.y, extra === 2 ? 12 : 8);
+      f.sparkle(src.x, src.y, 0.8, extra === 2 ? "#87e4ff" : "#fff2a6", extra === 2 ? 12 : 6);
+      B.shake(extra === 2 ? 6 : 2.5);
+      play(extra === 2 ? "pierce" : "leapshot");
+      if (mine && extra !== 1) text(G, "천궁의 일격!", src.x, src.y, 2.2, "#87e4ff", true);
+      else if (mine) text(G, "질풍 연사!", src.x, src.y, 2.1, "#9ae062", true);
+      break;
+    }
+    case 166: {
+      // 맹독 혈우: 사냥감 낙인 (추적자)
+      const r = extra || 66;
+      SkillFx_bow(G, src, true);
+      f.ring(tx, ty, r, "#8ef060", 420, true);
+      f.ring(tx, ty, r * 0.62, "#fb4b85", 320);
+      f.burst(tx, ty, 0.35, "#a5ef66", 24, 2.4);
+      B.shake(6); play("rain");
+      if (mine) text(G, "맹독 혈우!", src.x, src.y, 2.2, "#a5ef66", true);
+      break;
+    }
   }
   jobBeat(kind, src, tx, ty, p, near);
 }

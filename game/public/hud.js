@@ -153,6 +153,31 @@ function hudJobBar(s) {
   if (jobLv && lv > jobLv) { jr.classList.remove("pop"); void jr.offsetWidth; jr.classList.add("pop"); }
   jobLv = lv;
 }
+/** Live job identity gauge bar right below the job bar (JOB-03). */
+let jtKey = "";
+function hudJobTrait(s) {
+  const box = $("#jt-bar");
+  if (!box) return;
+  const tr = s?.job && G.defs?.jobTraits?.[s.job];
+  if (!tr) { if (!box.hidden) box.hidden = true; jtKey = ""; return; }
+  const v = Math.max(0, Math.min(tr.max, (G.me?.jt ?? s.jt?.v ?? 0) | 0));
+  const key = `${s.job}:${v}`;
+  if (key === jtKey && !box.hidden) return;
+  jtKey = key;
+  box.hidden = false;
+  box.style.setProperty("--jt-c", tr.color);
+  box.style.setProperty("--jt-c2", tr.color2);
+  box.classList.toggle("max", v >= tr.max);
+  box.title = `${tr.name} (${v}/${tr.max})\n${tr.desc}`;
+  $("#jt-lbl").textContent = tr.short;
+  $("#jt-n").textContent = `${v}/${tr.max}`;
+  const pips = $("#jt-pips");
+  if (pips.childElementCount !== tr.max) {
+    pips.textContent = "";
+    for (let i = 0; i < tr.max; i++) pips.append(el("i"));
+  }
+  for (let i = 0; i < tr.max; i++) pips.children[i].classList.toggle("on", i < v);
+}
 /** The weapon-mastery strip beside the bars (mastery.js); a level gained flashes it and chimes. */
 function hudMastery(s) {
   const wpn = s.eq.weapon, it = wpn && G.defs.items[wpn.id];
@@ -381,6 +406,7 @@ export function hudTick(t) {
   if (!s) return;
   // the weapon gauge (weapongauge.js); a fault there must never stop the frame
   try { drawWeaponGauge(cgauge, s, G.defs, t); } catch (err) { if (!hudTick.warned) { hudTick.warned = true; console.warn("weapon gauge:", err); } }
+  hudJobTrait(s);
   QS.tick(t);
   dashTick(t);
   targetFrame(t);

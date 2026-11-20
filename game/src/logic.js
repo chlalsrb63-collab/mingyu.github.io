@@ -93,9 +93,19 @@ const ELEM = { f: "불", i: "얼음", l: "번개" };
 /** What two elements make together (either order). */
 const REACT = {
   fi: { id: "steam", name: "증기 폭발", r: 62, mult: 1.3 },
-  il: { id: "super", name: "초전도", r: 56, mult: 0.6, vuln: 6000 },
+  il: { id: "super", name: "초전도", r: 56, mult: 0.7, vuln: 6000 },
   fl: { id: "over", name: "과부하", r: 50, mult: 1.1, knock: 26 },
 };
+/** Cross-elemental ailment reactions for the 8-element combat system (codes 4–9 on the "rx" wire event). */
+const ELEMENT_REACTIONS = [
+  { code: 4, id: "purify", name: "정화 작열", a: "light", b: "fire", ailsA: ["blind"], ailsB: ["burn"], elem: "light", r: 48, mult: 0.50, shatter: 3000, ward: 0.03, wardMs: 2400 },
+  { code: 5, id: "blightfrost", name: "동상 부식", a: "poison", b: "cold", ailsA: ["poison"], ailsB: ["chill", "freeze"], elem: "poison", r: 46, mult: 0.45, vuln: 4000, chillAdd: 1 },
+  { code: 6, id: "voidrift", name: "공허 파열", a: "dark", b: "lightning", ailsA: ["curse"], ailsB: ["shock"], elem: "dark", r: 50, mult: 0.52, pull: 12 },
+  { code: 7, id: "eclipse", name: "일식 붕괴", a: "dark", b: "light", ailsA: ["curse"], ailsB: ["blind"], elem: "light", r: 48, mult: 0.55, heal: 0.025 },
+  { code: 8, id: "venombleed", name: "부패 출혈", a: "poison", b: "bleed", ailsA: ["poison"], ailsB: ["bleed"], elem: "bleed", r: 44, mult: 0.44, extendMs: 1500 },
+  { code: 9, id: "cauterize", name: "혈염 소각", a: "fire", b: "bleed", ailsA: ["burn"], ailsB: ["bleed"], elem: "fire", r: 46, mult: 0.48 },
+];
+const ELEMENT_RX_CD = 6000;
 const pairKey = (a, b) => [a, b].sort().join("");
 // ───────────────────────────── editor data (GENERATED from data/**) ─────────────────────────────
 /** Maps, doors, NPCs and quests made in the world map editor (docs/editor/SCHEMA.md). */
@@ -199,6 +209,42 @@ const JOBS = {
   // ── 양손해머 (hammer)
   destroyer: { name: "파괴자", kind: "single", wk: ["hammer"], cost: JOB_COST },
   paladin: { name: "성기사", kind: "single", wk: ["hammer"], scale: { str: 0.8, wil: 0.7, wis: 0.55 }, cost: JOB_COST },
+};
+
+/**
+ * Job-unique identity passive traits and live combat gauges (JOB-03).
+ * Every single-weapon branch owns a distinct stackable gauge (`0..max`, decays after `ms` out of combat)
+ * so the two jobs sharing a weapon feel unmistakably different in cadence and payoff.
+ */
+const JOB_TRAIT = {
+  swordsman:   { id: "rage",      name: "광전사의 분노", short: "분노", max: 5, ms: 7000,  color: "#ff5a3c", color2: "#ffd27a",
+    desc: "공격 적중이나 피격 시 분노 +1(최대 5). 중첩당 피해 +1%, 최대 시 받는 피해 -10% 및 다음 스킬이 분노를 소모해 피해 +15%." },
+  spellblade:  { id: "arccharge", name: "마검 충전",     short: "마검", max: 4, ms: 8000,  color: "#ff9b42", color2: "#fff2a8",
+    desc: "공격이나 스킬 적중 시 마검 충전 +1(최대 4). 중첩당 원소/스킬 피해 +1.5%, 최대 시 다음 스킬이 충전을 소모해 피해 +16%·MP 30% 환급." },
+  thief:       { id: "shadow",    name: "암영의 기세",   short: "암영", max: 5, ms: 8000,  color: "#b46aff", color2: "#f0d4ff",
+    desc: "치명타나 등 뒤 타격 시 암영 +1(최대 5). 중첩당 치명타 피해 +2.5%, 최대 시 다음 스킬이 암영을 소모해 확정 치명타·피해 +16%." },
+  bladedancer: { id: "bloodstep", name: "선혈의 춤사위", short: "선혈", max: 5, ms: 7000,  color: "#f04878", color2: "#ffb8cc",
+    desc: "표식·출혈 적 타격이나 스킬 적중 시 선혈 +1(최대 5). 중첩당 공격 속도 +1.5%·이동 속도 +2%, 최대 중첩 유지 중 타격마다 최대 HP 1.5% 흡수." },
+  lancer:      { id: "spirit",    name: "창극의 기백",   short: "기백", max: 4, ms: 8000,  color: "#52d8c0", color2: "#d8fff6",
+    desc: "창끝 일격이나 스킬 적중 시 기백 +1(최대 4). 중첩당 방어 관통 +3%, 최대 시 다음 스킬이 기백을 소모해 피해 +16%·쿨타임 1.5초 단축." },
+  spellspear:  { id: "frostvolt", name: "빙뢰 공명",     short: "빙뢰", max: 4, ms: 8000,  color: "#72d4ff", color2: "#fff098",
+    desc: "냉기·번개 타격이나 스킬 적중 시 빙뢰 +1(최대 4). 중첩당 피해 +1.5%, 최대 시 다음 스킬이 빙뢰를 소모해 피해 +15% 및 주변 냉기·번개 파동 방출." },
+  wizard:      { id: "arcanum",   name: "대마도사의 비전", short: "비전", max: 5, ms: 9000, color: "#7a9cff", color2: "#e8f2ff",
+    desc: "스킬 시전이나 원소 반응 시 비전 +1(최대 5). 중첩당 스킬 피해 +1.5%, 최대 시 다음 스킬이 비전을 소모해 피해 +18%·최대 MP 25% 회복." },
+  trickster:   { id: "wilddeck",  name: "트릭 카드",     short: "카드", max: 4, ms: 8500,  color: "#d47aff", color2: "#ffe47a",
+    desc: "치명타나 스킬 적중 시 카드 +1(최대 4). 중첩당 치명타 +2.5%p·회피 +2%p, 최대 시 다음 스킬이 카드를 소모해 피해 +15%·쿨타임 25% 즉시 반환." },
+  warlock:     { id: "souls",     name: "영혼의 잔재",   short: "영혼", max: 5, ms: 9000,  color: "#9a66f0", color2: "#d4ff9c",
+    desc: "낙인 적 타격이나 처치 시 영혼 +1(최대 5). 중첩당 피해 +1.5%·흡혈 +0.6%, 최대 시 다음 스킬이 영혼을 소모해 피해 +16%·최대 HP 8% 회복." },
+  runearcher:  { id: "runeseal",  name: "룬 각인",       short: "룬",   max: 4, ms: 9000,  color: "#68c8ff", color2: "#ffca83",
+    desc: "스킬 시전이나 원소 반응 시 룬 각인 +1(최대 4). 중첩당 재사용 대기 감소 +2%p, 최대 시 다음 스킬이 각인을 소모해 피해 +16%·최대 HP 8% 신성 보호막." },
+  archer:      { id: "focus",     name: "사냥꾼의 집중", short: "집중", max: 5, ms: 8000,  color: "#9ae062", color2: "#fff2a8",
+    desc: "원거리 공격이나 스킬 적중 시 집중 +1(최대 5). 중첩당 피해 +1.5%·공격 속도 +2%, 최대 시 다음 스킬이 집중을 소모해 피해 +18%·방어 관통 +20%." },
+  tracker:     { id: "prey",      name: "사냥감 추적",   short: "추적", max: 5, ms: 8500,  color: "#76d65c", color2: "#f07298",
+    desc: "표식·독·덫 적중 시 추적 +1(최대 5). 중첩당 치명타 +2%p·이동 속도 +2%, 최대 시 다음 스킬이 추적을 소모해 피해 +18%·중독 확정 부여." },
+  destroyer:   { id: "quake",     name: "파쇄의 여진",   short: "여진", max: 4, ms: 8000,  color: "#e88a42", color2: "#ffe0a0",
+    desc: "해머 정타나 스킬 적중 시 여진 +1(최대 4). 중첩당 피해 +2.5%·경직 저항 +4%p, 최대 시 다음 스킬이 여진을 소모해 피해 +20%·방어구 파쇄 확정 부여." },
+  paladin:     { id: "vow",       name: "신성의 서약",   short: "서약", max: 4, ms: 9000,  color: "#ffd468", color2: "#fff8d8",
+    desc: "공격·회복·피격 시 서약 +1(최대 4). 중첩당 받는 피해 -2.5%, 최대 시 다음 스킬이 서약을 소모해 자신과 주변 파티원 HP 5% 회복·5% 신성 보호막." },
 };
 
 /**
@@ -426,6 +472,21 @@ const SKILL = {
     desc: "바바리안의 기술 (직업 Lv.30) · 5초 동안 대검을 들고 회오리처럼 돌며 움직이고, 주변의 모든 적을 0.3초마다 벤다. 도는 동안 마나와 HP를 조금씩 쓰며, 마나가 모자라거나 다른 스킬을 쓰면 멈춘다." },
   musou: { kind: "j", job: "lancer", wk: "spear", need: JOB_WM, jl: 30, name: "무쌍난무", mp: 8, cd: 10000, ms: 3000, every: 200, r: 52, mult: 0.32, mpT: 0.04, fx: 147,
     desc: "창술사의 기술 (직업 Lv.30) · 3초 동안 창을 휘휘 돌리며 움직이고, 창 길이만큼 둘러싼 모든 적을 0.2초마다 찌른다. 도는 동안 마나를 조금씩 쓰며, 마나가 모자라거나 다른 스킬을 쓰면 멈춘다." },
+  // ── remaining seven job Lv.30 secondary signatures (JOB-01, fx 160–166): placed before the extra weapon wave so a fresh Lv.30 loadout carries both signatures
+  aetherblade: { kind: "j", job: "spellblade", wk: "sword", need: JOB_WM, jl: 30, name: "성광 마검: 유성낙하", mp: 38, cd: 36000, at: 90, r: 68, field: 52, mult: 2.1, pulse: 0.38, ms: 2400, every: 600, inert: 0.12, el: "f", secondaryDamageType: "fire", fx: 160,
+    desc: "스펠블레이드의 기술 (직업 Lv.30) · 하늘로 도약해 성광과 화염이 깃든 마검을 전방에 내리꽂는다(빛·화염 피해). 쌓인 관성을 모두 소모해 관성 1당 피해 +12%, 착지 지점에 2.4초간 마검 잔광이 남아 0.6초마다 주변을 태우며 정화 작열 반응을 촉발한다." },
+  shadowexec: { kind: "j", job: "thief", wk: "dagger", need: JOB_WM, jl: 30, name: "칠흑의 사형선고", mp: 24, hpPct: 0.03, autoHp: 0.35, cd: 34000, len: 120, r: 44, mult: 1.95, per: 0.24, crit: 35, armorPenPct: 25, killCut: 0.4, hide: 2000, secondaryDamageType: "bleed", fx: 161,
+    desc: "도적의 기술 (직업 Lv.30) · 그림자처럼 적의 등 뒤로 파고들어 어둠과 출혈의 교차 사형참을 내리긋는다. 나를 노리지 않던 적에게는 확정 치명타(그 외 +35%), 표식을 모두 터뜨려 표식당 +24% 피해를 입히고 처치 시 쿨타임 40% 반환 및 2초간 은신한다." },
+  cataclysm: { kind: "j", job: "wizard", wk: "staff", need: JOB_WM, jl: 30, name: "삼원소 대격변", mp: 46, cd: 44000, at: 110, r: 72, mult: 0.48, fin: 0.95, n: 3, every: 750, el: "l", secondaryDamageType: "cold", mag: 1, fx: 162,
+    desc: "마법사의 기술 (직업 Lv.30) · 전방에 삼원소 대마법진을 열어 즉시 화염 폭격을 가하고, 0.75초마다 냉기·번개·삼원소 대폭발을 연쇄 낙하시킨다. 매 타격이 원소 엮기와 반응을 연쇄 발동시켜 넓은 구역을 초토화한다." },
+  mirageburst: { kind: "j", job: "trickster", wk: "staff", need: JOB_WM, jl: 30, name: "환영 만화경", mp: 36, cd: 34000, back: 44, hide: 1600, n: 6, len: 145, half: 13, mult: 0.92, popR: 64, popMult: 1.25, popMs: 1200, el: "l", secondaryDamageType: "lightning", mag: 1, fx: 163,
+    desc: "트릭스터의 기술 (직업 Lv.30) · 제자리에 거울 환영을 남기고 뒤로 도약(1.6초 은신·이속 증가)하며 6방향으로 어둠·번개 환영탄을 방사해 표식과 저주·감전을 새긴다. 1.2초 뒤 환영이 폭발해 주변 적에게 공허 파열 연계를 유도한다." },
+  soulharvest: { kind: "j", job: "warlock", wk: "book", need: JOB_WM, jl: 30, name: "금서 해방: 영혼 수확", mp: 40, cd: 36000, r: 88, mult: 1.9, perStatus: 0.25, heal: 0.20, mpGain: 0.08, secondaryDamageType: "poison", mag: 1, fx: 164,
+    desc: "마도사의 기술 (직업 Lv.30) · 금서를 해방해 주변 모든 적을 암흑과 맹독의 영혼 낫으로 베어 낙인을 새긴다. 낙인·저주·중독이 걸린 적에게는 상태 1종당 피해 +25%(최대 +75%), 총 피해의 20%만큼 HP와 8%만큼 MP를 흡수한다." },
+  galevolley: { kind: "j", job: "archer", wk: "bow", need: JOB_WM, jl: 30, name: "질풍 연사: 천궁의 화살", mp: 36, cd: 32000, len: 185, spread: 14, n: 5, every: 400, mult: 0.48, fin: 0.85, armorPenPct: 30, secondaryDamageType: "cold", fx: 165,
+    desc: "헌터의 기술 (직업 Lv.30) · 천궁의 질풍을 휘감아 즉시 세 갈래 관통 화살을 쏘고, 이동하면서도 0.4초마다 5회 연속 질풍 화살을 퍼붓는다. 매의 시야 보너스가 상시 적용되며 마지막 일제사격은 강력한 냉기 충격과 함께 적을 밀쳐낸다." },
+  venomrain: { kind: "j", job: "tracker", wk: "bow", need: JOB_WM, jl: 30, name: "맹독 혈우: 사냥감 낙인", mp: 38, cd: 36000, at: 125, r: 66, ms: 4000, every: 500, mult: 0.44, impact: 0.75, crit: 15, secondaryDamageType: "bleed", fx: 166,
+    desc: "추적자의 기술 (직업 Lv.30) · 겨눈 지점에 맹독과 가시 화살의 사냥터 결계를 4초간 전개한다. 착탄 및 0.5초마다 안의 적에게 독·출혈 피해와 표식을 쌓고 이동 속도를 늦추며, 부패 출혈 원소 반응과 치명타 +15% 보너스를 적용한다." },
   // ── the first wave of new weapon skills (docs/design/skill-ideas.md §9, fx 148–159); after everything older so a fresh bar keeps its old skills
   stomp: { kind: "a", wk: "hammer", need: 40, name: "땅울림 발구르기", mp: 2, hpPct: 0.015, autoHp: 0.35, cd: 4000, stomp: true, r: 52, mult: 0.5, air: 600, stg: 600, gauge: 0.1, fx: 148,
     desc: "쿵! 발을 굴러 둘레 52 안의 적을 친다(공격력의 50%). 작은 괴물은 0.6초 통째로 튀어 오르고(공중), 정예는 경직되며, 보스는 무력화 게이지가 10% 깎인다. 준비 동작이 없다." },
@@ -2412,19 +2473,19 @@ const ELEMENTS = {
 const WEAPON_ELEMENT = { staff: "lightning", book: "dark" };
 const WEAVE_ELEMENT = { f: "fire", i: "cold", l: "lightning" };
 const SKILL_ELEMENT_GROUPS = {
-  physical: ["slash", "rend", "spiral", "pierce", "leapshot", "verdict", "rain", "hammer_stamp", "hammer_fault", "hammer_final", "ironsiege", "crosscut", "cleave", "hook", "snipe", "whirl", "musou", "stomp", "dragonpierce", "rollshot", "shoulder", "parry", "mountain", "sword_weight40"],
+  physical: ["slash", "rend", "spiral", "pierce", "leapshot", "verdict", "rain", "hammer_stamp", "hammer_fault", "hammer_final", "ironsiege", "crosscut", "cleave", "hook", "snipe", "whirl", "musou", "stomp", "dragonpierce", "rollshot", "shoulder", "parry", "mountain", "sword_weight40", "galevolley"],
   bleed: ["ambush", "flurry", "bloodburst", "rupture", "bladevortex"],
   fire: ["comet", "mortar"],
   cold: ["inkshot", "dive"],
-  lightning: ["elemfan"],
-  poison: ["traps", "snare"],
-  dark: ["shade", "soulbolt", "gravity", "pact", "drain"],
-  light: ["oathward", "runecircle", "sanctuary"],
+  lightning: ["elemfan", "cataclysm"],
+  poison: ["traps", "snare", "venomrain"],
+  dark: ["shade", "soulbolt", "gravity", "pact", "drain", "shadowexec", "mirageburst", "soulharvest"],
+  light: ["oathward", "runecircle", "sanctuary", "aetherblade"],
 };
 const SKILL_ELEMENTS = Object.fromEntries(Object.entries(SKILL_ELEMENT_GROUPS).flatMap(([type, ids]) => ids.map((id) => [id, type])));
 const SKILL_WITHOUT_DAMAGE = new Set(["rally_banner", "revive_binding", "smoke"]);
 for (const [id, sk] of Object.entries(SKILL)) {
-  sk.damageType = WEAVE_ELEMENT[sk.el] || SKILL_ELEMENTS[id] || (sk.kind === "p" || SKILL_WITHOUT_DAMAGE.has(id) ? null : WEAPON_ELEMENT[sk.wk] || "physical");
+  sk.damageType = SKILL_ELEMENTS[id] || WEAVE_ELEMENT[sk.el] || (sk.kind === "p" || SKILL_WITHOUT_DAMAGE.has(id) ? null : WEAPON_ELEMENT[sk.wk] || "physical");
 }
 
 /** Skill objects and ids use the same table, including delayed spell hits. */
@@ -9259,6 +9320,7 @@ function stats(p) {
   out.spd *= p.slowed > now ? Math.min(1, cold / SLOW) : cold;
   // the powers that change the moment's numbers (51-prefix.js); `pspd` = what they did to the walk, for the client's own steps (wire `pspd`)
   if (c.pfx.stat.length) { const spd = out.spd; pfxStat(p, out); if (spd > 0 && out.spd !== spd) out.pspd = out.spd / spd; }
+  jobTraitStat(p, out);
   return out;
 }
 
@@ -10450,13 +10512,13 @@ const ELEMENT_STATUS = [
 
 const ELEMENT_RULE = {
   physical: { chance: 1, duration: 2800 },
-  bleed: { chance: 0.36, duration: 4200, dot: 0.21, cap: 5 },
-  fire: { chance: 0.40, duration: 3400, dot: 0.32 },
+  bleed: { chance: 0.42, duration: 4200, dot: 0.24, cap: 5 },
+  fire: { chance: 0.42, duration: 3600, dot: 0.34 },
   cold: { chance: 1, duration: 2600 },
-  lightning: { chance: 1, duration: 2300 },
-  poison: { chance: 1, duration: 6300, dot: 0.12 },
-  dark: { chance: 0.34, duration: 3800 },
-  light: { chance: 0.34, duration: 2400 },
+  lightning: { chance: 1, duration: 2400 },
+  poison: { chance: 1, duration: 6300, dot: 0.14 },
+  dark: { chance: 0.38, duration: 4000 },
+  light: { chance: 0.42, duration: 2800 },
 };
 const ELEMENT_DOTS = [["bleed", "bleed"], ["burn", "fire"], ["poison", "poison"]];
 const NO_ELEMENT_ROWS = Object.freeze([]);
@@ -10478,7 +10540,7 @@ function elementResist(S, target, type, penetration = 0) {
   const res = elementMob(target) ? monsterElement(target.k).res : elementGear(target)?.res;
   let n = res?.[type] || 0;
   if (n > 0) n = Math.max(0, n - Math.max(0, penetration));
-  if (elementActive(S, target, "curse")) n -= 14;
+  if (elementActive(S, target, "curse")) n -= 15;
   return 1 - clamp(n, -65, 90) / 100;
 }
 
@@ -10516,7 +10578,7 @@ function elementDamage(S, source, target, raw, armor, options = {}) {
 }
 
 const elementTaken = (S, target) => elementActive(S, target, "shock") ? 1.10 : 1;
-const elementOutgoing = (S, source) => (elementActive(S, source, "poison") || source?.poison?.until > S.now) ? 0.92 : 1;
+const elementOutgoing = (S, source) => (elementActive(S, source, "poison") || source?.poison?.until > S.now) ? 0.90 : 1;
 const elementHealFactor = (S, target) => (elementActive(S, target, "burn") || target?.burn?.until > S.now) ? 0.63 : 1;
 const elementFrozen = (S, target) => elementActive(S, target, "freeze") || elementActive(S, target, "stagger");
 const elementChill = (S, target) => elementActive(S, target, "chill") ? target.ail.chill.stacks : 0;
@@ -10707,8 +10769,53 @@ function elementInflict(S, rt, source, target, type, damage, options = {}) {
   return true;
 }
 
+/** Trigger one of the 6 cross-elemental reactions when an incoming player hit collides with an existing ailment on a monster. */
+function elementCrossReact(S, rt, source, target, parts, preAil) {
+  if (!source?.ch || !elementMob(target) || target.dead || MOBS[target.k]?.chest || (target.elRxAt || 0) > S.now || !preAil.size) return null;
+  const incoming = new Set();
+  for (const [type, amount] of parts) if (amount > 0 && type !== "physical") incoming.add(type);
+  if (!incoming.size) return null;
+  const rx = ELEMENT_REACTIONS.find((r) =>
+    (incoming.has(r.a) && r.ailsB.some((id) => preAil.has(id))) ||
+    (incoming.has(r.b) && r.ailsA.some((id) => preAil.has(id))));
+  if (!rx) return null;
+  target.elRxAt = S.now + ELEMENT_RX_CD;
+  const x = target.x, y = target.y, now = S.now, m = mapOfS(S, source.map);
+  rt.ev.push(["rx", rx.code, Math.round(x), Math.round(y), rx.r]);
+  const st = stats(source), amp = (1 + st.burst) * (pasHas(source, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1);
+  for (const o of mobsWithin(rt, x, y, rx.r)) {
+    if (rx.shatter) elementTimed(S, o, "shatter", rx.shatter);
+    if (rx.vuln) { o.vuln = Math.max(o.vuln || 0, now + rx.vuln); rt.ev.push(["vu", o.id, rx.vuln]); }
+    if (rx.chillAdd) elementCold(S, o, ELEMENT_RULE.cold.duration, 1, false);
+    if (rx.pull && o !== target) tug(m, o, x, y, rx.pull);
+    if (rx.extendMs && o.ail) {
+      for (const dotId of ["bleed", "poison"]) {
+        const dot = o.ail[dotId];
+        if (!dot || dot.until <= now) continue;
+        dot.until += rx.extendMs;
+        if (dot.sources) for (const byEnd of dot.sources.values()) {
+          const moved = [];
+          for (const [end, bucket] of byEnd) moved.push([end + rx.extendMs, bucket]);
+          byEnd.clear();
+          for (const [end, bucket] of moved) byEnd.set(end, bucket);
+        }
+      }
+    }
+    hurtMob(S, rt, o, source, rx.mult * amp, false, { mag: 1, elem: rx.elem, secondaryType: null, px: 1, noRx: true });
+  }
+  if (rx.ward) {
+    for (const q of allies(S, source)) if (!q.dead && dist(q.x, q.y, x, y) <= rx.r + 36) elementWard(S, q, stats(q).mhp * rx.ward, rx.wardMs);
+  }
+  if (rx.heal && !source.dead) elementRestore(S, rt, source, stats(source).mhp * rx.heal);
+  if (source.ch.job === "wizard" || source.ch.job === "runearcher") jobTraitGain(S, rt, source, 1, false);
+  return rx;
+}
+
 function elementApplyHit(S, rt, source, target, parts, options = {}) {
   if (!target || MOBS[target.k]?.chest || (options.proc === false && !options.forceAilment)) return;
+  const preAil = !options.noRx && source?.ch && elementMob(target)
+    ? new Set(ELEMENT_STATUS.map((s) => s.id).filter((id) => elementActive(S, target, id) || (id === "burn" && target.brnAt > S.now) || (id === "bleed" && target.dot?.until > S.now)))
+    : null;
   const gear = elementGear(source, options.element);
   // Multiple enemies often attack together. Their elemental precision is lower than a player's.
   const precision = elementMob(source) ? (source.el || MOBS[source.k]?.boss ? 0.65 : 0.40) : 1;
@@ -10723,6 +10830,7 @@ function elementApplyHit(S, rt, source, target, parts, options = {}) {
     const chance = forced ? 1 : (ELEMENT_RULE[type].chance + (gear?.proc?.[type] || 0) / 100) * precision;
     elementInflict(S, rt, source, target, type, damage, { chance, crit: options.crit, element: gear });
   }
+  if (preAil && preAil.size) elementCrossReact(S, rt, source, target, parts, preAil);
 }
 
 function elementDotHit(S, rt, target, type, pid, amount) {
@@ -11189,7 +11297,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const parts = elementDamage(S, p, mob, raw, defence, {
     type: o.elem || skillDamageType(o.sk, st.wk),
     secondaryType: o.secondaryType === undefined ? o.sk?.secondaryDamageType : o.secondaryType,
-    armorPenPct: o.sk?.armorPenPct,
+    armorPenPct: (o.sk?.armorPenPct || 0) + (o.armorPenPct || 0) + jobTraitArmorPen(S, p),
     element: st.element, extraScale: o.px ? 0 : mult * (graze ? SFX.grazeK : 1), pure, crit, typedOnly: o.typedOnly,
   });
   let dmg = damageTotal(parts);
@@ -11202,7 +11310,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (mob.vuln > S.now) dmg *= 1.3;
   // 금서의 낙인: a branded monster takes more from everyone
   if (mob.brand > S.now) dmg *= 1 + SKILL.brand.k;
-  dmg *= pasHurtK(S, p, mob, st);   // the felt passives (55-passives.js)
+  dmg *= pasHurtK(S, p, mob, st, o);   // the felt passives + job identity trait (55-passives.js)
   // a sword hit builds inertia, once an action
   if (st.wk === "sword" && p.inAct !== p.actN && pasOn(p, "inertia")) {
     p.inAct = p.actN;
@@ -11230,11 +11338,11 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   if (!o.px && (!pure || o.forceAilment) && lost > 0) {
     elementApplyHit(S, rt, p, mob, parts, {
       crit, element: st.element, proc: !graze && !pure, forceAilment: o.forceAilment,
-      noDarkLeech: o.noDarkLeech, scale: lost / Math.max(1, damageTotal(parts)),
+      noDarkLeech: o.noDarkLeech, noRx: o.noRx, scale: lost / Math.max(1, damageTotal(parts)),
     });
   }
   if (pure) runeShock(S, rt, p, x, y, mob);
-  pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand);
+  pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand, o);
   if (!o.px) pfxHit(S, rt, p, st, mob, dmg, crit, killed, o);   // the powers that answer a blow landing (chance, status, crit)
   if (!killed) {
     // whatever is hit (and lives) staggers for a moment and is nudged back; the biggest things shrug it off
@@ -11386,6 +11494,7 @@ function hurtPlayer(S, rt, p, raw, mob, type) {
   if (mob) p.blame = blameOf(mob);
   damageEvent(rt, p.eid, dmg, dmg ? 0 : 3, 1, 0, parts);
   pfxHurt(S, rt, p, st, mob, dmg, raw);   // the powers that answer a hurt (thorn gives back 40%)
+  if (p.hp > 0 && dmg && mob && (p.ch.job === "swordsman" || p.ch.job === "paladin")) jobTraitGain(S, rt, p, 1, false);
   if (p.hp > 0 && dmg && mob) elementApplyHit(S, rt, mob, p, parts, { scale: Math.min(before, dmg) / Math.max(1, damageTotal(parts)) });
   else if (p.hp <= 0 && !pfxLethal(S, rt, p, st, mob, dmg)) fall(S, rt, p);
   return dmg;
@@ -12838,11 +12947,11 @@ const pasLow = (p, ps) => ps.has("sword_fortify30") && p.hp < stats(p).mhp * SKI
 /** 정신 집중: stood still long enough for the focused next skill. */
 const pasFocus = (p, ps, now) => ps.has("staff_spark40") && now - Math.max(p.mvAt || 0, p.focusAt || 0) >= SKILL.staff_spark40.ms;
 
-/** Damage multiplier from the passives on one blow of `p` on `mob`. */
-function pasHurtK(S, p, mob, st) {
+/** Damage multiplier from the passives and job identity trait on one blow of `p` on `mob`. */
+function pasHurtK(S, p, mob, st, opt) {
   const ps = pasSet(p);
-  if (!ps.size) return 1;
-  let k = 1;
+  let k = jobTraitHurtK(S, p, mob, opt);
+  if (!ps.size) return k;
   if (ps.has("sword_edge50") && mob.hp < mobMax(mob) * SKILL.sword_edge50.below) k *= 1 + SKILL.sword_edge50.k;
   if (ps.has("staff_flood50") && p.mp >= st.mmp * SKILL.staff_flood50.at) k *= 1 + SKILL.staff_flood50.k;
   if (ps.has("bow_quill50") && mob.expAt > S.now && mob.expBy === p.pid) k *= 1 + SKILL.bow_quill50.k;
@@ -12852,9 +12961,11 @@ function pasHurtK(S, p, mob, st) {
 const pasFirst = (p, mob) => !mob.by[p.pid] && pasHas(p, "dagger_edge40");
 
 /** After a blow of `dmg` landed (`killed`: it fell; `brand`: its brand before the blow). */
-function pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand) {
+function pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand, opt) {
+  if (p.dead) return;
+  jobTraitHit(S, rt, p, mob, st, dmg, crit, killed, opt);
   const ps = pasSet(p);
-  if (!ps.size || p.dead) return;
+  if (!ps.size) return;
   const now = S.now;
   if (crit && !killed && ps.has("bow_quill50")) {
     if (!(mob.expAt > now && mob.expBy === p.pid)) pasFx(rt, p, "bow_quill50", mob.x, mob.y);
@@ -12887,24 +12998,26 @@ function pasAfter(S, rt, p, mob, st, dmg, crit, killed, brand) {
     if (next.length) pasFx(rt, p, "book_clause30", mob.x, mob.y);
   }
 }
-/** Attack-interval multiplier (the sword's low-HP rally, the dagger's kill rush). */
+/** Attack-interval multiplier (the sword's low-HP rally, the dagger's kill rush, job identity gauges). */
 function pasAspd(p) {
+  let k = jobTraitAspd(p);
   const ps = pasSet(p);
-  if (!ps.size) return 1;
-  let k = 1;
+  if (!ps.size) return k;
   if (pasLow(p, ps)) k *= 1 - SKILL.sword_fortify30.aspd;
   if (ps.has("dagger_fang50") && p.fangAt > p.S.now) k *= 1 - SKILL.dagger_fang50.aspd;
   return k;
 }
-/** Damage-taken multiplier (the sword's low-HP rally). */
-const pasGuard = (p) => (pasLow(p, pasSet(p)) ? 1 - SKILL.sword_fortify30.guard : 1);
-/** Every tick: a changed attack interval reaches the client (its bar paces the blows by `acd`). */
+/** Damage-taken multiplier (the sword's low-HP rally + barbarian rage / paladin vow). */
+const pasGuard = (p) => (pasLow(p, pasSet(p)) ? 1 - SKILL.sword_fortify30.guard : 1) * jobTraitGuard(p);
+/** Every tick: a changed attack interval or expired job trait reaches the client. */
 function pasTick(S, rt, p) {
-  const ps = pasSet(p);
-  if (!ps.size) return;
-  const low = pasLow(p, ps), as = pasAspd(p);
-  if (low && !p.psLow) pasFx(rt, p, "sword_fortify30", p.x, p.y);
-  p.psLow = low;
+  jobTraitTick(S, p);
+  const ps = pasSet(p), as = pasAspd(p);
+  if (ps.size) {
+    const low = pasLow(p, ps);
+    if (low && !p.psLow) pasFx(rt, p, "sword_fortify30", p.x, p.y);
+    p.psLow = low;
+  }
   if (as !== (p.psAs || 1)) { p.psAs = as; p.dirty = true; }
 }
 /** A spear's tip found its mark: 창끝 반동 trims the spear skills' waits; returns the tip blow's options (하나로 모인 힘: a sure crit). */
@@ -12914,13 +13027,167 @@ function pasTip(S, rt, p) {
     for (const id of Object.keys(p.cds)) if (SKILL[id] && skOf(SKILL[id], "spear") && p.cds[id] > now) p.cds[id] = Math.max(now, p.cds[id] - SKILL.spear_advance30.cut);
     p.dirty = true;
   }
-  return { ign: SKILL.tip.ign, crit: ps.has("spear_edge50") ? 100 : 0 };
+  return { ign: SKILL.tip.ign, crit: ps.has("spear_edge50") ? 100 : 0, tip: true };
 }
 /** 날에 실은 무게: a sword finisher's shockwave round (x, y), on all but the one it struck. */
 function pasQuake(S, rt, p, mob, x, y) {
   const q = SKILL.sword_weight40;
   pasFx(rt, p, "sword_weight40", x, y);
   for (const o of mobsWithin(rt, x, y, q.r)) if (o !== mob) hurtMob(S, rt, o, p, q.mult);
+}
+
+// ───────────────────────────── job identity gauges (JOB-03) ─────────────────────────────
+const jobTraitOf = (p) => (p?.ch?.job ? JOB_TRAIT[p.ch.job] || null : null);
+function jobTraitVal(p, now = p?.S?.now || 0) {
+  const t = jobTraitOf(p);
+  return t && (p.jt | 0) > 0 && now - (p.jtAt || 0) <= t.ms ? Math.min(t.max, p.jt | 0) : 0;
+}
+function jobTraitView(p, now) {
+  const t = jobTraitOf(p);
+  return t ? { job: p.ch.job, id: t.id, v: jobTraitVal(p, now), max: t.max } : null;
+}
+function jobTraitGain(S, rt, p, n = 1, dedup = true) {
+  const t = jobTraitOf(p);
+  if (!t || p.dead || !(n > 0)) return 0;
+  if (dedup && (!p.actN || p.jtAct === p.actN)) return jobTraitVal(p, S.now);
+  if (dedup) p.jtAct = p.actN;
+  const prev = jobTraitVal(p, S.now);
+  p.jt = Math.min(t.max, prev + n);
+  p.jtAt = S.now;
+  if (p.jt !== prev) {
+    p.dirty = true;
+    if (p.jt >= t.max && prev < t.max && rt) rt.ev.push(["jt", p.eid, 1]);
+  }
+  return p.jt;
+}
+function jobTraitTick(S, p) {
+  const t = jobTraitOf(p);
+  if (p.jt > 0 && (!t || S.now - (p.jtAt || 0) > t.ms)) { p.jt = 0; p.dirty = true; }
+}
+function jobTraitStat(p, out) {
+  const t = jobTraitOf(p), v = jobTraitVal(p, p.S.now);
+  if (!t || !v) return;
+  switch (p.ch.job) {
+    case "thief": out.critd += 0.025 * v; break;
+    case "bladedancer": out.spd *= 1 + 0.02 * v; out.pspd = (out.pspd || 1) * (1 + 0.02 * v); break;
+    case "trickster": out.crit = Math.min(SFX.critCap, out.crit + 2.5 * v); out.eva = Math.min(35, out.eva + 2 * v); break;
+    case "warlock": out.ls = Math.min(20, out.ls + 0.6 * v); break;
+    case "runearcher": out.cdr = Math.min(0.55, out.cdr + 0.02 * v); break;
+    case "tracker": out.crit = Math.min(SFX.critCap, out.crit + 2 * v); out.spd *= 1 + 0.02 * v; out.pspd = (out.pspd || 1) * (1 + 0.02 * v); break;
+    case "destroyer": out.poise = Math.min(0.92, out.poise + 0.04 * v); break;
+  }
+}
+function jobTraitHurtK(S, p, mob, opt) {
+  const v = jobTraitVal(p, S.now);
+  if (!v) return 1;
+  switch (p.ch.job) {
+    case "swordsman": return 1 + 0.01 * v;
+    case "spellblade": return opt?.sk || (opt?.elem && opt.elem !== "physical") ? 1 + 0.015 * v : 1;
+    case "spellspear": return 1 + 0.015 * v;
+    case "wizard": return opt?.sk ? 1 + 0.015 * v : 1;
+    case "warlock": return 1 + 0.015 * v;
+    case "archer": return 1 + 0.015 * v;
+    case "destroyer": return 1 + 0.02 * v;
+    default: return 1;
+  }
+}
+function jobTraitArmorPen(S, p) {
+  return p?.ch?.job === "lancer" ? 3 * jobTraitVal(p, S.now) : 0;
+}
+function jobTraitAspd(p) {
+  const v = jobTraitVal(p, p.S.now);
+  if (!v) return 1;
+  if (p.ch.job === "bladedancer") return 1 - 0.015 * v;
+  if (p.ch.job === "archer") return 1 - 0.02 * v;
+  return 1;
+}
+function jobTraitGuard(p) {
+  const v = jobTraitVal(p, p.S.now);
+  if (!v) return 1;
+  if (p.ch.job === "swordsman") return v >= JOB_TRAIT.swordsman.max ? 0.90 : 1;
+  if (p.ch.job === "paladin") return 1 - 0.025 * v;
+  return 1;
+}
+function jobTraitHit(S, rt, p, mob, st, dmg, crit, killed, opt) {
+  const job = p.ch.job;
+  if (!JOB_TRAIT[job] || opt?.px) return;
+  switch (job) {
+    case "swordsman": case "spellblade": case "paladin":
+      jobTraitGain(S, rt, p, 1, true); break;
+    case "thief":
+      if (crit || mob.tgt !== p.pid) jobTraitGain(S, rt, p, 1, true); break;
+    case "bladedancer":
+      if (jobTraitVal(p, S.now) >= JOB_TRAIT.bladedancer.max && p.bdHealAct !== p.actN && p.hp < st.mhp) {
+        p.bdHealAct = p.actN;
+        healP(rt, p, st.mhp * 0.015);
+      }
+      if (opt?.sk || marksOf(S, mob) > 0 || elementActive(S, mob, "bleed") || mob.dot?.until > S.now) jobTraitGain(S, rt, p, 1, true);
+      break;
+    case "lancer":
+      if (opt?.tip || opt?.sk) jobTraitGain(S, rt, p, 1, true); break;
+    case "spellspear":
+      if (opt?.sk || opt?.elem === "cold" || opt?.elem === "lightning") jobTraitGain(S, rt, p, 1, true); break;
+    case "trickster":
+      if (crit || opt?.sk) jobTraitGain(S, rt, p, 1, true); break;
+    case "warlock":
+      if (killed || mob.brand > S.now) jobTraitGain(S, rt, p, 1, true); break;
+    case "archer":
+      if (opt?.sk || dist(p.x, p.y, mob.x, mob.y) >= 35) jobTraitGain(S, rt, p, 1, true); break;
+    case "tracker":
+      if (opt?.sk || marksOf(S, mob) > 0 || elementActive(S, mob, "poison")) jobTraitGain(S, rt, p, 1, true); break;
+    case "destroyer":
+      if (opt?.sk || st.wk === "hammer") jobTraitGain(S, rt, p, 1, true); break;
+  }
+}
+/** Consume a maxed job identity gauge when casting a skill; returns bonus options applied to that cast. */
+function jobTraitSpend(S, rt, p, st, sk, id, cost) {
+  const t = jobTraitOf(p);
+  if (!t || p.ch.job === "bladedancer") return null;
+  const v = jobTraitVal(p, S.now);
+  if (v < t.max) {
+    if (p.ch.job === "wizard" || p.ch.job === "runearcher") jobTraitGain(S, rt, p, 1, true);
+    return null;
+  }
+  p.jt = 0; p.jtAt = 0; p.jtAct = p.actN; p.dirty = true;
+  rt.ev.push(["jt", p.eid, 2]);
+  switch (p.ch.job) {
+    case "swordsman": return { mult: 1.15 };
+    case "spellblade":
+      if (cost > 0) p.mp = Math.min(st.mmp, p.mp + Math.round(cost * 0.30));
+      return { mult: 1.16, forceAilment: "light" };
+    case "thief": return { mult: 1.16, sure: true };
+    case "lancer":
+      if (p.cds[id] > S.now) p.cds[id] = Math.max(S.now, p.cds[id] - 1500);
+      return { mult: 1.16 };
+    case "spellspear": {
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), 64, 9]);
+      for (const o of mobsWithin(rt, p.x, p.y, 64)) hurtMob(S, rt, o, p, 0.45, false, { mag: 1, elem: "cold", secondaryType: "lightning", px: 1, noRx: true });
+      return { mult: 1.15 };
+    }
+    case "wizard":
+      p.mp = Math.min(st.mmp, p.mp + Math.round(st.mmp * 0.25));
+      return { mult: 1.18 };
+    case "trickster":
+      if (p.cds[id] > S.now) p.cds[id] = S.now + Math.round((p.cds[id] - S.now) * 0.75);
+      return { mult: 1.15 };
+    case "warlock":
+      healP(rt, p, st.mhp * 0.08);
+      return { mult: 1.16 };
+    case "runearcher":
+      elementWard(S, p, st.mhp * 0.08, 3600);
+      return { mult: 1.16 };
+    case "archer": return { mult: 1.18, armorPenPct: 20 };
+    case "tracker": return { mult: 1.18, forceAilment: "poison" };
+    case "destroyer": return { mult: 1.20, forceAilment: "physical" };
+    case "paladin":
+      for (const ally of members(S, p)) if (!ally.dead && ally.map === p.map && dist(ally.x, ally.y, p.x, p.y) <= 90) {
+        const mhp = stats(ally).mhp;
+        elementWard(S, ally, mhp * 0.05, 3500);
+        healP(rt, ally, mhp * 0.05, HIT_CUE.oath);
+      }
+      return { mult: 1.10 };
+    default: return null;
+  }
 }
 // ───────────────────────────── the boss-script runner ─────────────────────────────
 // A scripted boss — any mob whose kind has `MOBS[k].script`, and a weekly challenge's boss (DIM_CHAL.bosses[k]) —
@@ -13525,8 +13792,9 @@ function react(S, rt, p, key, x, y, k) {
     if (rx.vuln) { o.vuln = now + rx.vuln; rt.ev.push(["vu", o.id, rx.vuln]); }
     if (rx.knock) { const d = dist(x, y, o.x, o.y) || 1; knock(m, o, (o.x - x) / d, (o.y - y) / d, rx.knock); }
     const elem = rx.id === "steam" ? "fire" : rx.id === "super" ? "cold" : "lightning";
-    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst) * (pasHas(p, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1), false, { mag: 1, elem });
+    hurtMob(S, rt, o, p, rx.mult * k * (1 + stats(p).burst) * (pasHas(p, "staff_chant30") ? 1 + SKILL.staff_chant30.k : 1), false, { mag: 1, elem, noRx: true });
   }
+  if (p?.ch && (p.ch.job === "wizard" || p.ch.job === "runearcher")) jobTraitGain(S, rt, p, 1, false);
   return rx;
 }
 /** A spell of element `e` landing at (x, y): if another element is still held the two react there; else `e` is held next. */
@@ -13571,6 +13839,7 @@ function healP(rt, p, n, cue) {
 /** A healed ally's next nearby kill can share job XP with the caster. */
 function healSupport(rt, healer, ally, amount, cue, creditMs) {
   const restored = healP(rt, ally, amount, cue);
+  if (restored && healer.ch.job === "paladin") jobTraitGain(healer.S, rt, healer, 1, true);
   if (restored && ally !== healer && healer.party && healer.party === ally.party) {
     const now = healer.S.now;
     let support = healer.healCredit;
@@ -13821,6 +14090,52 @@ function propPulse(S, rt, m, p, o, now) {
       if (low && got > 0) healP(rt, low, got * (low.hp < stats(low).mhp * o.sk.mendBelow ? o.sk.mend : 0.5), HIT_CUE.sanctuary);
       return false;
     }
+    case "aether": {
+      rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) hit(mob, o.mult, { elem: "fire", secondaryType: "light" });
+      return false;
+    }
+    case "cataclysm": {
+      const step = o.step++;
+      const last = step >= o.n;
+      rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y), step]);
+      const list = mobsWithin(rt, o.x, o.y, o.r);
+      if (step === 1) {
+        for (const mob of list) { mob.slow = Math.max(mob.slow || 0, now + 2200); hit(mob, o.mult, { elem: "cold", secondaryType: null }); }
+        weave(S, rt, p, "i", o.x, o.y, o.k);
+      } else if (step === 2) {
+        for (const mob of list) hit(mob, o.mult, { elem: "lightning", secondaryType: null });
+        weave(S, rt, p, "l", o.x, o.y, o.k);
+      } else {
+        rt.ev.push(["bw", Math.round(o.x), Math.round(o.y), o.r, 9]);
+        for (const mob of list) hit(mob, o.fin, { elem: "lightning", secondaryType: "fire" });
+        weave(S, rt, p, "f", o.x, o.y, o.k);
+      }
+      return last;
+    }
+    case "gale": {
+      if (p.chan !== o.id) return true;
+      const [ux, uy] = AIM_V[p.aim | 0], last = --o.left <= 0;
+      const hawk = pasOn(p, "hawk") ? 1 + SKILL.hawk.k : 1;
+      const cnt = last ? 5 : 3, a0 = Math.atan2(uy, ux), spread = o.sk.spread;
+      const mult = (last ? o.fin : o.mult) * hawk;
+      rt.ev.push(["a", p.eid, o.sk.fx, Math.round(p.x + ux * 80), Math.round(p.y + uy * 80 - 6), p.dir, 2, last ? 2 : 1]);
+      for (let j = 0; j < cnt; j++) {
+        const a = a0 + ((j - (cnt - 1) / 2) * spread * Math.PI) / 180;
+        fireArrow(S, rt, p, null, mult, 99, last ? 5 : 3, { len: o.sk.len, ux: Math.cos(a), uy: Math.sin(a), opt: last ? { ...opt, forceAilment: "cold" } : opt });
+      }
+      if (last) p.chan = 0;
+      return last;
+    }
+    case "venomrain": {
+      rt.ev.push(["pp", o.id, Math.round(o.x), Math.round(o.y)]);
+      for (const mob of mobsWithin(rt, o.x, o.y, o.r)) {
+        mob.slow = Math.max(mob.slow || 0, now + 1400);
+        hit(mob, o.mult, { crit: o.sk.crit });
+        addMarks(S, mob, 1);
+      }
+      return false;
+    }
   }
   return true;
 }
@@ -13894,7 +14209,7 @@ function weaponTick(S, p, now) {
 /** Whatever a hand had going that does not survive a fall or a change of map. */
 function weaponReset(p, death) {
   p.dance = null; p.hide = 0; p.inert = 0; p.weave = null; p.charge = null; p.chan = 0; p.hold = null; p.parry = null;
-  p.hammer = null; p.hammerCracks = null;
+  p.hammer = null; p.hammerCracks = null; p.jt = 0; p.jtAt = 0; p.jtCast = null;
   if (death) { p.reso = 0; p.sanctAt = 0; }
 }
 /** The bits other players see: 4 untouchable in the air, 16 dancing, 32 resonance full, 64 hidden, 128 focused, 256 holding a charge (its tier × 512). */
@@ -13985,6 +14300,9 @@ function castSkill(S, p, id) {
   if (sk.hpCost) { const c = Math.min(p.hp - 1, Math.round(p.hp * sk.hpCost)); if (c > 0) { p.hp -= c; rt.ev.push(["h", p.eid, c, 0, 1, 1]); } }
   // WIS shortens every wait; a prefix power (메아리의) may give it straight back
   p.cds[id] = now + skCooldown(p, sk);
+  const jt = jobTraitSpend(S, rt, p, st, sk, id, cost);
+  if (jt?.mult) k *= jt.mult;
+  p.jtCast = jt;
   pfxSkill(S, rt, p, st, sk, id, cost);
   p.atkAt = now;
   p.swordBeat = null;
@@ -14012,9 +14330,11 @@ function castSkill(S, p, id) {
 function skStrike(S, p, id, k, cost, tgt) {
   const sk = SKILL[id], st = stats(p), rt = S.maps[p.map], m = mapOfS(p.S, p.map), now = S.now;
   const ev = (kind, x, y, extra) => rt.ev.push(extra === undefined ? ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir] : ["a", p.eid, kind, Math.round(x), Math.round(y), p.dir, 2, extra]);
-  const opt = { mag: sk.mag, sk };
+  const jt = p.jtCast || null;
+  p.jtCast = null;
+  const opt = { mag: sk.mag, sk, ...(jt?.armorPenPct ? { armorPenPct: jt.armorPenPct } : {}), ...(jt?.forceAilment ? { forceAilment: jt.forceAilment } : {}) };
   // a consumer (sk.eat) spends the combo states on its first hit of each monster
-  const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult * k * comboK(S, rt, mob, sk.eat), !!(more && more.sure), more ? { ...opt, ...more } : opt);
+  const hit = (mob, mult, more) => hurtMob(S, rt, mob, p, mult * k * comboK(S, rt, mob, sk.eat), !!(jt?.sure || (more && more.sure)), more ? { ...opt, ...more } : opt);
   const [aimX, aimY] = AIM_V[p.aim | 0];
   const ahead = (n) => [p.x + aimX * n, p.y + aimY * n];
   const prop = (o) => addProp(S, rt, p, { sk, mag: sk.mag, k, ...o });
@@ -14598,6 +14918,142 @@ function skStrike(S, p, id, k, cost, tgt) {
         const a = a0 + ((j - (sk.n - 1) / 2) * ((2 * sk.spread) / (sk.n - 1)) * Math.PI) / 180;
         fireArrow(S, rt, p, null, sk.mult * k, 99, 7, { len: sk.len, r: sk.r, ux: Math.cos(a), uy: Math.sin(a), cap, opt, brandK: sk.brandK });
       }
+      break;
+    }
+
+    // ── remaining seven job Lv.30 secondary signatures (JOB-01, fx 160–166)
+    case "aetherblade": {
+      // 스펠블레이드 Lv.30: 성광·화염 유성낙하 + 관성 소모 + 잔광 장판
+      const [tx, ty] = aimPoint(rt, m, p, sk.at), d = dist(p.x, p.y, tx, ty) || 1;
+      const ux = (tx - p.x) / d, uy = (ty - p.y) / d;
+      let far = Math.min(d, reach(m, p.x, p.y, ux, uy, sk.at));
+      while (far > 0 && !canStand(m, p.x + ux * far, p.y + uy * far)) far -= 3;
+      const ox = p.x, oy = p.y;
+      p.x += ux * Math.max(0, far); p.y += uy * Math.max(0, far);
+      if (far > 0) runeMoveSkill(S, p);
+      p.fix = true; p.mvAt = now;
+      const inert = pasOn(p, "inertia") ? inertOf(p) : 0;
+      if (inert) { p.inert = 0; ev(110, p.x, p.y - 6); }
+      rt.ev.push(["ln", 9, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(sk.fx, p.x, p.y - 6, sk.r);
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 2]);
+      for (const o of mobsWithin(rt, p.x, p.y, sk.r)) {
+        hit(o, sk.mult * (1 + sk.inert * inert), { forceAilment: "light" });
+        addBrn(S, o);
+      }
+      weave(S, rt, p, "f", p.x, p.y, k);
+      prop({ kind: "aether", wire: 1, x: p.x, y: p.y, r: sk.field, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.pulse * k });
+      break;
+    }
+    case "shadowexec": {
+      // 도적 Lv.30: 칠흑의 사형선고 — 등 뒤 순간이동 + 표식 폭발 + 처치 시 쿨타임 반환 및 은신
+      const mob = aimMob(rt, p, sk.len, AIM_CONE) || mobsWithin(rt, p.x, p.y, sk.len).sort((a, b) => marksOf(S, b) - marksOf(S, a) || dist(p.x, p.y, a.x, a.y) - dist(p.x, p.y, b.x, b.y))[0];
+      const ox = p.x, oy = p.y;
+      if (!mob) {
+        const far = stepTo(m, ox, oy, aimX, aimY, Math.round(sk.len * 0.45));
+        p.x += aimX * far; p.y += aimY * far; p.fix = true; p.mvAt = now;
+        if (far > 0) runeMoveSkill(S, p);
+        rt.ev.push(["ln", 6, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+        ev(sk.fx, p.x, p.y - 6, 0);
+        for (const o of mobsWithin(rt, p.x, p.y, sk.r)) hit(o, sk.mult * 0.7, { crit: sk.crit });
+        break;
+      }
+      const sure = mob.tgt !== p.pid, [ux, uy] = aimVec(p, mob);
+      for (const d of [16, 8, 0, -16]) { const nx = mob.x + ux * d, ny = mob.y + uy * d; if (canStand(m, nx, ny)) { p.x = nx; p.y = ny; break; } }
+      if (p.x !== ox || p.y !== oy) runeMoveSkill(S, p);
+      p.fix = true; p.mvAt = now;
+      p.aim = aimIdx(mob.x - p.x, mob.y - p.y);
+      face(p, mob);
+      const n = marksOf(S, mob);
+      mob.mk = 0;
+      rt.ev.push(["ln", 6, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(sk.fx, mob.x, mob.y - 6, n);
+      hit(mob, sk.mult * (1 + sk.per * n), { ...(sure ? { sure: true } : { crit: sk.crit }), forceAilment: "dark" });
+      for (const o of mobsWithin(rt, mob.x, mob.y, Math.round(sk.r * 0.7))) if (o !== mob) hit(o, sk.mult * 0.45, { crit: sk.crit });
+      if (mob.dead) {
+        if (p.cds[id] > now) p.cds[id] = now + Math.round((p.cds[id] - now) * (1 - sk.killCut));
+        p.hide = Math.max(p.hide || 0, now + sk.hide);
+        p.spdBuff = Math.max(p.spdBuff, now + sk.hide);
+        p.dirty = true;
+      }
+      break;
+    }
+    case "cataclysm": {
+      // 마법사 Lv.30: 삼원소 대격변 — 화염 즉시 폭격 + 냉기→번개→대폭발 3단 연쇄 원소 반응
+      const [x, y] = aimPoint(rt, m, p, sk.at);
+      ev(sk.fx, x, y - 6, sk.r);
+      for (const o of mobsWithin(rt, x, y, sk.r)) { hit(o, sk.mult, { elem: "fire", secondaryType: null }); addBrn(S, o); }
+      weave(S, rt, p, "f", x, y, k);
+      prop({ kind: "cataclysm", wire: 1, x, y, r: sk.r, n: sk.n, step: 1, every: sk.every, next: now + sk.every, until: now + sk.every * sk.n + 50, mult: sk.mult * k, fin: sk.fin * k });
+      break;
+    }
+    case "mirageburst": {
+      // 트릭스터 Lv.30: 환영 만화경 — 분신 잔류 + 후방 도약 은신 + 6방향 환영탄 + 1.2초 분신 폭발
+      const ox = p.x, oy = p.y, a0 = Math.atan2(aimY, aimX);
+      p.hide = Math.max(p.hide || 0, now + sk.hide);
+      p.spdBuff = Math.max(p.spdBuff, now + sk.hide);
+      const far = stepTo(m, ox, oy, -aimX, -aimY, sk.back);
+      p.x = ox - aimX * far; p.y = oy - aimY * far;
+      if (far > 0) runeMoveSkill(S, p);
+      p.fix = true; p.mvAt = now;
+      rt.ev.push(["ln", 8, Math.round(ox), Math.round(oy), Math.round(p.x), Math.round(p.y)]);
+      ev(sk.fx, ox, oy - 6, sk.n);
+      for (let j = 0; j < sk.n; j++) {
+        const a = a0 + (j * Math.PI * 2) / sk.n, ux = Math.cos(a), uy = Math.sin(a);
+        const len = Math.max(16, reach(m, ox, oy, ux, uy, sk.len));
+        rt.ev.push(["ln", 7, Math.round(ox), Math.round(oy), Math.round(ox + ux * len), Math.round(oy + uy * len)]);
+        for (const o of mobsInLine(rt, ox, oy, ux, uy, len, sk.half)) {
+          hit(o, sk.mult, j % 2 === 0 ? { elem: "dark", secondaryType: "lightning" } : { elem: "lightning", secondaryType: "dark" });
+          addMarks(S, o, 1);
+        }
+      }
+      if (!rt.decoys) rt.decoys = [];
+      const dc = { id: S.nextId++, x: ox, y: oy, until: now + sk.popMs, pid: p.pid, r: sk.popR, mult: sk.popMult * k };
+      rt.decoys.push(dc);
+      rt.ev.push(["dc", dc.id, p.eid, Math.round(ox), Math.round(oy), sk.popMs]);
+      break;
+    }
+    case "soulharvest": {
+      // 마도사 Lv.30: 금서 해방: 영혼 수확 — 광역 암흑/독 낫 + 상태이상 비례 증폭 + HP/MP 흡수
+      ev(sk.fx, p.x, p.y - 6, sk.r);
+      rt.ev.push(["bw", Math.round(p.x), Math.round(p.y), sk.r, 15]);
+      const list = mobsWithin(rt, p.x, p.y, sk.r);
+      const got = dealt(p, list, () => {
+        for (const o of list) {
+          const cond = (o.brand > now ? 1 : 0) + (elementActive(S, o, "curse") ? 1 : 0) + (elementActive(S, o, "poison") || o.poison?.until > now ? 1 : 0);
+          hit(o, sk.mult * (1 + sk.perStatus * cond), { forceAilment: "poison" });
+          if (!o.dead && !MOBS[o.k].chest) o.brand = Math.max(o.brand || 0, now + SKILL.brand.ms);
+        }
+      });
+      if (got > 0) {
+        healP(rt, p, got * sk.heal);
+        p.mp = Math.min(st.mmp, p.mp + Math.max(1, Math.round(got * sk.mpGain)));
+      }
+      break;
+    }
+    case "galevolley": {
+      // 헌터 Lv.30: 질풍 연사 — 즉시 3연사 + 이동 가능 5연속 질풍 화살(막타 냉기 5연사)
+      const hawk = pasOn(p, "hawk") ? 1 + SKILL.hawk.k : 1;
+      const a0 = Math.atan2(aimY, aimX);
+      ev(sk.fx, ...ahead(70), 1);
+      for (let j = 0; j < 3; j++) {
+        const a = a0 + ((j - 1) * sk.spread * Math.PI) / 180;
+        fireArrow(S, rt, p, null, sk.mult * k * hawk, 99, 3, { len: sk.len, ux: Math.cos(a), uy: Math.sin(a), opt });
+      }
+      p.chan = prop({ kind: "gale", x: p.x, y: p.y, left: sk.n, every: sk.every, next: now + sk.every,
+        until: now + sk.every * (sk.n + 1) + 50, mult: sk.mult * k, fin: sk.fin * k }).id;
+      break;
+    }
+    case "venomrain": {
+      // 추적자 Lv.30: 맹독 혈우 — 착탄 + 4초간 맹독/출혈/표식 사냥터 결계
+      const [x, y] = aimPoint(rt, m, p, sk.at);
+      ev(sk.fx, x, y - 6, sk.r);
+      for (const o of mobsWithin(rt, x, y, sk.r)) {
+        o.slow = Math.max(o.slow || 0, now + 1800);
+        hit(o, sk.impact, { crit: sk.crit, forceAilment: "bleed" });
+        addMarks(S, o, 1);
+      }
+      prop({ kind: "venomrain", wire: 1, x, y, r: sk.r, every: sk.every, next: now + sk.every, until: now + sk.ms, mult: sk.mult * k });
       break;
     }
   }
@@ -26092,8 +26548,8 @@ function selfPayload(p) {
     // knockback resist %, elemental burst %, item find from luck %, graze chance on a monster of your own tier %
     dv: [st.mag, r1(st.eva), r1(st.aspd * 100), r1(st.cdr * 100), r1(st.res * 100), r1(st.poise * 100), r1(st.kbr * 100), r1(st.burst * 100),
       r1(Math.min(SFX.mf[1], SFX.mf[0] * eff(ch.st.luk))), clamp(SFX.graze[0] - (ch.eq.weapon ? ch.wm[weaponKind(ch)].lv : 0), 0, SFX.graze[3])],
-    // the weapon passive's gauge (57 crView), and every skill learned: [id, MP now, cooldown left ms, usable in hand 1/0]
-    cr: crView(p, now), sk: skWire(p, now),
+    // the weapon passive's gauge (57 crView), job identity trait (55 jobTraitView), and every skill learned
+    cr: crView(p, now), jt: jobTraitView(p, now), sk: skWire(p, now),
     inv: charmBag(ch.inv), eq: ch.eq, q: ch.q, kills: ch.kills || 0, enh, qs: ch.qs,
     bq: ch.bq, bn: ch.bn, mk: ch.mk, streak: [p.streak, Math.max(0, STREAK_MS - (now - p.streakAt))],
     // attack up, speed up, warmth, food — then what monsters leave on you: slowed, burning, poisoned —
@@ -26161,12 +26617,13 @@ export function viewFor(S, pid) {
   // me[12] / a P row's [9]: the carry code (58-life.js carryOf), only while something is held
   const held = carryOf(p);
   if (held) out.me.push(held);
+  if (p.ch.job !== "adventurer") out.jt = jobTraitVal(p, S.now);
   albaView(S, p, out);   // the 일일 아르바이트 shift in hand (66-alba.js)
   elementView(S, out, p.eid, p);
   const elementSpeed = elementFrozen(S, p) ? 0 : elementMoveFactor(S, p);
   if (elementSpeed !== 1) out.elspd = elementSpeed;
-  // a prefix power speeding the walk for a moment (질주·추격 …): only while it does, so the client's own steps keep up with the rules'
-  if (deriveStats(p).pfx.stat.length) { const ps = stats(p).pspd; if (ps) out.pspd = Math.round(ps * 1000) / 1000; }
+  // a prefix power or job trait speeding the walk for a moment: only while it does, so the client's own steps keep up with the rules'
+  { const ps = stats(p).pspd; if (ps && ps !== 1) out.pspd = Math.round(ps * 1000) / 1000; }
   for (const oid of Object.keys(S.players)) {
     const o = S.players[oid];
     if (o === p || o.map !== p.map || !near(o)) continue;
@@ -26346,13 +26803,13 @@ export function defs() {
   return {
     worldName: "루넬샤대륙",
     items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, jobPal: JOB_PAL, skillJob: SKILL_JOB, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
-    jobs, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, statGrowth: { perLevel: AP_PER_LEVEL, cap: ST_CAP, soft: ST_SOFT },
+    jobs, jobTraits: JOB_TRAIT, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, statGrowth: { perLevel: AP_PER_LEVEL, cap: ST_CAP, soft: ST_SOFT },
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
     ske: { rate: SKE_RATE, pct: SKE_PCT, max: SKE_MAX, item: SKE_ITEM },
     jf: { lo: [LO_MAX.a, LO_MAX.p], borrow: LO_BORROW, scroll: JF_SCROLL, cost: JF_COST, quest: JF_QUEST, respecItem: RESPEC_ITEM },
     affix, runes: RUNES, runeScale: RUNE_SCALE, runeStatCaps: RUNE_STAT_CAP, runeSets: RUNE_SETS, runeSetMax: RUNE_SET_MAX, runeRarity: RUNE_RARITY, sockCaps: SOCK_CAPS, sockCost: SOCK_COST, sockItem: SOCK_ITEM,
-    elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
+    elements: { types: DAMAGE_TYPES, info: ELEMENTS, status: ELEMENT_STATUS, reactions: ELEMENT_REACTIONS, basic: Object.fromEntries(WK_ORDER.map((wk) => [wk, skillDamageType("", wk)])) },
     elementPrefixes: ELEMENT_PREFIX_AFFIX,
     rarity: RARITY, eliteHp: ELITE.map((e) => e.hp), partyMax: PARTY_MAX,
     fieldParty: { tiles: FIELD_PARTY_RANGE / T, share: PARTY_SHARE },
