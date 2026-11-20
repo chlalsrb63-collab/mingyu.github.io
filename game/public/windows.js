@@ -17,7 +17,6 @@ import { Sound } from "./audio.js";
 import { showTopic } from "./help.js";
 import * as S3 from "./scene2d.js";
 import * as Emo from "./emoticons.js";
-import { gaugeTip } from "./weapongauge.js";
 import * as StatWin from "./statwin.js";
 import * as JobTree from "./jobtree.js";
 import * as Lobby from "./lobby.js";
@@ -744,7 +743,6 @@ export function setupWindows({ walkToDoor }) {
   });
   $("#chat-fold").addEventListener("click", () => document.body.classList.toggle("chat-folded"));
   // the class gauge's own tooltip
-  $("#cg-box").addEventListener("mouseenter", () => { $("#cg-box").title = G.self ? gaugeTip(G.self) || "" : ""; });
   addEventListener("resize", () => { layTabs(); for (const id of WIN) if (isOpen(id)) keepIn(id); });
   for (const b of $$("#menu button[data-win]")) b.addEventListener("click", () => toggleWin(b.dataset.win));
   $("#btn-winreset").addEventListener("click", () => {

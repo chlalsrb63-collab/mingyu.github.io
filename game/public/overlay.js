@@ -338,6 +338,15 @@ function renderText(t) {
       bar(fx, fy + 7, 34, k(me.hp, G.self.mhp), "#58c070");
       bar(fx, fy + 13, 34, k(me.mp, G.self.mmp), "#4a8cff");
     }
+    // the weapon-passive gauge (weapongauge.js draws #cgauge, 120×20) at half size under your feet, under the bars if shown
+    if (!me.dead && G.self?.cr) {
+      const [fx, fy] = at(me.x, me.y, 0), y = fy + (G.myBars ? 19 : 7), w = 60, h = 10;
+      tg.imageSmoothingEnabled = dpr < 2;   // half of 1 px: blend it rather than drop every other pixel
+      tg.fillStyle = "rgba(10,10,16,.7)";
+      tg.fillRect(Math.round((fx - w / 2 - 1) * dpr), Math.round((y - 1) * dpr), (w + 2) * dpr, (h + 2) * dpr);
+      tg.drawImage($("#cgauge"), Math.round((fx - w / 2) * dpr), Math.round(y * dpr), w * dpr, h * dpr);
+      tg.imageSmoothingEnabled = false;
+    }
   }
   for (const b of G.bobs.values()) if (b.bite) { const [x, y] = at(b.x, b.y, 0.9); label("!", x, y + Math.sin(t / 60) * 2, "#ffe04a", 20); }
   for (const [eid, b] of G.bubbles) {

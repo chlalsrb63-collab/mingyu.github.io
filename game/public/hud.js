@@ -338,7 +338,6 @@ export function section(text, glyph) {
 }
 
 const cgauge = $("#cgauge");
-const cgBox = $("#cg-box");
 /** The sky widget over the minimap: the phase and hour (sun or moon), and the weather. */
 const skyHud = { at: 0, key: "" };
 function skyTick(t) {
@@ -382,8 +381,6 @@ export function hudTick(t) {
   if (!s) return;
   // the weapon gauge (weapongauge.js); a fault there must never stop the frame
   try { drawWeaponGauge(cgauge, s, G.defs, t); } catch (err) { if (!hudTick.warned) { hudTick.warned = true; console.warn("weapon gauge:", err); } }
-  // no weapon passive learned yet (mastery 10): no empty black box under the job row
-  if (cgBox.hidden !== !s.cr) cgBox.hidden = !s.cr;
   QS.tick(t);
   dashTick(t);
   targetFrame(t);
