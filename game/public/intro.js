@@ -3,7 +3,50 @@
  * followed by the 11-second in-game Willow Plaza camera pan & dolly-in transition (Part 2).
  */
 import * as S3 from "./scene2d.js";
-import { G, el, $ } from "./state.js";
+import { Sound } from "./audio.js";
+import { G, el } from "./state.js";
+
+const OPENING_BGM = "assets/music/opening.mp3";
+let bgmAudio = null, bgmFadeTimer = 0;
+
+function startIntroBgm() {
+  stopIntroBgm(false);
+  if (Sound.vol?.mute) return;
+  // Duck normal map BGM cleanly while opening.mp3 plays
+  if (Sound.ctx && Sound.music) {
+    const t = Sound.ctx.currentTime;
+    Sound.music.gain.cancelScheduledValues(t);
+    Sound.music.gain.setTargetAtTime(0, t, 0.15);
+  }
+  const a = new Audio(OPENING_BGM);
+  a.volume = Math.max(0, Math.min(1, (Sound.vol?.music ?? 0.7) * 0.85));
+  a.currentTime = 0;
+  a.play().catch(() => { /* autoplay blocked until user gesture */ });
+  bgmAudio = a;
+}
+
+function fadeOutIntroBgm(ms = 3200) {
+  clearInterval(bgmFadeTimer);
+  // Restore town BGM gently as Willow Plaza fades in
+  if (Sound.applyVolume) Sound.applyVolume();
+  if (!bgmAudio) return;
+  const a = bgmAudio, v0 = a.volume, t0 = performance.now();
+  bgmFadeTimer = setInterval(() => {
+    const p = Math.min(1, (performance.now() - t0) / ms);
+    a.volume = Math.max(0, v0 * (1 - p));
+    if (p >= 1) {
+      clearInterval(bgmFadeTimer);
+      a.pause();
+      if (bgmAudio === a) bgmAudio = null;
+    }
+  }, 50);
+}
+
+function stopIntroBgm(restore = true) {
+  clearInterval(bgmFadeTimer);
+  if (bgmAudio) { bgmAudio.pause(); bgmAudio.currentTime = 0; bgmAudio = null; }
+  if (restore && Sound.applyVolume) Sound.applyVolume();
+}
 
 const SCENES = [
   { src: "assets/intro/scene1.jpg", dur: 7000, x0: -3.5, x1: 3.5, y0: 0, y1: -1.5, s0: 1.06, s1: 1.15, mood: "peace" },
@@ -50,6 +93,7 @@ export function start() {
   if (phase !== "idle") stop();
   phase = "video";
   document.body.classList.add("introcam", "intro-video");
+  startIntroBgm();
 
   overlay = el("div", "intro-overlay");
   const stage = el("div", "intro-stage");
@@ -127,6 +171,7 @@ function beginCameraPan() {
   cancelAnimationFrame(rafId);
   if (overlay) { overlay.remove(); overlay = null; }
   document.body.classList.remove("intro-video");
+  fadeOutIntroBgm(3200);
 
   // If not on a map yet (e.g. still loading), end cleanly
   if (!G.me || !G.map) { finish(); return; }
@@ -201,6 +246,7 @@ export function finish() {
 export function stop() {
   cancelAnimationFrame(rafId);
   phase = "idle";
+  stopIntroBgm(true);
   if (overlay) { overlay.remove(); overlay = null; }
   if (fadeEl) { fadeEl.remove(); fadeEl = null; }
   if (keyHandler) { window.removeEventListener("keydown", keyHandler, true); keyHandler = null; }
