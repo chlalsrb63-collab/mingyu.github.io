@@ -341,8 +341,35 @@ function airship(g) {
   rect(g, 11, 29, 6, 1, brass);
 }
 
+/** 천검관 협곡: twin sheer stratified ochre cliffs draped in emerald pines framing a dark-tiled Chinese pass gatehouse. */
+function jianmen(g) {
+  // Back mountain ridge silhouette
+  poly(g, [[4, 34], [12, 12], [22, 16], [26, 28], [38, 28], [44, 14], [54, 10], [60, 34]], INK);
+  // Left & right towering ochre-grey cliffs
+  poly(g, [[5, 34], [12, 13], [21, 17], [25, 34]], "#9c8468");
+  poly(g, [[12, 13], [21, 17], [22, 23], [14, 21]], "#baa282");
+  poly(g, [[39, 34], [44, 15], [53, 11], [59, 34]], "#8c7258");
+  poly(g, [[44, 15], [53, 11], [55, 19], [46, 20]], "#baa282");
+  // Lush green cliffside canopy & foothills
+  poly(g, [[3, 38], [9, 25], [22, 28], [26, 38]], "#3f7c3c");
+  poly(g, [[38, 38], [43, 27], [55, 24], [61, 38]], "#376e38");
+  rect(g, 8, 29, 10, 4, "#589c52"); rect(g, 45, 28, 10, 4, "#589c52");
+  // Red-brown stone pass gatehouse wedged in the central cleft
+  rect(g, 24, 24, 16, 14, INK);
+  rect(g, 25, 25, 14, 12, "#8e5c48");
+  rect(g, 25, 24, 14, 2, "#a8acb2");
+  rect(g, 29, 29, 6, 8, "#221614");
+  // Double-tiered dark slate Chinese gatehouse roof
+  poly(g, [[23, 24], [27, 19], [37, 19], [41, 24]], "#525c68");
+  poly(g, [[25, 19], [28, 15], [36, 15], [39, 19]], "#3a4450");
+  rect(g, 28, 14, 8, 2, "#8692a0");
+  rect(g, 30, 21, 4, 2, "#e8c058");
+  // Mountain pass stone road leading down from the arch
+  poly(g, [[28, 37], [36, 37], [39, 41], [25, 41]], "#b8ae9c");
+}
+
 const terrains = new Map([
-  ["frostkeep", frostkeep], ["dunesea", dunesea], ["airship", airship],
+  ["frostkeep", frostkeep], ["dunesea", dunesea], ["airship", airship], ["jianmen", jianmen],
   ["town", town], ["willow", g => town(g, true)], ["blossom_trail", blossomTrail], ["city", city],
   ["meadow", meadow], ["forest", forest], ["jungle", jungle], ["coast", coast],
   ["desert", oasis], ["oasis", oasis], ["autumn", autumn], ["maple", autumn],

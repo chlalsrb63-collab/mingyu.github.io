@@ -10,9 +10,9 @@
 /** The packed dungeons whose campfires get a quiet ring like a gate's (open fields keep their measured routes: tests/hunt-routes.mjs). */
 const FIRE_QUIET = ["crypt", "sewer", "abyss"];
 /** The wide grounds that get more campfires (how many), each laid where the walk to a fire was longest (dunesea: 64 % of its ground was over 60 tiles from one). */
-const FIRE_EXTRA = { dunesea: 1, city: 1, maple: 1, inklake: 1, cloudtemple: 1, mesa: 1, meadow: 2, forest: 2, cave: 1, jungle: 2, coast: 2, oasis: 2 };
+const FIRE_EXTRA = { dunesea: 1, city: 1, maple: 1, inklake: 1, cloudtemple: 1, mesa: 1, jianmen: 2, meadow: 2, forest: 2, cave: 1, jungle: 2, coast: 2, oasis: 2 };
 /** Open ground wanted all round an extra fire (default 2; a tighter ground needs more so the walk to it stays three tiles wide: tests/mapflow). */
-const FIRE_ROOM = { cloudtemple: 4, mesa: 4 };
+const FIRE_ROOM = { cloudtemple: 4, mesa: 4, jianmen: 4 };
 const Z_SAFE = 0, Z_NORMAL = 1, Z_ELITE = 2, Z_HIDDEN = 3;
 /**
  * Zone cuts, as a share of the farthest walk D from the entrance: the safe plaza is ZONE_SAFE D deep

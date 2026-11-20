@@ -34,8 +34,8 @@ const WX_ODDS = {
   city: [40, 30, 24, 6, 0, 0],
   autumn: [34, 22, 14, 16, 14, 0],
   jungle: [30, 22, 30, 12, 6, 0], coast: [46, 14, 16, 0, 24, 0], desert: [62, 8, 0, 0, 30, 0],
-  // maps-batch2: the cloud temple is fog first; the red mesa is dry and windy
-  mist: [18, 24, 14, 36, 6, 2], mesa: [56, 12, 4, 6, 22, 0],
+  // maps-batch2: the cloud temple is fog first; the red mesa is dry and windy; jianmen is crisp highland mountain weather
+  mist: [18, 24, 14, 36, 6, 2], mesa: [56, 12, 4, 6, 22, 0], jianmen: [34, 24, 14, 18, 10, 0],
 };
 /** Small flavour: rain brings the fish up sooner, fog hides you a little from monsters. */
 const WX_FISH = 0.75, WX_FOG_AGGRO = 0.9;

@@ -100,7 +100,7 @@ const GROUND_LIGHT = {
   meadow: "#e1c179", forest: "#72975c", crypt: "#9480ac", city: "#98a4b6",
   sewer: "#8c9952", cave: "#8486bb", abyss: "#b35b68", autumn: "#da9757",
   coast: "#73b9af", desert: "#e0b279", jungle: "#69a368", mist: "#abb7ce",
-  mesa: "#cd855b", frostkeep: "#a4cadb", inklake: "#848dab",
+  mesa: "#cd855b", frostkeep: "#a4cadb", inklake: "#848dab", jianmen: "#8ba078",
 };
 const reflected = Object.fromEntries(Object.entries(GROUND_LIGHT).map(([region, color]) => [region, hex(color)]));
 function habitatOf(map) {

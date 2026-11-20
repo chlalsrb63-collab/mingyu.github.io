@@ -85,7 +85,7 @@ while (todo.length) {
   }
 }
 assert.deepEqual(Object.keys(seen).sort(), D.maps.map((m) => m.id).sort(), "every map can be reached from town");
-for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa", "inklake"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
+for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa", "inklake", "jianmen"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
 
 // ── the dungeons: harder the deeper you go, a camp on the way, a guardian at the end
 for (const id of ["crypt", "sewer", "abyss"]) {
@@ -230,5 +230,22 @@ JSON.stringify(L.removePlayer(S, PID));
   assert.equal(mouth, 3, "one neck, three wide");
   // the mesa: plank bridges between the mesa tops, made crossings on the river
   assert.ok(maps.mesa.g.some((r) => r.includes("b")) && maps.mesa.crossings.length >= 4);
+  // END-03: 천검관 협곡 (jianmen) — two-way door from maple, 4 fortress courts, field boss at passgate, summit boss in walled citadelkeep
+  for (const [from, to] of [["maple", "jianmen"], ["jianmen", "maple"]]) {
+    assert.ok(maps[from].portals.some((p) => p.to === to), `${from} has a door to ${to}`);
+    assert.ok(D.maps.find((q) => q.id === from).to.includes(to), `${from} lists ${to} as a way on`);
+  }
+  const jm = maps.jianmen, jmMeta = D.maps.find((q) => q.id === "jianmen");
+  assert.deepEqual(jmMeta.band, [48, 50].map((t) => 4 * t - 3), "jianmen band Lv.189-197");
+  assert.deepEqual(jm.courts.map((c) => c.piece), ["citadelkeep", "passgate", "passkeep", "passkeep"], "jianmen courts");
+  assert.ok(jm.falls.length >= 3, `jianmen waterfalls (${jm.falls.length})`);
+  assert.deepEqual(D.waypoints.find((q) => q.id === "jianmen").names, ["산기슭 진영", "천검 관문", "고대 성채 마당"]);
+  const jmGate = jm.courts.find((c) => c.piece === "passgate");
+  assert.ok(jm.bossAt && jm.bossAt[0] >= jmGate.x && jm.bossAt[0] < jmGate.x + jmGate.w && jm.bossAt[1] >= jmGate.y && jm.bossAt[1] < jmGate.y + jmGate.h && jm.reach[jm.bossAt[1] * jm.w + jm.bossAt[0]], "jianmen field boss rises in passgate");
+  const jmCit = jm.courts[0], jmBoss = jm.spawns.find((sp) => sp.k === "jianmentiger");
+  assert.ok(D.mobs.jianmentiger.boss && jmBoss && jmBoss.r[0] > jmCit.x && jmBoss.r[0] < jmCit.x + jmCit.w && jmBoss.r[1] > jmCit.y && jmBoss.r[1] < jmCit.y + jmCit.h, "jianmentiger stands in citadelkeep");
+  let jmMouth = 0;
+  for (let x = jmCit.x; x < jmCit.x + jmCit.w; x++) { if (jm.o[jmCit.y + jmCit.h - 1][x] === " ") jmMouth++; assert.equal(jm.o[jmCit.y][x], "W"); }
+  assert.equal(jmMouth, 3, "jianmen citadelkeep has one 3-wide southern gate");
 }
 console.log("world ok — maps", Object.keys(seen).join(","));

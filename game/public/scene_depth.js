@@ -10,6 +10,7 @@ const PALETTE = {
   desert: [[219, 189, 163], "#5c423b"],
   mesa: [[198, 152, 145], "#562d39"],
   mist: [[174, 194, 209], "#394356"],
+  jianmen: [[156, 178, 166], "#2a3e38"],
   cave: [[89, 121, 158], "#202b4a"],
   crypt: [[104, 100, 132], "#2d2537"],
   sewer: [[82, 111, 103], "#243a33"],
@@ -17,7 +18,7 @@ const PALETTE = {
 };
 const WARM = new Set(["#ffb860", "#ffd890", "#ffe690", "#ffd070", "#ffd870"]);
 const COLD = new Set(["#5ae4d0", "#72e6f4", "#b07aff", "#4aa8ff", "#ff6a7a"]);
-const CANOPY = new Set(["town", "meadow", "forest", "jungle", "autumn", "mist"]);
+const CANOPY = new Set(["town", "meadow", "forest", "jungle", "autumn", "mist", "jianmen"]);
 const variants = new WeakMap();
 const VARIANT_LIMIT = 12;
 const clamp01 = (v) => Math.min(1, Math.max(0, v));

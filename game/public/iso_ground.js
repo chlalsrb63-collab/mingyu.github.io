@@ -26,7 +26,7 @@ export const UG = {
   abyss: { floor: ["#7c2f3c", "#5c1e2b", "#9e4855"], rock: "#19070c", face: ["#5a1622", "#8c2c3a", "#ba4e5a", "#330e18"], wet: ["#a81c2c", "#8e1424", "#e4606c", "#560a16", "#d04858"] },
   cave: { floor: ["#40606a", "#344f5a", "#527680"], rock: "#101a26", face: ["#2e4458", "#4a6a7c", "#5a7c8c", "#22343f"], wet: ["#26a08e", "#1e8a7a", "#8af4dc", "#145a50", "#58d6be"] },
 };
-export const GRASS = { meadow: "#6cbf5e", town: "#6cbf5e", city: "#6cbf5e", forest: "#3f8a5c", autumn: "#71843a", jungle: "#35944a", coast: "#74c060", desert: "#8ab850", mesa: "#a4a058", mist: "#6f9a6a" };
+export const GRASS = { meadow: "#6cbf5e", town: "#6cbf5e", city: "#6cbf5e", forest: "#3f8a5c", autumn: "#71843a", jungle: "#35944a", coast: "#74c060", desert: "#8ab850", mesa: "#a4a058", mist: "#6f9a6a", jianmen: "#4a8a46" };
 export const underground = (theme) => !!UG[theme];
 /**
  * The cave's shelf level (0/1/2) per tile from the map payload's `lv` (runs "<level><count>" joined by ","),
@@ -241,6 +241,7 @@ export function materials(theme) {
   const wet = U ? U.wet : theme === "autumn" ? ["#3f86b8", "#336fa0", "#80bede", "#285c8a", "#6aa8d0"]
     : theme === "jungle" || theme === "coast" ? ["#2a9cae", "#17748c", "#7adcd8", "#125a74", "#5cc4c8"]
     : theme === "desert" || theme === "mesa" ? ["#3aa8bc", "#2c90a8", "#8adcde", "#207890", "#74ccd4"]
+    : theme === "jianmen" ? ["#3290a4", "#247086", "#8ae0e4", "#1b586c", "#6ac2cc"]
     : theme === "mist" ? ["#e4ebf3", "#cdd8e6", "#ffffff", "#aebccf", "#f6f9fc"] : ["#4aa2e2", "#3f8ad2", "#8accf6", "#2f78c0", "#86c8f4"];
   const water = mk(MID.water, 10, wet[0], { pal: [wet[0], wet[1], mix(wet[0], 1.08)], style: "bank", line: wet[3] });
   water.tex = theme === "sewer" ? organic(water, SHP.water, SHP.sludge, 61, 0.42, 0.3, 9, 5) : organic(water, SHP.water, null, 61, 0.2, 0, 11, 6);
@@ -414,6 +415,15 @@ export function materials(theme) {
     const crag = mk(MID.ruin, 4, "#9a9e9c", { pal: ["#9a9e9c", "#72787a", "#b8bcb8", "#888c8a", "#a6aaa6"], straight: true, depth: 1, line: "#565c5e" });
     crag.tex = laid(crag, 13, 8, 5, 273, { moss: C("#6f9a6a"), crack: true });
     T.w = cloud; T.b = cloud; T._water = cloud; T.r = crag;
+  } else if (theme === "jianmen") {
+    // 천검관 협곡: lush emerald mountain turf, weathered ochre-grey pass flagstones (=), rugged sandstone gravel (r)
+    const turf = mk(MID.grass, 7, "#4a8a46", { pal: ["#4a8a46", "#376e38", "#64a658", "#55944c", "#2b5830", "#76b868"], line: "#2b5830" });
+    turf.tex = organic(turf, ["44./444/.11", "1.1/.1.", "22/.2", "444/.44", "11", "5/1", "2.2/.2."].map(shape), SHP.grass2, 281, 0.68, 0.32, 6, 5);
+    const passStone = mk(MID.royal, 1, "#a69c8c", { pal: ["#a69c8c", "#7e7568", "#c4baa8", "#948a7a", "#b4aa98"], amp: 2.2, depth: 2, line: "#564e44" });
+    passStone.tex = laid(passStone, 12, 8, 5, 283, { moss: C("#4a8a46"), crack: true });
+    const shale = mk(MID.ruin, 4, "#9a8268", { pal: ["#9a8268", "#745e4a", "#b8a084", "#8a725a", "#a89074"], straight: true, depth: 1, line: "#544234" });
+    shale.tex = laid(shale, 14, 9, 6, 285, { moss: C("#4a8a46"), crack: true });
+    T[":"] = turf; T["."] = turf; T._grass = turf; T["="] = passStone; T.r = shale;
   }
   if (cave) Object.assign(T, cave);
   // a ford out of doors (maps-v2 A.6, the forest's crossings `m.cross`): clear shallows over sand, flat grey

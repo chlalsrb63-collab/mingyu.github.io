@@ -838,13 +838,14 @@ function make(m, x, y, theme, S) {
     return S.cache.get(k);
   }
   if (ch === "W") {
-    const hW = (i, j) => (o(i, j) === "W" ? HEIGHT.W : 0);
+    const hw = theme === "jianmen" ? 22 : HEIGHT.W;
+    const hW = (i, j) => (o(i, j) === "W" ? hw : 0);
     return stoneWall(m, x, y, theme, [hW(x, y - 1), hW(x + 1, y), hW(x, y + 1), hW(x - 1, y)], hW(x + 1, y + 1));
   }
   // the cave's shelf rims stand as tall as their level (m.lv): a low step, a high wall of rock
   const L = ch === "C" ? levels(m) : null;
-  // (maps-batch2: on the red mesa and the cloud temple a cliff stands taller level by level — five heights)
-  const crag = theme === "mesa" || theme === "mist";
+  // (maps-batch2 + jianmen: cliffs stand taller level by level — five heights up to 36 px)
+  const crag = theme === "mesa" || theme === "mist" || theme === "jianmen";
   const hOf = (i, j) => (o(i, j) !== ch ? 0 : ch === "U" ? ruinH(i, j) : L ? (crag ? 16 + 5 * L[j * m.w + i] : L[j * m.w + i] >= 2 ? 30 : 16) : HEIGHT[ch]);
   const h = hOf(x, y);
   const nh = [hOf(x, y - 1), hOf(x + 1, y), hOf(x, y + 1), hOf(x - 1, y)], nd = hOf(x + 1, y + 1);
@@ -892,6 +893,7 @@ function rockWall(m, x, y, theme, S, g) {
  */
 function cliff(m, x, y, theme, h, nh, nd) {
   if (theme === "cave") return caveShelf(m, x, y, h, nh, nd);
+  if (theme === "jianmen") return jianmenCliff(m, x, y, h, nh, nd);
   if (theme === "desert" || theme === "coast" || theme === "mesa") return sandstone(m, x, y, theme, h, nh, nd);
   const G = materials(theme)._grass, gHex = GRASS[theme] || GRASS.meadow;
   const lip = C(light(gHex, 1.2)), gD = C(shade(gHex, 0.72));
@@ -962,10 +964,67 @@ function caveShelf(m, x, y, h, nh, nd) {
 }
 
 /**
+ * 천검관 협곡 sheer cliff (END-03): tall stratified ochre-grey & warm reddish-brown sandstone courses
+ * draped with lush emerald mountain canopy/vines hanging from the top lip and tucked into horizontal ledges.
+ */
+function jianmenCliff(m, x, y, h, nh, nd) {
+  const G = materials("jianmen")._grass, gHex = GRASS.jianmen;
+  const F = faces("#9c8468", "#baa282", "#62503e");
+  const B = faces("#88644c", "#a68064", "#543b2c");
+  const lip = C(light(gHex, 1.18)), gD = C(shade(gHex, 0.72));
+  const V = { 2: [C("#3e7c3e"), C("#589c52"), C("#28562c")], 1: [C("#306634"), C("#468244"), C("#1e4424")] };
+  const face = (side, s, z) => {
+    const ws = (side === 2 ? x : y) * 16 + s;
+    // lush mountain foliage & hanging vines draping unevenly from the cliff crown
+    const hang = 2 + Math.floor(hash(ws, side, 81) * 3) + (hash(ws >> 2, side, 82) > 0.62 ? 3 : 0);
+    if (z >= h - hang) return z === h - hang ? gD : hash(ws, z, 83) < 0.2 ? V[side][1] : side === 2 ? V[side][0] : V[side][2];
+    if (z < 2) return F[side][2];
+    const zz = z + Math.round(vnoise(ws, side * 37, 22, 84) * 3.2), r = zz % 5, course = Math.floor(zz / 5);
+    // mossy/leafy vegetation clinging along select horizontal cliff ledges
+    if (r === 4 && vnoise(ws, course * 11, 10, 85 + side) > 0.64) return hash(ws, z, 86) < 0.25 ? V[side][1] : V[side][0];
+    if (r === 0) return hash(ws >> 3, course, 87) < 0.86 ? F[side][2] : F[side][0];
+    const f = hash(course, 13, 88) < 0.42 ? B[side] : F[side];
+    if (r === 4 && hash(ws >> 2, course, 89) < 0.45) return f[1];
+    if (hash(ws >> 1, zz >> 1, 90) < 0.04) return f[2];
+    return hash(ws >> 2, zz, 91) < 0.1 ? f[3] : f[0];
+  };
+  const top = (a, b) => G.tex(x * 16 + a, y * 16 + b);
+  return block({ h, nh, nd, top, face, hi: () => lip, backInk: () => C(shade(gHex, 0.62)), seam: F[1][2] });
+}
+
+/**
  * 석축: the upper terrace's retaining wall of coursed field stone, a grassy lip on top with a few flowers
  * hanging over, moss low down; runs join like cliffs (12 px: a rise you read, never a climb).
+ * In `jianmen`, renders as a 22 px Oriental fortress rampart: red-brown weathered ashlar stone base
+ * crowned with grey brick battlements (merlons & embrasures).
  */
 function stoneWall(m, x, y, theme, nh, nd) {
+  if (theme === "jianmen") {
+    const h = 22;
+    const F = faces("#8e5c48", "#ae7a62", "#5c382a");
+    const P = faces("#84888e", "#aaafb6", "#545860");
+    const moss = C("#3e7c3e"), mossL = C("#589c52");
+    const face = (side, s, z) => {
+      const ws = (side === 2 ? x : y) * 16 + s;
+      // top 6 px: grey brick parapet with rhythmic crenelation notches
+      if (z >= h - 6) {
+        if (z >= h - 2 && ((ws >> 2) & 1) === 0) return P[side][2];
+        const kp = coursed(ws, z, 3, 5, 111 + side, x + y);
+        return kp.seam ? P[side][2] : kp.t > 0.72 ? P[side][1] : P[side][0];
+      }
+      if (z === h - 7) return P[side][2];
+      const k = coursed(ws, z, 4, 7 + (hash(ws >> 3, z >> 2, 115) < 0.5 ? 0 : 2), 116 + side, x + y);
+      if (z < 3 && hash(ws, z, 117) < 0.42) return z ? moss : mossL;
+      if (k.seam) return F[side][2];
+      return k.t < 0.25 ? F[side][3] : k.t > 0.78 ? F[side][1] : F[side][0];
+    };
+    const top = (a, b) => {
+      const edge = a < 2 || b < 2 || a > 13 || b > 13;
+      if (edge) return ((a + b) >> 2) & 1 ? C("#aaafb6") : C("#74787e");
+      return ((a >> 3) + (b >> 3)) & 1 ? C("#92969c") : C("#868a90");
+    };
+    return block({ h, nh, nd, top, face, hi: () => C("#c6cbd2"), backInk: () => C("#4c5056"), seam: F[1][2] });
+  }
   const h = HEIGHT.W, G = materials(theme)._grass, gHex = GRASS[theme] || GRASS.meadow;
   const F = faces("#a8a090", "#c8c0ae", "#7c7466");
   const lip = C(light(gHex, 1.2)), moss = C("#6a9a4a"), mossL = C("#86b45e");

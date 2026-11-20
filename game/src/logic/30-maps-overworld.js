@@ -15,8 +15,8 @@ const PIECE = {
   // maps-v2 M3, the south-west coast: palm Ψ, reef rock Φ, shore boulder Ω, mud hut Δ (Greek: every ASCII mark is taken by the rooms' furniture); shallows (walkable), white sand, dune sand
   "Ψ": [undefined, "Ψ"], "Φ": [undefined, "Φ"], "Ω": [undefined, "Ω"], "Δ": [undefined, "Δ"], ",": ["~", " "], _: ["S", " "], ":": ["z", " "],
   // maps-batch2 (the cloud temple, the red mesa): twisted pine Σ, a hall's footprint Π (a pagoda or a gold-roofed hall
-  // stands on four by two of them), rock pillar Θ, a crag, planks
-  "Σ": [undefined, "Σ"], "Π": [undefined, "Π"], "Θ": [undefined, "Θ"], C: [undefined, "C"], b: ["b", " "],
+  // stands on four by two of them), rock pillar Θ, a crag, planks, fortress wall W
+  "Σ": [undefined, "Σ"], "Π": [undefined, "Π"], "Θ": [undefined, "Θ"], C: [undefined, "C"], W: [undefined, "W"], b: ["b", " "],
 };
 const PIECES = {
   // 바람초원 · 속삭임 숲
@@ -112,9 +112,40 @@ Object.assign(PIECES, {
   colonnade: ["q.q.q.q", ".=====.", ".==*==.", ".=====.", "q.q.q.q", "......."],
   pillartop: ["Θ...Θ", ".....", "..*..", ".....", "Θ...Θ"],
   thronecourt: courtRows(15, 13, [[0, 0, "q"], [14, 0, "q"], [5, 0, "ΠΠΠΠ"], [5, 1, "ΠΠΠΠ"], [0, 4, "q"], [14, 4, "q"], [7, 3, "*"], [7, 7, "@"], [0, 8, "q"], [14, 8, "q"], [0, 12, "q"], [14, 12, "q"]]),
+  // 천검관 협곡 (jianmen): Jianmen Pass gatehouse wedged between great cliffs (Π), cliffside watchtower keeps (! → i),
+  // northern summit ancient citadel arena (^ → f) walled with fortress ashlar masonry (W), foothill camp and rampart vaults
+  passgate: (() => {
+    const rows = courtRows(16, 11, [
+      [3, 1, "WWW"], [6, 1, "ΠΠΠΠ"], [10, 1, "WWW"],
+      [3, 2, "WWW"], [6, 2, "ΠΠΠΠ"], [10, 2, "WWW"],
+      [2, 4, "3"], [13, 4, "3"],
+      [8, 4, "*"], [8, 7, "@"],
+      [2, 8, "3"], [13, 8, "3"],
+      [1, 9, "Σ"], [14, 9, "Σ"],
+    ]).map((r) => r.split(""));
+    return rows.map((r) => r.join(""));
+  })(),
+  passkeep: courtRows(11, 8, [[1, 0, "WW"], [4, 0, "!!!"], [8, 0, "WW"], [4, 1, "!!!"], [1, 3, "3"], [9, 3, "3"], [5, 4, "*"], [1, 6, "Σ"], [9, 6, "Σ"]]),
+  citadelkeep: (() => {
+    const rows = courtRows(21, 17, [
+      [8, 1, "^^^^"], [8, 2, "^^^^"],
+      [3, 4, "3"], [17, 4, "3"],
+      [3, 12, "3"], [17, 12, "3"],
+      [5, 2, "Σ"], [15, 2, "Σ"],
+      [10, 5, "*"], [10, 9, "@"],
+    ]).map((r) => r.split(""));
+    for (let y = 0; y < 17; y++) for (let x = 0; x < 21; x++) {
+      const rim = x === 0 || x === 20 || y === 0 || y >= 15 || ((x < 2 || x > 18) && (y < 2 || y > 12));
+      if (rim) rows[y][x] = y >= 15 && Math.abs(x - 10) <= 1 ? "=" : (y === 0 || x === 0 || x === 20) ? "W" : "W";
+    }
+    return rows.map((r) => r.join(""));
+  })(),
+  passcamp: [".E...3.", "..ppp..", ".pp#pp.", "Σ.ppp.l", "......."],
+  rampart: ["WW...WW", "W=====W", "3==*==3", ".=====.", "Σ.....Σ", "......."],
+  cliffshrine: [".Σ...Σ.", ".3rrr3.", "..r*r..", "..rrr..", "......."],
 });
 /** Pieces whose ruin is one big picture standing on its footprint: never turned (a mirror is fine). */
-const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate", "temple", "pagoda", "belltower", "summithall", "goldhall", "lowertown", "thronecourt"]);
+const UPRIGHT = new Set(["chapel", "cottage", "watchtower", "kinggate", "temple", "pagoda", "belltower", "summithall", "goldhall", "lowertown", "thronecourt", "passgate", "passkeep", "citadelkeep"]);
 /** Stamp a set piece and return where its tags landed: { chest: [[x, y]], fire: [...], ... }. */
 function piece(m, name, x, y, rot, flip) {
   const rows = PIECES[name], out = {};
@@ -696,8 +727,8 @@ function wilds(cfg) {
     m.pieces.push(c.piece);
     keepBox(x0 - 1, y0 - 1, x0 + tw, y0 + th);
     m.courts.push({ piece: c.piece, x: x0, y: y0, w: tw, h: th });
-    // (the crags a court is walled with stand for good: the widening never cuts them into steps)
-    for (let y = y0; y < y0 + th; y++) for (let x = x0; x < x0 + tw; x++) if (m.o[y][x] === "C") (m.noCut || (m.noCut = new Uint8Array(W * H)))[y * W + x] = 1;
+    // (the crags and fortress walls a court is walled with stand for good: the widening never cuts them into steps)
+    for (let y = y0; y < y0 + th; y++) for (let x = x0; x < x0 + tw; x++) if (m.o[y][x] === "C" || m.o[y][x] === "W") (m.noCut || (m.noCut = new Uint8Array(W * H)))[y * W + x] = 1;
     if (tags.chest) { const [cx, cy] = tags.chest[0]; spawns.push({ k: cfg.chest, n: 1, r: [cx, cy, cx, cy] }); special.push([cx, cy]); }
     const mark = tags.boss ? tags.boss[0] : tags.chest ? tags.chest[0] : [x0 + (tw >> 1), y0 + th - 1];
     if (tags.boss) {

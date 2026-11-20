@@ -299,6 +299,7 @@ export function loadMap(m) {
     else if (ch === "l" && theme === "coast") sp = S.DW[h < 0.5 ? 0 : 1];
     else if (theme === "town" && S.TT[ch]) sp = S.TT[ch][Math.floor(hash(x, y, 11) * S.TT[ch].length)];   // town tree kinds
     else if (ch === "T" && theme === "jungle") sp = S.JT[h < 0.45 ? 0 : h < 0.85 ? 1 : 2];   // broad dark leaves (maps-v2 M3 art)
+    else if (ch === "T" && theme === "jianmen") sp = h < 0.38 ? S.JT[0] : h < 0.72 ? S.JT[1] : h < 0.9 ? sp[0] : sp[2]; // deep emerald mountain canopy (no pink blossoms)
     else if (ch === "T") sp = sp[edge(x, y) ? (h < 0.7 ? 0 : 2) : h < 0.5 ? 0 : h < 0.72 ? 2 : h < 0.88 ? 1 : 3];
     else if (ch === "B") sp = theme === "town" ? S.TB[Math.floor(h * 3)] : sp[Math.floor(h * 3)];
     else if (ch === "L") sp = theme === "city" ? S.L2 : S.L;
@@ -458,10 +459,10 @@ export function wpLit() {
 
 /** Drifting motes: pollen in the open, fireflies and leaves under trees, rain in the city, dust underground. */
 const amb = [];
-const AMB_N = { town: 16, meadow: 24, forest: 26, city: 80, cave: 26, crypt: 18, sewer: 22, abyss: 36, autumn: 40, desert: 30, jungle: 22, mesa: 24, mist: 26 };
+const AMB_N = { town: 16, meadow: 24, forest: 26, city: 80, cave: 26, crypt: 18, sewer: 22, abyss: 36, autumn: 40, desert: 30, jungle: 22, mesa: 24, mist: 26, jianmen: 28 };
 function respawn(p, ox, oy, fresh) {
   // (maps-v2 M3 art) sand blowing low across the desert; fireflies and falling leaves in the jungle as in the wood
-  const k = map.id === BLOSSOM_MAP ? "petal" : theme === "desert" || theme === "mesa" ? "sand" : theme === "forest" || theme === "jungle" ? (Math.random() < 0.45 ? "fly" : "leaf") : theme === "autumn" || theme === "mist" ? (Math.random() < 0.12 ? "spore" : "leaf") : theme === "city" ? "rain" : theme === "cave" || UG[theme] ? "dust" : "pollen";
+  const k = map.id === BLOSSOM_MAP ? "petal" : theme === "desert" || theme === "mesa" ? "sand" : theme === "forest" || theme === "jungle" || theme === "jianmen" ? (Math.random() < 0.35 ? "fly" : "leaf") : theme === "autumn" || theme === "mist" ? (Math.random() < 0.12 ? "spore" : "leaf") : theme === "city" ? "rain" : theme === "cave" || UG[theme] ? "dust" : "pollen";
   p.k = k;
   p.x = ox - 20 + Math.random() * (vw + 40);
   p.y = k === "rain" && !fresh ? oy - 10 : oy - 10 + Math.random() * (vh + 20);
@@ -588,4 +589,4 @@ export function drawSunsetSea(t, ox, oy) {
 }
 
 /** The worlds under the open sky, where day turns to night. */
-export const OUTDOOR = new Set(["town", "meadow", "forest", "city", "autumn", "jungle", "coast", "desert", "mesa", "mist"]);
+export const OUTDOOR = new Set(["town", "meadow", "forest", "city", "autumn", "jungle", "coast", "desert", "mesa", "mist", "jianmen"]);

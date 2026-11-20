@@ -410,7 +410,88 @@ export function sprites() {
     eave(b, 64, 8, 36, 16, G[0], G[1], G[2]);
     b.r(63, 0, 3, 8, G[2]); b.oval(64, 3, 3.4, 3, G[0]);
   });
-  SPR = { pagoda, goldhall, chapel, cottage, ktower, kgate, waypoint, RUNE, sign: [sign(-1), sign(0), sign(1)], tower, oak, shrine, lip, board, metro, crystals, nave, culvert, heart, stall: [0, 1, 2].map(stall), stallShut, notice, statue };
+  // ── 천검관 협곡 (END-03, Jianmen Pass): passgate (red-brown ashlar arch base + grey crenelations + double-tiered slate
+  // Chinese gatehouse roof), passkeep (cliffside stone watchtower), citadelhall (ancient northern summit citadel)
+  const passgate = prop(144, 136, (b) => {
+    const S = ["#8e5c48", "#623d2f", "#b07c62"], BR = ["#82868c", "#545860", "#aeb2b8"];
+    const R = ["#525c68", "#323a44", "#8692a0"], W = "#763228", WD = "#4e1e18", DK = "#261816", GL = "#e8c058";
+    b.oval(72, 132, 68, 4, "#364632");
+    // tapered massive reddish-brown weathered sandstone fortress tower base + right rubble plinth
+    b.tri([[16, 130], [128, 130], [120, 74], [24, 74]], S[0]);
+    b.tri([[114, 130], [128, 130], [120, 74], [112, 74]], S[1]);
+    b.tri([[106, 130], [134, 130], [126, 102], [108, 102]], "#5e463a");
+    for (let y = 78; y < 130; y += 6) {
+      b.r(24 - Math.round((y - 74) * 0.14), y, 96 + Math.round((y - 74) * 0.28), 1, S[1]);
+      for (let x = 24 + ((y / 6) & 1) * 7; x < 118; x += 14) b.r(x, y, 1, 6, S[1]);
+      if (y % 12 === 0) b.r(30, y + 1, 10, 2, S[2]);
+    }
+    // arched dark stone tunnel gateway + red-brick voussoir arch + stone balustrade bridge steps
+    b.r(56, 96, 32, 34, DK); b.oval(72, 98, 16, 14, DK);
+    b.oval(72, 97, 18, 15, "#a46048"); b.oval(72, 98, 15, 13, DK);
+    b.r(57, 98, 30, 32, DK); b.r(61, 102, 22, 28, "#181012");
+    b.r(65, 114, 14, 16, "#46423c"); b.r(67, 118, 10, 12, "#767066");
+    // stone railing balustrade in front of the left approach
+    b.r(12, 114, 44, 3, BR[2]); b.r(12, 117, 44, 2, BR[1]);
+    for (let x = 14; x <= 52; x += 7) { b.r(x, 117, 3, 13, BR[0]); b.r(x + 2, 117, 1, 13, BR[1]); }
+    b.r(88, 114, 20, 3, BR[2]); b.r(88, 117, 20, 2, BR[1]);
+    for (let x = 90; x <= 104; x += 7) b.r(x, 117, 3, 13, BR[0]);
+    // grey brick crenelated battlement parapet along the top of the masonry base
+    b.r(20, 64, 104, 11, BR[0]); b.r(20, 74, 104, 2, BR[1]); b.r(20, 64, 104, 2, BR[2]);
+    for (let x = 22; x < 120; x += 10) { b.r(x, 58, 6, 6, BR[0]); b.r(x, 58, 6, 1, BR[2]); b.r(x + 5, 58, 1, 6, BR[1]); }
+    // double-tiered Chinese gatehouse pavilion (2층 기와 누각)
+    storey(b, 72, 44, 36, 18, "#4c3832", DK, W, DK);
+    b.r(60, 48, 24, 7, "#2a1a18"); b.r(61, 49, 22, 5, "#463028"); b.r(65, 51, 14, 2, GL); // lower plaque
+    eave(b, 72, 30, 50, 16, R[0], R[1], R[2]);
+    storey(b, 72, 18, 26, 13, "#64443a", WD, W, DK);
+    for (const x of [52, 62, 76, 86]) { b.r(x, 21, 6, 7, "#c6b8a0"); b.r(x + 2, 21, 1, 7, DK); b.r(x, 24, 6, 1, DK); }
+    b.r(65, 20, 14, 5, "#261614"); b.r(67, 22, 10, 2, GL); // upper plaque "천검"
+    eave(b, 72, 4, 38, 15, R[0], R[1], R[2]);
+    b.r(54, 1, 3, 4, BR[2]); b.r(87, 1, 3, 4, BR[2]);
+    // hanging green mountain vines on the left masonry shoulder
+    ivy(b, 18, 66, 120, 3); ivy(b, 118, 76, 116, 2);
+  });
+  const passkeep = prop(112, 124, (b) => {
+    const S = ["#8c5e4a", "#603d30", "#ae7c64"], BR = ["#82868c", "#545860", "#aeb2b8"];
+    const R = ["#525c68", "#323a44", "#8692a0"], W = "#7e3226", DK = "#261816";
+    b.oval(56, 120, 52, 4, "#364632");
+    b.tri([[14, 118], [98, 118], [90, 62], [22, 62]], S[0]);
+    b.tri([[84, 118], [98, 118], [90, 62], [82, 62]], S[1]);
+    for (let y = 66; y < 118; y += 6) { b.r(22 - Math.round((y - 62) * 0.14), y, 68 + Math.round((y - 62) * 0.28), 1, S[1]); }
+    // recessed wooden gate & arrow slits
+    b.r(46, 92, 20, 26, DK); b.oval(56, 94, 10, 8, DK); b.r(48, 94, 16, 24, "#4a2c1e");
+    b.r(30, 74, 4, 10, DK); b.r(78, 74, 4, 10, DK);
+    // crenelated stone deck
+    b.r(18, 52, 76, 11, BR[0]); b.r(18, 52, 76, 2, BR[2]);
+    for (let x = 20; x < 90; x += 9) { b.r(x, 47, 5, 5, BR[0]); b.r(x, 47, 5, 1, BR[2]); }
+    // watch pavilion & warm lantern + banners
+    storey(b, 56, 30, 24, 18, "#6a4c3e", "#4a3228", W, DK);
+    b.r(50, 35, 12, 9, "#f4d078"); b.r(55, 35, 2, 9, DK); b.r(50, 39, 12, 1, DK);
+    eave(b, 56, 12, 36, 18, R[0], R[1], R[2]);
+    b.r(55, 4, 2, 8, "#d4a442");
+    // twin crimson fortress banners
+    b.r(16, 48, 2, 26, "#4c3222"); b.r(10, 50, 6, 16, "#b8362a"); b.r(10, 50, 6, 2, "#e8c058");
+    b.r(94, 48, 2, 26, "#4c3222"); b.r(96, 50, 6, 16, "#b8362a"); b.r(96, 50, 6, 2, "#e8c058");
+    ivy(b, 20, 64, 110, 2);
+  });
+  const citadelhall = prop(144, 132, (b) => {
+    const ST = ["#9a9488", "#6c665c", "#c0bab0"], R = ["#485666", "#2c3642", "#7e90a4"];
+    const W = "#8c3024", WD = "#5a1e18", DK = "#221414", GL = "#e8be52";
+    b.oval(72, 128, 68, 4, "#364632");
+    // tiered grand stone terrace & wide central stair
+    b.r(8, 108, 128, 18, ST[0]); b.r(8, 108, 128, 2, ST[2]); b.r(8, 124, 128, 2, ST[1]);
+    for (let s = 0; s < 4; s++) { b.r(50 - s * 3, 111 + s * 4, 44 + s * 6, 3, ST[2]); b.r(50 - s * 3, 113 + s * 4, 44 + s * 6, 1, ST[1]); }
+    // grand lower hall with crimson columns and warm lit lattice screens
+    storey(b, 72, 72, 54, 36, "#c8b496", "#9a886c", W, DK);
+    b.r(58, 82, 28, 26, DK); b.r(60, 84, 11, 24, "#743022"); b.r(73, 84, 11, 24, "#60261a"); b.r(70, 94, 4, 4, GL);
+    for (const x of [26, 40, 94, 108]) { b.r(x, 82, 9, 14, "#f0dc9e"); b.r(x + 4, 82, 1, 14, WD); b.r(x, 88, 9, 1, WD); }
+    b.r(18, 69, 108, 3, GL);
+    eave(b, 72, 42, 64, 27, R[0], R[1], R[2]);
+    storey(b, 72, 28, 30, 14, "#b69e80", "#8a765c", W, DK);
+    b.r(64, 31, 16, 8, "#261614"); b.r(66, 34, 12, 2, GL);
+    eave(b, 72, 8, 42, 20, R[0], R[1], R[2]);
+    b.r(52, 4, 4, 5, GL); b.r(88, 4, 4, 5, GL); b.r(71, 2, 2, 7, GL);
+  });
+  SPR = { pagoda, goldhall, passgate, passkeep, citadelhall, chapel, cottage, ktower, kgate, waypoint, RUNE, sign: [sign(-1), sign(0), sign(1)], tower, oak, shrine, lip, board, metro, crystals, nave, culvert, heart, stall: [0, 1, 2].map(stall), stallShut, notice, statue };
   return SPR;
 }
 
@@ -431,12 +512,23 @@ const LANDMARKS = {
   // maps-batch2: a pagoda (the cloud temple) or a gold-roofed hall (the red mesa) on every hall footprint Π
   mist: [0, 1, 2, 3, 4, 5].map(() => ["pagoda", 4, 2, 0.5, 0.5, { on: "Π", exact: true }]),
   mesa: [0, 1, 2, 3, 4, 5].map(() => ["goldhall", 4, 2, 0.5, 0.5, { on: "Π", exact: true }]),
+  // 천검관 협곡 (END-03): great pass gatehouse on Π, cliffside watchtowers on i, northern summit citadel on f
+  jianmen: [
+    ["passgate", 4, 2, 0.5, 0.5, { on: "Π", exact: true }],
+    ["passgate", 4, 2, 0.5, 0.5, { on: "Π", exact: true }],
+    ["citadelhall", 4, 2, 0.5, 0.5, { on: "f", exact: true }],
+    ["citadelhall", 4, 2, 0.5, 0.5, { on: "f", exact: true }],
+    ["passkeep", 3, 2, 0.5, 0.5, { on: "i", exact: true }],
+    ["passkeep", 3, 2, 0.5, 0.5, { on: "i", exact: true }],
+    ["passkeep", 3, 2, 0.5, 0.5, { on: "i", exact: true }],
+    ["passkeep", 3, 2, 0.5, 0.5, { on: "i", exact: true }],
+  ],
   // the old kingdom's ruins stand on the footprints the set pieces leave for them (exact: nothing else may move them)
   autumn: [["chapel", 4, 2, 0.5, 0.5, { on: "N", exact: true }], ["cottage", 3, 2, 0.5, 0.5, { on: "d", exact: true }],
     ["ktower", 3, 2, 0.5, 0.5, { on: "i", exact: true }], ["ktower", 3, 2, 0.5, 0.5, { on: "i", exact: true }],
     ["kgate", 4, 2, 0.5, 0.5, { on: "f", exact: true }], ["kgate", 4, 2, 0.5, 0.5, { on: "f", exact: true }]],
 };
-const GLOW = { chapel: "#b06ad8", cottage: "#ffd070", tower: null, oak: "#ffe690", shrine: "#7af0b0", board: "#ff5a94", metro: "#4ab07a", crystals: "#72e6f4", nave: "#c8324a", heart: "#ff4a5a" };
+const GLOW = { chapel: "#b06ad8", cottage: "#ffd070", tower: null, oak: "#ffe690", shrine: "#7af0b0", board: "#ff5a94", metro: "#4ab07a", crystals: "#72e6f4", nave: "#c8324a", heart: "#ff4a5a", passgate: "#ffd884", passkeep: "#ffd070", citadelhall: "#ffe290" };
 
 function open(m, x, y) { return x >= 0 && y >= 0 && x < m.w && y < m.h && m.o[y][x] === " " && m.g[y][x] !== "w" && m.g[y][x] !== "W"; }
 /** A blocked tile of one of the kinds a landmark may stand on ("W" is bare rock). */

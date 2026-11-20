@@ -29,7 +29,7 @@ const LV = [null,
 const GRADE = {
   town: ["#22263a", 0.1, "#ffe8b0"], meadow: ["#1c3026", 0.08, "#fff0b0"], forest: ["#0e2c24", 0.1, "#eef0a0"], city: ["#1a2042", 0.06, "#ffe0c0"],
   autumn: ["#2c1824", 0.16, "#ffc890"], jungle: ["#0c2a20", 0.08, "#e8f8a8"], coast: ["#15304a", 0.04, "#fff4d0"], desert: ["#3a2216", 0.18, "#ffd8a0"],
-  mesa: ["#381620", 0.16, "#ffc0a0"], mist: ["#1e2a3c", 0, "#e4eeff"], cave: ["#06262e", 0, "#7eeedd"], crypt: ["#1c1428", 0.02, "#bfa2ff"],
+  mesa: ["#381620", 0.16, "#ffc0a0"], mist: ["#1e2a3c", 0, "#e4eeff"], jianmen: ["#1c2a28", 0.08, "#f0e8c0"], cave: ["#06262e", 0, "#7eeedd"], crypt: ["#1c1428", 0.02, "#bfa2ff"],
   sewer: ["#0a2418", 0.04, "#aee08e"], abyss: ["#320810", 0.06, "#ff6a5a"], interior: ["#26140a", 0.14, "#ffc27c"],
 };
 const DUNGEON = new Set(["cave", "crypt", "sewer", "abyss"]);

@@ -109,5 +109,14 @@ const BOSS_SCRIPTS = {
   serpentwing_ash: { cast: "먹물 안개", castMs: 6000, stunMs: 5000, stag: 0.04, blast: 2.2, gap: 5200, enrage: 270000, reach: 240,
     pats: [["먹빛 깃", "fan"], ["날개 급강하", "dive"], ["먹물 웅덩이", "pools"], ["뱀꼬리 휩쓸기", "cone", { back: 1 }]],
     phases: [{ at: 0.5, gap: 4400, pats: [["먹빛 깃 폭풍", "fan3"], ["날개 급강하", "dive"], ["먹물 웅덩이", "pools"], ["뱀꼬리 휩쓸기", "cone", { back: 1, both: 1 }], ["먹물 표식", "mark", { n: 3 }]] }] },
+  passbear: { cast: "철문 빗장 내리찍기", castMs: 6000, stunMs: 5000, stag: 0.04, blast: 2.3, gap: 5000, enrage: 270000, reach: 240,
+    pats: [["절벽 돌진", "charge"], ["철문 강타", "punch"], ["성벽 진동파", "donut"], ["관문 휩쓸기", "cone"]],
+    phases: [{ at: 0.5, gap: 4200, pats: [["절벽 연속 돌진", "charge2"], ["철문 연타", "punch", { n: 2 }], ["성벽 진동파", "donut", { rings: 1 }], ["관문 휩쓸기", "cone", { both: 1 }], ["수문 표식", "mark", { n: 3 }]] }] },
+  jianmentiger: { cast: "천검 백호 포효", castMs: 6000, stunMs: 5000, gap: 4600, enrage: 300000, reach: 240,
+    pats: [["검풍 발톱", "fan"], ["백호 강습", "charge"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1 }], ["천검 고리", "donut"]],
+    phases: [
+      { at: 0.66, gap: 3900, pats: [["검풍 발톱", "fan2"], ["백호 연속 강습", "charge2"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1 }], ["천검 고리", "donut", { rings: 1 }], ["검문 표식", "mark", { n: 3 }]] },
+      { at: 0.33, gap: 3200, cast: 1, steps: [{ f: "charge", dt: 650 }], pats: [["천검 폭풍", "fan3"], ["백호 연속 강습", "charge2"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1, ms: 800 }], ["천검 고리", "donut", { rings: 1, ms: 1050 }], ["검문 표식", "mark", { n: 4 }], ["협곡 대지진", "blast"]] },
+    ] },
 };
 for (const k of Object.keys(BOSS_SCRIPTS)) MOBS[k].script = BOSS_SCRIPTS[k];
