@@ -101,6 +101,12 @@ try {
   assert.equal(airship.source.loopEnd, 200, "the airship plays the full decoded recording");
   Sound.bgm("sunset_beach", "coast", "coast");
   await check("18.dawn sea.mp3", "sunset_beach");
+  Sound.bgm("blossom_trail", "willow", "meadow");
+  await check("19. flower.mp3", "blossom_trail");
+  Sound.bgm("sanctum", "cave", "sanctum");
+  await check("20. sanctum.mp3", "sanctum");
+  Sound.bgm("jianmen", "autumn", "jianmen");
+  await check("21. jianmen.mp3", "jianmen");
   Sound.localScores = {};
   Sound.bgm("without_recordings", "without_recordings");
   for (let i = 0; i < 12 && live(); i++) await nextTurn();
