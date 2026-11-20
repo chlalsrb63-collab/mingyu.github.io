@@ -40,8 +40,8 @@ function XP_K(lv) {
 }
 /** Keep later hunting payouts rising without making low-level farming more rewarding. */
 const goldK = (lv) => 1 - 0.48 * clamp((lv - 8) / 42, 0, 1);
-/** Hunting's share of a kill's gold (owner, 2026-11-15: 알바 should be where gold is earned; hunting pays in loot and XP). */
-const HUNT_GOLD = 0.4;
+/** Hunting's share of a kill's gold (owner: 알바 and 토벌 의뢰 are the main gold sources; normal mob kills pay 1/20). */
+const HUNT_GOLD = 0.4, HUNT_GOLD_NORMAL = 0.02;
 /**
  * The experience the world pays and charges at tier `t` (a real number: a player's level maps to
  * `toTier(lvl) = (lvl + 3) / 4`). Once the experience to the next of the old 50 levels; now the yardstick

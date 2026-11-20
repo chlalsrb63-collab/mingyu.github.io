@@ -181,7 +181,7 @@ function card(entry, o = {}) {
 export function sellPrice(entry) {
   const it = G.defs.items[entry.id];
   if (!isGear(entry.id)) return Math.floor(it.price * 0.4);
-  return Math.floor(it.price * 0.05 * (1 + 0.8 * (entry.q || 0)) * (1 + 0.3 * (entry.enh || 0)));
+  return Math.max(1, Math.floor(it.price * 0.01 * (1 + 0.35 * (entry.q || 0)) * (1 + 0.15 * (entry.enh || 0))));
 }
 /**
  * A tooltip's content: the item's card, and for a gear piece the card of whatever it would replace beside it

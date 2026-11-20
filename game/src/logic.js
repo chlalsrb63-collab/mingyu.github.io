@@ -2847,8 +2847,8 @@ function XP_K(lv) {
 }
 /** Keep later hunting payouts rising without making low-level farming more rewarding. */
 const goldK = (lv) => 1 - 0.48 * clamp((lv - 8) / 42, 0, 1);
-/** Hunting's share of a kill's gold (owner, 2026-11-15: 알바 should be where gold is earned; hunting pays in loot and XP). */
-const HUNT_GOLD = 0.4;
+/** Hunting's share of a kill's gold (owner: 알바 and 토벌 의뢰 are the main gold sources; normal mob kills pay 1/20). */
+const HUNT_GOLD = 0.4, HUNT_GOLD_NORMAL = 0.02;
 /**
  * The experience the world pays and charges at tier `t` (a real number: a player's level maps to
  * `toTier(lvl) = (lvl + 3) / 4`). Once the experience to the next of the old 50 levels; now the yardstick
@@ -11102,7 +11102,7 @@ const junk = (s) => isGear(s.id) && !(s.q | 0) && !(s.enh | 0) && !(s.ru || []).
 function sellPrice(s) {
   const it = ITEMS[s.id];
   if (!isGear(s.id)) return Math.floor(it.price * 0.4);
-  return Math.floor(it.price * 0.05 * (1 + 0.8 * (s.q | 0)) * (1 + 0.3 * (s.enh | 0)));
+  return Math.max(1, Math.floor(it.price * 0.01 * (1 + 0.35 * (s.q | 0)) * (1 + 0.15 * (s.enh | 0))));
 }
 /** The [low, high] an ordinary line of `key` rolls at item level `il`, before the rarity factor: a flat line is min–max % of AFFIX_REF, a % line min–max + growth × tier. */
 function affixRange(key, il) {
@@ -11180,7 +11180,8 @@ function lootFor(S, rt, mob, p) {
   const fx = pfxLoot(S, rt, p, mob, "drop");   // the powers that add to this kill's loot (51-prefix.js); all 0 without one
   const band = !d.chest && !mob.dim ? huntBandK(p.ch.lvl, d.lv) : 1;
   const goblin = has(mob, "goblin"), rain = rt.wx === WX.rain, snow = rt.wx === WX.snow;
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (goblin ? 3.5 : 1) * (rain ? 1.12 : 1) * (mob.goldK || 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
+  const huntGold = (!d.boss && !d.chest && mob.el === 0) ? HUNT_GOLD_NORMAL : HUNT_GOLD;
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * huntGold * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (goblin ? 3.5 : 1) * (rain ? 1.12 : 1) * (mob.goldK || 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
   const tries = (d.boss ? 4 : mob.el === 2 ? 3 : 1) + (goblin ? 2 : 0) + (d.eco ? 1 : 0);
   const dropRank = goblin ? 2 : d.eco ? Math.max(1, rank) : rank;
