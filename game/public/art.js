@@ -566,6 +566,19 @@ export const charmIconUrl = (kind) => { const k = "url:" + kind; return charmCac
 /** Which icon a bag charm shows: nothing of a sealed one's grade leaks (it has none on the wire). */
 export const charmKind = (c) => (!c || !c.rev ? "sealed" : c.lg && CHARM_ART[c.lg] ? c.lg : `g${c.g || 1}`);
 
+/** A copy of a 32 px weapon icon with a small blue shield and white cloud in its lower-right corner. */
+function scoutBadge(src) {
+  const [b, bg] = canvas(10, 10);
+  paint(bg, [
+    "LLLLLLLL", "LBBBBBBB", "LBBwwBBB", "LBwwwwwB", "BwwwwwwD", ".BBBBBD.", "..BBBD..", "...DD...",
+  ], { L: "#8ad0ff", B: "#3a78c8", D: "#24467a", w: "#ffffff" }, 1, 1);
+  outline(b, bg, "#111118");
+  const [c, g] = canvas(src.width, src.height);
+  g.drawImage(src, 0, 0);
+  g.drawImage(b, src.width - 10, src.height - 10);
+  return c;
+}
+
 /** Item id → data URL (for the windows) and canvas (for loot on the ground and in hand). */
 export function buildIcons(items, runes = {}) {
   const cv = { camp: campIcon(), gold: coin(), hp_s: potion("#b8303c", "#f09aa0", false), hp_m: potion("#b8303c", "#f09aa0", true), mp_s: potion("#3058c0", "#9ab4f0", false), mp_m: potion("#3058c0", "#9ab4f0", true), stone: gem(),
@@ -593,6 +606,8 @@ export function buildIcons(items, runes = {}) {
     const a = Assets.canvas("icon.item." + id);
     if (a) cv[id] = equipment.has(id) ? fitEquipmentIcon(a) : a;
   }
+  // 바람등호's scout issue is the shop weapon with lower attack: same art, plus the airship's sky badge
+  for (const id of Object.keys(cv)) if (id.startsWith("w_ship_")) cv[id] = scoutBadge(cv[id]);
   const url = {}, left = {};
   for (const id of Object.keys(cv)) { url[id] = cv[id].toDataURL(); left[id] = flip(cv[id]); }
   return { cv, url, left };
