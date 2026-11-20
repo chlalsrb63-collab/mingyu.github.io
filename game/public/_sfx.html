@@ -1,0 +1,61 @@
+<!doctype html><meta charset="utf-8"><link rel="icon" href="data:,"><title>효과음 비교</title>
+<style>
+  body { margin: 0; padding: 16px 20px; background: #101426; color: #eadabc; font: 14px/1.45 system-ui, sans-serif; }
+  h1 { font-size: 18px; margin: 0 0 6px; } small { color: #9a8fb0; }
+  table { border-collapse: collapse; margin-top: 10px; } td { padding: 4px 12px 4px 0; border-bottom: 1px solid #2b2136; }
+  button { font: inherit; padding: 3px 12px; margin-right: 4px; cursor: pointer; } code { color: #c9b98f; }
+</style>
+<h1>효과음 비교: 녹음 ↔ 합성음</h1>
+<small>녹음은 <code>assets/sfx/*.ogg</code> (Openverse · Freesound CC0, 출처는 <code>asset/CREDITS.md</code>). 배경음악은 끈 채로 들립니다.
+  어떤 녹음이 별로면 <code>assets/manifest.json</code>의 <code>"audio"</code>에서 그 키를 지우면 합성음으로 돌아갑니다. 개발용 미리보기 페이지라 배포되지 않습니다.</small>
+<p id="st">아무 버튼이나 누르면 소리를 켭니다.</p>
+<table id="t"></table>
+<script type="module">
+// Dev preview only: every sound with a recorded take, played as the recording and as the old synth.
+import { Sound } from "./audio.js";
+const NAME = {
+  ui: "버튼 클릭", tab: "탭 넘기기", open: "창 열기", close: "창 닫기", no: "안 돼요", blip: "알림 삑", coin: "골드", item: "아이템 줍기",
+  potion: "물약 마시기", pop: "뽁", swing: "휘두르기 (기본)", swing_sword: "대검 휘두르기", swing_dagger: "단검 휘두르기",
+  swing_spear: "창 휘두르기", swing_hammer: "해머 휘두르기", swing_staff: "지팡이 휘두르기", swing_book: "마도서 넘기기",
+  hit: "적중 (지팡이·마도서·활·맨손)", crit: "치명타 (기본)", finisher: "마무리 일격 (기본)", die_small: "몬스터 처치", die_big: "큰 몬스터 처치",
+  hurt: "내가 맞음", dash: "대시", dodge: "피하기", graze: "스침", shoot: "활 기본 공격", bow_shot: "활 쏘기", release: "활 놓기 (스킬)",
+  bow_draw: "활 당기기", arrow_hit: "화살 적중", arrow_wall: "화살이 벽에", mob_shot: "몬스터 원거리 공격", magic_hit: "마법탄 적중",
+  boom: "폭발", slam: "땅 내려찍기", thunder: "번개", spit: "몬스터 침 뱉기", die_boss: "보스 처치", door: "문 드나들기",
+  cast: "낚싯대 던지기", bite: "입질", landed: "물고기 낚음", forge_hit: "모루 두드리기", forge_quench: "담금질 증기",
+  step_grass: "발소리 · 풀", step_stone: "발소리 · 돌", step_wood: "발소리 · 나무", step_dirt: "발소리 · 흙", step_water: "발소리 · 물",
+};
+const WK = { sword: "대검", dagger: "단검", spear: "창", hammer: "해머" }, HIT = { hit: "적중", crit: "치명타", finisher: "마무리" };
+const label = (k) => { const [n, w] = k.split("."); return w ? `${WK[w] || w} ${HIT[n] || n}` : NAME[n] || n; };
+const man = await (await fetch("./assets/manifest.json")).json();
+const keys = Object.keys(man.audio), looks = [...new Set(keys.map((k) => k.slice(4).split("#")[0]))];
+const st = document.getElementById("st");
+const on = () => {
+  if (!Sound.ctx) {
+    Sound.unlock(); Sound.vol.music = 0; Sound.applyVolume();
+    const t = setInterval(() => {
+      if (!Sound.takes) { st.textContent = "녹음 불러오는 중…"; return; }
+      clearInterval(t);
+      const n = Object.values(Sound.takes).reduce((a, l) => a + l.length, 0), bad = keys.length - n;
+      st.textContent = `녹음 ${n}개 준비됨` + (bad ? ` · ${bad}개는 이 브라우저가 못 읽어 합성음으로 납니다` : "");
+    }, 100);
+  }
+};
+const play = (look, rec) => {
+  on();
+  const [name, arg] = look.split("."), t = Sound.takes;
+  if (!rec) Sound.takes = null;
+  Sound.last = {};
+  Sound.play(name, arg);
+  Sound.takes = t;
+};
+const tb = document.getElementById("t");
+for (const look of looks) {
+  const tr = tb.insertRow(), n = keys.filter((k) => k.slice(4).split("#")[0] === look).length;
+  tr.insertCell().textContent = label(look);
+  const c = tr.insertCell();
+  for (const [txt, rec] of [["녹음", true], ["합성", false]]) {
+    const b = document.createElement("button"); b.textContent = txt; b.onclick = () => play(look, rec); c.append(b);
+  }
+  tr.insertCell().innerHTML = `<small><code>${look}</code>${n > 1 ? ` · ${n}가지 중 무작위` : ""}</small>`;
+}
+</script>

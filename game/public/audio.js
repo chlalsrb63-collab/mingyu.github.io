@@ -4,13 +4,15 @@
  * Music: every map has its own composed loop (melody, bass, chords, drums),
  * plus a title theme, a boss theme and a rift-invasion theme. Notes are
  * scheduled a little ahead on the audio clock, and tracks crossfade.
- * Effects: a named catalogue, played through a voice limiter.
+ * Effects: a named catalogue, played through a voice limiter. A recorded take listed in
+ * assets/manifest.json "audio" as sfx.<name>[.<arg>][#variant] plays instead of the synth
+ * (or over it at `synth` level); a missing or broken file keeps the synth.
  */
 
 import { TRACKS } from "./bgm.js";
 import { arrangedTrack, DEFAULT_MUSIC_STYLE, MUSIC_STYLES } from "./bgm-arrangements.js";
 import { LOCAL_BGM_PATH, localHost } from "./local-host.js";
-import { ready as assetsReady } from "./assetlib.js";
+import { ready as assetsReady, loadSounds, sound } from "./assetlib.js";
 
 // ───────────────────────────── notes and chords ─────────────────────────────
 
@@ -121,7 +123,7 @@ export const Sound = {
   sfxOn: true, bgmOn: true,
   vol: { music: 0.7, sfx: 0.85, mute: false },
   base: null, mapScore: null, theme: null, playing: [], timer: 0,
-  recordings: null, localScores: {}, recordingRequest: null,
+  recordings: null, localScores: {}, recordingRequest: null, takes: null,
   voices: 0, last: {}, k: 1, amb: 0, ambNext: 0, noiseBuf: null, waves: {},
 
   /** Browsers only allow audio after a gesture — call this from a click/keypress. */
@@ -140,6 +142,7 @@ export const Sound = {
       this.recordings = manifest.bgm || {};
       this.localScores = manifest.bgmLocal || {};
       this.pick();
+      return loadSounds(this.ctx).then(() => { this.takes = takes(manifest.audio || {}); });
     }).catch(() => {});
   },
   resume() {
@@ -708,12 +711,33 @@ export const Sound = {
     this.last[name] = now;
     const fx = SFX[name];
     if (!fx) return;
-    this.k = BOOST[name] || 1;
+    const list = this.takes && (this.takes[`${name}.${arg}`] || this.takes[name]);
+    const take = list && list[Math.floor(Math.random() * list.length)];
+    if (take) this.sample(take);
+    if (take && !take.synth) return;
+    this.k = (BOOST[name] || 1) * (take ? take.synth : 1);
     try { fx.call(this, arg); } finally { this.k = 1; }
+  },
+  /** One recorded take, ±6% in pitch so repeats never sound like one file on a loop. */
+  sample({ buffer, vol }) {
+    const c = this.ctx, s = c.createBufferSource(), g = c.createGain();
+    s.buffer = buffer; s.playbackRate.value = this.vary(); g.gain.value = vol;
+    s.connect(g); g.connect(this.sfx); s.start();
+    this.voices++; s.onended = () => this.voices--;
   },
   /** A footstep on the ground under the player. */
   step(ground) { this.play(`step_${ground}`); },
 };
+
+/** The decoded recorded takes by sound name ("hit", "hit.sword"), from manifest keys sfx.<name>[#n]. */
+function takes(audio) {
+  const by = {};
+  for (const [k, d] of Object.entries(audio)) {
+    const s = k.startsWith("sfx.") && sound(k);
+    if (s) (by[k.slice(4).split("#")[0]] ||= []).push({ ...s, synth: d.synth || 0 });
+  }
+  return by;
+}
 
 /** A blow's colour by weapon: [punch drop Hz, thud Hz, metal ring Hz (0: none), crack Hz]. Blades ring, blunt things thump. */
 const IMPACT0 = [300, 112, 2300, 1600];

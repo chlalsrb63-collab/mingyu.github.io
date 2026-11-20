@@ -110,3 +110,7 @@ Default SFX are 100% code-synthesised Web Audio (`0 KB` download, `0 ms` latency
 1. Normalize short clips (`<= 400 ms`, mono, `-1 dBTP`, trimmed silence) into `game/public/assets/sfx/`.
 2. Register under `sfx` in `game/public/assets/manifest.json` and log licence/source in `asset/CREDITS.md`.
 3. Keep the Web Audio synthesis as an automatic fallback so offline/instant playback never breaks.
+
+Installed since 2026-11-21 (`docs/RECIPES.md` "Add a sound"): manifest keys `sfx.<name>[.<weapon>][#variant]` with `vol`
+(level-matched to this synth) and `synth` (blows keep the synth underneath at `0.7`). `Sound.play` picks a take before the
+synth runs, so this audit still checks the synth path; listen to both in `game/public/_sfx.html`.

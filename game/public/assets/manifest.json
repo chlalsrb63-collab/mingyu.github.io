@@ -1482,7 +1482,333 @@
       "h": 32
     }
   },
-  "audio": {},
+  "audio": {
+    "sfx.arrow_hit": {
+      "src": "assets/sfx/arrow_hit.ogg?v=a0057175",
+      "vol": 0.538,
+      "synth": 0.7
+    },
+    "sfx.arrow_wall": {
+      "src": "assets/sfx/arrow_hit.ogg?v=a0057175",
+      "vol": 0.043,
+      "synth": 0.7
+    },
+    "sfx.bite": {
+      "src": "assets/sfx/bite.ogg?v=6c230dc1",
+      "vol": 0.316
+    },
+    "sfx.blip": {
+      "src": "assets/sfx/blip.ogg?v=866ea21a",
+      "vol": 0.013
+    },
+    "sfx.boom": {
+      "src": "assets/sfx/boom.ogg?v=55d0fb07",
+      "vol": 0.197
+    },
+    "sfx.bow_draw": {
+      "src": "assets/sfx/bow_draw.ogg?v=9a85480d",
+      "vol": 0.044
+    },
+    "sfx.bow_shot": {
+      "src": "assets/sfx/bow_shot.ogg?v=1976ba5d",
+      "vol": 1.461
+    },
+    "sfx.cast": {
+      "src": "assets/sfx/cast.ogg?v=da6dc568",
+      "vol": 0.117
+    },
+    "sfx.close": {
+      "src": "assets/sfx/close.ogg?v=80e34a5e",
+      "vol": 0.025
+    },
+    "sfx.coin": {
+      "src": "assets/sfx/coin.ogg?v=23946ba2",
+      "vol": 0.084
+    },
+    "sfx.crit": {
+      "src": "assets/sfx/hit.ogg?v=ce8e0407",
+      "vol": 1.02,
+      "synth": 0.7
+    },
+    "sfx.crit.dagger": {
+      "src": "assets/sfx/hit_dagger.ogg?v=f2cfa320",
+      "vol": 1.772,
+      "synth": 0.7
+    },
+    "sfx.crit.hammer": {
+      "src": "assets/sfx/hit_hammer.ogg?v=1a759bdd",
+      "vol": 1.067,
+      "synth": 0.7
+    },
+    "sfx.crit.spear": {
+      "src": "assets/sfx/hit_spear.ogg?v=75bced84",
+      "vol": 0.778,
+      "synth": 0.7
+    },
+    "sfx.crit.sword": {
+      "src": "assets/sfx/hit_sword.ogg?v=edd3ca7a",
+      "vol": 1.175,
+      "synth": 0.7
+    },
+    "sfx.dash": {
+      "src": "assets/sfx/dash.ogg?v=9cab335a",
+      "vol": 0.034
+    },
+    "sfx.die_big": {
+      "src": "assets/sfx/die_big.ogg?v=330b5c59",
+      "vol": 0.133
+    },
+    "sfx.die_boss": {
+      "src": "assets/sfx/die_boss.ogg?v=766b61db",
+      "vol": 0.225
+    },
+    "sfx.die_small": {
+      "src": "assets/sfx/die_small.ogg?v=5e599e0d",
+      "vol": 0.093
+    },
+    "sfx.dodge": {
+      "src": "assets/sfx/swing_dagger.ogg?v=e7499ae5",
+      "vol": 0.082
+    },
+    "sfx.door": {
+      "src": "assets/sfx/door.ogg?v=14f61455",
+      "vol": 0.415
+    },
+    "sfx.finisher": {
+      "src": "assets/sfx/hit.ogg?v=ce8e0407",
+      "vol": 1.221,
+      "synth": 0.7
+    },
+    "sfx.finisher.dagger": {
+      "src": "assets/sfx/hit_dagger.ogg?v=f2cfa320",
+      "vol": 1.836,
+      "synth": 0.7
+    },
+    "sfx.finisher.hammer": {
+      "src": "assets/sfx/hit_hammer.ogg?v=1a759bdd",
+      "vol": 1.095,
+      "synth": 0.7
+    },
+    "sfx.finisher.spear": {
+      "src": "assets/sfx/hit_spear.ogg?v=75bced84",
+      "vol": 0.937,
+      "synth": 0.7
+    },
+    "sfx.finisher.sword": {
+      "src": "assets/sfx/hit_sword.ogg?v=edd3ca7a",
+      "vol": 1.131,
+      "synth": 0.7
+    },
+    "sfx.forge_hit": {
+      "src": "assets/sfx/forge_hit.ogg?v=ed0f77fe",
+      "vol": 0.112
+    },
+    "sfx.forge_quench": {
+      "src": "assets/sfx/forge_quench.ogg?v=31d4e749",
+      "vol": 0.12
+    },
+    "sfx.graze": {
+      "src": "assets/sfx/hit.ogg?v=ce8e0407",
+      "vol": 0.02,
+      "synth": 0.7
+    },
+    "sfx.hit": {
+      "src": "assets/sfx/hit.ogg?v=ce8e0407",
+      "vol": 0.811,
+      "synth": 0.7
+    },
+    "sfx.hit.dagger": {
+      "src": "assets/sfx/hit_dagger.ogg?v=f2cfa320",
+      "vol": 0.719,
+      "synth": 0.7
+    },
+    "sfx.hit.hammer": {
+      "src": "assets/sfx/hit_hammer.ogg?v=1a759bdd",
+      "vol": 0.99,
+      "synth": 0.7
+    },
+    "sfx.hit.spear": {
+      "src": "assets/sfx/hit_spear.ogg?v=75bced84",
+      "vol": 0.505,
+      "synth": 0.7
+    },
+    "sfx.hit.sword": {
+      "src": "assets/sfx/hit_sword.ogg?v=edd3ca7a",
+      "vol": 0.94,
+      "synth": 0.7
+    },
+    "sfx.hurt": {
+      "src": "assets/sfx/hurt.ogg?v=1bf25596",
+      "vol": 0.264
+    },
+    "sfx.item": {
+      "src": "assets/sfx/item.ogg?v=a4b6d167",
+      "vol": 0.175
+    },
+    "sfx.landed": {
+      "src": "assets/sfx/landed.ogg?v=98d3a2d6",
+      "vol": 0.521
+    },
+    "sfx.magic_hit": {
+      "src": "assets/sfx/magic_hit.ogg?v=6d5012c0",
+      "vol": 0.669,
+      "synth": 0.7
+    },
+    "sfx.mob_shot": {
+      "src": "assets/sfx/swing.ogg?v=a1a41854",
+      "vol": 0.126
+    },
+    "sfx.no": {
+      "src": "assets/sfx/no.ogg?v=3e078302",
+      "vol": 0.159
+    },
+    "sfx.open": {
+      "src": "assets/sfx/open.ogg?v=66e3739d",
+      "vol": 0.037
+    },
+    "sfx.pop": {
+      "src": "assets/sfx/pop.ogg?v=15ad1fab",
+      "vol": 0.519
+    },
+    "sfx.potion": {
+      "src": "assets/sfx/potion.ogg?v=ac0843b5",
+      "vol": 0.249
+    },
+    "sfx.release": {
+      "src": "assets/sfx/bow_shot.ogg?v=1976ba5d",
+      "vol": 1.468
+    },
+    "sfx.shoot": {
+      "src": "assets/sfx/bow_shot.ogg?v=1976ba5d",
+      "vol": 0.991
+    },
+    "sfx.slam": {
+      "src": "assets/sfx/slam.ogg?v=06e2132e",
+      "vol": 0.271,
+      "synth": 0.7
+    },
+    "sfx.spit": {
+      "src": "assets/sfx/spit.ogg?v=04cf018b",
+      "vol": 0.215
+    },
+    "sfx.step_dirt#1": {
+      "src": "assets/sfx/step_dirt-1.ogg?v=4042118d",
+      "vol": 0.011
+    },
+    "sfx.step_dirt#2": {
+      "src": "assets/sfx/step_dirt-2.ogg?v=f9e6640d",
+      "vol": 0.01
+    },
+    "sfx.step_dirt#3": {
+      "src": "assets/sfx/step_dirt-3.ogg?v=8ca23c82",
+      "vol": 0.008
+    },
+    "sfx.step_dirt#4": {
+      "src": "assets/sfx/step_dirt-4.ogg?v=2ec73657",
+      "vol": 0.008
+    },
+    "sfx.step_grass#1": {
+      "src": "assets/sfx/step_grass-1.ogg?v=18b35f75",
+      "vol": 0.014
+    },
+    "sfx.step_grass#2": {
+      "src": "assets/sfx/step_grass-2.ogg?v=24815fed",
+      "vol": 0.018
+    },
+    "sfx.step_grass#3": {
+      "src": "assets/sfx/step_grass-3.ogg?v=2e8b8548",
+      "vol": 0.018
+    },
+    "sfx.step_grass#4": {
+      "src": "assets/sfx/step_grass-4.ogg?v=0420bda3",
+      "vol": 0.015
+    },
+    "sfx.step_stone#1": {
+      "src": "assets/sfx/step_stone-1.ogg?v=35f9f424",
+      "vol": 0.019
+    },
+    "sfx.step_stone#2": {
+      "src": "assets/sfx/step_stone-2.ogg?v=4199c3ba",
+      "vol": 0.026
+    },
+    "sfx.step_stone#3": {
+      "src": "assets/sfx/step_stone-3.ogg?v=8a2524b4",
+      "vol": 0.028
+    },
+    "sfx.step_water#1": {
+      "src": "assets/sfx/step_water-1.ogg?v=67fffedb",
+      "vol": 0.078
+    },
+    "sfx.step_water#2": {
+      "src": "assets/sfx/step_water-2.ogg?v=d74befd3",
+      "vol": 0.077
+    },
+    "sfx.step_water#3": {
+      "src": "assets/sfx/step_water-3.ogg?v=f286f4f9",
+      "vol": 0.067
+    },
+    "sfx.step_water#4": {
+      "src": "assets/sfx/step_water-4.ogg?v=9c09a08f",
+      "vol": 0.044
+    },
+    "sfx.step_wood#1": {
+      "src": "assets/sfx/step_wood-1.ogg?v=19108572",
+      "vol": 0.037
+    },
+    "sfx.step_wood#2": {
+      "src": "assets/sfx/step_wood-2.ogg?v=05b97cc9",
+      "vol": 0.037
+    },
+    "sfx.step_wood#3": {
+      "src": "assets/sfx/step_wood-3.ogg?v=667dacc1",
+      "vol": 0.078
+    },
+    "sfx.step_wood#4": {
+      "src": "assets/sfx/step_wood-4.ogg?v=2b71e14d",
+      "vol": 0.064
+    },
+    "sfx.swing": {
+      "src": "assets/sfx/swing.ogg?v=a1a41854",
+      "vol": 0.086
+    },
+    "sfx.swing_book": {
+      "src": "assets/sfx/swing_book.ogg?v=a387117a",
+      "vol": 0.21
+    },
+    "sfx.swing_dagger": {
+      "src": "assets/sfx/swing_dagger.ogg?v=e7499ae5",
+      "vol": 0.347
+    },
+    "sfx.swing_hammer": {
+      "src": "assets/sfx/swing_hammer.ogg?v=7b98054b",
+      "vol": 0.308
+    },
+    "sfx.swing_spear": {
+      "src": "assets/sfx/swing_spear.ogg?v=0561f59d",
+      "vol": 0.306
+    },
+    "sfx.swing_staff": {
+      "src": "assets/sfx/swing_staff.ogg?v=53f60dc4",
+      "vol": 0.056
+    },
+    "sfx.swing_sword": {
+      "src": "assets/sfx/swing_sword.ogg?v=d6c005ca",
+      "vol": 0.868
+    },
+    "sfx.tab": {
+      "src": "assets/sfx/tab.ogg?v=29091999",
+      "vol": 0.042
+    },
+    "sfx.thunder": {
+      "src": "assets/sfx/thunder.ogg?v=6a86aaed",
+      "vol": 0.077,
+      "synth": 0.7
+    },
+    "sfx.ui": {
+      "src": "assets/sfx/ui.ogg?v=c4a804d1",
+      "vol": 0.173
+    }
+  },
   "bgmLocal": {
     "title": [
       [

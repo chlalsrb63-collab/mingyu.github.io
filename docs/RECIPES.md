@@ -89,7 +89,11 @@ Moved out of `AGENTS.md`; read the one recipe your task needs.
   directory. `assets/manifest.json` maps `bgmLocal` keys to `[file, loopStart, loopEnd]` clips. Co-op shifts
   use separate `coop_*` keys so their lobbies retain the indoor recordings. Copy the catalogue's source files
   to each separate local play checkout at the same relative paths when refreshing its build.
-- External file instead: the External assets section below + `Assets.play(ctx, "sfx.<key>")` (fall back to the synth).
+- Recorded take instead (CC0 preferred; find one with the `openverse-sfx` skill's `sfx_search.py`): cut and fade it, mono
+  44.1 kHz Ogg peaking at -1 dBFS, into `asset/sfx/` and `public/assets/sfx/`; list it in `assets/manifest.json` `"audio"` as
+  `sfx.<name>` (`.<arg>` for one weapon, `#n` for random variants) with `vol` level-matched to the synth (loudest 50 ms)
+  and, to keep the synth underneath, `synth: 0.7`. `Sound.play` uses it automatically; the synth stays the fallback.
+  Sources: `asset/sfx/README.md` + one `asset/CREDITS.md` row. Compare in `_sfx.html`.
 
 **HD-2D post-fx (그래픽 효과, `public/postfx.js`)**
 - `frame(...)` runs last in `scene2d.js render` (and after `roomLight` indoors); level 0 (끔) returns before touching canvas or DOM,
