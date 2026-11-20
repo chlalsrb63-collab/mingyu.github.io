@@ -25,14 +25,15 @@ const FUR = [
   "#fbfbff", "#fff0d8", "#ffd9c2", "#ffd0dc", "#e2d6ff", "#cfe6ff", "#cff2dc", "#ffeaa0", "#b9bdca", "#b98b68",
   "#f2b27a", "#e0b46c", "#8a6450", "#5c4a48", "#8a8a9a", "#4a4654", "#e8d4ae", "#ffb8c4", "#b4ece4", "#cddca0", "#ffcf9a", "#b8c8ff",
   "#a97961", "#c7aaa2", "#91b6ab", "#dfdcc4",
+  "#f7d8c4", "#e6b89c", "#c99472", "#7b513e", "#d4f0c0", "#ffe0eb", "#d0e4f8", "#3a3646",
 ];
 /** The second colour (markings, muzzles, bellies); 0 works it out from the fur. */
-const ACCENT = [null, "#fbfbff", "#fff0d8", "#e8d4ae", "#f2b27a", "#c08050", "#8a6450", "#5c4a48", "#8a8a9a", "#4a4654", "#ffb8c4", "#c8b0f0", "#a8d0f0", "#a8e0b8", "#dfc6a5", "#714b56", "#e9a979"];
-const EYE_COL = [null, "#8a5a3a", "#4a90e0", "#4ab06a", "#e0a030", "#9a6ad8", "#e86a9a", "#5ac8e0", "#7fa69d", "#ba728c"];
-const BLUSH = ["#f6a8a0", "#f07882", "#f8ba7c", null, "#d8b0f0", null, "#eb987f", "#c18d7e"];
+const ACCENT = [null, "#fbfbff", "#fff0d8", "#e8d4ae", "#f2b27a", "#c08050", "#8a6450", "#5c4a48", "#8a8a9a", "#4a4654", "#ffb8c4", "#c8b0f0", "#a8d0f0", "#a8e0b8", "#dfc6a5", "#714b56", "#e9a979", "#ffd8e4", "#f5d47a", "#7ac4b8", "#363242"];
+const EYE_COL = [null, "#8a5a3a", "#4a90e0", "#4ab06a", "#e0a030", "#9a6ad8", "#e86a9a", "#5ac8e0", "#7fa69d", "#ba728c", "#e04848", "#32c0a8", "#f0c440", "#b8d8ff"];
+const BLUSH = ["#f6a8a0", "#f07882", "#f8ba7c", null, "#d8b0f0", null, "#eb987f", "#c18d7e", "#ff9eb8", "#a8d8ff"];
 const FRECKLE = 5;
 /** Every colour an eye can be drawn in (pupils on light and dark fur, glints, irises, tears, stars, hearts): wardrobe.js keeps these uncovered. */
-export const EYE_PIX = ["#2b2233", "#f8e4a0", "#ffffff", "#7ac8ff", "#f0a828", "#fff2b0", "#e8506a", ...EYE_COL.filter(Boolean)];
+export const EYE_PIX = ["#2b2233", "#f8e4a0", "#ffffff", "#7ac8ff", "#f0a828", "#fff2b0", "#e8506a", "#f2b830", ...EYE_COL.filter(Boolean)];
 const CLOTH = [null, "#5a8ae0", "#e0605a", "#5ab87a", "#9a78e0", "#f0c050", "#ec8ab4", "#46b4bc", "#8a6a4a", "#3e4e72", "#f4f0e6", "#e8843a", "#688c7a", "#b65f6c"];
 
 /**
@@ -59,21 +60,25 @@ export const SPECIES = [
   { name: "다람쥐", top: 18, rows: [5, 6, 6, 6, 6, 5], ex: "pouch", def: { ear: 12, nose: 11, tail: 8, pat: 7 } },
   { name: "수달", top: 18, rows: [5, 6, 6, 7, 7, 5], ex: "otter", def: { ear: 14, nose: 9, tail: 12, pat: 7, acc: 14 } },
   { name: "고슴도치", top: 18, rows: [5, 6, 7, 7, 6, 4], ex: "spines", def: { ear: 15, nose: 14, tail: 2 } },
+  { name: "부엉이", top: 18, rows: [5, 6, 7, 7, 6, 5], ex: "owl", def: { ear: 12, nose: 8, tail: 13, pat: 15 } },
+  { name: "레서판다", top: 18, rows: [5, 6, 7, 7, 6, 5], ex: "cheeks", def: { ear: 16, nose: 16, tail: 9, pat: 14, acc: 1 } },
+  { name: "코알라", top: 18, rows: [5, 6, 7, 7, 7, 6], ex: "koala", def: { ear: 17, nose: 17, tail: 2 } },
+  { name: "아기용", top: 18, rows: [5, 6, 6, 6, 6, 5], ex: "dragon", def: { ear: 10, nose: 18, tail: 14 } },
 ];
 
 /** Everything chosen at creation, in the order `look` stores it, and the tab each sits on. */
 export const PARTS = [
-  { key: "ear", label: "귀", tab: 2, names: ["고양이", "토끼", "곰", "여우", "강아지", "쥐", "늘어진 귀", "작은 귀", "사슴뿔", "양 귀", "뿔", "없음", "깃털 귀", "사막여우", "수달 귀", "솜털 귀"] },
-  { key: "eye", label: "눈", tab: 1, names: ["점 눈", "긴 눈", "큰 눈", "웃는 눈", "졸린 눈", "파란 눈", "반짝 눈", "윙크", "다부진 눈", "글썽 눈", "별 눈", "하트 눈", "동글 눈", "나른한 눈", "감은 눈", "놀란 눈", "눈웃음", "속눈썹"] },
-  { key: "nose", label: "코·입", tab: 1, names: ["작은 코", "분홍 코", "ㅅ 입", "큰 코", "없음", "하트 코", "세모 코", "주둥이", "부리", "수염", "고양이 입", "앞니", "메롱", "활짝", "미소", "보조개"] },
-  { key: "fur", label: "털색", tab: 3, colors: FUR, labels: ["눈빛", "바닐라", "살구", "벚꽃", "연보라", "연하늘", "민트", "노란 크림", "회색", "밀크티", "호박", "황토", "밤색", "코코아", "돌회색", "먹색", "베이지", "복숭아", "물빛", "연두", "오렌지 크림", "수국", "계피", "장밋빛 회색", "세이지", "아마빛"] },
-  { key: "blush", label: "볼", tab: 1, names: ["분홍", "빨강", "주황", "없음", "라벤더", "주근깨", "산호빛", "말린 장미"] },
-  { key: "pat", label: "무늬", tab: 4, names: ["없음", "눈 얼룩", "줄무늬", "포인트", "점박이", "가면", "양말", "배 무늬", "이마 점", "볼 줄무늬", "얼룩소", "반반", "판다", "이마 흰줄", "눈 위 점"] },
+  { key: "ear", label: "귀", tab: 2, names: ["고양이", "토끼", "곰", "여우", "강아지", "쥐", "늘어진 귀", "작은 귀", "사슴뿔", "양 귀", "뿔", "없음", "깃털 귀", "사막여우", "수달 귀", "솜털 귀", "레서판다 귀", "코알라 귀", "아기날개 귀", "왕관 뿔"] },
+  { key: "eye", label: "눈", tab: 1, names: ["점 눈", "긴 눈", "큰 눈", "웃는 눈", "졸린 눈", "파란 눈", "반짝 눈", "윙크", "다부진 눈", "글썽 눈", "별 눈", "하트 눈", "동글 눈", "나른한 눈", "감은 눈", "놀란 눈", "눈웃음", "속눈썹", "고양이 눈", "초승달 눈", "쌍꺼풀 눈", "오드아이", "초롱 눈", "단추 눈"] },
+  { key: "nose", label: "코·입·수염", tab: 1, names: ["작은 코", "분홍 코", "ㅅ 입", "큰 코", "없음", "하트 코", "세모 코", "주둥이", "부리", "수염", "고양이 입", "앞니", "메롱", "활짝", "미소", "보조개", "긴 수염", "코알라 코", "송곳니", "신사 수염", "턱수염", "고양이 수염"] },
+  { key: "fur", label: "피부·털색", tab: 3, colors: FUR, labels: ["눈빛", "바닐라", "살구", "벚꽃", "연보라", "연하늘", "민트", "노란 크림", "회색", "밀크티", "호박", "황토", "밤색", "코코아", "돌회색", "먹색", "베이지", "복숭아", "물빛", "연두", "오렌지 크림", "수국", "계피", "장밋빛 회색", "세이지", "아마빛", "살구 피부", "따뜻한 살빛", "구릿빛", "초코 브라운", "말차", "딸기우유", "얼음빛", "흑요석"] },
+  { key: "blush", label: "볼", tab: 1, names: ["분홍", "빨강", "주황", "없음", "라벤더", "주근깨", "산호빛", "말린 장미", "체리빛", "별빛"] },
+  { key: "pat", label: "무늬", tab: 4, names: ["없음", "눈 얼룩", "줄무늬", "포인트", "점박이", "가면", "양말", "배 무늬", "이마 점", "볼 줄무늬", "얼룩소", "반반", "판다", "이마 흰줄", "눈 위 점", "부엉이 눈테", "하트 이마", "별 이마"] },
   { key: "cloth", label: "옷", tab: 4, colors: CLOTH, labels: ["없음", "파랑", "빨강", "잎초록", "연보라", "노랑", "분홍", "청록", "밤색", "남색", "아이보리", "주황", "올리브빛", "장미빛"] },
   { key: "sp", label: "종류", tab: 0, names: SPECIES.map((s) => s.name) },
-  { key: "tail", label: "꼬리", tab: 2, names: ["자동", "없음", "짧은 꼬리", "고양이", "여우", "솜꼬리", "강아지", "쥐", "다람쥐", "줄무늬", "깃털", "돼지", "수달 꼬리", "부채 꼬리"] },
-  { key: "acc", label: "보조색", tab: 3, colors: ACCENT, labels: ["자동", "눈빛", "바닐라", "베이지", "호박", "황갈색", "밤색", "코코아", "돌회색", "먹색", "복숭아", "라일락", "하늘", "연초록", "모래빛", "자두빛 갈색", "꿀빛"] },
-  { key: "eyeC", label: "눈동자", tab: 1, colors: EYE_COL, labels: ["기본", "갈색", "파랑", "초록", "호박석", "보라", "분홍", "청록", "녹회색", "자두빛"] },
+  { key: "tail", label: "꼬리", tab: 2, names: ["자동", "없음", "짧은 꼬리", "고양이", "여우", "솜꼬리", "강아지", "쥐", "다람쥐", "줄무늬", "깃털", "돼지", "수달 꼬리", "부채 꼬리", "아기용 꼬리", "악마 꼬리", "구미호 꼬리", "인어 꼬리"] },
+  { key: "acc", label: "보조색", tab: 3, colors: ACCENT, labels: ["자동", "눈빛", "바닐라", "베이지", "호박", "황갈색", "밤색", "코코아", "돌회색", "먹색", "복숭아", "라일락", "하늘", "연초록", "모래빛", "자두빛 갈색", "꿀빛", "딸기크림", "황금빛", "비취빛", "흑요석"] },
+  { key: "eyeC", label: "눈동자", tab: 1, colors: EYE_COL, labels: ["기본", "갈색", "파랑", "초록", "호박석", "보라", "분홍", "청록", "녹회색", "자두빛", "루비", "에메랄드", "금빛", "은하수"] },
 ];
 /** The tabs of the creation screen. */
 export const TABS = ["종류", "얼굴", "귀·꼬리", "색", "무늬·옷"];
@@ -106,6 +111,10 @@ export const PRESETS = [
   ["라벤더 곰", [7, 11, 5, 4, 0, 8, 6, 4, 2, 0, 5]],
   ["강가 수달", [14, 16, 9, 22, 6, 7, 12, 15, 12, 14, 8]],
   ["도토리 고슴도치", [15, 17, 14, 23, 7, 14, 13, 16, 2, 15, 9]],
+  ["숲속 부엉이", [12, 22, 8, 12, 3, 15, 8, 17, 13, 2, 12]],
+  ["레서판다", [16, 16, 16, 22, 6, 14, 2, 18, 9, 1, 1]],
+  ["졸린 코알라", [17, 13, 17, 8, 0, 7, 3, 19, 2, 1, 0]],
+  ["아기용", [19, 18, 18, 30, 8, 7, 1, 20, 14, 18, 12]],
 ];
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -158,6 +167,8 @@ export const EARS = [
   { kind: "side", top: 19, inX: 9 }, { kind: "horn", top: 15, inX: 12 }, { kind: "none", top: 18, inX: 0 },
   { kind: "small", top: 15, inX: 12 }, { kind: "tall", top: 12, inX: 13, fixed: 1 },
   { kind: "small", top: 16, inX: 11 }, { kind: "small", top: 15, inX: 12 },
+  { kind: "small", top: 15, inX: 12 }, { kind: "small", top: 15, inX: 11 },
+  { kind: "tall", top: 14, inX: 13 }, { kind: "horn", top: 14, inX: 12 },
 ];
 
 /**
@@ -248,7 +259,18 @@ const FAN_FEATHERS = [
   "FFFFSSS...",
   "FFSS......",
 ];
-const RAISED_TAILS = [4, 8, 13];
+const NINE_TAILS = [
+  "....I..I..",
+  "...II.II..",
+  "..FFI.FFI.",
+  ".FFFTTFFI.",
+  ".FFFFFTTS.",
+  "..FFFFSS..",
+  ".FFFFSS...",
+  "FFFFSS....",
+  "FFSS......",
+];
+const RAISED_TAILS = [4, 8, 13, 16];
 
 // Rear projections [left, top, rows]. The root tucks behind the center of the hips.
 // Long tails curve away from the feet before rising, leaving the cheeks clear.
@@ -277,6 +299,13 @@ const REAR_TAILS = {
     "....I......", "..I.IT.....", "..IT.T..FS.", "I.TFTTS.FFS",
     "ITFFTTSFFS.", ".TFFFFFFSS.", "..SSSSSSS..",
   ]],
+  14: [15, 24, ["......DD.", ".....DDDT", "FS..FFDT.", "FFFFFFS..", ".FFFFSS..", "..SSSS..."]],
+  15: [15, 23, [".....DD..", "....DDDD.", ".....DD..", ".....D...", "FS..DD...", "FFDDD....", ".SSS....."]],
+  16: [13, 19, [
+    "....II..II...", "...FFI.FFI...", "..FFFTTFFIS..", ".FFFFFFTTSS..",
+    ".FS..FFFFSS..", "FFFFFFFFSS...", "..FFFFSSS....", "...SSSS......",
+  ]],
+  17: [15, 24, ["......II.", ".....IIT.", "FS..FFTS.", "FFFFFFSS.", ".FFFFTTI.", "..SSSSII."]],
 };
 
 function paintTail(behind, rows, y, palette, sway, left = 17) {
@@ -367,6 +396,14 @@ export function animal(o, view, f, T, seam) {
     () => { behind(19, 26, 1, 1, tc); behind(20, 25, 1, 1, tc); behind(21, 26, 1, 1, tc); behind(21, 24, 1, 1, tc); },
     () => { behind(18, 25, 4, 2, tc); behind(21, 26, 3, 1, tc); behind(23 + sway, 25, 2, 1, soft); behind(19, 27, 4, 1, soft); },
     () => paintTail(behind, FAN_FEATHERS, 20, { F: fur, S: soft, I: pale, T: blend(fur, pale, 0.58) }, sway),
+    // 14: 아기용 꼬리 (spaded dragon tail)
+    () => { behind(19, 26, 4, 1, tc); behind(21, 25, 2, 2, tc); behind(23 + sway, 24, 2, 3, deep); behind(24 + sway, 25, 1, 1, pale); },
+    // 15: 악마 꼬리 (thin curved tail with dart tip)
+    () => { behind(19, 26, 3, 1, deep); behind(21, 24, 1, 2, deep); behind(22 + sway, 23, 2, 2, deeper); behind(23 + sway, 22, 1, 1, deep); },
+    // 16: 구미호 꼬리 (multi-tuft raised fox tail)
+    () => paintTail(behind, NINE_TAILS, 18, { F: fur, S: soft, I: "#fff1db", T: pale }, sway),
+    // 17: 인어 꼬리 (forked fin tail)
+    () => { behind(19, 25, 3, 2, tc); behind(22 + sway, 24, 2, 1, pale); behind(22 + sway, 25, 1, 1, deep); behind(22 + sway, 26, 2, 1, pale); },
   ][tail]();
 
   // ── body: a tiny lump on two feet; a step lifts one of them
@@ -415,6 +452,14 @@ export function animal(o, view, f, T, seam) {
     () => { E(9, 17, 5, 1); E(9, 16, 4, 1); E(9, 15, 4, 1); E(9, 14, 3, 1); E(9, 13, 2, 1); E(9, 12, 1, 1); pink(10, 14, 1, 3); pink(11, 15, 1, 2); },
     () => { E(9, 17, 3, 2); E(10, 16, 2, 1); if (!back) both(10 + dx, 17 + dy, 1, 1, pale); },
     () => { E(10, 15, 1, 1); E(10, 16, 2, 2); E(11, 17, 2, 2); pink(11, 17, 1, 1); },
+    // 16: 레서판다 귀 (white-rimmed pointed small ears)
+    () => { E(9, 16, 3, 2); E(10, 15, 2, 1); both(10 + dx, 15 + dy, 2, 1, pale); if (!back) both(10 + dx, 16 + dy, 1, 1, deep); },
+    // 17: 코알라 귀 (big round fluffy ears)
+    () => { E(8, 16, 4, 3); E(9, 15, 2, 1); if (!back) both(9 + dx, 16 + dy, 2, 2, pale); },
+    // 18: 아기날개 귀 (mini feathered wing tufts)
+    () => { E(9, 16, 4, 2); E(9, 15, 3, 1); E(10, 14, 2, 1); if (!back) both(10 + dx, 15 + dy, 2, 1, pale); },
+    // 19: 왕관 뿔 (golden curved horns)
+    () => { both(10 + dx, 14 + dy, 2, 2, "#f4cf62", "#f4cf62"); both(9 + dx, 16 + dy, 3, 2, "#d8a436", "#d8a436"); both(10 + dx, 15 + dy, 1, 1, "#fff4c0", "#fff4c0"); },
   ][ear]();
 
   // ── the head
@@ -485,6 +530,9 @@ export function animal(o, view, f, T, seam) {
   if (sp.ex === "wool") { const fc = acc || (lum(fur) > 0.6 ? blend(fur, "#d8b49c", 0.5) : blend(fur, "#fff4e8", 0.6)); r(12 + s2, 20, 8, 3, fc); r(13 + s2, 23, 6, 1, fc); r(13 + s2, 19, 6, 1, fc); }
   if (sp.ex === "otter") { r(13 + s2, 21, 6, 1, pale); r(12 + s2, 22, 8, 1, pale); r(13 + s2, 23, 6, 1, pale); }
   if (sp.ex === "spines") { r(13 + s2, 20, 6, 1, pale); r(12 + s2, 21, 8, 2, pale); r(13 + s2, 23, 6, 1, pale); }
+  if (sp.ex === "owl") { r(lx - 1, ey - 1, 4, 3, pale); r(rx2 - 1, ey - 1, 4, 3, pale); r(14 + s2, 22, 4, 2, pale); }
+  if (sp.ex === "koala") { r(13 + s2, 22, 6, 2, pale); both(16 - wAt(22), 21, 2, 2, soft); }
+  if (sp.ex === "dragon") { r(13 + s2, 22, 6, 2, pale); both(16 - wAt(21), 21, 1, 2, deep); }
 
   // ── markings on the face
   if (pat === 1) r((side ? 18 : 17) - ox, ey - 1, 4, 4, deep);
@@ -493,6 +541,9 @@ export function animal(o, view, f, T, seam) {
   if (pat === 9) { both(16 - wAt(ey), ey, 2, 1, deep); both(16 - wAt(ny), ny, 2, 1, deep); }
   if (pat === 12) { r(lx - 1, ey - 1, 3, 3, deep); r(rx2, ey - 1, 3, 3, deep); }
   if (pat === 14) { r(lx, ey - 2, 2, 1, deep); r(rx2, ey - 2, 2, 1, deep); }
+  if (pat === 15) { r(lx - 1, ey - 1, 4, 3, pale); r(rx2 - 1, ey - 1, 4, 3, pale); }
+  if (pat === 16) { r(14 + s2, top, 1, 1, deep); r(16 + s2, top, 1, 1, deep); r(15 + s2, top + 1, 1, 1, deep); }
+  if (pat === 17) { r(15 + s2, top, 1, 2, pale); r(14 + s2, top + 1, 3, 1, pale); }
   const onDark = pat === 12 || (pat === 5 && lum(deep) < 0.45);
 
   // ── eyes
@@ -532,6 +583,18 @@ export function animal(o, view, f, T, seam) {
     () => { at2((x, s) => { const x0 = s > 0 ? x - 1 : x; r(x0, ey - 1, 3, 3, EYE); r(x0 + 1, ey, 1, 1, darkFur ? DARK : WHITE); }); },
     () => { at2((x, s) => { r(x, ey + 1, 2, 1, EYE); r(x + (s < 0 ? 2 : -1), ey, 1, 1, EYE); }); },
     () => { eyes(2, ey, 2, EYE); iris(1, ey + 1); r(lx - 1, ey - 1, 1, 1, EYE); r(rx2 + 2, ey - 1, 1, 1, EYE); },
+    // 18: 고양이 눈 (slanted feline eyes)
+    () => { eyes(2, ey, 2, EYE); iris(2, ey + 1); r(lx - 1, ey - 1, 1, 1, EYE); r(rx2 + 2, ey - 1, 1, 1, EYE); r(lx + 1, ey, 1, 1, WHITE); r(rx2, ey, 1, 1, WHITE); },
+    // 19: 초승달 눈 (serene upward crescent)
+    () => { at2((x, s) => { r(x, ey, 2, 1, EYE); r(x + (s > 0 ? -1 : 2), ey + 1, 1, 1, EYE); }); },
+    // 20: 쌍꺼풀 눈 (expressive lidded eyes)
+    () => { eyes(2, ey, 2, EYE); iris(2, ey + 1); r(lx, ey, 1, 1, WHITE); r(rx2, ey, 1, 1, WHITE); r(lx, ey - 2, 2, 1, EYE); r(rx2, ey - 2, 2, 1, EYE); },
+    // 21: 오드아이 (heterochromia: left iris/blue, right amber gold)
+    () => { eyes(2, ey, 2, EYE); r(lx, ey + 1, 2, 1, I || "#4a90e0"); r(rx2, ey + 1, 2, 1, "#f2b830"); r(lx, ey, 1, 1, WHITE); r(rx2, ey, 1, 1, WHITE); },
+    // 22: 초롱 눈 (bright double-sparkle eyes)
+    () => { at2((x, s) => { const x0 = s > 0 ? x - 1 : x; r(x0, ey - 1, 3, 3, EYE); if (I) r(x0, ey + 1, 3, 1, I); r(x0, ey - 1, 1, 1, WHITE); r(x0 + 2, ey + 1, 1, 1, WHITE); }); },
+    // 23: 단추 눈 (plush round button eyes)
+    () => { eyes(2, ey, 2, EYE); r(lx + 1, ey + 1, 1, 1, WHITE); r(rx2, ey + 1, 1, 1, WHITE); },
   ][eye]();
   // eyes inside a dark patch keep a glint so they still read
   if (onDark && f !== FRAME.blink && ![3, 4, 13, 14].includes(eye)) { r(lx, ey, 1, 1, WHITE); r(rx2, ey, 1, 1, WHITE); }
@@ -556,6 +619,18 @@ export function animal(o, view, f, T, seam) {
     () => { r(nx - 2, ny, 6, 1, NOSE); r(nx - 1, ny + 1, 4, 1, HEART); },
     () => { r(nx, ny, 2, 1, NOSE); r(nx + 1, ny + 1, 1, 1, HEART); },
     () => { r(nx - 1, ny, 1, 1, NOSE); r(nx + 2, ny, 1, 1, NOSE); r(nx, ny + 1, 2, 1, NOSE); },
+    // 16: 긴 수염 (pink nose + 2-row long cheek whiskers)
+    () => { r(nx, ny, 2, 1, "#f08a9a"); const W = darkFur ? "#d8c8d8" : "#6a5a70"; r(nx - 4, ny, 2, 1, W); r(nx - 3, ny + 1, 2, 1, W); r(nx + 4, ny, 2, 1, W); r(nx + 3, ny + 1, 2, 1, W); },
+    // 17: 코알라 코 (cute vertical oval koala nose)
+    () => { r(nx, ny - 1, 2, 3, NOSE); r(nx, ny - 1, 1, 1, shade(NOSE, -0.2)); },
+    // 18: 송곳니 (cute tiny fang peeking out)
+    () => { r(nx - 1, ny, 4, 1, NOSE); r(nx + 2, ny + 1, 1, 1, WHITE); },
+    // 19: 신사 수염 (curled handlebar mustache)
+    () => { const W = darkFur ? "#e8dcd0" : "#5a4640"; r(nx, ny - 1, 2, 1, NOSE); r(nx - 2, ny, 6, 1, W); r(nx - 3, ny - 1, 1, 1, W); r(nx + 4, ny - 1, 1, 1, W); },
+    // 20: 턱수염 (fluffy short chin beard + mustache)
+    () => { const W = darkFur ? "#e8dcd0" : "#6a5850"; r(nx, ny - 1, 2, 1, NOSE); r(nx - 2, ny, 6, 1, W); r(nx - 1, ny + 1, 4, 1, W); },
+    // 21: 고양이 수염 (ω mouth + whiskers)
+    () => { r(nx, ny, 2, 1, "#f08a9a"); r(nx - 1, ny + 1, 1, 1, NOSE); r(nx + 2, ny + 1, 1, 1, NOSE); const W = darkFur ? "#d8c8d8" : "#7a6a80"; r(nx - 3, ny, 1, 1, W); r(nx + 4, ny, 1, 1, W); },
   ][nose]();
 
   // ── blush or freckles, on the cheek's edge whatever the head's width

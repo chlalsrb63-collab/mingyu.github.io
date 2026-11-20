@@ -225,6 +225,26 @@ const REAR_TAILS = {
     [19, "HHFFFFFFFFFSS"], [21, "HHFFFFFFFSSS"], [23, "HHFFFFFSSS"], [25, "HFFFFSSS"],
     [27, "FFFFSS"], [29, "FFSS"], [30, "SS"],
   ]],
+  14: [42, [
+    [43, "DD"], [42, "DDDT"], [41, "DDDT"], [41, "HDDF"], [39, "HFFFFS"],
+    [36, "HHFFFFSS"], [33, "HHFFFFFFSS"], [30, "HFFFFFFFSS"], [30, "FFFFFFSS"],
+    [30, "FFFFSS"], [31, "SSSS"],
+  ]],
+  15: [39, [
+    [43, "DD"], [41, "DDDDDD"], [42, "DDDD"], [43, "DD"], [43, "DD"],
+    [42, "DD"], [40, "DDD"], [37, "DDDD"], [34, "DDDDD"], [31, "DDDDDS"],
+    [30, "DDDDSS"], [30, "DDSSS"], [31, "SSS"],
+  ]],
+  16: [38, [
+    [37, "II....II"], [36, "III..III"], [35, "FFII.FFII"], [34, "HFFTTFFIIT"],
+    [33, "HFFFFTTFFTS"], [32, "HHFFFFFFTTSS"], [31, "HHFFFFFFFSSS"], [30, "HHFFFFFFFSSS"],
+    [30, "HHFFFFFFSSS"], [29, "HFFFFFFSS"], [29, "FFFFFFSS"], [30, "FFFFFSS"],
+    [30, "FFFFSS"], [31, "FSSS"], [32, "SS"],
+  ]],
+  17: [43, [
+    [43, "II"], [42, "IIIT"], [40, "HIIITS"], [37, "HHFFFTSS"], [33, "HHFFFFFFSS"],
+    [30, "HFFFFFFFSS"], [30, "FFFFFFTTI"], [31, "FFFFSSIII"], [32, "SSSS..II"],
+  ]],
 };
 
 /** From behind the tail is nearest to the camera, including above the back of the head. */
