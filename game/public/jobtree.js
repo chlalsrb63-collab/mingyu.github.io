@@ -37,6 +37,28 @@ const fmt = (n) => n.toLocaleString();
 const ro = (name) => { const c = name.charCodeAt(name.length - 1) - 0xac00; return c >= 0 && c % 28 && c % 28 !== 8 ? "으로" : "로"; };
 const wmOf = (s, k) => (Array.isArray(s.wm) ? s.wm[D().wkOrder.indexOf(k)] : null) || [1, 0, 0];
 
+// ── compact skill rows (owner: icon · cooldown · 위력 · cost at a glance, the text behind 상세보기) ──
+/** ⏲ cooldown · 위력 · cost of skill `sk` (or 패시브); `wire` its self.sk row when learned, `enh` its 스킬 강화. */
+export function skillStats(sk, wire, enh = 0) {
+  const m = el("div", "sk-meta");
+  if (sk.kind === "p") { m.append(el("span", "sk-tag", "패시브")); return m; }
+  const cd = el("span", "sk-cd");
+  cd.append(iconImg("clock"), `${+((wire?.[5] ?? sk.cd) / 1000).toFixed(1)}초`);
+  m.append(cd);
+  if (sk.mult) m.append(el("span", "sk-pow" + (enh > 0 ? " up" : ""), `위력 ${Math.round(sk.mult * 100 * (1 + ((D().ske?.pct || 2.5) / 100) * enh))}%${sk.hits > 1 ? `×${sk.hits}` : ""}`));
+  m.append(el("span", "mp", `MP ${wire?.[1] ?? sk.mp}${wire?.[4] ? ` · HP ${wire[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : ""}`));
+  return m;
+}
+const openSk = new Set();
+/** A 상세보기/접기 button showing and hiding `box` (hidden at first), remembered per `key` across redraws. */
+export function moreButton(key, box) {
+  const b = el("button", "btn small sk-more");
+  const set = () => { box.hidden = !openSk.has(key); b.textContent = box.hidden ? "상세보기" : "접기"; };
+  b.addEventListener("click", (e) => { e.stopPropagation(); if (openSk.has(key)) openSk.delete(key); else openSk.add(key); set(); });
+  set();
+  return b;
+}
+
 // ── jobs: who may take what ──
 /** All jobs belonging to weapon `k` (two branches per weapon). */
 const jobsOf = (k) => Object.keys(D().jobs).filter((j) => D().jobs[j].kind !== "none" && D().jobs[j].wk[0] === k);
@@ -132,19 +154,21 @@ function jobCard(s, j, atJob) {
     const wire = st === "cur" ? s.sk?.find(([id]) => id === sig) : null;
     const ic = el("img", "ic"); ic.alt = ""; ic.src = skillIconUrl(sig);
     const tx = el("div", "tx");
-    const hp = wire?.[4] ? ` · HP ${wire[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : "";
-    const cost = `MP ${wire?.[1] ?? sk.mp}${hp} · 재사용 ${(wire?.[5] ?? sk.cd) / 1000}초`;
-    const unlock = sk.jobNeed ? `직업 Lv.${sk.jobNeed}` : "전직 시 습득";
     const armorPen = skillArmorPenetration(sk);
     tx.append(el("b", "", sk.name), " ", skillElements(sk));
-    if (armorPen) tx.append(" ", el("small", "skill-armor-pen", armorPen), " ·");
-    tx.append(el("small", "", ` ${rank ? cost : `${unlock} · ${cost}`}`), el("p", "", sk.desc));
+    const stats = skillStats(sk, wire);
+    stats.append(el("span", "sk-req", sk.jobNeed ? `직업 Lv.${sk.jobNeed}` : "전직 시 습득"));
+    const more = el("div", "sk-desc");
+    if (armorPen) more.append(el("p", "skill-armor-pen", armorPen));
+    more.append(el("p", "", sk.desc));
     if (rank) {
       const text = [rank.current, rank.next && `${rank.current ? "다음 · " : ""}${rank.next}`].filter(Boolean).join(" / ");
       const progress = el("p", "", text);
       progress.title = rank.roadmap;
-      tx.append(progress);
+      more.append(progress);
     }
+    stats.append(moreButton(`jt:${j}:${sig}`, more));
+    tx.append(stats, more);
     r.append(ic, tx);
     card.append(r);
   });

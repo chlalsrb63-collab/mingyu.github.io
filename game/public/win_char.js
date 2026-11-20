@@ -292,7 +292,6 @@ function renderElementStats(host, totals) {
 }
 
 // ── K: 무기 · 스킬 and 전직의 길 (jobtree.js draws the weapon rows and the tree; the skill rows are here, with the quick-slot drag) ──
-const expandedSk = new Set();
 export function renderSkills(s) {
   const tab = G.skTab === "tree" || G.skTab === "lo" ? G.skTab : "wpn";
   for (const b of $$("#skill-tabs button")) b.classList.toggle("on", b.dataset.tab === tab);
@@ -303,7 +302,7 @@ export function renderSkills(s) {
 }
 /** Weapon `k`'s skills sorted by required mastery level (lowest first), compact key stats + "상세보기" toggle. */
 function skillRows(box, s, k) {
-  const SK = G.defs.skills, jobs = G.defs.jobs, skePct = G.defs.ske?.pct || 2.5;
+  const SK = G.defs.skills, jobs = G.defs.jobs;
   if (k === s.wk && s.eq.weapon) {
     const wk = G.defs.wkinds[s.wk] || {};
     const basic = el("div", "skill basic");
@@ -317,18 +316,9 @@ function skillRows(box, s, k) {
       hammer: `해머를 머리 위로 들어 올려 앞쪽 ${wk.center}px 지점을 내려찍습니다. 반경 ${wk.r}px의 적을 최대 세 마리까지 맞힙니다.`,
       sword: "대검을 좌우로 번갈아 휘둘러 두 번 이어 벱니다.",
     }[s.wk] || "가장 가까운 적을 겨냥합니다. 이어 치면 세 번째 타격이 마무리 일격이 됩니다.";
-    const bKey = `basic:${s.wk}`, bOpen = expandedSk.has(bKey);
     const bDesc = el("p", "sk-desc", description);
-    bDesc.hidden = !bOpen;
     const bFoot = el("div", "sk-foot");
-    const bBtn = el("button", "btn small sk-more", bOpen ? "접기" : "상세보기");
-    bBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const open = !expandedSk.has(bKey);
-      if (open) expandedSk.add(bKey); else expandedSk.delete(bKey);
-      bDesc.hidden = !open; bBtn.textContent = open ? "접기" : "상세보기";
-    });
-    bFoot.append(bBtn);
+    bFoot.append(JobTree.moreButton(`basic:${s.wk}`, bDesc));
     basic.append(bi, bh, bMeta, bDesc, bFoot);
     hoverTip(basic, (n) => { n.append(el("div", "nm", `기본 공격 · ${wk.name || "공격"}`), skillElements(basicType), el("div", "", description)); });
     box.append(basic);
@@ -360,35 +350,16 @@ function skillRows(box, s, k) {
     // Learned skills always display enhancement badge (+0, +1, +2 ...) beside the skill name
     const enhEl = w ? el("span", "sk-enh" + (enh > 0 ? " up" : ""), `+${enh}`) : "";
     hd.append(el("b", "", sk.name), enhEl, skillElements(sk), at ? el("kbd", "", at) : "");
-    // Compact structured key stats only (resource cost, cooldown, attack multiplier, armor pen, mastery req)
-    const meta = el("div", "sk-meta");
-    if (pas) {
-      meta.append(el("span", "sk-tag", "패시브"));
-    } else {
-      const mpTxt = `MP ${w?.[1] ?? sk.mp}${w?.[4] ? ` · HP ${w[4]}` : sk.hpPct ? ` · 최대 HP ${Math.round(sk.hpPct * 100)}%` : ""}`;
-      meta.append(el("span", "mp", mpTxt), el("span", "", `쿨 ${((w?.[5] ?? sk.cd) / 1000).toFixed(1).replace(/\.0$/, "")}초`));
-      if (sk.mult) {
-        const effPct = Math.round(sk.mult * 100 * (1 + (skePct / 100) * enh));
-        meta.append(el("span", "sk-pow" + (enh > 0 ? " up" : ""), `위력 ${effPct}%${sk.hits > 1 ? `×${sk.hits}` : ""}`));
-      }
-    }
-    if (armorPen) meta.append(el("span", "skill-armor-pen", armorPen));
+    // at a glance: ⏲ cooldown · 위력 · cost and when it is learned; the rest behind 상세보기
+    const meta = JobTree.skillStats(sk, w, enh);
     const detail = [rank?.current, why].filter(Boolean).join(" · ");
     meta.append(el("span", "sk-req", detail || (sk.job ? "전직 기술" : `숙련 ${sk.need}`)));
     if (!pas && w && w[3] === 0) { row.classList.add("off"); meta.append(el("span", "sk-req", "스킬 칸에 없음")); }
-    // Long description is hidden by default and toggled via "상세보기"
-    const isOpen = expandedSk.has(id);
-    const desc = el("p", "sk-desc", sk.desc);
-    desc.hidden = !isOpen;
+    const desc = el("div", "sk-desc");
+    if (armorPen) desc.append(el("p", "skill-armor-pen", armorPen));
+    desc.append(el("p", "", sk.desc));
     const foot = el("div", "sk-foot");
-    const more = el("button", "btn small sk-more", isOpen ? "접기" : "상세보기");
-    more.addEventListener("click", (e) => {
-      e.stopPropagation();
-      const open = !expandedSk.has(id);
-      if (open) expandedSk.add(id); else expandedSk.delete(id);
-      desc.hidden = !open; more.textContent = open ? "접기" : "상세보기";
-    });
-    foot.append(more);
+    foot.append(JobTree.moreButton(id, desc));
     if (!pas) {
       const put = el("button", "btn small qs-put", "단축칸");
       put.title = `누른 뒤 아래 단축칸(${K("slot1")}~${K("slot9")})을 누르면 거기에 놓입니다`;

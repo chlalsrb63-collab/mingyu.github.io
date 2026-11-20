@@ -1582,13 +1582,19 @@ body.touch .set-keys { display: none !important; }
 .wp-list .wp-skills .skill .hd { grid-column: 2; }
 .wp-list .wp-skills .skill .sk-enh { padding: 0 3px; font: 700 var(--t10)/13px var(--pix9); color: var(--tx2, #c8bfa8); background: var(--scr-a, rgba(18, 15, 24, .35)); border: 1px solid var(--rim, #6e5a3a); }
 .wp-list .wp-skills .skill .sk-enh.up { color: var(--tx-gold, #ffe07a); border-color: var(--b-mid); }
-.wp-list .wp-skills .skill .sk-meta { grid-column: 2; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font: var(--t10)/1.25 var(--pix9); color: var(--tx2, #c9bfa8); }
-.wp-list .wp-skills .skill .sk-meta .mp { color: var(--tx-info, #78c8ff); }
-.wp-list .wp-skills .skill .sk-meta .sk-pow { color: var(--tx-hd, var(--b-hi)); font-weight: 700; }
-.wp-list .wp-skills .skill .sk-meta .sk-pow.up { color: var(--tx-gold, #ffe07a); }
-.wp-list .wp-skills .skill .sk-meta .sk-req { opacity: .85; }
-.wp-list .wp-skills .skill p.sk-desc { grid-column: 1 / -1; min-width: 0; margin: 3px 0 1px; padding: 4px 6px; white-space: normal; overflow-wrap: anywhere; background: var(--scr-a, rgba(18, 15, 24, .28)); border-top: 1px dashed var(--rim, #6e5a3a); }
-.wp-list .wp-skills .skill p.sk-desc[hidden] { display: none; }
+.wp-list .wp-skills .skill .sk-meta { grid-column: 2; }
+:is(.wp-list .wp-skills .skill, .jt-sig) .sk-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; font: var(--t10)/1.25 var(--pix9); color: var(--tx2, #c9bfa8); }
+:is(.wp-list .wp-skills .skill, .jt-sig) .sk-meta .mp { color: var(--tx-info, #78c8ff); }
+:is(.wp-list .wp-skills .skill, .jt-sig) .sk-meta .sk-pow { color: var(--tx-hd, var(--b-hi)); font-weight: 700; }
+:is(.wp-list .wp-skills .skill, .jt-sig) .sk-meta .sk-pow.up { color: var(--tx-gold, #ffe07a); }
+:is(.wp-list .wp-skills .skill, .jt-sig) .sk-meta .sk-req { opacity: .85; }
+.wp-list .wp-skills .skill .sk-desc { grid-column: 1 / -1; }
+:is(.wp-list .wp-skills .skill, .jt-sig) .sk-desc { min-width: 0; margin: 3px 0 1px; padding: 4px 6px; white-space: normal; overflow-wrap: anywhere; background: var(--scr-a, rgba(18, 15, 24, .28)); border-top: 1px dashed var(--rim, #6e5a3a); }
+:is(.wp-list .wp-skills .skill, .jt-sig) .sk-desc[hidden] { display: none; }
+.window :is(.wp-list .wp-skills .skill, .jt-sig) .sk-desc p { margin: 0; }
+.sk-meta .sk-cd { display: inline-flex; align-items: center; gap: 2px; }
+.sk-meta .sk-cd img.gi { width: 12px; height: 12px; image-rendering: pixelated; }
+.jt-sig .sk-meta .sk-more { margin-left: auto; padding: 1px 6px; font-size: var(--t10); }
 .wp-list .wp-skills .skill .sk-foot { grid-column: 2; display: flex; justify-content: flex-end; align-items: center; gap: 4px; margin-top: 1px; }
 .wp-list .wp-skills .skill .sk-more { padding: 1px 6px; font-size: var(--t10); }
 .wp-list .wp-skills .skill .qs-put { grid-column: auto; padding: 1px 6px; font-size: var(--t10); }
