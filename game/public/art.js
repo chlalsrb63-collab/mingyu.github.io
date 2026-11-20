@@ -479,11 +479,26 @@ function coin() {
   outline(c, g, "#3a2a08");
   return c;
 }
-function runeIcon(id, rune) {
+const ELEM_COL = { physical: "#c8c8d4", bleed: "#e04a5a", fire: "#ff7a3a", cold: "#7ad8ff", lightning: "#ffe04a", poison: "#8ad84a", dark: "#b07ae0", light: "#fff4c0" };
+/**
+ * A rune's 16×16 icon. Its glyph (six bits of strokes) is unique per rune, or per family: a set's pieces and an
+ * element's three tiers share one glyph and show their number as pips under the stone. `ctx` ({used, fam}) is one
+ * buildIcons pass, so glyphs are handed out in item order and never collide.
+ */
+function runeIcon(id, rune, ctx) {
   const [c, g] = canvas(16, 16);
-  const q = rune?.q || 1, col = RARITY_COL[q];
-  let glyph = 0;
-  for (const ch of rune?.set || rune?.af?.[0]?.[0] || id) glyph = (glyph * 31 + ch.charCodeAt(0)) >>> 0;
+  const q = rune?.q || 1, el = !rune?.set && (rune?.af || []).map(([k]) => /^(?:dmg|pen|res|dur)_(\w+)$/.exec(k)?.[1]).find((e) => ELEM_COL[e]);
+  const fam = rune?.set || (el && "e:" + el), col = el ? ELEM_COL[el] : RARITY_COL[q];
+  const pips = fam ? Number(/_(\d+)$/.exec(id)?.[1]) || 0 : 0;
+  let glyph = fam ? ctx.fam[fam] : undefined;
+  if (glyph === undefined) {
+    glyph = 0;
+    for (const ch of fam || id) glyph = (glyph * 31 + ch.charCodeAt(0)) >>> 0;
+    glyph &= 63;
+    for (let n = 0; n < 64 && ctx.used.has(glyph); n++) glyph = (glyph + 1) & 63;   // past 64 runes they repeat
+    ctx.used.add(glyph);
+    if (fam) ctx.fam[fam] = glyph;
+  }
   paint(g, [
     "...LLL..", "..LMMMM.", ".LMMMMMS", "LMMMMMSS", "MMMMMMSS",
     "MMMMMMS.", "MMMMMSS.", ".MMMSS..", "..SSS...",
@@ -495,6 +510,8 @@ function runeIcon(id, rune) {
     g.fillRect(left ? 5 : 7, 5 + i * 2, 1 + (left ? 2 : 0) + (right ? 2 : 0), 1);
   }
   if (q === 4) g.fillRect(10, 10, 1, 1);
+  g.fillStyle = "#e8e0c8";
+  for (let i = 0; i < pips; i++) g.fillRect(8 - pips + i * 2, 14, 1, 1);   // piece / tier number, centred
   outline(c, g, "#111118");
   return c;
 }
@@ -561,12 +578,12 @@ export function buildIcons(items, runes = {}) {
     outline(c, g, "#2b2233");
     cv[id] = c;
   }
-  const equipment = new Set();
+  const equipment = new Set(), runeCtx = { used: new Set(), fam: {} };
   for (const id of Object.keys(items)) {
     const it = items[id];
     const gear = it.type === "weapon" ? WPN.weaponIcon(it.wk, it.tier, { wl: id }) : equipmentIcon(it.type, it.tier);
     if (gear) { cv[id] = gear; equipment.add(id); }
-    else if (it.type === "rune") cv[id] = runeIcon(id, runes[it.rune]);
+    else if (it.type === "rune") cv[id] = runeIcon(id, runes[it.rune], runeCtx);
     else if (it.type === "furn") cv[id] = furnIcon(id) || cv[id] || gem();   // crafted pieces (P8) draw in lifeicons.js
     // the 재료 주머니's goods: herbs, ores, woods and ingots by grade, 식재료 꾸러미, 빈 병 (gatherart.js)
     else if (it.type === "lmat" || id === "staple" || id === "flask") { const m = matIcon(id, it); if (m) cv[id] = m; }
