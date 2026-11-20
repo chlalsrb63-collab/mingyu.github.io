@@ -193,13 +193,12 @@ export function renderInv(s) {
 const precious = (entry) => isGear(entry.id) && ((entry.q || 0) >= 2 || (entry.enh || 0) > 0 || (entry.ru || []).some(Boolean));
 
 // ── the character sheet ──
-/** The sheet: groups of [infocard key, value]. Each is a glyph and its number; the name is the tooltip, a click opens the card. */
+/** The sheet: grouped [section name, css class, rows of [infocard key, value]]. Each row shows icon + Korean label + value; click opens detail card. */
 const STAT_GROUPS = [
-  ["공격", [["atk", (s) => s.atk], ["crit", (s) => `${s.crit}%`], ["critd", (s) => `${s.critd}%`], ["acd", (s) => `${(s.acd / 1000).toFixed(2)}초`], ["ls", (s) => `${s.ls}%`]]],
-  ["방어", [["def", (s) => s.def], ["mhp", (s) => s.mhp], ["mmp", (s) => s.mmp]]],
-  ["유틸", [["xpb", (s) => `${s.xpb}%`], ["mf", (s) => `${s.mf}%`], ["goldb", (s) => `+${s.goldb}%`], ["kills", (s) => s.kills.toLocaleString()]]],
-  ["능력치", [["str", (s) => s.st.str], ["wil", (s) => s.st.wil], ["dex", (s) => s.st.dex], ["int", (s) => s.st.int], ["wis", (s) => s.st.wis], ["luk", (s) => s.st.luk]]],
-  ["숙련", [["eva", (s) => `${s.dv[1]}%`], ["aspd", (s) => `+${s.dv[2]}%`], ["cdr", (s) => `${s.dv[3]}%`], ["wm", (s) => `${s.skLv}`]]],
+  ["기본 능력치", "six", [["str", (s) => s.st.str], ["wil", (s) => s.st.wil], ["dex", (s) => s.st.dex], ["int", (s) => s.st.int], ["wis", (s) => s.st.wis], ["luk", (s) => s.st.luk]]],
+  ["공격 · 전투", "combat", [["atk", (s) => s.atk.toLocaleString()], ["acd", (s) => `${(s.acd / 1000).toFixed(2)}초`], ["crit", (s) => `${s.crit}%`], ["critd", (s) => `${s.critd}%`], ["aspd", (s) => `+${s.dv[2]}%`], ["ls", (s) => `${s.ls}%`]]],
+  ["방어 · 생존", "defense", [["def", (s) => s.def.toLocaleString()], ["mhp", (s) => s.mhp.toLocaleString()], ["mmp", (s) => s.mmp.toLocaleString()], ["eva", (s) => `${s.dv[1]}%`], ["cdr", (s) => `${s.dv[3]}%`], ["wm", (s) => `Lv.${s.skLv}`]]],
+  ["파밍 · 기록", "util", [["xpb", (s) => `${s.xpb}%`], ["mf", (s) => `${s.mf}%`], ["goldb", (s) => `+${s.goldb}%`], ["kills", (s) => s.kills.toLocaleString()]]],
 ];
 export function renderChar(s) {
   // three tabs (the row is wardrobe_ui.js's): 장비 (the paper-doll and the sheet), 능력치 (statwin.js: buying points), 외형.
@@ -251,8 +250,14 @@ export function renderDoll(s) {
 function renderSheet(s) {
   const st = $("#char-stats");
   st.textContent = "";
-  for (const [name, rows] of STAT_GROUPS) {
-    const grp = el("div", "grp");
+  if (s.ap > 0) {
+    const apBar = el("button", "char-ap-banner", `★ 미투자 능력치 포인트 +${s.ap} · 클릭해 투자하기`);
+    apBar.type = "button";
+    apBar.addEventListener("click", () => openStats());
+    st.append(apBar);
+  }
+  for (const [name, cls, rows] of STAT_GROUPS) {
+    const grp = el("div", `grp ${cls}`);
     grp.append(el("h4", "", name));
     for (const [key, val] of rows) grp.append(Info.statChip(key, val(s)));
     st.append(grp);

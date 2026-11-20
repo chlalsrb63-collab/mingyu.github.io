@@ -201,15 +201,23 @@ export function statCard(key, value) {
   return { icon: iconImg(glyph, "#e2c486"), title: name, tag: "전투 수치", text: [what], rows: value === undefined ? [] : [["지금", value]], how };
 }
 
+const SHORT_LABEL = {
+  atk: "공격력", crit: "치명타", critd: "치명피해", acd: "공격간격", ls: "흡혈",
+  def: "방어력", mhp: "최대 HP", mmp: "최대 MP",
+  xpb: "경험치", mf: "드랍률", goldb: "골드", kills: "처치 수",
+  eva: "회피", aspd: "공속", cdr: "쿨감", res: "상태저항", poise: "강인도", kbr: "밀림저항", burst: "원소폭발", wm: "무기숙련",
+  str: "힘", wil: "의지", dex: "민첩", int: "지능", wis: "지혜", luk: "행운",
+};
 /**
- * A number on a sheet as a glyph and the number: the name is the tooltip, a click opens its card.
+ * A number on a sheet as a glyph, concise Korean label and value: hover shows full label, click opens its info card.
  * `name` overrides the title (공격력(마법)).
  */
 export function statChip(key, value, name) {
   const six = SIX[key], row = (G.defs.stats || []).find((s) => s[0] === key);
   const label = name || (six ? (row ? row[1] : key) : STAT_INFO[key][1]);
+  const short = name && name.length <= 6 ? name : SHORT_LABEL[key] || label;
   const sp = el("span", "chip");
-  sp.append(iconImg(six ? six[0] : STAT_INFO[key][0], six ? six[1] : undefined), el("b", "", String(value)));
+  sp.append(iconImg(six ? six[0] : STAT_INFO[key][0], six ? six[1] : undefined), el("span", "lbl", short), el("b", "", String(value)));
   return bind(sp, `${label} ${value}`, () => ({ ...statCard(key, value), ...(name ? { title: name } : {}) }));
 }
 
