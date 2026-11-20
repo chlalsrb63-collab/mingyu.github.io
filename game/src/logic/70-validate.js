@@ -60,6 +60,7 @@ export function validateAction(S, pid, a) {
     case "buddy": return buddyValidate(S, p, a);
     case "mingyutest": return devTestValidate(S, p, a);
     case "ab_start": case "ab_act": case "ab_leave": case "ab_close": return albaValidate(S, p, a);
+    case "rest": return restValidate(S, p, a);
     case "nw": return p.npcWhereAt === undefined || now >= p.npcWhereAt ? OK : bad("잠시 뒤 주민 위치를 다시 확인하세요");
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");

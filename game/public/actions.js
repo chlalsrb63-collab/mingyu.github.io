@@ -18,6 +18,7 @@ import * as Station from "./station.js";
 import * as Board from "./board.js";
 import * as FairMkt from "./fairmkt.js";
 import * as Chores from "./chores.js";
+import * as Rest from "./rest.js";
 import * as Charms from "./charms.js";
 import * as NPC from "./npclife.js";
 import * as Sky from "./sky.js";
@@ -216,6 +217,7 @@ export function interact() {
   }
   if (Housing.interact()) return;                  // at home: a chest opens the storage, a bed gives a rest
   if (Chores.interact()) return;                   // a village chore's spot in reach, or the can to fill (chores.js)
+  if (Rest.interact()) return;                     // a resting spot in reach: sit down (rest.js)
   // with nobody to talk to: a gathering node in reach (gather.js), else water is for fishing
   // with nobody to talk to: a node, then a campfire's 요리 window (station.js), then water
   if (!n) {

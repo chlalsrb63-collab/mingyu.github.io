@@ -22,6 +22,7 @@ import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
 import * as Chores from "./chores.js";
+import * as Rest from "./rest.js";
 import * as Coop from "./coop.js";
 import * as Charms from "./charms.js";
 import { G, dist, T, now, $, el } from "./state.js";
@@ -116,6 +117,7 @@ export function onEvent(e, t) {
   if (Gather.onEvent(e)) return;              // gathering: gs gt ga (gather.js)
   if (Station.onEvent(e)) return;             // the life stations: mk mo (station.js)
   if (Board.onEvent(e)) return;               // delivery: dl (board.js)
+  if (Rest.onEvent(e)) return;                // 쉼표 수첩: a stamp landed: rs (rest.js)
   if (Chores.onEvent(e)) return;              // a village chore's spot done: co (chores.js)
   if (Charms.onEvent(e)) return;              // a legendary charm at work: cm (charms.js)
   if (Coop.onEvent(e)) return;                // 협동 아르바이트: cj (coop.js)

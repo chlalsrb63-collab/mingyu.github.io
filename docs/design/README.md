@@ -23,6 +23,7 @@ Read only the doc for your task, and in it only your phase's sections (`grep -n 
 | [`arcs.md`](arcs.md) | **as built** — side-quest story arcs on the P1 engine: A1/A2 피난민 thread (steps, branches, retired quests, NPC lore) | writing or changing an arc; checking quest rewards against audit §3 |
 | [`maps-batch2.md`](maps-batch2.md) | **design only** — six maps from the owner's second set of references: 바람개비 능선 `ridge`, 물결 항구 `harbor` (second town + dock ward), 수련 삼각주 `delta`, 운해 사원 `cloudtemple`, 붉은바위 황금궁 `mesa`, 먹빛 호수 `inklake`; provisional bands, build order in three pairs | building one of those six maps: layout recipe, monster placement per region, new species + tinted fallbacks, art list, doors |
 | [`daily-alba-minigames-2026-11-16.md`](daily-alba-minigames-2026-11-16.md) | **built** (2026-11-17) — 12 solo 일일 아르바이트 mini-games (배관, 파리잡기, 편의점, 택배, 세탁소, 붕어빵, 해충 방제, 철거, 횡단 배달, 가로등, 여관 공연, 화환), grades C–S, the old 알바 board retired; `par` values are bot-tuned drafts | reworking 알바 / 협동 배관, the 알바 window, life-content tie-ins |
+| [`safezone-healing-2026-11-20.md`](safezone-healing-2026-11-20.md) | **built in part** (2026-11-20) — 쉼표 수첩: 쉬어가기 (12 resting spots) and 산책 줍기 (daily keepsakes) on the four safe maps (`69-rest.js`, `public/rest.js`); 물수제비 · 소원 유등 · 동물 친구 · 꽃비 시간 are designed only. |
 
 When a phase lands, its implementer adds a short "<phase> as built" section (deviations and contracts only)
 and updates the status column here.

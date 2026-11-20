@@ -17,6 +17,7 @@ import { aimAtPoint, castSkill, usePotion, aimIdx, canStand, attack, nearestNpc,
 import * as Gather from "./gather.js";
 import * as Board from "./board.js";
 import * as Chores from "./chores.js";
+import * as Rest from "./rest.js";
 import * as Hints from "./hints.js";
 import { toast, closeWin, isOpen, shown } from "./windows.js";
 import { refreshUi } from "./hud.js";
@@ -255,7 +256,7 @@ export function update(dt, t) {
   // with no NPC by you, a gathering node in reach names itself on the prompt (gather.js)
   // a village chore's spot in reach names itself first (chores.js), even beside a villager
   const cho = Chores.label();
-  const gat = cho || (near ? "" : Gather.label());
+  const gat = cho || (near ? "" : Rest.label() || Gather.label());   // then a resting spot (rest.js), then a node
   // the 알바 in hand names its step at the right NPC (board.js)
   const job = near?.role === "alba" ? G.defs.alba?.rows[near.alba] : null;
   const jb = job ? `${job.name} 시작` : near ? Board.promptFor(near) : "";

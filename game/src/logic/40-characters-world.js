@@ -83,6 +83,8 @@ export function newChar(name, look, wk) {
     fair: fairFresh(),
     // 일일 아르바이트 (66-alba.js): today's paid games and the best scores (no sheet version bump: a missing one starts fresh)
     ab: albaFresh(),
+    // 쉼표 수첩 (69-rest.js): today's stamps and finds, the book, 여유 (no version bump either)
+    rest: restFresh(),
     // the 장날 merchants' goods bought on the latest fair day (v27, 64-fair-market.js): { [KST day]: [product ids] }
     fairBuy: {},
     buddy: null,
@@ -292,6 +294,7 @@ function migrate(ch) {
   // the 장날 merchants' purchases (v27): the newest fair day's product ids only (64-fair-market.js)
   ch.fairBuy = fairBuyClean(ch.fairBuy);
   ch.ab = albaClean(ch.ab);
+  ch.rest = restClean(ch.rest);
   ch.v = Math.max(ch.v | 0, SHEET_VERSION);
   return ch;
 }
@@ -421,7 +424,7 @@ function stats(p) {
   const out = {
     mhp: c.mhp, mmp: c.mmp, def: c.def, crit: c.crit, critd: c.critd, ls: c.ls, mf: c.mf, wk: c.wk, mag: c.mag,
     eva: c.eva, aspd: rally === 1 ? c.aspd : 1 - (1 - c.aspd) / rally, sneak: c.sneak, cdr: c.cdr, mpReg: c.mpReg, burst: c.burst, proc: c.proc, kbr: c.kbr, poise: c.poise, res: c.res,
-    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0), gold: c.gold, lg: c.lg, lgOff: c.lgOff, pfx: c.pfx, arm: c.arm, acd: Math.round(c.acd / rally),
+    xp: c.xp + (food ? food.xp : 0) + (p.warm > now ? p.warmPct : 0) + (scr.xp > now ? ITEMS.sc_xp.pct : 0) + (p.ch.house && p.ch.house.cozy > now ? HOUSE_REST.xp : 0) + restPct(p.ch, now), gold: c.gold, lg: c.lg, lgOff: c.lgOff, pfx: c.pfx, arm: c.arm, acd: Math.round(c.acd / rally),
     atk: Math.round(c.atk0 * (p.atkBuff > now ? 1 + (p.atkBuffK ?? 0.25) : 1) * (food ? 1 + food.atk / 100 : 1) * (scr.atk > now ? 1 + ITEMS.sc_atk.pct / 100 : 1)),
     guard: (scr.def > now ? 1 - ITEMS.sc_def.pct / 100 : 1) * (p.dimWard > now ? 1 - DIM.ward : 1),
     spd: c.spd0 * (p.spdBuff > now ? 1.4 : p.wind > now ? WIND_K : 1) * (p.vitSpd > now ? 1 + SKILL.vitals.spd : 1) * (p.slowed > now ? SLOW : 1) * (p.hold ? SKILL[p.hold.id].holdSpd : 1), spd0: c.spd0,

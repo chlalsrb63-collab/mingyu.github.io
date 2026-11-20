@@ -673,6 +673,7 @@ export function tick(S, now) {
     if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr + st.mpReg) + 1);
     if (fire && p.sit) warmTick(S, p, fire, now);
     else p.warmT = 0;
+    restTick(S, p, now);   // 쉼표 수첩: sitting by a resting spot (69-rest.js)
     pfxTick(S, S.maps[p.map], p, st, now, calm);   // the prefix powers that work once a second (regen, cleanse, resting)
   }
   return S;

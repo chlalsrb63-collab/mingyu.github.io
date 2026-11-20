@@ -29,6 +29,7 @@ import * as Board from "./board.js";
 import * as Alba from "./alba.js";
 import * as FairMkt from "./fairmkt.js";
 import * as Chores from "./chores.js";
+import * as Rest from "./rest.js";
 import * as Charms from "./charms.js";
 import * as Loadout from "./loadout.js";
 import * as Trophies from "./trophies.js";
@@ -352,6 +353,7 @@ export function refreshUi() {
   draw("juana", Charms.juanaKey, Charms.renderJuana);   // 참감정사 주아나
   draw("board", Board.key, Board.render);       // the 알바 board (board.js)
   draw("fairmkt", FairMkt.key, FairMkt.render); // a 장날 merchant's list (fairmkt.js)
+  draw("rest", Rest.listKey, Rest.renderList);   // the 쉼표 수첩 window: resting spots and stroll finds (rest.js)
   draw("alba", Alba.listKey, Alba.renderList);   // the 알바 window: the job in hand, its clock, co-op, trust (board.js)
   tutCard(s);
 }
@@ -400,6 +402,7 @@ export function hudTick(t) {
   Board.tick(t);                                    // a parcel's countdown (board.js)
   FairMkt.tick();                                   // a 장날 merchant's countdown, and the window closes when you walk off (fairmkt.js)
   Track.tick();                                     // a 추적 trip under way (track.js)
+  Rest.tick();                                      // 쉼표 수첩: the spots' posts, the keepsakes (rest.js)
   Chores.tick();                                    // the village chore's spots (chores.js)
   if (isOpen("daily")) tickDaily(t);
   const s = G.self;

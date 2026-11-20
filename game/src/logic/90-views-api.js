@@ -89,6 +89,8 @@ function selfPayload(p) {
     coop: coopSelf(p),
     // 일일 아르바이트 paid today, best scores, pay slots left (66-alba.js)
     alba: albaSelf(p),
+    // 쉼표 수첩: stamps, finds, 여유 (69-rest.js)
+    rest: restSelf(p),
     // the slots whose 고유 효과 does not count (the same power on a better or earlier piece): the tooltip greys it (51-prefix.js)
     lgOff: st.lgOff,
     // world map boss / field-boss live status per region (0 = alive/ready, >0 = respawn seconds left; WLD-06)
@@ -354,6 +356,7 @@ export function defs() {
     // 협동 아르바이트: the jobs, cut-offs, tools (68-coop.js)
     coop: coopDefs(),
     alba: albaDefs(),
+    rest: restDefs(),
     sx: sxDefs(),
     // boss trophies: { list: { kind: { name, fx } }, cap, p, gold, story: { r, limit } } (67-trophies.js)
     trophies: trophyDefs(),
