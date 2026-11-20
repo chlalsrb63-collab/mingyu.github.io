@@ -280,6 +280,6 @@ export function setupWinSocial() {
   $("#chat-emo").addEventListener("pointerdown", (e) => e.preventDefault());     // keep the chat line focused
   $("#chat-emo").addEventListener("click", () => openEmotes("chat"));
   $("#b-sit").addEventListener("click", () => act({ t: "sit" }));
-  for (const b of document.querySelectorAll("#jam button")) b.addEventListener("click", () => act({ t: "jam", k: +b.dataset.jam }));
+  for (const b of document.querySelectorAll("#jam button")) b.addEventListener("click", () => b.dataset.camp ? act({ t: "camp", a: b.dataset.camp }) : act({ t: "jam", k: +b.dataset.jam }));
   $("#b-emo").addEventListener("click", () => openEmotes("emote"));
 }

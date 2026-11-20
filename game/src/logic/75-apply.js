@@ -296,6 +296,9 @@ export function applyAction(S, pid, a) {
       if (p.sit) p.sit = false;
       else { rouse(S, p); sitDown(S, p); fieldFire(S, p, now); }
       break;
+    case "camp":
+      campApply(S, p, a);
+      break;
     case "fish": {
       rouse(S, p);
       const [wx, wy] = waterNear(m, p);

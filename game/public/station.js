@@ -122,6 +122,21 @@ export function render(s) {
   const top = el("div", "daily-top st-top");
   top.append(iconImg(K.g, K.c), el("span", "", `${D().names[si]} Lv.${L}`), Info.coin(s.gold, "purse"));
   box.append(top);
+  if (st.kind === "fire") {
+    const campBar = el("div", "btns camp-services");
+    for (const [actKey, label, tip] of [
+      ["pot", "냄비 요리 나눔", "파티원과 모닥불 주변 모험가에게 30분간 온기(EXP+20%)·공격·이속·식사 버프를 나누어 줍니다"],
+      ["supply", "긴급 물약 보충", "현재 레벨에 맞는 HP·MP 물약을 5개씩 즉시 보충합니다"],
+      ["mend", "장비 정비·회복", "체력·마력을 100% 회복하고 상태이상을 정화하며 10분간 무기 정비 버프를 받습니다"],
+      ["call", "파티원 소환", "전투 중이 아닌 파티원을 이 모닥불 앞으로 즉시 소환합니다"],
+    ]) {
+      const b = el("button", "btn small", label);
+      b.title = tip;
+      b.addEventListener("click", () => { act({ t: "camp", a: actKey }); Sound.play("ui"); });
+      campBar.append(b);
+    }
+    box.append(campBar);
+  }
   const lst = el("div", "st-list");
   const G5 = D().grades;
   let band = -1;

@@ -226,6 +226,20 @@ function walkToBuilding(building) {
   D.play("ui");
 }
 
+function walkToSpot(tiles, label) {
+  const candidates = [];
+  for (const [tx, ty] of tiles) {
+    candidates.push([tx, ty], [tx, ty + 1], [tx, ty - 1], [tx + 1, ty], [tx - 1, ty]);
+  }
+  if (!D.walkToDoor(candidates)) {
+    D.toast(`지금은 ${label}까지 갈 수 없습니다`);
+    return;
+  }
+  D.closeMap();
+  D.toast(`${label}(으)로 이동합니다`);
+  D.play("ui");
+}
+
 /** 월드맵 → 걸어서 이동: the quest tracker's auto-walk to a whole map (track.js); a locked or unreachable region only says so. */
 function walkToMap(id) {
   const G = D.G, chart = currentChart(), d = chart.nodes.get(id)?.d;
@@ -589,23 +603,28 @@ function drawHere(g, W, H, t) {
     const [x, y] = Pt(p.x, p.y);
     blit(g, spr(p.door ? "door" : "gate", p.door ? COL.door : COL.gate), x, y - 3);
     tag(p.to, x, y - 15, p.door ? "#f0c890" : "#f0c8ff", 11, 2);
-    hit(x, y, 9, p.building ? `${p.building.name} · 입구까지 길찾기` : `${p.door ? "문" : "관문"} → ${p.to}`,
-      p.building && (() => walkToBuilding(p.building)));
+    hit(x, y, 9, p.building ? `${p.building.name} · 입구까지 길찾기` : `${p.door ? "문" : "관문"} → ${p.to} · 클릭하면 이동`,
+      p.building ? () => walkToBuilding(p.building) : () => walkToSpot(p.tiles || [[Math.round(p.x), Math.round(p.y)]], p.to));
   }
-  // waypoint stones: clickable to warp when woken and the rules allow
+  // waypoint stones: clickable to warp when woken and the rules allow, or walk there if unopened (WLD-06)
   const can = D.canWarp(), here = M.stones.findIndex((st) => Math.hypot(G.me.x - (st.x * T + 8), G.me.y - (st.y * T + 8)) < 40);
   for (const st of M.stones) {
     const [x, y] = Pt(st.x, st.y), { name, open } = stoneInfo(st), cur = here === st.i;
     blit(g, spr("stone", open ? COL.stone : COL.stoneOff), x, y - 3);
     tag(open ? name : `${name} · 미개방`, x, y + 12, open ? "#bfeaff" : "#a8a090", 10, 3);
     const ok = open && can && !cur;
-    hit(x, y, 9, cur ? `${name} — 지금 여기` : !open ? `${name} — 미개방 (돌에 다가가면 깨어납니다)` : ok ? `${name} — 클릭하면 이동합니다` : `${name} — 지금은 이동할 수 없습니다`,
-      ok ? () => { D.act(st.i ? { t: "warp", to: G.map.id, i: st.i } : { t: "warp", to: G.map.id }); D.play("ui"); } : null);
+    hit(x, y, 9, cur ? `${name} — 지금 여기` : !open ? `${name} — 미개방 (클릭하면 걸어갑니다)` : ok ? `${name} — 클릭하면 순간이동합니다` : `${name} — 지금은 이동할 수 없습니다`,
+      ok ? () => { D.act(st.i ? { t: "warp", to: G.map.id, i: st.i } : { t: "warp", to: G.map.id }); D.play("ui"); }
+        : !open ? () => walkToSpot([[st.x, st.y]], name) : null);
   }
-  for (const c of m.camps || []) { const [x, y] = P(c.x, c.y); blit(g, spr("fire", COL.fire), x, y); hit(x, y, 8, "모닥불 — 앉아서(Z) 쉬면 온기를 얻습니다"); }
+  for (const c of m.camps || []) {
+    const [x, y] = P(c.x, c.y);
+    blit(g, spr("fire", COL.fire), x, y);
+    hit(x, y, 8, "모닥불 — 클릭하면 이동 · 앉아서(Z) 쉬거나 야영 기능을 이용합니다", () => walkToSpot([[Math.floor(c.x / T), Math.floor(c.y / T)]], "모닥불"));
+  }
   for (const f of G.fires.values()) { const [x, y] = P(f.x, f.y); blit(g, spr("fire", "#ffb050"), x, y); }
-  for (const [sx, sy] of M.shrines) { const [x, y] = Pt(sx, sy); blit(g, spr("wind", COL.wind), x, y - 2); hit(x, y, 8, "질주의 바람 — 바람 신단"); }
-  if (M.obelisk) { const [x, y] = Pt(...M.obelisk); blit(g, spr("rift", COL.obelisk), x, y - 3); tag("차원의 오벨리스크", x, y - 15, "#e0c8ff", 10, 4); hit(x, y, 9, "차원의 오벨리스크 — 균열 지기에게 말을 걸어 레이드던전을 엽니다"); }
+  for (const [sx, sy] of M.shrines) { const [x, y] = Pt(sx, sy); blit(g, spr("wind", COL.wind), x, y - 2); hit(x, y, 8, "질주의 바람 — 클릭하면 바람 신단으로 이동", () => walkToSpot([[sx, sy]], "바람 신단")); }
+  if (M.obelisk) { const [x, y] = Pt(...M.obelisk); blit(g, spr("rift", COL.obelisk), x, y - 3); tag("차원의 오벨리스크", x, y - 15, "#e0c8ff", 10, 4); hit(x, y, 9, "차원의 오벨리스크 — 클릭하면 이동", () => walkToSpot([M.obelisk], "차원의 오벨리스크")); }
   for (const n of m.npcs || []) {
     if (n.thing || (NPC.cast(n.id) ? !servicePost(n) : !D.npcOut(n))) continue;
     const [x, y] = Pt(n.x, n.y), [gl, col, what] = roleOf(n);
@@ -632,7 +651,7 @@ function drawHere(g, W, H, t) {
     const d = (G.defs.mobs || {})[mob.k] || {}, [x, y] = P(mob.x, mob.y);
     if (d.boss) blit(g, spr("skull", COL.boss), x, y); else dotAt(g, x, y, mob.el ? "#ffbe3c" : "#ff5050", mob.el ? 3 : 2);
   }
-  if (G.fb) for (const [bx, by] of G.fb) { const [x, y] = P(bx, by); blit(g, spr("skull", COL.boss), x, y); tag("우두머리", x, y - 13, "#ff9a8a", 10, 1); hit(x, y, 9, "사냥터 우두머리"); }
+  if (G.fb) for (const [bx, by] of G.fb) { const [x, y] = P(bx, by); blit(g, spr("skull", COL.boss), x, y); tag("우두머리", x, y - 13, "#ff9a8a", 10, 1); hit(x, y, 9, "사냥터 우두머리 — 클릭하면 위치로 이동", () => walkToSpot([[Math.floor(bx / T), Math.floor(by / T)]], "우두머리 위치")); }
   D.miniDots((wx, wy, col, r = 2) => { const [x, y] = P(wx, wy); dotAt(g, x, y, col, Math.max(3, r)); }, t);
   // the party, live, with names
   for (const q of partyHere()) {
@@ -736,13 +755,13 @@ function drawWorld(g, W, H, t) {
     party.get(id).push({ n: i + 1, col: PARTY_COL[i % PARTY_COL.length], name: r[1] });
   });
   const state = { t, selected: world.selected, current, route: guidePath(chart), seen: new Set(G.self?.seen),
-    quests: questMaps(G.defs, G.self, chart.nodes, id => chart.anchors.get(id)), party, self: G.self, woke: D.wpWoke };
+    quests: questMaps(G.defs, G.self, chart.nodes, id => chart.anchors.get(id)), party, self: G.self, defs: G.defs, woke: D.wpWoke };
   view.hits = paintChart(g, chart, world.base, camp, state).map(h => ({ ...h, click: () => selectWorld(h.id) }));
   if (view.hover) view.hover = view.hits.find(h => h.id === view.hover.id) || null;
   const detail = $("#map-detail"), d = chart.nodes.get(world.selected)?.d;
   detail.hidden = !d;
   if (!d) { world.detailKey = null; return; }
-  const canWarp = !!D.canWarp(), key = JSON.stringify([d.id, state.current, state.route, state.quests.get(d.id), G.self?.wp?.[d.id], G.self?.lvl, canWarp, state.seen.has(d.id), unlockState(d, G.self)]);
+  const canWarp = !!D.canWarp(), key = JSON.stringify([d.id, state.current, state.route, state.quests.get(d.id), G.self?.wp?.[d.id], G.self?.lvl, canWarp, state.seen.has(d.id), unlockState(d, G.self), G.self?.fbMap?.[d.id], G.self?.tro?.length]);
   if (key === world.detailKey) return;
   world.detailKey = key;
   mapDetail(detail, d, { defs: G.defs, chart, state, canWarp, select: selectWorld, walk: walkToMap, travel: (to, i) => {
@@ -899,8 +918,20 @@ export function init(deps) {
     if (h && h.click) h.click();
   };
   cv.addEventListener("pointerup", end);
-  // a double click on a region of the world chart walks there, like the detail's [걸어서 이동]
-  cv.addEventListener("dblclick", (e) => { if (view.tab !== "world") return; const [x, y] = local(e), h = hitAt(x, y); if (h && h.id) walkToMap(h.id); });
+  // a double click on a region of the world chart walks there; on the regional map, double-clicking any tile auto-walks there (WLD-06)
+  cv.addEventListener("dblclick", (e) => {
+    const [x, y] = local(e);
+    if (view.tab === "world") {
+      const h = hitAt(x, y);
+      if (h && h.id) walkToMap(h.id);
+      return;
+    }
+    if (view.tab === "here" && M?.m && view.u > 0) {
+      const a = (x - view.ox) / view.u, b = (2 * (y - view.oy)) / view.u;
+      const tx = Math.floor((a + b) / 2), ty = Math.floor((b - a) / 2);
+      if (tx >= 0 && ty >= 0 && tx < M.m.w && ty < M.m.h) walkToSpot([[tx, ty]], `X ${tx} · Y ${ty}`);
+    }
+  });
   cv.addEventListener("pointercancel", end);
   cv.addEventListener("pointerleave", () => { if (!view.drag && view.hover) { view.hover = null; showHover(); } });
 }

@@ -209,14 +209,14 @@ function lootFor(S, rt, mob, p) {
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
   const fx = pfxLoot(S, rt, p, mob, "drop");   // the powers that add to this kill's loot (51-prefix.js); all 0 without one
   const band = !d.chest && !mob.dim ? huntBandK(p.ch.lvl, d.lv) : 1;
-  const goblin = has(mob, "goblin");
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (goblin ? 3.5 : 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
+  const goblin = has(mob, "goblin"), rain = rt.wx === WX.rain, snow = rt.wx === WX.snow;
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (goblin ? 3.5 : 1) * (rain ? 1.12 : 1) * (mob.goldK || 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
-  const tries = (d.boss ? 4 : mob.el === 2 ? 3 : 1) + (goblin ? 2 : 0);
-  const dropRank = goblin ? 2 : rank;
+  const tries = (d.boss ? 4 : mob.el === 2 ? 3 : 1) + (goblin ? 2 : 0) + (d.eco ? 1 : 0);
+  const dropRank = goblin ? 2 : d.eco ? Math.max(1, rank) : rank;
   for (let i = 0; i < tries; i++) {
     if (rnd(S) >= gearDropChance(d, dropRank, st.mf + fx.mf, band)) continue;
-    let tier = tierFor(d.lv);
+    let tier = tierFor(mob.ecoLv || d.lv);
     if (dropRank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
     for (const [t, w] of DROP_TYPES) { if (roll < w) { type = t; break; } roll -= w; }
@@ -225,12 +225,12 @@ function lootFor(S, rt, mob, p) {
     else id = `${GEAR[type].pre}_${tier}`;
     let q = rollRarity(S, dropRank, st.mf + fx.mf);
     if (isJewel(id) && q === 0) q = 1;
-    out.push({ g: rollGear(S, id, q, d.lv, dropRank) });
+    out.push({ g: rollGear(S, id, q, mob.ecoLv || d.lv, dropRank) });
   }
-  if (rnd(S) < runeDropChance(shownLv(d.lv), dropRank)) out.push({ it: rollRuneId(S, dropRank), n: 1 });
+  if (rnd(S) < runeDropChance(shownLv(mob.ecoLv || d.lv), dropRank) * (rain ? 1.25 : 1)) out.push({ it: rollRuneId(S, dropRank), n: 1 });
   const stoneRoll = rnd(S);
   if (goblin) out.push({ it: "stone", n: ri(S, 1, 2) });
-  else if (stoneRoll < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
+  else if (stoneRoll < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT * (rain || snow ? 1.35 : 1))) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
   if (fx.stone) out.push({ it: "stone", n: 1 });   // (a power's extra stone: at most one a kill)
   // A kind's own finds (MOBS[k].drops: [item, chance, min, max]); its signature gear always drops legendary.
   for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(isGear(it) ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
@@ -238,8 +238,12 @@ function lootFor(S, rt, mob, p) {
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   // Use the high end of the material roll without drawing more combat randomness.
   if (!d.chest && stoneRoll >= 1 - SOCK_DROP[rank]) out.push({ it: SOCK_ITEM, n: 1 });
-  // Crafting materials (herbs/ores/wood) matching this field's grade drop directly from monsters.
-  if (!mob.dim) for (const mat of rollHuntMats(S, mapOfS(S, rt.id), d, rank)) out.push(mat);
+  // Crafting materials (herbs/ores/wood) matching this field's grade drop directly from monsters; rainy weather boosts material yield (WLD-03).
+  if (!mob.dim) {
+    const mats = rollHuntMats(S, mapOfS(S, rt.id), d, d.eco ? Math.max(1, rank) : rank);
+    if (rain && mats.length) mats[0].n = (mats[0].n || 1) + 1;
+    for (const mat of mats) out.push(mat);
+  }
   for (const o of out) {
     const atCorpse = o.it === SOCK_ITEM;
     rt.drops.push({
@@ -509,7 +513,7 @@ function killMob(S, rt, mob) {
   }
   if (d.boss || el === 2) dmgBoard(S, rt, hitters);
   mob.by = {};
-  const xp = d.xp * ELITE[el].xp;
+  const xp = d.xp * ELITE[el].xp * (mob.xpK || 1);
   // Summoned minions and splitlings award light XP only (no loot/quest/split exploit).
   if (mob.noDrop) {
     for (const p of looters) if (!d.chest) gainXp(S, p, Math.max(1, Math.round(xp * 0.25)));
@@ -530,8 +534,20 @@ function killMob(S, rt, mob) {
     const early = hitters[p.pid] > 0 && wmEligible(p, d) && d.lv <= toTier(ch.lvl) + HUNT_EARLY.ahead
       ? HUNT_EARLY.extra * clamp((HUNT_EARLY.end - ch.lvl) / (HUNT_EARLY.end - HUNT_EARLY.full), 0, 1)
       : 0;
-    const band = field ? huntBandK(ch.lvl, d.lv) : 1;
+    const band = field ? huntBandK(ch.lvl, mob.ecoLv || d.lv) : 1;
     gainXp(S, p, xp * band * (1 + pfxLoot(S, rt, p, mob, "xp").xp / 100) * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
+    if (mob.k === "moonspirit") {
+      p.atkBuff = Math.max(p.atkBuff || 0, S.now + 300000);
+      p.spdBuff = Math.max(p.spdBuff || 0, S.now + 300000);
+      rt.ev.push(["u", p.eid, 2]);
+      toast(p, "달빛정령의 축복으로 5분간 공격력과 이동속도가 상승합니다!");
+    } else if (mob.k === "rainspirit") {
+      const st = stats(p);
+      p.hp = Math.min(st.mhp, p.hp + Math.round(st.mhp * 0.35));
+      p.mp = Math.min(st.mmp, p.mp + Math.round(st.mmp * 0.35));
+      rt.ev.push(["u", p.eid, 1]);
+      toast(p, "비구름 영물의 맑은 이슬로 체력과 마력이 회복되었습니다!");
+    }
     ch.kills = (ch.kills || 0) + 1;
     ch.mk[mob.k] = (ch.mk[mob.k] || 0) + 1;
     const now = masteryRank(ch, mob.k);

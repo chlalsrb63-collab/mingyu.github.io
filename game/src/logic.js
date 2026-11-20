@@ -1235,6 +1235,9 @@ const MOBS = {
   sanctumwarden: { name: "신전 동토른", epithet: "황금 성소 파수꾼", sp: "rootwarden", tint: "gold", lv: 50, hp: 5900, atk: 158, def: 46, spd: 40, xp: 3050, gold: [144, 228], aggro: 94, range: 22, cd: 1400, charge: 130, slam: 44 },
   sanctumstag: { name: "신전 녹사르", epithet: "가라앉은 숲의 사슴왕", sp: "rotstag", tint: "bile", lv: 50, hp: 6900, atk: 162, def: 46, spd: 42, xp: 3600, gold: [170, 264], aggro: 102, range: 24, cd: 1300, charge: 134, slam: 44, fan: 118 },
   sanctumwyrm: { name: "비취 수호룡", epithet: "지하강의 고대 신전룡", sp: "inkserpent", tint: "frost", lv: 50, hp: 540000, atk: 208, def: 52, spd: 42, xp: 79000, gold: [5600, 8200], aggro: 140, range: 34, cd: 1450, resp: 240000, boss: true, gear: 1, fly: true, fan: 156, pool: 34, poolKind: 2, charge: 150 },
+  // 날씨 · 시간대 연동 특수 생태계 (WLD-03): 밤 전용 달빛 정령과 비 오는 날 전용 희귀 영물
+  moonspirit: { name: "달빛정령 탈루나", epithet: "밤하늘의 달빛 정령", sp: "mothface", tint: "frost", lv: 25, hp: 1350, atk: 84, def: 14, spd: 46, xp: 640, gold: [70, 130], aggro: 84, range: 72, cd: 1400, fly: true, shot: true, questOnly: 1, eco: "night", drops: [["stone", 0.75, 1, 2], ["ske_stone", 0.25, 1, 1]] },
+  rainspirit: { name: "비구름 도글란", epithet: "빗물을 머금은 우비 정령", sp: "toadbrood", tint: "frost", lv: 25, hp: 1500, atk: 88, def: 18, spd: 38, xp: 680, gold: [75, 140], aggro: 84, range: 20, cd: 1350, pool: 26, poolKind: 2, questOnly: 1, eco: "rain", drops: [["stone", 0.8, 1, 2], ["hp_l", 0.5, 1, 2], ["mp_l", 0.5, 1, 2]] },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
@@ -1629,6 +1632,8 @@ const MOB_LORE = {
   nightbat: "주인의 망토 자락에서 떨어져 나온 박쥐들. 배가 차면 망토 속으로 돌아간다.",
   bloomwhale: "균열 밑바닥에 가라앉은 고래. 그 몸에서 피어난 꽃밭이 아직도 노래를 부른다.",
   hagfishhead: "고래의 상처를 파고들어 살던 먹장어. 이제는 고래의 머리인 척을 한다.",
+  moonspirit: "밤하늘의 달빛이 짙어질 때만 숲과 들판에 내려앉아 은빛 인분을 흩뿌리는 밤의 정령이다.",
+  rainspirit: "빗줄기가 대지를 적실 때 웅덩이에서 솟아나 맑은 빗방울과 희귀한 보물을 품고 다닌다.",
 };
 // Socket limits, rune variants and deterministic drops. A variant has fixed lines so identical runes stack.
 const SOCK_CAPS = { weapon: 2, armor: 2, helm: 1, gloves: 1, boots: 1, ring: 1, amulet: 1 };
@@ -2618,13 +2623,13 @@ const MONSTER_ELEMENT_GROUPS = {
   blood: ["batcluster_blood", "crabskull_blood", "squidrat_blood", "fishwalker_blood", "twingoat_blood", "spiderhand_blood", "gravrose_blood", "barnacleseal_blood", "bloodhorn", "bloodshard"],
   ember: ["wickhare", "smoggecko", "doghead_fire", "spinescorp_fire", "ribvulture_fire", "foxtwine_fire", "eyecrow_ash", "lionhand_gold"],
   inferno: ["boss", "wickregent", "sandmaw"],
-  frost: ["gutfrog_frost", "wingcrane_frost", "splitboar_frost", "fishwalker_frost", "eelknot_frost", "crabskull_frost", "ribdeer_frost", "foxtwine_frost", "shroomboar_frost", "crowscare_frost", "hermitskull_frost", "rimehare", "frostmoth", "barnacleseal", "hagfishhead", "sanctummoth"],
+  frost: ["gutfrog_frost", "wingcrane_frost", "splitboar_frost", "fishwalker_frost", "eelknot_frost", "crabskull_frost", "ribdeer_frost", "foxtwine_frost", "shroomboar_frost", "crowscare_frost", "hermitskull_frost", "rimehare", "frostmoth", "barnacleseal", "hagfishhead", "sanctummoth", "rainspirit"],
   rime: ["rimewalrus", "rootwarden", "crownstag", "bloomwhale", "sanctumwyrm"],
   storm: ["sluiceeel", "spoolsnipe", "eelknot", "hydrasnake_steel", "eelknot_gold", "prismmole", "airship_gale", "airship_lookout", "eyegull", "brainjelly", "clubshrimp", "sluiceleviathan", "gorgecrane"],
   toxin: ["hydrasnake", "mothface", "toadbrood", "gutfrog_poison", "ratking_bile", "slugtongue", "leechmaw", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile", "leechmaw_ash", "mothface_ash", "shroomboar", "gravrose", "dartbrood", "spinescorp", "sowseer", "knotwidow", "sanctumfrog", "sanctumcrown"],
   shadow: ["owlstare", "crowscare", "bogcrown", "hollowowl", "batcluster", "nightbat", "serpentwing", "serpentwing_ash", "bearmaw_ash", "splitboar_ash", "fishwalker_ash", "wingcrane_ash", "abyssboss", "mistiger", "cloakbat", "ironowl"],
   revenant: ["bellnewt", "gravecricket", "dunescarab", "ribdeer", "twinhare_bone", "bonehound", "bonehound_ash", "bonehound_gold", "lambmaw_bone", "leechmaw_bone", "spiderhand_bone", "serpentwing_bone", "rotstag", "hermitskull", "ribvulture_bone", "mummycamel", "spinescorp_bone", "ribvulture", "knellkeeper", "sanctumstag"],
-  radiant: ["prismcantor", "beadmonkey", "crownpeacock", "hydrasnake_gold", "sowseer_gold", "owlstare_gold", "ribvulture_gold", "citadellion", "sanctumwarden"],
+  radiant: ["prismcantor", "beadmonkey", "crownpeacock", "hydrasnake_gold", "sowseer_gold", "owlstare_gold", "ribvulture_gold", "citadellion", "sanctumwarden", "moonspirit"],
 };
 const MONSTER_ELEMENT = Object.fromEntries(Object.entries(MONSTER_ELEMENT_GROUPS).flatMap(([profile, kinds]) => kinds.map((kind) => [kind, MONSTER_PROFILES[profile]])));
 for (const [id, mob] of Object.entries(MOBS)) mob.element = mob.chest ? MONSTER_PROFILES.chest : MONSTER_ELEMENT[id] || MONSTER_PROFILES.neutral;
@@ -11143,14 +11148,14 @@ function lootFor(S, rt, mob, p) {
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
   const fx = pfxLoot(S, rt, p, mob, "drop");   // the powers that add to this kill's loot (51-prefix.js); all 0 without one
   const band = !d.chest && !mob.dim ? huntBandK(p.ch.lvl, d.lv) : 1;
-  const goblin = has(mob, "goblin");
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (goblin ? 3.5 : 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
+  const goblin = has(mob, "goblin"), rain = rt.wx === WX.rain, snow = rt.wx === WX.snow;
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (goblin ? 3.5 : 1) * (rain ? 1.12 : 1) * (mob.goldK || 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
-  const tries = (d.boss ? 4 : mob.el === 2 ? 3 : 1) + (goblin ? 2 : 0);
-  const dropRank = goblin ? 2 : rank;
+  const tries = (d.boss ? 4 : mob.el === 2 ? 3 : 1) + (goblin ? 2 : 0) + (d.eco ? 1 : 0);
+  const dropRank = goblin ? 2 : d.eco ? Math.max(1, rank) : rank;
   for (let i = 0; i < tries; i++) {
     if (rnd(S) >= gearDropChance(d, dropRank, st.mf + fx.mf, band)) continue;
-    let tier = tierFor(d.lv);
+    let tier = tierFor(mob.ecoLv || d.lv);
     if (dropRank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
     for (const [t, w] of DROP_TYPES) { if (roll < w) { type = t; break; } roll -= w; }
@@ -11159,12 +11164,12 @@ function lootFor(S, rt, mob, p) {
     else id = `${GEAR[type].pre}_${tier}`;
     let q = rollRarity(S, dropRank, st.mf + fx.mf);
     if (isJewel(id) && q === 0) q = 1;
-    out.push({ g: rollGear(S, id, q, d.lv, dropRank) });
+    out.push({ g: rollGear(S, id, q, mob.ecoLv || d.lv, dropRank) });
   }
-  if (rnd(S) < runeDropChance(shownLv(d.lv), dropRank)) out.push({ it: rollRuneId(S, dropRank), n: 1 });
+  if (rnd(S) < runeDropChance(shownLv(mob.ecoLv || d.lv), dropRank) * (rain ? 1.25 : 1)) out.push({ it: rollRuneId(S, dropRank), n: 1 });
   const stoneRoll = rnd(S);
   if (goblin) out.push({ it: "stone", n: ri(S, 1, 2) });
-  else if (stoneRoll < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
+  else if (stoneRoll < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT * (rain || snow ? 1.35 : 1))) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
   if (fx.stone) out.push({ it: "stone", n: 1 });   // (a power's extra stone: at most one a kill)
   // A kind's own finds (MOBS[k].drops: [item, chance, min, max]); its signature gear always drops legendary.
   for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(isGear(it) ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
@@ -11172,8 +11177,12 @@ function lootFor(S, rt, mob, p) {
   if (rnd(S) < 0.07) out.push({ it: d.lv < 8 ? "mp_s" : d.lv < 26 ? "mp_m" : "mp_l", n: 1 });
   // Use the high end of the material roll without drawing more combat randomness.
   if (!d.chest && stoneRoll >= 1 - SOCK_DROP[rank]) out.push({ it: SOCK_ITEM, n: 1 });
-  // Crafting materials (herbs/ores/wood) matching this field's grade drop directly from monsters.
-  if (!mob.dim) for (const mat of rollHuntMats(S, mapOfS(S, rt.id), d, rank)) out.push(mat);
+  // Crafting materials (herbs/ores/wood) matching this field's grade drop directly from monsters; rainy weather boosts material yield (WLD-03).
+  if (!mob.dim) {
+    const mats = rollHuntMats(S, mapOfS(S, rt.id), d, d.eco ? Math.max(1, rank) : rank);
+    if (rain && mats.length) mats[0].n = (mats[0].n || 1) + 1;
+    for (const mat of mats) out.push(mat);
+  }
   for (const o of out) {
     const atCorpse = o.it === SOCK_ITEM;
     rt.drops.push({
@@ -11443,7 +11452,7 @@ function killMob(S, rt, mob) {
   }
   if (d.boss || el === 2) dmgBoard(S, rt, hitters);
   mob.by = {};
-  const xp = d.xp * ELITE[el].xp;
+  const xp = d.xp * ELITE[el].xp * (mob.xpK || 1);
   // Summoned minions and splitlings award light XP only (no loot/quest/split exploit).
   if (mob.noDrop) {
     for (const p of looters) if (!d.chest) gainXp(S, p, Math.max(1, Math.round(xp * 0.25)));
@@ -11464,8 +11473,20 @@ function killMob(S, rt, mob) {
     const early = hitters[p.pid] > 0 && wmEligible(p, d) && d.lv <= toTier(ch.lvl) + HUNT_EARLY.ahead
       ? HUNT_EARLY.extra * clamp((HUNT_EARLY.end - ch.lvl) / (HUNT_EARLY.end - HUNT_EARLY.full), 0, 1)
       : 0;
-    const band = field ? huntBandK(ch.lvl, d.lv) : 1;
+    const band = field ? huntBandK(ch.lvl, mob.ecoLv || d.lv) : 1;
     gainXp(S, p, xp * band * (1 + pfxLoot(S, rt, p, mob, "xp").xp / 100) * (1 + early) * PARTY_SHARE[n - 1] * (1 + Math.min(STREAK_MAX, p.streak - 1) * 0.02 + rank * 0.02 + guildNear(S, p) * GUILD_XP));
+    if (mob.k === "moonspirit") {
+      p.atkBuff = Math.max(p.atkBuff || 0, S.now + 300000);
+      p.spdBuff = Math.max(p.spdBuff || 0, S.now + 300000);
+      rt.ev.push(["u", p.eid, 2]);
+      toast(p, "달빛정령의 축복으로 5분간 공격력과 이동속도가 상승합니다!");
+    } else if (mob.k === "rainspirit") {
+      const st = stats(p);
+      p.hp = Math.min(st.mhp, p.hp + Math.round(st.mhp * 0.35));
+      p.mp = Math.min(st.mmp, p.mp + Math.round(st.mmp * 0.35));
+      rt.ev.push(["u", p.eid, 1]);
+      toast(p, "비구름 영물의 맑은 이슬로 체력과 마력이 회복되었습니다!");
+    }
     ch.kills = (ch.kills || 0) + 1;
     ch.mk[mob.k] = (ch.mk[mob.k] || 0) + 1;
     const now = masteryRank(ch, mob.k);
@@ -16768,24 +16789,236 @@ function nightNpc(map, now) {
 /** Which tale is being told at `now` (an index into TALES), or -1 by day. */
 function taleAt(now) { return nightNpc("town", now) ? Math.floor(now / TALE_MS) % TALES.length : -1; }
 
-/** Once a tick, per outdoor map: the weather, and at night in town the next tale by the fire. */
+/** Once a tick, per outdoor map: the weather, special nocturnal/rain ecology (WLD-03), and at night in town the next tale by the fire. */
+const ECO_MS = 12000, ECO_CAP = 2;
+function spawnEcoMob(S, id, m, rt, kind, tag, now) {
+  let host = null;
+  for (const pid of Object.keys(S.players)) {
+    const p = S.players[pid];
+    if (p.map === id && !p.dead) { host = p; break; }
+  }
+  if (!host) return null;
+  const slot = Math.floor(now / ECO_MS);
+  const px = Math.floor(host.x / T), py = Math.floor(host.y / T);
+  let tx = px, ty = py, found = false;
+  for (let i = 0; i < 16 && !found; i++) {
+    const ang = wxRoll(`${id}:${kind}:a`, slot * 17 + i) * Math.PI * 2;
+    const rad = 8 + Math.floor(wxRoll(`${id}:${kind}:r`, slot * 31 + i) * 7);
+    const cx = clamp(px + Math.round(Math.cos(ang) * rad), 2, m.w - 3);
+    const cy = clamp(py + Math.round(Math.sin(ang) * rad), 2, m.h - 3);
+    if (m.reach && m.reach[cy * m.w + cx] && (!m.zone || m.zone[cy * m.w + cx] !== 0)) { tx = cx; ty = cy; found = true; }
+  }
+  if (!found && m.entry) { tx = m.entry[0]; ty = m.entry[1]; }
+  const mob = newMob(S, kind, [0, 0, 0, 0]);
+  mob.el = 0; mob.tr = []; mob.temp = true; mob.eco = tag;
+  mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
+  const refK = (m.kinds || []).find((k) => MOBS[k] && !MOBS[k].boss && !MOBS[k].chest);
+  if (refK) {
+    const ref = MOBS[refK], base = MOBS[kind];
+    mob.hk = Math.max(0.15, ref.hp / base.hp);
+    mob.ak = Math.max(0.15, ref.atk / base.atk);
+    mob.xpK = Math.max(0.2, (ref.xp * 1.8) / base.xp);
+    mob.goldK = Math.max(0.2, (ref.gold[1] * 2.2) / base.gold[1]);
+    mob.ecoLv = ref.lv;
+  }
+  mob.hp = mobMax(mob);
+  mob.castAt = now + 3500;
+  rt.mobs.push(mob);
+  rt.ev.push(["r", mob.id]);
+  const noteKey = `${tag}:${Math.floor(now / (tag === "night" ? SKY_DAY_MS : WX_MS))}`;
+  if (rt.ecoNote !== noteKey) {
+    rt.ecoNote = noteKey;
+    const msg = tag === "night"
+      ? "달빛이 짙어지며 사냥터에 밤 전용 [달빛정령 탈루나]가 모습을 드러냈습니다!"
+      : "빗줄기를 따라 사냥터에 희귀 영물 [비구름 도글란]이 나타났습니다!";
+    for (const pid of Object.keys(S.players)) {
+      const p = S.players[pid];
+      if (p.map === id) toast(p, msg);
+    }
+  }
+  return mob;
+}
+
+function ecoTick(S, id, rt, now) {
+  const meta = MAP_META[id];
+  if (!outdoor(meta) || meta.safe || !meta.kinds || !meta.kinds.length) return;
+  const night = isNight(now), rain = rt.wx === WX.rain;
+  // Retire calm untargeted nocturnal or rain spirits once their time/weather passes
+  for (let i = rt.mobs.length - 1; i >= 0; i--) {
+    const o = rt.mobs[i];
+    if (!o.eco) continue;
+    if (o.dead || ((o.eco === "night" && !night) || (o.eco === "rain" && !rain)) && !o.tgt) {
+      o.dead = true;
+      rt.mobs.splice(i, 1);
+    }
+  }
+  if (!rt.ecoAt) { rt.ecoAt = now + ECO_MS; return; }
+  if (now < rt.ecoAt) return;
+  rt.ecoAt = now + ECO_MS;
+  const m = mapOfS(S, id);
+  if (!m.cells) return;
+  if (night) {
+    const n = rt.mobs.filter((o) => !o.dead && o.k === "moonspirit").length;
+    if (n < ECO_CAP) spawnEcoMob(S, id, m, rt, "moonspirit", "night", now);
+  }
+  if (rain) {
+    const n = rt.mobs.filter((o) => !o.dead && o.k === "rainspirit").length;
+    if (n < ECO_CAP) spawnEcoMob(S, id, m, rt, "rainspirit", "rain", now);
+  }
+}
+
 function skyTick(S, now) {
   for (const id of Object.keys(S.maps)) {
     const rt = S.maps[id];
     rt.wx = weatherAt(id, now);
-    if (id !== "town" || rt.n <= 0) continue;
+    if (rt.n <= 0) continue;
+    if (id !== "town") { ecoTick(S, id, rt, now); continue; }
     const slot = nightNpc(id, now) ? Math.floor(now / TALE_MS) : -1;
     if (slot !== rt.tale) { rt.tale = slot; if (slot >= 0) rt.ev.push(["tl", slot % TALES.length]); }
   }
 }
 
+// ── 필드 모닥불 캠프 기능 강화 (WLD-05): 냄비 요리 나눔(pot), 긴급 물약 보충(supply), 장비 정비(mend), 파티원 소환(call)
+const CAMP_FEAST_MS = 30 * 60000, CAMP_MEND_MS = 10 * 60000;
+function campPotionsFor(lvl) { return lvl < 30 ? ["hp_s", "mp_s"] : lvl < 100 ? ["hp_m", "mp_m"] : ["hp_l", "mp_l"]; }
+function campFeeFor(lvl, base) { return base * Math.max(1, toTier(lvl)); }
+
+function campValidate(S, p, a) {
+  const ch = p.ch, rt = S.maps[p.map];
+  if (!a || !["pot", "supply", "mend", "call"].includes(a.a)) return { ok: false, error: "없는 야영 기능입니다" };
+  if (!fireNear(rt, p)) return { ok: false, error: "모닥불 곁에서만 이용할 수 있습니다" };
+  if (S.now - p.hitAt < 3000) return { ok: false, error: "전투 중에는 야영 기능을 이용할 수 없습니다" };
+  if (a.a === "pot") {
+    const hasFood = ch.inv.some((s) => ITEMS[s.id]?.type === "food");
+    const fee = campFeeFor(ch.lvl, 80);
+    if (!hasFood && ch.gold < fee) return { ok: false, error: `나눌 요리나 야영 식재료비(${fee}G)가 부족합니다` };
+    return { ok: true };
+  }
+  if (a.a === "supply") {
+    const [hpId, mpId] = campPotionsFor(ch.lvl), price = ITEMS[hpId].price;
+    if (ch.gold < price) return { ok: false, error: `골드가 부족합니다 (${price}G 이상 필요)` };
+    if (!canAdd(ch, hpId, 1) && !canAdd(ch, mpId, 1)) return { ok: false, error: "가방이 가득 찼습니다" };
+    return { ok: true };
+  }
+  if (a.a === "mend") {
+    const fee = campFeeFor(ch.lvl, 50);
+    if (ch.gold < fee) return { ok: false, error: `정비 비용이 부족합니다 (${fee}G 필요)` };
+    return { ok: true };
+  }
+  if (a.a === "call") {
+    if (String(p.map).startsWith("dim:") || p.ab || p.cj) return { ok: false, error: "이곳에서는 파티원을 소환할 수 없습니다" };
+    const pt = S.parties[p.party];
+    if (!pt || pt.m.length < 2) return { ok: false, error: "소환할 파티원이 없습니다" };
+    return { ok: true };
+  }
+  return { ok: true };
+}
+
+function campApply(S, p, a) {
+  const ch = p.ch, rt = S.maps[p.map], now = S.now, fire = fireNear(rt, p);
+  if (!fire) return;
+  if (a.a === "pot") {
+    // 냄비 요리 나눔: consumes 1 food item in bag if available, else pays camp ration gold; buffs party & fireside sitters for 30 min
+    const foodSlot = ch.inv.find((s) => ITEMS[s.id]?.type === "food");
+    const foodId = foodSlot ? foodSlot.id : "inn_stew";
+    if (foodSlot) takeItem(ch, foodId, 1);
+    else ch.gold -= campFeeFor(ch.lvl, 80);
+    const targets = new Set([p]);
+    for (const o of allies(S, p, 360)) if (!o.dead) targets.add(o);
+    for (const oid of Object.keys(S.players)) {
+      const o = S.players[oid];
+      if (o.map === p.map && !o.dead && dist(o.x, o.y, fire.x, fire.y) <= FIRE_R * 1.5) targets.add(o);
+    }
+    for (const o of targets) {
+      o.warm = Math.max(o.warm || 0, now + CAMP_FEAST_MS);
+      o.warmPct = Math.max(o.warmPct || 0, 20);
+      o.warmN = WARM_N;
+      o.atkBuff = Math.max(o.atkBuff || 0, now + CAMP_FEAST_MS);
+      o.spdBuff = Math.max(o.spdBuff || 0, now + CAMP_FEAST_MS);
+      if (ITEMS[foodId]) o.food = { id: foodId, until: now + CAMP_FEAST_MS };
+      const st = stats(o);
+      o.hp = Math.min(st.mhp, o.hp + Math.round(st.mhp * 0.35));
+      o.mp = Math.min(st.mmp, o.mp + Math.round(st.mmp * 0.35));
+      o.stc = null; o.dirty = true;
+      rt.ev.push(["u", o.eid, 2]);
+      if (o !== p) toast(o, `${ch.name}님이 모닥불 냄비 요리를 나누었습니다! (30분간 온기 EXP+20% · 전투·식사 버프)`);
+    }
+    toast(p, `모닥불 냄비 요리를 나누었습니다! (${targets.size}명에게 30분간 온기 EXP+20% · 공격·이속·식사 버프 적용)`);
+    saveSoon(p);
+    return;
+  }
+  if (a.a === "supply") {
+    // 긴급 물약 보충: buys up to 5 HP and 5 MP potions of the character's level tier
+    const [hpId, mpId] = campPotionsFor(ch.lvl);
+    let boughtHp = 0, boughtMp = 0;
+    for (let i = 0; i < 5; i++) {
+      if (ch.gold >= ITEMS[hpId].price && canAdd(ch, hpId, 1)) { ch.gold -= ITEMS[hpId].price; addItem(ch, hpId, 1); boughtHp++; }
+      if (ch.gold >= ITEMS[mpId].price && canAdd(ch, mpId, 1)) { ch.gold -= ITEMS[mpId].price; addItem(ch, mpId, 1); boughtMp++; }
+    }
+    p.dirty = true;
+    rt.ev.push(["u", p.eid, 1]);
+    toast(p, `야영 보급품 보충 완료: ${ITEMS[hpId].name} ×${boughtHp}, ${ITEMS[mpId].name} ×${boughtMp}`);
+    saveSoon(p);
+    return;
+  }
+  if (a.a === "mend") {
+    // 장비 정비 & 응급 치료: full HP/MP, cleanse ailments, 10m maintenance buff, and auto-uncurse if holding uncurse scroll
+    const fee = campFeeFor(ch.lvl, 50);
+    ch.gold -= fee;
+    const st = stats(p);
+    p.hp = st.mhp; p.mp = st.mmp;
+    p.burn = null; p.poison = null; p.slowed = 0; elementClear(p);
+    p.atkBuff = Math.max(p.atkBuff || 0, now + CAMP_MEND_MS);
+    let uncursed = 0;
+    for (const k of SLOTS) {
+      const g = ch.eq[k];
+      if (g && g.cu === 1 && countItem(ch, "uncurse") >= 1) { takeItem(ch, "uncurse", 1); g.cu = 2; uncursed++; }
+    }
+    p.stc = null; p.dirty = true;
+    rt.ev.push(["e", p.eid, uncursed ? 2 : 1]);
+    toast(p, `모닥불 장비 정비 완료! 체력·마력 회복 및 10분간 무기 정비 버프가 적용되었습니다.${uncursed ? ` (장비 저주 ${uncursed}개 해제)` : ""}`);
+    saveSoon(p);
+    return;
+  }
+  if (a.a === "call") {
+    // 파티원 소환: brings eligible party members to the campfire
+    const pt = S.parties[p.party], m = mapOfS(S, p.map);
+    if (!pt) return;
+    let called = 0;
+    for (const oid of pt.m) {
+      if (oid === p.pid) continue;
+      const o = S.players[oid];
+      if (!o || o.dead || String(o.map).startsWith("dim:") || o.ab || o.cj || now - o.hitAt < 3000) continue;
+      if (mapLevelNeed(o.ch, p.map) || airshipAccess(o.ch, p.map)) continue;
+      if (o.map !== p.map) {
+        S.maps[o.map].n--;
+        o.map = p.map; o.ch.map = p.map;
+        rt.n++; rt.who = true;
+        o.sendMap = true;
+      }
+      o.x = o.ch.x = fire.x;
+      o.y = o.ch.y = clamp(fire.y + 12, 16, m.h * T - 16);
+      o.fix = true; o.sit = false; o.dirty = true;
+      if (!o.ch.seen.includes(p.map)) o.ch.seen.push(p.map);
+      rt.ev.push(["wp", o.eid, 1]);
+      toast(o, `${ch.name}님이 [${m.name}] 모닥불 앞으로 파티원을 소환했습니다!`);
+      called++;
+    }
+    if (called > 0) {
+      rt.ev.push(["wp", p.eid, 1]);
+      toast(p, `파티원 ${called}명을 모닥불 앞으로 소환했습니다!`);
+    } else toast(p, "지금 소환할 수 있는 파티원이 없습니다 (전투 중·던전·레벨 제한 제외).");
+  }
+}
+
 /**
  * The sky over a map at a moment, for the tests and the tools: the hour, the phase, the
- * weather, whether the storyteller is out and which tale she tells, and the camps.
+ * weather, whether the storyteller is out and which tale she tells, the camps, and the active special ecology.
  */
 export function skyAt(map, now) {
-  const ph = dayPhase(now), m = mapOf(map);
-  return { hour: dayHour(now), phase: ph, name: PHASES[ph][0], night: ph === PH_NIGHT, outdoor: outdoor(m), wx: weatherAt(map, now), npc: nightNpc(map, now), tale: map === "town" ? taleAt(now) : -1, camps: m ? campsOf(m) : [] };
+  const ph = dayPhase(now), m = mapOf(map), wx = weatherAt(map, now), out = outdoor(m);
+  const eco = out && !m?.safe ? (ph === PH_NIGHT ? "moonspirit" : wx === WX.rain ? "rainspirit" : null) : null;
+  return { hour: dayHour(now), phase: ph, name: PHASES[ph][0], night: ph === PH_NIGHT, outdoor: out, wx, eco, npc: nightNpc(map, now), tale: map === "town" ? taleAt(now) : -1, camps: m ? campsOf(m) : [] };
 }
 // ───────────────────────────── NPC routines ─────────────────────────────
 //
@@ -24875,6 +25108,9 @@ export function validateAction(S, pid, a) {
       if (a.s === "talk" && !npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
       return OK;
     }
+    case "camp":
+      if (p.dead) return bad("쓰러진 상태입니다");
+      return campValidate(S, p, a);
   }
   if (p.dead) return bad("쓰러진 상태입니다");
   switch (a.t) {
@@ -25543,6 +25779,9 @@ export function applyAction(S, pid, a) {
     case "sit":
       if (p.sit) p.sit = false;
       else { rouse(S, p); sitDown(S, p); fieldFire(S, p, now); }
+      break;
+    case "camp":
+      campApply(S, p, a);
       break;
     case "fish": {
       rouse(S, p);
@@ -26669,6 +26908,21 @@ function dailyView(p) {
     tasks: dl.tasks.map((t, i) => ({ kind: t.kind, k: t.k, n: t.n, need: t.need, done: t.n >= t.need, claimed: dl.claimed[i], text: dailyText(t), reward: dailyReward(ch, t) })),
   };
 }
+function fbStatusMap(S) {
+  const out = {}, now = S.now;
+  for (const [id, meta] of Object.entries(MAP_META)) {
+    const hasFb = !!FIELD_BOSS[id], hasBoss = (meta.kinds || []).some((k) => MOBS[k]?.boss);
+    if (!hasFb && !hasBoss) continue;
+    const rt = S.maps[id];
+    if (!rt) { out[id] = 0; continue; }
+    const live = rt.mobs.some((o) => !o.dead && (MOBS[o.k]?.boss || (rt.fb && o.id === rt.fb)));
+    if (live) { out[id] = 0; continue; }
+    const deadBoss = rt.mobs.find((o) => o.dead && MOBS[o.k]?.boss);
+    const waitMs = deadBoss ? deadBoss.respAt - now : rt.fbAt ? rt.fbAt - now : 0;
+    out[id] = waitMs > 0 ? Math.max(1, Math.ceil(waitMs / 1000)) : 0;
+  }
+  return out;
+}
 function selfPayload(p) {
   const ch = p.ch;
   const st = stats(p);
@@ -26739,6 +26993,8 @@ function selfPayload(p) {
     alba: albaSelf(p),
     // the slots whose 고유 효과 does not count (the same power on a better or earlier piece): the tooltip greys it (51-prefix.js)
     lgOff: st.lgOff,
+    // world map boss / field-boss live status per region (0 = alive/ready, >0 = respawn seconds left; WLD-06)
+    fbMap: fbStatusMap(p.S),
   };
 }
 

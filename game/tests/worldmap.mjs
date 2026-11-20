@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { defs, setup, addPlayer, newChar, viewFor, runtime } from "../src/logic.js";
 import { terrainTrail } from "../public/worldmap_land.js";
-import { mapChart, buildingDoors, shortestRoute, nextGate, questMaps, wokeStones } from "../public/worldmap.js";
+import { mapChart, buildingDoors, shortestRoute, nextGate, questMaps, wokeStones, exploreInfo } from "../public/worldmap.js";
 
 const D = defs(), chart = mapChart(D.maps);
 assert.equal(chart.nodes.size, D.maps.length, "the routing graph includes interiors");
@@ -119,4 +119,13 @@ for (const nid of wanted) {
   assert.ok(mid, `objective NPC ${nid} has a map`);
   assert.ok(shortestRoute(chart.graph, "town", mid).length, `${nid}'s map ${mid} is reachable from town`);
 }
+// WLD-06: exploration progress % and live boss respawn status map (self.fbMap)
+const exp0 = exploreInfo(meadow, D, { seen: [], wp: {}, mk: {}, tro: [] }, () => 0);
+assert.equal(exp0.pct, 0, "unvisited meadow is 0% explored");
+const fullMk = Object.fromEntries((D.collection.meadow.mobs || []).map((k) => [k, 30]));
+const exp100 = exploreInfo(meadow, D, { seen: ["meadow"], wp: { meadow: 7 }, mk: fullMk, tro: ["lambmaw"] }, () => 1);
+assert.equal(exp100.pct, 100, "fully completed meadow is 100% explored");
+p.dirty = true;
+const snapSelf = viewFor(S, "test").self;
+assert.ok(snapSelf.fbMap && snapSelf.fbMap.meadow === 0, "self.fbMap reports live boss readiness per region");
 console.log(`추적: ${wanted.size} objective NPCs on reachable maps.`);

@@ -260,4 +260,51 @@ assert.ok(L.atlas().maps.town.npcs.some((n) => n.id === teller.id && n.night), "
   assert.equal(L.runtime(S, "town").fires.length, t0);
 }
 
+// ── WLD-03: weather & time-of-day special ecosystem (moonspirit at night, rainspirit in the rain)
+{
+  assert.equal(L.skyAt("meadow", at(22)).eco, "moonspirit", "meadow at night advertises moonspirit");
+  let tRainDay = BASE + 10 * HOUR;
+  while (L.skyAt("meadow", tRainDay).wx !== 2 || L.skyAt("meadow", tRainDay).night) tRainDay += SKY.wxMs;
+  assert.equal(L.skyAt("meadow", tRainDay).eco, "rainspirit", "meadow in daytime rain advertises rainspirit");
+  const W = L.setup();
+  L.addPlayer(W, "eco-1", L.newChar("달사냥꾼", "warrior", []));
+  const ep = W.players["eco-1"], ert = L.runtime(W, "meadow");
+  L.runtime(W, "town").n = 0; ep.map = "meadow"; ert.n = 1;
+  ep.x = 40 * 16 + 8; ep.y = 25 * 16 + 10;
+  const tNight = at(22);
+  L.tick(W, tNight); L.endTick(W);
+  L.tick(W, tNight + 13000); L.endTick(W);
+  assert.ok(ert.mobs.some((m) => !m.dead && m.k === "moonspirit"), "moonspirit spawns outdoors at night");
+  // When dawn arrives, calm untargeted moonspirits fade away
+  L.tick(W, at(12, 1)); L.endTick(W);
+  assert.ok(!ert.mobs.some((m) => !m.dead && m.k === "moonspirit"), "moonspirit retires by day");
+}
+
+// ── WLD-05: campfire camp features (pot feast share, supply potion restock, mend gear/recovery, party call)
+{
+  const p0 = P[0], p1 = P[1];
+  L.runtime(S, p0.map).n--; p0.map = "town"; L.runtime(S, "town").n++;
+  L.runtime(S, p1.map).n--; p1.map = "meadow"; L.runtime(S, "meadow").n++;
+  near(p0, fire.x + 8, fire.y + 8);
+  near(p1, 200, 200);
+  p0.ch.gold = 50000;
+  p0.hp = 10; p0.mp = 5; p0.burn = { until: now + 5000, next: now + 1000, dmg: 5 };
+  // mend: full HP/MP recovery, ailment cleanse, 10m maintenance buff
+  assert.ok(act(ids[0], { t: "camp", a: "mend" }).ok, "camp mend succeeds near fire");
+  assert.ok(p0.hp > 10 && p0.burn === null && p0.atkBuff > now, "camp mend restores HP, cleanses burn, buffs atk");
+  // supply: restocks level-appropriate HP/MP potions
+  p0.ch.inv = [];
+  assert.ok(act(ids[0], { t: "camp", a: "supply" }).ok, "camp supply succeeds");
+  assert.ok(p0.ch.inv.some((s) => s.id.startsWith("hp_")) && p0.ch.inv.some((s) => s.id.startsWith("mp_")), "camp supply adds HP & MP potions");
+  // pot: shares 30-minute warmth (EXP+20%) + combat & food buff
+  assert.ok(act(ids[0], { t: "camp", a: "pot" }).ok, "camp pot feast succeeds");
+  assert.ok(p0.warm >= now + 29 * 60000 && p0.warmPct === 20 && p0.spdBuff > now && p0.food, "camp pot grants 30m feast buffs");
+  // call: summons party member to the campfire
+  assert.ok(act(ids[0], { t: "pinv", e: p1.eid }).ok);
+  assert.ok(act(ids[1], { t: "pacc" }).ok);
+  assert.ok(act(ids[0], { t: "camp", a: "call" }).ok, "camp party summon succeeds");
+  assert.equal(p1.map, "town", "summoned party member moved to campfire map");
+  assert.ok(Math.hypot(p1.x - fire.x, p1.y - fire.y) <= D.fireR, "summoned party member stands by the campfire");
+}
+
 console.log("daynight ok");

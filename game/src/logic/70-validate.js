@@ -219,6 +219,9 @@ export function validateAction(S, pid, a) {
       if (a.s === "talk" && !npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
       return OK;
     }
+    case "camp":
+      if (p.dead) return bad("쓰러진 상태입니다");
+      return campValidate(S, p, a);
   }
   if (p.dead) return bad("쓰러진 상태입니다");
   switch (a.t) {

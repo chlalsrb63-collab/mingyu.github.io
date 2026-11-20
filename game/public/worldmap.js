@@ -130,6 +130,34 @@ export function wokeStones(d, self, woke) {
   return Array.from({ length: d.wpn || 0 }, (_, i) => i).filter(i => woke(self, d.id, i));
 }
 
+/** Compute regional exploration progress % and breakdown (WLD-06). */
+export function exploreInfo(d, defs, self, woke = () => false, seenSet = null) {
+  const seen = seenSet ? seenSet.has(d.id) : !!(self?.seen || []).includes(d.id);
+  let got = seen ? 1 : 0, total = 1;
+  const parts = [];
+  if (d.wpn) {
+    const open = wokeStones(d, self, woke).length;
+    got += open; total += d.wpn;
+    parts.push(`이동의 돌 ${open}/${d.wpn}`);
+  }
+  const colMobs = defs?.collection?.[d.id]?.mobs || [];
+  if (colMobs.length) {
+    const need = defs.colNeed || 30, mk = self?.mk || {};
+    const reg = colMobs.filter(k => (mk[k] || 0) >= need).length;
+    got += reg; total += colMobs.length;
+    parts.push(`도감 ${reg}/${colMobs.length}`);
+  }
+  const bosses = d.bosses || [];
+  if (bosses.length) {
+    const tro = self?.tro || [], mk = self?.mk || {};
+    const killed = bosses.filter(k => tro.includes(k) || (mk[k] || 0) > 0).length;
+    got += killed; total += bosses.length;
+    parts.push(`보스 ${killed}/${bosses.length}`);
+  }
+  const pct = total > 0 ? Math.min(100, Math.round((got / total) * 100)) : 0;
+  return { pct, got, total, summary: parts.join(" · ") || (seen ? "방문 완료" : "미방문") };
+}
+
 /** Current-map portal labels are supplied by the same rules as the map definitions. */
 export function nextGate(portals, target, px, py) {
   let best = null, score = Infinity;
@@ -245,12 +273,19 @@ export function paintChart(g, chart, base, cam, state) {
       pixel(g, xx - 5, markerY + 5, 9, 10, col);
       text(String(i), xx, markerY + 6, 8, "#20152a", 9, true);
     });
-    const tip = [d.name, names[d.kind], band(d), !known && "미방문", d.wpn && `이동의 돌 ${stoneCount}/${d.wpn}`,
+    const exp = state.defs ? exploreInfo(d, state.defs, self, woke, seen) : null;
+    const tip = [d.name, names[d.kind], band(d), !known ? "미방문" : exp ? `탐험 ${exp.pct}%` : "", d.wpn && `이동의 돌 ${stoneCount}/${d.wpn}`,
       members.length && `파티원 ${members.map(p => p.name).join(", ")}`, todo.length && `의뢰 ${todo.join(", ")}`].filter(Boolean).join(" · ");
     hits.push({ id, rect: [x - hitW / 2, top, hitW, low - top], tip });
   }
   g.textAlign = "start";
   return hits;
+}
+
+function formatRespawn(sec) {
+  if (!sec || sec <= 0) return "출현 중";
+  const m = Math.floor(sec / 60), s = sec % 60;
+  return m > 0 ? `재출현 ${m}분 ${s}초` : `재출현 ${s}초`;
 }
 
 export function mapDetail(host, d, ctx) {
@@ -259,13 +294,14 @@ export function mapDetail(host, d, ctx) {
   const E = (tag, text, cls) => { const n = document.createElement(tag); n.textContent = text; if (cls) n.className = cls; return n; };
   const nameOf = id => chart.nodes.get(id)?.d.name || "";
   const addRow = (root, key, value) => { if (value) root.append(E("div", key, "map-detail-key"), E("div", value)); };
+  const exp = exploreInfo(d, defs, self, woke, seen);
   const head = E("div", "", "map-detail-head");
-  head.append(E("strong", d.name), E("span", [names[d.kind], band(d), d.id === current ? "현재 위치" : !seen.has(d.id) ? "미방문" : ""].filter(Boolean).join(" · ")));
+  head.append(E("strong", d.name), E("span", [names[d.kind], band(d), d.id === current ? "현재 위치" : !seen.has(d.id) ? "미방문" : `탐험 ${exp.pct}%`].filter(Boolean).join(" · ")));
   const unlock = unlockState(d, self), chapter = defs.side?.find(q => q.id === d.unlockQuest);
   const path = route.length > 1 ? route.map(nameOf).join(" → ") : d.id === current ? "지금 이 지역에 있습니다" : "현재 갈 수 있는 문 경로가 없습니다";
   const guide = E("p", path, "map-guide");
   if (walk && d.id !== current) {
-    const go = E("button", "걸어서 이동", "btn small");
+    const go = E("button", "걸어서 이동", "btn gold small");
     go.type = "button"; go.title = "문을 따라 자동으로 걸어갑니다 (움직이면 취소) · 지역을 두 번 눌러도 됩니다";
     go.addEventListener("click", () => walk(d.id));
     guide.append(" ", go);
@@ -278,7 +314,7 @@ export function mapDetail(host, d, ctx) {
     if (!open.length) stones.append(E("span", "이동의 돌에 다가가면 해금됩니다"));
     else for (const i of open) {
       const label = d.wpn === 1 ? "순간이동" : `${ways?.names?.[i] || `이동의 돌 ${i + 1}`} 이동`;
-      const button = E("button", label, "btn small");
+      const button = E("button", label, "btn gold small");
       button.type = "button"; button.disabled = !!levelLocked || !canWarp;
       button.title = levelLocked ? `Lv.${d.minLv}에 이용할 수 있습니다` : canWarp ? "" : "레이드던전·협동 알바 중에는 이용할 수 없습니다";
       button.addEventListener("click", () => travel(d.id, i)); stones.append(button);
@@ -289,11 +325,22 @@ export function mapDetail(host, d, ctx) {
   if (chapter) addRow(body, "승선", unlock === 4 ? "해방된 갑판 · 무기 상점과 선원 의뢰"
     : unlock >= 2 ? `${chapter.giverMap} 승선장에서 구조에 나서세요`
     : `${chapter.giverMap}의 ${chapter.giverName}에게서 [${chapter.title}] 수락`);
+  addRow(body, "탐험률", `${exp.pct}% (${exp.summary})`);
   const mobName = id => defs.mobs?.[id]?.name || "";
   addRow(body, "몬스터", (d.mobs || []).filter(id => !defs.mobs?.[id]?.boss && !defs.mobs?.[id]?.chest).map(mobName).filter(Boolean).join(", "));
-  addRow(body, "보스", (d.bosses || []).map(mobName).filter(Boolean).join(", "));
+  if (d.bosses?.length) {
+    const fbWait = self?.fbMap?.[d.id];
+    const status = fbWait !== undefined ? ` (${formatRespawn(fbWait)})` : "";
+    addRow(body, "보스", d.bosses.map(id => `${mobName(id)}${status}`).filter(Boolean).join(", "));
+  }
   const grade = defs.life?.mapGrade?.[d.id];
-  if (grade && d.kind !== "in") addRow(body, "재료 드랍", `${grade}등급`);
+  if (grade && d.kind !== "in") {
+    const mats = Object.values(defs.items || {}).filter(it => it.type === "lmat" && it.grade === grade).map(it => it.name).slice(0, 4);
+    addRow(body, "재료 드랍", mats.length ? `${grade}등급 (${mats.join(", ")})` : `${grade}등급`);
+  }
+  if (!d.safe && d.kind === "field") {
+    addRow(body, "특수 생태", "밤: 달빛정령 탈루나 · 비: 비구름 도글란 (재료·룬 드랍↑)");
+  }
   addRow(body, "의뢰", quests.get(d.id)?.join(", "));
   const doors = E("div", "", "map-detail-buttons");
   for (const id of chart.graph.get(d.id)) {

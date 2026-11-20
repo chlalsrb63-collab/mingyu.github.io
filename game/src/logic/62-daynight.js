@@ -187,22 +187,234 @@ function nightNpc(map, now) {
 /** Which tale is being told at `now` (an index into TALES), or -1 by day. */
 function taleAt(now) { return nightNpc("town", now) ? Math.floor(now / TALE_MS) % TALES.length : -1; }
 
-/** Once a tick, per outdoor map: the weather, and at night in town the next tale by the fire. */
+/** Once a tick, per outdoor map: the weather, special nocturnal/rain ecology (WLD-03), and at night in town the next tale by the fire. */
+const ECO_MS = 12000, ECO_CAP = 2;
+function spawnEcoMob(S, id, m, rt, kind, tag, now) {
+  let host = null;
+  for (const pid of Object.keys(S.players)) {
+    const p = S.players[pid];
+    if (p.map === id && !p.dead) { host = p; break; }
+  }
+  if (!host) return null;
+  const slot = Math.floor(now / ECO_MS);
+  const px = Math.floor(host.x / T), py = Math.floor(host.y / T);
+  let tx = px, ty = py, found = false;
+  for (let i = 0; i < 16 && !found; i++) {
+    const ang = wxRoll(`${id}:${kind}:a`, slot * 17 + i) * Math.PI * 2;
+    const rad = 8 + Math.floor(wxRoll(`${id}:${kind}:r`, slot * 31 + i) * 7);
+    const cx = clamp(px + Math.round(Math.cos(ang) * rad), 2, m.w - 3);
+    const cy = clamp(py + Math.round(Math.sin(ang) * rad), 2, m.h - 3);
+    if (m.reach && m.reach[cy * m.w + cx] && (!m.zone || m.zone[cy * m.w + cx] !== 0)) { tx = cx; ty = cy; found = true; }
+  }
+  if (!found && m.entry) { tx = m.entry[0]; ty = m.entry[1]; }
+  const mob = newMob(S, kind, [0, 0, 0, 0]);
+  mob.el = 0; mob.tr = []; mob.temp = true; mob.eco = tag;
+  mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
+  const refK = (m.kinds || []).find((k) => MOBS[k] && !MOBS[k].boss && !MOBS[k].chest);
+  if (refK) {
+    const ref = MOBS[refK], base = MOBS[kind];
+    mob.hk = Math.max(0.15, ref.hp / base.hp);
+    mob.ak = Math.max(0.15, ref.atk / base.atk);
+    mob.xpK = Math.max(0.2, (ref.xp * 1.8) / base.xp);
+    mob.goldK = Math.max(0.2, (ref.gold[1] * 2.2) / base.gold[1]);
+    mob.ecoLv = ref.lv;
+  }
+  mob.hp = mobMax(mob);
+  mob.castAt = now + 3500;
+  rt.mobs.push(mob);
+  rt.ev.push(["r", mob.id]);
+  const noteKey = `${tag}:${Math.floor(now / (tag === "night" ? SKY_DAY_MS : WX_MS))}`;
+  if (rt.ecoNote !== noteKey) {
+    rt.ecoNote = noteKey;
+    const msg = tag === "night"
+      ? "달빛이 짙어지며 사냥터에 밤 전용 [달빛정령 탈루나]가 모습을 드러냈습니다!"
+      : "빗줄기를 따라 사냥터에 희귀 영물 [비구름 도글란]이 나타났습니다!";
+    for (const pid of Object.keys(S.players)) {
+      const p = S.players[pid];
+      if (p.map === id) toast(p, msg);
+    }
+  }
+  return mob;
+}
+
+function ecoTick(S, id, rt, now) {
+  const meta = MAP_META[id];
+  if (!outdoor(meta) || meta.safe || !meta.kinds || !meta.kinds.length) return;
+  const night = isNight(now), rain = rt.wx === WX.rain;
+  // Retire calm untargeted nocturnal or rain spirits once their time/weather passes
+  for (let i = rt.mobs.length - 1; i >= 0; i--) {
+    const o = rt.mobs[i];
+    if (!o.eco) continue;
+    if (o.dead || ((o.eco === "night" && !night) || (o.eco === "rain" && !rain)) && !o.tgt) {
+      o.dead = true;
+      rt.mobs.splice(i, 1);
+    }
+  }
+  if (!rt.ecoAt) { rt.ecoAt = now + ECO_MS; return; }
+  if (now < rt.ecoAt) return;
+  rt.ecoAt = now + ECO_MS;
+  const m = mapOfS(S, id);
+  if (!m.cells) return;
+  if (night) {
+    const n = rt.mobs.filter((o) => !o.dead && o.k === "moonspirit").length;
+    if (n < ECO_CAP) spawnEcoMob(S, id, m, rt, "moonspirit", "night", now);
+  }
+  if (rain) {
+    const n = rt.mobs.filter((o) => !o.dead && o.k === "rainspirit").length;
+    if (n < ECO_CAP) spawnEcoMob(S, id, m, rt, "rainspirit", "rain", now);
+  }
+}
+
 function skyTick(S, now) {
   for (const id of Object.keys(S.maps)) {
     const rt = S.maps[id];
     rt.wx = weatherAt(id, now);
-    if (id !== "town" || rt.n <= 0) continue;
+    if (rt.n <= 0) continue;
+    if (id !== "town") { ecoTick(S, id, rt, now); continue; }
     const slot = nightNpc(id, now) ? Math.floor(now / TALE_MS) : -1;
     if (slot !== rt.tale) { rt.tale = slot; if (slot >= 0) rt.ev.push(["tl", slot % TALES.length]); }
   }
 }
 
+// ── 필드 모닥불 캠프 기능 강화 (WLD-05): 냄비 요리 나눔(pot), 긴급 물약 보충(supply), 장비 정비(mend), 파티원 소환(call)
+const CAMP_FEAST_MS = 30 * 60000, CAMP_MEND_MS = 10 * 60000;
+function campPotionsFor(lvl) { return lvl < 30 ? ["hp_s", "mp_s"] : lvl < 100 ? ["hp_m", "mp_m"] : ["hp_l", "mp_l"]; }
+function campFeeFor(lvl, base) { return base * Math.max(1, toTier(lvl)); }
+
+function campValidate(S, p, a) {
+  const ch = p.ch, rt = S.maps[p.map];
+  if (!a || !["pot", "supply", "mend", "call"].includes(a.a)) return { ok: false, error: "없는 야영 기능입니다" };
+  if (!fireNear(rt, p)) return { ok: false, error: "모닥불 곁에서만 이용할 수 있습니다" };
+  if (S.now - p.hitAt < 3000) return { ok: false, error: "전투 중에는 야영 기능을 이용할 수 없습니다" };
+  if (a.a === "pot") {
+    const hasFood = ch.inv.some((s) => ITEMS[s.id]?.type === "food");
+    const fee = campFeeFor(ch.lvl, 80);
+    if (!hasFood && ch.gold < fee) return { ok: false, error: `나눌 요리나 야영 식재료비(${fee}G)가 부족합니다` };
+    return { ok: true };
+  }
+  if (a.a === "supply") {
+    const [hpId, mpId] = campPotionsFor(ch.lvl), price = ITEMS[hpId].price;
+    if (ch.gold < price) return { ok: false, error: `골드가 부족합니다 (${price}G 이상 필요)` };
+    if (!canAdd(ch, hpId, 1) && !canAdd(ch, mpId, 1)) return { ok: false, error: "가방이 가득 찼습니다" };
+    return { ok: true };
+  }
+  if (a.a === "mend") {
+    const fee = campFeeFor(ch.lvl, 50);
+    if (ch.gold < fee) return { ok: false, error: `정비 비용이 부족합니다 (${fee}G 필요)` };
+    return { ok: true };
+  }
+  if (a.a === "call") {
+    if (String(p.map).startsWith("dim:") || p.ab || p.cj) return { ok: false, error: "이곳에서는 파티원을 소환할 수 없습니다" };
+    const pt = S.parties[p.party];
+    if (!pt || pt.m.length < 2) return { ok: false, error: "소환할 파티원이 없습니다" };
+    return { ok: true };
+  }
+  return { ok: true };
+}
+
+function campApply(S, p, a) {
+  const ch = p.ch, rt = S.maps[p.map], now = S.now, fire = fireNear(rt, p);
+  if (!fire) return;
+  if (a.a === "pot") {
+    // 냄비 요리 나눔: consumes 1 food item in bag if available, else pays camp ration gold; buffs party & fireside sitters for 30 min
+    const foodSlot = ch.inv.find((s) => ITEMS[s.id]?.type === "food");
+    const foodId = foodSlot ? foodSlot.id : "inn_stew";
+    if (foodSlot) takeItem(ch, foodId, 1);
+    else ch.gold -= campFeeFor(ch.lvl, 80);
+    const targets = new Set([p]);
+    for (const o of allies(S, p, 360)) if (!o.dead) targets.add(o);
+    for (const oid of Object.keys(S.players)) {
+      const o = S.players[oid];
+      if (o.map === p.map && !o.dead && dist(o.x, o.y, fire.x, fire.y) <= FIRE_R * 1.5) targets.add(o);
+    }
+    for (const o of targets) {
+      o.warm = Math.max(o.warm || 0, now + CAMP_FEAST_MS);
+      o.warmPct = Math.max(o.warmPct || 0, 20);
+      o.warmN = WARM_N;
+      o.atkBuff = Math.max(o.atkBuff || 0, now + CAMP_FEAST_MS);
+      o.spdBuff = Math.max(o.spdBuff || 0, now + CAMP_FEAST_MS);
+      if (ITEMS[foodId]) o.food = { id: foodId, until: now + CAMP_FEAST_MS };
+      const st = stats(o);
+      o.hp = Math.min(st.mhp, o.hp + Math.round(st.mhp * 0.35));
+      o.mp = Math.min(st.mmp, o.mp + Math.round(st.mmp * 0.35));
+      o.stc = null; o.dirty = true;
+      rt.ev.push(["u", o.eid, 2]);
+      if (o !== p) toast(o, `${ch.name}님이 모닥불 냄비 요리를 나누었습니다! (30분간 온기 EXP+20% · 전투·식사 버프)`);
+    }
+    toast(p, `모닥불 냄비 요리를 나누었습니다! (${targets.size}명에게 30분간 온기 EXP+20% · 공격·이속·식사 버프 적용)`);
+    saveSoon(p);
+    return;
+  }
+  if (a.a === "supply") {
+    // 긴급 물약 보충: buys up to 5 HP and 5 MP potions of the character's level tier
+    const [hpId, mpId] = campPotionsFor(ch.lvl);
+    let boughtHp = 0, boughtMp = 0;
+    for (let i = 0; i < 5; i++) {
+      if (ch.gold >= ITEMS[hpId].price && canAdd(ch, hpId, 1)) { ch.gold -= ITEMS[hpId].price; addItem(ch, hpId, 1); boughtHp++; }
+      if (ch.gold >= ITEMS[mpId].price && canAdd(ch, mpId, 1)) { ch.gold -= ITEMS[mpId].price; addItem(ch, mpId, 1); boughtMp++; }
+    }
+    p.dirty = true;
+    rt.ev.push(["u", p.eid, 1]);
+    toast(p, `야영 보급품 보충 완료: ${ITEMS[hpId].name} ×${boughtHp}, ${ITEMS[mpId].name} ×${boughtMp}`);
+    saveSoon(p);
+    return;
+  }
+  if (a.a === "mend") {
+    // 장비 정비 & 응급 치료: full HP/MP, cleanse ailments, 10m maintenance buff, and auto-uncurse if holding uncurse scroll
+    const fee = campFeeFor(ch.lvl, 50);
+    ch.gold -= fee;
+    const st = stats(p);
+    p.hp = st.mhp; p.mp = st.mmp;
+    p.burn = null; p.poison = null; p.slowed = 0; elementClear(p);
+    p.atkBuff = Math.max(p.atkBuff || 0, now + CAMP_MEND_MS);
+    let uncursed = 0;
+    for (const k of SLOTS) {
+      const g = ch.eq[k];
+      if (g && g.cu === 1 && countItem(ch, "uncurse") >= 1) { takeItem(ch, "uncurse", 1); g.cu = 2; uncursed++; }
+    }
+    p.stc = null; p.dirty = true;
+    rt.ev.push(["e", p.eid, uncursed ? 2 : 1]);
+    toast(p, `모닥불 장비 정비 완료! 체력·마력 회복 및 10분간 무기 정비 버프가 적용되었습니다.${uncursed ? ` (장비 저주 ${uncursed}개 해제)` : ""}`);
+    saveSoon(p);
+    return;
+  }
+  if (a.a === "call") {
+    // 파티원 소환: brings eligible party members to the campfire
+    const pt = S.parties[p.party], m = mapOfS(S, p.map);
+    if (!pt) return;
+    let called = 0;
+    for (const oid of pt.m) {
+      if (oid === p.pid) continue;
+      const o = S.players[oid];
+      if (!o || o.dead || String(o.map).startsWith("dim:") || o.ab || o.cj || now - o.hitAt < 3000) continue;
+      if (mapLevelNeed(o.ch, p.map) || airshipAccess(o.ch, p.map)) continue;
+      if (o.map !== p.map) {
+        S.maps[o.map].n--;
+        o.map = p.map; o.ch.map = p.map;
+        rt.n++; rt.who = true;
+        o.sendMap = true;
+      }
+      o.x = o.ch.x = fire.x;
+      o.y = o.ch.y = clamp(fire.y + 12, 16, m.h * T - 16);
+      o.fix = true; o.sit = false; o.dirty = true;
+      if (!o.ch.seen.includes(p.map)) o.ch.seen.push(p.map);
+      rt.ev.push(["wp", o.eid, 1]);
+      toast(o, `${ch.name}님이 [${m.name}] 모닥불 앞으로 파티원을 소환했습니다!`);
+      called++;
+    }
+    if (called > 0) {
+      rt.ev.push(["wp", p.eid, 1]);
+      toast(p, `파티원 ${called}명을 모닥불 앞으로 소환했습니다!`);
+    } else toast(p, "지금 소환할 수 있는 파티원이 없습니다 (전투 중·던전·레벨 제한 제외).");
+  }
+}
+
 /**
  * The sky over a map at a moment, for the tests and the tools: the hour, the phase, the
- * weather, whether the storyteller is out and which tale she tells, and the camps.
+ * weather, whether the storyteller is out and which tale she tells, the camps, and the active special ecology.
  */
 export function skyAt(map, now) {
-  const ph = dayPhase(now), m = mapOf(map);
-  return { hour: dayHour(now), phase: ph, name: PHASES[ph][0], night: ph === PH_NIGHT, outdoor: outdoor(m), wx: weatherAt(map, now), npc: nightNpc(map, now), tale: map === "town" ? taleAt(now) : -1, camps: m ? campsOf(m) : [] };
+  const ph = dayPhase(now), m = mapOf(map), wx = weatherAt(map, now), out = outdoor(m);
+  const eco = out && !m?.safe ? (ph === PH_NIGHT ? "moonspirit" : wx === WX.rain ? "rainspirit" : null) : null;
+  return { hour: dayHour(now), phase: ph, name: PHASES[ph][0], night: ph === PH_NIGHT, outdoor: out, wx, eco, npc: nightNpc(map, now), tale: map === "town" ? taleAt(now) : -1, camps: m ? campsOf(m) : [] };
 }

@@ -6,6 +6,21 @@ function dailyView(p) {
     tasks: dl.tasks.map((t, i) => ({ kind: t.kind, k: t.k, n: t.n, need: t.need, done: t.n >= t.need, claimed: dl.claimed[i], text: dailyText(t), reward: dailyReward(ch, t) })),
   };
 }
+function fbStatusMap(S) {
+  const out = {}, now = S.now;
+  for (const [id, meta] of Object.entries(MAP_META)) {
+    const hasFb = !!FIELD_BOSS[id], hasBoss = (meta.kinds || []).some((k) => MOBS[k]?.boss);
+    if (!hasFb && !hasBoss) continue;
+    const rt = S.maps[id];
+    if (!rt) { out[id] = 0; continue; }
+    const live = rt.mobs.some((o) => !o.dead && (MOBS[o.k]?.boss || (rt.fb && o.id === rt.fb)));
+    if (live) { out[id] = 0; continue; }
+    const deadBoss = rt.mobs.find((o) => o.dead && MOBS[o.k]?.boss);
+    const waitMs = deadBoss ? deadBoss.respAt - now : rt.fbAt ? rt.fbAt - now : 0;
+    out[id] = waitMs > 0 ? Math.max(1, Math.ceil(waitMs / 1000)) : 0;
+  }
+  return out;
+}
 function selfPayload(p) {
   const ch = p.ch;
   const st = stats(p);
@@ -76,6 +91,8 @@ function selfPayload(p) {
     alba: albaSelf(p),
     // the slots whose 고유 효과 does not count (the same power on a better or earlier piece): the tooltip greys it (51-prefix.js)
     lgOff: st.lgOff,
+    // world map boss / field-boss live status per region (0 = alive/ready, >0 = respawn seconds left; WLD-06)
+    fbMap: fbStatusMap(p.S),
   };
 }
 

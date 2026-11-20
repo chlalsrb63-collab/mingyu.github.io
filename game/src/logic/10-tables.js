@@ -681,6 +681,9 @@ const MOBS = {
   sanctumwarden: { name: "신전 동토른", epithet: "황금 성소 파수꾼", sp: "rootwarden", tint: "gold", lv: 50, hp: 5900, atk: 158, def: 46, spd: 40, xp: 3050, gold: [144, 228], aggro: 94, range: 22, cd: 1400, charge: 130, slam: 44 },
   sanctumstag: { name: "신전 녹사르", epithet: "가라앉은 숲의 사슴왕", sp: "rotstag", tint: "bile", lv: 50, hp: 6900, atk: 162, def: 46, spd: 42, xp: 3600, gold: [170, 264], aggro: 102, range: 24, cd: 1300, charge: 134, slam: 44, fan: 118 },
   sanctumwyrm: { name: "비취 수호룡", epithet: "지하강의 고대 신전룡", sp: "inkserpent", tint: "frost", lv: 50, hp: 540000, atk: 208, def: 52, spd: 42, xp: 79000, gold: [5600, 8200], aggro: 140, range: 34, cd: 1450, resp: 240000, boss: true, gear: 1, fly: true, fan: 156, pool: 34, poolKind: 2, charge: 150 },
+  // 날씨 · 시간대 연동 특수 생태계 (WLD-03): 밤 전용 달빛 정령과 비 오는 날 전용 희귀 영물
+  moonspirit: { name: "달빛정령 탈루나", epithet: "밤하늘의 달빛 정령", sp: "mothface", tint: "frost", lv: 25, hp: 1350, atk: 84, def: 14, spd: 46, xp: 640, gold: [70, 130], aggro: 84, range: 72, cd: 1400, fly: true, shot: true, questOnly: 1, eco: "night", drops: [["stone", 0.75, 1, 2], ["ske_stone", 0.25, 1, 1]] },
+  rainspirit: { name: "비구름 도글란", epithet: "빗물을 머금은 우비 정령", sp: "toadbrood", tint: "frost", lv: 25, hp: 1500, atk: 88, def: 18, spd: 38, xp: 680, gold: [75, 140], aggro: 84, range: 20, cd: 1350, pool: 26, poolKind: 2, questOnly: 1, eco: "rain", drops: [["stone", 0.8, 1, 2], ["hp_l", 0.5, 1, 2], ["mp_l", 0.5, 1, 2]] },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
