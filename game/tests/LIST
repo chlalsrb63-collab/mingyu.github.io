@@ -14,6 +14,7 @@ prefix
 prefix-util
 prefix-guard
 prefix-strike
+prefix-runes
 life
 lifeskills
 jobaudit
