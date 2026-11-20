@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { MOBS, TRICKS, TRICK_EL, MV_GRACE, newMob, mobMax, canStand, mapOfS, mobHit, mobsWithin };\n";
+  "\nexport const __t = { MOBS, TRICKS, TRICK_EL, MV_GRACE, newMob, mobMax, canStand, mapOfS, mobHit, mobsWithin, killMob };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t;
 
@@ -44,7 +44,7 @@ function beast(kind, reach, el = 0, extra = {}) {
 function step(n = 1) {
   let lost = 0;
   for (let i = 0; i < n; i++) {
-    for (const o of rt.mobs) if (!keep.has(o) && !o.dead) { o.dead = true; o.respAt = 1e15; }
+    for (const o of rt.mobs) if (!keep.has(o) && !o.summonOf && !o.dead) { o.dead = true; o.respAt = 1e15; }
     p.dead = false; p.hp = 1e6; p.x = stand[0]; p.y = stand[1]; p.mvAt = now; p.stag = 0;
     now += 100; L.tick(S, now);
     lost += Math.max(0, 1e6 - p.hp);
@@ -133,6 +133,48 @@ beast("howl", 100);
 evs = [];
 step(5);
 assert.ok(!evs.some((e) => e[0] === "t" && e[5] === 1) && !(mob.rage > now), "no kin near: no howl");
+
+// CBT-05: shaman healer (mend) heals injured nearby non-boss allies, skips full-HP allies
+beast("mend", 95);
+stand = [spot[0] + 50, spot[1]];
+const hurt = place(X.newMob(S, "t_kin", [0, 0, 0, 0]), spot[0] - 25, spot[1]);
+hurt.hp = Math.round(X.mobMax(hurt) * 0.4); hurt.castAt = now + 1e9;
+const hpBefore = hurt.hp;
+evs = [];
+step(3);
+assert.ok(hurt.hp > hpBefore, "mend heals an injured nearby ally");
+assert.ok(mob.castAt - now >= X.TRICKS.mend.cd - 400, "mend cools down");
+
+// CBT-05: brood summoner (summon) spawns frail noDrop minions up to cap 2, never chained
+beast("summon", 110);
+stand = [spot[0] + 50, spot[1]];
+evs = [];
+step(2);
+const mins1 = rt.mobs.filter((o) => o.summonOf === mob.id && !o.dead);
+assert.equal(mins1.length, 1, "summon spawns 1 minion");
+assert.ok(mins1[0].noDrop && mins1[0].noSummon && mins1[0].noSplit, "minion has noDrop/noSummon/noSplit");
+mob.castAt = now; step(2);
+mob.castAt = now; step(2);
+const mins2 = rt.mobs.filter((o) => o.summonOf === mob.id && !o.dead);
+assert.equal(mins2.length, X.TRICKS.summon.cap, "summon caps active minions at 2");
+for (const o of mins2) o.dead = true;
+
+// CBT-05: ranged kiter (ai: "kite") steps back when hero closes in during attack cooldown
+beast("spit", 100, 0, { spd: 45, range: 76, shot: true, ai: "kite", moves: [] });
+stand = [spot[0] + 22, spot[1]];
+mob.atkAt = now + 5000;
+const kd0 = Math.hypot(mob.x - stand[0], mob.y - stand[1]);
+step(5);
+const kd1 = Math.hypot(mob.x - stand[0], mob.y - stand[1]);
+assert.ok(kd1 > kd0 + 4, `ranged kiter steps back (${kd0.toFixed(1)} -> ${kd1.toFixed(1)})`);
+
+// CBT-05: volatile mob leaves a hazard deathPool on death
+const vol = beast("cloud", 40, 0, { burst: 32, deathPool: 24, moves: [] });
+rt.pools.length = 0; rt.tele.length = 0;
+vol.hp = 0;
+X.killMob(S, rt, vol, p);
+assert.ok(rt.pools.length >= 1, "volatile mob leaves a death puddle");
+assert.ok(rt.tele.length >= 1, "volatile mob queues a death burst telegraph");
 
 // chained tricks: a hero reels from the first, not again inside MV_GRACE, and again after it
 const foe = beast("pounce", 90);

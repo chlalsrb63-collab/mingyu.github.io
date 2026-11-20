@@ -209,25 +209,28 @@ function lootFor(S, rt, mob, p) {
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
   const fx = pfxLoot(S, rt, p, mob, "drop");   // the powers that add to this kill's loot (51-prefix.js); all 0 without one
   const band = !d.chest && !mob.dim ? huntBandK(p.ch.lvl, d.lv) : 1;
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
+  const goblin = has(mob, "goblin");
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (goblin ? 3.5 : 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
-  const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
+  const tries = (d.boss ? 4 : mob.el === 2 ? 3 : 1) + (goblin ? 2 : 0);
+  const dropRank = goblin ? 2 : rank;
   for (let i = 0; i < tries; i++) {
-    if (rnd(S) >= gearDropChance(d, rank, st.mf + fx.mf, band)) continue;
+    if (rnd(S) >= gearDropChance(d, dropRank, st.mf + fx.mf, band)) continue;
     let tier = tierFor(d.lv);
-    if (rank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
+    if (dropRank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
     for (const [t, w] of DROP_TYPES) { if (roll < w) { type = t; break; } roll -= w; }
     let id;
     if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
     else id = `${GEAR[type].pre}_${tier}`;
-    let q = rollRarity(S, rank, st.mf + fx.mf);
+    let q = rollRarity(S, dropRank, st.mf + fx.mf);
     if (isJewel(id) && q === 0) q = 1;
-    out.push({ g: rollGear(S, id, q, d.lv, rank) });
+    out.push({ g: rollGear(S, id, q, d.lv, dropRank) });
   }
-  if (rnd(S) < runeDropChance(shownLv(d.lv), rank)) out.push({ it: rollRuneId(S, rank), n: 1 });
+  if (rnd(S) < runeDropChance(shownLv(d.lv), dropRank)) out.push({ it: rollRuneId(S, dropRank), n: 1 });
   const stoneRoll = rnd(S);
-  if (stoneRoll < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
+  if (goblin) out.push({ it: "stone", n: ri(S, 1, 2) });
+  else if (stoneRoll < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
   if (fx.stone) out.push({ it: "stone", n: 1 });   // (a power's extra stone: at most one a kill)
   // A kind's own finds (MOBS[k].drops: [item, chance, min, max]); its signature gear always drops legendary.
   for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(isGear(it) ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
@@ -435,6 +438,11 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
     const back = Math.min(p.hp - 1, Math.max(1, Math.round(dmg * 0.12)));
     if (back > 0) { p.hp -= back; rt.ev.push(["h", p.eid, back, 0, 1]); }
   }
+  // reflect shield (CBT-06): periodic golden barrier bounces 16% of non-proc damage back
+  if (has(mob, "reflect") && mob.refUntil > S.now && !o.px && !p.dead) {
+    const back = Math.min(p.hp - 1, Math.max(1, Math.round(dmg * 0.16)));
+    if (back > 0) { p.hp -= back; rt.ev.push(["h", p.eid, back, 0, 1]); }
+  }
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)) * elementHealFactor(S, p));
   const x = mob.x, y = mob.y;
   wmHit(S, p, mob);
@@ -502,6 +510,11 @@ function killMob(S, rt, mob) {
   if (d.boss || el === 2) dmgBoard(S, rt, hitters);
   mob.by = {};
   const xp = d.xp * ELITE[el].xp;
+  // Summoned minions and splitlings award light XP only (no loot/quest/split exploit).
+  if (mob.noDrop) {
+    for (const p of looters) if (!d.chest) gainXp(S, p, Math.max(1, Math.round(xp * 0.25)));
+    return;
+  }
   const rareBoss = !mob.story && !mob.guard
     && (mob.dim ? S.dims[rt.id]?.boss === mob.id : d.boss || (el === 2 && mob.temp));
   for (const p of looters) {
@@ -567,8 +580,31 @@ function killMob(S, rt, mob) {
   // some monsters go off where they fall, and so does any elite with the trait
   if (d.burst || has(mob, "burst")) {
     const r = d.burst || 34;
-    rt.tele.push({ x: mob.x, y: mob.y, r, at: S.now + 900, dmg: d.atk * ELITE[el].atk * 1.3 });
-    rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), r, 900]);
+    const k = has(mob, "burst") ? 1.3 : 1.05;
+    rt.tele.push({ x: mob.x, y: mob.y, r, at: S.now + 950, dmg: d.atk * ELITE[el].atk * k });
+    rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), r, 950]);
+  }
+  // volatile archetype (CBT-05): leaves a short hazard puddle on death
+  if (d.deathPool && !mob.noDrop) {
+    const kind = d.poolKind ?? POOL_OF[monsterElement(mob.k).type] ?? 0;
+    const atk = d.atk * ELITE[el].atk;
+    rt.pools.push({ x: mob.x, y: mob.y, r: d.deathPool, next: S.now + 700, until: S.now + 3400, dmg: atk * 0.35, atk, kind });
+    rt.ev.push(["g", mob.id, Math.round(mob.x), Math.round(mob.y), d.deathPool, 700, 2700, kind]);
+  }
+  // split trait (CBT-06): splits into two frail mini-clones on death (never chained)
+  if (has(mob, "split") && !mob.noSplit && !d.boss && el < 2 && !d.chest) {
+    const m = mapOfS(S, rt.id), ok = d.fly ? canFly : canStand;
+    for (const side of [-1, 1]) {
+      const cx = mob.x + side * 14, cy = mob.y + (side > 0 ? 6 : -6);
+      const [mx, my] = ok(m, cx, cy) ? [cx, cy] : [mob.x, mob.y];
+      const clone = newMob(S, mob.k, null, { elite: 0 });
+      clone.x = clone.hx = clone.wx = mx; clone.y = clone.hy = clone.wy = my;
+      clone.temp = true; clone.noSplit = true; clone.noDrop = true; clone.noSummon = true;
+      clone.hk = (mob.hk || 1) * 0.35; clone.ak = (mob.ak || 1) * 0.6;
+      clone.hp = mobMax(clone); clone.tr = []; clone.tgt = top ? top.pid : null;
+      rt.mobs.push(clone);
+      rt.ev.push(["r", clone.id]);
+    }
   }
   // inside a 레이드던전: the gauge, orbs and shrines, the master (64-dim.js)
   if (mob.dim) dimKill(S, rt, mob, looters);

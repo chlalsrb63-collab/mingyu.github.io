@@ -8,8 +8,8 @@ const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t;
 const KINDS = new Set(["charge", "fan", "fan2", "fan3", "rings", "pools", "charge2", "leapslam", "dive", "blast", "jet", "punch", ...Object.keys(X.BS_PAT)]);
-const BIG = ["wickregent", "knotwidow", "knellkeeper", "loomcolossus", "sluiceleviathan", "prismcantor", "boss", "abyssboss", "crownstag", "mistiger"];
-const FIELD = Object.values(X.FIELD_BOSS).filter((k) => k !== "clubshrimp");
+const BIG = ["wickregent", "knotwidow", "knellkeeper", "loomcolossus", "sluiceleviathan", "prismcantor", "boss", "abyssboss", "crownstag", "mistiger", "cloakbat", "bloomwhale", "jianmentiger", "sanctumwyrm"];
+const FIELD = [...Object.values(X.FIELD_BOSS).filter((k) => k !== "clubshrimp"), "airship_lookout"];
 
 for (const k of [...BIG, ...FIELD]) {
   const B = X.bsDef({ k });

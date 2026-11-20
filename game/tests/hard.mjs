@@ -2,21 +2,27 @@
 // kinds, elite traits and the conditions they leave on a player: node tests/hard.mjs
 import assert from "node:assert/strict";
 import * as L from "../src/logic.js";
+import * as UI from "../public/uiicons.js";
 
 const D = L.defs();
 const TINTS = ["fire", "poison", "frost", "steel", "blood", "bile", "ash", "bone", "gold"];
-const TRAITS = ["tough", "fire", "poison", "swift", "vamp", "frost", "burst", "thorn"];
+const TRAITS = ["tough", "fire", "poison", "swift", "vamp", "frost", "burst", "thorn", "split", "siphon", "reflect", "gravity", "berserk", "goblin"];
 
 // ── the tables clients read
 assert.deepEqual(Object.keys(D.traits), TRAITS, "traits come in the agreed order");
-for (const k of TRAITS) assert.ok(D.traits[k][0] && D.traits[k][1], k + " has a name and a description");
+assert.deepEqual(UI.badRows(), [], "every 12x12 UI icon glyph has valid row width");
+for (const k of TRAITS) {
+  assert.ok(D.traits[k][0] && D.traits[k][1], k + " has a name and a description");
+  assert.ok(UI.TRAIT[k], k + " has a client badge icon in uiicons.js");
+}
 for (const k of ["lambmaw", "foxtwine", "toadbrood", "squidrat", "crabskull", "moleworm", "lionhand", "sowseer"]) assert.equal(D.mobs[k].sp, k, k + " is a kind of its own");
 const variants = Object.keys(D.mobs).filter((k) => D.mobs[k].tint);
 assert.ok(variants.length >= 6, "recoloured kinds exist: " + variants);
 for (const k of variants) {
   assert.ok(TINTS.includes(D.mobs[k].tint), k + " uses a known tint");
-  assert.ok(D.mobs[D.mobs[k].sp] && D.mobs[k].sp !== k, k + " borrows another kind's body");
-  assert.ok(D.mobs[k].lv > D.mobs[D.mobs[k].sp].lv, k + " is tougher than the kind it is made from");
+  const base = D.mobs[D.mobs[k].sp] || Object.values(D.mobs).find((o) => !o.tint && o.sp === D.mobs[k].sp);
+  assert.ok(base && D.mobs[k].sp !== k, k + " borrows another kind's body");
+  assert.ok(D.mobs[k].lv > base.lv || (D.mobs[k].lv === base.lv && D.mobs[k].hp > base.hp), k + " is tougher than the kind it is made from");
 }
 const where = (k) => D.maps.filter((m) => m.mobs.includes(k)).map((m) => m.id).join(",");
 assert.equal(where("lambmaw"), "meadow"); assert.equal(where("foxtwine"), "forest"); assert.equal(where("toadbrood"), "crypt"); assert.equal(where("squidrat"), "city");
@@ -155,6 +161,58 @@ assert.ok(act({ t: "atk" }).ok);
 let ev = events(1500);
 assert.ok(pet.dead && ev.some((e) => e[0] === "t") && ev.some((e) => e[0] === "b"), "the corpse is marked, then bursts");
 assert.ok(p.hp < 9999, "and whoever stood there is hurt");
+
+// ── CBT-06 new elite traits: split, siphon, reflect, gravity, berserk, goblin
+// split: spawns 2 frail non-splitting noDrop mini-clones on death
+stand(); dress("twinhare", 1, ["split"], 14, { hp: 1, atkAt: 1e15, noSplit: false });
+const beforeSplit = rt.mobs.length;
+assert.ok(act({ t: "atk" }).ok);
+const clones = rt.mobs.slice(beforeSplit);
+assert.equal(clones.length, 2, "split elite spawns 2 mini-clones");
+assert.ok(clones.every((c) => c.noSplit && c.noDrop && c.temp && !c.dead), "split clones never chain-split or drop gear");
+for (const c of clones) c.dead = true;
+
+// siphon: hit drains MP and heals mob
+stand(); dress("meadowram", 1, ["siphon"], 14, { hp: 100 });
+p.mp = 200;
+events(1600);
+assert.ok(p.mp < 200 && pet.hp > 100, "siphon elite drains player MP and heals itself");
+
+// reflect: periodic barrier bounces part of melee damage back (never lethal)
+stand(); dress("twinhare", 1, ["reflect"], 14, { atkAt: 1e15, refCd: 0, refUntil: 0 });
+events(200);
+assert.ok(pet.refUntil > now, "reflect elite raises its barrier");
+p.hp = 500;
+assert.ok(act({ t: "atk" }).ok);
+assert.ok(p.hp < 500, "reflect barrier bounces damage back");
+p.hp = 1; p.atkAt = 0; step(1000); p.hp = 1; p.atkAt = 0;
+pet.refUntil = now + 2000;
+act({ t: "atk" });
+assert.ok(!p.dead && p.hp >= 1, "reflect never kills");
+
+// gravity: pulls a nearby player inward
+stand(); dress("twinhare", 1, ["gravity"], 70, { atkAt: 1e15, gravCd: 0 });
+const d0 = Math.hypot(pet.x - p.x, pet.y - p.y);
+events(200);
+const d1 = Math.hypot(pet.x - p.x, pet.y - p.y);
+assert.ok(d1 < d0 - 10, `gravity pulls player inward (${d0.toFixed(1)} -> ${d1.toFixed(1)})`);
+
+// berserk: below 30% HP triggers berserk pulse and increases attack speed/damage
+stand(); dress("twinhare", 1, ["berserk"], 14, { hp: 5, berserkOn: false });
+const bEv = events(400);
+assert.ok(pet.berserkOn && bEv.some((e) => e[0] === "t" && e[5] === 1), "berserk triggers visual cue below 30% HP");
+
+// goblin: flees away from attacker and drops bonus gold + enhancement stone
+stand(); dress("twinhare", 1, ["goblin"], 24, { atkAt: 1e15 });
+const gd0 = Math.hypot(pet.x - p.x, pet.y - p.y);
+events(600);
+const gd1 = Math.hypot(pet.x - p.x, pet.y - p.y);
+assert.ok(gd1 > gd0 + 5, `goblin flees away from attacker (${gd0.toFixed(1)} -> ${gd1.toFixed(1)})`);
+stand(); dress("twinhare", 1, ["goblin"], 14, { hp: 1, atkAt: 1e15 });
+rt.drops.length = 0;
+assert.ok(act({ t: "atk" }).ok);
+assert.ok(rt.drops.some((d) => d.it === "stone"), "goblin drops guaranteed enhancement stone");
+assert.ok(L.runtime(S, "crypt").mobs.filter((m) => m.el === 2).every((m) => !m.tr.includes("goblin") && !m.tr.includes("split")), "rank-2 guardians never roll goblin or split");
 
 // ── charge: a marked line, then a run down it
 stand(); dress("meadowram", 0, [], 60, { castAt: 0 });

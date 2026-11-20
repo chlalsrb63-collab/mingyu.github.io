@@ -604,7 +604,7 @@ function readyMob(S, mob) {
   // (how often depends on where: deeper chambers and side vaults breed more of them)
   mob.el = mob.fix || (!MOBS[mob.k].boss && !MOBS[mob.k].chest && rnd(S) < mob.ep ? 1 : 0);
   // an elite carries one trait, a guardian two
-  mob.tr = mob.el ? rollTraits(S, mob.el) : [];
+  mob.tr = mob.el ? rollTraits(S, mob.el, mob.el === 1) : [];
   mob.hp = mobMax(mob);
   mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null; mob.act = null; mob.mv = 0; mob.cn = 0;
   mob.runePoison = null;

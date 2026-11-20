@@ -17,9 +17,9 @@ function stepMob(m, mob, tx, ty, speed, dt, fly, now) {
 }
 
 const has = (mob, t) => !!mob.tr && mob.tr.includes(t);
-/** Pick `n` different traits for an elite (one) or a guardian / field boss (two). */
-function rollTraits(S, n) {
-  const pool = TRAIT_KEYS.slice(), out = [];
+/** Pick `n` different traits for an elite (one) or a guardian / field boss (two). Treasure goblin only rolls on regular field elites. */
+function rollTraits(S, n, allowGoblin = false) {
+  const pool = TRAIT_KEYS.filter((k) => (k !== "goblin" || allowGoblin) && (k !== "split" || n <= 1)), out = [];
   while (out.length < n && pool.length) out.push(pool.splice(ri(S, 0, pool.length - 1), 1)[0]);
   return out;
 }
@@ -67,6 +67,13 @@ function mobHit(S, rt, p, raw, mob, how = "blow") {
     // (a rift monster made tougher heals by the same measure: 64-dim.js dimHk)
     const heal = Math.min(mobMax(src) - src.hp, (Math.max(0, before - p.hp) * 3 * elementHealFactor(S, src)) / (src.hk || 1));
     if (heal >= 1) { src.hp += heal; rt.ev.push(["h", src.id, -Math.round(heal), 0, 0]); }
+  }
+  if (!p.dead && dmg > 0 && has(src, "siphon")) {
+    // 마력흡수 (CBT-06): drains 6% max MP from the hero and restores 3% max HP
+    const drain = Math.min(p.mp, Math.max(2, Math.round(stats(p).mmp * 0.06)));
+    if (drain > 0) { p.mp -= drain; p.dirty = true; }
+    const heal = Math.min(mobMax(src) - src.hp, Math.round(mobMax(src) * 0.03 * elementHealFactor(S, src)));
+    if (heal >= 1) { src.hp += heal; rt.ev.push(["h", src.id, -heal, 0, 0]); }
   }
 }
 
@@ -167,6 +174,32 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
     const kind = d.poolKind ?? POOL_OF[monsterElement(mob.k).type] ?? 2;
     rt.pools.push({ x: mob.x, y: mob.y, r: d.cloud, next: at, until: at + A.dur, dmg: atk * A.k, atk, kind });
     rt.ev.push(["g", mob.id, Math.round(mob.x), Math.round(mob.y), d.cloud, A.ms, A.dur, kind]);
+  } else if (k === "mend") {
+    // 주술 치유형 (CBT-05): heals up to 2 injured nearby non-boss allies
+    const alliesInj = rt.mobs.filter((o) => o !== mob && !o.dead && !o.dive && !MOBS[o.k].boss && !MOBS[o.k].chest && !MOBS[o.k].still
+      && o.hp < mobMax(o) * 0.85 && dist(o.x, o.y, mob.x, mob.y) <= d.mend)
+      .sort((a, b) => a.hp / mobMax(a) - b.hp / mobMax(b)).slice(0, A.cap);
+    if (!alliesInj.length) return false;
+    for (const o of alliesInj) {
+      const heal = Math.min(mobMax(o) - o.hp, Math.max(1, Math.round(mobMax(o) * A.k * elementHealFactor(S, o))));
+      if (heal >= 1) { o.hp += heal; rt.ev.push(["h", o.id, -heal, 0, 0]); }
+    }
+    rt.ev.push(["m", mob.id], ["t", Math.round(mob.x), Math.round(mob.y), d.mend, A.ms, 1]);
+  } else if (k === "summon") {
+    // 소환형 (CBT-05): calls 1 frail brood minion (never chained, capped at 2 active per summoner)
+    if (mob.noSummon || dd > d.summon) return false;
+    const active = rt.mobs.filter((o) => o.summonOf === mob.id && !o.dead).length;
+    if (active >= A.cap) return false;
+    const ang = rnd(S) * Math.PI * 2, sx = mob.x + Math.cos(ang) * 18, sy = mob.y + Math.sin(ang) * 18;
+    const ok = d.fly ? canFly : canStand;
+    const [mx, my] = ok(m, sx, sy) ? [sx, sy] : [mob.x, mob.y];
+    const min = newMob(S, mob.k, null, { elite: 0 });
+    min.x = min.hx = min.wx = mx; min.y = min.hy = min.wy = my;
+    min.temp = true; min.noDrop = true; min.noSummon = true; min.noSplit = true; min.summonOf = mob.id;
+    min.hk = (mob.hk || 1) * 0.32; min.ak = (mob.ak || 1) * 0.55;
+    min.hp = mobMax(min); min.tgt = mob.tgt; min.tr = []; min.castAt = now + 2000;
+    rt.mobs.push(min);
+    rt.ev.push(["m", mob.id], ["r", min.id]);
   } else return false;
   mob.dir = tgt.x < mob.x ? 1 : 2;
   mob.castAt = now + A.cd * TRICK_EL[mob.el || 0];
@@ -234,8 +267,11 @@ function tickMob(S, m, rt, mob, dt, here) {
   if (d.script && !mob.chal) bsField(S, m, rt, mob);
   if (d.still) return;
   if (elementFrozen(S, mob)) return;
-  // (a howl's rally: TRICKS.howl)
-  const rage = mob.rage > now, atk = d.atk * ELITE[mob.el].atk * (rage ? TRICKS.howl.k : 1);
+  // (a howl's rally: TRICKS.howl; berserk elite below 30% HP: CBT-06)
+  const rage = mob.rage > now;
+  const berserk = has(mob, "berserk") && mob.hp <= mobMax(mob) * 0.30;
+  if (berserk && !mob.berserkOn) { mob.berserkOn = true; rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), 38, 600, 1]); }
+  const atk = d.atk * ELITE[mob.el].atk * (rage ? TRICKS.howl.k : 1) * (berserk ? 1.32 : 1);
   // a charge already wound up goes off whatever is done to the charger in the meantime
   if (mob.act) {
     if (now >= mob.act.at) (mob.act.f ? landMove : dash)(S, m, rt, mob, atk);
@@ -245,8 +281,8 @@ function tickMob(S, m, rt, mob, dt, here) {
   if (mob.dive === 2) mob.dive = 0;
   if (mob.stun > now) return;
   const swift = has(mob, "swift");
-  const attackInterval = d.cd * elementAttackFactor(S, mob);
-  const speed = d.spd * Math.min(mob.slow > now ? 0.5 : 1, elementMoveFactor(S, mob)) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1);
+  const attackInterval = d.cd * elementAttackFactor(S, mob) * (berserk ? 0.80 : 1);
+  const speed = d.spd * Math.min(mob.slow > now ? 0.5 : 1, elementMoveFactor(S, mob)) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1) * (berserk ? 1.25 : 1);
   if (mob.dec) {
     // a rogue's puppet: walk up to it and strike it, which sets it off
     const dc = mob.dec;
@@ -276,6 +312,34 @@ function tickMob(S, m, rt, mob, dt, here) {
   }
   if (tgt) {
     const dd = dist(mob.x, mob.y, tgt.x, tgt.y);
+    // reflect trait (CBT-06): raises a 2.4s golden reflect barrier every 8s while fighting
+    if (has(mob, "reflect") && now >= (mob.refCd || 0)) {
+      mob.refUntil = now + 2400;
+      mob.refCd = now + 8000;
+      rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), 24, 600, 1]);
+    }
+    // gravity trait (CBT-06): pulls nearby heroes inward every 6.5s
+    if (has(mob, "gravity") && now >= (mob.gravCd || 0) && dd <= 120) {
+      mob.gravCd = now + 6500;
+      rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), 115, 500, 1]);
+      for (const o of here) {
+        if (o.map !== m.id || o.dead) continue;
+        const od = dist(mob.x, mob.y, o.x, o.y);
+        if (od <= 22 || od > 115) continue;
+        const ux = (mob.x - o.x) / od, uy = (mob.y - o.y) / od;
+        let go = 0;
+        for (let k = 2; k <= 22; k += 2) { if (!canStand(m, o.x + ux * k, o.y + uy * k)) break; go = k; }
+        if (go > 0) { o.x += ux * go; o.y += uy * go; o.fix = true; o.mvAt = now; }
+      }
+    }
+    // treasure goblin trait (CBT-06): flees away from the attacker instead of fighting
+    if (has(mob, "goblin")) {
+      const ux = dd > 1 ? (mob.x - tgt.x) / dd : 1, uy = dd > 1 ? (mob.y - tgt.y) / dd : 0;
+      const fx = mob.x + ux * 64, fy = mob.y + uy * 64;
+      if (dist(fx, fy, mob.hx, mob.hy) <= leash + 40) stepMob(m, mob, fx, fy, speed * 1.15, dt, d.fly, now);
+      else stepMob(m, mob, mob.hx - uy * 50, mob.hy + ux * 50, speed * 1.15, dt, d.fly, now);
+      return;
+    }
     // a scripted boss (a challenge's, or MOBS[k].script) takes its turns from its script (56-boss-script.js)
     if (now >= mob.castAt && bsDef(mob)) { bsCast(S, rt, mob, tgt); return; }
     if (now >= mob.castAt) {
@@ -312,6 +376,11 @@ function tickMob(S, m, rt, mob, dt, here) {
           if (d.shot && tgt.wheel > now) rt.ev.push(["bl", tgt.eid]);
           else mobHit(S, rt, tgt, atk, mob);
         }
+      } else if (d.ai === "kite" && dd < d.range * 0.55 && dd > 8) {
+        // ranged kiting archetype (CBT-05): steps back to maintain spacing while waiting on attack cooldown
+        const ux = (mob.x - tgt.x) / dd, uy = (mob.y - tgt.y) / dd;
+        const bx = mob.x + ux * 28, by = mob.y + uy * 28;
+        if (dist(bx, by, mob.hx, mob.hy) <= leash + 40) stepMob(m, mob, bx, by, speed * 0.65, dt, d.fly, now);
       }
     } else stepMob(m, mob, tgt.x, tgt.y, speed, dt, d.fly, now);
     return;

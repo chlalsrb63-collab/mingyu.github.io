@@ -95,6 +95,8 @@ const G = {
   eq_boots: ["............", "..######....", "..oooooo....", "...#####....", "...#####....", "...#####....", "...#####....", "...######...", "...########.", "..##########", "..ooo..ooooo", "............"],
   eq_amulet: [".o........o.", "..o......o..", "..o......o..", "...o....o...", "....o..o....", ".....##.....", "....####....", "...##oo##...", "...#oooo#...", "...##oo##...", "....####....", ".....##....."],
   eq_ring: [".....##.....", "....#oo#....", ".....##.....", "...######...", "..########..", ".###....###.", ".##......##.", ".##......##.", ".###....###.", "..########..", "...######...", "............"],
+  // split elite trait: twin dividing cells
+  split: ["............", "..###..###..", ".#####.#####", ".#oo#...#oo#", ".#####.#####", "..###.#.###.", "......#.....", "..###.#.###.", ".#####.#####", ".#oo#...#oo#", "..###..###..", "............"],
 };
 // the off-hand slot: the sword, facing the other way
 G.eq_off = G.sword.map((r) => [...r].reverse().join(""));
@@ -108,6 +110,8 @@ export const BUFF_ICON = ["sword", "chevron", "fire", "fish", "snow", "fire", "v
 export const TRAIT = {
   tough: ["shield", "#b8c4d8"], fire: ["fire", "#ff8a3a"], poison: ["venom", "#9be05a"], swift: ["chevron", "#ffe070"],
   vamp: ["fang", "#e84a6a"], frost: ["snow", "#8ad8ff"], burst: ["bomb", "#ffb04a"], thorn: ["thorn", "#e8dcc0"],
+  split: ["split", "#8ef0a8"], siphon: ["drop", "#8aa4ff"], reflect: ["shieldp", "#ffe888"],
+  gravity: ["rift", "#c484ff"], berserk: ["swords", "#ff4848"], goblin: ["coin", "#ffd448"],
 };
 
 const cache = {};

@@ -20,7 +20,10 @@ export function setShake(n) { shakeAmt = n; }
 
 export const parts = [];
 /** The colour an elite takes from its first trait (names from the sprite sheet's tint list). */
-export const TRAIT_TINT = { fire: "fire", poison: "poison", frost: "frost", tough: "steel", vamp: "blood", swift: "gold", burst: "ash", thorn: "bone" };
+export const TRAIT_TINT = {
+  fire: "fire", poison: "poison", frost: "frost", tough: "steel", vamp: "blood", swift: "gold", burst: "ash", thorn: "bone",
+  split: "poison", siphon: "ash", reflect: "gold", gravity: "frost", berserk: "blood", goblin: "gold",
+};
 /** What a spat puddle looks like, by kind: poison, fire, blood. */
 const POOL_COL = ["#8ad84a", "#ff8a3a", "#c8324a"];
 /**

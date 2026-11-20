@@ -127,5 +127,18 @@ const BOSS_SCRIPTS = {
       { at: 0.66, gap: 3800, pats: [["비취 물줄기", "jet", { n: 6, len: 185 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan2"], ["수류 웅덩이", "pools"], ["용꼬리 휩쓸기", "cone", { back: 1, both: 1 }], ["비취 표식", "mark", { n: 3 }]] },
       { at: 0.33, gap: 3200, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["비취 물줄기", "jet", { n: 7, len: 195 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan3"], ["수류 웅덩이", "pools"], ["성소 소용돌이", "donut", { rings: 1, ms: 1050 }], ["비취 표식", "mark", { n: 4 }], ["신전 대범람", "blast"]] },
     ] },
+  // ── CBT-03: standalone 3-phase scripts for cloakbat & bloomwhale (weekly raids continue using DIM_CHAL.bosses) ──
+  cloakbat: { cast: "심장의 포효", castMs: 6000, stunMs: 5000, gap: 4800, enrage: 280000, reach: 240,
+    pats: [["장막 휘감기", "cone", { half: 1.25, r: 60, k: 1.7 }], ["초음파 고리", "rings"], ["거꾸로 낙하", "leapslam"], ["날개 탄막", "fan2"]],
+    phases: [
+      { at: 0.68, gap: 4200, pats: [["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3200, k: 3.2 }], ["핏빛 메아리", "pools"], ["박쥐떼 소집", "adds", { kind: "nightbat", n: 3, cap: 3, d: 52, feed: 18000, heal: 0.02 }], ["장막 휘감기", "cone", { half: 1.25, r: 60, k: 1.8 }], ["날개 탄막", "fan2"]] },
+      { at: 0.34, gap: 3500, cast: 1, steps: [{ f: "pool", dt: 550 }], pats: [["양면 장막", "cone", { half: 1.25, r: 60, k: 1.9, both: 1 }], ["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3000, k: 3.6 }], ["거꾸로 낙하", "leapslam"], ["날개 폭풍", "fan3"], ["박쥐떼 소집", "adds", { kind: "nightbat", n: 4, cap: 4, d: 52, feed: 16000, heal: 0.02 }]] },
+    ] },
+  bloomwhale: { cast: "고래의 장송곡", castMs: 6500, stunMs: 5500, gap: 4800, enrage: 320000, reach: 260,
+    pats: [["고래 낙하", "dive"], ["수정 갈비 탄막", "fan2"], ["꼬리 지느러미", "cone", { back: 1, r: 68, ms: 1100, k: 2.0 }], ["심해의 노래", "donut", { r0: 30, r: 100, ms: 1450, k: 2.2, rings: 1 }]],
+    phases: [
+      { at: 0.66, gap: 4100, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 2, cap: 2, d: 84, shield: 1 }], ["혼꽃 표식", "mark", { n: 3, r: 36, ms: 3500, k: 2.0 }], ["서리 결정 웅덩이", "pools"], ["수정 갈비 폭풍", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 68, ms: 1100, k: 2.1 }], ["고래 낙하", "dive"]] },
+      { at: 0.33, gap: 3400, cast: 1, steps: [{ f: "pool", dt: 550 }], pats: [["심해의 노래", "donut", { r0: 30, r: 104, ms: 1300, k: 2.4, rings: 1 }], ["양면 지느러미", "cone", { both: 1, r: 68, ms: 950, k: 2.2 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 3200, k: 2.2 }], ["수정 갈비 폭풍", "fan3"], ["고래 낙하", "dive"], ["꽃무덤 대폭발", "blast"]] },
+    ] },
 };
 for (const k of Object.keys(BOSS_SCRIPTS)) MOBS[k].script = BOSS_SCRIPTS[k];

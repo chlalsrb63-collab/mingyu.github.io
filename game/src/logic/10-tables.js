@@ -324,6 +324,12 @@ const TRAITS = {
   frost: ["빙결", "맞으면 한동안 발이 느려진다"],
   burst: ["폭발", "쓰러진 자리에서 터진다"],
   thorn: ["가시", "가까이서 때리면 피해의 일부를 되돌려 받는다"],
+  split: ["분열", "쓰러질 때 소형 분열체 둘로 갈라진다"],
+  siphon: ["마력흡수", "맞으면 MP를 빼앗기고 적이 체력을 회복한다"],
+  reflect: ["반사막", "주기적으로 반사막을 펼쳐 받은 피해 일부를 되돌린다"],
+  gravity: ["중력장", "주기적으로 주변 모험가를 자신 쪽으로 끌어당긴다"],
+  berserk: ["광폭화", "HP가 30% 아래로 내려가면 공격력과 속도가 크게 오른다"],
+  goblin: ["보물사냥감", "공격받으면 도망치지만 쓰러뜨리면 골드와 전리품을 쏟아낸다"],
 };
 const TRAIT_KEYS = Object.keys(TRAITS);
 /** A slowed player moves at this share of their speed, for this long. */
@@ -331,12 +337,13 @@ const SLOW = 0.65, SLOW_MS = 2500;
 /** How long a charge is telegraphed, a volley is in the air, a spat puddle flies and then lies. */
 const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 /** The tricks a monster may have besides its plain attack, in the order it tries them. */
-const MOVES = ["charge", "leap", "slam", "pool", "fan", "pounce", "breath", "spit", "howl", "burrow", "cloud"];
+const MOVES = ["charge", "leap", "slam", "pool", "fan", "pounce", "breath", "spit", "howl", "burrow", "cloud", "mend", "summon"];
 /**
  * The telegraphed tricks (80-simulation.js special): a row opts in with its reach — `pounce`/`spit`/`burrow` from that
- * far, `breath` a cone that long, `howl` rallies kin that near, `cloud` a mist that wide round itself. `ms` the warning
- * (a dash or a step out of the mark escapes it), `k` × atk, `cd` until its next trick, × TRICK_EL[rank] (elites more
- * often); a cone's `half` angle (rad), a ring's `r`, a howl's `dur` (its kin hit × k and run × 1.15) and a cloud's.
+ * far, `breath` a cone that long, `howl` rallies kin that near, `cloud` a mist that wide round itself, `mend` heals
+ * injured kin that near, `summon` calls a frail minion. `ms` the warning (a dash or a step out of the mark escapes it),
+ * `k` × atk, `cd` until its next trick, × TRICK_EL[rank] (elites more often); a cone's `half` angle (rad), a ring's
+ * `r`, a howl's `dur` (its kin hit × k and run × 1.15) and a cloud's.
  * A recoloured kind (`sp`) has its body's ones unless it names its own.
  */
 const TRICKS = {
@@ -346,6 +353,8 @@ const TRICKS = {
   howl: { ms: 600, k: 1.25, cd: 12000, dur: 6000 },
   burrow: { ms: 1000, k: 1.8, cd: 8000, r: 28 },
   cloud: { ms: 600, k: 0.35, cd: 9000, dur: 4500 },
+  mend: { ms: 600, k: 0.16, cd: 10500, cap: 2 },
+  summon: { ms: 700, k: 1, cd: 14000, cap: 2 },
 };
 const TRICK_EL = [1, 0.75, 0.6];
 /** A trick's blow staggers only a player who has not reeled within this long (no stun-lock). */
@@ -568,7 +577,7 @@ const MOBS = {
   barnacleseal: { name: "달따개", epithet: "따개비 물개", lv: 27, hp: 1580, atk: 95, def: 22, spd: 32, xp: 590, gold: [52, 92], aggro: 80, range: 22, cd: 1500, slam: 38 },
   brainjelly: { name: "몽해리", epithet: "해파리 뇌", lv: 28, hp: 1320, atk: 99, def: 16, spd: 40, xp: 660, gold: [56, 100], aggro: 98, range: 76, cd: 1800, volley: true, cloud: 32 },
   eyegull: { name: "끼로록", epithet: "갈매기 눈알", lv: 29, hp: 1500, atk: 101, def: 18, spd: 56, xp: 715, gold: [59, 105], aggro: 96, range: 18, cd: 1000, fly: true, pool: 24, poolKind: 2 },
-  coralturtle: { name: "호초롱", epithet: "산호 뿔 거북", lv: 32, hp: 2100, atk: 106, def: 30, spd: 30, xp: 880, gold: [69, 119], aggro: 82, range: 21, cd: 1500, slam: 42, charge: 112 },
+  coralturtle: { name: "호초롱", epithet: "산호 뿔 거북", lv: 32, hp: 2100, atk: 106, def: 30, spd: 30, xp: 880, gold: [69, 119], aggro: 82, range: 21, cd: 1500, slam: 42, charge: 112, breath: 64, pool: 28, poolKind: 2 },
   // 모래바람 오아시스
   spinescorp_gold: { name: "모랫빛 마디록", epithet: "모래 전갈 등뼈", sp: "spinescorp", tint: "gold", lv: 30, hp: 1800, atk: 100, def: 16, spd: 40, xp: 790, gold: [64, 114], aggro: 90, range: 19, cd: 1200, charge: 112 },
   ribvulture_bone: { name: "백골 갈비락", epithet: "백골 독수리 갈비", sp: "ribvulture", tint: "bone", lv: 31, hp: 1750, atk: 98, def: 12, spd: 46, xp: 850, gold: [66, 118], aggro: 98, range: 18, cd: 1100, fly: true },
@@ -590,7 +599,9 @@ const MOBS = {
     lv: 26, hp: 840, atk: 74, def: 9, spd: 44, xp: 0, gold: [0, 0], aggro: 105, range: 18, cd: 1250, questOnly: true, breath: 100 },
   airship_lookout: { name: "누네크", epithet: "흑기수 외눈수리", lore: "깃이 찢어진 외눈수리가 정찰등 하나를 낚아채 매달고 다닌다. 빛을 본 조류 떼가 그 뒤를 따른다.",
     lv: 28, hp: 4300, atk: 101, def: 13, spd: 36, xp: 0, gold: [0, 0], aggro: 125, range: 70, cd: 1500, shot: true, boss: true, questOnly: true,
-    fan: 112, script: { gap: 5800, reach: 148, pats: [["검댕 깃털", "fan"], ["돛대 덮치기", "leapslam"]] } },
+    fan: 112, script: { cast: "정찰등 폭발", castMs: 5500, stunMs: 4800, gap: 5600, reach: 148,
+      pats: [["검댕 깃털", "fan"], ["돛대 덮치기", "leapslam"], ["정찰등 섬광", "cone", { ms: 1050, r: 58, half: 0.9, k: 1.35 }]],
+      phases: [{ at: 0.55, gap: 4600, pats: [["검댕 폭풍", "fan2"], ["갑판 급강하", "dive"], ["정찰 표식", "mark", { n: 2, ms: 2600, r: 30, k: 1.4 }], ["돛대 덮치기", "leapslam"]] }] } },
   jaemaei: {
     name: "재매이", epithet: "절망의 친칠라 재매이", lore: "제례전의 회색 털짐승. 금테 안경 너머로 초를 세던 두 눈은 아직 남아 있고, 등에 돋은 뼈와 촉수는 저마다의 박자로 몸을 끌어당긴다.",
     lv: 10, hp: 330, atk: 36, def: 5, spd: 34, xp: 160, gold: [18, 36], aggro: 120, range: 25, cd: 1400,
@@ -678,9 +689,24 @@ for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 16
   ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]], ["inklake", 42, 1750, [580, 980]], ["jianmen", 50, 2100, [750, 1250]], ["sanctum", 50, 2200, [800, 1300]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
+// Regular monster AI archetypes (CBT-05): ranged kiters, shaman healers, volatile death-bursters, brood summoners, chargers.
+const MOB_ARCHETYPES = {
+  kite: ["eyecrow", "eyegull", "spoolsnipe", "owlstare", "hollowowl", "dartbrood", "prismmole", "sowseer", "beadmonkey", "gorgecrane", "sanctummoth"],
+  healer: ["sowseer", "hollowowl", "brainjelly", "beadmonkey", "sanctummoth", "sanctumwarden", "gravrose"],
+  volatile: ["wickhare", "smoggecko", "gutfrog", "shroomboar", "mothface", "sanctumfrog"],
+  summoner: ["batcluster", "pigeonmass", "spiderhand", "blightsquirrel", "ratking"],
+  charger: ["splitboar", "passboar", "gigglehyena", "cliffmonkey", "gnawbadger"],
+};
+for (const k of MOB_ARCHETYPES.kite) if (MOBS[k]) MOBS[k].ai = "kite";
+for (const k of MOB_ARCHETYPES.healer) if (MOBS[k]) MOBS[k].mend = 95;
+for (const k of MOB_ARCHETYPES.volatile) if (MOBS[k]) { MOBS[k].burst = MOBS[k].burst || 32; MOBS[k].deathPool = MOBS[k].deathPool || 24; }
+for (const k of MOB_ARCHETYPES.summoner) if (MOBS[k]) MOBS[k].summon = 110;
+for (const k of MOB_ARCHETYPES.charger) if (MOBS[k] && !MOBS[k].charge && !MOBS[k].pounce) MOBS[k].charge = 95;
+
 for (const k of Object.keys(MOBS)) {
   const d = MOBS[k];
   if (!d.sp) d.sp = k;
+  if (!d.ai && MOBS[d.sp]?.ai) d.ai = MOBS[d.sp].ai;
   for (const mv in TRICKS) if (d[mv] === undefined && MOBS[d.sp] && MOBS[d.sp][mv]) d[mv] = MOBS[d.sp][mv];
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
   d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv) * mobItemAtk(d.lv) * mobStatAtk(d.lv));

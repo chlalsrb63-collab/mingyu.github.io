@@ -878,6 +878,12 @@ const TRAITS = {
   frost: ["빙결", "맞으면 한동안 발이 느려진다"],
   burst: ["폭발", "쓰러진 자리에서 터진다"],
   thorn: ["가시", "가까이서 때리면 피해의 일부를 되돌려 받는다"],
+  split: ["분열", "쓰러질 때 소형 분열체 둘로 갈라진다"],
+  siphon: ["마력흡수", "맞으면 MP를 빼앗기고 적이 체력을 회복한다"],
+  reflect: ["반사막", "주기적으로 반사막을 펼쳐 받은 피해 일부를 되돌린다"],
+  gravity: ["중력장", "주기적으로 주변 모험가를 자신 쪽으로 끌어당긴다"],
+  berserk: ["광폭화", "HP가 30% 아래로 내려가면 공격력과 속도가 크게 오른다"],
+  goblin: ["보물사냥감", "공격받으면 도망치지만 쓰러뜨리면 골드와 전리품을 쏟아낸다"],
 };
 const TRAIT_KEYS = Object.keys(TRAITS);
 /** A slowed player moves at this share of their speed, for this long. */
@@ -885,12 +891,13 @@ const SLOW = 0.65, SLOW_MS = 2500;
 /** How long a charge is telegraphed, a volley is in the air, a spat puddle flies and then lies. */
 const CHARGE_MS = 850, VOLLEY_MS = 650, POOL_FLY = 600, POOL_MS = 5000;
 /** The tricks a monster may have besides its plain attack, in the order it tries them. */
-const MOVES = ["charge", "leap", "slam", "pool", "fan", "pounce", "breath", "spit", "howl", "burrow", "cloud"];
+const MOVES = ["charge", "leap", "slam", "pool", "fan", "pounce", "breath", "spit", "howl", "burrow", "cloud", "mend", "summon"];
 /**
  * The telegraphed tricks (80-simulation.js special): a row opts in with its reach — `pounce`/`spit`/`burrow` from that
- * far, `breath` a cone that long, `howl` rallies kin that near, `cloud` a mist that wide round itself. `ms` the warning
- * (a dash or a step out of the mark escapes it), `k` × atk, `cd` until its next trick, × TRICK_EL[rank] (elites more
- * often); a cone's `half` angle (rad), a ring's `r`, a howl's `dur` (its kin hit × k and run × 1.15) and a cloud's.
+ * far, `breath` a cone that long, `howl` rallies kin that near, `cloud` a mist that wide round itself, `mend` heals
+ * injured kin that near, `summon` calls a frail minion. `ms` the warning (a dash or a step out of the mark escapes it),
+ * `k` × atk, `cd` until its next trick, × TRICK_EL[rank] (elites more often); a cone's `half` angle (rad), a ring's
+ * `r`, a howl's `dur` (its kin hit × k and run × 1.15) and a cloud's.
  * A recoloured kind (`sp`) has its body's ones unless it names its own.
  */
 const TRICKS = {
@@ -900,6 +907,8 @@ const TRICKS = {
   howl: { ms: 600, k: 1.25, cd: 12000, dur: 6000 },
   burrow: { ms: 1000, k: 1.8, cd: 8000, r: 28 },
   cloud: { ms: 600, k: 0.35, cd: 9000, dur: 4500 },
+  mend: { ms: 600, k: 0.16, cd: 10500, cap: 2 },
+  summon: { ms: 700, k: 1, cd: 14000, cap: 2 },
 };
 const TRICK_EL = [1, 0.75, 0.6];
 /** A trick's blow staggers only a player who has not reeled within this long (no stun-lock). */
@@ -1122,7 +1131,7 @@ const MOBS = {
   barnacleseal: { name: "달따개", epithet: "따개비 물개", lv: 27, hp: 1580, atk: 95, def: 22, spd: 32, xp: 590, gold: [52, 92], aggro: 80, range: 22, cd: 1500, slam: 38 },
   brainjelly: { name: "몽해리", epithet: "해파리 뇌", lv: 28, hp: 1320, atk: 99, def: 16, spd: 40, xp: 660, gold: [56, 100], aggro: 98, range: 76, cd: 1800, volley: true, cloud: 32 },
   eyegull: { name: "끼로록", epithet: "갈매기 눈알", lv: 29, hp: 1500, atk: 101, def: 18, spd: 56, xp: 715, gold: [59, 105], aggro: 96, range: 18, cd: 1000, fly: true, pool: 24, poolKind: 2 },
-  coralturtle: { name: "호초롱", epithet: "산호 뿔 거북", lv: 32, hp: 2100, atk: 106, def: 30, spd: 30, xp: 880, gold: [69, 119], aggro: 82, range: 21, cd: 1500, slam: 42, charge: 112 },
+  coralturtle: { name: "호초롱", epithet: "산호 뿔 거북", lv: 32, hp: 2100, atk: 106, def: 30, spd: 30, xp: 880, gold: [69, 119], aggro: 82, range: 21, cd: 1500, slam: 42, charge: 112, breath: 64, pool: 28, poolKind: 2 },
   // 모래바람 오아시스
   spinescorp_gold: { name: "모랫빛 마디록", epithet: "모래 전갈 등뼈", sp: "spinescorp", tint: "gold", lv: 30, hp: 1800, atk: 100, def: 16, spd: 40, xp: 790, gold: [64, 114], aggro: 90, range: 19, cd: 1200, charge: 112 },
   ribvulture_bone: { name: "백골 갈비락", epithet: "백골 독수리 갈비", sp: "ribvulture", tint: "bone", lv: 31, hp: 1750, atk: 98, def: 12, spd: 46, xp: 850, gold: [66, 118], aggro: 98, range: 18, cd: 1100, fly: true },
@@ -1144,7 +1153,9 @@ const MOBS = {
     lv: 26, hp: 840, atk: 74, def: 9, spd: 44, xp: 0, gold: [0, 0], aggro: 105, range: 18, cd: 1250, questOnly: true, breath: 100 },
   airship_lookout: { name: "누네크", epithet: "흑기수 외눈수리", lore: "깃이 찢어진 외눈수리가 정찰등 하나를 낚아채 매달고 다닌다. 빛을 본 조류 떼가 그 뒤를 따른다.",
     lv: 28, hp: 4300, atk: 101, def: 13, spd: 36, xp: 0, gold: [0, 0], aggro: 125, range: 70, cd: 1500, shot: true, boss: true, questOnly: true,
-    fan: 112, script: { gap: 5800, reach: 148, pats: [["검댕 깃털", "fan"], ["돛대 덮치기", "leapslam"]] } },
+    fan: 112, script: { cast: "정찰등 폭발", castMs: 5500, stunMs: 4800, gap: 5600, reach: 148,
+      pats: [["검댕 깃털", "fan"], ["돛대 덮치기", "leapslam"], ["정찰등 섬광", "cone", { ms: 1050, r: 58, half: 0.9, k: 1.35 }]],
+      phases: [{ at: 0.55, gap: 4600, pats: [["검댕 폭풍", "fan2"], ["갑판 급강하", "dive"], ["정찰 표식", "mark", { n: 2, ms: 2600, r: 30, k: 1.4 }], ["돛대 덮치기", "leapslam"]] }] } },
   jaemaei: {
     name: "재매이", epithet: "절망의 친칠라 재매이", lore: "제례전의 회색 털짐승. 금테 안경 너머로 초를 세던 두 눈은 아직 남아 있고, 등에 돋은 뼈와 촉수는 저마다의 박자로 몸을 끌어당긴다.",
     lv: 10, hp: 330, atk: 36, def: 5, spd: 34, xp: 160, gold: [18, 36], aggro: 120, range: 25, cd: 1400,
@@ -1232,9 +1243,24 @@ for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 16
   ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]], ["inklake", 42, 1750, [580, 980]], ["jianmen", 50, 2100, [750, 1250]], ["sanctum", 50, 2200, [800, 1300]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
+// Regular monster AI archetypes (CBT-05): ranged kiters, shaman healers, volatile death-bursters, brood summoners, chargers.
+const MOB_ARCHETYPES = {
+  kite: ["eyecrow", "eyegull", "spoolsnipe", "owlstare", "hollowowl", "dartbrood", "prismmole", "sowseer", "beadmonkey", "gorgecrane", "sanctummoth"],
+  healer: ["sowseer", "hollowowl", "brainjelly", "beadmonkey", "sanctummoth", "sanctumwarden", "gravrose"],
+  volatile: ["wickhare", "smoggecko", "gutfrog", "shroomboar", "mothface", "sanctumfrog"],
+  summoner: ["batcluster", "pigeonmass", "spiderhand", "blightsquirrel", "ratking"],
+  charger: ["splitboar", "passboar", "gigglehyena", "cliffmonkey", "gnawbadger"],
+};
+for (const k of MOB_ARCHETYPES.kite) if (MOBS[k]) MOBS[k].ai = "kite";
+for (const k of MOB_ARCHETYPES.healer) if (MOBS[k]) MOBS[k].mend = 95;
+for (const k of MOB_ARCHETYPES.volatile) if (MOBS[k]) { MOBS[k].burst = MOBS[k].burst || 32; MOBS[k].deathPool = MOBS[k].deathPool || 24; }
+for (const k of MOB_ARCHETYPES.summoner) if (MOBS[k]) MOBS[k].summon = 110;
+for (const k of MOB_ARCHETYPES.charger) if (MOBS[k] && !MOBS[k].charge && !MOBS[k].pounce) MOBS[k].charge = 95;
+
 for (const k of Object.keys(MOBS)) {
   const d = MOBS[k];
   if (!d.sp) d.sp = k;
+  if (!d.ai && MOBS[d.sp]?.ai) d.ai = MOBS[d.sp].ai;
   for (const mv in TRICKS) if (d[mv] === undefined && MOBS[d.sp] && MOBS[d.sp][mv]) d[mv] = MOBS[d.sp][mv];
   d.spd = Math.round(d.spd * 0.68);              // the whole world moves at an easier pace
   d.atk = Math.round(d.atk * (MOB_ATK - Math.max(0, d.lv - ATK_EASE[0]) * ATK_EASE[1]) * MOB_HARD * mobGearAtk(d.lv) * mobLevelAtk(d.lv) * mobItemAtk(d.lv) * mobStatAtk(d.lv));
@@ -2733,6 +2759,19 @@ const BOSS_SCRIPTS = {
     phases: [
       { at: 0.66, gap: 3800, pats: [["비취 물줄기", "jet", { n: 6, len: 185 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan2"], ["수류 웅덩이", "pools"], ["용꼬리 휩쓸기", "cone", { back: 1, both: 1 }], ["비취 표식", "mark", { n: 3 }]] },
       { at: 0.33, gap: 3200, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["비취 물줄기", "jet", { n: 7, len: 195 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan3"], ["수류 웅덩이", "pools"], ["성소 소용돌이", "donut", { rings: 1, ms: 1050 }], ["비취 표식", "mark", { n: 4 }], ["신전 대범람", "blast"]] },
+    ] },
+  // ── CBT-03: standalone 3-phase scripts for cloakbat & bloomwhale (weekly raids continue using DIM_CHAL.bosses) ──
+  cloakbat: { cast: "심장의 포효", castMs: 6000, stunMs: 5000, gap: 4800, enrage: 280000, reach: 240,
+    pats: [["장막 휘감기", "cone", { half: 1.25, r: 60, k: 1.7 }], ["초음파 고리", "rings"], ["거꾸로 낙하", "leapslam"], ["날개 탄막", "fan2"]],
+    phases: [
+      { at: 0.68, gap: 4200, pats: [["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3200, k: 3.2 }], ["핏빛 메아리", "pools"], ["박쥐떼 소집", "adds", { kind: "nightbat", n: 3, cap: 3, d: 52, feed: 18000, heal: 0.02 }], ["장막 휘감기", "cone", { half: 1.25, r: 60, k: 1.8 }], ["날개 탄막", "fan2"]] },
+      { at: 0.34, gap: 3500, cast: 1, steps: [{ f: "pool", dt: 550 }], pats: [["양면 장막", "cone", { half: 1.25, r: 60, k: 1.9, both: 1 }], ["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3000, k: 3.6 }], ["거꾸로 낙하", "leapslam"], ["날개 폭풍", "fan3"], ["박쥐떼 소집", "adds", { kind: "nightbat", n: 4, cap: 4, d: 52, feed: 16000, heal: 0.02 }]] },
+    ] },
+  bloomwhale: { cast: "고래의 장송곡", castMs: 6500, stunMs: 5500, gap: 4800, enrage: 320000, reach: 260,
+    pats: [["고래 낙하", "dive"], ["수정 갈비 탄막", "fan2"], ["꼬리 지느러미", "cone", { back: 1, r: 68, ms: 1100, k: 2.0 }], ["심해의 노래", "donut", { r0: 30, r: 100, ms: 1450, k: 2.2, rings: 1 }]],
+    phases: [
+      { at: 0.66, gap: 4100, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 2, cap: 2, d: 84, shield: 1 }], ["혼꽃 표식", "mark", { n: 3, r: 36, ms: 3500, k: 2.0 }], ["서리 결정 웅덩이", "pools"], ["수정 갈비 폭풍", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 68, ms: 1100, k: 2.1 }], ["고래 낙하", "dive"]] },
+      { at: 0.33, gap: 3400, cast: 1, steps: [{ f: "pool", dt: 550 }], pats: [["심해의 노래", "donut", { r0: 30, r: 104, ms: 1300, k: 2.4, rings: 1 }], ["양면 지느러미", "cone", { both: 1, r: 68, ms: 950, k: 2.2 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 3200, k: 2.2 }], ["수정 갈비 폭풍", "fan3"], ["고래 낙하", "dive"], ["꽃무덤 대폭발", "blast"]] },
     ] },
 };
 for (const k of Object.keys(BOSS_SCRIPTS)) MOBS[k].script = BOSS_SCRIPTS[k];
@@ -9492,7 +9531,7 @@ function readyMob(S, mob) {
   // (how often depends on where: deeper chambers and side vaults breed more of them)
   mob.el = mob.fix || (!MOBS[mob.k].boss && !MOBS[mob.k].chest && rnd(S) < mob.ep ? 1 : 0);
   // an elite carries one trait, a guardian two
-  mob.tr = mob.el ? rollTraits(S, mob.el) : [];
+  mob.tr = mob.el ? rollTraits(S, mob.el, mob.el === 1) : [];
   mob.hp = mobMax(mob);
   mob.dead = false; mob.tgt = null; mob.by = {}; mob.st = 0; mob.slow = 0; mob.stun = 0; mob.dot = null; mob.act = null; mob.mv = 0; mob.cn = 0;
   mob.runePoison = null;
@@ -11103,25 +11142,28 @@ function lootFor(S, rt, mob, p) {
   const rank = d.boss ? 2 : d.chest ? 1 : mob.el;
   const fx = pfxLoot(S, rt, p, mob, "drop");   // the powers that add to this kill's loot (51-prefix.js); all 0 without one
   const band = !d.chest && !mob.dim ? huntBandK(p.ch.lvl, d.lv) : 1;
-  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
+  const goblin = has(mob, "goblin");
+  const gold = ri(S, d.gold[0], d.gold[1]) * [1, 3, 12][mob.el] * goldK(d.lv) * HUNT_GOLD * (1 + (st.gold + fx.gold) / 100) * (1 + fx.gx) * (mob.lucky ? 2 : 1) * (goblin ? 3.5 : 1) * (mob.dim ? DIM.lootGold : 1) * (0.5 + 0.5 * band);
   out.push({ it: "gold", n: Math.max(1, Math.round(gold / share)) });
-  const tries = d.boss ? 4 : mob.el === 2 ? 3 : 1;
+  const tries = (d.boss ? 4 : mob.el === 2 ? 3 : 1) + (goblin ? 2 : 0);
+  const dropRank = goblin ? 2 : rank;
   for (let i = 0; i < tries; i++) {
-    if (rnd(S) >= gearDropChance(d, rank, st.mf + fx.mf, band)) continue;
+    if (rnd(S) >= gearDropChance(d, dropRank, st.mf + fx.mf, band)) continue;
     let tier = tierFor(d.lv);
-    if (rank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
+    if (dropRank && rnd(S) < 0.25) tier = Math.min(G_REQ.length, tier + 1);
     let roll = rnd(S) * 100, type = "weapon";
     for (const [t, w] of DROP_TYPES) { if (roll < w) { type = t; break; } roll -= w; }
     let id;
     if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
     else id = `${GEAR[type].pre}_${tier}`;
-    let q = rollRarity(S, rank, st.mf + fx.mf);
+    let q = rollRarity(S, dropRank, st.mf + fx.mf);
     if (isJewel(id) && q === 0) q = 1;
-    out.push({ g: rollGear(S, id, q, d.lv, rank) });
+    out.push({ g: rollGear(S, id, q, d.lv, dropRank) });
   }
-  if (rnd(S) < runeDropChance(shownLv(d.lv), rank)) out.push({ it: rollRuneId(S, rank), n: 1 });
+  if (rnd(S) < runeDropChance(shownLv(d.lv), dropRank)) out.push({ it: rollRuneId(S, dropRank), n: 1 });
   const stoneRoll = rnd(S);
-  if (stoneRoll < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
+  if (goblin) out.push({ it: "stone", n: ri(S, 1, 2) });
+  else if (stoneRoll < (rank === 2 ? 1 : rank === 1 ? 0.5 : 0.05 * GEAR_CUT)) out.push({ it: "stone", n: rank === 2 ? ri(S, 3, 6) : 1 });
   if (fx.stone) out.push({ it: "stone", n: 1 });   // (a power's extra stone: at most one a kill)
   // A kind's own finds (MOBS[k].drops: [item, chance, min, max]); its signature gear always drops legendary.
   for (const [it, c, lo = 1, hi = lo] of d.drops || []) if (rnd(S) < c) out.push(isGear(it) ? { g: rollGear(S, it, 3, d.lv, rank) } : { it, n: ri(S, lo, hi) });
@@ -11329,6 +11371,11 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
     const back = Math.min(p.hp - 1, Math.max(1, Math.round(dmg * 0.12)));
     if (back > 0) { p.hp -= back; rt.ev.push(["h", p.eid, back, 0, 1]); }
   }
+  // reflect shield (CBT-06): periodic golden barrier bounces 16% of non-proc damage back
+  if (has(mob, "reflect") && mob.refUntil > S.now && !o.px && !p.dead) {
+    const back = Math.min(p.hp - 1, Math.max(1, Math.round(dmg * 0.16)));
+    if (back > 0) { p.hp -= back; rt.ev.push(["h", p.eid, back, 0, 1]); }
+  }
   if (st.ls > 0 && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + Math.max(1, Math.round((dmg * st.ls) / 100)) * elementHealFactor(S, p));
   const x = mob.x, y = mob.y;
   wmHit(S, p, mob);
@@ -11396,6 +11443,11 @@ function killMob(S, rt, mob) {
   if (d.boss || el === 2) dmgBoard(S, rt, hitters);
   mob.by = {};
   const xp = d.xp * ELITE[el].xp;
+  // Summoned minions and splitlings award light XP only (no loot/quest/split exploit).
+  if (mob.noDrop) {
+    for (const p of looters) if (!d.chest) gainXp(S, p, Math.max(1, Math.round(xp * 0.25)));
+    return;
+  }
   const rareBoss = !mob.story && !mob.guard
     && (mob.dim ? S.dims[rt.id]?.boss === mob.id : d.boss || (el === 2 && mob.temp));
   for (const p of looters) {
@@ -11461,8 +11513,31 @@ function killMob(S, rt, mob) {
   // some monsters go off where they fall, and so does any elite with the trait
   if (d.burst || has(mob, "burst")) {
     const r = d.burst || 34;
-    rt.tele.push({ x: mob.x, y: mob.y, r, at: S.now + 900, dmg: d.atk * ELITE[el].atk * 1.3 });
-    rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), r, 900]);
+    const k = has(mob, "burst") ? 1.3 : 1.05;
+    rt.tele.push({ x: mob.x, y: mob.y, r, at: S.now + 950, dmg: d.atk * ELITE[el].atk * k });
+    rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), r, 950]);
+  }
+  // volatile archetype (CBT-05): leaves a short hazard puddle on death
+  if (d.deathPool && !mob.noDrop) {
+    const kind = d.poolKind ?? POOL_OF[monsterElement(mob.k).type] ?? 0;
+    const atk = d.atk * ELITE[el].atk;
+    rt.pools.push({ x: mob.x, y: mob.y, r: d.deathPool, next: S.now + 700, until: S.now + 3400, dmg: atk * 0.35, atk, kind });
+    rt.ev.push(["g", mob.id, Math.round(mob.x), Math.round(mob.y), d.deathPool, 700, 2700, kind]);
+  }
+  // split trait (CBT-06): splits into two frail mini-clones on death (never chained)
+  if (has(mob, "split") && !mob.noSplit && !d.boss && el < 2 && !d.chest) {
+    const m = mapOfS(S, rt.id), ok = d.fly ? canFly : canStand;
+    for (const side of [-1, 1]) {
+      const cx = mob.x + side * 14, cy = mob.y + (side > 0 ? 6 : -6);
+      const [mx, my] = ok(m, cx, cy) ? [cx, cy] : [mob.x, mob.y];
+      const clone = newMob(S, mob.k, null, { elite: 0 });
+      clone.x = clone.hx = clone.wx = mx; clone.y = clone.hy = clone.wy = my;
+      clone.temp = true; clone.noSplit = true; clone.noDrop = true; clone.noSummon = true;
+      clone.hk = (mob.hk || 1) * 0.35; clone.ak = (mob.ak || 1) * 0.6;
+      clone.hp = mobMax(clone); clone.tr = []; clone.tgt = top ? top.pid : null;
+      rt.mobs.push(clone);
+      rt.ev.push(["r", clone.id]);
+    }
   }
   // inside a 레이드던전: the gauge, orbs and shrines, the master (64-dim.js)
   if (mob.dim) dimKill(S, rt, mob, looters);
@@ -25902,9 +25977,9 @@ function stepMob(m, mob, tx, ty, speed, dt, fly, now) {
 }
 
 const has = (mob, t) => !!mob.tr && mob.tr.includes(t);
-/** Pick `n` different traits for an elite (one) or a guardian / field boss (two). */
-function rollTraits(S, n) {
-  const pool = TRAIT_KEYS.slice(), out = [];
+/** Pick `n` different traits for an elite (one) or a guardian / field boss (two). Treasure goblin only rolls on regular field elites. */
+function rollTraits(S, n, allowGoblin = false) {
+  const pool = TRAIT_KEYS.filter((k) => (k !== "goblin" || allowGoblin) && (k !== "split" || n <= 1)), out = [];
   while (out.length < n && pool.length) out.push(pool.splice(ri(S, 0, pool.length - 1), 1)[0]);
   return out;
 }
@@ -25952,6 +26027,13 @@ function mobHit(S, rt, p, raw, mob, how = "blow") {
     // (a rift monster made tougher heals by the same measure: 64-dim.js dimHk)
     const heal = Math.min(mobMax(src) - src.hp, (Math.max(0, before - p.hp) * 3 * elementHealFactor(S, src)) / (src.hk || 1));
     if (heal >= 1) { src.hp += heal; rt.ev.push(["h", src.id, -Math.round(heal), 0, 0]); }
+  }
+  if (!p.dead && dmg > 0 && has(src, "siphon")) {
+    // 마력흡수 (CBT-06): drains 6% max MP from the hero and restores 3% max HP
+    const drain = Math.min(p.mp, Math.max(2, Math.round(stats(p).mmp * 0.06)));
+    if (drain > 0) { p.mp -= drain; p.dirty = true; }
+    const heal = Math.min(mobMax(src) - src.hp, Math.round(mobMax(src) * 0.03 * elementHealFactor(S, src)));
+    if (heal >= 1) { src.hp += heal; rt.ev.push(["h", src.id, -heal, 0, 0]); }
   }
 }
 
@@ -26052,6 +26134,32 @@ function special(S, m, rt, mob, tgt, dd, atk, k) {
     const kind = d.poolKind ?? POOL_OF[monsterElement(mob.k).type] ?? 2;
     rt.pools.push({ x: mob.x, y: mob.y, r: d.cloud, next: at, until: at + A.dur, dmg: atk * A.k, atk, kind });
     rt.ev.push(["g", mob.id, Math.round(mob.x), Math.round(mob.y), d.cloud, A.ms, A.dur, kind]);
+  } else if (k === "mend") {
+    // 주술 치유형 (CBT-05): heals up to 2 injured nearby non-boss allies
+    const alliesInj = rt.mobs.filter((o) => o !== mob && !o.dead && !o.dive && !MOBS[o.k].boss && !MOBS[o.k].chest && !MOBS[o.k].still
+      && o.hp < mobMax(o) * 0.85 && dist(o.x, o.y, mob.x, mob.y) <= d.mend)
+      .sort((a, b) => a.hp / mobMax(a) - b.hp / mobMax(b)).slice(0, A.cap);
+    if (!alliesInj.length) return false;
+    for (const o of alliesInj) {
+      const heal = Math.min(mobMax(o) - o.hp, Math.max(1, Math.round(mobMax(o) * A.k * elementHealFactor(S, o))));
+      if (heal >= 1) { o.hp += heal; rt.ev.push(["h", o.id, -heal, 0, 0]); }
+    }
+    rt.ev.push(["m", mob.id], ["t", Math.round(mob.x), Math.round(mob.y), d.mend, A.ms, 1]);
+  } else if (k === "summon") {
+    // 소환형 (CBT-05): calls 1 frail brood minion (never chained, capped at 2 active per summoner)
+    if (mob.noSummon || dd > d.summon) return false;
+    const active = rt.mobs.filter((o) => o.summonOf === mob.id && !o.dead).length;
+    if (active >= A.cap) return false;
+    const ang = rnd(S) * Math.PI * 2, sx = mob.x + Math.cos(ang) * 18, sy = mob.y + Math.sin(ang) * 18;
+    const ok = d.fly ? canFly : canStand;
+    const [mx, my] = ok(m, sx, sy) ? [sx, sy] : [mob.x, mob.y];
+    const min = newMob(S, mob.k, null, { elite: 0 });
+    min.x = min.hx = min.wx = mx; min.y = min.hy = min.wy = my;
+    min.temp = true; min.noDrop = true; min.noSummon = true; min.noSplit = true; min.summonOf = mob.id;
+    min.hk = (mob.hk || 1) * 0.32; min.ak = (mob.ak || 1) * 0.55;
+    min.hp = mobMax(min); min.tgt = mob.tgt; min.tr = []; min.castAt = now + 2000;
+    rt.mobs.push(min);
+    rt.ev.push(["m", mob.id], ["r", min.id]);
   } else return false;
   mob.dir = tgt.x < mob.x ? 1 : 2;
   mob.castAt = now + A.cd * TRICK_EL[mob.el || 0];
@@ -26119,8 +26227,11 @@ function tickMob(S, m, rt, mob, dt, here) {
   if (d.script && !mob.chal) bsField(S, m, rt, mob);
   if (d.still) return;
   if (elementFrozen(S, mob)) return;
-  // (a howl's rally: TRICKS.howl)
-  const rage = mob.rage > now, atk = d.atk * ELITE[mob.el].atk * (rage ? TRICKS.howl.k : 1);
+  // (a howl's rally: TRICKS.howl; berserk elite below 30% HP: CBT-06)
+  const rage = mob.rage > now;
+  const berserk = has(mob, "berserk") && mob.hp <= mobMax(mob) * 0.30;
+  if (berserk && !mob.berserkOn) { mob.berserkOn = true; rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), 38, 600, 1]); }
+  const atk = d.atk * ELITE[mob.el].atk * (rage ? TRICKS.howl.k : 1) * (berserk ? 1.32 : 1);
   // a charge already wound up goes off whatever is done to the charger in the meantime
   if (mob.act) {
     if (now >= mob.act.at) (mob.act.f ? landMove : dash)(S, m, rt, mob, atk);
@@ -26130,8 +26241,8 @@ function tickMob(S, m, rt, mob, dt, here) {
   if (mob.dive === 2) mob.dive = 0;
   if (mob.stun > now) return;
   const swift = has(mob, "swift");
-  const attackInterval = d.cd * elementAttackFactor(S, mob);
-  const speed = d.spd * Math.min(mob.slow > now ? 0.5 : 1, elementMoveFactor(S, mob)) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1);
+  const attackInterval = d.cd * elementAttackFactor(S, mob) * (berserk ? 0.80 : 1);
+  const speed = d.spd * Math.min(mob.slow > now ? 0.5 : 1, elementMoveFactor(S, mob)) * (swift ? 1.35 : 1) * (rage ? 1.15 : 1) * (berserk ? 1.25 : 1);
   if (mob.dec) {
     // a rogue's puppet: walk up to it and strike it, which sets it off
     const dc = mob.dec;
@@ -26161,6 +26272,34 @@ function tickMob(S, m, rt, mob, dt, here) {
   }
   if (tgt) {
     const dd = dist(mob.x, mob.y, tgt.x, tgt.y);
+    // reflect trait (CBT-06): raises a 2.4s golden reflect barrier every 8s while fighting
+    if (has(mob, "reflect") && now >= (mob.refCd || 0)) {
+      mob.refUntil = now + 2400;
+      mob.refCd = now + 8000;
+      rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), 24, 600, 1]);
+    }
+    // gravity trait (CBT-06): pulls nearby heroes inward every 6.5s
+    if (has(mob, "gravity") && now >= (mob.gravCd || 0) && dd <= 120) {
+      mob.gravCd = now + 6500;
+      rt.ev.push(["t", Math.round(mob.x), Math.round(mob.y), 115, 500, 1]);
+      for (const o of here) {
+        if (o.map !== m.id || o.dead) continue;
+        const od = dist(mob.x, mob.y, o.x, o.y);
+        if (od <= 22 || od > 115) continue;
+        const ux = (mob.x - o.x) / od, uy = (mob.y - o.y) / od;
+        let go = 0;
+        for (let k = 2; k <= 22; k += 2) { if (!canStand(m, o.x + ux * k, o.y + uy * k)) break; go = k; }
+        if (go > 0) { o.x += ux * go; o.y += uy * go; o.fix = true; o.mvAt = now; }
+      }
+    }
+    // treasure goblin trait (CBT-06): flees away from the attacker instead of fighting
+    if (has(mob, "goblin")) {
+      const ux = dd > 1 ? (mob.x - tgt.x) / dd : 1, uy = dd > 1 ? (mob.y - tgt.y) / dd : 0;
+      const fx = mob.x + ux * 64, fy = mob.y + uy * 64;
+      if (dist(fx, fy, mob.hx, mob.hy) <= leash + 40) stepMob(m, mob, fx, fy, speed * 1.15, dt, d.fly, now);
+      else stepMob(m, mob, mob.hx - uy * 50, mob.hy + ux * 50, speed * 1.15, dt, d.fly, now);
+      return;
+    }
     // a scripted boss (a challenge's, or MOBS[k].script) takes its turns from its script (56-boss-script.js)
     if (now >= mob.castAt && bsDef(mob)) { bsCast(S, rt, mob, tgt); return; }
     if (now >= mob.castAt) {
@@ -26197,6 +26336,11 @@ function tickMob(S, m, rt, mob, dt, here) {
           if (d.shot && tgt.wheel > now) rt.ev.push(["bl", tgt.eid]);
           else mobHit(S, rt, tgt, atk, mob);
         }
+      } else if (d.ai === "kite" && dd < d.range * 0.55 && dd > 8) {
+        // ranged kiting archetype (CBT-05): steps back to maintain spacing while waiting on attack cooldown
+        const ux = (mob.x - tgt.x) / dd, uy = (mob.y - tgt.y) / dd;
+        const bx = mob.x + ux * 28, by = mob.y + uy * 28;
+        if (dist(bx, by, mob.hx, mob.hy) <= leash + 40) stepMob(m, mob, bx, by, speed * 0.65, dt, d.fly, now);
       }
     } else stepMob(m, mob, tgt.x, tgt.y, speed, dt, d.fly, now);
     return;
