@@ -25,8 +25,9 @@ export const UG = {
   sewer: { floor: ["#5d6a5e", "#47534a", "#768476"], rock: "#0d130f", face: ["#6a4636", "#8a6048", "#aa7c5e", "#3c2820"], wet: ["#6a9a3a", "#5a8a30", "#b0dc70", "#36561e", "#8cc054"] },
   abyss: { floor: ["#7c2f3c", "#5c1e2b", "#9e4855"], rock: "#19070c", face: ["#5a1622", "#8c2c3a", "#ba4e5a", "#330e18"], wet: ["#a81c2c", "#8e1424", "#e4606c", "#560a16", "#d04858"] },
   cave: { floor: ["#40606a", "#344f5a", "#527680"], rock: "#101a26", face: ["#2e4458", "#4a6a7c", "#5a7c8c", "#22343f"], wet: ["#26a08e", "#1e8a7a", "#8af4dc", "#145a50", "#58d6be"] },
+  sanctum: { floor: ["#5c6c64", "#404e48", "#7c8e82"], rock: "#0b1615", face: ["#465852", "#687e74", "#8ea698", "#24322e"], wet: ["#26b8c0", "#168696", "#9efaf2", "#0c5e6c", "#5ce6e0"] },
 };
-export const GRASS = { meadow: "#6cbf5e", town: "#6cbf5e", city: "#6cbf5e", forest: "#3f8a5c", autumn: "#71843a", jungle: "#35944a", coast: "#74c060", desert: "#8ab850", mesa: "#a4a058", mist: "#6f9a6a", jianmen: "#4a8a46" };
+export const GRASS = { meadow: "#6cbf5e", town: "#6cbf5e", city: "#6cbf5e", forest: "#3f8a5c", autumn: "#71843a", jungle: "#35944a", coast: "#74c060", desert: "#8ab850", mesa: "#a4a058", mist: "#6f9a6a", jianmen: "#4a8a46", sanctum: "#549e46" };
 export const underground = (theme) => !!UG[theme];
 /**
  * The cave's shelf level (0/1/2) per tile from the map payload's `lv` (runs "<level><count>" joined by ","),
@@ -424,6 +425,18 @@ export function materials(theme) {
     const shale = mk(MID.ruin, 4, "#9a8268", { pal: ["#9a8268", "#745e4a", "#b8a084", "#8a725a", "#a89074"], straight: true, depth: 1, line: "#544234" });
     shale.tex = laid(shale, 14, 9, 6, 285, { moss: C("#4a8a46"), crack: true });
     T[":"] = turf; T["."] = turf; T._grass = turf; T["="] = passStone; T.r = shale;
+  } else if (theme === "sanctum") {
+    // 가라앉은 고대 신전: sunlit emerald underground forest moss, cracked mossy temple flagstones (=, k)
+    const mossFloor = mk(MID.grass, 3.2, "#549e46", { pal: ["#549e46", "#387238", "#74c254", "#4a8a40", "#2a562e", "#8ee062"], line: "#2a562e" });
+    mossFloor.tex = organic(mossFloor, ["44./444/.11", "1.1/.1.", "22/.2", "444/.44", "11", "5/1", "2.2/.2."].map(shape), SHP.grass2, 291, 0.72, 0.36, 6, 5);
+    const sunlitMoss = mk(MID.grass, 3.1, "#6ec04e", { pal: ["#6ec04e", "#4e943e", "#94e066", "#5ea844", "#386e34", "#b4f07a"], line: "#346430" });
+    sunlitMoss.tex = organic(sunlitMoss, SHP.grass, SHP.grass2, 293, 0.76, 0.38, 6, 5);
+    const templeSlab = mk(MID.royal, 1, "#829288", { pal: ["#829288", "#5b6a62", "#a4b4a8", "#708076", "#92a296"], amp: 2.2, depth: 2, line: "#3a4640" });
+    const mC = C("#56a446"), mCL = C("#84d65c");
+    templeSlab.tex = veined(laid(templeSlab, 12, 8, 5, 295, { moss: mC, crack: true }), 8, 296, 4, 297, (n, n2, A, B) => (n > 0.72 && n2 > 0.36 ? ((A + B) & 1 ? mC : mCL) : 0));
+    const brokenSlab = mk(MID.slab, 3.6, "#708076", { pal: ["#708076", "#4e5c54", "#92a498", "#627268", "#809086"], style: "lip", amp: 1.8, depth: 1, line: "#36423c" });
+    brokenSlab.tex = veined(laid(brokenSlab, 11, 9, 5, 298, { moss: mC, crack: true }), 7, 299, 4, 300, (n, n2, A, B) => (n > 0.66 && n2 > 0.35 ? ((A + B) & 1 ? mC : mCL) : 0));
+    T[":"] = mossFloor; T["."] = mossFloor; T['"'] = sunlitMoss; T[";"] = sunlitMoss; T["="] = templeSlab; T.k = brokenSlab; T._grass = mossFloor;
   }
   if (cave) Object.assign(T, cave);
   // a ford out of doors (maps-v2 A.6, the forest's crossings `m.cross`): clear shallows over sand, flat grey
@@ -1160,6 +1173,13 @@ function extras(m, theme, MT) {
         // an iron grating between two rails
         c = (along % 4 === 0 || across % 4 === 0) ? C("#2a302c") : C("#5a625c");
         if (d < 2) c = (d === 0) === lit ? C("#8a948c") : C("#3a423e");
+      } else if (theme === "sanctum") {
+        // weathered old wooden suspension bridge planks lashed with pale rope along both timber rails
+        const r = wA % 5, plank = Math.floor(wA / 5), t = hash(plank, alongX ? y : x, 31);
+        c = r === 4 ? C("#3c2818") : t < 0.28 ? C("#a6805a") : t > 0.78 ? C("#6c4c2e") : C("#8c6844");
+        if (r === 1 && (across === 3 || across === 12)) c = C("#4a321e");
+        if (r !== 4 && hash(plank, across >> 2, 32) < 0.1) c = C("#4c8e42"); // tiny moss flecks on old boards
+        if (d < 3) c = d === 1 && (wA % 6 < 2) ? C("#d0b67a") : (d === 0) === lit ? C("#b89268") : C("#5a3e24");
       } else {
         const r = wA % 5, plank = Math.floor(wA / 5), t = hash(plank, alongX ? y : x, 3);
         c = r === 4 ? wood.seam : t < 0.3 ? wood.lt : t > 0.8 ? wood.dk : wood.mid;

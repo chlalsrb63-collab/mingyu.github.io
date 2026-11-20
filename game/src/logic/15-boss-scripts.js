@@ -118,5 +118,14 @@ const BOSS_SCRIPTS = {
       { at: 0.66, gap: 3900, pats: [["검풍 발톱", "fan2"], ["백호 연속 강습", "charge2"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1 }], ["천검 고리", "donut", { rings: 1 }], ["검문 표식", "mark", { n: 3 }]] },
       { at: 0.33, gap: 3200, cast: 1, steps: [{ f: "charge", dt: 650 }], pats: [["천검 폭풍", "fan3"], ["백호 연속 강습", "charge2"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1, ms: 800 }], ["천검 고리", "donut", { rings: 1, ms: 1050 }], ["검문 표식", "mark", { n: 4 }], ["협곡 대지진", "blast"]] },
     ] },
+  sanctumstag: { cast: "이끼 왕관 개화", castMs: 6000, stunMs: 5000, stag: 0.04, blast: 2.3, gap: 5000, enrage: 270000, reach: 240,
+    pats: [["이끼 뿔 돌진", "charge"], ["포자 산탄", "fan"], ["성소 웅덩이", "pools"], ["뿌리 파동", "donut"]],
+    phases: [{ at: 0.5, gap: 4200, steps: [{ f: "pool", dt: 500 }], pats: [["이끼 뿔 연속 돌진", "charge2"], ["포자 폭풍", "fan3"], ["성소 웅덩이", "pools"], ["뿌리 파동", "donut", { rings: 1 }], ["신전 표식", "mark", { n: 3 }]] }] },
+  sanctumwyrm: { cast: "지하강 수류 해일", castMs: 6000, stunMs: 5000, gap: 4500, enrage: 300000, reach: 250,
+    pats: [["비취 물줄기", "jet"], ["지하강 잠행", "dive"], ["수정 비늘 산탄", "fan"], ["수류 웅덩이", "pools"], ["용꼬리 휩쓸기", "cone", { back: 1 }]],
+    phases: [
+      { at: 0.66, gap: 3800, pats: [["비취 물줄기", "jet", { n: 6, len: 185 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan2"], ["수류 웅덩이", "pools"], ["용꼬리 휩쓸기", "cone", { back: 1, both: 1 }], ["비취 표식", "mark", { n: 3 }]] },
+      { at: 0.33, gap: 3200, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["비취 물줄기", "jet", { n: 7, len: 195 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan3"], ["수류 웅덩이", "pools"], ["성소 소용돌이", "donut", { rings: 1, ms: 1050 }], ["비취 표식", "mark", { n: 4 }], ["신전 대범람", "blast"]] },
+    ] },
 };
 for (const k of Object.keys(BOSS_SCRIPTS)) MOBS[k].script = BOSS_SCRIPTS[k];

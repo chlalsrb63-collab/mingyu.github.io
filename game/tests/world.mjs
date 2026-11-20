@@ -85,7 +85,7 @@ while (todo.length) {
   }
 }
 assert.deepEqual(Object.keys(seen).sort(), D.maps.map((m) => m.id).sort(), "every map can be reached from town");
-for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa", "inklake", "jianmen"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
+for (const id of ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa", "inklake", "jianmen", "sanctum"]) assert.ok(D.maps.find((m) => m.id === id).band, id + " shows its level band");
 
 // ── the dungeons: harder the deeper you go, a camp on the way, a guardian at the end
 for (const id of ["crypt", "sewer", "abyss"]) {
@@ -247,5 +247,18 @@ JSON.stringify(L.removePlayer(S, PID));
   let jmMouth = 0;
   for (let x = jmCit.x; x < jmCit.x + jmCit.w; x++) { if (jm.o[jmCit.y + jmCit.h - 1][x] === " ") jmMouth++; assert.equal(jm.o[jmCit.y][x], "W"); }
   assert.equal(jmMouth, 3, "jianmen citadelkeep has one 3-wide southern gate");
+  // END-03 dungeon: 가라앉은 고대 신전 (sanctum) — two-way door from jianmen, wooden bridges over river, walk-under arches, rune pool, boss
+  for (const [from, to] of [["jianmen", "sanctum"], ["sanctum", "jianmen"]]) {
+    assert.ok(maps[from].portals.some((p) => p.to === to), `${from} has a door to ${to}`);
+    assert.ok(D.maps.find((q) => q.id === from).to.includes(to), `${from} lists ${to} as a way on`);
+  }
+  const sc = maps.sanctum, scMeta = D.maps.find((q) => q.id === "sanctum");
+  assert.equal(scMeta.kind, "dun", "sanctum is registered as a dungeon");
+  assert.deepEqual(scMeta.band, [48, 50].map((t) => 4 * t - 3), "sanctum band Lv.189-197");
+  assert.ok(sc.g.some((r) => r.includes("b")) && sc.g.some((r) => r.includes("w")), "sanctum has wooden bridges over river");
+  assert.ok((sc.arches || []).length >= 4, `sanctum has walk-under temple arches (${(sc.arches || []).length})`);
+  assert.ok(sc.temple && sc.temple.pool, "sanctum has a glowing jade rune pool");
+  assert.deepEqual(D.waypoints.find((q) => q.id === "sanctum").names, ["이끼 회랑", "구름다리 광장", "가라앉은 대신전"]);
+  assert.ok(sc.spawns.some((sp) => sp.k === "sanctumwyrm"), "sanctum boss spawns in sanctuary");
 }
 console.log("world ok — maps", Object.keys(seen).join(","));

@@ -128,18 +128,18 @@ const MONSTER_PROFILES = {
 
 // Explicit profiles express the ecology rather than treating a different sprite as a different species.
 const MONSTER_ELEMENT_GROUPS = {
-  hide: ["meadowram", "splitboar", "ratking", "gatorhalf", "crabskull", "moleworm", "bearmaw", "twingoat", "loggator", "coralturtle", "cactushog", "stumpmaw", "burrlynx", "catsplit_gold", "foxtwine_gold", "twingoat_gold", "bearmaw_gold", "gatorhalf_steel", "ratking_gold", "spinescorp_gold", "ribdeer_gold", "moleworm_gold", "horsehalf_gold", "passboar", "stonegoat", "passbear"],
-  feral: ["foxtwine", "catsplit", "gnawbadger", "dropsloth", "gigglehyena", "pigeonmass", "horsehalf", "lionhand", "spiderhand", "blightsquirrel", "wingcrane", "loomcolossus", "vinemonkey", "orchidmantis", "cliffmonkey", "jianmentiger"],
+  hide: ["meadowram", "splitboar", "ratking", "gatorhalf", "crabskull", "moleworm", "bearmaw", "twingoat", "loggator", "coralturtle", "cactushog", "stumpmaw", "burrlynx", "catsplit_gold", "foxtwine_gold", "twingoat_gold", "bearmaw_gold", "gatorhalf_steel", "ratking_gold", "spinescorp_gold", "ribdeer_gold", "moleworm_gold", "horsehalf_gold", "passboar", "stonegoat", "passbear", "sanctumturtle"],
+  feral: ["foxtwine", "catsplit", "gnawbadger", "dropsloth", "gigglehyena", "pigeonmass", "horsehalf", "lionhand", "spiderhand", "blightsquirrel", "wingcrane", "loomcolossus", "vinemonkey", "orchidmantis", "cliffmonkey", "jianmentiger", "sanctumsloth"],
   blood: ["batcluster_blood", "crabskull_blood", "squidrat_blood", "fishwalker_blood", "twingoat_blood", "spiderhand_blood", "gravrose_blood", "barnacleseal_blood", "bloodhorn", "bloodshard"],
   ember: ["wickhare", "smoggecko", "doghead_fire", "spinescorp_fire", "ribvulture_fire", "foxtwine_fire", "eyecrow_ash", "lionhand_gold"],
   inferno: ["boss", "wickregent", "sandmaw"],
-  frost: ["gutfrog_frost", "wingcrane_frost", "splitboar_frost", "fishwalker_frost", "eelknot_frost", "crabskull_frost", "ribdeer_frost", "foxtwine_frost", "shroomboar_frost", "crowscare_frost", "hermitskull_frost", "rimehare", "frostmoth", "barnacleseal", "hagfishhead"],
-  rime: ["rimewalrus", "rootwarden", "crownstag", "bloomwhale"],
+  frost: ["gutfrog_frost", "wingcrane_frost", "splitboar_frost", "fishwalker_frost", "eelknot_frost", "crabskull_frost", "ribdeer_frost", "foxtwine_frost", "shroomboar_frost", "crowscare_frost", "hermitskull_frost", "rimehare", "frostmoth", "barnacleseal", "hagfishhead", "sanctummoth"],
+  rime: ["rimewalrus", "rootwarden", "crownstag", "bloomwhale", "sanctumwyrm"],
   storm: ["sluiceeel", "spoolsnipe", "eelknot", "hydrasnake_steel", "eelknot_gold", "prismmole", "airship_gale", "airship_lookout", "eyegull", "brainjelly", "clubshrimp", "sluiceleviathan", "gorgecrane"],
-  toxin: ["hydrasnake", "mothface", "toadbrood", "gutfrog_poison", "ratking_bile", "slugtongue", "leechmaw", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile", "leechmaw_ash", "mothface_ash", "shroomboar", "gravrose", "dartbrood", "spinescorp", "sowseer", "knotwidow"],
+  toxin: ["hydrasnake", "mothface", "toadbrood", "gutfrog_poison", "ratking_bile", "slugtongue", "leechmaw", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile", "leechmaw_ash", "mothface_ash", "shroomboar", "gravrose", "dartbrood", "spinescorp", "sowseer", "knotwidow", "sanctumfrog", "sanctumcrown"],
   shadow: ["owlstare", "crowscare", "bogcrown", "hollowowl", "batcluster", "nightbat", "serpentwing", "serpentwing_ash", "bearmaw_ash", "splitboar_ash", "fishwalker_ash", "wingcrane_ash", "abyssboss", "mistiger", "cloakbat", "ironowl"],
-  revenant: ["bellnewt", "gravecricket", "dunescarab", "ribdeer", "twinhare_bone", "bonehound", "bonehound_ash", "bonehound_gold", "lambmaw_bone", "leechmaw_bone", "spiderhand_bone", "serpentwing_bone", "rotstag", "hermitskull", "ribvulture_bone", "mummycamel", "spinescorp_bone", "ribvulture", "knellkeeper"],
-  radiant: ["prismcantor", "beadmonkey", "crownpeacock", "hydrasnake_gold", "sowseer_gold", "owlstare_gold", "ribvulture_gold", "citadellion"],
+  revenant: ["bellnewt", "gravecricket", "dunescarab", "ribdeer", "twinhare_bone", "bonehound", "bonehound_ash", "bonehound_gold", "lambmaw_bone", "leechmaw_bone", "spiderhand_bone", "serpentwing_bone", "rotstag", "hermitskull", "ribvulture_bone", "mummycamel", "spinescorp_bone", "ribvulture", "knellkeeper", "sanctumstag"],
+  radiant: ["prismcantor", "beadmonkey", "crownpeacock", "hydrasnake_gold", "sowseer_gold", "owlstare_gold", "ribvulture_gold", "citadellion", "sanctumwarden"],
 };
 const MONSTER_ELEMENT = Object.fromEntries(Object.entries(MONSTER_ELEMENT_GROUPS).flatMap(([profile, kinds]) => kinds.map((kind) => [kind, MONSTER_PROFILES[profile]])));
 for (const [id, mob] of Object.entries(MOBS)) mob.element = mob.chest ? MONSTER_PROFILES.chest : MONSTER_ELEMENT[id] || MONSTER_PROFILES.neutral;

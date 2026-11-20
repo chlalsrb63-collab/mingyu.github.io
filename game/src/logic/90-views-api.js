@@ -231,9 +231,9 @@ const WORLD_MAP_POS = {
   willow: [170, 233], blossom_trail: [152, 148], sunset_beach: [118, 316], town: [327, 205], meadow: [348, 93], forest: [548, 124], crypt: [723, 133],
   city: [367, 334], sewer: [552, 320], cave: [710, 302], abyss: [928, 335], maple: [824, 229],
   jungle: [203, 417], coast: [370, 528], oasis: [622, 470], dunesea: [838, 516], frostkeep: [915, 91],
-  airship: [622, 389], mesa: [764, 386], inklake: [850, 300], jianmen: [808, 128],
+  airship: [622, 389], mesa: [764, 386], inklake: [850, 300], jianmen: [808, 128], sanctum: [918, 178],
 };
-const WORLD_MAP_ART = { willow: "willow", blossom_trail: "blossom_trail", sunset_beach: "coast", frostkeep: "frostkeep", dunesea: "dunesea", airship: "airship", jianmen: "jianmen" };
+const WORLD_MAP_ART = { willow: "willow", blossom_trail: "blossom_trail", sunset_beach: "coast", frostkeep: "frostkeep", dunesea: "dunesea", airship: "airship", jianmen: "jianmen", sanctum: "sanctum" };
 
 function worldMapDefs() {
   // Only custom labels need coordinates to disambiguate the destination. Keep generated terrain lazy.
@@ -246,7 +246,7 @@ function worldMapDefs() {
   }
   return Object.entries(MAP_META).map(([id, meta]) => {
     const { name, band, kinds, theme, safe, w, h, wpn, minLv } = meta;
-    const kind = theme === "interior" ? "in" : safe ? "town" : (minLv || ["crypt", "sewer", "cave", "abyss"].includes(theme)) ? "dun" : "field";
+    const kind = theme === "interior" ? "in" : safe ? "town" : (minLv || ["crypt", "sewer", "cave", "abyss", "sanctum"].includes(theme)) ? "dun" : "field";
     const bosses = [...new Set([FIELD_BOSS[id], ...kinds.filter((mob) => MOBS[mob].boss)].filter(Boolean))];
     return { id, name, band: band && band.map(shownLv), mobs: kinds.slice(), theme, safe, w, h, wpn, to: ROUTES[id],
       kind, gateLabel: doorName(meta), pos: WORLD_MAP_POS[id]?.slice() || null, bosses, ...(Object.hasOwn(WORLD_MAP_ART, id) ? { art: WORLD_MAP_ART[id] } : {}), ...(minLv ? { minLv } : {}), ...(doors[id] ? { doors: doors[id] } : {}),

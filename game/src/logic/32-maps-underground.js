@@ -1057,3 +1057,239 @@ function abyssal(cfg) {
   return m;
 }
 
+/**
+ * 가라앉은 고대 신전 (END-03 dungeon, Lv.189–200): spacious sunken underground ancient temple
+ * chambers and overgrown subterranean forest islands rising from a luminous turquoise river,
+ * joined by weathered wooden suspension bridges (`b`) framed by walk-under mossy stone arches
+ * (`m.arches`), flickering wall torches (`m.torches`), treasure shrines, and a grand northern
+ * temple sanctuary (`N` + glowing jade rune pool `m.temple.pool`).
+ */
+function sanctum(cfg) {
+  const box = { seed: cfg.seed }, S0 = cfg.seed;
+  const W = cfg.w, H = cfg.h;
+  const m = blank(cfg.id, cfg.name, W, H, "W");
+  m.bgm = cfg.bgm || "cave"; m.theme = cfg.theme; m.pieces = [];
+  const N1 = field(m, S0 + 5, 5, 2), N2 = field(m, S0 + 6, 9, 2), N3 = field(m, S0 + 7, 7, 2);
+  // subterranean cavern flooded by a luminous turquoise underground river
+  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+    const d = Math.min(x - 2, y - 2, W - 3 - x, H - 3 - y);
+    if (d + (N2[y * W + x] - 0.5) * 5 > 2) m.g[y][x] = "w";
+  }
+  const sites = poisson(box, 8, 8, W - 9, H - 9, cfg.r, [[7, Math.round(H * 0.55)], [W - 14, 15]]);
+  const n = sites.length;
+  const PL = cfg.plate;
+  const isl = sites.map(([x, y], k) => ({
+    k, x: Math.round(x), y: Math.round(y),
+    r: k === 1 ? 9.5 : k === 0 ? 6.8 : PL.r + rnd(box) * PL.vary,
+  }));
+  const edges = [];
+  for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) {
+    const A = isl[a], B = isl[b], cx = (A.x + B.x) / 2, cy = (A.y + B.y) / 2, r2 = ((A.x - B.x) ** 2 + (A.y - B.y) ** 2) / 4;
+    let ok = r2 < (cfg.r * 1.95) ** 2;
+    for (let c = 0; c < n && ok; c++) if (c !== a && c !== b && (isl[c].x - cx) ** 2 + (isl[c].y - cy) ** 2 < r2) ok = false;
+    if (ok && !(a === 1 || b === 1)) edges.push([a, b]);
+  }
+  const tree = grow(box, n, edges, 0, cfg.wind, cfg.loops);
+  let guardI = -1;
+  for (let k = 2; k < n; k++) if (tree.dist[k] >= 0 && Math.hypot(isl[k].x - isl[1].x, isl[k].y - isl[1].y) < cfg.r * 2.3 && (guardI < 0 || tree.dist[k] > tree.dist[guardI])) guardI = k;
+  if (guardI < 0) { let bd = Infinity; for (let k = 2; k < n; k++) { const d = Math.hypot(isl[k].x - isl[1].x, isl[k].y - isl[1].y); if (d < bd && tree.dist[k] >= 0) { bd = d; guardI = k; } } }
+  tree.link.add(ekey(guardI, 1)); tree.dist[1] = tree.dist[guardI] + 1; tree.deg[guardI]++; tree.deg[1] = 1;
+  const far = Math.max(1, ...tree.dist);
+  const kind = isl.map((_, k) => (k % 2 === 0 ? "grove" : "colonnade"));
+  kind[0] = "gate"; kind[1] = "arena"; kind[guardI] = "guard";
+  const main = [...tree.path(guardI), 1], onMain = new Set(main);
+  const campAt = main[Math.floor(main.length / 2)];
+  if (campAt > 1 && campAt !== guardI) kind[campAt] = "camp";
+  for (let k = 2; k < n; k++) if (k !== guardI && k !== campAt && tree.deg[k] === 1) kind[k] = "shrine";
+  for (const I of isl) if (kind[I.k] === "shrine") I.r = 4.6 + (I.r - PL.r) / PL.vary * 1.4;
+
+  // carve wide terraced sunken temple plates and forest sanctuary islands out of the river
+  const owner = new Int16Array(W * H).fill(-1);
+  for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
+    const i = y * W + x;
+    let k1 = -1, d1 = Infinity, d2 = Infinity;
+    for (let k = 0; k < n; k++) {
+      const I = isl[k], ax = (x - I.x) * 0.84, ay = y - I.y, d = ax * ax + ay * ay;
+      if (d < d1) { d2 = d1; d1 = d; k1 = k; } else if (d < d2) d2 = d;
+    }
+    d1 = Math.sqrt(d1); d2 = Math.sqrt(d2);
+    const I = isl[k1], bossD = Math.hypot((x - isl[1].x) * 0.84, y - isl[1].y);
+    if (d1 + (N1[i] - 0.5) * 2.6 >= I.r || (k1 !== 1 && (d2 - d1 < PL.gap + N2[i] * PL.gapVary || bossD < isl[1].r + 4.5))) continue;
+    owner[i] = k1;
+    const kd = kind[k1];
+    if (kd === "grove") m.g[y][x] = N3[i] > 0.62 ? ";" : N3[i] > 0.28 ? ":" : "c";
+    else if (kd === "arena" || kd === "gate" || kd === "guard") m.g[y][x] = N3[i] > 0.72 ? "k" : "=";
+    else if (kd === "colonnade") m.g[y][x] = N3[i] > 0.66 ? ";" : N3[i] > 0.34 ? "k" : "=";
+    else if (kd === "camp") m.g[y][x] = N3[i] > 0.45 ? ":" : "=";
+    else m.g[y][x] = N3[i] > 0.5 ? "=" : ":";
+  }
+  // back rock backdrop behind the northern grand sanctuary
+  for (let y = 2; y <= isl[1].y - 7; y++) for (let x = isl[1].x - 11; x <= isl[1].x + 11; x++) {
+    if (inMap(m, x, y) && y < isl[1].y - 7 + Math.round(Math.abs(x - isl[1].x) / 4)) { m.g[y][x] = "W"; owner[y * W + x] = -1; }
+  }
+  // grand stone entrance gallery reaching back to the west cavern wall
+  for (let x = 3; x <= isl[0].x; x++) for (const y of [isl[0].y - 2, isl[0].y - 1, isl[0].y, isl[0].y + 1, isl[0].y + 2]) {
+    if (inMap(m, x, y)) m.g[y][x] = "=";
+  }
+
+  // old weathered wooden suspension bridges (`b`) spanning the turquoise river channels
+  const arches = [], torches = [];
+  const legs = (A, B, wide, hFirst) => {
+    const o = -((wide - 1) >> 1), e = wide - 1 + o;
+    if (Math.abs(B.y - A.y) <= 1) { const y = Math.min(A.y, B.y); return [[Math.min(A.x, B.x), y + o, Math.max(A.x, B.x), y + e]]; }
+    if (Math.abs(B.x - A.x) <= 1) { const x = Math.min(A.x, B.x); return [[x + o, Math.min(A.y, B.y), x + e, Math.max(A.y, B.y)]]; }
+    const [P, Q] = hFirst ? [A, B] : [B, A];
+    return [[Math.min(P.x, Q.x + o), P.y + o, Math.max(P.x, Q.x + e), P.y + e], [Q.x + o, Math.min(P.y, Q.y), Q.x + e, Math.max(P.y + e, Q.y)]];
+  };
+  const cells = (rs) => { const out = []; for (const [x0, y0, x1, y1] of rs) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (x >= 3 && y >= 3 && x < W - 3 && y < H - 3) out.push([x, y]); return out; };
+  for (const [a, b] of [...edges, [guardI, 1]]) {
+    if (!tree.linked(a, b)) continue;
+    const A = isl[a], B = isl[b];
+    const wide = kind[a] === "shrine" || kind[b] === "shrine" ? 3 : (onMain.has(a) && onMain.has(b)) ? 5 : 4;
+    const cost = (cs) => {
+      let c = 0;
+      for (const [x, y] of cs) {
+        const k = owner[y * W + x];
+        if (k >= 0 && k !== a && k !== b) c += 4;
+        if (b !== 1) for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (owner[(y + dy) * W + x + dx] === 1) c += 100;
+        if (m.g[y][x] === "b") c += 2;
+      }
+      return c;
+    };
+    const legOpts = [true, false].map((h) => legs(A, B, wide, h));
+    const opts = legOpts.map(cells);
+    const ca = cost(opts[0]), cb = cost(opts[1]);
+    const pickIdx = ca < cb ? 0 : cb < ca ? 1 : rnd(box) < 0.5 ? 0 : 1;
+    for (const [X, Y] of opts[pickIdx]) if (m.g[Y][X] === "w" || m.g[Y][X] === "W") m.g[Y][X] = "b";
+    // place a walk-under mossy temple arch at the stone threshold of main-route bridges
+    if ((onMain.has(a) && onMain.has(b)) || b === 1) {
+      const firstLeg = legOpts[pickIdx][0];
+      const [x0, y0, x1, y1] = firstLeg;
+      const ew = (x1 - x0) >= (y1 - y0) ? 1 : 0;
+      const lo = -((wide - 1) >> 1), hi = wide - 1 + lo;
+      const mx = Math.round((x0 + x1) / 2), my = Math.round((y0 + y1) / 2);
+      // walk from bridge midpoint toward A until hitting dry island land
+      let ax = mx, ay = my;
+      const sx = Math.sign(A.x - mx), sy = Math.sign(A.y - my);
+      for (let step = 0; step < 18; step++) {
+        if (inMap(m, ax, ay) && m.g[ay][ax] !== "b" && m.g[ay][ax] !== "w" && m.g[ay][ax] !== "W") break;
+        if (ew) ax += sx || 1; else ay += sy || 1;
+      }
+      if (inMap(m, ax, ay) && m.g[ay][ax] !== "w" && m.g[ay][ax] !== "W" && !arches.some((ar) => Math.abs(ar[0] - ax) + Math.abs(ar[1] - ay) < 8)) {
+        arches.push([ax, ay, ew, lo, hi]);
+      }
+    }
+    m.pieces.push("bridge");
+  }
+
+  // lush subterranean woodland & ancient temple rim dressing (kept near island rims so fighting centers stay spacious)
+  for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
+    const ch = m.g[y][x], k = owner[y * W + x];
+    if (k < 0 || ch === "w" || ch === "W" || ch === "b" || m.o[y][x] !== " ") continue;
+    if (kind[k] === "arena" || kind[k] === "camp") continue;
+    const h = h2(x, y, S0 + 9);
+    const nearB = D4.some(([dx, dy]) => m.g[y + dy][x + dx] === "b");
+    const nearW = D4.some(([dx, dy]) => m.g[y + dy][x + dx] === "w");
+    const rim2 = nearW || D4.some(([dx, dy]) => inMap(m, x + 2 * dx, y + 2 * dy) && m.g[y + 2 * dy][x + 2 * dx] === "w");
+    if (nearB && !D4.some(([dx, dy]) => m.o[y + dy][x + dx] === "3" || m.o[y + dy][x + dx] === "q")) {
+      if (h < 0.22) m.o[y][x] = "3";
+      else if (h < 0.38) m.o[y][x] = "q";
+      continue;
+    }
+    if (!rim2) {
+      // inner temple floor accents: cracked stone and occasional moss
+      if (kind[k] === "colonnade" && h > 0.88) m.g[y][x] = "d";
+      continue;
+    }
+    if (kind[k] === "grove") {
+      if (h < 0.14) m.o[y][x] = h < 0.08 ? "P" : "T";
+      else if (h < 0.21) m.o[y][x] = "B";
+      else if (h < 0.25) m.o[y][x] = "Y";
+      else if (h < 0.29) m.o[y][x] = "R";
+    } else if (kind[k] === "colonnade" || kind[k] === "gate" || kind[k] === "guard") {
+      if (h < 0.1) m.o[y][x] = "q";
+      else if (h < 0.15) m.o[y][x] = "U";
+      else if (h < 0.19) m.o[y][x] = "P";
+      else if (h < 0.22) m.o[y][x] = "3";
+      else if (h < 0.25) m.o[y][x] = "Y";
+    }
+  }
+
+  // island landmarks, camp, treasure shrines, field boss, and grand sunken temple boss sanctuary
+  const pts = [], gates = {}, noDig = new Uint8Array(W * H);
+  isl.forEach((I) => {
+    const k = I.k, t = Math.max(0, tree.dist[k]) / far, d = tree.dist[k];
+    const rect = [I.x - Math.floor(I.r * 0.8) + 1, I.y - Math.floor(I.r * 0.75) + 1, I.x + Math.floor(I.r * 0.8) - 1, I.y + Math.floor(I.r * 0.75) - 1];
+    clear(m, I.x - 2, I.y - 2, I.x + 2, I.y + 2);
+    pts.push(spot(m, I.x, I.y));
+    if (kind[k] === "gate") {
+      gates.in = { t: [[3, I.y], [3, I.y + 1]], a: [[5, I.y], [5, I.y + 1]] };
+      for (const [dx, dy] of [[-2, -3], [2, -3], [-2, 3], [2, 3]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "3";
+      m.spawns.push({ k: cfg.mobs[0], n: 1, r: rect, elite: 0 });
+    } else if (kind[k] === "camp") {
+      clear(m, I.x - 3, I.y - 3, I.x + 3, I.y + 3);
+      if (inMap(m, I.x - 2, I.y - 2) && m.g[I.y - 2][I.x - 2] !== "w") m.o[I.y - 2][I.x - 2] = "E";
+      if (inMap(m, I.x + 2, I.y - 2) && m.g[I.y - 2][I.x + 2] !== "w") m.o[I.y - 2][I.x + 2] = "3";
+      if (inMap(m, I.x - 3, I.y + 1) && m.g[I.y + 1][I.x - 3] !== "w") m.o[I.y + 1][I.x - 3] = "P";
+      FIRES[cfg.id].push([I.x, I.y]);
+      m.camp = { x: I.x - 3, y: I.y - 3, w: 7, h: 7 };
+      m.pieces.push("camp");
+    } else if (kind[k] === "shrine") {
+      if (inMap(m, I.x, I.y - 2) && m.g[I.y - 2][I.x] !== "w") m.o[I.y - 2][I.x] = "z";
+      for (const [dx, dy] of [[-2, -1], [2, -1]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "3";
+      m.spawns.push({ k: cfg.chest, n: 1, r: [I.x, I.y + 1, I.x, I.y + 1] });
+      m.spawns.push({ k: cfg.mobs[Math.min(cfg.mobs.length - 1, Math.floor(t * cfg.mobs.length) + 1)], n: 2 + (t > 0.5 ? 1 : 0), r: rect, elite: 0.25 });
+      pts.push([I.x, I.y + 1]);
+      m.pieces.push("shrine");
+    } else if (kind[k] === "guard") {
+      for (const [dx, dy] of [[-4, -3], [4, -3], [-4, 3], [4, 3]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "q";
+      m.bossAt = [I.x, I.y];
+      m.spawns.push({ k: cfg.mobs[cfg.mobs.length - 1], n: 3, r: rect, elite: 0.25 });
+      m.spawns.push({ k: cfg.chest, n: 1, r: [I.x + 2, I.y - 2, I.x + 2, I.y - 2] });
+      pts.push([I.x + 2, I.y - 2]);
+    } else if (kind[k] === "arena") {
+      // monumental northern sunken temple sanctuary with 4×2 N facade & glowing jade rune pool
+      for (let y = I.y - 7; y <= I.y + 7; y++) for (let x = I.x - 9; x <= I.x + 9; x++) {
+        if (!inMap(m, x, y)) continue;
+        if (Math.hypot((x - I.x) * 0.85, y - I.y) <= 8.5) { m.g[y][x] = "="; m.o[y][x] = " "; }
+      }
+      // 4×2 Sunken Ancient Temple Portal landmark (`N`) on the northern edge
+      for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) {
+        const tx = I.x - 2 + i, ty = I.y - 6 + j;
+        if (inMap(m, tx, ty)) { m.g[ty][tx] = "="; m.o[ty][tx] = "N"; noDig[ty * W + tx] = 1; }
+      }
+      // carved stairs descending in front of the temple portal
+      for (let i = -2; i <= 1; i++) if (inMap(m, I.x + i, I.y - 4)) m.g[I.y - 4][I.x + i] = "v";
+      // glowing jade rune pool aura right in the grand sanctuary court
+      m.temple = { x: I.x - 5, y: I.y - 6, w: 11, h: 12, pool: [I.x, I.y - 1] };
+      for (const [dx, dy] of [[-5, -4], [5, -4], [-5, 4], [5, 4]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "q";
+      for (const [dx, dy] of [[-4, -2], [4, -2], [-4, 2], [4, 2]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "3";
+      for (const [dx, dy] of [[-6, -1], [6, -1], [-6, 2], [6, 2]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "P";
+      m.spawns.push({ k: cfg.boss, n: 1, r: [I.x, I.y + 1, I.x, I.y + 1] });
+      pts.push([I.x, I.y + 1]);
+      m.pieces.push("sunkentemple");
+    } else {
+      denSpawns(m, box, cfg, rect, t, d, !onMain.has(k), I.r > 5 ? 1 : 0);
+    }
+  });
+
+  // flickering wall torches on cavern wall edges facing open dry floor
+  for (let y = 4; y < H - 4; y += 5) for (let x = 4; x < W - 4; x += 5) {
+    if (m.g[y][x] !== "W" && m.g[y][x] !== "w" && m.g[y][x] !== "b" && m.o[y][x] === " " && m.g[y][x - 1] === "W" && h2(x, y, S0 + 44) < 0.55) {
+      torches.push([x, y]);
+    }
+  }
+  for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) { m.g[y][x] = "="; m.o[y][x] = " "; pts.push([x, y]); }
+  m.gates = gates;
+  m.entry = gates.in.a[0];
+  m.arches = arches;
+  m.torches = torches;
+  if (arches.length) m.pieces.push("arch");
+  cover(m, cfg.mobs);
+  knit(m, pts, "=");
+  const bossAt = isl[1];
+  wideWays(m, pts, cfg.soft, noDig, Object.values(gates).flatMap((g) => g.a).concat(FIRES[cfg.id], [[bossAt.x, bossAt.y + 2]]), 2);
+  m.regions = n;
+  return m;
+}
+

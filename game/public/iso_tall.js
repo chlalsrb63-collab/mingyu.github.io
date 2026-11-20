@@ -133,6 +133,17 @@ function wallFace(theme, P, x, y, v) {
     if (n > 0.72) return f[1];
     return (ws + z) % 7 === 0 && n < 0.3 ? f[3] : f[0];
   };
+  if (theme === "sanctum") return (side, s, z) => {
+    const k = coursed(s, z, 5, 8, 7, v), f = F[side], ws = (side === 2 ? x : y) * 16 + s;
+    // lush emerald moss & hanging vines draping down from the ancient temple wall cornice
+    const run = hash(ws, side, 71) < 0.42 ? 3 + Math.floor(hash(ws >> 1, side, 72) * 11) : 0;
+    if (run && z >= 26 - run) return z === 26 - run ? C("#28562c") : hash(ws, z, 73) < 0.25 ? C("#6ec052") : C("#488e42");
+    // damp turquoise-tinted mineral band near the subterranean river level
+    if (z < 4 && hash(ws, z, 74) < 0.45) return z < 2 ? C("#1d5a60") : C("#2f7476");
+    if (k.seam) return f[2];
+    if (k.top) return f[1];
+    return k.t < 0.22 ? f[3] : k.t > 0.82 ? f[1] : f[0];
+  };
   // cave rock: broken planes, each its own tone, split by dark cracks
   return (side, s, z) => {
     const ws = (side === 2 ? x : y) * 16 + s;
@@ -201,6 +212,15 @@ function wallDeco(theme, h, x, y, v, faceL, faceR) {
         const w = j < 2 ? 3 : j < 4 ? 2 : 1;
         for (let q = 0; q < w; q++) { const [X, Y] = at(1 + i * 5 + q + (3 - w + 1) / 2 | 0, 1 + j); buf.px(X, Y, q === 0 ? C("#f8f2e0") : C("#d8ccb0")); }
       }
+    } else if (theme === "sanctum" && k < 0.22) {
+      // a carved ancient temple niche with a subtle glowing jade rune & mossy sill
+      const s0 = 4, z0 = 7;
+      for (let i = 0; i < 8; i++) for (let j = 0; j < 10; j++) {
+        if ((j === 9 && (i === 0 || i === 7))) continue;
+        const [X, Y] = at(s0 + i, z0 + j);
+        buf.px(X, Y, j === 0 ? C("#54a246") : (i === 0 || i === 7 || j === 9) ? C("#8ea698") : C("#182826"));
+      }
+      for (const [dx, dy] of [[3, 4], [4, 4], [3, 6], [4, 6], [4, 5]]) { const [X, Y] = at(s0 + dx, z0 + dy); buf.px(X, Y, C("#86f6d8")); }
     }
   };
 }

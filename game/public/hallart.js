@@ -21,6 +21,7 @@ const INK = C("#2b2233");
 const SKIN = {
   crypt: { b: ["#7d776c", "#8f897c", "#6a645c"], mortar: "#3e3a36", ring: ["#a8a294", "#8b867c"], key: "#c8c0a8", top: "#b4ae9e", side: "#55504a" },
   sewer: { b: ["#8a5a42", "#9c6a4e", "#74482f"], mortar: "#2e1e18", ring: ["#b08868", "#8e6a50"], key: "#c8a07a", top: "#a8806a", side: "#4e3226" },
+  sanctum: { b: ["#62746c", "#7a8e84", "#485852"], mortar: "#24302c", ring: ["#90a498", "#6c8076"], key: "#a8c6a6", top: "#5aa848", side: "#36443e" },
 };
 
 const PIER = 5, TOP = 34, THICK = 3;
@@ -134,7 +135,7 @@ export function hallProps(m, theme) {
     const blank = document.createElement("canvas"); blank.width = 120; blank.height = 20;
     out.push({ sp: blank, dx: X - 60, dy: Y - 10, x: X, y: Y, d: Y - 40, glow: null, glint: -1, tx: X, ty: Y, anim: runePool });
   }
-  if (theme !== "crypt" && theme !== "sewer") return { statics: out, torchAt };
+  if (theme !== "crypt" && theme !== "sewer" && theme !== "sanctum") return { statics: out, torchAt };
   const seen = new Set();
   for (const [x, y, ew, lo = -1, hi = 1] of m.arches || []) {
     const k = x + "," + y + "," + lo;

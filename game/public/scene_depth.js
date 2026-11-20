@@ -15,6 +15,7 @@ const PALETTE = {
   crypt: [[104, 100, 132], "#2d2537"],
   sewer: [[82, 111, 103], "#243a33"],
   abyss: [[124, 79, 104], "#3b2135"],
+  sanctum: [[84, 152, 146], "#183230"],
 };
 const WARM = new Set(["#ffb860", "#ffd890", "#ffe690", "#ffd070", "#ffd870"]);
 const COLD = new Set(["#5ae4d0", "#72e6f4", "#b07aff", "#4aa8ff", "#ff6a7a"]);

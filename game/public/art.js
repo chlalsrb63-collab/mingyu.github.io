@@ -108,6 +108,7 @@ const MINI_THEME = {
   mesa: { s: "#d98a5a", z: "#e29a62", r: "#b86a48", w: "#3aa0b8", "=": "#e2ca92", ",": "#a4a058", t: "#8a9a50" },
   mist: { w: "#dfe7f0", b: "#b8bcb8", ":": "#5f8a5c", ";": "#5f8a5c", ",": "#6a9464", r: "#9a9e9c", "%": "#b4622e" },
   jianmen: { ":": "#4a8a46", ".": "#4a8a46", ",": "#56944e", '"': "#3f7c3c", "=": "#a69c8c", r: "#9a8268", p: "#9c7c56", w: "#3290a4", W: "#8e5c48", C: "#8a7054" },
+  sanctum: { c: "#5c6c64", d: "#506058", "=": "#829288", k: "#708076", ":": "#549e46", ";": "#6ec04e", W: "#0b1615", w: "#26b8c0", b: "#967048" },
 };
 /** A zoned hunting ground's minimap tint by 4 × 4 block (m.zq): the safe plaza cool, the elite ground red; hidden pockets stay hidden. */
 const ZONE_TINT = { 0: "rgba(120,220,255,0.22)", 2: "rgba(255,70,60,0.2)" };

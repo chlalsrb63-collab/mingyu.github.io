@@ -29,6 +29,8 @@ const TROPHIES = {
   serpentwing_ash: { name: "먹빛 구렁이 비늘", fx: { move: 2, drop: 2 } },
   // 천검관 협곡 field boss (END-03)
   passbear: { name: "천검관 수문장의 철패", fx: { hp: 3, crit: 2 } },
+  // 가라앉은 고대 신전 field boss (END-03 dungeon)
+  sanctumstag: { name: "가라앉은 신전의 이끼관", fx: { drop: 3, hp: 2 } },
 };
 const TROPHY_CAP = { gold: 8, xp: 8, move: 5, aspd: 5, drop: 6, hp: 5, crit: 4 };
 const TROPHY_P = 0.05, TROPHY_GOLD = 40;

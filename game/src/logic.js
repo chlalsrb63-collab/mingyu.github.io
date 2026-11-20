@@ -802,7 +802,7 @@ const BOUNTY_N = 25;
 /** A hunting ground's field boss stands at its fixed spot from the start and is back there this long after it falls (ms). */
 const FB_RESP = 600000;
 /** Each hunting ground's field boss, by map (its trophy: TROPHIES, 67-trophies.js). */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "clubshrimp", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock", inklake: "serpentwing_ash", jianmen: "passbear" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "clubshrimp", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock", inklake: "serpentwing_ash", jianmen: "passbear", sanctum: "sanctumstag" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -845,7 +845,7 @@ const TRICK_EL = [1, 0.75, 0.6];
 const MV_GRACE = 1200;
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 15, jianmen: 12.6 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 15, jianmen: 12.6, sanctum: 8.2 };
 // MOB_HARD: owner 2026-11-19 — every monster 20 % more HP and attack (chests excepted)
 const GEAR_CUT = 0.3, MOB_ATK = 1.27, MOB_HARD = 1.2;
 // The stronger gear pays off against progressively tougher monsters. Openers stay gentle.
@@ -1154,12 +1154,21 @@ const MOBS = {
   ironowl: { name: "검문 문두린", epithet: "검문 강철올빼미", sp: "hollowowl", tint: "steel", lv: 50, hp: 4900, atk: 152, def: 36, spd: 38, xp: 2900, gold: [136, 214], aggro: 96, range: 70, cd: 1700, fly: true, fan: 110, breath: 74 },
   passbear: { name: "수문 우걱마", epithet: "천검관 철갑곰", sp: "bearmaw", tint: "steel", lv: 50, hp: 6600, atk: 160, def: 46, spd: 38, xp: 3400, gold: [160, 250], aggro: 100, range: 24, cd: 1350, charge: 134, slam: 44, fan: 118 },
   jianmentiger: { name: "천검 무해랑", epithet: "천검관의 백호왕", sp: "mistiger", tint: "steel", lv: 50, hp: 520000, atk: 204, def: 50, spd: 38, xp: 76000, gold: [5400, 7800], aggro: 132, range: 30, cd: 1450, resp: 240000, boss: true, gear: 1, charge: 152, leap: 126, slam: 48, fan: 152 },
+  // 가라앉은 고대 신전 (Lv.189–200 subterranean overgrown temple & turquoise river dungeon)
+  sanctumfrog: { name: "이끼 꼬르륵", epithet: "신전 이끼 뱃가죽", sp: "gutfrog", tint: "bile", lv: 48, hp: 4300, atk: 142, def: 30, spd: 46, xp: 2540, gold: [126, 200], aggro: 92, range: 20, cd: 1150, leap: 100, pool: 26 },
+  sanctumturtle: { name: "이끼 호초롱", epithet: "지하강 이끼거북", sp: "coralturtle", tint: "bile", lv: 48, hp: 4900, atk: 144, def: 38, spd: 36, xp: 2580, gold: [128, 204], aggro: 86, range: 22, cd: 1350, slam: 42, charge: 118 },
+  sanctumsloth: { name: "신전 툭늘보", epithet: "덩굴 매복 늘보", sp: "dropsloth", tint: "ash", lv: 49, hp: 4550, atk: 148, def: 32, spd: 42, xp: 2700, gold: [132, 210], aggro: 94, range: 20, cd: 1200, leap: 104 },
+  sanctummoth: { name: "신전 탈루나", epithet: "비취빛 신전나방", sp: "mothface", tint: "frost", lv: 49, hp: 4200, atk: 146, def: 28, spd: 44, xp: 2680, gold: [130, 208], aggro: 98, range: 74, cd: 1650, fly: true, volley: true, cloud: 30 },
+  sanctumcrown: { name: "신전 무르칸", epithet: "고대 뿌리 수호수", sp: "bogcrown", tint: "bile", lv: 50, hp: 5700, atk: 154, def: 42, spd: 34, xp: 2980, gold: [140, 222], aggro: 90, range: 22, cd: 1450, slam: 44, pool: 28 },
+  sanctumwarden: { name: "신전 동토른", epithet: "황금 성소 파수꾼", sp: "rootwarden", tint: "gold", lv: 50, hp: 5900, atk: 158, def: 46, spd: 40, xp: 3050, gold: [144, 228], aggro: 94, range: 22, cd: 1400, charge: 130, slam: 44 },
+  sanctumstag: { name: "신전 녹사르", epithet: "가라앉은 숲의 사슴왕", sp: "rotstag", tint: "bile", lv: 50, hp: 6900, atk: 162, def: 46, spd: 42, xp: 3600, gold: [170, 264], aggro: 102, range: 24, cd: 1300, charge: 134, slam: 44, fan: 118 },
+  sanctumwyrm: { name: "비취 수호룡", epithet: "지하강의 고대 신전룡", sp: "inkserpent", tint: "frost", lv: 50, hp: 540000, atk: 208, def: 52, spd: 42, xp: 79000, gold: [5600, 8200], aggro: 140, range: 34, cd: 1450, resp: 240000, boss: true, gear: 1, fly: true, fan: 156, pool: 34, poolKind: 2, charge: 150 },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
   ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]],
   ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 30, 1250, [440, 775]], ["dunesea", 34, 1420, [490, 840]],
-  ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]], ["inklake", 42, 1750, [580, 980]], ["jianmen", 50, 2100, [750, 1250]]]) {
+  ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]], ["inklake", 42, 1750, [580, 980]], ["jianmen", 50, 2100, [750, 1250]], ["sanctum", 50, 2200, [800, 1300]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {
@@ -1509,6 +1518,16 @@ const MOB_LORE = {
   passbear: "철제 문빗장을 통째로 삼킨 수문마가 관문 앞마당을 가로막고 서 있다.",
   jianmentiger: "천검관 꼭대기 본성 마당에 웅크린 강철빛 백호. 포효 한 번에 협곡 바위가 울린다.",
   chest_jianmen: "붉은 성돌과 청동 못으로 단단히 짜 맞춘 옛 수비대의 군량 상자다.",
+  // 가라앉은 고대 신전
+  sanctumfrog: "비취빛 지하강 물가에서 푸른 이끼를 삼켜 배가 등불처럼 은은하게 빛난다.",
+  sanctumturtle: "무너진 신전 기둥 조각이 등딱지에 붙어 물속에서는 낡은 석조 다리처럼 보인다.",
+  sanctumsloth: "신전 아치 아래 늘어진 덩굴에 매달려 구름다리를 건너는 발소리를 기다린다.",
+  sanctummoth: "천장 틈으로 쏟아지는 햇살에 날개를 말리며 지하강 위로 푸른 인분을 흩뿌린다.",
+  sanctumcrown: "지하 숲의 뿌리와 고대 성소 제단이 한데 엉겨 걸을 때마다 돌조각이 떨어진다.",
+  sanctumwarden: "금박이 벗겨진 신전 문지기 뿔이 아치 천장을 긁으며 성소 회랑을 순찰한다.",
+  sanctumstag: "가라앉은 숲의 이끼로 짠 왕관을 쓴 사슴왕이 수호자의 다리 광장을 가로막는다.",
+  sanctumwyrm: "비취빛 지하강 깊은 곳에서 깨어난 고대 수호룡. 룬 연못이 울릴 때 물기둥과 함께 솟아오른다.",
+  chest_sanctum: "이끼 낀 청동 경첩에 지하강 물방울이 맺혀 있는 고대 신전의 봉헌함이다.",
   chest_jungle: "손잡이를 타고 올라온 덩굴 두 가닥이 매듭을 이룬다.",
   chest_oasis: "잠금쇠 안쪽에 우물물로 씻긴 자국이 남아 있다.",
   chest_coast: "뚜껑 안에 조가비가 끼어 흔들 때마다 잘그락댄다.",
@@ -1642,7 +1661,7 @@ const LIFE_UNLOCK = { 10: "2등급", 20: "3등급", 30: "4등급", 40: "5등급"
  */
 const GRADE_TIER = [1, 8, 14, 24, 40];
 /** A map whose grade is not its band's (P7: 붉은바위 황금궁, Lv 36–42, is the grade-5 door before 왕도). */
-const GRADE_MAP = { mesa: 5, inklake: 5, jianmen: 5 };
+const GRADE_MAP = { mesa: 5, inklake: 5, jianmen: 5, sanctum: 5 };
 const GRADE_NAME = ["1등급", "2등급", "3등급", "4등급", "5등급"];
 
 // ── materials (B.3): herb / ore / wood of each grade; gathered from L2 on, kept in the 재료 주머니 (pouch)
@@ -1714,7 +1733,7 @@ const NODE_W = {
   cave: [0.3, 0.55, 0.15], abyss: [0.3, 0.55, 0.15], autumn: [0.4, 0.2, 0.4],
   jungle: [0.45, 0.2, 0.35], coast: [0.35, 0.4, 0.25], desert: [0.25, 0.5, 0.25], oasis: [0.45, 0.25, 0.3],
   snow: [0.3, 0.45, 0.25], temple: [0.4, 0.35, 0.25], canyon: [0.25, 0.55, 0.2], lake: [0.45, 0.25, 0.3],
-  jianmen: [0.25, 0.45, 0.3],
+  jianmen: [0.25, 0.45, 0.3], sanctum: [0.4, 0.25, 0.35],
 };
 /** Hunting material drops by monster rank (0 normal, 1 elite/chest, 2 field boss/boss). */
 const MAT_DROP = { chance: [0.38, 0.85, 1], rolls: [1, 2, 3], qty: [[1, 1], [1, 2], [2, 3]] };
@@ -1893,7 +1912,7 @@ Object.assign(ITEMS, {
   fish_mtrout: { name: "단풍 송어", type: "fish", grade: 5, price: 650, desc: "단풍 왕도의 붉은 물에 사는 송어. 물고기 도감에 오른다." },
   fish_ssog: { name: "붉은바위 쏘가리", type: "fish", grade: 5, price: 700, desc: "붉은바위 황금궁의 바위틈에 숨은 얼룩 쏘가리. 물고기 도감에 오른다." },
 });
-const FISH_MAP = { jungle: "fish_jcat", coast: "fish_bream", dunesea: "fish_eel", oasis: "fish_eel", cloudtemple: "fish_ayu", maple: "fish_mtrout", mesa: "fish_ssog", inklake: "fish_mtrout", jianmen: "fish_ssog" };
+const FISH_MAP = { jungle: "fish_jcat", coast: "fish_bream", dunesea: "fish_eel", oasis: "fish_eel", cloudtemple: "fish_ayu", maple: "fish_mtrout", mesa: "fish_ssog", inklake: "fish_mtrout", jianmen: "fish_ssog", sanctum: "fish_ayu" };
 const FISH_LOCAL = 0.4;
 /**
  * 물고기 도감 (P8): each species' length range in cm; a catch rolls u = 0.75·rnd + 0.25·score (0–1), the length
@@ -2507,18 +2526,18 @@ const MONSTER_PROFILES = {
 
 // Explicit profiles express the ecology rather than treating a different sprite as a different species.
 const MONSTER_ELEMENT_GROUPS = {
-  hide: ["meadowram", "splitboar", "ratking", "gatorhalf", "crabskull", "moleworm", "bearmaw", "twingoat", "loggator", "coralturtle", "cactushog", "stumpmaw", "burrlynx", "catsplit_gold", "foxtwine_gold", "twingoat_gold", "bearmaw_gold", "gatorhalf_steel", "ratking_gold", "spinescorp_gold", "ribdeer_gold", "moleworm_gold", "horsehalf_gold", "passboar", "stonegoat", "passbear"],
-  feral: ["foxtwine", "catsplit", "gnawbadger", "dropsloth", "gigglehyena", "pigeonmass", "horsehalf", "lionhand", "spiderhand", "blightsquirrel", "wingcrane", "loomcolossus", "vinemonkey", "orchidmantis", "cliffmonkey", "jianmentiger"],
+  hide: ["meadowram", "splitboar", "ratking", "gatorhalf", "crabskull", "moleworm", "bearmaw", "twingoat", "loggator", "coralturtle", "cactushog", "stumpmaw", "burrlynx", "catsplit_gold", "foxtwine_gold", "twingoat_gold", "bearmaw_gold", "gatorhalf_steel", "ratking_gold", "spinescorp_gold", "ribdeer_gold", "moleworm_gold", "horsehalf_gold", "passboar", "stonegoat", "passbear", "sanctumturtle"],
+  feral: ["foxtwine", "catsplit", "gnawbadger", "dropsloth", "gigglehyena", "pigeonmass", "horsehalf", "lionhand", "spiderhand", "blightsquirrel", "wingcrane", "loomcolossus", "vinemonkey", "orchidmantis", "cliffmonkey", "jianmentiger", "sanctumsloth"],
   blood: ["batcluster_blood", "crabskull_blood", "squidrat_blood", "fishwalker_blood", "twingoat_blood", "spiderhand_blood", "gravrose_blood", "barnacleseal_blood", "bloodhorn", "bloodshard"],
   ember: ["wickhare", "smoggecko", "doghead_fire", "spinescorp_fire", "ribvulture_fire", "foxtwine_fire", "eyecrow_ash", "lionhand_gold"],
   inferno: ["boss", "wickregent", "sandmaw"],
-  frost: ["gutfrog_frost", "wingcrane_frost", "splitboar_frost", "fishwalker_frost", "eelknot_frost", "crabskull_frost", "ribdeer_frost", "foxtwine_frost", "shroomboar_frost", "crowscare_frost", "hermitskull_frost", "rimehare", "frostmoth", "barnacleseal", "hagfishhead"],
-  rime: ["rimewalrus", "rootwarden", "crownstag", "bloomwhale"],
+  frost: ["gutfrog_frost", "wingcrane_frost", "splitboar_frost", "fishwalker_frost", "eelknot_frost", "crabskull_frost", "ribdeer_frost", "foxtwine_frost", "shroomboar_frost", "crowscare_frost", "hermitskull_frost", "rimehare", "frostmoth", "barnacleseal", "hagfishhead", "sanctummoth"],
+  rime: ["rimewalrus", "rootwarden", "crownstag", "bloomwhale", "sanctumwyrm"],
   storm: ["sluiceeel", "spoolsnipe", "eelknot", "hydrasnake_steel", "eelknot_gold", "prismmole", "airship_gale", "airship_lookout", "eyegull", "brainjelly", "clubshrimp", "sluiceleviathan", "gorgecrane"],
-  toxin: ["hydrasnake", "mothface", "toadbrood", "gutfrog_poison", "ratking_bile", "slugtongue", "leechmaw", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile", "leechmaw_ash", "mothface_ash", "shroomboar", "gravrose", "dartbrood", "spinescorp", "sowseer", "knotwidow"],
+  toxin: ["hydrasnake", "mothface", "toadbrood", "gutfrog_poison", "ratking_bile", "slugtongue", "leechmaw", "toadbrood_poison", "hydrasnake_poison", "mothface_bile", "ribdeer_bile", "leechmaw_ash", "mothface_ash", "shroomboar", "gravrose", "dartbrood", "spinescorp", "sowseer", "knotwidow", "sanctumfrog", "sanctumcrown"],
   shadow: ["owlstare", "crowscare", "bogcrown", "hollowowl", "batcluster", "nightbat", "serpentwing", "serpentwing_ash", "bearmaw_ash", "splitboar_ash", "fishwalker_ash", "wingcrane_ash", "abyssboss", "mistiger", "cloakbat", "ironowl"],
-  revenant: ["bellnewt", "gravecricket", "dunescarab", "ribdeer", "twinhare_bone", "bonehound", "bonehound_ash", "bonehound_gold", "lambmaw_bone", "leechmaw_bone", "spiderhand_bone", "serpentwing_bone", "rotstag", "hermitskull", "ribvulture_bone", "mummycamel", "spinescorp_bone", "ribvulture", "knellkeeper"],
-  radiant: ["prismcantor", "beadmonkey", "crownpeacock", "hydrasnake_gold", "sowseer_gold", "owlstare_gold", "ribvulture_gold", "citadellion"],
+  revenant: ["bellnewt", "gravecricket", "dunescarab", "ribdeer", "twinhare_bone", "bonehound", "bonehound_ash", "bonehound_gold", "lambmaw_bone", "leechmaw_bone", "spiderhand_bone", "serpentwing_bone", "rotstag", "hermitskull", "ribvulture_bone", "mummycamel", "spinescorp_bone", "ribvulture", "knellkeeper", "sanctumstag"],
+  radiant: ["prismcantor", "beadmonkey", "crownpeacock", "hydrasnake_gold", "sowseer_gold", "owlstare_gold", "ribvulture_gold", "citadellion", "sanctumwarden"],
 };
 const MONSTER_ELEMENT = Object.fromEntries(Object.entries(MONSTER_ELEMENT_GROUPS).flatMap(([profile, kinds]) => kinds.map((kind) => [kind, MONSTER_PROFILES[profile]])));
 for (const [id, mob] of Object.entries(MOBS)) mob.element = mob.chest ? MONSTER_PROFILES.chest : MONSTER_ELEMENT[id] || MONSTER_PROFILES.neutral;
@@ -2644,6 +2663,15 @@ const BOSS_SCRIPTS = {
     phases: [
       { at: 0.66, gap: 3900, pats: [["검풍 발톱", "fan2"], ["백호 연속 강습", "charge2"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1 }], ["천검 고리", "donut", { rings: 1 }], ["검문 표식", "mark", { n: 3 }]] },
       { at: 0.33, gap: 3200, cast: 1, steps: [{ f: "charge", dt: 650 }], pats: [["천검 폭풍", "fan3"], ["백호 연속 강습", "charge2"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1, ms: 800 }], ["천검 고리", "donut", { rings: 1, ms: 1050 }], ["검문 표식", "mark", { n: 4 }], ["협곡 대지진", "blast"]] },
+    ] },
+  sanctumstag: { cast: "이끼 왕관 개화", castMs: 6000, stunMs: 5000, stag: 0.04, blast: 2.3, gap: 5000, enrage: 270000, reach: 240,
+    pats: [["이끼 뿔 돌진", "charge"], ["포자 산탄", "fan"], ["성소 웅덩이", "pools"], ["뿌리 파동", "donut"]],
+    phases: [{ at: 0.5, gap: 4200, steps: [{ f: "pool", dt: 500 }], pats: [["이끼 뿔 연속 돌진", "charge2"], ["포자 폭풍", "fan3"], ["성소 웅덩이", "pools"], ["뿌리 파동", "donut", { rings: 1 }], ["신전 표식", "mark", { n: 3 }]] }] },
+  sanctumwyrm: { cast: "지하강 수류 해일", castMs: 6000, stunMs: 5000, gap: 4500, enrage: 300000, reach: 250,
+    pats: [["비취 물줄기", "jet"], ["지하강 잠행", "dive"], ["수정 비늘 산탄", "fan"], ["수류 웅덩이", "pools"], ["용꼬리 휩쓸기", "cone", { back: 1 }]],
+    phases: [
+      { at: 0.66, gap: 3800, pats: [["비취 물줄기", "jet", { n: 6, len: 185 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan2"], ["수류 웅덩이", "pools"], ["용꼬리 휩쓸기", "cone", { back: 1, both: 1 }], ["비취 표식", "mark", { n: 3 }]] },
+      { at: 0.33, gap: 3200, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["비취 물줄기", "jet", { n: 7, len: 195 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan3"], ["수류 웅덩이", "pools"], ["성소 소용돌이", "donut", { rings: 1, ms: 1050 }], ["비취 표식", "mark", { n: 4 }], ["신전 대범람", "blast"]] },
     ] },
 };
 for (const k of Object.keys(BOSS_SCRIPTS)) MOBS[k].script = BOSS_SCRIPTS[k];
@@ -6463,6 +6491,242 @@ function abyssal(cfg) {
   return m;
 }
 
+/**
+ * 가라앉은 고대 신전 (END-03 dungeon, Lv.189–200): spacious sunken underground ancient temple
+ * chambers and overgrown subterranean forest islands rising from a luminous turquoise river,
+ * joined by weathered wooden suspension bridges (`b`) framed by walk-under mossy stone arches
+ * (`m.arches`), flickering wall torches (`m.torches`), treasure shrines, and a grand northern
+ * temple sanctuary (`N` + glowing jade rune pool `m.temple.pool`).
+ */
+function sanctum(cfg) {
+  const box = { seed: cfg.seed }, S0 = cfg.seed;
+  const W = cfg.w, H = cfg.h;
+  const m = blank(cfg.id, cfg.name, W, H, "W");
+  m.bgm = cfg.bgm || "cave"; m.theme = cfg.theme; m.pieces = [];
+  const N1 = field(m, S0 + 5, 5, 2), N2 = field(m, S0 + 6, 9, 2), N3 = field(m, S0 + 7, 7, 2);
+  // subterranean cavern flooded by a luminous turquoise underground river
+  for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
+    const d = Math.min(x - 2, y - 2, W - 3 - x, H - 3 - y);
+    if (d + (N2[y * W + x] - 0.5) * 5 > 2) m.g[y][x] = "w";
+  }
+  const sites = poisson(box, 8, 8, W - 9, H - 9, cfg.r, [[7, Math.round(H * 0.55)], [W - 14, 15]]);
+  const n = sites.length;
+  const PL = cfg.plate;
+  const isl = sites.map(([x, y], k) => ({
+    k, x: Math.round(x), y: Math.round(y),
+    r: k === 1 ? 9.5 : k === 0 ? 6.8 : PL.r + rnd(box) * PL.vary,
+  }));
+  const edges = [];
+  for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) {
+    const A = isl[a], B = isl[b], cx = (A.x + B.x) / 2, cy = (A.y + B.y) / 2, r2 = ((A.x - B.x) ** 2 + (A.y - B.y) ** 2) / 4;
+    let ok = r2 < (cfg.r * 1.95) ** 2;
+    for (let c = 0; c < n && ok; c++) if (c !== a && c !== b && (isl[c].x - cx) ** 2 + (isl[c].y - cy) ** 2 < r2) ok = false;
+    if (ok && !(a === 1 || b === 1)) edges.push([a, b]);
+  }
+  const tree = grow(box, n, edges, 0, cfg.wind, cfg.loops);
+  let guardI = -1;
+  for (let k = 2; k < n; k++) if (tree.dist[k] >= 0 && Math.hypot(isl[k].x - isl[1].x, isl[k].y - isl[1].y) < cfg.r * 2.3 && (guardI < 0 || tree.dist[k] > tree.dist[guardI])) guardI = k;
+  if (guardI < 0) { let bd = Infinity; for (let k = 2; k < n; k++) { const d = Math.hypot(isl[k].x - isl[1].x, isl[k].y - isl[1].y); if (d < bd && tree.dist[k] >= 0) { bd = d; guardI = k; } } }
+  tree.link.add(ekey(guardI, 1)); tree.dist[1] = tree.dist[guardI] + 1; tree.deg[guardI]++; tree.deg[1] = 1;
+  const far = Math.max(1, ...tree.dist);
+  const kind = isl.map((_, k) => (k % 2 === 0 ? "grove" : "colonnade"));
+  kind[0] = "gate"; kind[1] = "arena"; kind[guardI] = "guard";
+  const main = [...tree.path(guardI), 1], onMain = new Set(main);
+  const campAt = main[Math.floor(main.length / 2)];
+  if (campAt > 1 && campAt !== guardI) kind[campAt] = "camp";
+  for (let k = 2; k < n; k++) if (k !== guardI && k !== campAt && tree.deg[k] === 1) kind[k] = "shrine";
+  for (const I of isl) if (kind[I.k] === "shrine") I.r = 4.6 + (I.r - PL.r) / PL.vary * 1.4;
+
+  // carve wide terraced sunken temple plates and forest sanctuary islands out of the river
+  const owner = new Int16Array(W * H).fill(-1);
+  for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
+    const i = y * W + x;
+    let k1 = -1, d1 = Infinity, d2 = Infinity;
+    for (let k = 0; k < n; k++) {
+      const I = isl[k], ax = (x - I.x) * 0.84, ay = y - I.y, d = ax * ax + ay * ay;
+      if (d < d1) { d2 = d1; d1 = d; k1 = k; } else if (d < d2) d2 = d;
+    }
+    d1 = Math.sqrt(d1); d2 = Math.sqrt(d2);
+    const I = isl[k1], bossD = Math.hypot((x - isl[1].x) * 0.84, y - isl[1].y);
+    if (d1 + (N1[i] - 0.5) * 2.6 >= I.r || (k1 !== 1 && (d2 - d1 < PL.gap + N2[i] * PL.gapVary || bossD < isl[1].r + 4.5))) continue;
+    owner[i] = k1;
+    const kd = kind[k1];
+    if (kd === "grove") m.g[y][x] = N3[i] > 0.62 ? ";" : N3[i] > 0.28 ? ":" : "c";
+    else if (kd === "arena" || kd === "gate" || kd === "guard") m.g[y][x] = N3[i] > 0.72 ? "k" : "=";
+    else if (kd === "colonnade") m.g[y][x] = N3[i] > 0.66 ? ";" : N3[i] > 0.34 ? "k" : "=";
+    else if (kd === "camp") m.g[y][x] = N3[i] > 0.45 ? ":" : "=";
+    else m.g[y][x] = N3[i] > 0.5 ? "=" : ":";
+  }
+  // back rock backdrop behind the northern grand sanctuary
+  for (let y = 2; y <= isl[1].y - 7; y++) for (let x = isl[1].x - 11; x <= isl[1].x + 11; x++) {
+    if (inMap(m, x, y) && y < isl[1].y - 7 + Math.round(Math.abs(x - isl[1].x) / 4)) { m.g[y][x] = "W"; owner[y * W + x] = -1; }
+  }
+  // grand stone entrance gallery reaching back to the west cavern wall
+  for (let x = 3; x <= isl[0].x; x++) for (const y of [isl[0].y - 2, isl[0].y - 1, isl[0].y, isl[0].y + 1, isl[0].y + 2]) {
+    if (inMap(m, x, y)) m.g[y][x] = "=";
+  }
+
+  // old weathered wooden suspension bridges (`b`) spanning the turquoise river channels
+  const arches = [], torches = [];
+  const legs = (A, B, wide, hFirst) => {
+    const o = -((wide - 1) >> 1), e = wide - 1 + o;
+    if (Math.abs(B.y - A.y) <= 1) { const y = Math.min(A.y, B.y); return [[Math.min(A.x, B.x), y + o, Math.max(A.x, B.x), y + e]]; }
+    if (Math.abs(B.x - A.x) <= 1) { const x = Math.min(A.x, B.x); return [[x + o, Math.min(A.y, B.y), x + e, Math.max(A.y, B.y)]]; }
+    const [P, Q] = hFirst ? [A, B] : [B, A];
+    return [[Math.min(P.x, Q.x + o), P.y + o, Math.max(P.x, Q.x + e), P.y + e], [Q.x + o, Math.min(P.y, Q.y), Q.x + e, Math.max(P.y + e, Q.y)]];
+  };
+  const cells = (rs) => { const out = []; for (const [x0, y0, x1, y1] of rs) for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) if (x >= 3 && y >= 3 && x < W - 3 && y < H - 3) out.push([x, y]); return out; };
+  for (const [a, b] of [...edges, [guardI, 1]]) {
+    if (!tree.linked(a, b)) continue;
+    const A = isl[a], B = isl[b];
+    const wide = kind[a] === "shrine" || kind[b] === "shrine" ? 3 : (onMain.has(a) && onMain.has(b)) ? 5 : 4;
+    const cost = (cs) => {
+      let c = 0;
+      for (const [x, y] of cs) {
+        const k = owner[y * W + x];
+        if (k >= 0 && k !== a && k !== b) c += 4;
+        if (b !== 1) for (const [dx, dy] of [[0, 0], [1, 0], [-1, 0], [0, 1], [0, -1]]) if (owner[(y + dy) * W + x + dx] === 1) c += 100;
+        if (m.g[y][x] === "b") c += 2;
+      }
+      return c;
+    };
+    const legOpts = [true, false].map((h) => legs(A, B, wide, h));
+    const opts = legOpts.map(cells);
+    const ca = cost(opts[0]), cb = cost(opts[1]);
+    const pickIdx = ca < cb ? 0 : cb < ca ? 1 : rnd(box) < 0.5 ? 0 : 1;
+    for (const [X, Y] of opts[pickIdx]) if (m.g[Y][X] === "w" || m.g[Y][X] === "W") m.g[Y][X] = "b";
+    // place a walk-under mossy temple arch at the stone threshold of main-route bridges
+    if ((onMain.has(a) && onMain.has(b)) || b === 1) {
+      const firstLeg = legOpts[pickIdx][0];
+      const [x0, y0, x1, y1] = firstLeg;
+      const ew = (x1 - x0) >= (y1 - y0) ? 1 : 0;
+      const lo = -((wide - 1) >> 1), hi = wide - 1 + lo;
+      const mx = Math.round((x0 + x1) / 2), my = Math.round((y0 + y1) / 2);
+      // walk from bridge midpoint toward A until hitting dry island land
+      let ax = mx, ay = my;
+      const sx = Math.sign(A.x - mx), sy = Math.sign(A.y - my);
+      for (let step = 0; step < 18; step++) {
+        if (inMap(m, ax, ay) && m.g[ay][ax] !== "b" && m.g[ay][ax] !== "w" && m.g[ay][ax] !== "W") break;
+        if (ew) ax += sx || 1; else ay += sy || 1;
+      }
+      if (inMap(m, ax, ay) && m.g[ay][ax] !== "w" && m.g[ay][ax] !== "W" && !arches.some((ar) => Math.abs(ar[0] - ax) + Math.abs(ar[1] - ay) < 8)) {
+        arches.push([ax, ay, ew, lo, hi]);
+      }
+    }
+    m.pieces.push("bridge");
+  }
+
+  // lush subterranean woodland & ancient temple rim dressing (kept near island rims so fighting centers stay spacious)
+  for (let y = 3; y < H - 3; y++) for (let x = 3; x < W - 3; x++) {
+    const ch = m.g[y][x], k = owner[y * W + x];
+    if (k < 0 || ch === "w" || ch === "W" || ch === "b" || m.o[y][x] !== " ") continue;
+    if (kind[k] === "arena" || kind[k] === "camp") continue;
+    const h = h2(x, y, S0 + 9);
+    const nearB = D4.some(([dx, dy]) => m.g[y + dy][x + dx] === "b");
+    const nearW = D4.some(([dx, dy]) => m.g[y + dy][x + dx] === "w");
+    const rim2 = nearW || D4.some(([dx, dy]) => inMap(m, x + 2 * dx, y + 2 * dy) && m.g[y + 2 * dy][x + 2 * dx] === "w");
+    if (nearB && !D4.some(([dx, dy]) => m.o[y + dy][x + dx] === "3" || m.o[y + dy][x + dx] === "q")) {
+      if (h < 0.22) m.o[y][x] = "3";
+      else if (h < 0.38) m.o[y][x] = "q";
+      continue;
+    }
+    if (!rim2) {
+      // inner temple floor accents: cracked stone and occasional moss
+      if (kind[k] === "colonnade" && h > 0.88) m.g[y][x] = "d";
+      continue;
+    }
+    if (kind[k] === "grove") {
+      if (h < 0.14) m.o[y][x] = h < 0.08 ? "P" : "T";
+      else if (h < 0.21) m.o[y][x] = "B";
+      else if (h < 0.25) m.o[y][x] = "Y";
+      else if (h < 0.29) m.o[y][x] = "R";
+    } else if (kind[k] === "colonnade" || kind[k] === "gate" || kind[k] === "guard") {
+      if (h < 0.1) m.o[y][x] = "q";
+      else if (h < 0.15) m.o[y][x] = "U";
+      else if (h < 0.19) m.o[y][x] = "P";
+      else if (h < 0.22) m.o[y][x] = "3";
+      else if (h < 0.25) m.o[y][x] = "Y";
+    }
+  }
+
+  // island landmarks, camp, treasure shrines, field boss, and grand sunken temple boss sanctuary
+  const pts = [], gates = {}, noDig = new Uint8Array(W * H);
+  isl.forEach((I) => {
+    const k = I.k, t = Math.max(0, tree.dist[k]) / far, d = tree.dist[k];
+    const rect = [I.x - Math.floor(I.r * 0.8) + 1, I.y - Math.floor(I.r * 0.75) + 1, I.x + Math.floor(I.r * 0.8) - 1, I.y + Math.floor(I.r * 0.75) - 1];
+    clear(m, I.x - 2, I.y - 2, I.x + 2, I.y + 2);
+    pts.push(spot(m, I.x, I.y));
+    if (kind[k] === "gate") {
+      gates.in = { t: [[3, I.y], [3, I.y + 1]], a: [[5, I.y], [5, I.y + 1]] };
+      for (const [dx, dy] of [[-2, -3], [2, -3], [-2, 3], [2, 3]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "3";
+      m.spawns.push({ k: cfg.mobs[0], n: 1, r: rect, elite: 0 });
+    } else if (kind[k] === "camp") {
+      clear(m, I.x - 3, I.y - 3, I.x + 3, I.y + 3);
+      if (inMap(m, I.x - 2, I.y - 2) && m.g[I.y - 2][I.x - 2] !== "w") m.o[I.y - 2][I.x - 2] = "E";
+      if (inMap(m, I.x + 2, I.y - 2) && m.g[I.y - 2][I.x + 2] !== "w") m.o[I.y - 2][I.x + 2] = "3";
+      if (inMap(m, I.x - 3, I.y + 1) && m.g[I.y + 1][I.x - 3] !== "w") m.o[I.y + 1][I.x - 3] = "P";
+      FIRES[cfg.id].push([I.x, I.y]);
+      m.camp = { x: I.x - 3, y: I.y - 3, w: 7, h: 7 };
+      m.pieces.push("camp");
+    } else if (kind[k] === "shrine") {
+      if (inMap(m, I.x, I.y - 2) && m.g[I.y - 2][I.x] !== "w") m.o[I.y - 2][I.x] = "z";
+      for (const [dx, dy] of [[-2, -1], [2, -1]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "3";
+      m.spawns.push({ k: cfg.chest, n: 1, r: [I.x, I.y + 1, I.x, I.y + 1] });
+      m.spawns.push({ k: cfg.mobs[Math.min(cfg.mobs.length - 1, Math.floor(t * cfg.mobs.length) + 1)], n: 2 + (t > 0.5 ? 1 : 0), r: rect, elite: 0.25 });
+      pts.push([I.x, I.y + 1]);
+      m.pieces.push("shrine");
+    } else if (kind[k] === "guard") {
+      for (const [dx, dy] of [[-4, -3], [4, -3], [-4, 3], [4, 3]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "q";
+      m.bossAt = [I.x, I.y];
+      m.spawns.push({ k: cfg.mobs[cfg.mobs.length - 1], n: 3, r: rect, elite: 0.25 });
+      m.spawns.push({ k: cfg.chest, n: 1, r: [I.x + 2, I.y - 2, I.x + 2, I.y - 2] });
+      pts.push([I.x + 2, I.y - 2]);
+    } else if (kind[k] === "arena") {
+      // monumental northern sunken temple sanctuary with 4×2 N facade & glowing jade rune pool
+      for (let y = I.y - 7; y <= I.y + 7; y++) for (let x = I.x - 9; x <= I.x + 9; x++) {
+        if (!inMap(m, x, y)) continue;
+        if (Math.hypot((x - I.x) * 0.85, y - I.y) <= 8.5) { m.g[y][x] = "="; m.o[y][x] = " "; }
+      }
+      // 4×2 Sunken Ancient Temple Portal landmark (`N`) on the northern edge
+      for (let j = 0; j < 2; j++) for (let i = 0; i < 4; i++) {
+        const tx = I.x - 2 + i, ty = I.y - 6 + j;
+        if (inMap(m, tx, ty)) { m.g[ty][tx] = "="; m.o[ty][tx] = "N"; noDig[ty * W + tx] = 1; }
+      }
+      // carved stairs descending in front of the temple portal
+      for (let i = -2; i <= 1; i++) if (inMap(m, I.x + i, I.y - 4)) m.g[I.y - 4][I.x + i] = "v";
+      // glowing jade rune pool aura right in the grand sanctuary court
+      m.temple = { x: I.x - 5, y: I.y - 6, w: 11, h: 12, pool: [I.x, I.y - 1] };
+      for (const [dx, dy] of [[-5, -4], [5, -4], [-5, 4], [5, 4]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "q";
+      for (const [dx, dy] of [[-4, -2], [4, -2], [-4, 2], [4, 2]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "3";
+      for (const [dx, dy] of [[-6, -1], [6, -1], [-6, 2], [6, 2]]) if (inMap(m, I.x + dx, I.y + dy) && m.g[I.y + dy][I.x + dx] !== "w") m.o[I.y + dy][I.x + dx] = "P";
+      m.spawns.push({ k: cfg.boss, n: 1, r: [I.x, I.y + 1, I.x, I.y + 1] });
+      pts.push([I.x, I.y + 1]);
+      m.pieces.push("sunkentemple");
+    } else {
+      denSpawns(m, box, cfg, rect, t, d, !onMain.has(k), I.r > 5 ? 1 : 0);
+    }
+  });
+
+  // flickering wall torches on cavern wall edges facing open dry floor
+  for (let y = 4; y < H - 4; y += 5) for (let x = 4; x < W - 4; x += 5) {
+    if (m.g[y][x] !== "W" && m.g[y][x] !== "w" && m.g[y][x] !== "b" && m.o[y][x] === " " && m.g[y][x - 1] === "W" && h2(x, y, S0 + 44) < 0.55) {
+      torches.push([x, y]);
+    }
+  }
+  for (const name of Object.keys(gates)) for (const [x, y] of gates[name].t.concat(gates[name].a)) { m.g[y][x] = "="; m.o[y][x] = " "; pts.push([x, y]); }
+  m.gates = gates;
+  m.entry = gates.in.a[0];
+  m.arches = arches;
+  m.torches = torches;
+  if (arches.length) m.pieces.push("arch");
+  cover(m, cfg.mobs);
+  knit(m, pts, "=");
+  const bossAt = isl[1];
+  wideWays(m, pts, cfg.soft, noDig, Object.values(gates).flatMap((g) => g.a).concat(FIRES[cfg.id], [[bossAt.x, bossAt.y + 2]]), 2);
+  m.regions = n;
+  return m;
+}
+
 // ───────────────────────────── zones: how deep into a hunting ground ─────────────────────────────
 // docs/design/scale-and-rift.md C.1–C.3. Every generated hunting ground is cut into zones by how
 // far a tile is walked from the entrance (BFS over open ground): a SAFE plaza round the way in
@@ -6473,7 +6737,7 @@ function abyssal(cfg) {
 // extra waypoint stones, the wind shrines and the signs. Editor maps are never zoned.
 
 /** The packed dungeons whose campfires get a quiet ring like a gate's (open fields keep their measured routes: tests/hunt-routes.mjs). */
-const FIRE_QUIET = ["crypt", "sewer", "abyss"];
+const FIRE_QUIET = ["crypt", "sewer", "abyss", "sanctum"];
 /** The wide grounds that get more campfires (how many), each laid where the walk to a fire was longest (dunesea: 64 % of its ground was over 60 tiles from one). */
 const FIRE_EXTRA = { dunesea: 1, city: 1, maple: 1, inklake: 1, cloudtemple: 1, mesa: 1, jianmen: 2, meadow: 2, forest: 2, cave: 1, jungle: 2, coast: 2, oasis: 2 };
 /** Open ground wanted all round an extra fire (default 2; a tighter ground needs more so the walk to it stays three tiles wide: tests/mapflow). */
@@ -7190,7 +7454,7 @@ function buildBlossomTrail() {
 // know without building anything (names, bands, monster lists) is read from here into MAP_META.
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
-const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa", "inklake", "jianmen"];
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa", "inklake", "jianmen", "sanctum"];
 const REGIONAL_BEASTS = {
   meadow: ["wickhare", "gutfrog"], forest: ["burrlynx", "ribdeer"], crypt: ["bellnewt", "bonehound"],
   city: ["spoolsnipe", "doghead"], sewer: ["sluiceeel", "gatorhalf"], cave: ["prismmole", "bearmaw"],
@@ -7541,7 +7805,7 @@ const GEN = {
       river: true, riverAt: [0.47, 0.05], gorge: { first: 16, every: 24, deck: "=" },
       ground: ":", edge: "C", treeCh: "T", treeCh2: "Σ", road: "=", trail: "p", shore: "r", lakes: 3, lakeR: 5, vaults: 10, ruins: 3, tpm: 15.5,
       walls: [["trees", 0.45], ["rocks", 0.3], ["ruin", 0.25]], rocks: ["R", "Θ"], nookWall: "cliff",
-      gates: [["south", "s", 0.5]], exit: "south", via: [[0.5, 0.72], [0.5, 0.46], [0.5, 0.16]],
+      gates: [["south", "s", 0.5]], exit: "south", doors: [["sanctum", "n", 0.72]], via: [[0.5, 0.72], [0.5, 0.46], [0.5, 0.16]],
       mobs: [MONK, BOAR, CRANE, GOAT, LION, OWL], pondMob: null, chest: "chest_jianmen", boss: "jianmentiger",
       campPiece: "passcamp",
       vaultKinds: ["rampart", "cliffshrine", "pavilion", "lanterncourt", "cache", "menhir"],
@@ -7583,6 +7847,14 @@ const GEN = {
         : h < 0.018 ? "Σ" : h < 0.028 ? "3" : h < 0.034 ? "q" : null),
     };
   } },
+  // 가라앉은 고대 신전 (END-03 dungeon, Lv.189–200): spacious sunken underground ancient temple
+  // and lush forest islands over glowing turquoise rivers, joined by weathered wooden suspension bridges
+  sanctum: { make: sanctum, band: [48, 50], stones: 3, stoneNames: ["이끼 회랑", "구름다리 광장", "가라앉은 대신전"], cfg: () => ({
+    id: "sanctum", name: "가라앉은 고대 신전", theme: "sanctum", bgm: "cave", seed: 94217, w: 164, h: 124, r: 16, wind: 0.55, loops: 0.26, n: 7,
+    plate: { r: 14.5, vary: 3, gap: 2.3, gapVary: 2.0 }, soft: "TPBRYqU3z",
+    mobs: ["sanctumfrog", "sanctumturtle", "sanctumsloth", "sanctummoth", "sanctumcrown", "sanctumwarden"],
+    boss: "sanctumwyrm", chest: "chest_sanctum",
+  }) },
 };
 /**
  * A paired threshold across an existing open hallway, with its arrival two tiles off the door: at (x, y) as fractions
@@ -7651,7 +7923,9 @@ const CAMP_KEEPERS = {
   inklake: { id: "camp_inklake", name: "나루지기 먹선", role: "shop", look: [4, 1, 0, "#5a5a62"], goods: FIELD_GOODS,
     lines: ["물이 얕아 보여도 검은 웅덩이는 바닥이 없어. 모래톱만 밟고 건너.", "북쪽 외딴 탑 섬에 먹빛 구렁이가 산다네. 그 너머가 단풍 왕도야."] },
   jianmen: { id: "camp_jianmen", name: "관문 수비대장 석철", role: "shop", look: [7, 2, 0, "#6a5a4e"], goods: FIELD_GOODS,
-    lines: ["여긴 천하의 험지, 천검관 협곡일세. 양쪽 절벽이 칼날처럼 깎여 있어 관문 하나만 막으면 만 명도 못 넘지.", "협곡 한가운데 붉은 성문 앞엔 철갑 수문마가 버티고, 맨 위 본성 마당엔 강철빛 백호왕이 웅크리고 있다네."] },
+    lines: ["여긴 천하의 험지, 천검관 협곡일세. 양쪽 절벽이 칼날처럼 깎여 있어 관문 하나만 막으면 만 명도 못 넘지.", "협곡 한가운데 붉은 성문 앞엔 철갑 수문마가 버티고, 맨 위 본성 마당엔 강철빛 백호왕이 웅크리고 있다네.", "동쪽 절벽 틈으로 내려가면 지하강 위에 가라앉은 고대 신전이 숨어 있다더군."] },
+  sanctum: { id: "camp_sanctum", name: "유적 탐사대장 미르", role: "shop", look: [11, 1, 0, "#3a8a76"], goods: FIELD_GOODS,
+    lines: ["천장 틈으로 떨어지는 빛 덕분에 지하인데도 숲이 우거져 있어. 발밑의 비취빛 강엔 빠지지 않게 조심해.", "낡은 나무 구름다리를 건너 북동쪽 대신전으로 가면 수호룡이 룬 연못을 지키고 있다네."] },
 };
 for (const [id, n] of Object.entries(CAMP_KEEPERS)) GEN[id].npcs = [[n.id, n.name]];
 /** Stand a ground's keeper beside its camp's fire, on open ground (no camp, no keeper). */
@@ -7774,8 +8048,8 @@ const GATE_LINKS = [
   ["cave", "shaft", "cloudtemple", "west", 1], ["cloudtemple", "south", "mesa", "ledge", 1], ["oasis", "east", "mesa", "west", 1],
   // maps-batch2, batch 2: north out of the red mesa to the ink lake, and on north into the old kingdom by its south edge
   ["mesa", "north", "inklake", "south", 1], ["maple", "ink", "inklake", "north", 1],
-  // END-03: north out of maple into the Jianmen mountain pass and ancient cliffside citadel
-  ["maple", "pass", "jianmen", "south", 1],
+  // END-03: north out of maple into the Jianmen mountain pass and ancient cliffside citadel; east cliff cave into Sunken Ancient Temple dungeon
+  ["maple", "pass", "jianmen", "south", 1], ["jianmen", "sanctum", "sanctum", "in", 1],
 ];
 /** A generated map's own doors out (in GATE_LINKS order, as the generators always laid them). */
 function gateDoors(m) {
@@ -8194,7 +8468,7 @@ function artWire(m) {
 // here it is moved to the nearest open tile so nobody is ever stuck in a wall).
 // Malformed entries are skipped: npm run data:check is where the owner hears about them.
 
-const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn", "interior", "mist", "jianmen"];
+const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn", "interior", "mist", "jianmen", "sanctum"];
 const AIRSHIP_MAP = "airship", AIRSHIP_MIN_LV = 100;
 /** The looks an interior can have (wallpaper, wood and light; public/iso_interior.js). */
 const ROOM_STYLES = ["cafe", "hall", "inn", "library", "office", "forge", "tavern", "shop", "boutique", "dojo", "lab", "lobby"];
@@ -15719,7 +15993,7 @@ const achPoints = (ch) => ch.ach.reduce((n, id) => n + (ACH_BY[id] ? ACH_BY[id].
 const titleOf = (ch) => (ch.title && ACH_BY[ch.title] ? ACH_BY[ch.title].title : "");
 
 // ── the monster collection: a kind is registered at its first mastery star
-const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def", 2]], city: [["crit", 1]], sewer: [["mf", 5]], cave: [["atk", 3]], abyss: [["atkp", 2]], maple: [["hp", 60], ["mf", 4]], frostkeep: [["def", 3], ["hp", 40]], jianmen: [["atkp", 2], ["crit", 1]] };
+const REGION_BONUS = { meadow: [["hp", 20]], forest: [["xp", 2]], crypt: [["def", 2]], city: [["crit", 1]], sewer: [["mf", 5]], cave: [["atk", 3]], abyss: [["atkp", 2]], maple: [["hp", 60], ["mf", 4]], frostkeep: [["def", 3], ["hp", 40]], jianmen: [["atkp", 2], ["crit", 1]], sanctum: [["mf", 5], ["hp", 50]] };
 // a hunting ground from the world map editor has a collection too, with no bonus; one with no monsters left has none
 for (const id of Object.keys(COL_MOBS)) if (!REGION_BONUS[id]) REGION_BONUS[id] = [];
 for (const id of Object.keys(REGION_BONUS)) if (!COL_MOBS[id]) delete REGION_BONUS[id];
@@ -21869,6 +22143,8 @@ const TROPHIES = {
   serpentwing_ash: { name: "먹빛 구렁이 비늘", fx: { move: 2, drop: 2 } },
   // 천검관 협곡 field boss (END-03)
   passbear: { name: "천검관 수문장의 철패", fx: { hp: 3, crit: 2 } },
+  // 가라앉은 고대 신전 field boss (END-03 dungeon)
+  sanctumstag: { name: "가라앉은 신전의 이끼관", fx: { drop: 3, hp: 2 } },
 };
 const TROPHY_CAP = { gold: 8, xp: 8, move: 5, aspd: 5, drop: 6, hp: 5, crit: 4 };
 const TROPHY_P = 0.05, TROPHY_GOLD = 40;
@@ -26011,9 +26287,9 @@ const WORLD_MAP_POS = {
   willow: [170, 233], blossom_trail: [152, 148], sunset_beach: [118, 316], town: [327, 205], meadow: [348, 93], forest: [548, 124], crypt: [723, 133],
   city: [367, 334], sewer: [552, 320], cave: [710, 302], abyss: [928, 335], maple: [824, 229],
   jungle: [203, 417], coast: [370, 528], oasis: [622, 470], dunesea: [838, 516], frostkeep: [915, 91],
-  airship: [622, 389], mesa: [764, 386], inklake: [850, 300], jianmen: [808, 128],
+  airship: [622, 389], mesa: [764, 386], inklake: [850, 300], jianmen: [808, 128], sanctum: [918, 178],
 };
-const WORLD_MAP_ART = { willow: "willow", blossom_trail: "blossom_trail", sunset_beach: "coast", frostkeep: "frostkeep", dunesea: "dunesea", airship: "airship", jianmen: "jianmen" };
+const WORLD_MAP_ART = { willow: "willow", blossom_trail: "blossom_trail", sunset_beach: "coast", frostkeep: "frostkeep", dunesea: "dunesea", airship: "airship", jianmen: "jianmen", sanctum: "sanctum" };
 
 function worldMapDefs() {
   // Only custom labels need coordinates to disambiguate the destination. Keep generated terrain lazy.
@@ -26026,7 +26302,7 @@ function worldMapDefs() {
   }
   return Object.entries(MAP_META).map(([id, meta]) => {
     const { name, band, kinds, theme, safe, w, h, wpn, minLv } = meta;
-    const kind = theme === "interior" ? "in" : safe ? "town" : (minLv || ["crypt", "sewer", "cave", "abyss"].includes(theme)) ? "dun" : "field";
+    const kind = theme === "interior" ? "in" : safe ? "town" : (minLv || ["crypt", "sewer", "cave", "abyss", "sanctum"].includes(theme)) ? "dun" : "field";
     const bosses = [...new Set([FIELD_BOSS[id], ...kinds.filter((mob) => MOBS[mob].boss)].filter(Boolean))];
     return { id, name, band: band && band.map(shownLv), mobs: kinds.slice(), theme, safe, w, h, wpn, to: ROUTES[id],
       kind, gateLabel: doorName(meta), pos: WORLD_MAP_POS[id]?.slice() || null, bosses, ...(Object.hasOwn(WORLD_MAP_ART, id) ? { art: WORLD_MAP_ART[id] } : {}), ...(minLv ? { minLv } : {}), ...(doors[id] ? { doors: doors[id] } : {}),

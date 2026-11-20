@@ -309,7 +309,7 @@ const BOUNTY_N = 25;
 /** A hunting ground's field boss stands at its fixed spot from the start and is back there this long after it falls (ms). */
 const FB_RESP = 600000;
 /** Each hunting ground's field boss, by map (its trophy: TROPHIES, 67-trophies.js). */
-const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "clubshrimp", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock", inklake: "serpentwing_ash", jianmen: "passbear" };
+const FIELD_BOSS = { meadow: "lambmaw", forest: "ribdeer", crypt: "toadbrood", city: "doghead", sewer: "crabskull", cave: "moleworm", abyss: "lionhand", maple: "rotstag", jungle: "loggator", oasis: "mummycamel", coast: "clubshrimp", dunesea: "sandmaw", cloudtemple: "bearmaw_ash", mesa: "crownpeacock", inklake: "serpentwing_ash", jianmen: "passbear", sanctum: "sanctumstag" };
 
 /**
  * What an elite carries besides its size: one trait for an elite, two for a
@@ -352,7 +352,7 @@ const TRICK_EL = [1, 0.75, 0.6];
 const MV_GRACE = 1200;
 /** Hunting grounds hold this many times the monsters their layout asks for; each one drops gear this much less often and hits this much harder. */
 /** Walkable tiles per monster on each hunting ground: open fields roomy, dungeon halls packed. */
-const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 15, jianmen: 12.6 };
+const DENSITY = { meadow: 12.6, forest: 12.2, crypt: 5.6, city: 10.6, sewer: 6.2, cave: 9.5, abyss: 7, maple: 11.8, jungle: 12.2, oasis: 12.6, coast: 12.6, dunesea: 12.6, frostkeep: 14, cloudtemple: 12.6, mesa: 12.6, inklake: 15, jianmen: 12.6, sanctum: 8.2 };
 // MOB_HARD: owner 2026-11-19 — every monster 20 % more HP and attack (chests excepted)
 const GEAR_CUT = 0.3, MOB_ATK = 1.27, MOB_HARD = 1.2;
 // The stronger gear pays off against progressively tougher monsters. Openers stay gentle.
@@ -661,12 +661,21 @@ const MOBS = {
   ironowl: { name: "검문 문두린", epithet: "검문 강철올빼미", sp: "hollowowl", tint: "steel", lv: 50, hp: 4900, atk: 152, def: 36, spd: 38, xp: 2900, gold: [136, 214], aggro: 96, range: 70, cd: 1700, fly: true, fan: 110, breath: 74 },
   passbear: { name: "수문 우걱마", epithet: "천검관 철갑곰", sp: "bearmaw", tint: "steel", lv: 50, hp: 6600, atk: 160, def: 46, spd: 38, xp: 3400, gold: [160, 250], aggro: 100, range: 24, cd: 1350, charge: 134, slam: 44, fan: 118 },
   jianmentiger: { name: "천검 무해랑", epithet: "천검관의 백호왕", sp: "mistiger", tint: "steel", lv: 50, hp: 520000, atk: 204, def: 50, spd: 38, xp: 76000, gold: [5400, 7800], aggro: 132, range: 30, cd: 1450, resp: 240000, boss: true, gear: 1, charge: 152, leap: 126, slam: 48, fan: 152 },
+  // 가라앉은 고대 신전 (Lv.189–200 subterranean overgrown temple & turquoise river dungeon)
+  sanctumfrog: { name: "이끼 꼬르륵", epithet: "신전 이끼 뱃가죽", sp: "gutfrog", tint: "bile", lv: 48, hp: 4300, atk: 142, def: 30, spd: 46, xp: 2540, gold: [126, 200], aggro: 92, range: 20, cd: 1150, leap: 100, pool: 26 },
+  sanctumturtle: { name: "이끼 호초롱", epithet: "지하강 이끼거북", sp: "coralturtle", tint: "bile", lv: 48, hp: 4900, atk: 144, def: 38, spd: 36, xp: 2580, gold: [128, 204], aggro: 86, range: 22, cd: 1350, slam: 42, charge: 118 },
+  sanctumsloth: { name: "신전 툭늘보", epithet: "덩굴 매복 늘보", sp: "dropsloth", tint: "ash", lv: 49, hp: 4550, atk: 148, def: 32, spd: 42, xp: 2700, gold: [132, 210], aggro: 94, range: 20, cd: 1200, leap: 104 },
+  sanctummoth: { name: "신전 탈루나", epithet: "비취빛 신전나방", sp: "mothface", tint: "frost", lv: 49, hp: 4200, atk: 146, def: 28, spd: 44, xp: 2680, gold: [130, 208], aggro: 98, range: 74, cd: 1650, fly: true, volley: true, cloud: 30 },
+  sanctumcrown: { name: "신전 무르칸", epithet: "고대 뿌리 수호수", sp: "bogcrown", tint: "bile", lv: 50, hp: 5700, atk: 154, def: 42, spd: 34, xp: 2980, gold: [140, 222], aggro: 90, range: 22, cd: 1450, slam: 44, pool: 28 },
+  sanctumwarden: { name: "신전 동토른", epithet: "황금 성소 파수꾼", sp: "rootwarden", tint: "gold", lv: 50, hp: 5900, atk: 158, def: 46, spd: 40, xp: 3050, gold: [144, 228], aggro: 94, range: 22, cd: 1400, charge: 130, slam: 44 },
+  sanctumstag: { name: "신전 녹사르", epithet: "가라앉은 숲의 사슴왕", sp: "rotstag", tint: "bile", lv: 50, hp: 6900, atk: 162, def: 46, spd: 42, xp: 3600, gold: [170, 264], aggro: 102, range: 24, cd: 1300, charge: 134, slam: 44, fan: 118 },
+  sanctumwyrm: { name: "비취 수호룡", epithet: "지하강의 고대 신전룡", sp: "inkserpent", tint: "frost", lv: 50, hp: 540000, atk: 208, def: 52, spd: 42, xp: 79000, gold: [5600, 8200], aggro: 140, range: 34, cd: 1450, resp: 240000, boss: true, gear: 1, fly: true, fan: 156, pool: 34, poolKind: 2, charge: 150 },
 };
 // Treasure chests are "monsters" that never move or fight: break one open for a sure piece of gear.
 for (const [id, lv, hp, gold] of [["meadow", 4, 40, [30, 60]], ["forest", 11, 160, [80, 150]], ["crypt", 15, 300, [130, 240]], ["city", 18, 420, [180, 320]],
   ["sewer", 24, 760, [280, 480]], ["cave", 27, 900, [320, 560]], ["abyss", 35, 1500, [520, 900]], ["maple", 43, 1800, [600, 1000]],
   ["jungle", 23, 640, [240, 420]], ["oasis", 31, 1200, [420, 740]], ["coast", 30, 1250, [440, 775]], ["dunesea", 34, 1420, [490, 840]],
-  ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]], ["inklake", 42, 1750, [580, 980]], ["jianmen", 50, 2100, [750, 1250]]]) {
+  ["cloudtemple", 33, 1380, [480, 820]], ["mesa", 39, 1650, [560, 950]], ["inklake", 42, 1750, [580, 980]], ["jianmen", 50, 2100, [750, 1250]], ["sanctum", 50, 2200, [800, 1300]]]) {
   MOBS[`chest_${id}`] = { name: "보물 상자", sp: "chest", lv, hp, atk: 0, def: 0, spd: 0, xp: 0, gold, aggro: 0, range: 0, cd: 1e9, resp: 300000, chest: true, still: true, gear: 1 };
 }
 for (const k of Object.keys(MOBS)) {

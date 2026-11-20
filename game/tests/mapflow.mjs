@@ -10,16 +10,16 @@ const L = await import("../src/logic.js");
 const { maps, fires } = L.atlas();
 const D = L.defs();
 const VERBOSE = process.argv.includes("-v");
-const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "cloudtemple", "mesa", "inklake", "jianmen"];
+const HUNT = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "cloudtemple", "mesa", "inklake", "jianmen", "sanctum"];
 /** Maps held to the rules, and their own minimum loop count (cycle rank of the coarse graph). */
-const STRICT = { meadow: { loops: 12 }, forest: { loops: 10 }, cave: { loops: 6 }, crypt: { loops: 6 }, sewer: { loops: 6 }, abyss: { loops: 6 },
+const STRICT = { meadow: { loops: 12 }, forest: { loops: 10 }, cave: { loops: 6 }, crypt: { loops: 6 }, sewer: { loops: 6 }, abyss: { loops: 6 }, sanctum: { loops: 6 },
   jungle: { loops: 10 }, oasis: { loops: 12 }, coast: { loops: 12 }, dunesea: { loops: 30 }, cloudtemple: { loops: 12 }, mesa: { loops: 14 }, inklake: { loops: 16 }, jianmen: { loops: 12 } };
 /**
  * Dungeon widening (maps-v2 "K"): a dungeon is roomy enough for a party of four — `open` of the map is ground,
  * `party` of that ground lies where a 7 × 7 square fits, and ground `route` tiles wide joins the entry to every
  * door, waypoint stone, camp and boss (the generators cut it five wide; four is the floor).
  */
-const ROOMY = { crypt: { open: 0.58, party: 0.55, route: 4 }, sewer: { open: 0.58, party: 0.55, route: 4 }, abyss: { open: 0.57, party: 0.55, route: 4 }, cave: { open: 0.58, party: 0.5, route: 4 } };
+const ROOMY = { crypt: { open: 0.58, party: 0.55, route: 4 }, sewer: { open: 0.58, party: 0.55, route: 4 }, abyss: { open: 0.57, party: 0.55, route: 4 }, cave: { open: 0.58, party: 0.5, route: 4 }, sanctum: { open: 0.57, party: 0.55, route: 4 } };
 // tort: the target band is 1.15–2.2; held from 1.12 so a wide open ground with one short way round still passes
 const RULES = { open: [0.42, 0.9], tort: [1.12, 2.2], deadMax: 7, deadPer: 0.012 };
 const CELL = 8, DOORWAY = 8, PARTY = 7;

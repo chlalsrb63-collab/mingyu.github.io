@@ -6,7 +6,7 @@
 // here it is moved to the nearest open tile so nobody is ever stuck in a wall).
 // Malformed entries are skipped: npm run data:check is where the owner hears about them.
 
-const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn", "interior", "mist", "jianmen"];
+const THEMES = ["town", "meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "autumn", "interior", "mist", "jianmen", "sanctum"];
 const AIRSHIP_MAP = "airship", AIRSHIP_MIN_LV = 100;
 /** The looks an interior can have (wallpaper, wood and light; public/iso_interior.js). */
 const ROOM_STYLES = ["cafe", "hall", "inn", "library", "office", "forge", "tavern", "shop", "boutique", "dojo", "lab", "lobby"];

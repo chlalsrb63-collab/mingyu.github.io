@@ -32,6 +32,7 @@ export const UG = {
   crypt: { floor: ["#6f6a64", "#55504c", "#8b867c"], rock: "#15121a", face: ["#4b4540", "#77705f", "#989078", "#2f2a29"], wet: ["#3d5a66", "#33505c", "#7aa0a8", "#243a44", "#5a8088"], mote: "#d8d0c0" },
   sewer: { floor: ["#5d6a5e", "#47534a", "#768476"], rock: "#0d130f", face: ["#6a4636", "#8a6048", "#aa7c5e", "#3c2820"], wet: ["#6a9a3a", "#5a8a30", "#b0dc70", "#36561e", "#8cc054"], mote: "#b8e890" },
   abyss: { floor: ["#7c2f3c", "#5c1e2b", "#9e4855"], rock: "#19070c", face: ["#5a1622", "#8c2c3a", "#ba4e5a", "#330e18"], wet: ["#a81c2c", "#8e1424", "#e4606c", "#560a16", "#d04858"], mote: "#ff8a7a" },
+  sanctum: { floor: ["#5c6c64", "#404e48", "#7c8e82"], rock: "#0b1615", face: ["#465852", "#687e74", "#8ea698", "#24322e"], wet: ["#26b8c0", "#168696", "#9efaf2", "#0c5e6c", "#5ce6e0"], mote: "#98ffca" },
 };
 
 /** One tile of dungeon floor. `d` is the busier variant; `under` means rock stands directly above. */

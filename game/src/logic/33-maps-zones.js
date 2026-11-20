@@ -8,7 +8,7 @@
 // extra waypoint stones, the wind shrines and the signs. Editor maps are never zoned.
 
 /** The packed dungeons whose campfires get a quiet ring like a gate's (open fields keep their measured routes: tests/hunt-routes.mjs). */
-const FIRE_QUIET = ["crypt", "sewer", "abyss"];
+const FIRE_QUIET = ["crypt", "sewer", "abyss", "sanctum"];
 /** The wide grounds that get more campfires (how many), each laid where the walk to a fire was longest (dunesea: 64 % of its ground was over 60 tiles from one). */
 const FIRE_EXTRA = { dunesea: 1, city: 1, maple: 1, inklake: 1, cloudtemple: 1, mesa: 1, jianmen: 2, meadow: 2, forest: 2, cave: 1, jungle: 2, coast: 2, oasis: 2 };
 /** Open ground wanted all round an extra fire (default 2; a tighter ground needs more so the walk to it stays three tiles wide: tests/mapflow). */

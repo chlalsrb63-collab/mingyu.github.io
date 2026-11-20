@@ -491,7 +491,36 @@ export function sprites() {
     eave(b, 72, 8, 42, 20, R[0], R[1], R[2]);
     b.r(52, 4, 4, 5, GL); b.r(88, 4, 4, 5, GL); b.r(71, 2, 2, 7, GL);
   });
-  SPR = { pagoda, goldhall, passgate, passkeep, citadelhall, chapel, cottage, ktower, kgate, waypoint, RUNE, sign: [sign(-1), sign(0), sign(1)], tower, oak, shrine, lip, board, metro, crystals, nave, culvert, heart, stall: [0, 1, 2].map(stall), stallShut, notice, statue };
+  // ── 가라앉은 고대 신전 (END-03 dungeon): sunlit overgrown ancient sunken temple portal with skylight oculus & vines
+  const sunkentemple = prop(144, 136, (b) => {
+    const ST = ["#64766e", "#3d4b46", "#8ea298"], DK = "#162422", GL = "#a8ff9e", GL2 = "#e4ffd4";
+    const M = ["#489642", "#6cc052", "#2b5e2e"];
+    b.oval(72, 132, 68, 4, "#1e3632");
+    // broad mossy carved temple stone steps & plinth
+    b.r(10, 114, 124, 16, ST[0]); b.r(10, 114, 124, 2, ST[2]); b.r(10, 128, 124, 2, ST[1]);
+    for (let s = 0; s < 3; s++) { b.r(44 - s * 3, 117 + s * 4, 56 + s * 6, 3, ST[2]); b.r(44 - s * 3, 119 + s * 4, 56 + s * 6, 1, ST[1]); }
+    // monumental twin sanctuary stone piers & recessed vaulted archway
+    b.r(18, 28, 108, 86, ST[0]); b.r(110, 28, 16, 86, ST[1]);
+    for (let y = 34; y < 114; y += 8) { b.r(18, y, 108, 1, ST[1]); b.r(24 + ((y / 8) & 1) * 8, y, 1, 8, ST[1]); }
+    // upper skylight oculus bathed in emerald-gold skylight rays pouring into the sunken temple
+    b.oval(72, 24, 24, 20, ST[0]); b.oval(72, 24, 18, 15, ST[2]); b.oval(72, 24, 13, 11, GL); b.oval(72, 22, 8, 6, GL2);
+    // deep carved semicircular sanctuary portal with glowing mist inside
+    b.r(46, 62, 52, 52, DK); b.oval(72, 64, 26, 22, DK);
+    b.oval(72, 63, 29, 24, ST[2]); b.oval(72, 64, 24, 20, DK); b.r(48, 64, 48, 50, DK);
+    // soft diagonal sunlight beam inside the dark sanctuary arch
+    b.tri([[58, 52], [86, 52], [94, 114], [52, 114]], "#284c42");
+    b.tri([[64, 56], [80, 56], [86, 114], [58, 114]], "#3c725a");
+    b.r(68, 88, 8, 26, "#58a878");
+    // flanking carved pilasters & arch cornice
+    for (const x of [22, 36, 98, 112]) { b.r(x, 32, 8, 82, ST[2]); b.r(x + 6, 32, 2, 82, ST[1]); b.r(x - 1, 30, 10, 4, ST[2]); }
+    b.r(14, 26, 116, 5, ST[2]); b.r(14, 31, 116, 2, ST[1]);
+    // thick luminous emerald moss cap & cascading hanging vines over the cornice and piers
+    for (let x = 16; x < 126; x += 6) { b.r(x, 23, 7, 4, M[0]); b.r(x + 1, 22, 4, 2, M[1]); }
+    ivy(b, 20, 28, 108, 4); ivy(b, 38, 30, 86, 3); ivy(b, 104, 28, 104, 4); ivy(b, 120, 30, 112, 3);
+    // moss patches creeping across the front steps
+    for (const [x, y, w] of [[16, 114, 16], [96, 114, 20], [46, 119, 10], [84, 122, 12]]) { b.r(x, y, w, 3, M[0]); b.r(x + 2, y, w - 4, 1, M[1]); }
+  });
+  SPR = { pagoda, goldhall, passgate, passkeep, citadelhall, sunkentemple, chapel, cottage, ktower, kgate, waypoint, RUNE, sign: [sign(-1), sign(0), sign(1)], tower, oak, shrine, lip, board, metro, crystals, nave, culvert, heart, stall: [0, 1, 2].map(stall), stallShut, notice, statue };
   return SPR;
 }
 
@@ -523,12 +552,14 @@ const LANDMARKS = {
     ["passkeep", 3, 2, 0.5, 0.5, { on: "i", exact: true }],
     ["passkeep", 3, 2, 0.5, 0.5, { on: "i", exact: true }],
   ],
+  // 가라앉은 고대 신전 (END-03 dungeon): sunlit overgrown sunken temple portal on N
+  sanctum: [["sunkentemple", 4, 2, 0.5, 0.5, { on: "N", exact: true }]],
   // the old kingdom's ruins stand on the footprints the set pieces leave for them (exact: nothing else may move them)
   autumn: [["chapel", 4, 2, 0.5, 0.5, { on: "N", exact: true }], ["cottage", 3, 2, 0.5, 0.5, { on: "d", exact: true }],
     ["ktower", 3, 2, 0.5, 0.5, { on: "i", exact: true }], ["ktower", 3, 2, 0.5, 0.5, { on: "i", exact: true }],
     ["kgate", 4, 2, 0.5, 0.5, { on: "f", exact: true }], ["kgate", 4, 2, 0.5, 0.5, { on: "f", exact: true }]],
 };
-const GLOW = { chapel: "#b06ad8", cottage: "#ffd070", tower: null, oak: "#ffe690", shrine: "#7af0b0", board: "#ff5a94", metro: "#4ab07a", crystals: "#72e6f4", nave: "#c8324a", heart: "#ff4a5a", passgate: "#ffd884", passkeep: "#ffd070", citadelhall: "#ffe290" };
+const GLOW = { chapel: "#b06ad8", cottage: "#ffd070", tower: null, oak: "#ffe690", shrine: "#7af0b0", board: "#ff5a94", metro: "#4ab07a", crystals: "#72e6f4", nave: "#c8324a", heart: "#ff4a5a", passgate: "#ffd884", passkeep: "#ffd070", citadelhall: "#ffe290", sunkentemple: "#8af8b8" };
 
 function open(m, x, y) { return x >= 0 && y >= 0 && x < m.w && y < m.h && m.o[y][x] === " " && m.g[y][x] !== "w" && m.g[y][x] !== "W"; }
 /** A blocked tile of one of the kinds a landmark may stand on ("W" is bare rock). */

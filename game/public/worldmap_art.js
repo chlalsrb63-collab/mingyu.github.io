@@ -368,8 +368,36 @@ function jianmen(g) {
   poly(g, [[28, 37], [36, 37], [39, 41], [25, 41]], "#b8ae9c");
 }
 
+/** 가라앉은 고대 신전: luminous turquoise underground river, weathered wooden bridge, mossy stone temple arch & lush forest. */
+function sanctum(g) {
+  // Glowing turquoise subterranean river basin
+  poly(g, [[4, 38], [10, 24], [54, 24], [60, 38]], INK);
+  poly(g, [[6, 37], [12, 25], [52, 25], [58, 37]], "#26b8c0");
+  rect(g, 14, 28, 12, 2, "#9efaf2"); rect(g, 38, 33, 14, 2, "#9efaf2");
+  // Mossy temple islands left & right with lush underground trees
+  poly(g, [[4, 32], [8, 18], [24, 20], [22, 34]], "#485852");
+  poly(g, [[8, 18], [24, 20], [22, 24], [8, 23]], "#549e46");
+  poly(g, [[42, 34], [40, 20], [56, 18], [60, 32]], "#485852");
+  poly(g, [[40, 20], [56, 18], [56, 23], [42, 24]], "#549e46");
+  // Ancient mossy stone temple archway centered at the back
+  rect(g, 20, 10, 24, 18, INK);
+  rect(g, 21, 11, 22, 16, "#708278");
+  rect(g, 21, 10, 22, 3, "#6ec04e");
+  rect(g, 27, 16, 10, 11, "#162422");
+  rect(g, 30, 13, 4, 2, "#a8ff9e");
+  // Lush emerald & amber trees framing the ruins
+  poly(g, [[8, 21], [13, 10], [18, 21]], "#2f7438");
+  poly(g, [[14, 22], [18, 13], [22, 22]], "#d08434");
+  poly(g, [[45, 22], [50, 11], [55, 22]], "#3f8c42");
+  // Old weathered wooden suspension bridge across the glowing turquoise river
+  rect(g, 21, 30, 22, 6, INK);
+  rect(g, 22, 31, 20, 4, "#967048");
+  for (let x = 24; x < 41; x += 4) rect(g, x, 31, 1, 4, "#5a3e24");
+  rect(g, 22, 30, 20, 1, "#d0b67a");
+}
+
 const terrains = new Map([
-  ["frostkeep", frostkeep], ["dunesea", dunesea], ["airship", airship], ["jianmen", jianmen],
+  ["frostkeep", frostkeep], ["dunesea", dunesea], ["airship", airship], ["jianmen", jianmen], ["sanctum", sanctum],
   ["town", town], ["willow", g => town(g, true)], ["blossom_trail", blossomTrail], ["city", city],
   ["meadow", meadow], ["forest", forest], ["jungle", jungle], ["coast", coast],
   ["desert", oasis], ["oasis", oasis], ["autumn", autumn], ["maple", autumn],

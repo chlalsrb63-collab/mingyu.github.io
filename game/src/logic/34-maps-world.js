@@ -450,7 +450,7 @@ function buildBlossomTrail() {
 // know without building anything (names, bands, monster lists) is read from here into MAP_META.
 
 /** The generated maps in their fixed order (also the order of every list made from them). */
-const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa", "inklake", "jianmen"];
+const GEN_IDS = ["meadow", "forest", "crypt", "city", "sewer", "cave", "abyss", "maple", "jungle", "oasis", "coast", "dunesea", "frostkeep", "cloudtemple", "mesa", "inklake", "jianmen", "sanctum"];
 const REGIONAL_BEASTS = {
   meadow: ["wickhare", "gutfrog"], forest: ["burrlynx", "ribdeer"], crypt: ["bellnewt", "bonehound"],
   city: ["spoolsnipe", "doghead"], sewer: ["sluiceeel", "gatorhalf"], cave: ["prismmole", "bearmaw"],
@@ -801,7 +801,7 @@ const GEN = {
       river: true, riverAt: [0.47, 0.05], gorge: { first: 16, every: 24, deck: "=" },
       ground: ":", edge: "C", treeCh: "T", treeCh2: "Σ", road: "=", trail: "p", shore: "r", lakes: 3, lakeR: 5, vaults: 10, ruins: 3, tpm: 15.5,
       walls: [["trees", 0.45], ["rocks", 0.3], ["ruin", 0.25]], rocks: ["R", "Θ"], nookWall: "cliff",
-      gates: [["south", "s", 0.5]], exit: "south", via: [[0.5, 0.72], [0.5, 0.46], [0.5, 0.16]],
+      gates: [["south", "s", 0.5]], exit: "south", doors: [["sanctum", "n", 0.72]], via: [[0.5, 0.72], [0.5, 0.46], [0.5, 0.16]],
       mobs: [MONK, BOAR, CRANE, GOAT, LION, OWL], pondMob: null, chest: "chest_jianmen", boss: "jianmentiger",
       campPiece: "passcamp",
       vaultKinds: ["rampart", "cliffshrine", "pavilion", "lanterncourt", "cache", "menhir"],
@@ -843,6 +843,14 @@ const GEN = {
         : h < 0.018 ? "Σ" : h < 0.028 ? "3" : h < 0.034 ? "q" : null),
     };
   } },
+  // 가라앉은 고대 신전 (END-03 dungeon, Lv.189–200): spacious sunken underground ancient temple
+  // and lush forest islands over glowing turquoise rivers, joined by weathered wooden suspension bridges
+  sanctum: { make: sanctum, band: [48, 50], stones: 3, stoneNames: ["이끼 회랑", "구름다리 광장", "가라앉은 대신전"], cfg: () => ({
+    id: "sanctum", name: "가라앉은 고대 신전", theme: "sanctum", bgm: "cave", seed: 94217, w: 164, h: 124, r: 16, wind: 0.55, loops: 0.26, n: 7,
+    plate: { r: 14.5, vary: 3, gap: 2.3, gapVary: 2.0 }, soft: "TPBRYqU3z",
+    mobs: ["sanctumfrog", "sanctumturtle", "sanctumsloth", "sanctummoth", "sanctumcrown", "sanctumwarden"],
+    boss: "sanctumwyrm", chest: "chest_sanctum",
+  }) },
 };
 /**
  * A paired threshold across an existing open hallway, with its arrival two tiles off the door: at (x, y) as fractions
@@ -911,7 +919,9 @@ const CAMP_KEEPERS = {
   inklake: { id: "camp_inklake", name: "나루지기 먹선", role: "shop", look: [4, 1, 0, "#5a5a62"], goods: FIELD_GOODS,
     lines: ["물이 얕아 보여도 검은 웅덩이는 바닥이 없어. 모래톱만 밟고 건너.", "북쪽 외딴 탑 섬에 먹빛 구렁이가 산다네. 그 너머가 단풍 왕도야."] },
   jianmen: { id: "camp_jianmen", name: "관문 수비대장 석철", role: "shop", look: [7, 2, 0, "#6a5a4e"], goods: FIELD_GOODS,
-    lines: ["여긴 천하의 험지, 천검관 협곡일세. 양쪽 절벽이 칼날처럼 깎여 있어 관문 하나만 막으면 만 명도 못 넘지.", "협곡 한가운데 붉은 성문 앞엔 철갑 수문마가 버티고, 맨 위 본성 마당엔 강철빛 백호왕이 웅크리고 있다네."] },
+    lines: ["여긴 천하의 험지, 천검관 협곡일세. 양쪽 절벽이 칼날처럼 깎여 있어 관문 하나만 막으면 만 명도 못 넘지.", "협곡 한가운데 붉은 성문 앞엔 철갑 수문마가 버티고, 맨 위 본성 마당엔 강철빛 백호왕이 웅크리고 있다네.", "동쪽 절벽 틈으로 내려가면 지하강 위에 가라앉은 고대 신전이 숨어 있다더군."] },
+  sanctum: { id: "camp_sanctum", name: "유적 탐사대장 미르", role: "shop", look: [11, 1, 0, "#3a8a76"], goods: FIELD_GOODS,
+    lines: ["천장 틈으로 떨어지는 빛 덕분에 지하인데도 숲이 우거져 있어. 발밑의 비취빛 강엔 빠지지 않게 조심해.", "낡은 나무 구름다리를 건너 북동쪽 대신전으로 가면 수호룡이 룬 연못을 지키고 있다네."] },
 };
 for (const [id, n] of Object.entries(CAMP_KEEPERS)) GEN[id].npcs = [[n.id, n.name]];
 /** Stand a ground's keeper beside its camp's fire, on open ground (no camp, no keeper). */
@@ -1034,8 +1044,8 @@ const GATE_LINKS = [
   ["cave", "shaft", "cloudtemple", "west", 1], ["cloudtemple", "south", "mesa", "ledge", 1], ["oasis", "east", "mesa", "west", 1],
   // maps-batch2, batch 2: north out of the red mesa to the ink lake, and on north into the old kingdom by its south edge
   ["mesa", "north", "inklake", "south", 1], ["maple", "ink", "inklake", "north", 1],
-  // END-03: north out of maple into the Jianmen mountain pass and ancient cliffside citadel
-  ["maple", "pass", "jianmen", "south", 1],
+  // END-03: north out of maple into the Jianmen mountain pass and ancient cliffside citadel; east cliff cave into Sunken Ancient Temple dungeon
+  ["maple", "pass", "jianmen", "south", 1], ["jianmen", "sanctum", "sanctum", "in", 1],
 ];
 /** A generated map's own doors out (in GATE_LINKS order, as the generators always laid them). */
 function gateDoors(m) {
