@@ -303,6 +303,7 @@ body.item-drag, body.item-drag * { cursor: grabbing !important; }
 @keyframes qs-bob { 50% { transform: translate(-50%, -2px); } }
 /* the bag and the skill window say which slot a thing sits in */
 .slot .qk { position: absolute; right: 2px; top: 1px; font: var(--t10) var(--pix9); color: var(--b-hi); text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; pointer-events: none; }
+.slot .anc { position: absolute; right: 1px; bottom: 0; font: var(--t9)/9px var(--pix9); color: #ffd36a; text-shadow: 1px 0 0 #000, -1px 0 0 #000, 0 1px 0 #000, 0 -1px 0 #000; pointer-events: none; }
 .slot .qk.equip-ready, #inv-detail .equip-ready { color: var(--tx-ok, #a9ebb3); }
 .skill .qs-put { justify-self: end; grid-column: -2 / -1; }
 .skill.qs-src { cursor: grab; }

@@ -67,19 +67,22 @@ function dimClean(d) {
     wk: Math.max(0, o.wk | 0), wb: clamp(o.wb | 0, 0, 1), bw: clamp(o.bw | 0, 0, CHAL_REWARD_MASK),
     // per boss: the highest difficulty step cleared, + 1 (0 none)
     bs: CHAL_KEYS.map((k, i) => clamp((Array.isArray(o.bs) ? o.bs[i] : 0) | 0, 0, chalSteps(k).length)),
+    // the raids gone into at 헬 on `day` (one entry a day each, owner 2026-11-21)
+    hd: Array.isArray(o.hd) ? [...new Set(o.hd.filter((k) => typeof k === "string" && Object.hasOwn(RAID, k)))] : [],
   };
 }
 /** The record brought to today and to this week (a new day clears the count; a new week the brackets and boss flags). */
 function dimRec(ch, now) {
   const d = ch.dim, day = dayOf(now), wk = weekOf(now);
-  if (d.day !== day) { d.day = day; d.n = 0; }
+  if (d.day !== day) { d.day = day; d.n = 0; d.hd = []; }
   if (d.wk !== wk) { d.wk = wk; d.wb = 0; d.bw = 0; }
   return d;
 }
 /** What a leader asked for (`dim_open`), made safe: a boss challenge, or the rift (always from floor 1; an old client's `tier` is ignored). */
 const dimAsk = (a) => (a && a.boss ? { tier: 0, boss: a.boss, step: a.step | 0 } : { tier: 0, boss: "", step: 0, raid: dimRaidKey(a?.hanok === true ? "hanok" : a?.raid), dif: dimDif(a?.dif) });
-/** Why `o` may not go into what was asked ("" when they may): the level short of the boss, or outside a field raid's window (the first two raids bar nobody). */
-function dimBar(o, ask) {
+/** Why `o` may not go into what was asked ("" when they may): the level short of the boss, outside a field raid's window (the first two raids bar nobody), or 헬 already gone into today (`ask.rejoin`: back into the same run). */
+function dimBar(o, ask, now) {
+  if (!ask.boss && RAID_DIF[dimDif(ask.dif)].hell && !ask.rejoin && o.ch.dim.day === dayOf(now) && o.ch.dim.hd.includes(dimRaidKey(ask.raid))) return "오늘은 이 레이드의 헬 난이도에 이미 들어갔습니다. 매일 06:00에 다시 열립니다.";
   if (!ask.boss) return dimRaidBar(ask.raid, o.ch.lvl, ask.dif);
   const need = chalMinLv(ask.boss, ask.step | 0);
   return o.ch.lvl < need ? `보스 도전${ask.step ? ` [${DIM_CHAL.stepNames[ask.step]}]` : ""}은 Lv.${need}부터 참가할 수 있습니다.` : "";
@@ -124,7 +127,7 @@ function dimOpen(S, p, a) {
   const rc = { id: S.nextId++, leader: p.pid, until: S.now + DIM.rcMs, resp: {}, tier: ask.tier, boss: ask.boss, step: ask.step, raid: ask.raid, dif: ask.dif | 0 };
   // 0 asked, 1 yes, 2 no (or no answer in time), 3 not free (in an instance, on a shift) or barred: the level outside the raid's window
   for (const pid of party.m) {
-    const o = S.players[pid], bar = o && pid !== p.pid && dimFree(o) ? dimBar(o, ask) : "";
+    const o = S.players[pid], bar = o && pid !== p.pid && dimFree(o) ? dimBar(o, ask, S.now) : "";
     rc.resp[pid] = pid === p.pid ? 1 : o && dimFree(o) && !bar ? 0 : 3;
     if (bar) toast(o, bar);
   }
@@ -164,6 +167,13 @@ function rcCheck(S, party) {
 
 // ── an instance's life
 
+/** Going into a 헬 run uses up `p`'s entry to that raid's 헬 for the day. */
+function dimHellMark(S, dim, p) {
+  if (dim.chal || !RAID_DIF[dim.dif | 0].hell) return;
+  const d = dimRec(p.ch, S.now), k = dim.map.dim?.raid || "under";
+  if (!d.hd.includes(k)) d.hd.push(k);
+}
+
 /** Make an instance for `ps` (all in town) and take them in. Null when every slot of the room is taken. */
 function dimStart(S, ps, partyId, ask) {
   const open = Object.keys(S.dims).length;
@@ -192,6 +202,7 @@ function dimStart(S, ps, partyId, ask) {
     o.dead = false;
     const [x, y] = dimSpot(map, i);
     changeMap(S, o, id, x, y);
+    dimHellMark(S, dim, o);
     dim.members[o.pid] = S.now;
     toast(o, boss ? `[보스 도전 · ${DIM_CHAL.stepNames[step]} Lv.${chalSteps(boss)[step][1]}] ${MOBS[boss].name} — ${DIM_CHAL.limit / 60000}분 안에 쓰러뜨리세요. 전멸해도 다시 도전할 수 있습니다.`
       : `[1단 · ${dimFloorName(1, map.dim.raid)}] 레이드던전${dif ? ` [${RAID_DIF[dif].name}]` : ""} Lv.${shownLv(lv)} 1/${DIM.floors}단에 들어왔습니다. ${DIM.limit / 60000}분 안에 ${DIM.floors}단 끝의 최종 보스를 쓰러뜨리세요!`);
@@ -465,6 +476,8 @@ function dimChest(S, dim, p) {
     if (!carried && !d.wb) { d.wb = 1; wkN = W.unc; r.gold += W.gold * lv; r.stone += W.stone; fl |= 8; }
     payout(S, p, r);
     if (!carried) for (let i = 0; i < D.gear; i++) payout(S, p, { gear: 1, gearQ: r.gearQ });
+    // 헬's rare 고대 piece: a top-tier base at item level IL_ANCIENT, at least 희귀
+    if (!carried && D.ancient && rnd(S) < D.ancient) { rewardGear(S, p, 0, 2, IL_ANCIENT); toast(p, `<고대> 장비를 얻었습니다! (아이템 레벨 ${IL_ANCIENT})`); }
     if (fl & 8) jfScroll(p, "job");
     if (!carried) giveX(S, p, full ? "rift" : "", DIM.lootTier, wkN);
     charmChest(S, dim, p);
@@ -710,10 +723,10 @@ function dimValidate(S, p, a) {
         if (a.step !== undefined && (!Number.isInteger(a.step) || a.step < 0 || a.step >= chalSteps(a.boss).length)) return bad("잘못된 난이도입니다");
         if (!chalOpen(a.boss, S.now)) return bad(CHAL_ROTATED);
         // the party's members in town are asked in dimOpen; a member under the step's level is not asked (dimBar)
-        const bar = dimBar(p, dimAsk(a));
+        const bar = dimBar(p, dimAsk(a), S.now);
         if (bar) return bad(bar);
       } else {
-        const bar = dimBar(p, dimAsk(a));
+        const bar = dimBar(p, dimAsk(a), S.now);
         if (bar) return bad(bar);
       }
       return OK;
@@ -738,7 +751,7 @@ function dimValidate(S, p, a) {
       const dim = dimJoinable(S, p);
       if (!dim) return bad("합류할 수 있는 레이드던전이 없습니다");
       if (dimInside(S, dim.id).length >= DIM.party) return bad(`레이드던전 안이 가득 찼습니다 (${DIM.party}명).`);
-      const bar = dimBar(p, { tier: 0, boss: dim.chal ? dim.chal.k : "", step: dim.chal ? dim.chal.s | 0 : 0, raid: dim.map.dim?.raid });
+      const bar = dimBar(p, { tier: 0, boss: dim.chal ? dim.chal.k : "", step: dim.chal ? dim.chal.s | 0 : 0, raid: dim.map.dim?.raid, dif: dim.dif | 0, rejoin: Object.hasOwn(dim.members, p.pid) }, S.now);
       if (bar) return bad(bar);
       return OK;
     }
@@ -766,6 +779,7 @@ function dimApply(S, p, a) {
     case "dim_join": {
       const dim = dimJoinable(S, p);
       const [x, y] = dimSpot(dim.map, dimInside(S, dim.id).length);
+      if (!Object.hasOwn(dim.members, p.pid)) dimHellMark(S, dim, p);
       dim.members[p.pid] = S.now;
       changeMap(S, p, dim.id, x, y);
       dim.top = Math.max(dim.top || 0, toTier(p.ch.lvl));

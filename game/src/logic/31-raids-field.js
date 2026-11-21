@@ -127,14 +127,15 @@ const dimFloorName = (floor, raid) => RAID[dimRaidKey(raid === true ? "hanok" : 
  * Difficulty steps of every raid (owner 2026-11-21). 보통 is the raid as tuned; 어려움 and 악몽 keep the raid's own levels
  * but want strong gear for them; 헬 (Lv.200+, any raid, no level window) scales every monster to the world's top
  * tier first (dimHell, 64-dim.js), then hardens it. `hp` / `atk` × on every raid monster and the master; the chest pays
- * `gold` / `xp` × and `gear` extra rare pieces and `stone` extra 강화석.
+ * `gold` / `xp` × and `gear` extra rare pieces and `stone` extra 강화석. 헬 is one entry a day per raid (dimBar, ch.dim.hd) and
+ * its chest has an `ancient` chance of a 고대 piece (item level IL_ANCIENT).
  */
 const RAID_HELL_LV = 200;
 const RAID_DIF = [
   { name: "보통", hp: 1, atk: 1, gold: 1, xp: 1, gear: 0, stone: 0 },
   { name: "어려움", hp: 2, atk: 1.5, gold: 1.6, xp: 1.4, gear: 1, stone: 2 },
   { name: "악몽", hp: 3.5, atk: 2.2, gold: 2.4, xp: 1.9, gear: 2, stone: 4 },
-  { name: "헬", hp: 2.5, atk: 1.8, gold: 3.5, xp: 2.5, gear: 3, stone: 6, hell: 1 },
+  { name: "헬", hp: 2.5, atk: 1.8, gold: 3.5, xp: 2.5, gear: 3, stone: 6, hell: 1, ancient: 0.04 },
 ];
 const dimDif = (d) => (Number.isInteger(d) ? clamp(d, 0, RAID_DIF.length - 1) : 0);
 /** Why a hero of shown level `lv` may not go into a raid at difficulty `dif` ("" when they may): 헬 wants Lv.200; else a field raid's window (the first two bar nobody: the level is clamped up). */

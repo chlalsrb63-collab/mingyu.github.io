@@ -124,17 +124,18 @@ function dailyProg(S, p, kind, k) {
     if (t.n >= t.need) toast(p, `토벌 의뢰 완료: ${dailyText(t)} — 보상을 받으세요.`);
   }
 }
-/** A piece of gear for the looter's class, of at least rarity `minQ`. */
-function rewardGear(S, p, ilvl, minQ) {
+/** A piece of gear for the looter's class, of at least rarity `minQ`; with `il`, a top-tier base at that item level (고대: IL_ANCIENT). */
+function rewardGear(S, p, ilvl, minQ, il = 0) {
   // a reward earned is never lost: with a full bag it sits in an extra slot until room is made (as a recovered rune does, 40 migrate)
   if (p.ch.inv.length >= bagCap(p.ch)) toast(p, "가방이 가득 차 보상 장비를 임시 칸에 넣었습니다. 가방을 비워 주세요.");
   let roll = rnd(S) * 100, type = "weapon";
   for (const [ty, w] of DROP_TYPES) { if (roll < w) { type = ty; break; } roll -= w; }
-  const tier = tierFor(ilvl);
+  const tier = il ? G_REQ.length : tierFor(ilvl);
   let id;
   if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
   else id = `${GEAR[type].pre}_${tier}`;
-  const g = rollGear(S, id, Math.max(minQ, Math.min(3, rollRarity(S, 1, 0))), ilvl);   // uniques come from monster drops
+  const q = Math.max(minQ, Math.min(3, rollRarity(S, 1, 0)));   // uniques come from monster drops
+  const g = il ? rollGearAtLevel(S, id, q, il) : rollGear(S, id, q, ilvl);
   p.ch.inv.push(g);
   p.gain.push(["item", g.id, 1, g.q]);
 }

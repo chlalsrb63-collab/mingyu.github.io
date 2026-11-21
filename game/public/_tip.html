@@ -22,7 +22,7 @@ document.getElementById("app").innerHTML = doc.body.innerHTML;
 const q = new URLSearchParams(location.search);
 if (q.get("ts")) document.body.dataset.ts = q.get("ts");
 const { G } = await import("./state.js");
-const { itemTip } = await import("./items.js");
+const { itemTip, itemSlot } = await import("./items.js");
 const Keymap = await import("./keymap.js");
 if (q.get("hud")) Keymap.hudTheme(q.get("hud"));
 
@@ -79,6 +79,7 @@ const scenes = [
   ["착용 중인 물건 (비교 없음)", unique, { worn: true }],
   ["물약", { id: "hp_2" }, { price: "40G" }],
   ["전설 룬", { id: "ru_legend" }, {}],
+  ["<고대> 투구 (헬 레이드, 아이템 레벨 210)", { id: "h_5", q: 2, il: 210, af: [["hp", 60], ["def", 8]] }, {}],
 ];
 const stage = document.getElementById("stage");
 scenes.forEach(([label, entry, o], i) => {
@@ -89,6 +90,15 @@ scenes.forEach(([label, entry, o], i) => {
   sc.append(h, host); stage.append(sc);
   itemTip(entry, host, o);
 });
+// the bag slots: an ordinary piece and a 고대 one (the <고대> tag on the icon; no icon atlas here)
+G.icons ??= { url: {} };
+{
+  const sc = document.createElement("div"); sc.className = "scene";
+  const h = document.createElement("h4"); h.textContent = "가방 칸: 일반 / <고대>";
+  const row = document.createElement("div"); row.className = "host"; row.id = "slots"; row.style.cssText = "display:flex;gap:4px;--slot:42px";
+  for (const e of [{ id: "h_5", q: 2, il: 80, enh: 3 }, { id: "h_5", q: 2, il: 210, enh: 3 }, { id: "w_sword_5", q: 3, il: 210 }]) { const s = itemSlot(e); s.style.cssText = "position:relative;width:42px;height:42px"; row.append(s); }
+  sc.append(h, row); stage.append(sc);
+}
 if (q.get("only")) for (const sc of [...stage.children]) if (!sc.querySelector("#s" + q.get("only"))) sc.remove();
 document.fonts.ready.then(() => { window.__done = true; document.title = "ready"; });
 </script>

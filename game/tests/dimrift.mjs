@@ -508,10 +508,10 @@ const dimIds = (S) => Object.keys(S.dims);
   // a character saved inside wakes in town; the old sheet (v8) gains a rift record
   const old = L.newChar("옛날", "mage", []); delete old.dim; old.v = 8;
   L.addPlayer(S, "old", old);
-  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: X.CHAL_KEYS.map(() => 0) }); assert.equal(S.players.old.ch.v, L.newChar("현재양식", []).v);
+  assert.deepEqual(S.players.old.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: X.CHAL_KEYS.map(() => 0), hd: [] }); assert.equal(S.players.old.ch.v, L.newChar("현재양식", []).v);
   const odd = L.newChar("이상", "mage", []); odd.dim = { day: "x", n: -5 };
   L.addPlayer(S, "odd", odd);
-  assert.deepEqual(S.players.odd.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: X.CHAL_KEYS.map(() => 0) });
+  assert.deepEqual(S.players.odd.ch.dim, { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: X.CHAL_KEYS.map(() => 0), hd: [] });
 }
 
 for (const [k, v] of X_DIM_SET) D[k] = v;
@@ -758,7 +758,7 @@ const FIELDS = ["forest", "coast", "oasis", "maple"];
   assert.deepEqual(Object.keys(X.RAID), ["under", "hanok", ...FIELDS], "display order");
   const defs = L.defs().dim;
   assert.deepEqual(defs.raids.map((r) => r.k), Object.keys(X.RAID));
-  assert.deepEqual(defs.raids.map((r) => [r.minLv, r.maxLv]), [[37, 200], [37, 200], [37, 60], [95, 125], [110, 140], [155, 200]]);
+  assert.deepEqual(defs.raids.map((r) => [r.minLv, r.maxLv]), [[37, 300], [37, 300], [37, 60], [95, 125], [110, 140], [155, 200]]);
   for (const r of defs.raids) { assert.equal(r.floors.length, 3); assert.ok(r.name && r.theme); }
   assert.ok(defs.raid.names.length === 3 && defs.raid.hanokNames.length === 3, "the old raid defs stay");
   const LOOK = { forest: ":;\"pjw=", coast: "S~zp.w", oasis: "szp,.tr=w", maple: ".%;:\"&p=jw" };
@@ -864,7 +864,7 @@ const leave = (S, pids) => { for (const pid of pids) assert.ok(act(S, pid, { t: 
   assert.equal(X.dayOf(MONDAY - 1) + 1, X.dayOf(MONDAY));
   for (let d = 1; d < 7; d++) assert.equal(X.weekOf(MONDAY + d * 86400000), X.weekOf(MONDAY), "one week, seven days");
   // old sheets (v13: a daily count only; v21: the tier ladder) and odd ones
-  const fresh = { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: X.CHAL_KEYS.map(() => 0) };
+  const fresh = { day: 0, n: 0, t: 1, best: 0, ms: 0, wk: 0, wb: 0, bw: 0, bs: X.CHAL_KEYS.map(() => 0), hd: [] };
   assert.deepEqual(L.newChar("새단수", []).dim, fresh); assert.equal(L.newChar("새단수", []).v, L.newChar("현재양식", []).v);
   const S = world();
   const old = L.newChar("옛단수", []); old.v = 13; old.dim = { day: 20000, n: 2 };

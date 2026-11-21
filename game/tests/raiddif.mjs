@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const src = readFileSync(new URL("../src/logic.js", import.meta.url), "utf8") +
-  "\nexport const __t = { RAID_DIF, HELL_TIER, DIM_TOWN, dimHell, dimReward, MOBS };\n";
+  "\nexport const __t = { RAID_DIF, HELL_TIER, DIM_TOWN, dimHell, dimReward, MOBS, IL_ANCIENT, MAXLV, rewardGear, gearBaseValue, gearName, gearReq, migrate, plain };\n";
 const L = await import("data:text/javascript;base64," + Buffer.from(src).toString("base64"));
 const X = L.__t, T = 16;
 const [OBX, OBY] = [X.DIM_TOWN.keeper[0] * T + 8, (X.DIM_TOWN.keeper[1] - 1) * T + 10];
@@ -50,4 +50,36 @@ assert.ok(hk(hell) > hk(night) && ak(hell) > ak(night), "헬 in the forest is ha
 const top = Object.keys(X.MOBS).find((k) => !X.MOBS[k].boss && !X.MOBS[k].chest && X.MOBS[k].lv === X.HELL_TIER + 1);
 if (top) assert.equal(X.dimHell(top).hp, 1, "a top-tier monster is never lowered");
 assert.ok(run(200, "under", 3).dim, "헬 opens on the underground raid too");
+
+// 헬: one entry a day per raid (owner 2026-11-21); the day turns at 06:00 KST
+{
+  const S = world(), p = hero(S, "pa", "하루", 200);
+  L.tick(S, now);
+  assert.ok(act(S, "pa", { t: "dim_open", raid: "forest", dif: 3 }).ok);
+  // the entry is on the sheet: a fresh world (a reconnect, a reboot) still bars it today
+  const again = (at) => { const S2 = world(); S2.now = at; const ch = JSON.parse(JSON.stringify(p.ch)); ch.map = "town"; ch.x = OBX; ch.y = OBY; L.addPlayer(S2, "pb", ch); return S2; };
+  const keep = now, S2 = again(now);
+  assert.match(act(S2, "pb", { t: "dim_open", raid: "forest", dif: 3 }).error || "", /오늘은 이 레이드의 헬/);
+  assert.ok(act(again(now), "pb", { t: "dim_open", raid: "under", dif: 3 }).ok, "another raid's 헬 is its own entry");
+  assert.ok(act(again(now), "pb", { t: "dim_open", raid: "under", dif: 2 }).ok, "악몽 has no daily limit");
+  now += 86_400_000;
+  const v = act(again(now), "pb", { t: "dim_open", raid: "forest", dif: 3 });
+  assert.ok(v.ok, v.error);
+  now = keep;
+}
+// 헬's rare 고대 piece: a top-tier base at item level 210, worn from Lv.200, stronger than a 200 piece
+assert.ok(X.RAID_DIF[3].ancient > 0 && X.RAID_DIF[3].ancient < 0.1 && !X.RAID_DIF[2].ancient);
+{
+  const S = world(), p = hero(S, "pa", "고대", 200);
+  X.rewardGear(S, p, 0, 2, X.IL_ANCIENT);
+  const g = p.ch.inv.at(-1);
+  assert.equal(g.il, 210); assert.ok(g.q >= 2); assert.match(g.id, /_10$/);
+  assert.equal(X.gearReq(g), 200);
+  assert.match(X.gearName(g), /^<고대> /);
+  const old = { ...X.plain(g.id), il: 200 }, stat = Object.keys(X.MOBS && L.defs().items[g.id].base)[0];
+  assert.ok(X.gearBaseValue(g, stat) > X.gearBaseValue(old, stat), "210 beats 200");
+  const ch = L.hero("저장", { lvl: 200 }); ch.inv = [g];
+  const S2 = L.setup(); L.addPlayer(S2, "s", JSON.parse(JSON.stringify(ch)));
+  assert.equal(S2.players.s.ch.inv[0].il, 210, "a saved 고대 piece keeps its level");
+}
 console.log("raiddif: ok");
