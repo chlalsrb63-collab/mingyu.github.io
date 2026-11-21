@@ -75,11 +75,11 @@ const RUNE_MARKS = [
 const tileCache = new Map(), blockCache = new Map(), spriteCache = new Map(), cellCache = new Map();
 const engravings = (c, r) => D().shapes[c.sh].order[r & 3].map((i) => c.runes?.[i] ?? i);
 
-/** External 16px-per-cell polyomino sprite rotated clockwise by `r & 3` turns, or null to fall back to code tiles. */
-function charmSprite(sh, r) {
-  const rot = r & 3, key = `${sh}:${rot}`;
+/** External 16px-per-cell polyomino sprite rotated clockwise by `r & 3` turns (grade-specific `charm.g<N>.<sh>` wins over `charm.<sh>`). */
+function charmSprite(sh, r, grade = 0) {
+  const rot = r & 3, key = `${grade}:${sh}:${rot}`;
   if (spriteCache.has(key)) return spriteCache.get(key);
-  const src = Assets.canvas("charm." + sh);
+  const src = (grade ? Assets.canvas(`charm.g${grade}.${sh}`) : null) || Assets.canvas("charm." + sh);
   if (!src) return null;
   if (rot === 0) { spriteCache.set(key, src); return src; }
   const w = src.width, h = src.height;
@@ -94,10 +94,10 @@ function charmSprite(sh, r) {
 }
 
 /** One 16×16 cell slice `(lx, ly)` from the rotated polyomino sprite for the 5×5 board, or "" if unavailable. */
-function charmCellUrl(sh, r, lx, ly) {
-  const key = `${sh}:${r & 3}:${lx},${ly}`;
+function charmCellUrl(sh, r, lx, ly, grade = 0) {
+  const key = `${grade}:${sh}:${r & 3}:${lx},${ly}`;
   if (cellCache.has(key)) return cellCache.get(key);
-  const sp = charmSprite(sh, r);
+  const sp = charmSprite(sh, r, grade);
   if (!sp) return "";
   const [cv, g] = Art.canvas(16, 16);
   g.imageSmoothingEnabled = false;
@@ -130,9 +130,9 @@ function runeTile(grade, rune) {
 }
 
 function blockUrl(c, r, square) {
-  const sp = charmSprite(c.sh, r);
+  const grade = gradeOf(c), sp = charmSprite(c.sh, r, grade);
   if (sp) {
-    const key = `sp:${c.sh}:${r & 3}:${+square}`;
+    const key = `sp:${grade}:${c.sh}:${r & 3}:${+square}`;
     if (blockCache.has(key)) return blockCache.get(key);
     let cv, g;
     if (square) {
@@ -149,7 +149,7 @@ function blockUrl(c, r, square) {
     blockCache.set(key, url);
     return url;
   }
-  const cells = D().shapes[c.sh].rot[r & 3], marks = engravings(c, r), grade = gradeOf(c);
+  const cells = D().shapes[c.sh].rot[r & 3], marks = engravings(c, r);
   const key = `${grade}:${c.sh}:${r & 3}:${+square}:${marks.join(",")}`;
   if (blockCache.has(key)) return blockCache.get(key);
   const width = Math.max(...cells.map(([x]) => x)) + 1;
@@ -509,7 +509,7 @@ export function renderBoard(s) {
       if (wait && wait.uid === e.c.uid) c.classList.add("away");
       const img = el("img", "cm-tile");
       const i = cells.findIndex(([cx, cy]) => cx === x && cy === y);
-      img.src = charmCellUrl(e.c.sh, e.r, x - e.x, y - e.y) || runeTile(g, engravings(e.c, e.r)[i]).url; img.alt = "";
+      img.src = charmCellUrl(e.c.sh, e.r, x - e.x, y - e.y, g) || runeTile(g, engravings(e.c, e.r)[i]).url; img.alt = "";
       c.append(img);
       if (i === 0) c.append(el("span", "mk", GRADE_MARK[g]));
       hoverTip(c, (h) => describe(e.c, h, { r: e.r, hint: safe ? "끌어서 옮기기 · 클릭 후 회전/빼기" : "" }));

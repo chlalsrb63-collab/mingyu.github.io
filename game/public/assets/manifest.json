@@ -1690,6 +1690,66 @@
       "src": "assets/charms/step4m.png?v=587c1c7d",
       "w": 48,
       "h": 32
+    },
+    "charm.g1.pin": {
+      "src": "assets/charms/g1_pin.png?v=12ca53cc",
+      "w": 16,
+      "h": 16
+    },
+    "charm.g1.bar2": {
+      "src": "assets/charms/g1_bar2.png?v=8480eda1",
+      "w": 32,
+      "h": 16
+    },
+    "charm.g1.bar3": {
+      "src": "assets/charms/g1_bar3.png?v=cd5b4f55",
+      "w": 48,
+      "h": 16
+    },
+    "charm.g1.elbow": {
+      "src": "assets/charms/g1_elbow.png?v=54d6e677",
+      "w": 32,
+      "h": 32
+    },
+    "charm.g1.tile2": {
+      "src": "assets/charms/g1_tile2.png?v=cda396ba",
+      "w": 32,
+      "h": 32
+    },
+    "charm.g1.bar4": {
+      "src": "assets/charms/g1_bar4.png?v=e6d6bf8d",
+      "w": 64,
+      "h": 16
+    },
+    "charm.g1.pole4": {
+      "src": "assets/charms/g1_pole4.png?v=c5cf0699",
+      "w": 16,
+      "h": 64
+    },
+    "charm.g1.tee4": {
+      "src": "assets/charms/g1_tee4.png?v=900f63d8",
+      "w": 48,
+      "h": 32
+    },
+    "charm.g1.hook4": {
+      "src": "assets/charms/g1_hook4.png?v=bf3dd54b",
+      "w": 32,
+      "h": 48
+    },
+    "charm.g1.hook4m": {
+      "src": "assets/charms/g1_hook4m.png?v=72fb734d",
+      "w": 32,
+      "h": 48
+    },
+    "charm.g1.step4": {
+      "src": "assets/charms/g1_step4.png?v=c88fb055",
+      "w": 48,
+      "h": 32
+    },
+    "charm.g1.step4m": {
+      "src": "assets/charms/g1_step4m.png?v=6cae2d4a",
+      "w": 48,
+      "h": 32
     }
   },
   "audio": {
