@@ -1,7 +1,7 @@
 /**
  * A boss fight's opening (설정 → 화면 → 보스 연출, owner 2026-11-21): the first time a boss comes within its aggro reach,
  * letterbox bars slide in, the camera eases in on it and a red WARNING shows its name and, under it, its epithet
- * ("- 절망의 친칠라 -"). About three seconds; the fight itself does not wait (the server never pauses).
+ * ("- 절망의 친칠라 -"). About three seconds; the fight does not wait (the server never pauses), so the HUD stays up.
  * Each boss spawn plays once (its mob id). overlay.js asks `active()` / `tick()` for the camera like talkcam.js.
  */
 import * as S3 from "./scene2d.js";
