@@ -22,9 +22,9 @@ const DIM = {
   // elite traits; `boss` the final boss's traits.
   floors: 1, minTier: 5, downMs: 10000, downR: 16, ckR: 12, hallR: 30,   // (minTier: the lowest world tier a raid is made for = Lv.37 shown, defs().dim.minLv; ckR: the fallen get up this many steps short of the final boss's hall; hallR: 균열의 문 opens past this)
   // the one floor (owner 2026-11-21): its monsters hit harder and lead more elites with two traits than the old floors did, the mid-boss two traits
-  floor: [{ hp: 1.15, atk: 1.15, elites: 2, traits: 2, boss: 2 }],
-  // the mid-boss portal: everyone inside goes on after `gateMs` (sooner once all standing step in); the raid boss x [hp, atk] over the challenge numbers
-  gateMs: 30000, raidBoss: [1, 1], raidUp: 0.66,
+  floor: [{ hp: 1.4, atk: 1.3, elites: 2, traits: 2, boss: 2 }],
+  // the mid-boss portal: everyone inside goes on after `gateMs` (sooner once all standing step in); the raid boss x [hp, atk] over the challenge numbers (owner 2026-11-21: 2.6 min was too quick; bot party now 4.7–6.6 min)
+  gateMs: 30000, raidBoss: [1.6, 1.1], raidUp: 0.66,
   emptyMs: 20000, portalMs: 90000, failMs: 8000, memberMs: 180000, rcMs: 20000, near: 80,
   // the gauge: a kill, an elite (guardians too), an orb an elite leaves behind, each × `gK` percent — fixed, so 100% takes
   // about 26 kills (gK 4.2; was 44 at 2.5) however many monsters a big floor holds: the party picks a route, never clears it all

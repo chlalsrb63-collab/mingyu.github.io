@@ -303,7 +303,7 @@ for (const [k, t] of [["cloakbat", 47], ["bloomwhale", 51]]) {
   const win = botRaid(k, t, true), lose = botRaid(k, t, false, 2);
   console.log(`  ${k}: 4 geared bots ${win.state} in ${win.min.toFixed(1)} min (${win.tries} tries, ${win.deaths} deaths, fury ${win.fury}, ${(win.left * 100).toFixed(0)} % left); 2 bare bots ${lose.state} (${(lose.left * 100).toFixed(0)} % left, ${lose.tries} tries)`);
   if (process.env.NOCLEAR) continue;
-  assert.ok(win.state === "clear" && win.min >= 2.5, `${k}: four geared heroes win, not in a blink (${win.min.toFixed(1)} min)`);
+  assert.ok(win.state === "clear" && win.min >= 4, `${k}: four geared heroes win, not in a blink (${win.min.toFixed(1)} min)`);
   assert.ok(lose.state !== "clear", `${k}: two bare heroes lose`);
 }
 // server-first kills: a first personal kill queues [name, kind] once for room.ts; the confirmed notice reaches the chat
