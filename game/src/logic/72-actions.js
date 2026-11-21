@@ -2,8 +2,8 @@
 // One row per action `t`, its check and its mutation side by side:
 //   check(S, p, a) → OK or bad(…)   asked by validateAction (70-validate.js) after its shared guards
 //   run(S, p, a)                     done by applyAction (75-apply.js) once the check said OK
-// A row with `down: true` may be asked while the hero is down; any other row is refused first with
-// "쓰러진 상태입니다". A name missing here is "알 수 없는 행동".
+// A row with `down: true` may be asked while the hero is down; any other row, or a name missing here, is
+// refused first with "쓰러진 상태입니다". An unknown name from a hero on their feet is "알 수 없는 행동".
 const ACTIONS = {
   // ── allowed while down: where the residents are, getting up, settings, the mirror
   nw: {
@@ -694,6 +694,624 @@ const ACTIONS = {
       fairPan(S, p, score);   // 장날 요리 대회 (63-festival.js)
       S.maps[p.map].ev.push(["u", p.eid, 0]);
       p.dirty = true;
+    },
+  },
+
+  // ── alive only: using things, gear, runes, sockets, stats
+  use: {
+    check(S, p, a) {
+      const ch = p.ch, now = S.now;
+      if (a.id === SOCK_ITEM) return socketValidate(p, a.k);
+      // Elixirs and the whetstone (life skills, 58-life.js).
+      if (lifeUse(a.id)) return lifeUseValidate(S, p, a);
+      const it = ITEMS[a.id];
+      if (!it || !["pot", "food", "camp", "scroll", "buff", "pet"].includes(it.type)) return bad("사용할 수 없는 아이템");
+      if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
+      if (it.type === "buff" || it.type === "pet") return OK;
+      if (it.type === "scroll") {
+        if (S.dims[p.map]?.story?.airship) return bad("구조 중에는 [떠나기]로 오아시스에 돌아갈 수 있습니다");
+        if (p.map === START.map) return bad("이미 마을에 있습니다");
+        if (p.recall) return bad("이미 귀환을 준비하고 있습니다");
+        return OK;
+      }
+      if (it.type === "camp") {
+        const rt = S.maps[p.map];
+        if (rt.fires.some((f) => dist(f.x, f.y, p.x, p.y) < 40)) return bad("바로 곁에 모닥불이 있습니다");
+        if (rt.fires.filter((f) => f.until).length >= FIRE_MAX) return bad("이 지역에는 모닥불이 너무 많습니다");
+        return OK;
+      }
+      if (now < p.potAt) return bad("재사용 대기 중입니다");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch, now = S.now;
+      if (a.id === SOCK_ITEM) { socketApply(S, p, a.k); return; }
+      if (lifeUse(a.id)) { lifeUseApply(S, p, a); return; }
+      const it = ITEMS[a.id];
+      const st = stats(p);
+      if (it.type === "scroll") {
+        rouse(S, p);
+        const rms = Math.round(pfxNum(p, "recall", RECALL_MS));   // (a prefix power may shorten the cast)
+        p.recall = { at: now + rms };
+        S.maps[p.map].ev.push(["rc", p.eid, rms]);
+        toast(p, "귀환 주문서를 읽는 중… (움직이거나 피해를 입으면 취소)");
+        p.dirty = true;
+        return;
+      }
+      if (it.type === "pet") {
+        // the same pet again sends it home; another takes its place
+        ch.pet = ch.pet === a.id ? "" : a.id;
+        S.maps[p.map].who = true;
+        if (ch.pet) S.maps[p.map].ev.push(["u", p.eid, 2]);
+        toast(p, ch.pet ? `${it.name}${pp(it.name, "이가")} 곁을 따라다닙니다. 내 전리품을 주워 옵니다.` : `${it.name}${pp(it.name, "을를")} 돌려보냈습니다.`);
+        p.dirty = true;
+        return;
+      }
+      takeItem(ch, a.id, 1);
+      if (it.type === "buff") {
+        // the same scroll never stacks with itself: reading it again refills its time
+        const had = ch.scr[it.buff] > now;
+        ch.scr[it.buff] = now + it.min * 60000;
+        S.maps[p.map].ev.push(["u", p.eid, 2]);
+        toast(p, had ? `${it.name} — 남은 시간을 다시 채웠습니다 (10분).` : `${it.name}${pp(it.name, "을를")} 읽었습니다. ${it.desc.split(".")[0]}.`);
+        p.dirty = true;
+        return;
+      }
+      if (it.type === "camp") {
+        S.maps[p.map].fires.push({ id: S.nextId++, x: Math.round(p.x), y: Math.round(p.y) - 14, until: now + FIRE_MS });
+        S.maps[p.map].ev.push(["u", p.eid, 2]);
+        toast(p, "모닥불을 피웠습니다. 앉아서(X) 쉬어 가세요.");
+        p.dirty = true;
+        return;
+      }
+      if (it.type === "food") {
+        // a life-buff food (P8) trades the meal's xp/atk for its work buff `lf` (58-life.js lifeBuff)
+        p.food = { id: a.id, until: now + it.buff.min * 60000, xp: it.buff.xp, atk: it.buff.atk, lf: it.buff.lf || null };
+        toast(p, `${it.name}${pp(it.name, "을를")} ${it.lit ? "피웠습니다" : "먹었습니다"}. ${it.desc}`);
+      }
+      p.potAt = now + 900;
+      if (it.heal) {
+        const amt = Math.min(Math.round(pfxPot(S, p, st, it.heal + st.mhp * (it.pct || 0)) * elementHealFactor(S, p)), Math.max(1, Math.round(st.mhp - p.hp)));
+        p.hp = Math.min(st.mhp, p.hp + amt);
+        S.maps[p.map].ev.push(["h", p.eid, -amt, 0, 1]);
+      }
+      if (it.mana) p.mp = Math.min(st.mmp, p.mp + it.mana);
+      if (it.cure) {
+        p.burn = null; p.poison = null; p.slowed = 0;
+        elementClear(p, "poison", "burn", "chill", "freeze");
+        toast(p, "몸이 개운해졌습니다. 중독·화상·오한·빙결이 씻겨 나갔습니다.");
+      }
+      S.maps[p.map].ev.push(["u", p.eid, it.heal ? 0 : 1]);
+      p.dirty = true;
+    },
+  },
+  eq: {
+    check(S, p, a) {
+      const ch = p.ch;
+      const s = invAt(ch, a.s);
+      if (!s || !isGear(s.id)) return bad("장착할 수 없습니다");
+      const it = ITEMS[s.id];
+      // worn from item level − 10 (an entry without `il` asks what its base always asked: gearReq, 50-loot-combat.js)
+      const need = gearReq(s);
+      if (ch.lvl < need) return bad(`레벨 ${need}부터 착용할 수 있습니다`);
+      if (a.k === "weapon2") {
+        // a second main weapon for everyone (§9); a hybrid's is one of its pair
+        if (it.type !== "weapon") return bad("무기만 Ⅱ에 장착할 수 있습니다");
+        if (isHybrid(ch) && !JOBS[ch.job].wk.includes(it.wk)) return bad(`${JOBS[ch.job].wk.map((k) => WK_NAME[k]).join("이나 ")}만 들 수 있습니다`);
+        return OK;
+      }
+      if (a.k !== undefined && !slotsFor(it.type).includes(a.k)) return bad("그 부위에는 착용할 수 없습니다");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const s = ch.inv[a.s];
+      // a ring goes where asked, else on the first bare finger
+      const fits = slotsFor(ITEMS[s.id].type);
+      const k = a.k === "weapon2" ? "weapon2" : fits.includes(a.k) ? a.k : fits.find((o) => !ch.eq[o]) || fits[0];
+      const old = ch.eq[k], was = inHand(ch);
+      ch.eq[k] = s;
+      if (k === "weapon") p.hammer = null;
+      if (old) ch.inv[a.s] = old;
+      else ch.inv.splice(a.s, 1);
+      // another kind of weapon in hand: a dance stops; a kind never used before puts its first skill on the bar
+      if (inHand(ch) !== was) handChanged(p);
+      afterGear(S, p);
+      if (k === "weapon") tutStep(S, p, "equip");
+    },
+  },
+  uneq: {
+    check(S, p, a) {
+      const ch = p.ch;
+      if (!SLOTS.includes(a.k)) return bad("잘못된 부위");
+      if (!ch.eq[a.k]) return bad("장착한 장비가 없습니다");
+      if (ch.inv.length >= bagCap(ch)) return bad("가방이 가득 찼습니다");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const was = inHand(ch);
+      ch.inv.push(ch.eq[a.k]);
+      ch.eq[a.k] = null;
+      if (a.k === "weapon") p.hammer = null;
+      if (inHand(ch) !== was) handChanged(p);
+      afterGear(S, p);
+    },
+  },
+  rune: {
+    check(S, p, a) {
+      const ch = p.ch;
+      const s = invAt(ch, a.s);
+      if (!s || ITEMS[s.id].type !== "rune") return bad("룬이 아닙니다");
+      if (p.dead) return bad("쓰러진 상태입니다");
+      const need = runeReq(s.il);
+      if (ch.lvl < need) return bad(`레벨 ${need}부터 이 룬을 사용할 수 있습니다`);
+      const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
+      if (!g) return bad("장착한 장비가 없습니다");
+      if (!Number.isInteger(a.i) || a.i < 0 || a.i >= Math.min(g.sk, sockCap(g))) return bad("뚫린 홈이 없습니다");
+      const current = g.ru[a.i];
+      if (runeSocketId(current) === s.id && runeSocketLevel(current) === runeIl(s.il)) return bad("이미 같은 룬이 끼워져 있습니다");
+      if (g.ru[a.i] && a.r !== 1) return bad("끼워진 룬을 교체하면 사라집니다. 교체를 확인하세요");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const g = ch.eq[a.k];
+      const slot = ch.inv[a.s];
+      if (--slot.n === 0) ch.inv.splice(a.s, 1);
+      while (g.ru.length < g.sk) g.ru.push(null);
+      g.ru[a.i] = [slot.id, runeIl(slot.il)];
+      const name = RUNES[slot.id].name;
+      toast(p, `[${name}]${pp(name, "을를")} 끼웠습니다.`);
+      S.maps[p.map].ev.push(["e", p.eid, 1]);
+      afterGear(S, p);
+    },
+  },
+  socket: {
+    check(S, p, a) { return socketValidate(p, a.k); },
+    run(S, p, a) { socketApply(S, p, a.k); },
+  },
+  train: {
+    check(S, p, a) {
+      const ch = p.ch;
+      // Spend earned points: a = [str, wil, dex, int, wis, luk].
+      if (!Array.isArray(a.a) || a.a.length !== ST_ORDER.length || !a.a.every((v) => Number.isInteger(v) && v >= 0 && v <= 50)) return bad("잘못된 능력치");
+      const n = a.a.reduce((s, v) => s + v, 0);
+      if (n < 1 || n > 50) return bad("잘못된 능력치");
+      if (p.dead) return bad("쓰러진 상태입니다");
+      if (ST_ORDER.some((k, i) => ch.st[k] + a.a[i] > ST_CAP)) return bad(`능력치는 ${ST_CAP}까지 올릴 수 있습니다`);
+      if (n > statPoints(ch)) return bad("능력치 포인트가 부족합니다");
+      return OK;
+    },
+    run(S, p, a) {
+      ST_ORDER.forEach((k, i) => { p.ch.st[k] += a.a[i]; });
+      afterGear(S, p);
+    },
+  },
+
+  // ── alive only: the warehouse, the shop
+  wh: {
+    check(S, p, a) {
+      const ch = p.ch;
+      if (!npcNear(p, "bank")) return bad("창고지기가 너무 멉니다");
+      const wh = ch.wh;
+      if (a.a === "gold") {
+        if (!Number.isSafeInteger(a.n) || a.n === 0) return bad("잘못된 금액");
+        if (a.n > 0 && ch.gold < a.n) return bad("골드가 부족합니다");
+        if (a.n < 0 && wh.gold < -a.n) return bad("창고에 골드가 부족합니다");
+        return OK;
+      }
+      // materials straight from the 재료 주머니: { a: "put", pid: itemId, n }
+      if (a.a === "put" && typeof a.pid === "string") {
+        const n = a.n | 0;
+        if (n < 1 || n > pouchHas(ch, a.pid)) return bad("잘못된 수량");
+        return whRoom(wh, a.pid, n) ? OK : bad("창고가 가득 찼습니다");
+      }
+      const from = a.a === "put" ? ch.inv : a.a === "take" ? wh.items : null;
+      if (!from) return bad("잘못된 요청입니다");
+      const sl = Number.isInteger(a.s) ? from[a.s] : null;
+      if (!sl) return bad("아이템이 없습니다");
+      if (a.a === "put" && isQuestItem(sl.id)) return bad("퀘스트 아이템은 창고에 맡길 수 없습니다");
+      const n = isGear(sl.id) ? 1 : a.n | 0;
+      if (n < 1 || n > (sl.n || 1)) return bad("잘못된 수량");
+      if (a.a === "put") return whRoom(wh, sl.id, n, sl.il) ? OK : bad("창고가 가득 찼습니다");
+      return (isGear(sl.id) ? ch.inv.length < bagCap(ch) : canAdd(ch, sl.id, n, sl.il)) ? OK : bad("가방이 가득 찼습니다");
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const wh = ch.wh;
+      if (a.a === "gold") {
+        ch.gold -= a.n; wh.gold += a.n;
+        toast(p, a.n > 0 ? `${a.n}G를 맡겼습니다.` : `${-a.n}G를 찾았습니다.`);
+      } else if (a.a === "put" && typeof a.pid === "string") {
+        // from the 재료 주머니 (taking it back out goes through addItem, so into the pouch again)
+        stackInto(wh.items, a.pid, a.n | 0);
+        pouchTake(ch, a.pid, a.n | 0);
+      } else if (a.a === "put") {
+        const sl = ch.inv[a.s];
+        if (isGear(sl.id)) { ch.inv.splice(a.s, 1); wh.items.push(sl); }
+        else {
+          const n = a.n | 0;
+          stackInto(wh.items, sl.id, n, sl.il);
+          sl.n -= n;
+          if (sl.n <= 0) ch.inv.splice(a.s, 1);
+        }
+        petCheck(S, p);
+      } else {
+        const sl = wh.items[a.s];
+        if (isGear(sl.id)) { wh.items.splice(a.s, 1); ch.inv.push(sl); }
+        else {
+          const n = a.n | 0;
+          addItem(ch, sl.id, n, sl.il);
+          sl.n -= n;
+          if (sl.n <= 0) wh.items.splice(a.s, 1);
+        }
+      }
+      p.dirty = true;
+    },
+  },
+  sellall: {
+    check(S, p) {
+      if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
+      return p.ch.inv.some(junk) ? OK : bad("팔 일반 장비가 없습니다");
+    },
+    run(S, p) {
+      const ch = p.ch;
+      // every plain, unenhanced, unsocketed piece in the bag goes in one go
+      let n = 0, gold = 0;
+      for (let i = ch.inv.length - 1; i >= 0; i--) {
+        if (!junk(ch.inv[i])) continue;
+        gold += sellPrice(ch.inv[i]);
+        ch.inv.splice(i, 1);
+        n++;
+      }
+      ch.gold += gold;
+      p.gain.push(["gold", gold]);
+      toast(p, `일반 장비 ${n}개를 ${gold}G에 팔았습니다.`);
+      p.dirty = true;
+    },
+  },
+  buy: {
+    check(S, p, a) {
+      const ch = p.ch;
+      if (typeof a.id !== "string" || !Object.hasOwn(ITEMS, a.id) && !SHOP.includes(a.id)) return bad("팔지 않는 물건입니다");
+      const n = a.n | 0;
+      if (n < 1 || n > STACK) return bad("잘못된 수량");
+      if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
+      if (!goodsNear(p).has(a.id)) return bad("이 가게에서는 팔지 않는 물건입니다");
+      const id = resolveItem(a.id, ch);
+      if (ch.gold < buyCost(p, a.id, id, n)) return bad("골드가 부족합니다");
+      if (!canAdd(ch, id, n)) return bad("가방이 가득 찼습니다");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const id = resolveItem(a.id, ch);
+      const n = a.n | 0;
+      ch.gold -= buyCost(p, a.id, id, n);
+      addItem(ch, id, n);
+      foundItem(S, p, id, n);
+      if (ITEMS[id].type === "pot") tutStep(S, p, "buy");
+      p.dirty = true;
+    },
+  },
+  sell: {
+    check(S, p, a) {
+      const ch = p.ch;
+      // from the 재료 주머니: { pid: itemId, n }
+      if (typeof a.pid === "string") {
+        const n = a.n | 0;
+        if (n < 1 || n > pouchHas(ch, a.pid)) return bad("잘못된 수량");
+        return npcNear(p, "shop") ? OK : bad("상인이 너무 멉니다");
+      }
+      // every piece of plain gear at once: { junk: 0 | 1 } (46-bag.js junkSlots)
+      if (a.junk !== undefined) {
+        if (a.junk !== 0 && a.junk !== 1) return bad("잘못된 요청");
+        if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
+        return junkSlots(ch, a.junk).length ? OK : bad("팔 만한 장비가 없습니다");
+      }
+      const s = invAt(ch, a.s);
+      if (!s) return bad("아이템이 없습니다");
+      if (isQuestItem(s.id)) return bad("퀘스트 아이템은 팔 수 없습니다");
+      const n = a.n | 0;
+      if (n < 1 || n > (s.n || 1)) return bad("잘못된 수량");
+      if (!npcNear(p, "shop")) return bad("상인이 너무 멉니다");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const n = a.n | 0;
+      if (typeof a.pid === "string") {
+        // from the 재료 주머니
+        const each = sellPrice({ id: a.pid });
+        pouchTake(ch, a.pid, n);
+        ch.gold += each * n;
+        p.gain.push(["gold", each * n]);
+        p.dirty = true;
+        return;
+      }
+      if (a.junk !== undefined) {
+        let gold = 0, cnt = 0;
+        for (const i of junkSlots(ch, a.junk)) { gold += sellPrice(ch.inv[i]); ch.inv.splice(i, 1); cnt++; }
+        ch.gold += gold;
+        p.gain.push(["gold", gold]);
+        toast(p, `장비 ${cnt}개를 ${gStr(gold)}G에 팔았습니다.`);
+        petCheck(S, p);
+        p.dirty = true;
+        return;
+      }
+      const s = ch.inv[a.s];
+      const each = sellPrice(s);
+      ch.gold += each * n;
+      if (isGear(s.id) || s.n <= n) ch.inv.splice(a.s, 1);
+      else s.n -= n;
+      p.gain.push(["gold", each * n]);
+      petCheck(S, p);
+      p.dirty = true;
+    },
+  },
+
+  // ── alive only: the smith
+  enh: {
+    check(S, p, a) {
+      const ch = p.ch;
+      const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
+      if (!g) return bad("장착한 장비가 없습니다");
+      if (isJewel(g.id)) return bad("장신구는 강화할 수 없습니다");
+      if (g.enh >= 10) return bad("최대 강화 단계입니다");
+      if (g.cu === 1) return bad("저주받은 장비는 강화할 수 없습니다 — 저주 해제 주문서로 먼저 풀어 주세요");
+      if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
+      const c = enhCost(g);
+      if (ch.gold < c.gold) return bad("골드가 부족합니다");
+      if (countItem(ch, "stone") < c.stone) return bad("강화석이 부족합니다");
+      // b: 1 adds a 축복 강화석 (+10 %p, a failure never drops a step)
+      if (a.b !== undefined && a.b !== 0 && a.b !== 1) return bad("잘못된 요청입니다");
+      if (a.b === 1 && countItem(ch, "stone_b") < 1) return bad("축복 강화석이 없습니다");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const g = ch.eq[a.k];
+      const c = enhCost(g);
+      ch.gold -= c.gold;
+      takeItem(ch, "stone", c.stone);
+      // a 축복 강화석 (b: 1): +ENH_BLESS %p, and a failure keeps the step and brings no curse
+      const bless = a.b === 1;
+      if (bless) takeItem(ch, "stone_b", 1);
+      // the roll, with the pity gauge (63-social-weekly.js enhWin: failures from +5 fill it, a full gauge is a sure try)
+      const win = enhWin(S, ch, g, bless);
+      // a lifted curse (cu 2) helps this one try only
+      if (g.cu === 2) delete g.cu;
+      if (win) {
+        g.enh++;
+        toast(p, `${gearFull(g)} 강화 성공!`);
+        if (g.enh >= 7) sys(S, `${ch.name}님이 ${gearFull(g)} 강화에 성공했습니다!`);
+        ch.cnt.enh = Math.max(ch.cnt.enh, g.enh);
+        checkAch(S, p);
+      } else if (bless) {
+        toast(p, `${gearFull(g)} 강화 실패... 축복 덕분에 단계도 그대로, 저주도 없습니다.`);
+      } else {
+        // owner (job-freedom.md §8): a failure drops one step and curses the piece until a 저주 해제 주문서 lifts it
+        g.enh = Math.max(0, g.enh - 1);
+        g.cu = 1;
+        toast(p, `강화 실패... ${gearFull(g)}${pp(gearFull(g), "으로")} 내려가고 저주를 받았습니다. 저주 해제 주문서로 풀 수 있습니다.`);
+      }
+      S.maps[p.map].ev.push(["e", p.eid, win ? 1 : 0, win ? g.enh : bless ? 0 : -1]);
+      afterGear(S, p);
+    },
+  },
+  uncurse: {
+    check(S, p, a) {
+      const ch = p.ch;
+      const g = SLOTS.includes(a.k) ? ch.eq[a.k] : null;
+      if (!g || g.cu !== 1) return bad("저주받은 장비가 아닙니다");
+      if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
+      if (countItem(ch, "uncurse") < 1) return bad("저주 해제 주문서가 없습니다");
+      if (ch.gold < UNCURSE_FEE * ITEMS[g.id].tier) return bad(`저주 해제 수수료 ${(UNCURSE_FEE * ITEMS[g.id].tier).toLocaleString()}G가 부족합니다`);
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const g = ch.eq[a.k];
+      takeItem(ch, "uncurse", 1);
+      ch.gold -= UNCURSE_FEE * ITEMS[g.id].tier;
+      g.cu = 2;
+      toast(p, `${gearFull(g)}의 저주가 풀렸습니다 — 다음 강화는 성공 확률 +${ENH_UNCURSE}%p`);
+      S.maps[p.map].ev.push(["e", p.eid, 2]);
+      afterGear(S, p);
+    },
+  },
+  salv: {
+    check(S, p, a) {
+      const s = invAt(p.ch, a.s);
+      if (!s || !isGear(s.id)) return bad("분해할 수 없는 아이템");
+      if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
+      if (!canAdd(p.ch, "stone", 12)) return bad("가방이 가득 찼습니다");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const s = ch.inv[a.s];
+      ch.inv.splice(a.s, 1);
+      // better pieces break down into more stones; enhancement gives some back
+      const n = [rnd(S) < 0.35 ? 1 : 0, 1, 2, 5, 5, 8][s.q | 0] + Math.floor((s.enh | 0) / 2);
+      if (n > 0) { addItem(ch, "stone", n); p.gain.push(["item", "stone", n, 0]); }
+      toast(p, n > 0 ? `${gearName(s)} 분해 — 강화석 ${n}개` : `${gearName(s)} 분해 — 건진 것이 없습니다`);
+      p.dirty = true;
+    },
+  },
+
+  // ── alive only: the elder's bounties and quests
+  bq: {
+    check(S, p, a) {
+      const ch = p.ch;
+      if (!npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
+      if (a.a === "take") {
+        const d = MOBS[a.k];
+        if (typeof a.k !== "string" || !d || d.boss || d.chest || d.questOnly) return bad("그런 의뢰는 없습니다");
+        if (d.lv > toTier(ch.lvl) + 4) return bad("아직 감당하기 어려운 상대입니다");
+        return OK;
+      }
+      if (a.a === "done") return ch.bq && ch.bq.n >= ch.bq.need ? OK : bad("아직 의뢰를 마치지 못했습니다");
+      return bad("잘못된 요청입니다");
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      if (a.a === "take") {
+        ch.bq = { k: a.k, n: 0, need: BOUNTY_N };
+        toast(p, `반복 토벌 수락: ${MOBS[a.k].name} ${BOUNTY_N}마리`);
+      } else {
+        const d = MOBS[ch.bq.k];
+        const gold = Math.round(((d.gold[0] + d.gold[1]) / 2) * ch.bq.need * 0.8);
+        ch.gold += gold;
+        p.gain.push(["gold", gold]);
+        ch.bn++;
+        // every third report earns a stone, every tenth a rune
+        if (ch.bn % 3 === 0 && addItem(ch, "stone", 1)) p.gain.push(["item", "stone", 1, 0]);
+        if (ch.bn % 10 === 0) gainRune(S, p);
+        toast(p, `반복 토벌 완료 (${ch.bn}회째) — 같은 의뢰가 다시 시작됩니다.`);
+        dailyProg(S, p, "bounty");
+        const xp = Math.round(d.xp * ch.bq.need * 0.5);
+        ch.bq = { k: ch.bq.k, n: 0, need: BOUNTY_N };
+        gainXp(S, p, xp);
+      }
+      p.dirty = true;
+    },
+  },
+  quest: {
+    check(S, p, a) {
+      const ch = p.ch;
+      if (!npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
+      const quest = QUESTS[ch.q.i];
+      if (!quest) return bad("모든 의뢰를 마쳤습니다");
+      if (a.a === "accept") {
+        if (ch.q.st !== 0) return bad("이미 진행 중입니다");
+        // a chapter's story beat comes first (QUESTS `sq`, 62-side-quests.js SQ_MAIN)
+        const beat = quest.sq && !ch.sq.done[quest.sq] ? SQ_BY[quest.sq] : null;
+        return beat ? bad(`먼저 [${beat.title}]${pp(beat.title, "을를")} 마쳐 주게 — ${npcName(beat.giver)}`) : OK;
+      }
+      if (a.a === "done") {
+        if (ch.q.st !== 1 || ch.q.n < quest.n) return bad("아직 의뢰를 마치지 못했습니다");
+        for (const [id, n] of quest.items) if (!canAdd(ch, id, n)) return bad("가방을 비우고 다시 오세요");
+        return OK;
+      }
+      return bad("잘못된 요청입니다");
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const quest = QUESTS[ch.q.i];
+      tutStep(S, p, "talk");
+      if (a.a === "accept") {
+        ch.q.st = 1; ch.q.n = 0;
+        toast(p, `의뢰 수락: ${quest.title}`);
+      } else {
+        ch.gold += quest.gold;
+        p.gain.push(["gold", quest.gold]);
+        for (const [id, n] of quest.items) if (addItem(ch, id, n)) foundItem(S, p, id, n);
+        ch.q = { i: ch.q.i + 1, n: 0, st: 0 };
+        toast(p, `의뢰 완료: ${quest.title}`);
+        if (quest.honor) { checkAch(S, p); toast(p, `칭호 「${quest.honor}」 획득!`); }
+        if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "의뢰 보상");
+        gainXp(S, p, quest.xp);
+      }
+      p.dirty = true;
+    },
+  },
+
+  // ── alive only: jobs and stats (45-jobs.js): reset, the starter weapon, a job, a hybrid's swap
+  respec: {
+    check(S, p) {
+      const ch = p.ch;
+      if (p.dead) return bad("쓰러진 상태입니다");
+      if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
+      if (!spentPoints(ch.st)) return bad("되돌릴 능력치가 없습니다");
+      const gold = statResetCost(ch);
+      if (gold && countItem(ch, RESPEC_ITEM) < 1) return bad("되새김 인장이 필요합니다");
+      if (ch.gold < gold) return bad(`골드가 부족합니다 (${gold.toLocaleString()}G 필요)`);
+      return OK;
+    },
+    run(S, p) {
+      const ch = p.ch;
+      const fee = statResetCost(ch);
+      if (fee) {
+        ch.gold -= fee;
+        takeItem(ch, RESPEC_ITEM, 1);
+      } else ch.rs--;
+      ch.st = freshSt();
+      afterGear(S, p);
+      S.maps[p.map].ev.push(["u", p.eid, 2]);
+      toast(p, `망각의 의식 — 능력치를 모두 되돌렸습니다.${fee ? ` (되새김 인장 1개 · ${fee.toLocaleString()}G)` : " (무료)"}`);
+    },
+  },
+  starter: {
+    check(S, p, a) {
+      const ch = p.ch;
+      if (ch.sw) return bad("이미 무기를 받았습니다");
+      if (!STARTER_WKS.includes(a.wk)) return bad("그런 무기는 없습니다");
+      if (!npcNear(p, "train")) return bad("수련관이 너무 멉니다");
+      if (ch.inv.length >= bagCap(ch)) return bad("가방이 가득 찼습니다");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      // the weapon picked at 카이 goes straight into the hand; the one held before goes to the bag
+      const id = `w_${WK_ID[a.wk]}_1`, old = ch.eq.weapon, was = inHand(ch);
+      ch.sw = 1;
+      ch.eq.weapon = plain(id);
+      if (old) ch.inv.push(old);
+      p.gain.push(["item", id, 1, 0]);
+      if (inHand(ch) !== was) handChanged(p);
+      afterGear(S, p);
+      toast(p, `[${ITEMS[id].name}]${pp(ITEMS[id].name, "을를")} 받아 손에 들었습니다.${old ? " 들던 무기는 가방에 넣었습니다." : ""}`);
+      tutStep(S, p, "equip");
+    },
+  },
+  job_change: {
+    check(S, p, a) {
+      const ch = p.ch;
+      if (typeof a.j !== "string") return bad("없는 직업입니다");
+      const why = jobOk(ch, a.j);
+      if (why) return bad(why);
+      if (!npcNear(p, "job")) return bad("전직관이 너무 멉니다");
+      // a job walked before is taken up again for free (47-job-freedom.js)
+      if (!ch.jobs[a.j] && ch.gold < JOBS[a.j].cost) return bad("골드가 부족합니다");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const job = JOBS[a.j], back = ch.jobs[a.j];
+      if (!back) ch.gold -= job.cost;
+      ch.job = a.j;
+      // a job walked before resumes where it was left (47-job-freedom.js)
+      ch.jp = ch.jobs[a.j] = back || { lv: 1, xp: 0 };
+      afterGear(S, p);
+      S.maps[p.map].ev.push(["jc", p.eid]);
+      sys(S, `${ch.name}님이 [${job.name}]의 길을 걷기 시작했습니다!`);
+      toast(p, `[${job.name}] 전직!`);
+      // the job's signature skill onto the bar
+      const signature = SKILL[JOB_SKILL[a.j]];
+      if (back) toast(p, `[${job.name}] 직업 Lv.${back.lv}부터 이어서 걷습니다.`);
+      else if (signature) toast(p, `직업 Lv.${signature.jobNeed}에 [${signature.name}]${pp(signature.name, "을를")} 배웁니다.`);
+      checkAch(S, p);
+    },
+  },
+  wsw: {
+    check(S, p) {
+      if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
+      if (!p.ch.eq.weapon2) return bad("Ⅱ에 장착한 무기가 없습니다");
+      if (S.now < (p.wswAt || 0)) return bad("wsw");
+      return OK;
+    },
+    run(S, p) {
+      const ch = p.ch;
+      // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops. Anyone else: as a re-equip.
+      const was = inHand(ch);
+      [ch.eq.weapon, ch.eq.weapon2] = [ch.eq.weapon2, ch.eq.weapon];
+      p.wswAt = S.now + WSW_MS;
+      p.dance = null;
+      if (!isHybrid(ch) && inHand(ch) !== was) handChanged(p);
+      afterGear(S, p);
+      S.maps[p.map].ev.push(["ws", p.eid]);
     },
   },
 };
