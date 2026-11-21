@@ -256,7 +256,7 @@ function onSnap(s) {
   }
   sync(G.players, s.P, (e, r) => { e.tx = r[1]; e.ty = r[2]; e.dir = r[3]; e.dead = !!r[4]; e.hp = r[5]; e.mhp = r[6]; e.sit = !!r[7]; e.carry = r[9] | 0; }, t);
   sync(G.fires, s.F || [], (e, r) => { e.tx = r[1]; e.ty = r[2]; e.x = r[1]; e.y = r[2]; }, t);
-  sync(G.mobs, s.M, (e, r) => { e.k = r[1]; e.tx = r[2]; e.ty = r[3]; e.dir = r[4]; e.hp = r[5]; e.hk = (s.HK && s.HK[r[0]]) || 1; e.el = r[6]; e.tr = r[7] || []; e.bph = r[10] | 0; e.bst = r[11] | 0; e.stg = r[12] | 0; e.enchant = G.defs.elements?.types[s.enc?.[r[0]]]; e.cb = s.cb?.[r[0]] | 0; }, t, G.gone);   // [10, 11]: a scripted boss's phase and state, [12]: its stagger gauge left %
+  sync(G.mobs, s.M, (e, r) => { e.k = r[1]; e.tx = r[2]; e.ty = r[3]; e.dir = r[4]; e.hp = r[5]; e.hk = (s.HK && s.HK[r[0]]) || 1; e.lv = (s.MLV && s.MLV[r[0]]) || 0; e.el = r[6]; e.tr = r[7] || []; e.bph = r[10] | 0; e.bst = r[11] | 0; e.stg = r[12] | 0; e.enchant = G.defs.elements?.types[s.enc?.[r[0]]]; e.cb = s.cb?.[r[0]] | 0; }, t, G.gone);   // [10, 11]: a scripted boss's phase and state, [12]: its stagger gauge left %
   sync(G.drops, s.D, (e, r) => { e.it = r[1]; e.tx = r[2]; e.ty = r[3]; e.q = r[4]; }, t);
   G.ailments.clear();
   for (const [id, rows] of s.ail || []) G.ailments.set(id, rows.map(([kind, left, stacks]) => [kind, t + left * 100, stacks]));

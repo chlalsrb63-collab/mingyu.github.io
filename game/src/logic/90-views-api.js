@@ -128,6 +128,7 @@ function mobViews(S, rt) {
       mob, row, enc: mob.enchant ? DAMAGE_TYPES.indexOf(mob.enchant) : undefined, cm: comboMask(S, mob), ail: ail.length ? [mob.id, ail] : null,
       // a rift's toughness (64-dim.js hk: party size, level, tier) — only where it isn't 1, so the bar can show the real HP
       hk: mob.hk && mob.hk !== 1 ? Math.round(mob.hk * 1000) / 1000 : 0,
+      lv: mob.ecoLv ? shownLv(mob.ecoLv) : 0,
     });
   }
   return { fb, list };
@@ -191,6 +192,7 @@ export function viewFor(S, pid) {
     if (v.cm) (out.cb || (out.cb = {}))[v.mob.id] = v.cm;
     if (v.ail) (out.ail || (out.ail = [])).push(v.ail);
     if (v.hk) (out.HK || (out.HK = {}))[v.mob.id] = v.hk;
+    if (v.lv) (out.MLV || (out.MLV = {}))[v.mob.id] = v.lv;
   }
   for (const dr of rt.drops) {
     if (near(dr) && (dr.own === pid || S.now >= dr.freeAt)) out.D.push([dr.id, dr.it, Math.round(dr.x), Math.round(dr.y), dr.q]);

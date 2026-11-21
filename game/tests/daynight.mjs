@@ -274,7 +274,12 @@ assert.ok(L.atlas().maps.town.npcs.some((n) => n.id === teller.id && n.night), "
   const tNight = at(22);
   L.tick(W, tNight); L.endTick(W);
   L.tick(W, tNight + 13000); L.endTick(W);
-  assert.ok(ert.mobs.some((m) => !m.dead && m.k === "moonspirit"), "moonspirit spawns outdoors at night");
+  const ms = ert.mobs.find((m) => !m.dead && m.k === "moonspirit");
+  assert.ok(ms, "moonspirit spawns outdoors at night");
+  assert.ok(ms.ecoLv >= 1 && ms.ecoLv <= 7, "moonspirit in meadow scales to meadow tier level, got " + ms.ecoLv);
+  assert.ok(ms.ak < 0.35 && ms.hk < 0.35 && ms.ecoDef <= 6, "moonspirit in meadow scales HP/ATK/DEF down to meadow level");
+  const snap = L.viewFor(W, "eco-1");
+  assert.ok(snap.MLV && snap.MLV[ms.id] >= 1 && snap.MLV[ms.id] <= 25, "snapshot MLV sends field-scaled display level, got " + snap.MLV?.[ms.id]);
   // When dawn arrives, calm untargeted moonspirits fade away
   L.tick(W, at(12, 1)); L.endTick(W);
   assert.ok(!ert.mobs.some((m) => !m.dead && m.k === "moonspirit"), "moonspirit retires by day");

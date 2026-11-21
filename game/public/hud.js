@@ -436,13 +436,13 @@ function targetFrame(t) {
   if (box.hidden === live) box.hidden = !live;
   if (!live) return;
   const d = G.defs.mobs[m.k], max = mobMax(m), tr = m.tr || [], traits = G.defs.traits || {};
-  const key = `${G.tgt}|${m.el}|${m.enchant || ""}|${tr.join()}`;
+  const key = `${G.tgt}|${m.el}|${m.lv || 0}|${m.enchant || ""}|${tr.join()}`;
   if (box.dataset.k !== key) {
     box.dataset.k = key;
     const rank = m.el === 2 && DUNGEONS.has(G.map.id) ? "수문장 " : RANK_NAME[m.el | 0];
     const nm = box.querySelector(".tn");
     const enchant = enchantName(m);
-    nm.textContent = `Lv.${d.lv} ${rank}${enchant ? `${enchant} ` : ""}${d.name}`;
+    nm.textContent = `Lv.${m.lv || d.lv} ${rank}${enchant ? `${enchant} ` : ""}${d.name}`;
     nm.style.color = d.boss ? "#ff9ae0" : m.el === 2 ? "#ff8a4a" : m.el ? "#ffbe3c" : "";
     const tt = box.querySelector(".tt");
     tt.textContent = "";

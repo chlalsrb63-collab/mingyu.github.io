@@ -10119,7 +10119,8 @@ function grazeChance(p, mob) {
   const d = MOBS[mob.k];
   if (d.chest || d.still) return 0;
   const ch = p.ch, m = ch.eq.weapon ? ch.wm[ITEMS[ch.eq.weapon.id].wk].lv : 0, g = SFX.graze;
-  return clamp(g[0] + g[1] * Math.max(0, Math.ceil(d.lv - toTier(ch.lvl) - 1e-9)) + (d.boss ? g[2] : 0) - m, 0, g[3]);
+  const mlv = mob.ecoLv ?? d.lv;
+  return clamp(g[0] + g[1] * Math.max(0, Math.ceil(mlv - toTier(ch.lvl) - 1e-9)) + (d.boss ? g[2] : 0) - m, 0, g[3]);
 }
 /** A monster's direct blow or shot at `p`: true if they slipped it ("회피"). */
 function evadeBlow(S, rt, p) {
@@ -11446,7 +11447,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const ign = fx.ign ? 1 - (1 - (o.ign || 0)) * (1 - fx.ign) : (o.ign || 0);
   // 거검의 관성: each stack a sword carries adds to its critical damage
   const critd = st.critd + (st.wk === "sword" ? inertOf(p) * SKILL.inertia.critd : 0);
-  const defence = d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
+  const defence = (mob.ecoDef ?? d.def) * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
   const raw = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) * elementOutgoing(S, p);
   const parts = elementDamage(S, p, mob, raw, defence, {
     type: o.elem || skillDamageType(o.sk, st.wk),
@@ -17397,13 +17398,27 @@ function spawnEcoMob(S, id, m, rt, kind, tag, now) {
   const mob = newMob(S, kind, [0, 0, 0, 0]);
   mob.el = 0; mob.tr = []; mob.temp = true; mob.eco = tag;
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
-  const refK = (m.kinds || []).find((k) => MOBS[k] && !MOBS[k].boss && !MOBS[k].chest);
+  // Scale to the nearest local non-boss/non-chest spawn at (tx, ty), else the map's lowest-level mob
+  let refK = null, bestD = Infinity;
+  for (const sp of m.spawns || []) {
+    const sd = MOBS[sp.k];
+    if (!sd || sd.boss || sd.chest) continue;
+    const cx = (sp.r[0] + sp.r[2]) / 2, cy = (sp.r[1] + sp.r[3]) / 2;
+    const d = Math.hypot(cx - tx, cy - ty);
+    if (d < bestD) { bestD = d; refK = sp.k; }
+  }
+  if (!refK) {
+    const pool = (MAP_META[id]?.kinds || []).filter((k) => MOBS[k] && !MOBS[k].boss && !MOBS[k].chest);
+    pool.sort((a, b) => MOBS[a].lv - MOBS[b].lv);
+    refK = pool[0] || null;
+  }
   if (refK) {
     const ref = MOBS[refK], base = MOBS[kind];
-    mob.hk = Math.max(0.15, ref.hp / base.hp);
-    mob.ak = Math.max(0.15, ref.atk / base.atk);
-    mob.xpK = Math.max(0.2, (ref.xp * 1.8) / base.xp);
-    mob.goldK = Math.max(0.2, (ref.gold[1] * 2.2) / base.gold[1]);
+    mob.hk = Math.max(0.01, (ref.hp * 1.15) / base.hp);
+    mob.ak = Math.max(0.02, ref.atk / base.atk);
+    mob.ecoDef = ref.def;
+    mob.xpK = Math.max(0.01, (ref.xp * 1.8) / base.xp);
+    mob.goldK = Math.max(0.01, (ref.gold[1] * 2.2) / base.gold[1]);
     mob.ecoLv = ref.lv;
   }
   mob.hp = mobMax(mob);
@@ -28357,6 +28372,7 @@ function mobViews(S, rt) {
       mob, row, enc: mob.enchant ? DAMAGE_TYPES.indexOf(mob.enchant) : undefined, cm: comboMask(S, mob), ail: ail.length ? [mob.id, ail] : null,
       // a rift's toughness (64-dim.js hk: party size, level, tier) — only where it isn't 1, so the bar can show the real HP
       hk: mob.hk && mob.hk !== 1 ? Math.round(mob.hk * 1000) / 1000 : 0,
+      lv: mob.ecoLv ? shownLv(mob.ecoLv) : 0,
     });
   }
   return { fb, list };
@@ -28420,6 +28436,7 @@ export function viewFor(S, pid) {
     if (v.cm) (out.cb || (out.cb = {}))[v.mob.id] = v.cm;
     if (v.ail) (out.ail || (out.ail = [])).push(v.ail);
     if (v.hk) (out.HK || (out.HK = {}))[v.mob.id] = v.hk;
+    if (v.lv) (out.MLV || (out.MLV = {}))[v.mob.id] = v.lv;
   }
   for (const dr of rt.drops) {
     if (near(dr) && (dr.own === pid || S.now >= dr.freeAt)) out.D.push([dr.id, dr.it, Math.round(dr.x), Math.round(dr.y), dr.q]);

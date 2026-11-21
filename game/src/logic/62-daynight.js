@@ -210,13 +210,27 @@ function spawnEcoMob(S, id, m, rt, kind, tag, now) {
   const mob = newMob(S, kind, [0, 0, 0, 0]);
   mob.el = 0; mob.tr = []; mob.temp = true; mob.eco = tag;
   mob.x = mob.hx = mob.wx = tx * T + 8; mob.y = mob.hy = mob.wy = ty * T + 10;
-  const refK = (m.kinds || []).find((k) => MOBS[k] && !MOBS[k].boss && !MOBS[k].chest);
+  // Scale to the nearest local non-boss/non-chest spawn at (tx, ty), else the map's lowest-level mob
+  let refK = null, bestD = Infinity;
+  for (const sp of m.spawns || []) {
+    const sd = MOBS[sp.k];
+    if (!sd || sd.boss || sd.chest) continue;
+    const cx = (sp.r[0] + sp.r[2]) / 2, cy = (sp.r[1] + sp.r[3]) / 2;
+    const d = Math.hypot(cx - tx, cy - ty);
+    if (d < bestD) { bestD = d; refK = sp.k; }
+  }
+  if (!refK) {
+    const pool = (MAP_META[id]?.kinds || []).filter((k) => MOBS[k] && !MOBS[k].boss && !MOBS[k].chest);
+    pool.sort((a, b) => MOBS[a].lv - MOBS[b].lv);
+    refK = pool[0] || null;
+  }
   if (refK) {
     const ref = MOBS[refK], base = MOBS[kind];
-    mob.hk = Math.max(0.15, ref.hp / base.hp);
-    mob.ak = Math.max(0.15, ref.atk / base.atk);
-    mob.xpK = Math.max(0.2, (ref.xp * 1.8) / base.xp);
-    mob.goldK = Math.max(0.2, (ref.gold[1] * 2.2) / base.gold[1]);
+    mob.hk = Math.max(0.01, (ref.hp * 1.15) / base.hp);
+    mob.ak = Math.max(0.02, ref.atk / base.atk);
+    mob.ecoDef = ref.def;
+    mob.xpK = Math.max(0.01, (ref.xp * 1.8) / base.xp);
+    mob.goldK = Math.max(0.01, (ref.gold[1] * 2.2) / base.gold[1]);
     mob.ecoLv = ref.lv;
   }
   mob.hp = mobMax(mob);

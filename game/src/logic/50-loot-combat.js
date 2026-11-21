@@ -412,7 +412,7 @@ function hurtMob(S, rt, mob, p, mult, sure, opt) {
   const ign = fx.ign ? 1 - (1 - (o.ign || 0)) * (1 - fx.ign) : (o.ign || 0);
   // 거검의 관성: each stack a sword carries adds to its critical damage
   const critd = st.critd + (st.wk === "sword" ? inertOf(p) * SKILL.inertia.critd : 0);
-  const defence = d.def * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
+  const defence = (mob.ecoDef ?? d.def) * ((o.mag ?? st.mag) ? SFX.magDef : SFX.physDef) * (1 - ign);
   const raw = st.atk * mult * (0.85 + rnd(S) * 0.3) * (crit ? critd : 1) * (graze ? SFX.grazeK : 1) * elementOutgoing(S, p);
   const parts = elementDamage(S, p, mob, raw, defence, {
     type: o.elem || skillDamageType(o.sk, st.wk),

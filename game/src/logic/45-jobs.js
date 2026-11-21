@@ -230,7 +230,8 @@ function grazeChance(p, mob) {
   const d = MOBS[mob.k];
   if (d.chest || d.still) return 0;
   const ch = p.ch, m = ch.eq.weapon ? ch.wm[ITEMS[ch.eq.weapon.id].wk].lv : 0, g = SFX.graze;
-  return clamp(g[0] + g[1] * Math.max(0, Math.ceil(d.lv - toTier(ch.lvl) - 1e-9)) + (d.boss ? g[2] : 0) - m, 0, g[3]);
+  const mlv = mob.ecoLv ?? d.lv;
+  return clamp(g[0] + g[1] * Math.max(0, Math.ceil(mlv - toTier(ch.lvl) - 1e-9)) + (d.boss ? g[2] : 0) - m, 0, g[3]);
 }
 /** A monster's direct blow or shot at `p`: true if they slipped it ("회피"). */
 function evadeBlow(S, rt, p) {
