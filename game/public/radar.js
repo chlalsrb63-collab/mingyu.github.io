@@ -14,7 +14,9 @@
  * The map window has a regional map (fit to the window; wheel or ± to zoom, drag
  * to pan; party members live with names, gates with where they lead, stones clickable to warp
  * when the warp rules allow) and the world route map, every region from defs.maps joined by its
- * doors (defs.maps[].to), plus a resident directory from the server's NPC schedules.
+ * doors (defs.maps[].to), plus a resident directory from the server's NPC schedules. A region picked on
+ * the world chart can be opened whole (전체 지도: its layout asked once with `mapov`, cached) in the regional
+ * view, with its stones (woken ones warp), campfires and NPCs.
  *
  * The client lends what it owns through init(): G, act, openWin/toggleWin/isOpen, wpWoke, npcOut,
  * miniDots (레이드던전 marks), canWarp, channel info.
@@ -174,6 +176,14 @@ function aimScreen(G) {
 
 /** A new map: its radar texture and the marks that never move. */
 export function loadMap(m) {
+  M = chartOf(m);
+  view.pv = null;
+  if (D) updateBuildings(true);
+  view.reset = true;
+  view.dirty = true;
+}
+/** A map's radar texture and the marks that never move (the current map, or one previewed from the world chart). */
+function chartOf(m) {
   const tex = Art.renderMini(m, 1);
   const stones = [];
   for (const k of m.marks || []) if (k.kind === "waypoint") stones.push({ x: k.x, y: k.y, i: stones.length });
@@ -210,10 +220,27 @@ export function loadMap(m) {
     p.bld = !!b;
     if (b && p.building) b.building = p.building;
   }
-  M = { m, tex, stones, portals, shrines, blds, buildings, obelisk: ob ? [ob.x, ob.y] : null };
-  if (D) updateBuildings(true);
-  view.reset = true;
-  view.dirty = true;
+  return { m, tex, stones, portals, shrines, blds, buildings, obelisk: ob ? [ob.x, ob.y] : null };
+}
+
+// ── 전체 지도: another region's whole layout (the world chart's detail → [전체 지도]) ──
+const overviews = new Map();   // map id → chartOf(payload); maps are fixed for the boot
+let ovWant = null;
+function preview(id) {
+  if (id === D.G.map?.id) { view.pv = null; setTab("here"); return; }
+  const c = overviews.get(id);
+  if (c) { view.pv = c; view.reset = true; setTab("here"); return; }
+  ovWant = id;
+  D.act({ t: "mapov", id });
+}
+/** The server's answer to `mapov` (net.js onSnap `mov`). */
+export function onOverview(m) {
+  const c = chartOf(m);
+  overviews.set(m.id, c);
+  if (ovWant !== m.id) return;
+  ovWant = null;
+  if (!D.isOpen("map")) return;
+  view.pv = c; view.reset = true; setTab("here");
 }
 
 function walkToBuilding(building) {
@@ -259,7 +286,7 @@ function walkToMap(id) {
 
 function updateBuildings(rebuild = false) {
   const buildings = M?.buildings || [], panel = $("#map-buildings");
-  panel.hidden = view.tab !== "here" || !buildings.length;
+  panel.hidden = view.tab !== "here" || !!view.pv || !buildings.length;
   $("#w-map").classList.toggle("map-has-buildings", !panel.hidden);
   if (!rebuild) return;
   $("#map-building-list").replaceChildren(...buildings.map(building => {
@@ -274,8 +301,8 @@ function updateBuildings(rebuild = false) {
 }
 
 /** Stone `i` of the current map: its name (defs.waypoints) and whether the sheet has woken it. */
-function stoneInfo(st) {
-  const G = D.G, id = G.map.id, w = (G.defs.waypoints || []).find((o) => o.id === id);
+function stoneInfo(st, id = D.G.map.id) {
+  const G = D.G, w = (G.defs.waypoints || []).find((o) => o.id === id);
   const name = w ? ((w.n || 1) > 1 ? `${w.name} · ${(w.names && w.names[st.i]) || st.i + 1}` : w.name) : "이동의 돌";
   return { name, open: D.wpWoke(G.self, id, st.i) };
 }
@@ -443,7 +470,7 @@ function setZoom(i) {
 
 // ───────────────────────────── the map window ─────────────────────────────
 
-const view = { tab: "here", z: 1, cx: 0, cy: 0, reset: true, dirty: true, at: 0, hits: [], hover: null, drag: null, u: 1, ox: 0, oy: 0 };
+const view = { pv: null, tab: "here", z: 1, cx: 0, cy: 0, reset: true, dirty: true, at: 0, hits: [], hover: null, drag: null, u: 1, ox: 0, oy: 0 };
 const bandOf = (b) => (b ? `Lv.${b[0]}–${b[1]}` : "안전 지대");
 const residentsPanel = { filter: "all", rows: null, display: "", map: null, route: null };
 const servicePost = (n) => n.role && n.role !== "talk" && n.role !== "quest";
@@ -574,7 +601,8 @@ export function drawWin(t) {
 }
 
 function drawHere(g, W, H, t) {
-  const G = D.G, m = M.m, S = m.w + m.h;
+  // a region previewed from the world chart (view.pv) shows only what never moves; its woken stones still warp
+  const G = D.G, A = view.pv || M, live = !view.pv, m = A.m, S = m.w + m.h;
   const fit = Math.min((W - 24) / S, (2 * (H - 24)) / S);
   const u = fit * view.z;
   if (view.reset) { view.cx = m.w / 2; view.cy = m.h / 2; view.reset = false; }
@@ -583,7 +611,7 @@ function drawHere(g, W, H, t) {
   const P = (wx, wy) => { const tx = wx / T, ty = wy / T; return [ox + u * (tx - ty), oy + (u / 2) * (tx + ty)]; };
   const Pt = (tx, ty) => P(tx * T + 8, ty * T + 8);
   g.setTransform(u, u / 2, -u, u / 2, ox, oy);
-  g.drawImage(M.tex, 0, 0);
+  g.drawImage(A.tex, 0, 0);
   g.setTransform(1, 0, 0, 1, 0, 0);
   // labels wait until every mark is down, then go in order of importance (0 first), never on each other
   const labels = [];
@@ -592,81 +620,86 @@ function drawHere(g, W, H, t) {
   const names = u >= 4.5;
   // gates first: where each leads
   // the town's buildings: the sign's glyph at the door and the name (their doors need no mark of their own)
-  for (const b of M.blds) {
+  for (const b of A.blds) {
     const [x, y] = Pt(b.x, b.y);
     blit(g, spr(b.icon, "#f0d8a8"), x, y - 3);
     tag(b.name, x, y - 15, "#f0d8a8", 10, 2);
-    hit(x, y, 9, b.building ? `${b.name} · 입구까지 길찾기` : b.name, b.building && (() => walkToBuilding(b.building)));
+    hit(x, y, 9, live && b.building ? `${b.name} · 입구까지 길찾기` : b.name, live && b.building && (() => walkToBuilding(b.building)));
   }
-  for (const p of M.portals) {
+  for (const p of A.portals) {
     if (p.bld) continue;
     const [x, y] = Pt(p.x, p.y);
     blit(g, spr(p.door ? "door" : "gate", p.door ? COL.door : COL.gate), x, y - 3);
     tag(p.to, x, y - 15, p.door ? "#f0c890" : "#f0c8ff", 11, 2);
+    if (!live) { hit(x, y, 9, `${p.door ? "문" : "관문"} → ${p.to}`); continue; }
     hit(x, y, 9, p.building ? `${p.building.name} · 입구까지 길찾기` : `${p.door ? "문" : "관문"} → ${p.to} · 클릭하면 이동`,
       p.building ? () => walkToBuilding(p.building) : () => walkToSpot(p.tiles || [[Math.round(p.x), Math.round(p.y)]], p.to));
   }
   // waypoint stones: clickable to warp when woken and the rules allow, or walk there if unopened (WLD-06)
-  const can = D.canWarp(), here = M.stones.findIndex((st) => Math.hypot(G.me.x - (st.x * T + 8), G.me.y - (st.y * T + 8)) < 40);
-  for (const st of M.stones) {
-    const [x, y] = Pt(st.x, st.y), { name, open } = stoneInfo(st), cur = here === st.i;
+  const can = D.canWarp(), here = !live ? -1 : A.stones.findIndex((st) => Math.hypot(G.me.x - (st.x * T + 8), G.me.y - (st.y * T + 8)) < 40);
+  for (const st of A.stones) {
+    const [x, y] = Pt(st.x, st.y), { name, open } = stoneInfo(st, m.id), cur = here === st.i;
     blit(g, spr("stone", open ? COL.stone : COL.stoneOff), x, y - 3);
     tag(open ? name : `${name} · 미개방`, x, y + 12, open ? "#bfeaff" : "#a8a090", 10, 3);
     const ok = open && can && !cur;
-    hit(x, y, 9, cur ? `${name} — 지금 여기` : !open ? `${name} — 미개방 (클릭하면 걸어갑니다)` : ok ? `${name} — 클릭하면 순간이동합니다` : `${name} — 지금은 이동할 수 없습니다`,
-      ok ? () => { D.act(st.i ? { t: "warp", to: G.map.id, i: st.i } : { t: "warp", to: G.map.id }); D.play("ui"); }
-        : !open ? () => walkToSpot([[st.x, st.y]], name) : null);
+    hit(x, y, 9, cur ? `${name} — 지금 여기` : !open ? `${name} — 미개방${live ? " (클릭하면 걸어갑니다)" : " · 가까이 가면 깨어납니다"}` : ok ? `${name} — 클릭하면 순간이동합니다` : `${name} — 지금은 이동할 수 없습니다`,
+      ok ? () => { D.act(st.i ? { t: "warp", to: m.id, i: st.i } : { t: "warp", to: m.id }); D.play("ui"); }
+        : !open && live ? () => walkToSpot([[st.x, st.y]], name) : null);
   }
   for (const c of m.camps || []) {
     const [x, y] = P(c.x, c.y);
     blit(g, spr("fire", COL.fire), x, y);
+    if (!live) { hit(x, y, 8, "모닥불 — 앉아서(Z) 쉬거나 야영 기능을 이용합니다"); continue; }
     hit(x, y, 8, "모닥불 — 클릭하면 이동 · 앉아서(Z) 쉬거나 야영 기능을 이용합니다", () => walkToSpot([[Math.floor(c.x / T), Math.floor(c.y / T)]], "모닥불"));
   }
-  for (const f of G.fires.values()) { const [x, y] = P(f.x, f.y); blit(g, spr("fire", "#ffb050"), x, y); }
-  for (const [sx, sy] of M.shrines) { const [x, y] = Pt(sx, sy); blit(g, spr("wind", COL.wind), x, y - 2); hit(x, y, 8, "질주의 바람 — 클릭하면 바람 신단으로 이동", () => walkToSpot([[sx, sy]], "바람 신단")); }
-  if (M.obelisk) { const [x, y] = Pt(...M.obelisk); blit(g, spr("rift", COL.obelisk), x, y - 3); tag("차원의 오벨리스크", x, y - 15, "#e0c8ff", 10, 4); hit(x, y, 9, "차원의 오벨리스크 — 클릭하면 이동", () => walkToSpot([M.obelisk], "차원의 오벨리스크")); }
+  if (live) for (const f of G.fires.values()) { const [x, y] = P(f.x, f.y); blit(g, spr("fire", "#ffb050"), x, y); }
+  for (const [sx, sy] of A.shrines) { const [x, y] = Pt(sx, sy); blit(g, spr("wind", COL.wind), x, y - 2); hit(x, y, 8, live ? "질주의 바람 — 클릭하면 바람 신단으로 이동" : "질주의 바람", live && (() => walkToSpot([[sx, sy]], "바람 신단"))); }
+  if (A.obelisk) { const [x, y] = Pt(...A.obelisk); blit(g, spr("rift", COL.obelisk), x, y - 3); tag("차원의 오벨리스크", x, y - 15, "#e0c8ff", 10, 4); hit(x, y, 9, live ? "차원의 오벨리스크 — 클릭하면 이동" : "차원의 오벨리스크", live && (() => walkToSpot([A.obelisk], "차원의 오벨리스크"))); }
   for (const n of m.npcs || []) {
-    if (n.thing || (NPC.cast(n.id) ? !servicePost(n) : !D.npcOut(n))) continue;
+    if (n.thing || n.fair || (NPC.cast(n.id) ? !servicePost(n) : live ? !D.npcOut(n) : n.night)) continue;
     const [x, y] = Pt(n.x, n.y), [gl, col, what] = roleOf(n);
     blit(g, spr(gl, col), x, y - 3);
-    if (names && n.role !== "talk") tag(n.name, x, y + 11, "#f4ecd0", 10);
-    hit(x, y, 8, `${n.name} · ${what}${NPC.cast(n.id) && !NPC.at(n.id)?.onPost ? " · 업무 자리" : ""}`);
+    if ((names || !live) && n.role !== "talk") tag(n.name, x, y + 11, "#f4ecd0", 10);
+    hit(x, y, 8, `${n.name} · ${what}${live && NPC.cast(n.id) && !NPC.at(n.id)?.onPost ? " · 업무 자리" : ""}`);
   }
-  const track = residentTarget();
-  for (const n of NPC.list()) {
-    const pinned = n.id === track;
-    if (!pinned && n.onPost && n.post && servicePost(n.post)) continue;
-    const [x, y] = P(n.x, n.y);
-    dotAt(g, x, y, pinned ? COL.track : COL.resident, pinned ? 5 : 3);
-    if (pinned || names) tag(n.name, x, y - 13, COL.track, 10, pinned ? 1 : 5);
-    hit(x, y, 7, `${n.name} · ${NPC.actName(n.act)}`, () => { NPC.track(NPC.tracked() === n.id ? null : n.id); D.play("ui"); });
+  const placed = [];
+  if (live) {
+    const track = residentTarget();
+    for (const n of NPC.list()) {
+      const pinned = n.id === track;
+      if (!pinned && n.onPost && n.post && servicePost(n.post)) continue;
+      const [x, y] = P(n.x, n.y);
+      dotAt(g, x, y, pinned ? COL.track : COL.resident, pinned ? 5 : 3);
+      if (pinned || names) tag(n.name, x, y - 13, COL.track, 10, pinned ? 1 : 5);
+      hit(x, y, 7, `${n.name} · ${NPC.actName(n.act)}`, () => { NPC.track(NPC.tracked() === n.id ? null : n.id); D.play("ui"); });
+    }
+    const guidance = residentPoint(track);
+    if (guidance?.gate) {
+      const [x, y] = P(guidance.x, guidance.y);
+      blit(g, spr("talk", COL.track), x, y);
+      tag(`${NPC.cast(track).name}에게 가는 문`, x, y - 16, COL.track, 10, 1);
+    }
+    for (const mob of G.mobs.values()) {
+      const d = (G.defs.mobs || {})[mob.k] || {}, [x, y] = P(mob.x, mob.y);
+      if (d.boss) blit(g, spr("skull", COL.boss), x, y); else dotAt(g, x, y, mob.el ? "#ffbe3c" : "#ff5050", mob.el ? 3 : 2);
+    }
+    if (G.fb) for (const [bx, by] of G.fb) { const [x, y] = P(bx, by); blit(g, spr("skull", COL.boss), x, y); tag("우두머리", x, y - 13, "#ff9a8a", 10, 1); hit(x, y, 9, "사냥터 우두머리 — 클릭하면 위치로 이동", () => walkToSpot([[Math.floor(bx / T), Math.floor(by / T)]], "우두머리 위치")); }
+    D.miniDots((wx, wy, col, r = 2) => { const [x, y] = P(wx, wy); dotAt(g, x, y, col, Math.max(3, r)); }, t);
+    // the party, live, with names
+    for (const q of partyHere()) {
+      const [x, y] = P(q.x, q.y);
+      blit(g, disc(q.col, q.n), x, y);
+      tag(q.name, x, y - 13, q.col, 11, 1);
+      hit(x, y, 8, `파티원 ${q.n} · ${q.name} (X ${Math.floor(q.x / T)}, Y ${Math.floor(q.y / T)})`);
+    }
+    // me, blinking, big
+    const [cx, cy] = P(G.me.x, G.me.y), ph = (t % 1000) / 1000;
+    ring(g, cx, cy + 1, 7 + ph * 18, `rgba(255,244,200,${(0.9 * (1 - ph)).toFixed(2)})`);
+    if (Math.floor(t / 400) % 2 === 0) blit(g, meArrow(aimScreen(G), 2), cx, cy);
+    else blit(g, meArrow(aimScreen(G)), cx, cy);
+    tag("나", cx, cy - 26, "#fff2a0", 11, 0);
+    placed.push([cx - 13, cy - 16, cx + 13, cy + 14]);   // nothing written over my marker
   }
-  const guidance = residentPoint(track);
-  if (guidance?.gate) {
-    const [x, y] = P(guidance.x, guidance.y);
-    blit(g, spr("talk", COL.track), x, y);
-    tag(`${NPC.cast(track).name}에게 가는 문`, x, y - 16, COL.track, 10, 1);
-  }
-  for (const mob of G.mobs.values()) {
-    const d = (G.defs.mobs || {})[mob.k] || {}, [x, y] = P(mob.x, mob.y);
-    if (d.boss) blit(g, spr("skull", COL.boss), x, y); else dotAt(g, x, y, mob.el ? "#ffbe3c" : "#ff5050", mob.el ? 3 : 2);
-  }
-  if (G.fb) for (const [bx, by] of G.fb) { const [x, y] = P(bx, by); blit(g, spr("skull", COL.boss), x, y); tag("우두머리", x, y - 13, "#ff9a8a", 10, 1); hit(x, y, 9, "사냥터 우두머리 — 클릭하면 위치로 이동", () => walkToSpot([[Math.floor(bx / T), Math.floor(by / T)]], "우두머리 위치")); }
-  D.miniDots((wx, wy, col, r = 2) => { const [x, y] = P(wx, wy); dotAt(g, x, y, col, Math.max(3, r)); }, t);
-  // the party, live, with names
-  for (const q of partyHere()) {
-    const [x, y] = P(q.x, q.y);
-    blit(g, disc(q.col, q.n), x, y);
-    tag(q.name, x, y - 13, q.col, 11, 1);
-    hit(x, y, 8, `파티원 ${q.n} · ${q.name} (X ${Math.floor(q.x / T)}, Y ${Math.floor(q.y / T)})`);
-  }
-  // me, blinking, big
-  const [cx, cy] = P(G.me.x, G.me.y), ph = (t % 1000) / 1000;
-  ring(g, cx, cy + 1, 7 + ph * 18, `rgba(255,244,200,${(0.9 * (1 - ph)).toFixed(2)})`);
-  if (Math.floor(t / 400) % 2 === 0) blit(g, meArrow(aimScreen(G), 2), cx, cy);
-  else blit(g, meArrow(aimScreen(G)), cx, cy);
-  tag("나", cx, cy - 26, "#fff2a0", 11, 0);
-  const placed = [[cx - 13, cy - 16, cx + 13, cy + 14]];   // nothing written over my marker
   labels.sort((a, b) => a.pri - b.pri || a.i - b.i);
   for (const l of labels) {
     g.font = `${l.size}px Galmuri11, Galmuri9, sans-serif`;
@@ -690,7 +723,7 @@ function currentChart() {
     world.detailKey = null;
     const picker = $("#map-region");
     picker.length = 1;
-    for (const { d } of world.chart.outdoor) picker.add(new Option(d.name, d.id));
+    for (const { d } of world.chart.outdoor) picker.add(new Option(d.band ? `${d.name} · Lv.${d.band[0]}–${d.band[1]}` : d.minLv ? `${d.name} · Lv.${d.minLv}` : d.name, d.id));
     if (world.chart.anchors.get(world.selected) !== world.selected) world.selected = null;
     picker.value = world.selected || "";
   }
@@ -764,14 +797,15 @@ function drawWorld(g, W, H, t) {
   const canWarp = !!D.canWarp(), key = JSON.stringify([d.id, state.current, state.route, state.quests.get(d.id), G.self?.wp?.[d.id], G.self?.lvl, canWarp, state.seen.has(d.id), unlockState(d, G.self), G.self?.fbMap?.[d.id], G.self?.tro?.length]);
   if (key === world.detailKey) return;
   world.detailKey = key;
-  mapDetail(detail, d, { defs: G.defs, chart, state, canWarp, select: selectWorld, walk: walkToMap, travel: (to, i) => {
+  mapDetail(detail, d, { defs: G.defs, chart, state, canWarp, select: selectWorld, walk: walkToMap, preview, travel: (to, i) => {
     D.act({ t: "warp", to, i }); D.play("ui");
   } });
 }
 
 function showHover() {
   const h = view.hover, el = $("#map-info");
-  const txt = h ? h.tip : view.tab === "here" ? `${D.G.map.name}${D.G.map.band ? " · " + bandOf(D.G.map.band) : ""} · 휠/±로 확대, 끌어서 이동 · 깨운 돌을 누르면 순간이동` : "지도 조각을 누르거나 지역을 골라 경로를 확인하세요";
+  const pv = view.pv?.m;
+  const txt = h ? h.tip : view.tab === "here" && pv ? `${pv.name}${pv.band ? " · 권장 " + bandOf(pv.band) : ""} · 전체 지도 미리보기 · 깨운 돌을 누르면 순간이동 · [지역] 탭: 현재 위치` : view.tab === "here" ? `${D.G.map.name}${D.G.map.band ? " · " + bandOf(D.G.map.band) : ""} · 휠/±로 확대, 끌어서 이동 · 깨운 돌을 누르면 순간이동` : "지도 조각을 누르거나 지역을 골라 경로를 확인하세요";
   if (el.textContent !== txt) el.textContent = txt;
   $("#map-cv").style.cursor = h && h.click ? "pointer" : view.drag ? "grabbing" : "grab";
 }
@@ -798,7 +832,7 @@ function zoomAt(f, x, y) {
   clampView();
   view.dirty = true;
 }
-function clampView() { const m = M && M.m; if (!m) return; view.cx = Math.max(0, Math.min(m.w, view.cx)); view.cy = Math.max(0, Math.min(m.h, view.cy)); }
+function clampView() { const m = (view.pv || M)?.m; if (!m) return; view.cx = Math.max(0, Math.min(m.w, view.cx)); view.cy = Math.max(0, Math.min(m.h, view.cy)); }
 function setTab(tab) {
   view.tab = tab; view.hover = null; view.dirty = true;
   for (const b of document.querySelectorAll("#map-tabs button[data-tab]")) {
@@ -826,7 +860,7 @@ function legend() {
   if (view.tab === "here") {
     chip(rimArrow(0, COL.me), "나"); chip(disc(PARTY_COL[1], 2), "파티원"); chip(spr("gate", COL.gate), "관문"); chip(spr("door", COL.door), "건물 문");
     chip(spr("stone", COL.stone), "이동의 돌"); chip(spr("stone", COL.stoneOff), "미개방"); chip(spr("coin", ROLE.shop[1]), "상점"); chip(spr("anvil", ROLE.smith[1]), "대장간");
-    chip(spr("sword", ROLE.train[1]), "수련관"); chip(spr("bag", ROLE.bank[1]), "창고"); chip(spr("excl", ROLE.elder[1]), "의뢰"); chip(spr("fire", COL.fire), "모닥불");
+    chip(spr("sword", ROLE.train[1]), "수련관"); chip(spr("bag", ROLE.bank[1]), "창고"); chip(spr("excl", ROLE.elder[1]), "의뢰"); chip(spr("talk", ROLE.talk[1]), "NPC"); chip(spr("fire", COL.fire), "모닥불");
     chip(spr("rift", COL.obelisk), "오벨리스크"); chip(spr("wind", COL.wind), "바람 신단"); chip(spr("skull", COL.boss), "우두머리"); chip(sw("#ff5050"), "몬스터");
   } else {
     chip(sw("#ffd84a"), "현재 위치"); chip(disc(PARTY_COL[0], 1), "파티원");
@@ -839,6 +873,7 @@ export function opened() {
   const residents = !!D?.G?.defs?.npclife?.cast?.length;
   $("#map-residents-tab").hidden = !residents;
   if (!residents && view.tab === "residents") setTab("here");
+  if (view.pv) { view.pv = null; view.reset = true; updateBuildings(); }
   if (view.z > 1 && M) { view.cx = D.G.me.x / T; view.cy = D.G.me.y / T; clampView(); }
   view.dirty = true;
   legend();
@@ -864,7 +899,7 @@ export function init(deps) {
   }
   $("#mini-fb").addEventListener("click", (e) => { e.stopPropagation(); fl.hidden = !fl.hidden; $("#mini-fb").classList.toggle("on", !fl.hidden); D.play("ui"); });
   setHide();
-  for (const b of document.querySelectorAll("#map-tabs button[data-tab]")) b.addEventListener("click", () => { setTab(b.dataset.tab); D.play("ui"); });
+  for (const b of document.querySelectorAll("#map-tabs button[data-tab]")) b.addEventListener("click", () => { if (b.dataset.tab === "here" && view.pv) { view.pv = null; view.reset = true; } setTab(b.dataset.tab); D.play("ui"); });
   for (const b of document.querySelectorAll(".res-filters button")) b.addEventListener("click", () => {
     residentsPanel.filter = b.dataset.filter;
     for (const chip of b.parentElement.children) {
@@ -926,7 +961,7 @@ export function init(deps) {
       if (h && h.id) walkToMap(h.id);
       return;
     }
-    if (view.tab === "here" && M?.m && view.u > 0) {
+    if (view.tab === "here" && !view.pv && M?.m && view.u > 0) {
       const a = (x - view.ox) / view.u, b = (2 * (y - view.oy)) / view.u;
       const tx = Math.floor((a + b) / 2), ty = Math.floor((b - a) / 2);
       if (tx >= 0 && ty >= 0 && tx < M.m.w && ty < M.m.h) walkToSpot([[tx, ty]], `X ${tx} · Y ${ty}`);

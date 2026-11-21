@@ -129,3 +129,22 @@ p.dirty = true;
 const snapSelf = viewFor(S, "test").self;
 assert.ok(snapSelf.fbMap && snapSelf.fbMap.meadow === 0, "self.fbMap reports live boss readiness per region");
 console.log(`추적: ${wanted.size} objective NPCs on reachable maps.`);
+
+// 월드맵 → 전체 지도 (mapov): another outdoor map's layout once, in the next snapshot only; interiors and unknown ids refused, throttled
+{
+  const { validateAction, applyAction } = await import("../src/logic.js");
+  S.now = 100000; p.map = "town"; p.sendMap = false; viewFor(S, "test");
+  assert.ok(!validateAction(S, "test", { t: "mapov", id: "nope" }).ok, "unknown map refused");
+  assert.ok(!validateAction(S, "test", { t: "mapov", id: 7 }).ok, "non-string id refused");
+  const inside = D.maps.find((m) => m.kind === "in").id;
+  assert.ok(!validateAction(S, "test", { t: "mapov", id: inside }).ok, "interiors are not previewed");
+  assert.ok(validateAction(S, "test", { t: "mapov", id: "forest" }).ok);
+  applyAction(S, "test", { t: "mapov", id: "forest" });
+  assert.ok(!validateAction(S, "test", { t: "mapov", id: "cave" }).ok, "one request a second");
+  const v = viewFor(S, "test");
+  assert.equal(v.mov.id, "forest"); assert.equal(v.mov.w, D.maps.find((m) => m.id === "forest").w);
+  assert.ok(v.mov.marks.some((k) => k.kind === "waypoint"), "the overview carries its waypoint stones");
+  assert.ok(Array.isArray(v.mov.camps) && Array.isArray(v.mov.npcs));
+  assert.equal(viewFor(S, "test").mov, undefined, "sent once");
+  console.log(`전체 지도: forest overview ${(JSON.stringify(v.mov).length / 1024).toFixed(0)} KB, once on request.`);
+}

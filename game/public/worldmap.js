@@ -289,7 +289,7 @@ function formatRespawn(sec) {
 }
 
 export function mapDetail(host, d, ctx) {
-  const { defs, chart, state, canWarp, travel, select, walk } = ctx;
+  const { defs, chart, state, canWarp, travel, select, walk, preview } = ctx;
   const { current, route, quests, self, woke, seen } = state;
   const E = (tag, text, cls) => { const n = document.createElement(tag); n.textContent = text; if (cls) n.className = cls; return n; };
   const nameOf = id => chart.nodes.get(id)?.d.name || "";
@@ -305,6 +305,12 @@ export function mapDetail(host, d, ctx) {
     go.type = "button"; go.title = "문을 따라 자동으로 걸어갑니다 (움직이면 취소) · 지역을 두 번 눌러도 됩니다";
     go.addEventListener("click", () => walk(d.id));
     guide.append(" ", go);
+  }
+  if (preview) {
+    const look = E("button", "전체 지도", "btn small");
+    look.type = "button"; look.title = "이 지역의 전체 모습과 이동의 돌·모닥불·NPC 위치를 봅니다";
+    look.addEventListener("click", () => preview(d.id));
+    guide.append(" ", look);
   }
   const open = wokeStones(d, self, woke), ways = defs.waypoints?.find(w => w.id === d.id);
   const stones = E("div", "", "map-detail-buttons map-fast-travel");

@@ -11,6 +11,15 @@ const ACTIONS = {
     check(S, p) { return p.npcWhereAt === undefined || S.now >= p.npcWhereAt ? OK : bad("잠시 뒤 주민 위치를 다시 확인하세요"); },
     run(S, p) { p.npcWhereAt = S.now + 5000; p.npcWhere = true; },
   },
+  // 월드맵 → 전체 지도: one other outdoor map's layout, once, in the next snapshot (`mov`, 90-views-api.js)
+  mapov: {
+    down: true,
+    check(S, p, a) {
+      if (typeof a.id !== "string" || !Object.hasOwn(MAP_META, a.id) || MAP_META[a.id].theme === "interior") return bad("볼 수 없는 지도입니다");
+      return p.movAt === undefined || S.now >= p.movAt ? OK : bad("잠시 뒤 다시 지도를 열어 보세요");
+    },
+    run(S, p, a) { p.movAt = S.now + 1000; p.mov = a.id; },
+  },
   respawn: {
     down: true,
     check(S, p, a) {

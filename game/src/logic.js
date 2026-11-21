@@ -25973,6 +25973,15 @@ const ACTIONS = {
     check(S, p) { return p.npcWhereAt === undefined || S.now >= p.npcWhereAt ? OK : bad("잠시 뒤 주민 위치를 다시 확인하세요"); },
     run(S, p) { p.npcWhereAt = S.now + 5000; p.npcWhere = true; },
   },
+  // 월드맵 → 전체 지도: one other outdoor map's layout, once, in the next snapshot (`mov`, 90-views-api.js)
+  mapov: {
+    down: true,
+    check(S, p, a) {
+      if (typeof a.id !== "string" || !Object.hasOwn(MAP_META, a.id) || MAP_META[a.id].theme === "interior") return bad("볼 수 없는 지도입니다");
+      return p.movAt === undefined || S.now >= p.movAt ? OK : bad("잠시 뒤 다시 지도를 열어 보세요");
+    },
+    run(S, p, a) { p.movAt = S.now + 1000; p.mov = a.id; },
+  },
   respawn: {
     down: true,
     check(S, p, a) {
@@ -28327,6 +28336,8 @@ export function viewFor(S, pid) {
   // (and a whisper only its reader, and nobody a name they blocked: 63-social-weekly.js chatFor)
   if (S.chat.length) { const chat = chatFor(S, p, pid); if (chat.length) out.chat = chat; }
   if (p.sendMap) out.map = mapPayload(mapOfS(S, p.map));
+  // a map asked for by the world map's overview (`mapov`), once
+  if (p.mov) { out.mov = mapPayload(mapOfS(S, p.mov)); p.mov = null; }
   // the sky: [weather (-1 under a roof), server clock in seconds, season 0–3, 장날 open 0/1 (63-festival.js)], when
   // the weather turns or the market opens or closes, on arrival, and once a minute to keep everyone's hour in step
   const wx = rt.wx ?? weatherAt(p.map, S.now), fo = fairOpen(S.now) ? 1 : 0;

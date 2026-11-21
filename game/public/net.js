@@ -237,6 +237,7 @@ function onSnap(s) {
   me.serverX = s.me[0]; me.serverY = s.me[1];
   if (s.nl) NpcLife.onLegs(s.nl);
   if (s.nw) NpcLife.onWhere(s.nw);
+  if (s.mov) Radar.onOverview(s.mov);           // 월드맵 → 전체 지도: another map's layout, once on request (mapov)
   if (s.map || s.me[5]) { me.x = s.me[0]; me.y = s.me[1]; me.dir = s.me[6]; if (s.me[10] !== undefined) me.aimI = s.me[10]; }
   me.hp = s.me[2]; me.mp = s.me[3]; me.sit = !!s.me[7]; me.carry = s.me[12] | 0;   // [12]: what is held instead of the weapon (carry.js)
   // me[11]: ms left on the dash (Space) cooldown; a 0 just after pressing may predate the press reaching the server
