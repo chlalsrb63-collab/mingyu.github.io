@@ -29,8 +29,8 @@ export const meta = { game: "테일즈테일즈", minPlayers: 1, maxPlayers: 40 
 const T = 16;
 /** The bag: INV_BASE slots to start, grown with bag_expand to INV_MAX (sheet field bagCap, 46-bag.js). */
 const INV_BASE = 40, INV_MAX = 100;
-/** Player levels run 1–200; the world keeps its own 1–50 tiers (02-jobs-stats.js). */
-const MAXLV = 200;
+/** The world tops out at Lv.200 (gear, tiers 1–50, every level-scaled formula); heroes may grow on to LV_CAP (45-jobs.js, owner 2026-11-21). */
+const MAXLV = 200, LV_CAP = 300;
 const STACK = 99;
 /** The order the bag's tidy button puts things in. */
 const SORT_KIND = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet", "rune", "pot", "food", "fish", "scroll", "buff", "camp", "revive", "pet", "mat", "furn"];

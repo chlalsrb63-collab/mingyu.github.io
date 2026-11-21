@@ -2,18 +2,21 @@
 // docs/design/jobs-and-stats.md (tables in 02-jobs-stats.js). Levels, stat points, derived stats,
 // weapon mastery, jobs, the migration of the old four classes, and the arrows a bow looses.
 
-/** Player level (1–200) → world tier (1–50, real); tier → the level printed on screen. */
-const toTier = (lvl) => (lvl + 3) / 4;
+/** Player level (1–200; above 200 reads as 200) → world tier (1–50, real); tier → the level printed on screen. */
+const toTier = (lvl) => (Math.min(lvl, MAXLV) + 3) / 4;
 const shownLv = (t) => 4 * t - 3;
 /** Invested AP keeps its full weight until the first threshold, then half and a quarter. */
 const eff = (s) => ST_BASE + 0.25 * (Math.min(s, ST_SOFT[0]) - ST_BASE +
   0.5 * clamp(s - ST_SOFT[0], 0, ST_SOFT[1] - ST_SOFT[0]) + 0.25 * Math.max(0, s - ST_SOFT[1]));
-const levelXp = (lv) => Math.round(tierXp(toTier(lv)) / 4.4 * (1 + 0.13 * ((lv - 1) / (MAXLV - 1)) ** 1.4));
+const levelXp = (lv) => lv >= MAXLV ? Math.round(levelXp(MAXLV - 1) * (LV_OVER_XP[0] + LV_OVER_XP[1] * (lv - MAXLV)))
+  : Math.round(tierXp(toTier(lv)) / 4.4 * (1 + 0.13 * ((lv - 1) / (MAXLV - 1)) ** 1.4));
+/** Stat points a level has earned: AP_PER_LEVEL a level to 200, AP_OVER a level after. */
+const apEarned = (lvl) => (Math.min(lvl, MAXLV) - 1) * AP_PER_LEVEL + Math.max(0, lvl - MAXLV) * AP_OVER;
 const spentPoints = (st) => ST_ORDER.reduce((n, k) => n + st[k] - ST_BASE, 0);
-const statPoints = (ch) => Math.max(0, (ch.lvl - 1) * AP_PER_LEVEL - spentPoints(ch.st));
+const statPoints = (ch) => Math.max(0, apEarned(ch.lvl) - spentPoints(ch.st));
 /** Experience banked during this level rolls through every earned level in order. */
 function advanceLevels(ch) {
-  while (ch.lvl < MAXLV) {
+  while (ch.lvl < LV_CAP) {
     const need = levelXp(ch.lvl);
     if (ch.xp < need) break;
     ch.xp -= need;
@@ -79,7 +82,7 @@ function gainJob(S, p, n) {
 
 const RESPEC_ITEM = "stat_seal";
 /** A grant on an older or new sheet pays for the first ritual. Further rituals use the level before reset. */
-const statResetCost = (ch) => ch.rs > 0 ? 0 : 420 + 24 * ch.lvl + 2 * ch.lvl ** 2;
+const statResetCost = (ch) => { const l = Math.min(ch.lvl, MAXLV); return ch.rs > 0 ? 0 : 420 + 24 * l + 2 * l ** 2; };
 
 /**
  * Everything about a character that only changes with their sheet (cached in `p.stc` until the sheet
@@ -88,7 +91,8 @@ const statResetCost = (ch) => ch.rs > 0 ? 0 : 420 + 24 * ch.lvl + 2 * ch.lvl ** 
  */
 function deriveStats(p) {
   if (p.stc) return p.stc;
-  const ch = p.ch, lv = ch.lvl, b = gearBonus(ch), w = ch.eq.weapon, wk = weaponKind(ch), arm = WKIND[wk];
+  // levels past 200 add stat points only: every per-level bonus reads as 200
+  const ch = p.ch, lv = Math.min(ch.lvl, MAXLV), b = gearBonus(ch), w = ch.eq.weapon, wk = weaponKind(ch), arm = WKIND[wk];
   const E = {};
   // the charm board (66-charms.js): stats on top of the soft-capped ones (combat only), HP, MP, attack after gear
   const cm = charmSum(ch);
@@ -441,8 +445,8 @@ function cleanJobs(ch, legacy) {
     ch.st[k] = legacy ? ST_BASE + AP_PER_LEVEL * (clamp(raw, ST_BASE, 99) - ST_BASE) : clamp(raw, ST_BASE, ST_CAP);
   }
   const level = legacy ? 1 + spentPoints(ch.st) / AP_PER_LEVEL : Math.floor(num(ch.lvl) ? ch.lvl : 1);
-  ch.lvl = clamp(level, 1, MAXLV);
-  const budget = (ch.lvl - 1) * AP_PER_LEVEL;
+  ch.lvl = clamp(level, 1, LV_CAP);
+  const budget = apEarned(ch.lvl);
   for (let excess = spentPoints(ch.st) - budget; excess > 0; excess--) {
     const k = ST_ORDER.reduce((a, b) => ch.st[b] > ch.st[a] ? b : a);
     ch.st[k]--;
@@ -480,8 +484,8 @@ export function hero(name, o = {}) {
   ch.sw = 1;
   const preset = isObj(o.st);
   if (preset) for (const k of ST_ORDER) if (num(o.st[k])) ch.st[k] = clamp(ST_BASE + (o.st[k] - ST_BASE) * AP_PER_LEVEL, ST_BASE, ST_CAP);
-  ch.lvl = clamp(o.lvl | 0 || (preset ? 1 + spentPoints(ch.st) / AP_PER_LEVEL : 1), 1, MAXLV);
-  if (!preset) ch.st = allocate(isObj(o.build) ? o.build : BUILD[wk], (ch.lvl - 1) * AP_PER_LEVEL);
+  ch.lvl = clamp(o.lvl | 0 || (preset ? 1 + spentPoints(ch.st) / AP_PER_LEVEL : 1), 1, LV_CAP);
+  if (!preset) ch.st = allocate(isObj(o.build) ? o.build : BUILD[wk], apEarned(ch.lvl));
   ch.xpt = experienceEarned(ch.lvl);
   if (o.migrate) {
     const L = Math.round(toTier(ch.lvl));

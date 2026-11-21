@@ -99,6 +99,8 @@ assert.equal(act({ t: "enh", k: "ring1" }).ok, false);
   assert.equal(act({ t: "uncurse", k: "boots" }).ok, false, "needs the scroll");
   ch.inv.push({ id: "uncurse", n: 1 });
   const fee = L.defs().uncurseFee * L.defs().items[ch.eq.boots.id].tier;
+  assert.ok(L.defs().items[ch.eq.boots.id].tier <= 4, "tiers 1–4 keep the old fee");
+  assert.equal(fee, self().enh.boots.unc, "the view carries the fee the smith asks");
   ch.gold = fee - 1;
   assert.equal(act({ t: "uncurse", k: "boots" }).ok, false, "the smith's fee by gear tier");
   ch.gold = fee;
@@ -238,4 +240,12 @@ console.log("loot ok — kills", killed, "piece types", [...types].join(","));
   assert.ok(c.gold > gold0, "and gold came in");
   assert.equal(L2.validateAction(S2, "junk", { t: "sell", junk: 1 }).ok, false, "nothing left (or no merchant near) is refused");
   assert.equal(L2.validateAction(S2, "junk", { t: "sell", junk: 2 }).ok, false, "희귀 and up are never sold in bulk");
+}
+
+// ── late-game gold sink (owner 2026-11-21): tier 5+ enhancement and uncurse cost more, steeper past +5; tiers 1–4 unchanged
+{
+  const c = (id, enh) => { const S = L.setup(), h = L.hero("강화비", { lvl: 200 }); h.eq.weapon = { id, q: 0, enh, af: [], sk: 0, ru: [] }; L.addPlayer(S, "pid-e", h); return JSON.parse(JSON.stringify(L.viewFor(S, "pid-e"))).self.enh.weapon; };
+  assert.deepEqual(c("w_warrior_4", 9), { gold: 2400, stone: 3, unc: 1600 }, "tier 4 +9: 60·t·(n+1), fee 400·t as before");
+  assert.deepEqual(c("w_warrior_10", 0), { gold: 1032, stone: 1, unc: 6880 }, "tier 10 +0: ×1.72");
+  assert.deepEqual(c("w_warrior_10", 9), { gold: 14640, stone: 3, unc: 9760 }, "tier 10 +9: ×2.44");
 }

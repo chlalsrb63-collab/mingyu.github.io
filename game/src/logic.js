@@ -31,8 +31,8 @@ export const meta = { game: "테일즈테일즈", minPlayers: 1, maxPlayers: 40 
 const T = 16;
 /** The bag: INV_BASE slots to start, grown with bag_expand to INV_MAX (sheet field bagCap, 46-bag.js). */
 const INV_BASE = 40, INV_MAX = 100;
-/** Player levels run 1–200; the world keeps its own 1–50 tiers (02-jobs-stats.js). */
-const MAXLV = 200;
+/** The world tops out at Lv.200 (gear, tiers 1–50, every level-scaled formula); heroes may grow on to LV_CAP (45-jobs.js, owner 2026-11-21). */
+const MAXLV = 200, LV_CAP = 300;
 const STACK = 99;
 /** The order the bag's tidy button puts things in. */
 const SORT_KIND = ["weapon", "helm", "armor", "gloves", "boots", "ring", "amulet", "rune", "pot", "food", "fish", "scroll", "buff", "camp", "revive", "pet", "mat", "furn"];
@@ -148,6 +148,8 @@ const STATS = [
 ];
 const ST_ORDER = STATS.map((s) => s[0]);
 const ST_BASE = 5, AP_PER_LEVEL = 5, ST_CAP = 475;
+/** Past Lv.200: one point a level, and each level costs LV_OVER_XP[0] + LV_OVER_XP[1]·(lvl − 200) times the Lv.199→200 step. */
+const AP_OVER = 1, LV_OVER_XP = [4, 0.02];
 const ST_SOFT = [180, 280];
 /** The world's own scale (monster levels, map bands): 1–50. Players see 4·tier − 3. */
 const TIER_MAX = 50;
@@ -924,6 +926,9 @@ const enhMul = (e) => 1 + ENH_PCT[e | 0] / 100;
 // weapon crit % per step; a lifted curse gives the next try this many %p
 // UNCURSE_FEE: the smith's gold per gear tier on top of the scroll (economy review 2026-11-15 §3: tier 1 1.6k … tier 5 3.2k with the scroll)
 const ENH_CRIT = 0.5, ENH_UNCURSE = 10, UNCURSE_FEE = 400;
+// Late-game gold sink (owner 2026-11-21): above gear tier `from` (Lv.81+) each tier adds `tier` to the try's and the
+// uncurse fee's gold, and each step past +`step` adds `stepK` more of that, so tiers 1–4 pay exactly as before.
+const ENH_LATE = { from: 4, tier: 0.12, step: 5, stepK: 0.25 };
 
 // ── the cosy side: campfires, fishing, guilds
 /** Campfires that always burn, by map, in tiles. */
@@ -9883,18 +9888,21 @@ function leaveParty(S, p) {
 // docs/design/jobs-and-stats.md (tables in 02-jobs-stats.js). Levels, stat points, derived stats,
 // weapon mastery, jobs, the migration of the old four classes, and the arrows a bow looses.
 
-/** Player level (1–200) → world tier (1–50, real); tier → the level printed on screen. */
-const toTier = (lvl) => (lvl + 3) / 4;
+/** Player level (1–200; above 200 reads as 200) → world tier (1–50, real); tier → the level printed on screen. */
+const toTier = (lvl) => (Math.min(lvl, MAXLV) + 3) / 4;
 const shownLv = (t) => 4 * t - 3;
 /** Invested AP keeps its full weight until the first threshold, then half and a quarter. */
 const eff = (s) => ST_BASE + 0.25 * (Math.min(s, ST_SOFT[0]) - ST_BASE +
   0.5 * clamp(s - ST_SOFT[0], 0, ST_SOFT[1] - ST_SOFT[0]) + 0.25 * Math.max(0, s - ST_SOFT[1]));
-const levelXp = (lv) => Math.round(tierXp(toTier(lv)) / 4.4 * (1 + 0.13 * ((lv - 1) / (MAXLV - 1)) ** 1.4));
+const levelXp = (lv) => lv >= MAXLV ? Math.round(levelXp(MAXLV - 1) * (LV_OVER_XP[0] + LV_OVER_XP[1] * (lv - MAXLV)))
+  : Math.round(tierXp(toTier(lv)) / 4.4 * (1 + 0.13 * ((lv - 1) / (MAXLV - 1)) ** 1.4));
+/** Stat points a level has earned: AP_PER_LEVEL a level to 200, AP_OVER a level after. */
+const apEarned = (lvl) => (Math.min(lvl, MAXLV) - 1) * AP_PER_LEVEL + Math.max(0, lvl - MAXLV) * AP_OVER;
 const spentPoints = (st) => ST_ORDER.reduce((n, k) => n + st[k] - ST_BASE, 0);
-const statPoints = (ch) => Math.max(0, (ch.lvl - 1) * AP_PER_LEVEL - spentPoints(ch.st));
+const statPoints = (ch) => Math.max(0, apEarned(ch.lvl) - spentPoints(ch.st));
 /** Experience banked during this level rolls through every earned level in order. */
 function advanceLevels(ch) {
-  while (ch.lvl < MAXLV) {
+  while (ch.lvl < LV_CAP) {
     const need = levelXp(ch.lvl);
     if (ch.xp < need) break;
     ch.xp -= need;
@@ -9960,7 +9968,7 @@ function gainJob(S, p, n) {
 
 const RESPEC_ITEM = "stat_seal";
 /** A grant on an older or new sheet pays for the first ritual. Further rituals use the level before reset. */
-const statResetCost = (ch) => ch.rs > 0 ? 0 : 420 + 24 * ch.lvl + 2 * ch.lvl ** 2;
+const statResetCost = (ch) => { const l = Math.min(ch.lvl, MAXLV); return ch.rs > 0 ? 0 : 420 + 24 * l + 2 * l ** 2; };
 
 /**
  * Everything about a character that only changes with their sheet (cached in `p.stc` until the sheet
@@ -9969,7 +9977,8 @@ const statResetCost = (ch) => ch.rs > 0 ? 0 : 420 + 24 * ch.lvl + 2 * ch.lvl ** 
  */
 function deriveStats(p) {
   if (p.stc) return p.stc;
-  const ch = p.ch, lv = ch.lvl, b = gearBonus(ch), w = ch.eq.weapon, wk = weaponKind(ch), arm = WKIND[wk];
+  // levels past 200 add stat points only: every per-level bonus reads as 200
+  const ch = p.ch, lv = Math.min(ch.lvl, MAXLV), b = gearBonus(ch), w = ch.eq.weapon, wk = weaponKind(ch), arm = WKIND[wk];
   const E = {};
   // the charm board (66-charms.js): stats on top of the soft-capped ones (combat only), HP, MP, attack after gear
   const cm = charmSum(ch);
@@ -10322,8 +10331,8 @@ function cleanJobs(ch, legacy) {
     ch.st[k] = legacy ? ST_BASE + AP_PER_LEVEL * (clamp(raw, ST_BASE, 99) - ST_BASE) : clamp(raw, ST_BASE, ST_CAP);
   }
   const level = legacy ? 1 + spentPoints(ch.st) / AP_PER_LEVEL : Math.floor(num(ch.lvl) ? ch.lvl : 1);
-  ch.lvl = clamp(level, 1, MAXLV);
-  const budget = (ch.lvl - 1) * AP_PER_LEVEL;
+  ch.lvl = clamp(level, 1, LV_CAP);
+  const budget = apEarned(ch.lvl);
   for (let excess = spentPoints(ch.st) - budget; excess > 0; excess--) {
     const k = ST_ORDER.reduce((a, b) => ch.st[b] > ch.st[a] ? b : a);
     ch.st[k]--;
@@ -10361,8 +10370,8 @@ export function hero(name, o = {}) {
   ch.sw = 1;
   const preset = isObj(o.st);
   if (preset) for (const k of ST_ORDER) if (num(o.st[k])) ch.st[k] = clamp(ST_BASE + (o.st[k] - ST_BASE) * AP_PER_LEVEL, ST_BASE, ST_CAP);
-  ch.lvl = clamp(o.lvl | 0 || (preset ? 1 + spentPoints(ch.st) / AP_PER_LEVEL : 1), 1, MAXLV);
-  if (!preset) ch.st = allocate(isObj(o.build) ? o.build : BUILD[wk], (ch.lvl - 1) * AP_PER_LEVEL);
+  ch.lvl = clamp(o.lvl | 0 || (preset ? 1 + spentPoints(ch.st) / AP_PER_LEVEL : 1), 1, LV_CAP);
+  if (!preset) ch.st = allocate(isObj(o.build) ? o.build : BUILD[wk], apEarned(ch.lvl));
   ch.xpt = experienceEarned(ch.lvl);
   if (o.migrate) {
     const L = Math.round(toTier(ch.lvl));
@@ -11301,7 +11310,7 @@ function gainXp(S, p, n) {
     p.gain.push(["lvl", ch.lvl]);
     rt.ev.push(["l", p.eid]);
     rt.who = true;
-    toast(p, `레벨 ${ch.lvl}! 능력치 포인트 +${(ch.lvl - from) * AP_PER_LEVEL}`);
+    toast(p, `레벨 ${ch.lvl}! 능력치 포인트 +${apEarned(ch.lvl) - apEarned(from)}`);
     for (let l = from + 1; l <= ch.lvl; l++) if (l % 50 === 0) sys(S, `${ch.name}님이 레벨 ${l}${pp(l, "을를")} 달성했습니다!`);
     tutStep(S, p, "level");
     checkAch(S, p);
@@ -19612,7 +19621,7 @@ function dimDefs() {
     // Every raid in display order: level window, floor names, art theme and optional named master.
     difs: RAID_DIF.map((D) => [D.name, D.hell ? RAID_HELL_LV : 0, D.gold, D.xp, D.gear, D.stone]),
     raids: Object.entries(RAID).map(([k, r]) => ({
-      k, name: r.name, minLv: r.minLv, maxLv: r.maxLv || MAXLV,
+      k, name: r.name, minLv: r.minLv, maxLv: r.maxLv || LV_CAP,
       floors: r.floors.map((floor) => floor.name), theme: r.theme || (k === "hanok" ? "interior" : "underground"),
       ...(r.master ? { master: r.master } : {}),
     })),
@@ -25988,9 +25997,12 @@ function socketValidate(p, slot) {
   if (ch.gold < SOCK_COST[g.sk]) return bad(`골드가 부족합니다 (${gStr(SOCK_COST[g.sk])}G 필요)`);
   return OK;
 }
+/** The gold factor of ENH_LATE for a tier-`tier` piece at +`enh` (1 for tiers 1–4). */
+const enhLateK = (tier, enh) => 1 + ENH_LATE.tier * Math.max(0, tier - ENH_LATE.from) * (1 + ENH_LATE.stepK * Math.max(0, enh - ENH_LATE.step));
+/** One try's price, and `unc` the smith's fee to lift a curse from this piece (the client shows both). */
 function enhCost(g) {
-  const tier = ITEMS[g.id].tier;
-  return { gold: 60 * tier * (g.enh + 1), stone: g.enh < 3 ? 1 : g.enh < 6 ? 2 : 3 };
+  const tier = ITEMS[g.id].tier, k = enhLateK(tier, g.enh);
+  return { gold: Math.round(60 * tier * (g.enh + 1) * k), stone: g.enh < 3 ? 1 : g.enh < 6 ? 2 : 3, unc: Math.round(UNCURSE_FEE * tier * k) };
 }
 function byEid(S, eid) {
   for (const pid of Object.keys(S.players)) if (S.players[pid].eid === eid) return S.players[pid];
@@ -27125,14 +27137,14 @@ const ACTIONS = {
       if (!g || g.cu !== 1) return bad("저주받은 장비가 아닙니다");
       if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
       if (countItem(ch, "uncurse") < 1) return bad("저주 해제 주문서가 없습니다");
-      if (ch.gold < UNCURSE_FEE * ITEMS[g.id].tier) return bad(`저주 해제 수수료 ${(UNCURSE_FEE * ITEMS[g.id].tier).toLocaleString()}G가 부족합니다`);
+      if (ch.gold < enhCost(g).unc) return bad(`저주 해제 수수료 ${enhCost(g).unc.toLocaleString()}G가 부족합니다`);
       return OK;
     },
     run(S, p, a) {
       const ch = p.ch;
       const g = ch.eq[a.k];
       takeItem(ch, "uncurse", 1);
-      ch.gold -= UNCURSE_FEE * ITEMS[g.id].tier;
+      ch.gold -= enhCost(g).unc;
       g.cu = 2;
       toast(p, `${gearFull(g)}의 저주가 풀렸습니다 — 다음 강화는 성공 확률 +${ENH_UNCURSE}%p`);
       S.maps[p.map].ev.push(["e", p.eid, 2]);
@@ -28213,7 +28225,7 @@ function selfPayload(p) {
   return {
     // Jobs and stats: experience towards the next level, unspent points and the six stats; mastery
     // [lv, xp, need] per kind (WK_ORDER), the kinds in hand and on the back
-    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, xpNext: ch.lvl < MAXLV ? levelXp(ch.lvl) : 0,
+    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, xpNext: ch.lvl < LV_CAP ? levelXp(ch.lvl) : 0,
     ap: statPoints(ch), spentAp: spentPoints(ch.st), st: ch.st, rs: ch.rs, sw: ch.sw, respecCost: statResetCost(ch),
     buddy: buddySelf(p),
     wm: WK_ORDER.map((k) => [ch.wm[k].lv, Math.floor(ch.wm[k].xp),ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
@@ -28519,8 +28531,8 @@ export function defs() {
   }
   return {
     worldName: "루넬샤대륙",
-    items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, jobPal: JOB_PAL, skillJob: SKILL_JOB, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
-    jobs, jobTraits: JOB_TRAIT, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, statGrowth: { perLevel: AP_PER_LEVEL, cap: ST_CAP, soft: ST_SOFT },
+    items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, jobPal: JOB_PAL, skillJob: SKILL_JOB, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: LV_CAP, worldLv: MAXLV,
+    jobs, jobTraits: JOB_TRAIT, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, statGrowth: { perLevel: AP_PER_LEVEL, over: AP_OVER, cap: ST_CAP, soft: ST_SOFT },
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
     ske: { rate: SKE_RATE, pct: SKE_PCT, max: SKE_MAX, item: SKE_ITEM },

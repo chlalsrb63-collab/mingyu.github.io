@@ -848,7 +848,7 @@ function dimDefs() {
     // Every raid in display order: level window, floor names, art theme and optional named master.
     difs: RAID_DIF.map((D) => [D.name, D.hell ? RAID_HELL_LV : 0, D.gold, D.xp, D.gear, D.stone]),
     raids: Object.entries(RAID).map(([k, r]) => ({
-      k, name: r.name, minLv: r.minLv, maxLv: r.maxLv || MAXLV,
+      k, name: r.name, minLv: r.minLv, maxLv: r.maxLv || LV_CAP,
       floors: r.floors.map((floor) => floor.name), theme: r.theme || (k === "hanok" ? "interior" : "underground"),
       ...(r.master ? { master: r.master } : {}),
     })),

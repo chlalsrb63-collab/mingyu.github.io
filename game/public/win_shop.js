@@ -103,7 +103,7 @@ export function renderSmith(s) {
     if (c && g.enh >= 10) tx.append(el("small", "", "최대 강화 단계"));
     else if (c && g.cu === 1) {
       // a failed try cursed it (rules 75 "enh"): only a 저주 해제 주문서 opens it again
-      const fee = (G.defs.uncurseFee || 400) * ((G.defs.items[g.id] || {}).tier || 1);
+      const fee = c?.unc ?? (G.defs.uncurseFee || 400) * ((G.defs.items[g.id] || {}).tier || 1);
       const cl = el("small", "", `저주받음 · 저주 해제 주문서 1장 + 수수료 ${fee.toLocaleString()}G로 풀 수 있습니다 (주문서 보유 ${scrolls})`);
       cl.style.color = "var(--tx-bad, #ff9a8a)"; tx.append(cl);
       const b = el("button", "", "저주 해제");

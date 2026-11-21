@@ -31,9 +31,12 @@ function socketValidate(p, slot) {
   if (ch.gold < SOCK_COST[g.sk]) return bad(`골드가 부족합니다 (${gStr(SOCK_COST[g.sk])}G 필요)`);
   return OK;
 }
+/** The gold factor of ENH_LATE for a tier-`tier` piece at +`enh` (1 for tiers 1–4). */
+const enhLateK = (tier, enh) => 1 + ENH_LATE.tier * Math.max(0, tier - ENH_LATE.from) * (1 + ENH_LATE.stepK * Math.max(0, enh - ENH_LATE.step));
+/** One try's price, and `unc` the smith's fee to lift a curse from this piece (the client shows both). */
 function enhCost(g) {
-  const tier = ITEMS[g.id].tier;
-  return { gold: 60 * tier * (g.enh + 1), stone: g.enh < 3 ? 1 : g.enh < 6 ? 2 : 3 };
+  const tier = ITEMS[g.id].tier, k = enhLateK(tier, g.enh);
+  return { gold: Math.round(60 * tier * (g.enh + 1) * k), stone: g.enh < 3 ? 1 : g.enh < 6 ? 2 : 3, unc: Math.round(UNCURSE_FEE * tier * k) };
 }
 function byEid(S, eid) {
   for (const pid of Object.keys(S.players)) if (S.players[pid].eid === eid) return S.players[pid];

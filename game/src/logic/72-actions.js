@@ -1107,14 +1107,14 @@ const ACTIONS = {
       if (!g || g.cu !== 1) return bad("저주받은 장비가 아닙니다");
       if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
       if (countItem(ch, "uncurse") < 1) return bad("저주 해제 주문서가 없습니다");
-      if (ch.gold < UNCURSE_FEE * ITEMS[g.id].tier) return bad(`저주 해제 수수료 ${(UNCURSE_FEE * ITEMS[g.id].tier).toLocaleString()}G가 부족합니다`);
+      if (ch.gold < enhCost(g).unc) return bad(`저주 해제 수수료 ${enhCost(g).unc.toLocaleString()}G가 부족합니다`);
       return OK;
     },
     run(S, p, a) {
       const ch = p.ch;
       const g = ch.eq[a.k];
       takeItem(ch, "uncurse", 1);
-      ch.gold -= UNCURSE_FEE * ITEMS[g.id].tier;
+      ch.gold -= enhCost(g).unc;
       g.cu = 2;
       toast(p, `${gearFull(g)}의 저주가 풀렸습니다 — 다음 강화는 성공 확률 +${ENH_UNCURSE}%p`);
       S.maps[p.map].ev.push(["e", p.eid, 2]);

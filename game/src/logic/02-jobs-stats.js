@@ -14,6 +14,8 @@ const STATS = [
 ];
 const ST_ORDER = STATS.map((s) => s[0]);
 const ST_BASE = 5, AP_PER_LEVEL = 5, ST_CAP = 475;
+/** Past Lv.200: one point a level, and each level costs LV_OVER_XP[0] + LV_OVER_XP[1]·(lvl − 200) times the Lv.199→200 step. */
+const AP_OVER = 1, LV_OVER_XP = [4, 0.02];
 const ST_SOFT = [180, 280];
 /** The world's own scale (monster levels, map bands): 1–50. Players see 4·tier − 3. */
 const TIER_MAX = 50;

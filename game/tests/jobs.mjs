@@ -85,7 +85,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 
 // ═════════ the tables the client reads ═════════
 {
-  assert.equal(D.maxLv, 200);
+  assert.equal(D.maxLv, 300); assert.equal(D.worldLv, 200);
   assert.deepEqual(D.stats.map((s) => s[0]), ST);
   assert.ok(D.stats.every((s) => s[1] && s[2]), "every stat has a Korean name and a line");
   assert.deepEqual(D.wkOrder, ["sword", "dagger", "spear", "staff", "book", "bow", "hammer"]);
@@ -126,7 +126,7 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
 
 // ═════════ Auto level-up, points and reallocation ═════════
 {
-  assert.deepEqual(D.statGrowth, { perLevel: 5, cap: 475, soft: [180, 280] });
+  assert.deepEqual(D.statGrowth, { perLevel: 5, over: 1, cap: 475, soft: [180, 280] });
   const earned = (lvl) => L.hero("누적", { wk: "sword", lvl }).xpt;
   const cumulative = Array.from({ length: D.maxLv }, (_, i) => earned(i + 1));
   const costs = cumulative.slice(1).map((n, i) => n - cumulative[i]);
@@ -172,8 +172,20 @@ const ready = (W) => { const p = W.p; p.mp = 9999; p.hp = 1e6; p.atkAt = 0; p.st
   assert.equal(ch.gold, 30);
   assert.ok(!ch.inv.some((item) => item.id === D.jf.respecItem));
   assert.deepEqual([W.self().ap, ch.lvl, ch.xp], [10, 3, xp]);
+  // past Lv.200 (owner 2026-11-21): 4× the Lv.199→200 step +2 % a level, one point a level, combat reads as 200
+  assert.equal(costs[199], Math.round(costs[198] * 4)); assert.equal(costs[249], Math.round(costs[198] * 5)); assert.equal(costs[298], Math.round(costs[198] * 5.98));
+  assert.equal(world({ wk: "sword", lvl: 300 }).self().xpNext, 0, "Lv.300 is the cap");
+  const h250 = world({ wk: "sword", lvl: 250 }), h200 = world({ wk: "sword", lvl: 200 });
+  assert.equal(h250.ch.lvl, 250); assert.equal(L.hero("x", { lvl: 250 }).xpt - L.hero("x", { lvl: 200 }).xpt, costs.slice(199, 249).reduce((a, b) => a + b, 0));
+  h250.ch.st = { ...h200.ch.st }; h250.p.stc = null; h250.p.dirty = true;
+  const s250 = h250.self(), s200 = h200.self();
+  assert.equal(s250.ap, 50, "one point a level past 200");
+  assert.deepEqual([s250.atk, s250.mhp, s250.mmp, s250.respecCost], [s200.atk, s200.mhp, s200.mmp, s200.respecCost], "no other per-level bonus past 200");
+  const load = (lvl) => { const S = L.setup(), ch = L.hero("저장" + lvl, { lvl: 250 }); ch.lvl = lvl; L.addPlayer(S, "pid-s", JSON.parse(JSON.stringify(ch))); return S.players["pid-s"].ch; };
+  assert.equal(load(250).lvl, 250, "a saved Lv.250 sheet loads as 250");
+  assert.equal(load(999).lvl, 300, "a hand-edited sheet clamps to the cap");
   const top = world({ wk: "sword", lvl: 200, st: { str: 99 } });
-  assert.equal(top.self().xpNext, 0);
+  assert.equal(top.self().xpNext, costs[199]);
   assert.equal(top.self().respecCost, 85220);
   assert.equal(top.act({ t: "train", a: [1, 0, 0, 0, 0, 0] }).error, "능력치는 475까지 올릴 수 있습니다");
   assert.ok(top.act({ t: "train", a: [0, 5, 0, 0, 0, 0] }).ok, "max-level heroes can still assign their points");

@@ -136,7 +136,7 @@ export function render(box, s) {
   }
   box.append(dv);
   if (lit >= 0) light(box, ST[lit], sc);
-  box.append(el("p", "hint", `레벨업당 ${perLevel}포인트. 한 능력치는 ${soft[0]}부터 추가 투자 효율이 50%, ${soft[1]}부터 25%가 됩니다. 수련관 카이에게서 투자한 포인트를 되돌릴 수 있습니다.`));
+  box.append(el("p", "hint", `레벨업당 ${perLevel}포인트(Lv.${D.worldLv || 200}부터 ${D.statGrowth.over || 1}포인트). 한 능력치는 ${soft[0]}부터 추가 투자 효율이 50%, ${soft[1]}부터 25%가 됩니다. 수련관 카이에게서 투자한 포인트를 되돌릴 수 있습니다.`));
 }
 /** Light the derived rows stat `k` raises (attack too when the hand scales with it). */
 function light(box, k, sc) {
