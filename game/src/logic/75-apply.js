@@ -17,7 +17,6 @@ export function applyAction(S, pid, a) {
   const h = Object.hasOwn(ACTIONS, a.t) ? ACTIONS[a.t] : null;
   if (h) h.run(S, p, a);
   else switch (a.t) {
-    case "nw": p.npcWhereAt = now + 5000; p.npcWhere = true; break;
     case "mv": {
       if (p.dance || p.ab || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; break; }
       const dt = clamp(now - p.mvAt, 0, 600);
@@ -198,19 +197,6 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
-    case "look":
-      ch.look = cleanLook(a.look);
-      ch.gold -= LOOK_COST;
-      S.maps[p.map].who = true;
-      toast(p, `새 모습이 되었습니다! (-${LOOK_COST}G)`);
-      p.dirty = true;
-      break;
-    case "opt":
-      if (a.filter !== undefined) ch.opt.filter = a.filter;
-      if (a.ahp !== undefined) ch.opt.ahp = a.ahp;
-      if (a.amp !== undefined) ch.opt.amp = a.amp;
-      p.dirty = true;
-      break;
     case "buy": {
       const id = resolveItem(a.id, ch);
       const n = a.n | 0;
@@ -401,193 +387,6 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
-    case "respawn": {
-      if (a.here) {
-        // a revive feather: up again where you fell, a little shaken, nothing lost (메이플 부활 아이템)
-        takeItem(ch, "feather", 1);
-        p.dead = false;
-        const st = stats(p);
-        p.hp = Math.round(st.mhp * 0.6); p.mp = Math.max(p.mp, Math.round(st.mmp * 0.6));
-        p.ghost = now + 2500;
-        p.hitAt = now;
-        S.maps[p.map].ev.push(["u", p.eid, 2]);
-        p.dirty = true;
-        toast(p, "부활 깃털로 그 자리에서 일어났습니다. (경험치 손실 없음)");
-        break;
-      }
-      // inside a 레이드던전: up again in its start room, at no cost (64-dim.js)
-      if (dimRespawn(S, p)) break;
-      const lost = deathLoss(ch, p);
-      ch.xp -= lost;
-      p.dead = false;
-      changeMap(S, p, START.map, START.x, START.y);
-      const st = stats(p);
-      p.hp = st.mhp; p.mp = st.mmp;
-      p.dirty = true;
-      toast(p, lost > 0 ? `광장에서 깨어났습니다. (경험치 -${lost})` : "광장에서 깨어났습니다.");
-      break;
-    }
-    case "chat": {
-      const text = a.m.trim().slice(0, 80);
-      p.chatAt = now;
-      S.chat.push(chatLine(ch, text, a));
-      S.maps[p.map].ev.push(["s", p.eid, text]);
-      break;
-    }
-    case "pinv": {
-      const o = byEid(S, a.e);
-      o.pinv = { from: pid, at: now };
-      toast(p, `${o.ch.name}님을 파티에 초대했습니다.`);
-      break;
-    }
-    case "pacc": {
-      const from = S.players[p.pinv.from];
-      p.pinv = null;
-      let party = S.parties[from.party];
-      if (!party) {
-        party = { id: S.nextId++, m: [from.pid] };
-        S.parties[party.id] = party;
-        from.party = party.id;
-      }
-      party.m.push(pid);
-      p.party = party.id;
-      for (const o of members(S, p)) {
-        buddyReturnForParty(S, o);
-        toast(o, o === p ? "파티에 참가했습니다." : `${ch.name}님이 파티에 참가했습니다.`);
-        S.maps[o.map].who = true;
-      }
-      break;
-    }
-    case "pdec": p.pinv = null; break;
-    case "gcreate":
-      ch.gold -= GUILD_COST;
-      ch.guild = a.name; ch.gm = 1;
-      sys(S, `${ch.name}님이 길드 [${a.name}]${pp(a.name, "을를")} 세웠습니다!`);
-      ch.cnt.gfound = 1;
-      checkAch(S, p);
-      S.maps[p.map].who = true;
-      p.dirty = true;
-      break;
-    case "ginv": {
-      const o = byEid(S, a.e);
-      o.ginv = { from: pid, g: ch.guild, at: now };
-      toast(p, `${o.ch.name}님을 길드에 초대했습니다.`);
-      break;
-    }
-    case "gacc": {
-      ch.guild = p.ginv.g; ch.gm = 0;
-      p.ginv = null;
-      for (const oid of Object.keys(S.players)) {
-        const o = S.players[oid];
-        if (o.ch.guild === ch.guild) { toast(o, o === p ? `길드 [${ch.guild}]에 가입했습니다.` : `${ch.name}님이 길드 [${ch.guild}]에 들어왔습니다.`); o.dirty = true; }
-      }
-      checkAch(S, p);
-      S.maps[p.map].who = true;
-      break;
-    }
-    case "gdec": p.ginv = null; break;
-    case "glist": p.dirty = true; break;
-    case "gleave":
-      toast(p, `길드 [${ch.guild}]${pp(ch.guild, "을를")} 떠났습니다.`);
-      ch.guild = ""; ch.gm = 0;
-      S.maps[p.map].who = true;
-      p.dirty = true;
-      break;
-    case "gchat":
-      p.chatAt = now;
-      S.chat.push(chatLine(ch, a.m.trim().slice(0, 80), a, { g: ch.guild }));
-      break;
-    case "pchat":
-      p.chatAt = now;
-      S.chat.push(chatLine(ch, a.m.trim().slice(0, 80), a, { pt: p.party }));
-      break;
-    case "qs":
-      if (a.j !== undefined) [ch.qs[a.i], ch.qs[a.j]] = [ch.qs[a.j], ch.qs[a.i]];
-      else ch.qs[a.i] = a.v ? a.v.slice() : null;
-      p.dirty = true;
-      break;
-    case "sort": {
-      // by kind, then the better piece first, then the higher level; stacks of the same thing merge (46-bag.js)
-      ch.inv = sortSlots(ch.inv);
-      p.dirty = true;
-      break;
-    }
-    case "jam":
-      // a song on the lute or a raised cup, for everyone around to hear
-      p.emoAt = now;
-      S.maps[p.map].ev.push(["j", p.eid, a.k]);
-      break;
-    case "emo":
-      p.emoAt = now;
-      S.maps[p.map].ev.push(["o", p.eid, a.i]);
-      break;
-    case "title":
-      ch.title = a.id || "";
-      p.stc = null;
-      S.maps[p.map].who = true;
-      toast(p, ch.title ? `칭호 「${titleOf(ch)}」${pp(titleOf(ch), "을를")} 달았습니다.` : "칭호를 떼었습니다.");
-      p.dirty = true;
-      break;
-    case "cos_eq":
-      ch.cos.on[COSMETICS[a.id].slot] = a.id;
-      S.maps[p.map].who = true;
-      p.dirty = true;
-      break;
-    case "cos_off":
-      delete ch.cos.on[a.s];
-      S.maps[p.map].who = true;
-      p.dirty = true;
-      break;
-    case "cos_buy": {
-      const c = COSMETICS[a.id];
-      if (c.src === "token") ch.cos.tokens -= c.price;
-      else ch.gold -= c.price;
-      ch.cos.own.push(a.id);
-      // bought to be worn: put it on straight away
-      ch.cos.on[c.slot] = a.id;
-      S.maps[p.map].who = true;
-      toast(p, `[${c.name}]${pp(c.name, "을를")} 샀습니다. 캐릭터 창 ‘외형’ 탭에서 갈아입을 수 있습니다.`);
-      p.dirty = true;
-      break;
-    }
-    case "cos_dye": {
-      const c = COSMETICS[a.id];
-      if (a.d) { takeItem(ch, COS_DYES[a.d - 1], 1); ch.cosDye[a.id] = a.d; }
-      else delete ch.cosDye[a.id];
-      if (ch.cos.on[c.slot] === a.id) S.maps[p.map].who = true;
-      toast(p, a.d ? `[${c.name}]${pp(c.name, "을를")} ${ITEMS[COS_DYES[a.d - 1]].name}${pp(ITEMS[COS_DYES[a.d - 1]].name, "으로")} 물들였습니다.` : `[${c.name}]${pp(c.name, "을를")} 원래 색으로 되돌렸습니다.`);
-      p.dirty = true;
-      break;
-    }
-    case "cos_sew":
-      giveCos(S, p, KEEP_SEW[a.k], `루루가 [${ITEMS[a.k].name}]${pp(ITEMS[a.k].name, "으로")} 지어 주었습니다`);
-      break;
-    case "daily": {
-      const dl = ch.daily;
-      if (a.i === "party" || a.i === "solo") {
-        dl.tasks[0] = a.i === "party"
-          ? { kind: "party", k: null, n: 0, need: DAILY_PARTY_KILLS }
-          : rollDaily(ch, dl.day).tasks[0];
-        p.dirty = true;
-        break;
-      }
-      if (a.i === "bonus") {
-        dl.bonus = true;
-        ch.cnt.daily++;
-        toast(p, "토벌 의뢰 보상 상자를 열었습니다!");
-        payout(S, p, dailyBonus(ch));
-        cosFrom(S, p, "daily", "토벌 의뢰 보상 상자");
-      } else {
-        dl.claimed[a.i] = true;
-        payout(S, p, dailyReward(ch, dl.tasks[a.i]));
-      }
-      checkAch(S, p);
-      break;
-    }
-    case "tut": {
-      tutStep(S, p, a.s);
-      break;
-    }
     case "warp": {
       const denied = airshipAccess(ch, a.to);
       if (denied) { toast(p, denied); break; }
@@ -603,10 +402,6 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
-    case "pleave":
-      leaveParty(S, p);
-      toast(p, "파티를 떠났습니다.");
-      break;
     // ── jobs and stats (45-jobs.js)
     case "respec": {
       const fee = statResetCost(ch);
