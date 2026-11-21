@@ -201,6 +201,8 @@ export function viewFor(S, pid) {
   // (and a whisper only its reader, and nobody a name they blocked: 63-social-weekly.js chatFor)
   if (S.chat.length) { const chat = chatFor(S, p, pid); if (chat.length) out.chat = chat; }
   if (p.sendMap) out.map = mapPayload(mapOfS(S, p.map));
+  // a map asked for by the world map's overview (`mapov`), once
+  if (p.mov) { out.mov = mapPayload(mapOfS(S, p.mov)); p.mov = null; }
   // the sky: [weather (-1 under a roof), server clock in seconds, season 0–3, 장날 open 0/1 (63-festival.js)], when
   // the weather turns or the market opens or closes, on arrival, and once a minute to keep everyone's hour in step
   const wx = rt.wx ?? weatherAt(p.map, S.now), fo = fairOpen(S.now) ? 1 : 0;
