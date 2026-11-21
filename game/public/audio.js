@@ -744,7 +744,7 @@ const IMPACT0 = [300, 112, 2300, 1600];
 const IMPACT = { sword: [330, 118, 2500, 1900], dagger: [420, 130, 3300, 2600], spear: [360, 112, 2100, 1700], hammer: [220, 82, 0, 900], staff: [260, 96, 0, 1200], book: [280, 100, 0, 1300] };
 
 /** Minimum seconds between two plays of the same effect. */
-const THROTTLE = { job_note: 0.06, gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.035, magic_hit: 0.04, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5,
+const THROTTLE = { job_note: 0.06, gat_work: 0.2, gat_start: 0.3, bow_draw: 0.06, arrow_hit: 0.035, magic_hit: 0.04, arrow_wall: 0.05, quake: 0.2, tip: 0.06, bleed: 0.12, brand: 0.1, gravity_tick: 0.3, phantom_bite: 0.1, meteor_hit: 0.08, dance: 0.08, hit: 0.035, crit: 0.05, mob_shot: 0.08, mob_melee: 0.07, mob_body: 0.04,warn: 0.25, blip: 0.12, hover: 0.06, step_grass: 0.12, step_stone: 0.12, step_wood: 0.12, step_dirt: 0.12, step_water: 0.12, die_small: 0.04, coin: 0.06, pop: 0.06, elite: 1, announce: 1.5,
   hammer_land: 0.065, graze: 0.045, merc_dash: 0.1, oath_cast: 0.15, oath_heal: 0.28,
   rally_banner: 0.18, rally_mend: 0.26, revive_binding: 0.22, revive_mend: 0.4,
   cross_cut: 0.1, element_dagger: 0.12, frost_lance: 0.12, rune_circle: 0.18, inkshot: 0.12,
@@ -1327,6 +1327,14 @@ const SFX = {
   /** A rallying cry: a low growl that climbs. */
   mob_howl() { this.tone("sawtooth", 150, 300, 0.38, 0.09); this.tone("sawtooth", 110, 84, 0.42, 0.06, 0.04); },
   mob_shot() { this.tone("square", 700, 300, 0.1, 0.06); this.noise(0.05, 0.08, 3000); },
+  /** A monster's blow by its style (events.js mobMeleeStyle): bite, claw or smash. The recordings carry it; this is the fallback. */
+  mob_melee(style) {
+    if (style === "bite") { this.noise(0.06, 0.12, 1400, "bandpass", 0, 600, 2); this.tone("triangle", 220, 90, 0.07, 0.1); }
+    else if (style === "smash") { this.tone("sine", 120, 45, 0.14, 0.16, 0, true); this.noise(0.08, 0.12, 700, "lowpass"); }
+    else this.noise(0.09, 0.1, 3800, "highpass", 0, 1800);
+  },
+  /** What the struck monster is made of (bone, shell, goo, wood, bug) under the weapon's hit: recordings only, no synth. */
+  mob_body() {},
   charge() { this.tone("sawtooth", 90, 260, 0.6, 0.08); this.noise(0.6, 0.08, 300, "bandpass", 0, 1600); },
   volley() { this.arp(0.25, [880, 740, 620], 0.05, 0.08, 0.06); this.noise(0.15, 0.1, 2800); },
   spit() { this.noise(0.18, 0.16, 500, "lowpass", 0, 2400); this.tone("sine", 300, 120, 0.2, 0.08); },

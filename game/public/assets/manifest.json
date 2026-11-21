@@ -1483,6 +1483,16 @@
     }
   },
   "audio": {
+    "sfx.armor_break#1": {
+      "src": "assets/sfx/clang-1.ogg?v=51e923af",
+      "vol": 0.132,
+      "synth": 0.7
+    },
+    "sfx.armor_break#2": {
+      "src": "assets/sfx/clang-2.ogg?v=bc20495b",
+      "vol": 0.259,
+      "synth": 0.7
+    },
     "sfx.arrow_hit": {
       "src": "assets/sfx/arrow_hit.ogg?v=a0057175",
       "vol": 0.538,
@@ -1497,13 +1507,93 @@
       "src": "assets/sfx/bite.ogg?v=6c230dc1",
       "vol": 0.316
     },
+    "sfx.blade_fan": {
+      "src": "assets/sfx/throw.ogg?v=58074069",
+      "vol": 0.124,
+      "synth": 0.7
+    },
+    "sfx.bleed": {
+      "src": "assets/sfx/blood.ogg?v=ab5772fd",
+      "vol": 0.019,
+      "synth": 0.7
+    },
     "sfx.blip": {
       "src": "assets/sfx/blip.ogg?v=866ea21a",
       "vol": 0.013
     },
+    "sfx.blood_bind": {
+      "src": "assets/sfx/blood.ogg?v=ab5772fd",
+      "vol": 0.038,
+      "synth": 0.7
+    },
+    "sfx.blood_burst": {
+      "src": "assets/sfx/blood.ogg?v=ab5772fd",
+      "vol": 0.084,
+      "synth": 0.7
+    },
+    "sfx.blood_jet": {
+      "src": "assets/sfx/blood.ogg?v=ab5772fd",
+      "vol": 0.103,
+      "synth": 0.7
+    },
+    "sfx.bolt": {
+      "src": "assets/sfx/zap.ogg?v=0eff85be",
+      "vol": 0.121,
+      "synth": 0.7
+    },
     "sfx.boom": {
       "src": "assets/sfx/boom.ogg?v=55d0fb07",
       "vol": 0.197
+    },
+    "sfx.boss_break": {
+      "src": "assets/sfx/quake.ogg?v=dfb32799",
+      "vol": 1.8,
+      "synth": 0.7
+    },
+    "sfx.boss_enrage#1": {
+      "src": "assets/sfx/roar-1.ogg?v=6bf79363",
+      "vol": 0.666,
+      "synth": 0.7
+    },
+    "sfx.boss_enrage#2": {
+      "src": "assets/sfx/roar-2.ogg?v=89d69295",
+      "vol": 0.564,
+      "synth": 0.7
+    },
+    "sfx.boss_hit_bleed": {
+      "src": "assets/sfx/blood.ogg?v=ab5772fd",
+      "vol": 0.063,
+      "synth": 0.7
+    },
+    "sfx.boss_hit_cold": {
+      "src": "assets/sfx/ice.ogg?v=3f967b99",
+      "vol": 0.227,
+      "synth": 0.7
+    },
+    "sfx.boss_hit_dark": {
+      "src": "assets/sfx/dark.ogg?v=e7e3d100",
+      "vol": 0.078,
+      "synth": 0.7
+    },
+    "sfx.boss_hit_fire#1": {
+      "src": "assets/sfx/fire_blast-1.ogg?v=cbc204e6",
+      "vol": 0.093,
+      "synth": 0.7
+    },
+    "sfx.boss_hit_fire#2": {
+      "src": "assets/sfx/fire_blast-2.ogg?v=51f2e761",
+      "vol": 0.064,
+      "synth": 0.7
+    },
+    "sfx.boss_hit_lightning": {
+      "src": "assets/sfx/zap.ogg?v=0eff85be",
+      "vol": 0.133,
+      "synth": 0.7
+    },
+    "sfx.boss_hit_poison": {
+      "src": "assets/sfx/poison.ogg?v=edc024bc",
+      "vol": 0.036,
+      "synth": 0.7
     },
     "sfx.bow_draw": {
       "src": "assets/sfx/bow_draw.ogg?v=9a85480d",
@@ -1513,9 +1603,33 @@
       "src": "assets/sfx/bow_shot.ogg?v=1976ba5d",
       "vol": 1.461
     },
+    "sfx.buff": {
+      "src": "assets/sfx/buff.ogg?v=d503e9f6",
+      "vol": 0.049,
+      "synth": 0.7
+    },
     "sfx.cast": {
       "src": "assets/sfx/cast.ogg?v=da6dc568",
       "vol": 0.117
+    },
+    "sfx.chain_zap": {
+      "src": "assets/sfx/zap.ogg?v=0eff85be",
+      "vol": 0.136,
+      "synth": 0.7
+    },
+    "sfx.chest_open": {
+      "src": "assets/sfx/chest.ogg?v=8946c9b7",
+      "vol": 0.178
+    },
+    "sfx.cleave_hit#1": {
+      "src": "assets/sfx/slash-1.ogg?v=3ca41ae5",
+      "vol": 1.722,
+      "synth": 0.7
+    },
+    "sfx.cleave_hit#2": {
+      "src": "assets/sfx/slash-2.ogg?v=a0f010d7",
+      "vol": 0.608,
+      "synth": 0.7
     },
     "sfx.close": {
       "src": "assets/sfx/close.ogg?v=80e34a5e",
@@ -1524,6 +1638,11 @@
     "sfx.coin": {
       "src": "assets/sfx/coin.ogg?v=23946ba2",
       "vol": 0.084
+    },
+    "sfx.crimson": {
+      "src": "assets/sfx/fire_cast.ogg?v=5dc173f2",
+      "vol": 0.064,
+      "synth": 0.7
     },
     "sfx.crit": {
       "src": "assets/sfx/hit.ogg?v=ce8e0407",
@@ -1550,6 +1669,21 @@
       "vol": 1.175,
       "synth": 0.7
     },
+    "sfx.cross_cut#1": {
+      "src": "assets/sfx/slash-1.ogg?v=3ca41ae5",
+      "vol": 0.103,
+      "synth": 0.7
+    },
+    "sfx.cross_cut#2": {
+      "src": "assets/sfx/slash-2.ogg?v=a0f010d7",
+      "vol": 0.04,
+      "synth": 0.7
+    },
+    "sfx.dark_beam": {
+      "src": "assets/sfx/dark.ogg?v=e7e3d100",
+      "vol": 0.04,
+      "synth": 0.7
+    },
     "sfx.dash": {
       "src": "assets/sfx/dash.ogg?v=9cab335a",
       "vol": 0.034
@@ -1557,6 +1691,42 @@
     "sfx.die_big": {
       "src": "assets/sfx/die_big.ogg?v=330b5c59",
       "vol": 0.133
+    },
+    "sfx.die_big.bone#1": {
+      "src": "assets/sfx/bone_die-1.ogg?v=2c25882b",
+      "vol": 0.404
+    },
+    "sfx.die_big.bone#2": {
+      "src": "assets/sfx/bone_die-2.ogg?v=34dd4d42",
+      "vol": 0.406
+    },
+    "sfx.die_big.bug": {
+      "src": "assets/sfx/bug.ogg?v=f7e6e024",
+      "vol": 0.467
+    },
+    "sfx.die_big.goo#1": {
+      "src": "assets/sfx/goo-1.ogg?v=6a1e9888",
+      "vol": 0.399
+    },
+    "sfx.die_big.goo#2": {
+      "src": "assets/sfx/goo-2.ogg?v=5ae380e5",
+      "vol": 0.3
+    },
+    "sfx.die_big.shell#1": {
+      "src": "assets/sfx/bone_die-1.ogg?v=2c25882b",
+      "vol": 0.407
+    },
+    "sfx.die_big.shell#2": {
+      "src": "assets/sfx/bone_die-2.ogg?v=34dd4d42",
+      "vol": 0.396
+    },
+    "sfx.die_big.wood#1": {
+      "src": "assets/sfx/plant_die-1.ogg?v=1d0839c9",
+      "vol": 0.333
+    },
+    "sfx.die_big.wood#2": {
+      "src": "assets/sfx/plant_die-2.ogg?v=6bd8524b",
+      "vol": 0.344
     },
     "sfx.die_boss": {
       "src": "assets/sfx/die_boss.ogg?v=766b61db",
@@ -1566,6 +1736,50 @@
       "src": "assets/sfx/die_small.ogg?v=5e599e0d",
       "vol": 0.093
     },
+    "sfx.die_small.bone#1": {
+      "src": "assets/sfx/bone_die-1.ogg?v=2c25882b",
+      "vol": 0.242
+    },
+    "sfx.die_small.bone#2": {
+      "src": "assets/sfx/bone_die-2.ogg?v=34dd4d42",
+      "vol": 0.237
+    },
+    "sfx.die_small.bug": {
+      "src": "assets/sfx/bug.ogg?v=f7e6e024",
+      "vol": 0.278
+    },
+    "sfx.die_small.goo#1": {
+      "src": "assets/sfx/goo-1.ogg?v=6a1e9888",
+      "vol": 0.241
+    },
+    "sfx.die_small.goo#2": {
+      "src": "assets/sfx/goo-2.ogg?v=5ae380e5",
+      "vol": 0.169
+    },
+    "sfx.die_small.shell#1": {
+      "src": "assets/sfx/bone_die-1.ogg?v=2c25882b",
+      "vol": 0.245
+    },
+    "sfx.die_small.shell#2": {
+      "src": "assets/sfx/bone_die-2.ogg?v=34dd4d42",
+      "vol": 0.235
+    },
+    "sfx.die_small.small": {
+      "src": "assets/sfx/squeak.ogg?v=f2ad97e2",
+      "vol": 0.099
+    },
+    "sfx.die_small.wood#1": {
+      "src": "assets/sfx/plant_die-1.ogg?v=1d0839c9",
+      "vol": 0.198
+    },
+    "sfx.die_small.wood#2": {
+      "src": "assets/sfx/plant_die-2.ogg?v=6bd8524b",
+      "vol": 0.204
+    },
+    "sfx.dim_chest": {
+      "src": "assets/sfx/chest.ogg?v=8946c9b7",
+      "vol": 0.255
+    },
     "sfx.dodge": {
       "src": "assets/sfx/swing_dagger.ogg?v=e7499ae5",
       "vol": 0.082
@@ -1573,6 +1787,56 @@
     "sfx.door": {
       "src": "assets/sfx/door.ogg?v=14f61455",
       "vol": 0.415
+    },
+    "sfx.dragon": {
+      "src": "assets/sfx/fire_cast.ogg?v=5dc173f2",
+      "vol": 0.13,
+      "synth": 0.7
+    },
+    "sfx.dragon_final#1": {
+      "src": "assets/sfx/fire_blast-1.ogg?v=cbc204e6",
+      "vol": 0.249,
+      "synth": 0.7
+    },
+    "sfx.dragon_final#2": {
+      "src": "assets/sfx/fire_blast-2.ogg?v=51f2e761",
+      "vol": 0.165,
+      "synth": 0.7
+    },
+    "sfx.earth_stomp": {
+      "src": "assets/sfx/quake.ogg?v=dfb32799",
+      "vol": 1.8,
+      "synth": 0.7
+    },
+    "sfx.edge_cut#1": {
+      "src": "assets/sfx/slash-1.ogg?v=3ca41ae5",
+      "vol": 0.099,
+      "synth": 0.7
+    },
+    "sfx.edge_cut#2": {
+      "src": "assets/sfx/slash-2.ogg?v=a0f010d7",
+      "vol": 0.038,
+      "synth": 0.7
+    },
+    "sfx.element_dagger": {
+      "src": "assets/sfx/throw.ogg?v=58074069",
+      "vol": 0.128,
+      "synth": 0.7
+    },
+    "sfx.elite#1": {
+      "src": "assets/sfx/roar-1.ogg?v=6bf79363",
+      "vol": 0.073,
+      "synth": 0.7
+    },
+    "sfx.elite#2": {
+      "src": "assets/sfx/roar-2.ogg?v=89d69295",
+      "vol": 0.061,
+      "synth": 0.7
+    },
+    "sfx.ember": {
+      "src": "assets/sfx/fire_cast.ogg?v=5dc173f2",
+      "vol": 0.042,
+      "synth": 0.7
     },
     "sfx.finisher": {
       "src": "assets/sfx/hit.ogg?v=ce8e0407",
@@ -1599,6 +1863,21 @@
       "vol": 1.131,
       "synth": 0.7
     },
+    "sfx.fireball_cast": {
+      "src": "assets/sfx/fire_cast.ogg?v=5dc173f2",
+      "vol": 0.019,
+      "synth": 0.7
+    },
+    "sfx.fireball_land#1": {
+      "src": "assets/sfx/fire_blast-1.ogg?v=cbc204e6",
+      "vol": 0.105,
+      "synth": 0.7
+    },
+    "sfx.fireball_land#2": {
+      "src": "assets/sfx/fire_blast-2.ogg?v=51f2e761",
+      "vol": 0.069,
+      "synth": 0.7
+    },
     "sfx.forge_hit": {
       "src": "assets/sfx/forge_hit.ogg?v=ed0f77fe",
       "vol": 0.112
@@ -1607,9 +1886,43 @@
       "src": "assets/sfx/forge_quench.ogg?v=31d4e749",
       "vol": 0.12
     },
+    "sfx.freeze_lock": {
+      "src": "assets/sfx/ice.ogg?v=3f967b99",
+      "vol": 0.143,
+      "synth": 0.7
+    },
+    "sfx.frost": {
+      "src": "assets/sfx/ice.ogg?v=3f967b99",
+      "vol": 0.136,
+      "synth": 0.7
+    },
+    "sfx.frost_lance": {
+      "src": "assets/sfx/ice.ogg?v=3f967b99",
+      "vol": 0.159,
+      "synth": 0.7
+    },
+    "sfx.gear_equip": {
+      "src": "assets/sfx/equip.ogg?v=9e66343c",
+      "vol": 0.109
+    },
+    "sfx.gravity": {
+      "src": "assets/sfx/dark.ogg?v=e7e3d100",
+      "vol": 0.122,
+      "synth": 0.7
+    },
     "sfx.graze": {
       "src": "assets/sfx/hit.ogg?v=ce8e0407",
       "vol": 0.02,
+      "synth": 0.7
+    },
+    "sfx.hawk_eye": {
+      "src": "assets/sfx/buff.ogg?v=d503e9f6",
+      "vol": 0.035,
+      "synth": 0.7
+    },
+    "sfx.heal": {
+      "src": "assets/sfx/heal.ogg?v=40e664a8",
+      "vol": 0.121,
       "synth": 0.7
     },
     "sfx.hit": {
@@ -1641,9 +1954,34 @@
       "src": "assets/sfx/hurt.ogg?v=1bf25596",
       "vol": 0.264
     },
+    "sfx.ice": {
+      "src": "assets/sfx/ice.ogg?v=3f967b99",
+      "vol": 0.152,
+      "synth": 0.7
+    },
+    "sfx.ignite_burst#1": {
+      "src": "assets/sfx/fire_blast-1.ogg?v=cbc204e6",
+      "vol": 0.299,
+      "synth": 0.7
+    },
+    "sfx.ignite_burst#2": {
+      "src": "assets/sfx/fire_blast-2.ogg?v=51f2e761",
+      "vol": 0.191,
+      "synth": 0.7
+    },
+    "sfx.ignite_wind": {
+      "src": "assets/sfx/fire_cast.ogg?v=5dc173f2",
+      "vol": 0.057,
+      "synth": 0.7
+    },
     "sfx.item": {
       "src": "assets/sfx/item.ogg?v=a4b6d167",
       "vol": 0.175
+    },
+    "sfx.knife_throw": {
+      "src": "assets/sfx/throw.ogg?v=58074069",
+      "vol": 0.064,
+      "synth": 0.7
     },
     "sfx.landed": {
       "src": "assets/sfx/landed.ogg?v=98d3a2d6",
@@ -1654,17 +1992,150 @@
       "vol": 0.669,
       "synth": 0.7
     },
+    "sfx.mana_surge": {
+      "src": "assets/sfx/buff.ogg?v=d503e9f6",
+      "vol": 0.052,
+      "synth": 0.7
+    },
+    "sfx.meteor_cast": {
+      "src": "assets/sfx/fire_cast.ogg?v=5dc173f2",
+      "vol": 0.074,
+      "synth": 0.7
+    },
+    "sfx.meteor_hit#1": {
+      "src": "assets/sfx/fire_blast-1.ogg?v=cbc204e6",
+      "vol": 0.195,
+      "synth": 0.7
+    },
+    "sfx.meteor_hit#2": {
+      "src": "assets/sfx/fire_blast-2.ogg?v=51f2e761",
+      "vol": 0.128,
+      "synth": 0.7
+    },
+    "sfx.mob_body.bone#1": {
+      "src": "assets/sfx/bone-1.ogg?v=d69bfb48",
+      "vol": 1.8
+    },
+    "sfx.mob_body.bone#2": {
+      "src": "assets/sfx/bone-2.ogg?v=d980fa39",
+      "vol": 1.8
+    },
+    "sfx.mob_body.bug": {
+      "src": "assets/sfx/bug.ogg?v=f7e6e024",
+      "vol": 1.587
+    },
+    "sfx.mob_body.goo#1": {
+      "src": "assets/sfx/goo-1.ogg?v=6a1e9888",
+      "vol": 1.408
+    },
+    "sfx.mob_body.goo#2": {
+      "src": "assets/sfx/goo-2.ogg?v=5ae380e5",
+      "vol": 0.968
+    },
+    "sfx.mob_body.shell#1": {
+      "src": "assets/sfx/shell-1.ogg?v=9ff6e89f",
+      "vol": 0.61
+    },
+    "sfx.mob_body.shell#2": {
+      "src": "assets/sfx/shell-2.ogg?v=49fafc2e",
+      "vol": 1.5
+    },
+    "sfx.mob_body.wood#1": {
+      "src": "assets/sfx/wood-1.ogg?v=40172700",
+      "vol": 1.087
+    },
+    "sfx.mob_body.wood#2": {
+      "src": "assets/sfx/wood-2.ogg?v=db28ebc0",
+      "vol": 1.105
+    },
+    "sfx.mob_howl#1": {
+      "src": "assets/sfx/roar-1.ogg?v=6bf79363",
+      "vol": 0.066,
+      "synth": 0.7
+    },
+    "sfx.mob_howl#2": {
+      "src": "assets/sfx/roar-2.ogg?v=89d69295",
+      "vol": 0.056,
+      "synth": 0.7
+    },
+    "sfx.mob_melee.bite": {
+      "src": "assets/sfx/mob_bite.ogg?v=93596896",
+      "vol": 0.135
+    },
+    "sfx.mob_melee.claw": {
+      "src": "assets/sfx/mob_claw.ogg?v=96890390",
+      "vol": 0.05
+    },
+    "sfx.mob_melee.smash": {
+      "src": "assets/sfx/mob_smash.ogg?v=48211b55",
+      "vol": 0.613
+    },
     "sfx.mob_shot": {
       "src": "assets/sfx/swing.ogg?v=a1a41854",
       "vol": 0.126
+    },
+    "sfx.mortar_blast#1": {
+      "src": "assets/sfx/fire_blast-1.ogg?v=cbc204e6",
+      "vol": 0.961,
+      "synth": 0.7
+    },
+    "sfx.mortar_blast#2": {
+      "src": "assets/sfx/fire_blast-2.ogg?v=51f2e761",
+      "vol": 0.613,
+      "synth": 0.7
+    },
+    "sfx.mountain_split": {
+      "src": "assets/sfx/quake.ogg?v=dfb32799",
+      "vol": 1.8,
+      "synth": 0.7
     },
     "sfx.no": {
       "src": "assets/sfx/no.ogg?v=3e078302",
       "vol": 0.159
     },
+    "sfx.oath_cast": {
+      "src": "assets/sfx/buff.ogg?v=d503e9f6",
+      "vol": 0.083,
+      "synth": 0.7
+    },
+    "sfx.oath_heal": {
+      "src": "assets/sfx/heal.ogg?v=40e664a8",
+      "vol": 0.04,
+      "synth": 0.7
+    },
     "sfx.open": {
       "src": "assets/sfx/open.ogg?v=66e3739d",
       "vol": 0.037
+    },
+    "sfx.overload#1": {
+      "src": "assets/sfx/fire_blast-1.ogg?v=cbc204e6",
+      "vol": 0.22,
+      "synth": 0.7
+    },
+    "sfx.overload#2": {
+      "src": "assets/sfx/fire_blast-2.ogg?v=51f2e761",
+      "vol": 0.151,
+      "synth": 0.7
+    },
+    "sfx.pact": {
+      "src": "assets/sfx/dark.ogg?v=e7e3d100",
+      "vol": 0.093,
+      "synth": 0.7
+    },
+    "sfx.parry_clang#1": {
+      "src": "assets/sfx/clang-1.ogg?v=51e923af",
+      "vol": 1.713,
+      "synth": 0.7
+    },
+    "sfx.parry_clang#2": {
+      "src": "assets/sfx/clang-2.ogg?v=bc20495b",
+      "vol": 1.8,
+      "synth": 0.7
+    },
+    "sfx.phantom_bite": {
+      "src": "assets/sfx/dark.ogg?v=e7e3d100",
+      "vol": 0.026,
+      "synth": 0.7
     },
     "sfx.pop": {
       "src": "assets/sfx/pop.ogg?v=15ad1fab",
@@ -1674,9 +2145,54 @@
       "src": "assets/sfx/potion.ogg?v=ac0843b5",
       "vol": 0.249
     },
+    "sfx.power_slash#1": {
+      "src": "assets/sfx/slash-1.ogg?v=3ca41ae5",
+      "vol": 0.139,
+      "synth": 0.7
+    },
+    "sfx.power_slash#2": {
+      "src": "assets/sfx/slash-2.ogg?v=a0f010d7",
+      "vol": 0.053,
+      "synth": 0.7
+    },
+    "sfx.quake": {
+      "src": "assets/sfx/quake.ogg?v=dfb32799",
+      "vol": 0.506,
+      "synth": 0.7
+    },
+    "sfx.rally_banner": {
+      "src": "assets/sfx/buff.ogg?v=d503e9f6",
+      "vol": 0.048,
+      "synth": 0.7
+    },
+    "sfx.rally_mend": {
+      "src": "assets/sfx/heal.ogg?v=40e664a8",
+      "vol": 0.054,
+      "synth": 0.7
+    },
     "sfx.release": {
       "src": "assets/sfx/bow_shot.ogg?v=1976ba5d",
       "vol": 1.468
+    },
+    "sfx.reso_ready": {
+      "src": "assets/sfx/buff.ogg?v=d503e9f6",
+      "vol": 0.065,
+      "synth": 0.7
+    },
+    "sfx.revive_mend": {
+      "src": "assets/sfx/heal.ogg?v=40e664a8",
+      "vol": 0.08,
+      "synth": 0.7
+    },
+    "sfx.rupture": {
+      "src": "assets/sfx/blood.ogg?v=ab5772fd",
+      "vol": 0.49,
+      "synth": 0.7
+    },
+    "sfx.shade": {
+      "src": "assets/sfx/dark.ogg?v=e7e3d100",
+      "vol": 0.029,
+      "synth": 0.7
     },
     "sfx.shoot": {
       "src": "assets/sfx/bow_shot.ogg?v=1976ba5d",
@@ -1685,6 +2201,21 @@
     "sfx.slam": {
       "src": "assets/sfx/slam.ogg?v=06e2132e",
       "vol": 0.271,
+      "synth": 0.7
+    },
+    "sfx.soul_drain": {
+      "src": "assets/sfx/dark.ogg?v=e7e3d100",
+      "vol": 0.056,
+      "synth": 0.7
+    },
+    "sfx.soul_drain_fin": {
+      "src": "assets/sfx/dark.ogg?v=e7e3d100",
+      "vol": 0.125,
+      "synth": 0.7
+    },
+    "sfx.soulbolt": {
+      "src": "assets/sfx/dark.ogg?v=e7e3d100",
+      "vol": 0.047,
       "synth": 0.7
     },
     "sfx.spit": {
@@ -1767,6 +2298,11 @@
       "src": "assets/sfx/step_wood-4.ogg?v=2b71e14d",
       "vol": 0.064
     },
+    "sfx.supercon": {
+      "src": "assets/sfx/zap.ogg?v=0eff85be",
+      "vol": 0.087,
+      "synth": 0.7
+    },
     "sfx.swing": {
       "src": "assets/sfx/swing.ogg?v=a1a41854",
       "vol": 0.086
@@ -1807,6 +2343,25 @@
     "sfx.ui": {
       "src": "assets/sfx/ui.ogg?v=c4a804d1",
       "vol": 0.173
+    },
+    "sfx.warp": {
+      "src": "assets/sfx/warp.ogg?v=ed03c9ef",
+      "vol": 0.084,
+      "synth": 0.7
+    },
+    "sfx.weapon_swap": {
+      "src": "assets/sfx/equip.ogg?v=9e66343c",
+      "vol": 0.081
+    },
+    "sfx.whirl_slash#1": {
+      "src": "assets/sfx/slash-1.ogg?v=3ca41ae5",
+      "vol": 0.134,
+      "synth": 0.7
+    },
+    "sfx.whirl_slash#2": {
+      "src": "assets/sfx/slash-2.ogg?v=a0f010d7",
+      "vol": 0.048,
+      "synth": 0.7
     }
   },
   "bgmLocal": {

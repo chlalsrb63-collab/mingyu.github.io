@@ -94,6 +94,8 @@ Moved out of `AGENTS.md`; read the one recipe your task needs.
   `sfx.<name>` (`.<arg>` for one weapon, `#n` for random variants) with `vol` level-matched to the synth (loudest 50 ms)
   and, to keep the synth underneath, `synth: 0.7`. `Sound.play` uses it automatically; the synth stays the fallback.
   Sources: `asset/sfx/README.md` + one `asset/CREDITS.md` row. Compare in `_sfx.html`.
+  Monster sounds by kind (`events.js`): attacks `mob_melee.<bite|claw|smash>` (`mobMeleeStyle`), the body under every blow
+  `mob_body.<bone|shell|goo|wood|bug>` and deaths `die_small|die_big.<body>` (`BODY_MOBS`; flesh keeps the plain take).
 
 **HD-2D post-fx (그래픽 효과, `public/postfx.js`)**
 - `frame(...)` runs last in `scene2d.js render` (and after `roomLight` indoors); level 0 (끔) returns before touching canvas or DOM,

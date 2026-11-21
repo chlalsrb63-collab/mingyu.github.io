@@ -52,6 +52,16 @@ const BITE_MOBS = /^(lambmaw|gutfrog|toadbrood|leechmaw|gatorhalf|bearmaw|sandma
 const SMASH_MOBS = /^(meadowram|splitboar|ribdeer|fishwalker|crabskull|twingoat|shroomboar|coralturtle|rootwarden|rimewalrus|passboar|stonegoat|sanctumturtle|sanctumcrown|sanctumwarden|sanctumstag|rotstag)/;
 const mobShotStyle = (k) => { const sp = G.defs.mobs[k]?.sp || k; return FEATHER_MOBS.test(k) || FEATHER_MOBS.test(sp) ? "feather" : BONE_MOBS.test(k) || BONE_MOBS.test(sp) ? "bone" : NEEDLE_MOBS.test(k) || NEEDLE_MOBS.test(sp) ? "needle" : "orb"; };
 const mobMeleeStyle = (k) => { const sp = G.defs.mobs[k]?.sp || k; return BITE_MOBS.test(k) || BITE_MOBS.test(sp) ? "bite" : SMASH_MOBS.test(k) || SMASH_MOBS.test(sp) ? "smash" : "claw"; };
+/** What a monster is made of, for the layer under a blow and its death cry (audio.js mob_body, die_*.<body>); the rest is flesh. First match wins. */
+const BODY_MOBS = [
+  ["wood", /^(crowscare|stumpmaw|rootwarden|gravrose|inkrose|shroomboar|bogcrown|loomcolossus|sanctumwarden)/],
+  ["bone", /^(bonehound|twinhare_bone|serpentwing_bone|crabskull|hermitskull|mummycamel|knellkeeper|ribvulture|ribdeer)/],
+  ["shell", /^(dunescarab|coralturtle|sanctumturtle|barnacleseal|clubshrimp|prismmole|prismcantor|bloodshard|airship_|hydrasnake_steel|sluiceeel)/],
+  ["goo", /^(slugtongue|leechmaw|gutfrog|toadbrood|sanctumfrog|brainjelly|moleworm|eelknot|squidrat|fishwalker|inkleech|inkfish|bloomwhale|hagfishhead|sluiceleviathan)/],
+  ["bug", /^(gravecricket|knotwidow|spiderhand|plumspider|mothface|inkmoth|frostmoth|sanctummoth|orchidmantis|dartbrood|spinescorp)/],
+  ["small", /^(wickhare|twinhare|rimehare|ratking|blightsquirrel|batcluster|cloakbat|nightbat|smoggecko|bellnewt|beadmonkey|vinemonkey|eyecrow|eyegull|pigeonmass|owlstare|hollowowl)/],
+];
+const mobBody = (k) => { const sp = G.defs.mobs[k]?.sp || k; return BODY_MOBS.find(([, re]) => re.test(k) || re.test(sp))?.[0] || "flesh"; };
 function nearestPlayerTo(m) {
   let best = null, bd = 85 * 85;
   const check = (p) => { if (!p || p.dead) return; const d = (p.x - m.x) ** 2 + (p.y - m.y) ** 2; if (d < bd) { bd = d; best = p; } };
@@ -206,8 +216,10 @@ export function onEvent(e, t) {
         else if (!hammer && dmg > 0) drawDamageImpact(tgt, t, h, dmg, parts, critical, heavy, grazing);
         if (id === G.you && dmg > 0) { G.flash = 1; S3.shake(3); Sound.play("hurt"); }
         // Play one damage cue; hammer, healing and swing cues have their own events.
-        else if (!isPlayer && !hammer && dmg > 0 && G.me && dist(G.me.x, G.me.y, tgt.x, tgt.y) < 230)
-          Sound.play(critical ? "crit" : grazing ? "graze" : fin ? "finisher" : "hit", wk);
+        else if (!isPlayer && dmg > 0 && G.me && dist(G.me.x, G.me.y, tgt.x, tgt.y) < 230) {
+          if (!hammer) Sound.play(critical ? "crit" : grazing ? "graze" : fin ? "finisher" : "hit", wk);
+          if (tgt.k) Sound.play("mob_body", mobBody(tgt.k));   // what it is made of, under every blow (hammers too)
+        }
       }
       break;
     }
@@ -217,7 +229,7 @@ export function onEvent(e, t) {
         G.gone.delete(e[1]);
         const d = G.defs.mobs[m.k], col = MOB_COL[m.k] || MOB_COL[d?.sp] || "#fff";
         S3.fx.mobDeath(m.x, m.y, heightOf(m), col, m.el | 0, !!d?.boss);
-        Sound.play(d?.boss ? "die_boss" : m.el ? "die_big" : "die_small");
+        Sound.play(d?.boss ? "die_boss" : m.el ? "die_big" : "die_small", mobBody(m.k));
         G.mobs.delete(e[1]);
       }
       break;
@@ -232,7 +244,7 @@ export function onEvent(e, t) {
           if (near) Sound.play("mob_shot");
         } else if (near) {
           const tgt = nearestPlayerTo(m), d = G.defs.mobs[m.k];
-          if (tgt) S3.fx.mobMelee(m.x, m.y, tgt.x, tgt.y, mobMeleeStyle(m.k), col, d?.boss ? 1.45 : m.el === 2 ? 1.3 : m.el ? 1.15 : 1);
+          if (tgt) { S3.fx.mobMelee(m.x, m.y, tgt.x, tgt.y, mobMeleeStyle(m.k), col, d?.boss ? 1.45 : m.el === 2 ? 1.3 : m.el ? 1.15 : 1); Sound.play("mob_melee", mobMeleeStyle(m.k)); }
         }
       }
       break;
