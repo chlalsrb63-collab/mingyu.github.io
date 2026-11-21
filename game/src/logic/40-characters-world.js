@@ -142,7 +142,7 @@ function migrate(ch) {
     recovered.push(...ru.slice(sk).filter(Boolean));
     const out = { id, q: oldQ === 4 ? 3 : oldQ, enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk, ru: ru.slice(0, sk) };
     // item level (no sheet version bump: a missing `il` is derived, so an old piece asks what it always did — gearIl)
-    out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, 200) : gearIl(out);
+    out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, IL_ANCIENT) : gearIl(out);
     if (LEGEND[g.lg]) out.lg = g.lg;
     // (v32) flat lines became a share of the level's yardstick and 치명타 피해 % widened: an old line keeps its place in its old range
     if ((ch.v | 0) < 32) out.af = out.af.map((line) => affixV32(line, out.il, AFFIX_MUL[out.q] || 1));

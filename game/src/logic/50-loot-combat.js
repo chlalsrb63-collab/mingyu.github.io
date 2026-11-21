@@ -112,12 +112,12 @@ const gearReq = (g) => Math.max(1, gearIl(g) - IL_GAP);
 function gearBaseValue(g, stat) {
   const value = ITEMS[g.id].base[stat] || 0;
   if (stat === "spd" || stat === "crit") return value;
-  const scale = (stat === "def" ? DEF_BASE_SCALE : GEAR_BASE_SCALE)[clamp(gearIl(g), 1, MAXLV) - 1] / 1000;
+  const scale = (stat === "def" ? DEF_BASE_SCALE : GEAR_BASE_SCALE)[clamp(gearIl(g), 1, IL_ANCIENT) - 1] / 1000;
   return value * scale * enhMul(g.enh);
 }
 /** A piece's name word comes from a legendary or unique power. */
 function gearWord(g) {
-  return g.lg ? `${LEGEND[g.lg][0]} ` : "";
+  return (gearIl(g) > MAXLV ? "<고대> " : "") + (g.lg ? `${LEGEND[g.lg][0]} ` : "");
 }
 /** "+3 뇌명의 강철 양손검" (a 유니크 is named like a 전설: by its power's word) */
 function gearName(g) {
@@ -137,7 +137,7 @@ function sellPrice(s) {
 /** The [low, high] an ordinary line of `key` rolls at item level `il`, before the rarity factor: a flat line is min–max % of AFFIX_REF, a % line min–max + growth × tier. */
 function affixRange(key, il) {
   const [, , , min, max, grow] = AFFIX_BY_KEY[key], ref = affixRefOf(key);
-  if (ref) { const r = ref[clamp(il | 0, 1, MAXLV) - 1] / 100; return [min * r, max * r]; }
+  if (ref) { const r = ref[clamp(il | 0, 1, IL_ANCIENT) - 1] / 100; return [min * r, max * r]; }
   const b = grow * Math.min(TIER_MAX, toTier(clamp(il | 0, 1, MAXLV)));
   return [min + b, max + b];
 }

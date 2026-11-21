@@ -60,7 +60,7 @@ export function itemName(entry) {
   if (Charms.isCharm(entry)) return Charms.charmName(entry);       // a charm's name comes from its wire, not ITEMS (charms.js)
   const it = G.defs.items[entry.id], lg = legendOf(entry.lg);
   const word = lg ? lg[0] : "";
-  return (entry.cu === 1 ? "저주받은 " : "") + (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name;
+  return (isAncient(entry) ? "<고대> " : "") + (entry.cu === 1 ? "저주받은 " : "") + (entry.enh > 0 ? `+${entry.enh} ` : "") + (word ? word + " " : "") + it.name;
 }
 /** The piece's own stats with the server's level and enhancement curves. */
 function baseStats(entry) {
@@ -90,6 +90,8 @@ function statRow(k, v, cls) {
   return d;
 }
 /** A piece's item level as the rules count it (50-loot-combat.js gearIl): its `il`, or for an old piece its base's req + the gap. */
+/** 고대: gear past the world's top item level (헬 raid chests, 10-tables.js IL_ANCIENT). */
+const isAncient = (e) => isGear(e.id) && e.il > (G.defs.worldLv || 200);
 const ilOf = (e) => (e.il > 0 ? e.il : G.defs.items[e.id].req > 1 ? G.defs.items[e.id].req + (G.defs.ilGap ?? 10) : 1);
 /**
  * Does this piece's 고유 효과 not count? The same power on two worn pieces counts once (higher item level, a tie to the earlier slot):
@@ -263,6 +265,7 @@ export function itemSlot(entry, o = {}) {
   }
   if (entry.n > 1) d.append(el("span", "n", entry.n));
   if (entry.enh > 0) d.append(el("span", "e", `+${entry.enh}`));
+  if (isAncient(entry)) d.append(el("span", "anc", "<고대>"));
   if (o.onClick) d.addEventListener("click", o.onClick);
   if (o.onUse) {
     d.addEventListener("dblclick", (e) => { e.preventDefault(); o.onUse(); });

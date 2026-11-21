@@ -217,14 +217,16 @@ const UNIQ_P = [0.001, 0.004, 0.01];
  */
 const IL_RANK = [0, 4, 8];
 const IL_GAP = 10;
+/** 고대 gear (헬 raid chests, rare): a top-tier base at item level 210, worn from Lv.200. Any item level past MAXLV is 고대; the level tables run on to it. */
+const IL_ANCIENT = 210;
 // Double the displayed Lv.1 → Lv.200 weapon attack gap (6 → 2086). Per-mille values also drive client item comparisons.
-const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(22178 * (i / (MAXLV - 1)) ** 1.55));
+const GEAR_BASE_SCALE = Array.from({ length: IL_ANCIENT }, (_, i) => 1000 + Math.round(22178 * (i / (MAXLV - 1)) ** 1.55));
 /**
  * Armour defence (helm, armor, boots `def`) grows on its own, gentler line (balance 2026-11-20): a blow loses 0.6 × defence
  * (hurtPlayer), and monster attack grows ~110× from level 1 to 200, so the weapon's 23× made a plain-geared hero shrug off 96 %
  * of a normal blow at 200. With ×1 → ×11.8 the same hero turns about 36 % of a blow at level 1 and about 50 % at 200.
  */
-const DEF_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(10800 * i / (MAXLV - 1)));
+const DEF_BASE_SCALE = Array.from({ length: IL_ANCIENT }, (_, i) => 1000 + Math.round(10800 * i / (MAXLV - 1)));
 /** A tier table read at an item level: straight between the tiers' first levels (G_REQ), flat past the last. */
 function tierLerp(arr, il) {
   let t = 0;
@@ -240,7 +242,7 @@ const AFFIX_REF = (() => {
   const sum = (stat, types) => G_REQ.map((_, t) => types.reduce((n, k) => n + (GEAR[k].st[stat]?.[t] || 0), 0));
   const defs = sum("def", ["helm", "armor", "boots"]), hps = sum("hp", ["helm", "armor", "amulet"]), mps = sum("mp", ["amulet"]);
   const out = { atk: [], def: [], hp: [], mp: [] };
-  for (let il = 1; il <= MAXLV; il++) {
+  for (let il = 1; il <= IL_ANCIENT; il++) {
     const g = GEAR_BASE_SCALE[il - 1] / 1000, d = DEF_BASE_SCALE[il - 1] / 1000;
     out.atk.push(2.2 * tierLerp(W_ATK, il) * g);
     out.def.push(tierLerp(defs, il) * d);

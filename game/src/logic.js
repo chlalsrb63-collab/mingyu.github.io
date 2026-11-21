@@ -148,8 +148,8 @@ const STATS = [
 ];
 const ST_ORDER = STATS.map((s) => s[0]);
 const ST_BASE = 5, AP_PER_LEVEL = 5, ST_CAP = 475;
-/** Past Lv.200: one point a level, and each level costs LV_OVER_XP[0] + LV_OVER_XP[1]·(lvl − 200) times the Lv.199→200 step. */
-const AP_OVER = 1, LV_OVER_XP = [4, 0.02];
+/** Past Lv.200: three points a level (owner 2026-11-21), and each level costs LV_OVER_XP[0] + LV_OVER_XP[1]·(lvl − 200) times the Lv.199→200 step. */
+const AP_OVER = 3, LV_OVER_XP = [4, 0.02];
 const ST_SOFT = [180, 280];
 /** The world's own scale (monster levels, map bands): 1–50. Players see 4·tier − 3. */
 const TIER_MAX = 50;
@@ -833,14 +833,16 @@ const UNIQ_P = [0.001, 0.004, 0.01];
  */
 const IL_RANK = [0, 4, 8];
 const IL_GAP = 10;
+/** 고대 gear (헬 raid chests, rare): a top-tier base at item level 210, worn from Lv.200. Any item level past MAXLV is 고대; the level tables run on to it. */
+const IL_ANCIENT = 210;
 // Double the displayed Lv.1 → Lv.200 weapon attack gap (6 → 2086). Per-mille values also drive client item comparisons.
-const GEAR_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(22178 * (i / (MAXLV - 1)) ** 1.55));
+const GEAR_BASE_SCALE = Array.from({ length: IL_ANCIENT }, (_, i) => 1000 + Math.round(22178 * (i / (MAXLV - 1)) ** 1.55));
 /**
  * Armour defence (helm, armor, boots `def`) grows on its own, gentler line (balance 2026-11-20): a blow loses 0.6 × defence
  * (hurtPlayer), and monster attack grows ~110× from level 1 to 200, so the weapon's 23× made a plain-geared hero shrug off 96 %
  * of a normal blow at 200. With ×1 → ×11.8 the same hero turns about 36 % of a blow at level 1 and about 50 % at 200.
  */
-const DEF_BASE_SCALE = Array.from({ length: MAXLV }, (_, i) => 1000 + Math.round(10800 * i / (MAXLV - 1)));
+const DEF_BASE_SCALE = Array.from({ length: IL_ANCIENT }, (_, i) => 1000 + Math.round(10800 * i / (MAXLV - 1)));
 /** A tier table read at an item level: straight between the tiers' first levels (G_REQ), flat past the last. */
 function tierLerp(arr, il) {
   let t = 0;
@@ -856,7 +858,7 @@ const AFFIX_REF = (() => {
   const sum = (stat, types) => G_REQ.map((_, t) => types.reduce((n, k) => n + (GEAR[k].st[stat]?.[t] || 0), 0));
   const defs = sum("def", ["helm", "armor", "boots"]), hps = sum("hp", ["helm", "armor", "amulet"]), mps = sum("mp", ["amulet"]);
   const out = { atk: [], def: [], hp: [], mp: [] };
-  for (let il = 1; il <= MAXLV; il++) {
+  for (let il = 1; il <= IL_ANCIENT; il++) {
     const g = GEAR_BASE_SCALE[il - 1] / 1000, d = DEF_BASE_SCALE[il - 1] / 1000;
     out.atk.push(2.2 * tierLerp(W_ATK, il) * g);
     out.def.push(tierLerp(defs, il) * d);
@@ -5625,14 +5627,15 @@ const dimFloorName = (floor, raid) => RAID[dimRaidKey(raid === true ? "hanok" : 
  * Difficulty steps of every raid (owner 2026-11-21). 보통 is the raid as tuned; 어려움 and 악몽 keep the raid's own levels
  * but want strong gear for them; 헬 (Lv.200+, any raid, no level window) scales every monster to the world's top
  * tier first (dimHell, 64-dim.js), then hardens it. `hp` / `atk` × on every raid monster and the master; the chest pays
- * `gold` / `xp` × and `gear` extra rare pieces and `stone` extra 강화석.
+ * `gold` / `xp` × and `gear` extra rare pieces and `stone` extra 강화석. 헬 is one entry a day per raid (dimBar, ch.dim.hd) and
+ * its chest has an `ancient` chance of a 고대 piece (item level IL_ANCIENT).
  */
 const RAID_HELL_LV = 200;
 const RAID_DIF = [
   { name: "보통", hp: 1, atk: 1, gold: 1, xp: 1, gear: 0, stone: 0 },
   { name: "어려움", hp: 2, atk: 1.5, gold: 1.6, xp: 1.4, gear: 1, stone: 2 },
   { name: "악몽", hp: 3.5, atk: 2.2, gold: 2.4, xp: 1.9, gear: 2, stone: 4 },
-  { name: "헬", hp: 2.5, atk: 1.8, gold: 3.5, xp: 2.5, gear: 3, stone: 6, hell: 1 },
+  { name: "헬", hp: 2.5, atk: 1.8, gold: 3.5, xp: 2.5, gear: 3, stone: 6, hell: 1, ancient: 0.04 },
 ];
 const dimDif = (d) => (Number.isInteger(d) ? clamp(d, 0, RAID_DIF.length - 1) : 0);
 /** Why a hero of shown level `lv` may not go into a raid at difficulty `dif` ("" when they may): 헬 wants Lv.200; else a field raid's window (the first two bar nobody: the level is clamped up). */
@@ -9182,7 +9185,7 @@ function migrate(ch) {
     recovered.push(...ru.slice(sk).filter(Boolean));
     const out = { id, q: oldQ === 4 ? 3 : oldQ, enh: clamp(g.enh | 0, 0, 10), af: Array.isArray(g.af) ? g.af : [], sk, ru: ru.slice(0, sk) };
     // item level (no sheet version bump: a missing `il` is derived, so an old piece asks what it always did — gearIl)
-    out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, 200) : gearIl(out);
+    out.il = (g.il | 0) > 0 ? clamp(g.il | 0, 1, IL_ANCIENT) : gearIl(out);
     if (LEGEND[g.lg]) out.lg = g.lg;
     // (v32) flat lines became a share of the level's yardstick and 치명타 피해 % widened: an old line keeps its place in its old range
     if ((ch.v | 0) < 32) out.af = out.af.map((line) => affixV32(line, out.il, AFFIX_MUL[out.q] || 1));
@@ -11143,12 +11146,12 @@ const gearReq = (g) => Math.max(1, gearIl(g) - IL_GAP);
 function gearBaseValue(g, stat) {
   const value = ITEMS[g.id].base[stat] || 0;
   if (stat === "spd" || stat === "crit") return value;
-  const scale = (stat === "def" ? DEF_BASE_SCALE : GEAR_BASE_SCALE)[clamp(gearIl(g), 1, MAXLV) - 1] / 1000;
+  const scale = (stat === "def" ? DEF_BASE_SCALE : GEAR_BASE_SCALE)[clamp(gearIl(g), 1, IL_ANCIENT) - 1] / 1000;
   return value * scale * enhMul(g.enh);
 }
 /** A piece's name word comes from a legendary or unique power. */
 function gearWord(g) {
-  return g.lg ? `${LEGEND[g.lg][0]} ` : "";
+  return (gearIl(g) > MAXLV ? "<고대> " : "") + (g.lg ? `${LEGEND[g.lg][0]} ` : "");
 }
 /** "+3 뇌명의 강철 양손검" (a 유니크 is named like a 전설: by its power's word) */
 function gearName(g) {
@@ -11168,7 +11171,7 @@ function sellPrice(s) {
 /** The [low, high] an ordinary line of `key` rolls at item level `il`, before the rarity factor: a flat line is min–max % of AFFIX_REF, a % line min–max + growth × tier. */
 function affixRange(key, il) {
   const [, , , min, max, grow] = AFFIX_BY_KEY[key], ref = affixRefOf(key);
-  if (ref) { const r = ref[clamp(il | 0, 1, MAXLV) - 1] / 100; return [min * r, max * r]; }
+  if (ref) { const r = ref[clamp(il | 0, 1, IL_ANCIENT) - 1] / 100; return [min * r, max * r]; }
   const b = grow * Math.min(TIER_MAX, toTier(clamp(il | 0, 1, MAXLV)));
   return [min + b, max + b];
 }
@@ -16975,17 +16978,18 @@ function dailyProg(S, p, kind, k) {
     if (t.n >= t.need) toast(p, `토벌 의뢰 완료: ${dailyText(t)} — 보상을 받으세요.`);
   }
 }
-/** A piece of gear for the looter's class, of at least rarity `minQ`. */
-function rewardGear(S, p, ilvl, minQ) {
+/** A piece of gear for the looter's class, of at least rarity `minQ`; with `il`, a top-tier base at that item level (고대: IL_ANCIENT). */
+function rewardGear(S, p, ilvl, minQ, il = 0) {
   // a reward earned is never lost: with a full bag it sits in an extra slot until room is made (as a recovered rune does, 40 migrate)
   if (p.ch.inv.length >= bagCap(p.ch)) toast(p, "가방이 가득 차 보상 장비를 임시 칸에 넣었습니다. 가방을 비워 주세요.");
   let roll = rnd(S) * 100, type = "weapon";
   for (const [ty, w] of DROP_TYPES) { if (roll < w) { type = ty; break; } roll -= w; }
-  const tier = tierFor(ilvl);
+  const tier = il ? G_REQ.length : tierFor(ilvl);
   let id;
   if (type === "weapon") id = `w_${WK_ID[dropKind(S, p)]}_${tier}`;
   else id = `${GEAR[type].pre}_${tier}`;
-  const g = rollGear(S, id, Math.max(minQ, Math.min(3, rollRarity(S, 1, 0))), ilvl);   // uniques come from monster drops
+  const q = Math.max(minQ, Math.min(3, rollRarity(S, 1, 0)));   // uniques come from monster drops
+  const g = il ? rollGearAtLevel(S, id, q, il) : rollGear(S, id, q, ilvl);
   p.ch.inv.push(g);
   p.gain.push(["item", g.id, 1, g.q]);
 }
@@ -18840,19 +18844,22 @@ function dimClean(d) {
     wk: Math.max(0, o.wk | 0), wb: clamp(o.wb | 0, 0, 1), bw: clamp(o.bw | 0, 0, CHAL_REWARD_MASK),
     // per boss: the highest difficulty step cleared, + 1 (0 none)
     bs: CHAL_KEYS.map((k, i) => clamp((Array.isArray(o.bs) ? o.bs[i] : 0) | 0, 0, chalSteps(k).length)),
+    // the raids gone into at 헬 on `day` (one entry a day each, owner 2026-11-21)
+    hd: Array.isArray(o.hd) ? [...new Set(o.hd.filter((k) => typeof k === "string" && Object.hasOwn(RAID, k)))] : [],
   };
 }
 /** The record brought to today and to this week (a new day clears the count; a new week the brackets and boss flags). */
 function dimRec(ch, now) {
   const d = ch.dim, day = dayOf(now), wk = weekOf(now);
-  if (d.day !== day) { d.day = day; d.n = 0; }
+  if (d.day !== day) { d.day = day; d.n = 0; d.hd = []; }
   if (d.wk !== wk) { d.wk = wk; d.wb = 0; d.bw = 0; }
   return d;
 }
 /** What a leader asked for (`dim_open`), made safe: a boss challenge, or the rift (always from floor 1; an old client's `tier` is ignored). */
 const dimAsk = (a) => (a && a.boss ? { tier: 0, boss: a.boss, step: a.step | 0 } : { tier: 0, boss: "", step: 0, raid: dimRaidKey(a?.hanok === true ? "hanok" : a?.raid), dif: dimDif(a?.dif) });
-/** Why `o` may not go into what was asked ("" when they may): the level short of the boss, or outside a field raid's window (the first two raids bar nobody). */
-function dimBar(o, ask) {
+/** Why `o` may not go into what was asked ("" when they may): the level short of the boss, outside a field raid's window (the first two raids bar nobody), or 헬 already gone into today (`ask.rejoin`: back into the same run). */
+function dimBar(o, ask, now) {
+  if (!ask.boss && RAID_DIF[dimDif(ask.dif)].hell && !ask.rejoin && o.ch.dim.day === dayOf(now) && o.ch.dim.hd.includes(dimRaidKey(ask.raid))) return "오늘은 이 레이드의 헬 난이도에 이미 들어갔습니다. 매일 06:00에 다시 열립니다.";
   if (!ask.boss) return dimRaidBar(ask.raid, o.ch.lvl, ask.dif);
   const need = chalMinLv(ask.boss, ask.step | 0);
   return o.ch.lvl < need ? `보스 도전${ask.step ? ` [${DIM_CHAL.stepNames[ask.step]}]` : ""}은 Lv.${need}부터 참가할 수 있습니다.` : "";
@@ -18897,7 +18904,7 @@ function dimOpen(S, p, a) {
   const rc = { id: S.nextId++, leader: p.pid, until: S.now + DIM.rcMs, resp: {}, tier: ask.tier, boss: ask.boss, step: ask.step, raid: ask.raid, dif: ask.dif | 0 };
   // 0 asked, 1 yes, 2 no (or no answer in time), 3 not free (in an instance, on a shift) or barred: the level outside the raid's window
   for (const pid of party.m) {
-    const o = S.players[pid], bar = o && pid !== p.pid && dimFree(o) ? dimBar(o, ask) : "";
+    const o = S.players[pid], bar = o && pid !== p.pid && dimFree(o) ? dimBar(o, ask, S.now) : "";
     rc.resp[pid] = pid === p.pid ? 1 : o && dimFree(o) && !bar ? 0 : 3;
     if (bar) toast(o, bar);
   }
@@ -18937,6 +18944,13 @@ function rcCheck(S, party) {
 
 // ── an instance's life
 
+/** Going into a 헬 run uses up `p`'s entry to that raid's 헬 for the day. */
+function dimHellMark(S, dim, p) {
+  if (dim.chal || !RAID_DIF[dim.dif | 0].hell) return;
+  const d = dimRec(p.ch, S.now), k = dim.map.dim?.raid || "under";
+  if (!d.hd.includes(k)) d.hd.push(k);
+}
+
 /** Make an instance for `ps` (all in town) and take them in. Null when every slot of the room is taken. */
 function dimStart(S, ps, partyId, ask) {
   const open = Object.keys(S.dims).length;
@@ -18965,6 +18979,7 @@ function dimStart(S, ps, partyId, ask) {
     o.dead = false;
     const [x, y] = dimSpot(map, i);
     changeMap(S, o, id, x, y);
+    dimHellMark(S, dim, o);
     dim.members[o.pid] = S.now;
     toast(o, boss ? `[보스 도전 · ${DIM_CHAL.stepNames[step]} Lv.${chalSteps(boss)[step][1]}] ${MOBS[boss].name} — ${DIM_CHAL.limit / 60000}분 안에 쓰러뜨리세요. 전멸해도 다시 도전할 수 있습니다.`
       : `[1단 · ${dimFloorName(1, map.dim.raid)}] 레이드던전${dif ? ` [${RAID_DIF[dif].name}]` : ""} Lv.${shownLv(lv)} 1/${DIM.floors}단에 들어왔습니다. ${DIM.limit / 60000}분 안에 ${DIM.floors}단 끝의 최종 보스를 쓰러뜨리세요!`);
@@ -19238,6 +19253,8 @@ function dimChest(S, dim, p) {
     if (!carried && !d.wb) { d.wb = 1; wkN = W.unc; r.gold += W.gold * lv; r.stone += W.stone; fl |= 8; }
     payout(S, p, r);
     if (!carried) for (let i = 0; i < D.gear; i++) payout(S, p, { gear: 1, gearQ: r.gearQ });
+    // 헬's rare 고대 piece: a top-tier base at item level IL_ANCIENT, at least 희귀
+    if (!carried && D.ancient && rnd(S) < D.ancient) { rewardGear(S, p, 0, 2, IL_ANCIENT); toast(p, `<고대> 장비를 얻었습니다! (아이템 레벨 ${IL_ANCIENT})`); }
     if (fl & 8) jfScroll(p, "job");
     if (!carried) giveX(S, p, full ? "rift" : "", DIM.lootTier, wkN);
     charmChest(S, dim, p);
@@ -19483,10 +19500,10 @@ function dimValidate(S, p, a) {
         if (a.step !== undefined && (!Number.isInteger(a.step) || a.step < 0 || a.step >= chalSteps(a.boss).length)) return bad("잘못된 난이도입니다");
         if (!chalOpen(a.boss, S.now)) return bad(CHAL_ROTATED);
         // the party's members in town are asked in dimOpen; a member under the step's level is not asked (dimBar)
-        const bar = dimBar(p, dimAsk(a));
+        const bar = dimBar(p, dimAsk(a), S.now);
         if (bar) return bad(bar);
       } else {
-        const bar = dimBar(p, dimAsk(a));
+        const bar = dimBar(p, dimAsk(a), S.now);
         if (bar) return bad(bar);
       }
       return OK;
@@ -19511,7 +19528,7 @@ function dimValidate(S, p, a) {
       const dim = dimJoinable(S, p);
       if (!dim) return bad("합류할 수 있는 레이드던전이 없습니다");
       if (dimInside(S, dim.id).length >= DIM.party) return bad(`레이드던전 안이 가득 찼습니다 (${DIM.party}명).`);
-      const bar = dimBar(p, { tier: 0, boss: dim.chal ? dim.chal.k : "", step: dim.chal ? dim.chal.s | 0 : 0, raid: dim.map.dim?.raid });
+      const bar = dimBar(p, { tier: 0, boss: dim.chal ? dim.chal.k : "", step: dim.chal ? dim.chal.s | 0 : 0, raid: dim.map.dim?.raid, dif: dim.dif | 0, rejoin: Object.hasOwn(dim.members, p.pid) }, S.now);
       if (bar) return bad(bar);
       return OK;
     }
@@ -19539,6 +19556,7 @@ function dimApply(S, p, a) {
     case "dim_join": {
       const dim = dimJoinable(S, p);
       const [x, y] = dimSpot(dim.map, dimInside(S, dim.id).length);
+      if (!Object.hasOwn(dim.members, p.pid)) dimHellMark(S, dim, p);
       dim.members[p.pid] = S.now;
       changeMap(S, p, dim.id, x, y);
       dim.top = Math.max(dim.top || 0, toTier(p.ch.lvl));

@@ -35,9 +35,9 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
 // ── level progression applies to every flat equipment base, including shop stock and old sheets
 {
   const scale = D.gearBaseScale;
-  assert.equal(scale.length, 200);
+  assert.equal(scale.length, 210, "the table runs on to 고대 gear (IL_ANCIENT)");
   assert.deepEqual([scale[0], scale[199]], [1000, 23178]);
-  assert.ok(scale.every((n, i) => i === 0 || n - scale[i - 1] >= 0 && n - scale[i - 1] <= 173), "no jumps between adjacent levels");
+  assert.ok(scale.slice(0, 200).every((n, i) => i === 0 || n - scale[i - 1] >= 0 && n - scale[i - 1] <= 173), "no jumps between adjacent levels");
   assert.deepEqual([D.runeScale[0], D.runeScale[199]], [18, 65], "rune lines remain supplementary");
   assert.deepEqual([D.runeStatCaps.atkp, D.runeStatCaps.dmg, D.runeStatCaps.proc], [6, 8, 8], "socketed percentage lines have a tighter budget");
   for (const [curve, start, end] of [[X.mobGearHp, 1.08, 1.48], [X.mobGearAtk, 1.05, 1.36], [X.mobLevelHp, 1, 1.72], [X.mobLevelAtk, 1, 1.48]]) {
@@ -342,7 +342,7 @@ const roll = (box, q, i, ilvl = 30) => X.rollGear(box, IDS[i % IDS.length], q, i
   assert.equal(ch.inv[11].q, 2); assert.equal(ch.inv[11].lg, undefined, "a bad power is no power");
   assert.equal(ch.inv[12].q, 5); assert.equal(JSON.stringify(ch.inv[12]), JSON.stringify({ id: "a_3", q: 5, enh: 0, af: [["atkp", 9]], sk: 0, ru: [], il: ch.inv[12].il, lg: "nova" }), "the current shape retains its power while the high attack line is capped");
   assert.equal(ch.inv[3].q, 2, "q 9 is cut to the top (5) and, with no power, is no unique");
-  assert.equal(ch.inv[4].il, 200, "an il is clamped");
+  assert.equal(ch.inv[4].il, 210, "an il is clamped to the 고대 level");
   assert.equal(ch.inv[5].il, 71, "a negative il is derived (tier 4 → 61 + 10)");
   assert.deepEqual(ch.inv[6], { id: "hp_s", n: 3 });
   assert.equal(ch.wh.items[0].q, 5); assert.equal(ch.wh.items[0].il, 88); assert.equal(ch.wh.items[0].lg, uq.lg, "the warehouse keeps a unique");

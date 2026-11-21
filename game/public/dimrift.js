@@ -282,10 +282,10 @@ function renderKeeper() {
   // the difficulty step for the raid picked below (defs().dim.difs: [name, level needed, gold ×, xp ×, extra gear, extra stones]); 헬 has no level window
   const difs = d.difs || [], dif = Math.min(st.dif | 0, Math.max(0, difs.length - 1)), D0 = difs[dif], hell = !!(D0 && D0[1]);
   const difRow = dj || !difs.length ? "" : `<div class="dim-chal dim-dif"><span><b>난이도</b></span>` + difs.map(([name, need, g, x, ge, stn], i) =>
-    `<button class="btn small${i === dif ? " gold" : ""}" data-a="dif" data-i="${i}"${need && lvl && lvl < need ? " disabled" : ""} title="${need ? `Lv.${need}부터 · 모든 몬스터가 최고 레벨로 · ` : ""}${i ? `보상 골드 ×${g} · 경험치 ×${x} · 장비 +${ge} · 강화석 +${stn}` : "기본 난이도"}">${esc(name)}</button>`).join("") + `</div>`;
+    `<button class="btn small${i === dif ? " gold" : ""}" data-a="dif" data-i="${i}"${need && lvl && lvl < need ? " disabled" : ""} title="${need ? `Lv.${need}부터 · 레이드마다 하루 1회 · 모든 몬스터가 최고 레벨로 · 낮은 확률로 &lt;고대&gt; 장비(아이템 레벨 210) · ` : ""}${i ? `보상 골드 ×${g} · 경험치 ×${x} · 장비 +${ge} · 강화석 +${stn}` : "기본 난이도"}">${esc(name)}</button>`).join("") + `</div>`;
   const raids = dj ? "" : difRow + (d.raids || []).map((x) => {
     const ok = !lvl || (hell ? lvl >= D0[1] : lvl >= x.minLv && (!x.maxLv || lvl <= x.maxLv));
-    return `<div class="dim-chal"><span><b>${esc(x.name)}</b> <em>${hell ? `Lv.${D0[1]}+ · 최고 레벨` : `Lv.${x.minLv}${x.maxLv ? `~${x.maxLv}` : "+"}`}</em></span>` +
+    return `<div class="dim-chal"><span><b>${esc(x.name)}</b> <em>${hell ? `Lv.${D0[1]}+ · 최고 레벨 · 하루 1회` : `Lv.${x.minLv}${x.maxLv ? `~${x.maxLv}` : "+"}`}</em></span>` +
       `<button class="btn small${ok ? " gold" : ""}" data-a="raid" data-k="${esc(x.k)}"${!lead || !ok ? " disabled" : ""} title="${ok ? (party.length ? "파티 입장 준비" : "혼자 입장") : "레벨이 맞지 않습니다"}">${lead ? "입장" : "파티장만"}</button></div>`;
   }).join("");
   const pick = dj ? "" : raids + `<div class="dim-rec">최고 기록 ${r[1] >= r[0] ? mmss(r[2]) : r[1] ? `${r[1]}단까지` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음 · 주간 첫 정화 보너스 ${r[4] ? "받음" : "남음"}</div>` +
