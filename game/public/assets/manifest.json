@@ -1452,12 +1452,12 @@
       "h": 32
     },
     "icon.item.h_9": {
-      "src": "assets/gear/helm/h_8.png?v=e28e98a2",
+      "src": "assets/gear/helm/h_9.png?v=17ee9699",
       "w": 32,
       "h": 32
     },
     "icon.item.a_9": {
-      "src": "assets/gear/armor/a_8.png?v=3047c3b9",
+      "src": "assets/gear/armor/a_9.png?v=2418f7d9",
       "w": 32,
       "h": 32
     },
@@ -1558,6 +1558,76 @@
     },
     "icon.item.q_reed_box": {
       "src": "assets/items/q_reed_box.png?v=358ee9f6",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.veil_g": {
+      "src": "assets/gear/gloves/veil_g.png?v=421ec3f4",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.veil_b": {
+      "src": "assets/gear/boots/veil_b.png?v=a8e07e59",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.bloom_g": {
+      "src": "assets/gear/gloves/bloom_g.png?v=99972224",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.bloom_b": {
+      "src": "assets/gear/boots/bloom_b.png?v=93737887",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.u_meteor_g": {
+      "src": "assets/gear/gloves/u_meteor_g.png?v=aacde91b",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.u_meteor_b": {
+      "src": "assets/gear/boots/u_meteor_b.png?v=63bf3405",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.u_blood_g": {
+      "src": "assets/gear/gloves/u_blood_g.png?v=c4f68330",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.u_blood_b": {
+      "src": "assets/gear/boots/u_blood_b.png?v=e0261c04",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.u_sun_h": {
+      "src": "assets/gear/helm/u_sun_h.png?v=e20a2940",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.u_blood_a": {
+      "src": "assets/gear/armor/u_blood_a.png?v=046ec57a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.u_sun_g": {
+      "src": "assets/gear/gloves/u_sun_g.png?v=f41bee13",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.u_sun_b": {
+      "src": "assets/gear/boots/u_sun_b.png?v=40963986",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.u_dawn_h": {
+      "src": "assets/gear/helm/u_dawn_h.png?v=97e99dc6",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.u_dawn_a": {
+      "src": "assets/gear/armor/u_dawn_a.png?v=38e498c1",
       "w": 32,
       "h": 32
     }
