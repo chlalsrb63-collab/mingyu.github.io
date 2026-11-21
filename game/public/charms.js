@@ -15,6 +15,7 @@
  */
 
 import * as Art from "./art.js";
+import * as Assets from "./assetlib.js";
 import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
 import * as SP from "./sprites.js";
@@ -71,8 +72,40 @@ const RUNE_MARKS = [
   [".#.", "#.#", "##.", "..#"], ["##.", "..#", "..#", "##."],
   ["#..", ".#.", "..#", "###"], [".#.", "###", "#.#", "#.#"],
 ];
-const tileCache = new Map(), blockCache = new Map();
+const tileCache = new Map(), blockCache = new Map(), spriteCache = new Map(), cellCache = new Map();
 const engravings = (c, r) => D().shapes[c.sh].order[r & 3].map((i) => c.runes?.[i] ?? i);
+
+/** External 16px-per-cell polyomino sprite rotated clockwise by `r & 3` turns, or null to fall back to code tiles. */
+function charmSprite(sh, r) {
+  const rot = r & 3, key = `${sh}:${rot}`;
+  if (spriteCache.has(key)) return spriteCache.get(key);
+  const src = Assets.canvas("charm." + sh);
+  if (!src) return null;
+  if (rot === 0) { spriteCache.set(key, src); return src; }
+  const w = src.width, h = src.height;
+  const [cv, g] = Art.canvas(rot & 1 ? h : w, rot & 1 ? w : h);
+  g.imageSmoothingEnabled = false;
+  if (rot === 1) { g.translate(h, 0); g.rotate(Math.PI / 2); }
+  else if (rot === 2) { g.translate(w, h); g.rotate(Math.PI); }
+  else { g.translate(0, w); g.rotate(-Math.PI / 2); }
+  g.drawImage(src, 0, 0);
+  spriteCache.set(key, cv);
+  return cv;
+}
+
+/** One 16×16 cell slice `(lx, ly)` from the rotated polyomino sprite for the 5×5 board, or "" if unavailable. */
+function charmCellUrl(sh, r, lx, ly) {
+  const key = `${sh}:${r & 3}:${lx},${ly}`;
+  if (cellCache.has(key)) return cellCache.get(key);
+  const sp = charmSprite(sh, r);
+  if (!sp) return "";
+  const [cv, g] = Art.canvas(16, 16);
+  g.imageSmoothingEnabled = false;
+  g.drawImage(sp, lx * 16, ly * 16, 16, 16, 0, 0, 16, 16);
+  const url = cv.toDataURL();
+  cellCache.set(key, url);
+  return url;
+}
 
 /** A square stone, lit from above-left. The offset lip makes the glyph read as an engraving. */
 function runeTile(grade, rune) {
@@ -97,6 +130,25 @@ function runeTile(grade, rune) {
 }
 
 function blockUrl(c, r, square) {
+  const sp = charmSprite(c.sh, r);
+  if (sp) {
+    const key = `sp:${c.sh}:${r & 3}:${+square}`;
+    if (blockCache.has(key)) return blockCache.get(key);
+    let cv, g;
+    if (square) {
+      [cv, g] = Art.canvas(BLOCK_PX, BLOCK_PX);
+      const scale = Math.min(BLOCK_PX / sp.width, BLOCK_PX / sp.height);
+      const dw = Math.round(sp.width * scale), dh = Math.round(sp.height * scale);
+      g.drawImage(sp, 0, 0, sp.width, sp.height, Math.floor((BLOCK_PX - dw) / 2), Math.floor((BLOCK_PX - dh) / 2), dw, dh);
+    } else {
+      [cv, g] = Art.canvas(sp.width, sp.height);
+      g.drawImage(sp, 0, 0);
+    }
+    const url = cv.toDataURL();
+    if (blockCache.size >= 256) blockCache.delete(blockCache.keys().next().value);
+    blockCache.set(key, url);
+    return url;
+  }
   const cells = D().shapes[c.sh].rot[r & 3], marks = engravings(c, r), grade = gradeOf(c);
   const key = `${grade}:${c.sh}:${r & 3}:${+square}:${marks.join(",")}`;
   if (blockCache.has(key)) return blockCache.get(key);
@@ -457,7 +509,7 @@ export function renderBoard(s) {
       if (wait && wait.uid === e.c.uid) c.classList.add("away");
       const img = el("img", "cm-tile");
       const i = cells.findIndex(([cx, cy]) => cx === x && cy === y);
-      img.src = runeTile(g, engravings(e.c, e.r)[i]).url; img.alt = "";
+      img.src = charmCellUrl(e.c.sh, e.r, x - e.x, y - e.y) || runeTile(g, engravings(e.c, e.r)[i]).url; img.alt = "";
       c.append(img);
       if (i === 0) c.append(el("span", "mk", GRADE_MARK[g]));
       hoverTip(c, (h) => describe(e.c, h, { r: e.r, hint: safe ? "끌어서 옮기기 · 클릭 후 회전/빼기" : "" }));

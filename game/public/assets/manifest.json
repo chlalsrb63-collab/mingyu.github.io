@@ -1630,6 +1630,66 @@
       "src": "assets/gear/armor/u_dawn_a.png?v=38e498c1",
       "w": 32,
       "h": 32
+    },
+    "charm.pin": {
+      "src": "assets/charms/pin.png?v=d7f714fc",
+      "w": 16,
+      "h": 16
+    },
+    "charm.bar2": {
+      "src": "assets/charms/bar2.png?v=bacffad9",
+      "w": 32,
+      "h": 16
+    },
+    "charm.bar3": {
+      "src": "assets/charms/bar3.png?v=fb97fc2a",
+      "w": 48,
+      "h": 16
+    },
+    "charm.elbow": {
+      "src": "assets/charms/elbow.png?v=3e125e22",
+      "w": 32,
+      "h": 32
+    },
+    "charm.tile2": {
+      "src": "assets/charms/tile2.png?v=b977f464",
+      "w": 32,
+      "h": 32
+    },
+    "charm.bar4": {
+      "src": "assets/charms/bar4.png?v=0623f56c",
+      "w": 64,
+      "h": 16
+    },
+    "charm.pole4": {
+      "src": "assets/charms/pole4.png?v=22ad7ad8",
+      "w": 16,
+      "h": 64
+    },
+    "charm.tee4": {
+      "src": "assets/charms/tee4.png?v=00112909",
+      "w": 48,
+      "h": 32
+    },
+    "charm.hook4": {
+      "src": "assets/charms/hook4.png?v=b56a1a2d",
+      "w": 32,
+      "h": 48
+    },
+    "charm.hook4m": {
+      "src": "assets/charms/hook4m.png?v=0566af1f",
+      "w": 32,
+      "h": 48
+    },
+    "charm.step4": {
+      "src": "assets/charms/step4.png?v=73d621eb",
+      "w": 48,
+      "h": 32
+    },
+    "charm.step4m": {
+      "src": "assets/charms/step4m.png?v=587c1c7d",
+      "w": 48,
+      "h": 32
     }
   },
   "audio": {
