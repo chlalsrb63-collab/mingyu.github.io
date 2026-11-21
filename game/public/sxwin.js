@@ -10,7 +10,7 @@
  */
 import { Sound } from "./audio.js";
 import { G, $, el, now } from "./state.js";
-import { act } from "./net.js";
+import { act } from "./wire.js";
 import { openWin, closeWin, isOpen, onClose, winEl, ask } from "./windows.js";
 import { itemSlot, itemName } from "./items.js";
 

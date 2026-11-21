@@ -15,7 +15,7 @@ import * as Charms from "./charms.js";
 import * as Coop from "./coop.js";
 import * as Alba from "./alba.js";
 import { G, $, dist, T, clamp, world, now, resize } from "./state.js";
-import { act } from "./net.js";
+import { act } from "./wire.js";
 import { usePotion, interact, stoneNear, aimAtPoint, attack, dash, talkKey } from "./actions.js";
 import { autoSt } from "./update.js";
 import { toggleWin, closeTop, closeAll, openWin, toast, isOpen, replyWhisper } from "./windows.js";

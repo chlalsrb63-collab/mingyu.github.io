@@ -8,7 +8,7 @@
 import { G, $, el } from "./state.js";
 import { Sound } from "./audio.js";
 import { K } from "./keymap.js";
-import { refreshUi } from "./hud.js";
+import { refreshUi } from "./hudkit.js";
 import { topics } from "./helptext.js";
 
 const F = { t: "start", q: "" };

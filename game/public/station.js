@@ -15,7 +15,7 @@ import * as Mini from "./minigames.js";
 import * as Gather from "./gather.js";
 import * as S3 from "./scene2d.js";
 import { G, $, el, dist, T } from "./state.js";
-import { act, entityPos } from "./net.js";
+import { act, entityPos } from "./wire.js";
 import { openWin, closeWin, isOpen, hoverTip, toast } from "./windows.js";
 import { countItem, fireNear } from "./actions.js";
 import { itemTip } from "./items.js";

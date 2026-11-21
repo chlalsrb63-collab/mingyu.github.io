@@ -19,10 +19,10 @@ import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
 import * as SP from "./sprites.js";
 import { G, $, el, now } from "./state.js";
-import { act, entityPos } from "./net.js";
+import { act, entityPos } from "./wire.js";
 import { openWin, isOpen, hoverTip, hideTip } from "./windows.js";
 import { iconImg } from "./uiicons.js";
-import { refreshUi } from "./hud.js";
+import { refreshUi } from "./hudkit.js";
 import { floatText } from "./events.js";
 import * as Track from "./track.js";
 

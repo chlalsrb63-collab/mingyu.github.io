@@ -12,7 +12,7 @@
 import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
 import { G, T, $, el, dist, now } from "./state.js";
-import { act, entityPos } from "./net.js";
+import { act, entityPos } from "./wire.js";
 
 const INK = "#2b2233";
 const FIND_COL = { town: "#ffd84a", willow: "#6adf6a", sunset_beach: "#ffc0d8", blossom_trail: "#ff9ac8" };

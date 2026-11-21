@@ -1,8 +1,9 @@
 /**
- * The HUD (split from client.js): face and portrait (`drawFace drawPortrait`), HP/MP bars, purse,
+ * The HUD (split from client.js): face (`drawFace`), HP/MP bars, purse,
  * unit frame, mastery strip, hotbar, quest tracker; window refresh (`draw(id, keyOf, fn)` re-renders
- * a window only when its key changed, `refreshUi`, `section`); the sky widget and `hudTick` (per frame:
- * event widget, cast bar, weapon gauge, streak, buffs).
+ * a window only when its key changed, `refreshUi`); the sky widget and `hudTick` (per frame:
+ * event widget, cast bar, weapon gauge, streak, buffs). The pieces windows share (`look section setOnce
+ * drawPortrait`, the late-bound `refreshUi`) live in hudkit.js.
  */
 
 import { Sound } from "./audio.js";
@@ -23,6 +24,7 @@ import * as Sky from "./sky.js";
 import * as Housing from "./housing.js";
 import * as Life from "./life.js";
 import { G, $, clamp, VP, el } from "./state.js";
+import { look, setOnce, drawPortrait, setRefreshUi } from "./hudkit.js";
 import * as Gather from "./gather.js";
 import * as Station from "./station.js";
 import * as Board from "./board.js";
@@ -46,7 +48,6 @@ import { K } from "./keymap.js";
 import { elementInfo, enchantName, matchups, monsterElementText, statusHud, statusesAt } from "./elements.js";
 
 // ── the unit frame and the bars ──
-export const look = () => G.who.get(G.you);
 let faceKey = "";
 function drawFace() {
   const w = look(), s = G.self;
@@ -59,24 +60,6 @@ function drawFace() {
   g.clearRect(0, 0, 40, 40);
   g.imageSmoothingEnabled = false;
   SP.drawPersonCrop(g, fr, 6, 8, 20, 20, 0, 0, 40, 40);
-}
-/** The paper-doll's figure: the player's own sprite, large, breathing and now and then blinking. */
-let dollAt = 0, dollFrame = -1;
-/** Draw the portrait afresh next frame (the character window changed). */
-export function resetDoll() { dollFrame = -1; }
-export function drawPortrait(t) {
-  const w = look(), s = G.self;
-  if (!w || !s) return;
-  const f = t % 4200 < 160 ? 5 : Math.floor(t / 650) % 2;
-  if (f === dollFrame && t - dollAt < 2000) return;
-  dollFrame = f; dollAt = t;
-  const cv = $("#char-cv"), g = cv.getContext("2d");
-  g.clearRect(0, 0, cv.width, cv.height);
-  g.imageSmoothingEnabled = false;
-  g.fillStyle = "rgba(0,0,0,.4)";
-  g.beginPath(); g.ellipse(66, 147, 30, 6, 0, 0, Math.PI * 2); g.fill();
-  const fr = SP.personSheet(SP.playerLook(s.cls, w.look, w.gear)).front[f];
-  SP.drawPersonCrop(g, fr, 4, 2, 24, 28, 6, 10, 120, 140);
 }
 export function hudBars() {
   const s = G.self, me = G.me;
@@ -117,12 +100,6 @@ function hudPurse(s) {
     }
     hudTtok = ttok;
   }
-}
-export function setOnce(node, key, fill) {
-  if (node.dataset.k === key) return;
-  node.dataset.k = key;
-  node.textContent = "";
-  fill(node);
 }
 function hudFrame(s) {
   $("#st-name").textContent = s.name;
@@ -358,12 +335,7 @@ export function refreshUi() {
   draw("alba", Alba.listKey, Alba.renderList);   // the 알바 window: the job in hand, its clock, co-op, trust (board.js)
   tutCard(s);
 }
-export function section(text, glyph) {
-  const h = el("div", "section");
-  if (glyph) h.append(iconImg(glyph, "#e2c486"));
-  h.append(text);
-  return h;
-}
+setRefreshUi(refreshUi);   // the windows call it through hudkit.js
 
 const cgauge = $("#cgauge");
 /** The sky widget over the minimap: the phase and hour (sun or moon), and the weather. */

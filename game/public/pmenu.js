@@ -12,7 +12,7 @@ import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
 import * as Track from "./track.js";
 import { G, $, el, dist, T, now } from "./state.js";
-import { act } from "./net.js";
+import { act } from "./wire.js";
 import { toast, chatTo } from "./windows.js";
 import { show as hint } from "./hints.js";
 import { pathTo, walkToDoor, toggleAuto } from "./input.js";

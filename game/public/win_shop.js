@@ -9,12 +9,12 @@ import * as SideQ from "./sidequests.js";
 import * as Board from "./board.js";
 import * as NPC from "./npclife.js";
 import { G, $, el, clamp } from "./state.js";
-import { act } from "./net.js";
+import { act } from "./wire.js";
 import { countItem } from "./actions.js";
 import { hoverTip, ask } from "./windows.js";
 import * as Info from "./infocard.js";
 import { itemDesc, itemTip, itemName, SLOT_NAME, socketCap, isGear, sellPrice } from "./items.js";
-import { refreshUi } from "./hud.js";
+import { refreshUi } from "./hudkit.js";
 import * as Track from "./track.js";
 
 // 잡템 일괄 판매: the same pick as the rules' junkSlots (46-bag.js), counted here only to ask "몇 개, 얼마"

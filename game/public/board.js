@@ -17,7 +17,7 @@
 import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
 import { G, $, el, dist, T, now, clamp } from "./state.js";
-import { act, entityPos } from "./net.js";
+import { act, entityPos } from "./wire.js";
 import { openWin, isOpen, toggleWin } from "./windows.js";
 import { countItem } from "./actions.js";
 import { iconImg } from "./uiicons.js";

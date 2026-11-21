@@ -23,7 +23,7 @@ import * as Charms from "./charms.js";
 import * as NPC from "./npclife.js";
 import * as Sky from "./sky.js";
 import { G, T, now, dist, $, el } from "./state.js";
-import { act } from "./net.js";
+import { act } from "./wire.js";
 import { toast, openWin, closeWin, addChat, shown } from "./windows.js";
 import { K } from "./keymap.js";
 import { portrait } from "./talkui.js";

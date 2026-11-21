@@ -8,9 +8,9 @@ import { iconImg } from "./uiicons.js";
 import * as Info from "./infocard.js";
 import * as Emo from "./emoticons.js";
 import { el, clamp, $, G, T } from "./state.js";
-import { act } from "./net.js";
+import { act } from "./wire.js";
 import { isOpen, keepIn, chatTo, ask } from "./windows.js";
-import { section, look } from "./hud.js";
+import { section, look } from "./hudkit.js";
 
 // ── party ──
 function hpBar(hp, mhp) {

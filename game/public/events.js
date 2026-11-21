@@ -26,7 +26,7 @@ import * as Rest from "./rest.js";
 import * as Coop from "./coop.js";
 import * as Charms from "./charms.js";
 import { G, dist, T, now, $, el } from "./state.js";
-import { entityPos } from "./net.js";
+import { entityPos } from "./wire.js";
 import { addChat, banner, chatLog } from "./windows.js";
 import { fadeIn } from "./win_world.js";
 import { rarityLabel } from "./items.js";

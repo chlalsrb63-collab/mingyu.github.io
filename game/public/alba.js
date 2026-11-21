@@ -18,7 +18,7 @@
 import { Sound } from "./audio.js";
 import * as SP from "./sprites.js";
 import { G, $, el, clamp } from "./state.js";
-import { act, ws } from "./net.js";
+import { act, ws } from "./wire.js";
 import * as Board from "./board.js";
 import * as Stage from "./alba_stage.js";
 

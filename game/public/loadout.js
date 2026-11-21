@@ -4,12 +4,12 @@
  * `self.lo = [actives in use, set]`. The local draft is sent whole as `{t:"lo", a}` and validated by the server.
  */
 import { G, el } from "./state.js";
-import { act } from "./net.js";
+import { act } from "./wire.js";
 import { countItem } from "./actions.js";
 import { Sound } from "./audio.js";
 import { skillIconUrl } from "./skillicons.js";
 import { hoverTip } from "./windows.js";
-import { refreshUi } from "./hud.js";
+import { refreshUi } from "./hudkit.js";
 
 const PERK_NAME = {
   atk: "공격력", def: "방어력", hp: "최대 HP", mp: "최대 MP", crit: "치명타 확률", critd: "치명타 피해",
