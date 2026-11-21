@@ -149,7 +149,7 @@ function renderHud() {
   // one floor, its mid-boss, then the boss's own room (owner 2026-11-21): the bar shows the stage, not a gauge
   const R = raidOf(d[16]), chal = d[15], boss = R && A.G.defs.mobs[R.boss];
   const mid = d[3] && A.G.mobs.get(d[3]), midName = (mid && A.G.defs.mobs[mid.k]?.name) || "중간보스";
-  const label = [`중간보스 [${midName}]를 찾아 쓰러뜨리세요`, "보스를 쓰러뜨리세요!", "클리어 — 보상 상자를 열고 귀환의 문으로", "레이드가 닫힙니다…", `포탈이 열렸습니다 — ${boss ? boss.name : "보스"}의 방으로`][d[2]];
+  const label = [mid ? `중간보스 [${midName}]를 쓰러뜨리세요` : "가장 먼 방의 중간보스를 찾아 쓰러뜨리세요", "보스를 쓰러뜨리세요!", "클리어 — 보상 상자를 열고 귀환의 문으로", "레이드가 닫힙니다…", `포탈이 열렸습니다 — ${boss ? boss.name : "보스"}의 방으로`][d[2]];
   const where = chal ? `${boss ? boss.name : "보스"}의 방` : (A.G.map?.name || "").split(" · ").pop();
   // (the wire carries the raid's world tier; players see levels as 4·tier − 3, like monsters and doors)
   put($("#dim-title"), `${R ? R.name : "레이드"}${difTag(d[17])} Lv.${4 * d[4] - 3} · ${where}`);
