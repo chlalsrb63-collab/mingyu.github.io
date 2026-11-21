@@ -123,8 +123,26 @@ const RAID = {
 const dimRaidKey = (k) => (typeof k === "string" && Object.hasOwn(RAID, k) ? k : "under");
 /** Floor `floor`'s name in `raid` (an old caller's `true` is the hanok raid). */
 const dimFloorName = (floor, raid) => RAID[dimRaidKey(raid === true ? "hanok" : raid)].floors[clamp(floor | 0, 1, DIM.floors) - 1].name;
-/** Why a hero of shown level `lv` may not go into a field raid ("" when they may); the first two bar nobody (the level is clamped up). */
-const dimRaidBar = (raid, lv) => { const R = RAID[dimRaidKey(raid)]; return R.field && (lv < R.minLv || lv > R.maxLv) ? `이 레이드는 Lv.${R.minLv}~${R.maxLv} 파티만 들어갈 수 있습니다.` : ""; };
+/**
+ * Difficulty steps of every raid (owner 2026-11-21). 보통 is the raid as tuned; 어려움 and 악몽 keep the raid's own levels
+ * but want strong gear for them; 헬 (Lv.200+, any raid, no level window) scales every monster to the world's top
+ * tier first (dimHell, 64-dim.js), then hardens it. `hp` / `atk` × on every raid monster and the master; the chest pays
+ * `gold` / `xp` × and `gear` extra rare pieces and `stone` extra 강화석.
+ */
+const RAID_HELL_LV = 200;
+const RAID_DIF = [
+  { name: "보통", hp: 1, atk: 1, gold: 1, xp: 1, gear: 0, stone: 0 },
+  { name: "어려움", hp: 2, atk: 1.5, gold: 1.6, xp: 1.4, gear: 1, stone: 2 },
+  { name: "악몽", hp: 3.5, atk: 2.2, gold: 2.4, xp: 1.9, gear: 2, stone: 4 },
+  { name: "헬", hp: 2.5, atk: 1.8, gold: 3.5, xp: 2.5, gear: 3, stone: 6, hell: 1 },
+];
+const dimDif = (d) => (Number.isInteger(d) ? clamp(d, 0, RAID_DIF.length - 1) : 0);
+/** Why a hero of shown level `lv` may not go into a raid at difficulty `dif` ("" when they may): 헬 wants Lv.200; else a field raid's window (the first two bar nobody: the level is clamped up). */
+const dimRaidBar = (raid, lv, dif = 0) => {
+  if (RAID_DIF[dimDif(dif)].hell) return lv < RAID_HELL_LV ? `헬 난이도는 Lv.${RAID_HELL_LV}부터 들어갈 수 있습니다.` : "";
+  const R = RAID[dimRaidKey(raid)];
+  return R.field && (lv < R.minLv || lv > R.maxLv) ? `이 레이드는 Lv.${R.minLv}~${R.maxLv} 파티만 들어갈 수 있습니다.` : "";
+};
 /** A raid's toughness scale (RAID `hk`, default 1): the forest's low band (Lv.37–60) is the underground raid's steepest hp ramp, so it is eased to keep the 10-minute pace (bots: 8.2–14.4 min at 1, see tests/dimrift.mjs). */
 const dimRaidHk = (raid) => RAID[dimRaidKey(raid)].hk || 1;
 /** A raid's final-boss scale `[hp, atk]` (RAID `boss`, default [1, 1]): the maple raid's master is the Lv.46 field boss across a Lv.155–200 window, so it is raised to its band (owner 2026-11-18; bots: boss fight ≈1 min → ≈2, like the other raids). */
