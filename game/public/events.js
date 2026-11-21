@@ -238,7 +238,7 @@ export function onEvent(e, t) {
         G.gone.delete(e[1]);
         const d = G.defs.mobs[m.k], col = MOB_COL[m.k] || MOB_COL[d?.sp] || "#fff";
         S3.fx.mobDeath(m.x, m.y, heightOf(m), col, m.el | 0, !!d?.boss);
-        // a boss's killing blow: the scene holds still ~100 ms (client.js frame) and shakes; 설정 → 보스 처치 연출 turns it off
+        // a boss's killing blow: the scene holds still ~100 ms (client.js frame) and shakes; 설정 → 보스 연출 turns it off
         if (d?.boss && G.bossFx && G.me && dist(G.me.x, G.me.y, m.x, m.y) < 420) { G.stopAt = t; G.stopUntil = t + 100; S3.shake(10); }
         Sound.play(d?.boss ? "die_boss" : m.el ? "die_big" : "die_small", mobBody(m.k));
         G.mobs.delete(e[1]);

@@ -184,7 +184,7 @@ function setAimArrow(on) {
   $("#btn-aim").textContent = on ? "켜짐" : "꺼짐";
   localStorage.setItem("lumentale:aim", on ? "1" : "0");
 }
-/** A boss's killing blow freezes the scene a moment and shakes it (events.js); on unless turned off. */
+/** A boss fight's opening (bossintro.js) and its killing blow's freeze and shake (events.js); on unless turned off. */
 function setBossFx(on) {
   G.bossFx = on;
   $("#btn-bossfx").classList.toggle("off", !on);
