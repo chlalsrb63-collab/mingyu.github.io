@@ -279,7 +279,7 @@ function gainXp(S, p, n) {
     p.gain.push(["lvl", ch.lvl]);
     rt.ev.push(["l", p.eid]);
     rt.who = true;
-    toast(p, `레벨 ${ch.lvl}! 능력치 포인트 +${(ch.lvl - from) * AP_PER_LEVEL}`);
+    toast(p, `레벨 ${ch.lvl}! 능력치 포인트 +${apEarned(ch.lvl) - apEarned(from)}`);
     for (let l = from + 1; l <= ch.lvl; l++) if (l % 50 === 0) sys(S, `${ch.name}님이 레벨 ${l}${pp(l, "을를")} 달성했습니다!`);
     tutStep(S, p, "level");
     checkAch(S, p);

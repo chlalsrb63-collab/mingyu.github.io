@@ -31,7 +31,7 @@ function selfPayload(p) {
   return {
     // Jobs and stats: experience towards the next level, unspent points and the six stats; mastery
     // [lv, xp, need] per kind (WK_ORDER), the kinds in hand and on the back
-    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, xpNext: ch.lvl < MAXLV ? levelXp(ch.lvl) : 0,
+    name: ch.name, job: ch.job, lvl: ch.lvl, xp: ch.xp, xpt: ch.xpt, xpNext: ch.lvl < LV_CAP ? levelXp(ch.lvl) : 0,
     ap: statPoints(ch), spentAp: spentPoints(ch.st), st: ch.st, rs: ch.rs, sw: ch.sw, respecCost: statResetCost(ch),
     buddy: buddySelf(p),
     wm: WK_ORDER.map((k) => [ch.wm[k].lv, Math.floor(ch.wm[k].xp),ch.wm[k].lv >= WM_MAX ? 0 : wmNeed(ch.wm[k].lv)]),
@@ -337,8 +337,8 @@ export function defs() {
   }
   return {
     worldName: "루넬샤대륙",
-    items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, jobPal: JOB_PAL, skillJob: SKILL_JOB, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: MAXLV,
-    jobs, jobTraits: JOB_TRAIT, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, statGrowth: { perLevel: AP_PER_LEVEL, cap: ST_CAP, soft: ST_SOFT },
+    items: ITEMS, mobs, skills: SKILL, skillOrder: SKILL_ORDER, skGrow: SK_GROW, jobPal: JOB_PAL, skillJob: SKILL_JOB, shop: SHOP, quests: QUESTS, enh: ENH_RATE, enhPct: ENH_PCT, enhCrit: ENH_CRIT, enhUc: ENH_UNCURSE, uncurseFee: UNCURSE_FEE, inv: INV_BASE, invMax: INV_MAX, bag: { step: BAG_STEP, cost: BAG_COST }, house: homeDefs(), maxLv: LV_CAP, worldLv: MAXLV,
+    jobs, jobTraits: JOB_TRAIT, jobSkillRanks: JOB_SKILL_RANKS, stats: STATS, scale: SCALE, grade: GRADE, statGrowth: { perLevel: AP_PER_LEVEL, over: AP_OVER, cap: ST_CAP, soft: ST_SOFT },
     wmNeed: Array.from({ length: WM_MAX }, (_, i) => wmNeed(i + 1)), wkOrder: WK_ORDER, wkName: WK_NAME, jobWm: JOB_WM, hybWm: HYB_WM, wswMs: WSW_MS,
     // 직업 자유: loadout sizes, the reset scrolls and gold [base, per level], the off-slot quest
     ske: { rate: SKE_RATE, pct: SKE_PCT, max: SKE_MAX, item: SKE_ITEM },

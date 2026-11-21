@@ -75,8 +75,8 @@ export function topics(d) {
     ] },
     { id: "stats", name: "스탯과 성장", secs: [
       { h: "레벨업과 능력치 투자", l: [
-        `사냥과 의뢰로 경험치를 채우면 자동으로 레벨이 올라요. 최고 레벨은 ${d.maxLv}예요.`,
-        `레벨업마다 **능력치 포인트 ${d.statGrowth.perLevel}개**를 받아요. 캐릭터 창({char})의 '능력치' 탭에서 투자하세요.`,
+        `사냥과 의뢰로 경험치를 채우면 자동으로 레벨이 올라요. 최고 레벨은 ${d.maxLv}예요. Lv.${d.worldLv || 200}부터는 레벨마다 아주 많은 경험치가 들어요.`,
+        `레벨업마다 **능력치 포인트 ${d.statGrowth.perLevel}개**(Lv.${d.worldLv || 200}부터 ${d.statGrowth.over || 1}개)를 받아요. 캐릭터 창({char})의 '능력치' 탭에서 투자하세요.`,
         `능력치는 각 ${d.statGrowth.cap}까지 높일 수 있어요. ${d.statGrowth.soft.join("와 ")}에서 추가 투자 효율이 줄어들어요.`,
         "능력치 위에 마우스를 올리면 그 능력치가 영향을 주는 항목이 밝아져요."] },
       { h: "여섯 가지 능력치", l: ST },

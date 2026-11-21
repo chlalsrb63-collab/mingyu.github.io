@@ -310,6 +310,9 @@ const enhMul = (e) => 1 + ENH_PCT[e | 0] / 100;
 // weapon crit % per step; a lifted curse gives the next try this many %p
 // UNCURSE_FEE: the smith's gold per gear tier on top of the scroll (economy review 2026-11-15 §3: tier 1 1.6k … tier 5 3.2k with the scroll)
 const ENH_CRIT = 0.5, ENH_UNCURSE = 10, UNCURSE_FEE = 400;
+// Late-game gold sink (owner 2026-11-21): above gear tier `from` (Lv.81+) each tier adds `tier` to the try's and the
+// uncurse fee's gold, and each step past +`step` adds `stepK` more of that, so tiers 1–4 pay exactly as before.
+const ENH_LATE = { from: 4, tier: 0.12, step: 5, stepK: 0.25 };
 
 // ── the cosy side: campfires, fishing, guilds
 /** Campfires that always burn, by map, in tiles. */
