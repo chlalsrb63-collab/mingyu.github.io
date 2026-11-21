@@ -25961,65 +25961,6 @@ export function validateAction(S, pid, a) {
   if (h) return !h.down && p.dead ? bad("쓰러진 상태입니다") : h.check(S, p, a);
   if (p.dead) return bad("쓰러진 상태입니다");
   switch (a.t) {
-    case "mv":
-      if (!num(a.x) || !num(a.y)) return bad("잘못된 좌표");
-      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      return OK;
-    case "atk":
-      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      if (carryOf(p)) return bad(CARRY_NO);
-      if (p.dance) return bad("무영난무 중입니다");
-      if (p.hammer) return bad("해머를 내려찍는 중입니다");
-      if (now < (p.stag || 0) || elementFrozen(S, p)) return bad("stag");
-      if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
-      return OK;
-    case "skr":
-      // the key of a held skill came up (57-weapon-skills.js holdGo)
-      if (elementFrozen(S, p)) return bad("stag");
-      return p.hold ? OK : bad("skr");
-    case "dash": {
-      // Space (59-dash.js): refused in silence while it cools, while reeling, when down
-      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      const why = dashWhy(S, p);
-      return why ? bad(why) : OK;
-    }
-    case "warp": {
-      // a big ground has several stones: `i` picks one (0, the first, when left out)
-      const i = a.i === undefined ? 0 : a.i;
-      if (!hasWp(a.to) || !Number.isInteger(i) || i < 0 || i >= MAP_META[a.to].wpn) return bad("그곳에는 이동의 돌이 없습니다");
-      const denied = airshipAccess(ch, a.to);
-      if (denied) return bad(denied);
-      const minLv = mapLevelNeed(ch, a.to);
-      if (minLv) return bad(mapLevelMessage(minLv));
-      // owner 2026-11-18: the world map warps from anywhere, not only beside a stone; never out of an instance (raid, co-op shift)
-      if (inDim(p)) return bad("레이드던전이나 협동 알바 중에는 이동할 수 없습니다");
-      if (!wpWoken(ch, a.to, i)) return bad("아직 깨우지 않은 이동의 돌입니다");
-      const at = wpNear(p);
-      if (a.to === p.map && at && i === (at.i || 0)) return bad("이미 이곳에 있습니다");
-      if (now - p.hitAt < WARP_CALM) return bad("전투 중에는 이동할 수 없습니다");
-      return OK;
-    }
-    case "sk": {
-      // a skill by id (57-weapon-skills.js): its weapon in hand, its mastery or job, off cooldown, MP for it
-      const sk = typeof a.id === "string" && Object.hasOwn(SKILL, a.id) ? SKILL[a.id] : null;
-      if (!sk) return bad("없는 스킬");
-      if (sk.kind === "p") return bad("저절로 발동하는 패시브 스킬입니다");
-      if (carryOf(p)) return bad(CARRY_NO);
-      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      const why = skWhy(ch, sk);
-      if (why) return bad(why);
-      if (!loOf(ch).a.includes(a.id)) return bad("스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
-      if (p.dance) return bad("무영난무 중입니다");
-      if (p.hammer) return bad("해머를 내려찍는 중입니다");
-      if (p.charge) return bad("기술을 모으는 중입니다");
-      // a held charge (E1): only the same skill again, which lets it go
-      if (p.hold) return a.id === p.hold.id ? OK : bad("기술을 모으는 중입니다");
-      if (now < (p.stag || 0) || elementFrozen(S, p)) return bad("stag");
-      if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
-      if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");
-      if (sk.hpPct && p.hp <= skillHpCost(p, sk)) return bad("HP가 부족합니다");
-      return OK;
-    }
     case "use": {
       if (a.id === SOCK_ITEM) return socketValidate(p, a.k);
       // Elixirs and the whetstone (life skills, 58-life.js).
@@ -26170,24 +26111,6 @@ export function validateAction(S, pid, a) {
       if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
       if (countItem(ch, "uncurse") < 1) return bad("저주 해제 주문서가 없습니다");
       if (ch.gold < UNCURSE_FEE * ITEMS[g.id].tier) return bad(`저주 해제 수수료 ${(UNCURSE_FEE * ITEMS[g.id].tier).toLocaleString()}G가 부족합니다`);
-      return OK;
-    }
-    case "sit": return OK;
-    case "fish":
-      if (p.fish) return bad("이미 낚시 중입니다");
-      if (now - p.hitAt < 3000) return bad("싸우는 중에는 낚시할 수 없습니다");
-      if (mapOfS(p.S, p.map).nofish) return bad("이곳에서는 낚시를 할 수 없습니다");
-      if (!waterNear(mapOfS(p.S, p.map), p)) return bad("물가에서만 낚시할 수 있습니다");
-      if (!canAdd(ch, "fish_s", 1)) return bad("가방이 가득 찼습니다");
-      return OK;
-    case "hook": return p.fish && p.fish.bite && !p.fish.hook ? OK : bad("아직 입질이 없습니다");
-    case "reel": return p.fish ? OK : bad("낚시 중이 아닙니다");
-    case "cook": {
-      const r = typeof a.id === "string" ? fishRecipe(a.id) : null;
-      if (!r || ITEMS[a.id].type !== "fish") return bad("요리할 수 없는 아이템");
-      if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
-      if (!fireNear(S.maps[p.map], p)) return bad("모닥불 곁에서만 요리할 수 있습니다");
-      if (!canAdd(ch, r.out[0], r.out[1] * 2) || !canAdd(ch, "burnt", 1)) return bad("가방이 가득 찼습니다");
       return OK;
     }
     case "salv": {
@@ -26747,6 +26670,219 @@ const ACTIONS = {
     },
     run(S, p, a) { tutStep(S, p, a.s); },
   },
+
+  // ── alive only: walking, fighting, skills, the dash, the world map
+  mv: {
+    check(S, p, a) {
+      if (!num(a.x) || !num(a.y)) return bad("잘못된 좌표");
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch, now = S.now, m = mapOfS(p.S, p.map);
+      if (p.dance || p.ab || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; return; }
+      const dt = clamp(now - p.mvAt, 0, 600);
+      p.mvAt = now;
+      const max = (stats(p).spd * dt) / 1000 * 1.6 + 8;
+      const d = dist(p.x, p.y, a.x, a.y);
+      if (d > max || !canStand(m, a.x, a.y)) { p.fix = true; return; }
+      if (d > 1.5) { rouse(S, p); p.elementRunAt = now; }
+      p.x = a.x; p.y = a.y;
+      if (a.d >= 0 && a.d <= 3) p.dir = a.d | 0;
+      if (validAim(a.a)) p.aim = a.a;
+      // stepping anywhere on a gate tile (or brushing its edge) takes you through
+      for (const pt of m.portals) {
+        if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) >= 12) continue;
+        if (p.map === AIRSHIP_BACK[0] && pt.to === AIRSHIP_MAP && !airshipCleared(ch)) airshipBoard(S, p);
+        else {
+          const at = arrivalOf(S, pt);
+          if (at) changeMap(S, p, pt.to, at[0] * T + 8, at[1] * T + 10);
+        }
+        break;
+      }
+      // the "내 집" door in town (64-housing.js)
+      homeDoor(S, p);
+    },
+  },
+  atk: {
+    check(S, p, a) {
+      const now = S.now;
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
+      if (carryOf(p)) return bad(CARRY_NO);
+      if (p.dance) return bad("무영난무 중입니다");
+      if (p.hammer) return bad("해머를 내려찍는 중입니다");
+      if (now < (p.stag || 0) || elementFrozen(S, p)) return bad("stag");
+      if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
+      return OK;
+    },
+    run(S, p, a) { if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); },
+  },
+  sk: {
+    check(S, p, a) {
+      const ch = p.ch, now = S.now;
+      // a skill by id (57-weapon-skills.js): its weapon in hand, its mastery or job, off cooldown, MP for it
+      const sk = typeof a.id === "string" && Object.hasOwn(SKILL, a.id) ? SKILL[a.id] : null;
+      if (!sk) return bad("없는 스킬");
+      if (sk.kind === "p") return bad("저절로 발동하는 패시브 스킬입니다");
+      if (carryOf(p)) return bad(CARRY_NO);
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
+      const why = skWhy(ch, sk);
+      if (why) return bad(why);
+      if (!loOf(ch).a.includes(a.id)) return bad("스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
+      if (p.dance) return bad("무영난무 중입니다");
+      if (p.hammer) return bad("해머를 내려찍는 중입니다");
+      if (p.charge) return bad("기술을 모으는 중입니다");
+      // a held charge (E1): only the same skill again, which lets it go
+      if (p.hold) return a.id === p.hold.id ? OK : bad("기술을 모으는 중입니다");
+      if (now < (p.stag || 0) || elementFrozen(S, p)) return bad("stag");
+      if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
+      if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");
+      if (sk.hpPct && p.hp <= skillHpCost(p, sk)) return bad("HP가 부족합니다");
+      return OK;
+    },
+    run(S, p, a) { if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.id); },
+  },
+  skr: {
+    check(S, p) {
+      // the key of a held skill came up (57-weapon-skills.js holdGo)
+      if (elementFrozen(S, p)) return bad("stag");
+      return p.hold ? OK : bad("skr");
+    },
+    run(S, p) { holdGo(S, p); },
+  },
+  dash: {
+    check(S, p, a) {
+      // Space (59-dash.js): refused in silence while it cools, while reeling, when down
+      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
+      const why = dashWhy(S, p);
+      return why ? bad(why) : OK;
+    },
+    run(S, p, a) { dashGo(S, p, mapOfS(p.S, p.map), a.a); },
+  },
+  warp: {
+    check(S, p, a) {
+      const ch = p.ch;
+      // a big ground has several stones: `i` picks one (0, the first, when left out)
+      const i = a.i === undefined ? 0 : a.i;
+      if (!hasWp(a.to) || !Number.isInteger(i) || i < 0 || i >= MAP_META[a.to].wpn) return bad("그곳에는 이동의 돌이 없습니다");
+      const denied = airshipAccess(ch, a.to);
+      if (denied) return bad(denied);
+      const minLv = mapLevelNeed(ch, a.to);
+      if (minLv) return bad(mapLevelMessage(minLv));
+      // owner 2026-11-18: the world map warps from anywhere, not only beside a stone; never out of an instance (raid, co-op shift)
+      if (inDim(p)) return bad("레이드던전이나 협동 알바 중에는 이동할 수 없습니다");
+      if (!wpWoken(ch, a.to, i)) return bad("아직 깨우지 않은 이동의 돌입니다");
+      const at = wpNear(p);
+      if (a.to === p.map && at && i === (at.i || 0)) return bad("이미 이곳에 있습니다");
+      if (S.now - p.hitAt < WARP_CALM) return bad("전투 중에는 이동할 수 없습니다");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      const denied = airshipAccess(ch, a.to);
+      if (denied) { toast(p, denied); return; }
+      const minLv = mapLevelNeed(ch, a.to);
+      if (minLv) { toast(p, mapLevelMessage(minLv)); return; }
+      const i = a.i || 0, w = stonesOf(mapOf(a.to))[i] || wpOf(a.to);
+      S.maps[p.map].ev.push(["wp", p.eid, 0]);
+      // to another stone of the same ground: a step, not a journey (the map is not sent again)
+      if (a.to === p.map) { dropAggro(S, p); p.x = w.ax * T + 8; p.y = w.ay * T + 10; p.fix = true; }
+      else changeMap(S, p, a.to, w.ax * T + 8, w.ay * T + 10);
+      S.maps[a.to].ev.push(["wp", p.eid, 1]);
+      toast(p, `[${stoneName(a.to, i)}]의 이동의 돌로 건너왔습니다.`);
+      p.dirty = true;
+    },
+  },
+
+  // ── alive only: sitting, fishing, cooking
+  sit: {
+    check() { return OK; },
+    run(S, p) {
+      if (p.sit) p.sit = false;
+      else { rouse(S, p); sitDown(S, p); fieldFire(S, p, S.now); }
+    },
+  },
+  fish: {
+    check(S, p) {
+      if (p.fish) return bad("이미 낚시 중입니다");
+      if (S.now - p.hitAt < 3000) return bad("싸우는 중에는 낚시할 수 없습니다");
+      if (mapOfS(p.S, p.map).nofish) return bad("이곳에서는 낚시를 할 수 없습니다");
+      if (!waterNear(mapOfS(p.S, p.map), p)) return bad("물가에서만 낚시할 수 있습니다");
+      if (!canAdd(p.ch, "fish_s", 1)) return bad("가방이 가득 찼습니다");
+      return OK;
+    },
+    run(S, p) {
+      const m = mapOfS(p.S, p.map);
+      rouse(S, p);
+      const [wx, wy] = waterNear(m, p);
+      // a practised angler gets bites sooner (life skills: −0.8 % a 낚시 level)
+      p.fish = { at: S.now + fishWait(S, p.ch, lifeBuff(S, p, "bite")) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
+      p.dir = dirOf(wx - p.x, wy - p.y);
+      S.maps[p.map].ev.push(["f", p.eid, 1, wx, wy]);
+    },
+  },
+  hook: {
+    check(S, p) { return p.fish && p.fish.bite && !p.fish.hook ? OK : bad("아직 입질이 없습니다"); },
+    run(S, p) {
+      // the fish is on: the angler now plays it in, and reports how well that went
+      p.fish.hook = S.now;
+      S.maps[p.map].ev.push(["f", p.eid, 3]);
+    },
+  },
+  reel: {
+    check(S, p) { return p.fish ? OK : bad("낚시 중이 아닙니다"); },
+    run(S, p, a) {
+      const ch = p.ch, now = S.now;
+      const { bite, hook } = p.fish;
+      p.fish = null;
+      S.maps[p.map].ev.push(["f", p.eid, 0]);
+      if (!bite) { toast(p, "너무 일찍 당겼습니다…"); return; }
+      // how well the fish was played (0–100) decides what comes out of the water;
+      // a fight that ended implausibly fast counts for little
+      let score = hook ? clamp(a.s | 0, 0, 100) : 30;
+      if (hook && now - hook < 2500) score = Math.min(score, 40);
+      if (score < fishKeep(ch)) { toast(p, "물고기가 줄을 끊고 달아났습니다."); return; }
+      // what bites depends on the water's grade and the angler's 낚시 level; 대성공 lands two (58-life.js)
+      const { id, n, great } = fishLand(S, p, score);
+      if (score >= 95) toast(p, "완벽한 낚시!");
+      if (great) toast(p, `대성공! ${ITEMS[id].name} ${n}마리`);
+      const g = ITEMS[id].grade | 0;
+      if (addItem(ch, id, n)) p.gain.push(["item", id, n, id === "fish_l" ? 3 : g >= 3 ? 2 : g === 2 ? 1 : 0]);
+      ch.fish++;
+      if (id === "fish_l") { sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`); ch.cnt.carp++; }
+      if (id.startsWith("fish")) dailyProg(S, p, "fish");
+      checkAch(S, p);
+      p.dirty = true;
+    },
+  },
+  cook: {
+    check(S, p, a) {
+      const ch = p.ch;
+      const r = typeof a.id === "string" ? fishRecipe(a.id) : null;
+      if (!r || ITEMS[a.id].type !== "fish") return bad("요리할 수 없는 아이템");
+      if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
+      if (!fireNear(S.maps[p.map], p)) return bad("모닥불 곁에서만 요리할 수 있습니다");
+      if (!canAdd(ch, r.out[0], r.out[1] * 2) || !canAdd(ch, "burnt", 1)) return bad("가방이 가득 찼습니다");
+      return OK;
+    },
+    run(S, p, a) {
+      const ch = p.ch;
+      // the fish's recipe (12-life-tables.js RECIPES; L2's `craft` takes the same path)
+      const r = fishRecipe(a.id);
+      takeItem(ch, a.id, 1);
+      // how neatly the pan was packed (0–100): a mess burns (less often for a practised cook), a perfect
+      // fit or a 대성공 feeds two (58-life.js cookDish)
+      const score = clamp(a.s | 0, 0, 100);
+      const { id: out, n, great, burnt } = cookDish(S, p, r, score);
+      addItem(ch, out, n);
+      p.gain.push(["item", out, n, 0]);
+      toast(p, burnt ? "태워 버렸습니다…" : n > 1 ? `${great ? "대성공" : "완벽한 요리"}! ${ITEMS[out].name} ${n}개` : `${ITEMS[out].name} 완성`);
+      if (!burnt) { ch.cnt.cook++; dailyProg(S, p, "cook", r.at); checkAch(S, p); }
+      fairPan(S, p, score);   // 장날 요리 대회 (63-festival.js)
+      S.maps[p.map].ev.push(["u", p.eid, 0]);
+      p.dirty = true;
+    },
+  },
 };
 
 // Whole systems keep their check and mutation in their own part; these names go straight to them.
@@ -26835,35 +26971,6 @@ export function applyAction(S, pid, a) {
   const h = Object.hasOwn(ACTIONS, a.t) ? ACTIONS[a.t] : null;
   if (h) h.run(S, p, a);
   else switch (a.t) {
-    case "mv": {
-      if (p.dance || p.ab || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; break; }
-      const dt = clamp(now - p.mvAt, 0, 600);
-      p.mvAt = now;
-      const max = (stats(p).spd * dt) / 1000 * 1.6 + 8;
-      const d = dist(p.x, p.y, a.x, a.y);
-      if (d > max || !canStand(m, a.x, a.y)) { p.fix = true; break; }
-      if (d > 1.5) { rouse(S, p); p.elementRunAt = now; }
-      p.x = a.x; p.y = a.y;
-      if (a.d >= 0 && a.d <= 3) p.dir = a.d | 0;
-      if (validAim(a.a)) p.aim = a.a;
-      // stepping anywhere on a gate tile (or brushing its edge) takes you through
-      for (const pt of m.portals) {
-        if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) >= 12) continue;
-        if (p.map === AIRSHIP_BACK[0] && pt.to === AIRSHIP_MAP && !airshipCleared(ch)) airshipBoard(S, p);
-        else {
-          const at = arrivalOf(S, pt);
-          if (at) changeMap(S, p, pt.to, at[0] * T + 8, at[1] * T + 10);
-        }
-        break;
-      }
-      // the "내 집" door in town (64-housing.js)
-      homeDoor(S, p);
-      break;
-    }
-    case "atk": if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); break;
-    case "sk": if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.id); break;
-    case "skr": holdGo(S, p); break;
-    case "dash": dashGo(S, p, m, a.a); break;
     case "use": {
       if (a.id === SOCK_ITEM) { socketApply(S, p, a.k); break; }
       if (lifeUse(a.id)) { lifeUseApply(S, p, a); break; }
@@ -27096,64 +27203,6 @@ export function applyAction(S, pid, a) {
       afterGear(S, p);
       break;
     }
-    case "sit":
-      if (p.sit) p.sit = false;
-      else { rouse(S, p); sitDown(S, p); fieldFire(S, p, now); }
-      break;
-    case "fish": {
-      rouse(S, p);
-      const [wx, wy] = waterNear(m, p);
-      // a practised angler gets bites sooner (life skills: −0.8 % a 낚시 level)
-      p.fish = { at: now + fishWait(S, ch, lifeBuff(S, p, "bite")) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
-      p.dir = dirOf(wx - p.x, wy - p.y);
-      S.maps[p.map].ev.push(["f", p.eid, 1, wx, wy]);
-      break;
-    }
-    case "hook":
-      // the fish is on: the angler now plays it in, and reports how well that went
-      p.fish.hook = now;
-      S.maps[p.map].ev.push(["f", p.eid, 3]);
-      break;
-    case "reel": {
-      const { bite, hook } = p.fish;
-      p.fish = null;
-      S.maps[p.map].ev.push(["f", p.eid, 0]);
-      if (!bite) { toast(p, "너무 일찍 당겼습니다…"); break; }
-      // how well the fish was played (0–100) decides what comes out of the water;
-      // a fight that ended implausibly fast counts for little
-      let score = hook ? clamp(a.s | 0, 0, 100) : 30;
-      if (hook && now - hook < 2500) score = Math.min(score, 40);
-      if (score < fishKeep(ch)) { toast(p, "물고기가 줄을 끊고 달아났습니다."); break; }
-      // what bites depends on the water's grade and the angler's 낚시 level; 대성공 lands two (58-life.js)
-      const { id, n, great } = fishLand(S, p, score);
-      if (score >= 95) toast(p, "완벽한 낚시!");
-      if (great) toast(p, `대성공! ${ITEMS[id].name} ${n}마리`);
-      const g = ITEMS[id].grade | 0;
-      if (addItem(ch, id, n)) p.gain.push(["item", id, n, id === "fish_l" ? 3 : g >= 3 ? 2 : g === 2 ? 1 : 0]);
-      ch.fish++;
-      if (id === "fish_l") { sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`); ch.cnt.carp++; }
-      if (id.startsWith("fish")) dailyProg(S, p, "fish");
-      checkAch(S, p);
-      p.dirty = true;
-      break;
-    }
-    case "cook": {
-      // the fish's recipe (12-life-tables.js RECIPES; L2's `craft` takes the same path)
-      const r = fishRecipe(a.id);
-      takeItem(ch, a.id, 1);
-      // how neatly the pan was packed (0–100): a mess burns (less often for a practised cook), a perfect
-      // fit or a 대성공 feeds two (58-life.js cookDish)
-      const score = clamp(a.s | 0, 0, 100);
-      const { id: out, n, great, burnt } = cookDish(S, p, r, score);
-      addItem(ch, out, n);
-      p.gain.push(["item", out, n, 0]);
-      toast(p, burnt ? "태워 버렸습니다…" : n > 1 ? `${great ? "대성공" : "완벽한 요리"}! ${ITEMS[out].name} ${n}개` : `${ITEMS[out].name} 완성`);
-      if (!burnt) { ch.cnt.cook++; dailyProg(S, p, "cook", r.at); checkAch(S, p); }
-      fairPan(S, p, score);   // 장날 요리 대회 (63-festival.js)
-      S.maps[p.map].ev.push(["u", p.eid, 0]);
-      p.dirty = true;
-      break;
-    }
     case "salv": {
       const s = ch.inv[a.s];
       ch.inv.splice(a.s, 1);
@@ -27202,21 +27251,6 @@ export function applyAction(S, pid, a) {
         if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "의뢰 보상");
         gainXp(S, p, quest.xp);
       }
-      p.dirty = true;
-      break;
-    }
-    case "warp": {
-      const denied = airshipAccess(ch, a.to);
-      if (denied) { toast(p, denied); break; }
-      const minLv = mapLevelNeed(ch, a.to);
-      if (minLv) { toast(p, mapLevelMessage(minLv)); break; }
-      const i = a.i || 0, w = stonesOf(mapOf(a.to))[i] || wpOf(a.to);
-      S.maps[p.map].ev.push(["wp", p.eid, 0]);
-      // to another stone of the same ground: a step, not a journey (the map is not sent again)
-      if (a.to === p.map) { dropAggro(S, p); p.x = w.ax * T + 8; p.y = w.ay * T + 10; p.fix = true; }
-      else changeMap(S, p, a.to, w.ax * T + 8, w.ay * T + 10);
-      S.maps[a.to].ev.push(["wp", p.eid, 1]);
-      toast(p, `[${stoneName(a.to, i)}]의 이동의 돌로 건너왔습니다.`);
       p.dirty = true;
       break;
     }

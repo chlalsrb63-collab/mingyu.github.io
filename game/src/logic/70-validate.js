@@ -60,65 +60,6 @@ export function validateAction(S, pid, a) {
   if (h) return !h.down && p.dead ? bad("쓰러진 상태입니다") : h.check(S, p, a);
   if (p.dead) return bad("쓰러진 상태입니다");
   switch (a.t) {
-    case "mv":
-      if (!num(a.x) || !num(a.y)) return bad("잘못된 좌표");
-      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      return OK;
-    case "atk":
-      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      if (carryOf(p)) return bad(CARRY_NO);
-      if (p.dance) return bad("무영난무 중입니다");
-      if (p.hammer) return bad("해머를 내려찍는 중입니다");
-      if (now < (p.stag || 0) || elementFrozen(S, p)) return bad("stag");
-      if (now - p.atkAt < atkCd(p) - 60) return bad("아직 공격할 수 없습니다");
-      return OK;
-    case "skr":
-      // the key of a held skill came up (57-weapon-skills.js holdGo)
-      if (elementFrozen(S, p)) return bad("stag");
-      return p.hold ? OK : bad("skr");
-    case "dash": {
-      // Space (59-dash.js): refused in silence while it cools, while reeling, when down
-      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      const why = dashWhy(S, p);
-      return why ? bad(why) : OK;
-    }
-    case "warp": {
-      // a big ground has several stones: `i` picks one (0, the first, when left out)
-      const i = a.i === undefined ? 0 : a.i;
-      if (!hasWp(a.to) || !Number.isInteger(i) || i < 0 || i >= MAP_META[a.to].wpn) return bad("그곳에는 이동의 돌이 없습니다");
-      const denied = airshipAccess(ch, a.to);
-      if (denied) return bad(denied);
-      const minLv = mapLevelNeed(ch, a.to);
-      if (minLv) return bad(mapLevelMessage(minLv));
-      // owner 2026-11-18: the world map warps from anywhere, not only beside a stone; never out of an instance (raid, co-op shift)
-      if (inDim(p)) return bad("레이드던전이나 협동 알바 중에는 이동할 수 없습니다");
-      if (!wpWoken(ch, a.to, i)) return bad("아직 깨우지 않은 이동의 돌입니다");
-      const at = wpNear(p);
-      if (a.to === p.map && at && i === (at.i || 0)) return bad("이미 이곳에 있습니다");
-      if (now - p.hitAt < WARP_CALM) return bad("전투 중에는 이동할 수 없습니다");
-      return OK;
-    }
-    case "sk": {
-      // a skill by id (57-weapon-skills.js): its weapon in hand, its mastery or job, off cooldown, MP for it
-      const sk = typeof a.id === "string" && Object.hasOwn(SKILL, a.id) ? SKILL[a.id] : null;
-      if (!sk) return bad("없는 스킬");
-      if (sk.kind === "p") return bad("저절로 발동하는 패시브 스킬입니다");
-      if (carryOf(p)) return bad(CARRY_NO);
-      if (a.a !== undefined && !validAim(a.a)) return bad("잘못된 조준");
-      const why = skWhy(ch, sk);
-      if (why) return bad(why);
-      if (!loOf(ch).a.includes(a.id)) return bad("스킬 칸에 넣지 않은 스킬입니다 — 마을이나 모닥불 곁에서 바꿀 수 있습니다");
-      if (p.dance) return bad("무영난무 중입니다");
-      if (p.hammer) return bad("해머를 내려찍는 중입니다");
-      if (p.charge) return bad("기술을 모으는 중입니다");
-      // a held charge (E1): only the same skill again, which lets it go
-      if (p.hold) return a.id === p.hold.id ? OK : bad("기술을 모으는 중입니다");
-      if (now < (p.stag || 0) || elementFrozen(S, p)) return bad("stag");
-      if (now < (p.cds[a.id] || 0)) return bad("재사용 대기 중입니다");
-      if (p.mp < skMp(p, sk)) return bad("MP가 부족합니다");
-      if (sk.hpPct && p.hp <= skillHpCost(p, sk)) return bad("HP가 부족합니다");
-      return OK;
-    }
     case "use": {
       if (a.id === SOCK_ITEM) return socketValidate(p, a.k);
       // Elixirs and the whetstone (life skills, 58-life.js).
@@ -269,24 +210,6 @@ export function validateAction(S, pid, a) {
       if (!npcNear(p, "smith")) return bad("대장장이가 너무 멉니다");
       if (countItem(ch, "uncurse") < 1) return bad("저주 해제 주문서가 없습니다");
       if (ch.gold < UNCURSE_FEE * ITEMS[g.id].tier) return bad(`저주 해제 수수료 ${(UNCURSE_FEE * ITEMS[g.id].tier).toLocaleString()}G가 부족합니다`);
-      return OK;
-    }
-    case "sit": return OK;
-    case "fish":
-      if (p.fish) return bad("이미 낚시 중입니다");
-      if (now - p.hitAt < 3000) return bad("싸우는 중에는 낚시할 수 없습니다");
-      if (mapOfS(p.S, p.map).nofish) return bad("이곳에서는 낚시를 할 수 없습니다");
-      if (!waterNear(mapOfS(p.S, p.map), p)) return bad("물가에서만 낚시할 수 있습니다");
-      if (!canAdd(ch, "fish_s", 1)) return bad("가방이 가득 찼습니다");
-      return OK;
-    case "hook": return p.fish && p.fish.bite && !p.fish.hook ? OK : bad("아직 입질이 없습니다");
-    case "reel": return p.fish ? OK : bad("낚시 중이 아닙니다");
-    case "cook": {
-      const r = typeof a.id === "string" ? fishRecipe(a.id) : null;
-      if (!r || ITEMS[a.id].type !== "fish") return bad("요리할 수 없는 아이템");
-      if (countItem(ch, a.id) < 1) return bad("아이템이 없습니다");
-      if (!fireNear(S.maps[p.map], p)) return bad("모닥불 곁에서만 요리할 수 있습니다");
-      if (!canAdd(ch, r.out[0], r.out[1] * 2) || !canAdd(ch, "burnt", 1)) return bad("가방이 가득 찼습니다");
       return OK;
     }
     case "salv": {

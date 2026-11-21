@@ -17,35 +17,6 @@ export function applyAction(S, pid, a) {
   const h = Object.hasOwn(ACTIONS, a.t) ? ACTIONS[a.t] : null;
   if (h) h.run(S, p, a);
   else switch (a.t) {
-    case "mv": {
-      if (p.dance || p.ab || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; break; }
-      const dt = clamp(now - p.mvAt, 0, 600);
-      p.mvAt = now;
-      const max = (stats(p).spd * dt) / 1000 * 1.6 + 8;
-      const d = dist(p.x, p.y, a.x, a.y);
-      if (d > max || !canStand(m, a.x, a.y)) { p.fix = true; break; }
-      if (d > 1.5) { rouse(S, p); p.elementRunAt = now; }
-      p.x = a.x; p.y = a.y;
-      if (a.d >= 0 && a.d <= 3) p.dir = a.d | 0;
-      if (validAim(a.a)) p.aim = a.a;
-      // stepping anywhere on a gate tile (or brushing its edge) takes you through
-      for (const pt of m.portals) {
-        if (dist(p.x, p.y - 3, pt.x * T + 8, pt.y * T + 8) >= 12) continue;
-        if (p.map === AIRSHIP_BACK[0] && pt.to === AIRSHIP_MAP && !airshipCleared(ch)) airshipBoard(S, p);
-        else {
-          const at = arrivalOf(S, pt);
-          if (at) changeMap(S, p, pt.to, at[0] * T + 8, at[1] * T + 10);
-        }
-        break;
-      }
-      // the "내 집" door in town (64-housing.js)
-      homeDoor(S, p);
-      break;
-    }
-    case "atk": if (validAim(a.a)) setAim(p, a.a); basicAttack(S, p); break;
-    case "sk": if (validAim(a.a)) setAim(p, a.a); castSkill(S, p, a.id); break;
-    case "skr": holdGo(S, p); break;
-    case "dash": dashGo(S, p, m, a.a); break;
     case "use": {
       if (a.id === SOCK_ITEM) { socketApply(S, p, a.k); break; }
       if (lifeUse(a.id)) { lifeUseApply(S, p, a); break; }
@@ -278,64 +249,6 @@ export function applyAction(S, pid, a) {
       afterGear(S, p);
       break;
     }
-    case "sit":
-      if (p.sit) p.sit = false;
-      else { rouse(S, p); sitDown(S, p); fieldFire(S, p, now); }
-      break;
-    case "fish": {
-      rouse(S, p);
-      const [wx, wy] = waterNear(m, p);
-      // a practised angler gets bites sooner (life skills: −0.8 % a 낚시 level)
-      p.fish = { at: now + fishWait(S, ch, lifeBuff(S, p, "bite")) * (S.maps[p.map].wx === WX.rain ? WX_FISH : 1), bite: 0 };
-      p.dir = dirOf(wx - p.x, wy - p.y);
-      S.maps[p.map].ev.push(["f", p.eid, 1, wx, wy]);
-      break;
-    }
-    case "hook":
-      // the fish is on: the angler now plays it in, and reports how well that went
-      p.fish.hook = now;
-      S.maps[p.map].ev.push(["f", p.eid, 3]);
-      break;
-    case "reel": {
-      const { bite, hook } = p.fish;
-      p.fish = null;
-      S.maps[p.map].ev.push(["f", p.eid, 0]);
-      if (!bite) { toast(p, "너무 일찍 당겼습니다…"); break; }
-      // how well the fish was played (0–100) decides what comes out of the water;
-      // a fight that ended implausibly fast counts for little
-      let score = hook ? clamp(a.s | 0, 0, 100) : 30;
-      if (hook && now - hook < 2500) score = Math.min(score, 40);
-      if (score < fishKeep(ch)) { toast(p, "물고기가 줄을 끊고 달아났습니다."); break; }
-      // what bites depends on the water's grade and the angler's 낚시 level; 대성공 lands two (58-life.js)
-      const { id, n, great } = fishLand(S, p, score);
-      if (score >= 95) toast(p, "완벽한 낚시!");
-      if (great) toast(p, `대성공! ${ITEMS[id].name} ${n}마리`);
-      const g = ITEMS[id].grade | 0;
-      if (addItem(ch, id, n)) p.gain.push(["item", id, n, id === "fish_l" ? 3 : g >= 3 ? 2 : g === 2 ? 1 : 0]);
-      ch.fish++;
-      if (id === "fish_l") { sys(S, `${ch.name}님이 [황금 잉어]를 낚았습니다!`); ch.cnt.carp++; }
-      if (id.startsWith("fish")) dailyProg(S, p, "fish");
-      checkAch(S, p);
-      p.dirty = true;
-      break;
-    }
-    case "cook": {
-      // the fish's recipe (12-life-tables.js RECIPES; L2's `craft` takes the same path)
-      const r = fishRecipe(a.id);
-      takeItem(ch, a.id, 1);
-      // how neatly the pan was packed (0–100): a mess burns (less often for a practised cook), a perfect
-      // fit or a 대성공 feeds two (58-life.js cookDish)
-      const score = clamp(a.s | 0, 0, 100);
-      const { id: out, n, great, burnt } = cookDish(S, p, r, score);
-      addItem(ch, out, n);
-      p.gain.push(["item", out, n, 0]);
-      toast(p, burnt ? "태워 버렸습니다…" : n > 1 ? `${great ? "대성공" : "완벽한 요리"}! ${ITEMS[out].name} ${n}개` : `${ITEMS[out].name} 완성`);
-      if (!burnt) { ch.cnt.cook++; dailyProg(S, p, "cook", r.at); checkAch(S, p); }
-      fairPan(S, p, score);   // 장날 요리 대회 (63-festival.js)
-      S.maps[p.map].ev.push(["u", p.eid, 0]);
-      p.dirty = true;
-      break;
-    }
     case "salv": {
       const s = ch.inv[a.s];
       ch.inv.splice(a.s, 1);
@@ -384,21 +297,6 @@ export function applyAction(S, pid, a) {
         if (cosRoll(S, p, "quest") < COS_QUEST) cosFrom(S, p, "quest", "의뢰 보상");
         gainXp(S, p, quest.xp);
       }
-      p.dirty = true;
-      break;
-    }
-    case "warp": {
-      const denied = airshipAccess(ch, a.to);
-      if (denied) { toast(p, denied); break; }
-      const minLv = mapLevelNeed(ch, a.to);
-      if (minLv) { toast(p, mapLevelMessage(minLv)); break; }
-      const i = a.i || 0, w = stonesOf(mapOf(a.to))[i] || wpOf(a.to);
-      S.maps[p.map].ev.push(["wp", p.eid, 0]);
-      // to another stone of the same ground: a step, not a journey (the map is not sent again)
-      if (a.to === p.map) { dropAggro(S, p); p.x = w.ax * T + 8; p.y = w.ay * T + 10; p.fix = true; }
-      else changeMap(S, p, a.to, w.ax * T + 8, w.ay * T + 10);
-      S.maps[a.to].ev.push(["wp", p.eid, 1]);
-      toast(p, `[${stoneName(a.to, i)}]의 이동의 돌로 건너왔습니다.`);
       p.dirty = true;
       break;
     }
