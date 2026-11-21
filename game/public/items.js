@@ -9,10 +9,10 @@ import { Sound } from "./audio.js";
 import * as Mini from "./minigames.js";
 import { entryIconUrl } from "./weapons.js";
 import { G, el, $ } from "./state.js";
-import { act } from "./net.js";
+import { act } from "./wire.js";
 import { fireNear } from "./actions.js";
 import { hoverTip, hideTip, closeDrawer, openWin, toast } from "./windows.js";
-import { refreshUi } from "./hud.js";
+import { refreshUi } from "./hudkit.js";
 import * as Charms from "./charms.js";
 
 // ── items ──

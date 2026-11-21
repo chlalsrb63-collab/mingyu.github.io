@@ -13,10 +13,10 @@ import * as Sky from "./sky.js";
 import * as Wardrobe from "./wardrobe_ui.js";
 import { entryIconUrl } from "./weapons.js";
 import { G, $, el } from "./state.js";
-import { act } from "./net.js";
+import { act } from "./wire.js";
 import { openWin, closeWin, isOpen, hoverTip } from "./windows.js";
 import { itemTip, itemName, itemDesc, itemRarity, reqLv } from "./items.js";
-import { refreshUi } from "./hud.js";
+import { refreshUi } from "./hudkit.js";
 
 const st = { v: "", name: "", fm: null, rev: 0 };
 const nearVendor = () => !!G.near && G.near.role === "fairmkt" && G.near.id === `fm_${st.v}`;

@@ -1,5 +1,5 @@
 import { $, G, el } from "./state.js";
-import { act } from "./net.js";
+import { act } from "./wire.js";
 import { addChat } from "./windows.js";
 import { Sound } from "./audio.js";
 

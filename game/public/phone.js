@@ -19,7 +19,7 @@ import { Sound } from "./audio.js";
 import { icon } from "./uiicons.js";
 import { phoneHook, openWin, closeWin, panelWin, hoverTip, hideTip, keepAll } from "./windows.js";
 import { K } from "./keymap.js";
-import { act, channelName } from "./net.js";
+import { act, channelName } from "./wire.js";
 import { openCharTab } from "./win_char.js";
 import { openEmotes } from "./win_social.js";
 import { openKeeper } from "./dimrift.js";

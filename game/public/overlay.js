@@ -20,7 +20,7 @@ import * as Housing from "./housing.js";
 import { G, T, dpr, tg, text, $ } from "./state.js";
 import * as TalkCam from "./talkcam.js";
 import * as Intro from "./intro.js";
-import { entityPos } from "./net.js";
+import { entityPos } from "./wire.js";
 import { mobMax, DUNGEONS, RANK_NAME } from "./events.js";
 import { enchantName, statusesAt } from "./elements.js";
 /** Quest marks over NPCs (owner): the main chain in yellow, side quests in blue; "!" to take, "?" to hand in (a lighter tint). */

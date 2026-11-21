@@ -1,8 +1,8 @@
 /**
  * The connection and the messages (split from client.js): the socket to a channel (`connect open
- * disconnect act`, `ws channel`), `onMessage` (welcome, errors, ranks), `stopGame`, `loadMap`,
- * the 10 Hz snapshot decoder `onSnap` (field order in docs/systems/wire-and-client.md), entity
- * reconciling `sync` and `entityPos`.
+ * disconnect`; the handle `ws channel`, `act` and `entityPos` live in wire.js), `onMessage` (welcome,
+ * errors, ranks), `stopGame`, `loadMap`, the 10 Hz snapshot decoder `onSnap` (field order in
+ * docs/systems/wire-and-client.md), entity reconciling `sync`.
  */
 
 import * as Art from "./art.js";
@@ -32,13 +32,15 @@ import { hideBriefing, renderBriefing } from "./coop-briefing.js";
 import * as Alba from "./alba.js";
 import * as SX from "./sxwin.js";
 import { setJobDefs } from "./jobpal.js";
-import { G, el, $, resize, $$, tg, text, now, T } from "./state.js";
+import { G, el, $, resize, $$, tg, text, now } from "./state.js";
+import { ws, channel, setSocket, setChannel, act, channelName, entityPos } from "./wire.js";
 import { JOB_ALIAS, onEvent, onGain } from "./events.js";
 import { countItem, usePotion, castSkill } from "./actions.js";
 import { snd } from "./update.js";
 import { addChat, chatTo, chatHint, hoverTip, toast, showTip, hideTip, touch, closeWin, banner, isOpen, saveOpen, restoreOpen, phoneShut } from "./windows.js";
 import { itemSlot, isGear, sellPrice, useSlot } from "./items.js";
-import { section, refreshUi, resetPurse, hudBars } from "./hud.js";
+import { refreshUi, resetPurse, hudBars } from "./hud.js";
+import { section } from "./hudkit.js";
 import { openStats, openTree } from "./win_char.js";
 import { doorFade } from "./win_world.js";
 import * as Charms from "./charms.js";
@@ -50,21 +52,17 @@ import * as Buddy from "./buddy.js";
 // Use the same server that issued the account session, including on a home LAN.
 const WS_BASE = API || location.origin;
 
-/**
- * The channel: one of the two of a server ("s1-ch2"), chosen in the lobby
- * (lobby.js). The socket joins with the account's session token (account.js).
- */
-export let ws = null;
+// the socket handle and the channel live in wire.js (a leaf, so windows can send without importing this file)
+export { ws, channel, act, channelName, entityPos } from "./wire.js";
 let retry = 0;
 let wantOnline = false;
-export let channel = Lobby.lastChannel();
 let connT = 0;
 
 /** Open (or reopen) the socket to channel `ch`, after `delay` ms. */
 export function connect(ch = channel, delay = 0) {
   clearTimeout(connT);
-  if (ws) { const old = ws; ws = null; wantOnline = false; try { old.close(); } catch { /* already closed */ } }
-  channel = ch;
+  if (ws) { const old = ws; setSocket(null); wantOnline = false; try { old.close(); } catch { /* already closed */ } }
+  setChannel(ch);
   wantOnline = true;
   if (delay) { connT = setTimeout(open, delay); return; }
   open();
@@ -72,7 +70,8 @@ export function connect(ch = channel, delay = 0) {
 function open() {
   const url = new URL(`/ws/${channel}`, WS_BASE);
   url.protocol = url.protocol === "http:" ? "ws:" : "wss:";
-  const sock = (ws = new WebSocket(url));
+  const sock = new WebSocket(url);
+  setSocket(sock);
   sock.addEventListener("open", () => {
     retry = 0;
     sock.send(JSON.stringify(Lobby.joinMsg()));
@@ -96,10 +95,7 @@ function open() {
 export function disconnect() {
   clearTimeout(connT);
   wantOnline = false;
-  if (ws) { const old = ws; ws = null; try { old.close(); } catch { /* already closed */ } }
-}
-export function act(action) {
-  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: "action", action }));
+  if (ws) { const old = ws; setSocket(null); try { old.close(); } catch { /* already closed */ } }
 }
 
 // ───────────────────────────── messages ─────────────────────────────
@@ -169,7 +165,6 @@ function onMessage(msg) {
       break;
   }
 }
-export const channelName = () => Lobby.label(channel);
 /** Out of the world, back to the lobby (the socket is already closed or closing). */
 export function stopGame() {
   G.playing = false;
@@ -348,18 +343,6 @@ function sync(map, rows, apply, t, gone) {
     if (fresh) { e.x = e.tx; e.y = e.ty; }
   }
   for (const [id, e] of map) if (!seen.has(id)) { if (gone) { e.goneT = t; gone.set(id, e); } map.delete(id); }
-}
-
-export function entityPos(id) {
-  if (id === G.you) return G.me;
-  if (typeof id === "string" && id.startsWith("npc:")) {
-    const key = id.slice(4), body = NpcLife.at(key);
-    if (body) return { x: body.x, y: body.y, h3: 1.32 };
-    if (NpcLife.cast(key)) return null;
-    const post = G.map?.npcs.find((n) => n.id === key);
-    return post ? { x: post.x * T + 8, y: post.y * T + 12, h3: 1.32 } : null;
-  }
-  return G.players.get(id) || G.mobs.get(id) || G.gone.get(id) || null;
 }
 
 /** Start-up wiring (listeners, DOM tweaks), run once: client.js calls it where this code used to stand, so the order is unchanged. */

@@ -10,7 +10,7 @@ import * as Growth from "./growth.js";
 import * as QS from "./quickslots.js";
 import * as Sky from "./sky.js";
 import { G, T, dist, $, el } from "./state.js";
-import { act } from "./net.js";
+import { act } from "./wire.js";
 import * as Keymap from "./keymap.js";
 import { moveVector, typing, keys, held, pathTo } from "./input.js";
 import { aimAtPoint, castSkill, usePotion, aimIdx, canStand, attack, nearestNpc, fireNear } from "./actions.js";
@@ -20,7 +20,7 @@ import * as Chores from "./chores.js";
 import * as Rest from "./rest.js";
 import * as Hints from "./hints.js";
 import { toast, closeWin, isOpen, shown } from "./windows.js";
-import { refreshUi } from "./hud.js";
+import { refreshUi } from "./hudkit.js";
 
 // ───────────────────────────── update ─────────────────────────────
 

@@ -9,7 +9,7 @@
  */
 import { G, $, el } from "./state.js";
 import { Sound } from "./audio.js";
-import { refreshUi } from "./hud.js";
+import { refreshUi } from "./hudkit.js";
 
 const CAT = { O: "공격형", D: "방어형", U: "유틸" };
 const CAT_TABS = [["", "전체"], ["O", "공격형"], ["D", "방어형"], ["U", "유틸"]];

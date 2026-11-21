@@ -11,7 +11,7 @@
 import { Sound } from "./audio.js";
 import * as S3 from "./scene2d.js";
 import { G, T, dist, now } from "./state.js";
-import { act, entityPos } from "./net.js";
+import { act, entityPos } from "./wire.js";
 import { active } from "./board.js";
 
 const INK = "#2b2233";
