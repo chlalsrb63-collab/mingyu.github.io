@@ -1480,6 +1480,86 @@
       "src": "assets/gear/amulet/n_8.png?v=ba7fe3f8",
       "w": 32,
       "h": 32
+    },
+    "icon.item.enc_atk": {
+      "src": "assets/items/enc_atk.png?v=09c7f35a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.enc_def": {
+      "src": "assets/items/enc_def.png?v=38254d8e",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.enc_util": {
+      "src": "assets/items/enc_util.png?v=15cce49c",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.enc_hammer": {
+      "src": "assets/items/enc_hammer.png?v=8c1c6e4a",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.rune_chisel": {
+      "src": "assets/items/rune_chisel.png?v=f7c69e32",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.punch": {
+      "src": "assets/items/punch.png?v=81cdb3d5",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.stone": {
+      "src": "assets/items/stone.png?v=a337caba",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.ske_stone": {
+      "src": "assets/items/ske_stone.png?v=c83a7778",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.recall": {
+      "src": "assets/items/recall.png?v=ebe27310",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.feather": {
+      "src": "assets/items/feather.png?v=badac393",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.q_flower_letter": {
+      "src": "assets/items/q_flower_letter.png?v=a6522fbc",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.gold": {
+      "src": "assets/items/gold.png?v=f1d4d334",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.hp_s": {
+      "src": "assets/items/hp_s.png?v=80b8347d",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.hp_l": {
+      "src": "assets/items/hp_l.png?v=c2cf5734",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.mp_l": {
+      "src": "assets/items/mp_l.png?v=68d4e293",
+      "w": 32,
+      "h": 32
+    },
+    "icon.item.q_reed_box": {
+      "src": "assets/items/q_reed_box.png?v=358ee9f6",
+      "w": 32,
+      "h": 32
     }
   },
   "audio": {
