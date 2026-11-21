@@ -184,6 +184,13 @@ function setAimArrow(on) {
   $("#btn-aim").textContent = on ? "켜짐" : "꺼짐";
   localStorage.setItem("lumentale:aim", on ? "1" : "0");
 }
+/** A boss's killing blow freezes the scene a moment and shakes it (events.js); on unless turned off. */
+function setBossFx(on) {
+  G.bossFx = on;
+  $("#btn-bossfx").classList.toggle("off", !on);
+  $("#btn-bossfx").textContent = on ? "켜짐" : "꺼짐";
+  try { localStorage.setItem("lumentale:bossfx", on ? "1" : "0"); } catch { /* private mode */ }
+}
 /** The close-up while talking to an NPC (talkcam.js); on unless turned off. */
 function showTalkCam() {
   $("#btn-talkcam").classList.toggle("off", !TalkCam.enabled);
@@ -337,6 +344,9 @@ export function setupInput() {
   PostFX.bindSetting($("#opt-gfx"), () => Sound.play("ui"));
   setAimArrow(localStorage.getItem("lumentale:aim") !== "0");
   $("#btn-aim").addEventListener("click", () => { setAimArrow(!G.aimArrow); Sound.play("ui"); });
+  let bf = true; try { bf = localStorage.getItem("lumentale:bossfx") !== "0"; } catch { /* private mode */ }
+  setBossFx(bf);
+  $("#btn-bossfx").addEventListener("click", () => { setBossFx(!G.bossFx); Sound.play("ui"); });
   TalkCam.load(); showTalkCam();
   $("#btn-talkcam").addEventListener("click", () => { TalkCam.setEnabled(!TalkCam.enabled); showTalkCam(); Sound.play("ui"); });
   $("#btn-intro-replay")?.addEventListener("click", () => { closeAll(); Sound.play("ui"); Intro.start(); });

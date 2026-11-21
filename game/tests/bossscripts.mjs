@@ -16,7 +16,8 @@ for (const k of [...BIG, ...FIELD]) {
   assert.ok(B, k + ": has a script");
   assert.ok(B.pats.length >= 3 && new Set(B.pats.map((p) => p[1])).size >= 3, k + ": 3+ patterns of 3+ kinds");
   assert.ok([...B.pats, ...B.phases.flatMap((P) => P.pats || [])].every((p) => KINDS.has(p[1]) && p[0]), k + ": known kinds, named");
-  assert.equal(B.phases.length, BIG.includes(k) ? 2 : 1, k + ": phases");
+  // owner 2026-11-21: every scripted boss turns at 50 % and 25 % (a field boss's second phase repeats at 25 %, bsDef)
+  assert.deepEqual(B.phases.map((P) => P.at), [0.5, 0.25], k + ": phases at 50 % and 25 %");
   assert.ok(B.phases.every((P, i) => P.at < (i ? B.phases[i - 1].at : 1)), k + ": phases fall");
 
   const S = L.setup(); let now = 1_000_000; S.now = now;

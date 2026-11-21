@@ -1240,7 +1240,7 @@ const MOBS = {
     lv: 28, hp: 4300, atk: 101, def: 13, spd: 36, xp: 0, gold: [0, 0], aggro: 125, range: 70, cd: 1500, shot: true, boss: true, questOnly: true,
     fan: 112, script: { cast: "정찰등 폭발", castMs: 5500, stunMs: 4800, gap: 5600, reach: 148,
       pats: [["검댕 깃털", "fan"], ["돛대 덮치기", "leapslam"], ["정찰등 섬광", "cone", { ms: 1050, r: 58, half: 0.9, k: 1.35 }]],
-      phases: [{ at: 0.55, gap: 4600, pats: [["검댕 폭풍", "fan2"], ["갑판 급강하", "dive"], ["정찰 표식", "mark", { n: 2, ms: 2600, r: 30, k: 1.4 }], ["돛대 덮치기", "leapslam"]] }] } },
+      phases: [{ at: 0.5, gap: 4600, pats: [["검댕 폭풍", "fan2"], ["갑판 급강하", "dive"], ["정찰 표식", "mark", { n: 2, ms: 2600, r: 30, k: 1.4 }], ["돛대 덮치기", "leapslam"]] }] } },
   jaemaei: {
     name: "재매이", epithet: "절망의 친칠라 재매이", lore: "제례전의 회색 털짐승. 금테 안경 너머로 초를 세던 두 눈은 아직 남아 있고, 등에 돋은 뼈와 촉수는 저마다의 박자로 몸을 끌어당긴다.",
     lv: 10, hp: 330, atk: 36, def: 5, spd: 34, xp: 160, gold: [18, 36], aggro: 120, range: 25, cd: 1400,
@@ -1254,13 +1254,13 @@ const MOBS = {
         ["골절의 파동", "punch", { ms: 1000, r: 17, ms2: 650, r2: 30 }],
       ],
       phases: [
-        { at: 0.65, gap: 2700, pats: [
+        { at: 0.5, gap: 2700, pats: [
           ["갈비뼈의 고리", "donut", { ms: 1350, r0: 26, r: 69, k: 1.6 }],
           ["뒤틀린 연속 돌진", "charge2"],
           ["뼛가시 탄막", "fan2"],
           ["절망의 낙인", "mark", { ms: 2200, r: 23, n: 2, k: 1.25 }],
         ] },
-        { at: 0.30, cast: 1, gap: 2150, blast: 2.35, pats: [
+        { at: 0.25, cast: 1, gap: 2150, blast: 2.35, pats: [
           ["쌍촉수 난타", "cone", { both: 1, ms: 1050, r: 65, half: 0.78, k: 1.6 }],
           ["갈비뼈의 고리", "donut", { ms: 1150, r0: 23, r: 74, k: 1.75 }],
           ["뒤틀린 연속 돌진", "charge2"],
@@ -1278,7 +1278,7 @@ const MOBS = {
     script: { cast: "혈루 대분출", castMs: 4000, stunMs: 4000, stag: 0.04, blast: 2.2, gap: 5000, enrage: 150000, reach: 220,
       pats: [["혈루 사출", "jet"], ["뿔관 돌진", "charge"], ["결정 가시 산탄", "fan"], ["모래 잠행", "leapslam"], ["꼬리 휩쓸기", "cone", { back: 1 }], ["피의 비", "blast"]],
       phases: [
-        { at: 0.6, cast: 1, pats: [["혈루 사출", "jet"], ["뿔관 연속 돌진", "charge2"], ["결정 가시 폭풍", "fan3"], ["모래 잠행", "leapslam"], ["꼬리 휩쓸기", "cone", { back: 1 }],
+        { at: 0.5, cast: 1, pats: [["혈루 사출", "jet"], ["뿔관 연속 돌진", "charge2"], ["결정 가시 폭풍", "fan3"], ["모래 잠행", "leapslam"], ["꼬리 휩쓸기", "cone", { back: 1 }],
           ["붉은 결정 성장", "adds", { kind: "bloodshard", n: 3, cap: 3, d: 48 }], ["피의 비", "blast"]] },
         // 혈루 폭주: every pattern leaves a burn pool, the gap a quarter shorter
         { at: 0.25, cast: 1, gap: 3750, steps: [{ f: "pool", dt: 400 }], pats: [["혈루 사출", "jet"], ["뿔관 연속 돌진", "charge2"], ["결정 가시 폭풍", "fan3"], ["모래 잠행", "leapslam"],
@@ -2724,69 +2724,69 @@ const monsterElement = (kind) => MOBS[kind]?.element || MONSTER_PROFILES.neutral
 // ───────────────────────────── boss scripts (owner order 2026-11-19: harder bosses, varied patterns) ─────────────────────────────
 // Scripts for the map bosses and the hunting grounds' field bosses (the runner: 56-boss-script.js; kinds and BS_PAT overrides there).
 // The patterns are the difficulty — no extra stat multiplier on top of MOB_HARD. Big bosses: 3 phases (the later ones shorter `gap`,
-// more `steps`, a marked cast to open); field bosses: 2 phases; the newbie grounds (lambmaw, ribdeer) stay slow, long-telegraphed, no adds.
+// more `steps`, a marked cast to open) at 50 % and 25 %; field bosses: 2 phases at 50 % (bsDef repeats the second at 25 %); the newbie grounds (lambmaw, ribdeer) stay slow, long-telegraphed, no adds.
 // Skipped on purpose: airship_lookout (quest-only, its own script), cloakbat/bloomwhale (raids, DIM_CHAL), bloodhorn/clubshrimp (bosses-2).
 const BOSS_SCRIPTS = {
   // ── map bosses ──
   wickregent: { cast: "촛농 폭발", castMs: 6000, stunMs: 5000, gap: 5600, enrage: 270000, reach: 200,
     pats: [["촛농 튀기기", "fan"], ["심지 돌진", "charge"], ["밀랍 웅덩이", "pools"], ["녹아내린 왕관", "donut"]],
     phases: [
-      { at: 0.66, gap: 4800, pats: [["촛농 튀기기", "fan"], ["심지 연속 돌진", "charge2"], ["밀랍 웅덩이", "pools"], ["녹아내린 왕관", "donut"], ["불씨 표식", "mark", { n: 2 }]] },
-      { at: 0.33, gap: 4000, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["촛농 폭풍", "fan3"], ["심지 연속 돌진", "charge2"], ["밀랍 웅덩이", "pools"], ["녹아내린 왕관", "donut", { ms: 1100 }], ["불씨 표식", "mark", { n: 3 }]] },
+      { at: 0.5, gap: 4800, pats: [["촛농 튀기기", "fan"], ["심지 연속 돌진", "charge2"], ["밀랍 웅덩이", "pools"], ["녹아내린 왕관", "donut"], ["불씨 표식", "mark", { n: 2 }]] },
+      { at: 0.25, gap: 4000, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["촛농 폭풍", "fan3"], ["심지 연속 돌진", "charge2"], ["밀랍 웅덩이", "pools"], ["녹아내린 왕관", "donut", { ms: 1100 }], ["불씨 표식", "mark", { n: 3 }]] },
     ] },
   knotwidow: { cast: "매듭 조이기", castMs: 6000, stunMs: 5000, gap: 5400, enrage: 270000, reach: 200,
     pats: [["실매듭 사출", "fan"], ["거미 덮치기", "leapslam"], ["올가미 표식", "mark", { n: 2 }], ["뿌리 휩쓸기", "cone", { both: 1 }]],
     phases: [
-      { at: 0.66, gap: 4600, pats: [["실매듭 사출", "fan2"], ["거미 덮치기", "leapslam"], ["올가미 표식", "mark", { n: 3 }], ["뿌리 휩쓸기", "cone", { both: 1 }], ["등불 폭죽", "blast"]] },
-      { at: 0.33, gap: 3800, cast: 1, steps: [{ f: "fan", off: 0.5, dt: 600 }], pats: [["실매듭 폭풍", "fan3"], ["거미 덮치기", "leapslam"], ["올가미 표식", "mark", { n: 3 }], ["뿌리 휩쓸기", "cone", { both: 1, ms: 800 }], ["등불 폭죽", "blast"]] },
+      { at: 0.5, gap: 4600, pats: [["실매듭 사출", "fan2"], ["거미 덮치기", "leapslam"], ["올가미 표식", "mark", { n: 3 }], ["뿌리 휩쓸기", "cone", { both: 1 }], ["등불 폭죽", "blast"]] },
+      { at: 0.25, gap: 3800, cast: 1, steps: [{ f: "fan", off: 0.5, dt: 600 }], pats: [["실매듭 폭풍", "fan3"], ["거미 덮치기", "leapslam"], ["올가미 표식", "mark", { n: 3 }], ["뿌리 휩쓸기", "cone", { both: 1, ms: 800 }], ["등불 폭죽", "blast"]] },
     ] },
   knellkeeper: { cast: "장례 종소리", castMs: 6000, stunMs: 5000, gap: 5400, enrage: 270000, reach: 210,
     pats: [["조종 울림", "rings"], ["종추 돌진", "charge"], ["진혼 파동", "donut"], ["부고 표식", "mark", { n: 2 }]],
     phases: [
-      { at: 0.66, gap: 4600, pats: [["조종 울림", "rings"], ["종추 연속 돌진", "charge2"], ["진혼 파동", "donut", { rings: 1 }], ["부고 표식", "mark", { n: 3 }], ["문상객 소집", "adds", { kind: "nightbat", n: 2, cap: 2, d: 44 }]] },
-      { at: 0.33, gap: 3800, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["조종 난타", "rings"], ["종추 연속 돌진", "charge2"], ["진혼 파동", "donut", { rings: 1, ms: 1100 }], ["부고 표식", "mark", { n: 3 }], ["문상객 소집", "adds", { kind: "nightbat", n: 3, cap: 3, d: 44 }]] },
+      { at: 0.5, gap: 4600, pats: [["조종 울림", "rings"], ["종추 연속 돌진", "charge2"], ["진혼 파동", "donut", { rings: 1 }], ["부고 표식", "mark", { n: 3 }], ["문상객 소집", "adds", { kind: "nightbat", n: 2, cap: 2, d: 44 }]] },
+      { at: 0.25, gap: 3800, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["조종 난타", "rings"], ["종추 연속 돌진", "charge2"], ["진혼 파동", "donut", { rings: 1, ms: 1100 }], ["부고 표식", "mark", { n: 3 }], ["문상객 소집", "adds", { kind: "nightbat", n: 3, cap: 3, d: 44 }]] },
     ] },
   loomcolossus: { cast: "직조 조이기", castMs: 6000, stunMs: 5000, gap: 5400, enrage: 270000, reach: 210,
     pats: [["북 던지기", "fan"], ["날실 덮치기", "leapslam"], ["씨실 올가미", "pools"], ["베틀대 내리치기", "punch", { n: 2 }]],
     phases: [
-      { at: 0.66, gap: 4600, pats: [["북 던지기", "fan2"], ["날실 덮치기", "leapslam"], ["씨실 올가미", "pools"], ["베틀대 내리치기", "punch", { n: 2 }], ["천 찢기", "cone", { both: 1 }]] },
-      { at: 0.33, gap: 3800, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["북 폭풍", "fan3"], ["날실 덮치기", "leapslam"], ["씨실 올가미", "pools"], ["베틀대 연타", "punch", { n: 3 }], ["천 찢기", "cone", { both: 1, ms: 800 }]] },
+      { at: 0.5, gap: 4600, pats: [["북 던지기", "fan2"], ["날실 덮치기", "leapslam"], ["씨실 올가미", "pools"], ["베틀대 내리치기", "punch", { n: 2 }], ["천 찢기", "cone", { both: 1 }]] },
+      { at: 0.25, gap: 3800, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["북 폭풍", "fan3"], ["날실 덮치기", "leapslam"], ["씨실 올가미", "pools"], ["베틀대 연타", "punch", { n: 3 }], ["천 찢기", "cone", { both: 1, ms: 800 }]] },
     ] },
   sluiceleviathan: { cast: "수문 개방", castMs: 6000, stunMs: 5000, gap: 5200, enrage: 260000, reach: 220,
     pats: [["물살 사출", "jet"], ["아귀 돌진", "charge"], ["소용돌이", "donut"], ["수압 표식", "mark", { n: 2 }], ["배수 폭발", "blast"]],
     phases: [
-      { at: 0.66, gap: 4400, pats: [["물살 사출", "jet"], ["아귀 연속 돌진", "charge2"], ["소용돌이", "donut", { rings: 1 }], ["수압 표식", "mark", { n: 3 }], ["배수 폭발", "blast"]] },
-      { at: 0.33, gap: 3600, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["급류 사출", "jet", { n: 7, len: 180 }], ["아귀 연속 돌진", "charge2"], ["소용돌이", "donut", { rings: 1, ms: 1100 }], ["수압 표식", "mark", { n: 4 }], ["배수 폭발", "blast"]] },
+      { at: 0.5, gap: 4400, pats: [["물살 사출", "jet"], ["아귀 연속 돌진", "charge2"], ["소용돌이", "donut", { rings: 1 }], ["수압 표식", "mark", { n: 3 }], ["배수 폭발", "blast"]] },
+      { at: 0.25, gap: 3600, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["급류 사출", "jet", { n: 7, len: 180 }], ["아귀 연속 돌진", "charge2"], ["소용돌이", "donut", { rings: 1, ms: 1100 }], ["수압 표식", "mark", { n: 4 }], ["배수 폭발", "blast"]] },
     ] },
   prismcantor: { cast: "쌍결정 합창", castMs: 6000, stunMs: 5000, gap: 5200, enrage: 260000, reach: 220,
     pats: [["결정 음파", "fan"], ["프리즘 급강하", "dive"], ["공명 고리", "rings"], ["성가 표식", "mark", { n: 2 }], ["굴절 광선", "jet"]],
     phases: [
-      { at: 0.66, gap: 4400, pats: [["결정 음파", "fan2"], ["프리즘 급강하", "dive"], ["공명 고리", "rings"], ["성가 표식", "mark", { n: 3 }], ["굴절 광선", "jet"]] },
-      { at: 0.33, gap: 3600, cast: 1, steps: [{ f: "fan", off: 0.6, dt: 600 }], pats: [["결정 폭풍", "fan3"], ["프리즘 급강하", "dive"], ["공명 고리", "rings"], ["성가 표식", "mark", { n: 4 }], ["굴절 광선", "jet", { n: 7, len: 180 }]] },
+      { at: 0.5, gap: 4400, pats: [["결정 음파", "fan2"], ["프리즘 급강하", "dive"], ["공명 고리", "rings"], ["성가 표식", "mark", { n: 3 }], ["굴절 광선", "jet"]] },
+      { at: 0.25, gap: 3600, cast: 1, steps: [{ f: "fan", off: 0.6, dt: 600 }], pats: [["결정 폭풍", "fan3"], ["프리즘 급강하", "dive"], ["공명 고리", "rings"], ["성가 표식", "mark", { n: 4 }], ["굴절 광선", "jet", { n: 7, len: 180 }]] },
     ] },
   boss: { cast: "균열 붕괴", castMs: 6000, stunMs: 5000, gap: 5000, enrage: 260000, reach: 230,
     pats: [["균열 파편", "fan"], ["군주의 돌진", "charge"], ["갈라진 땅", "pools"], ["균열 휩쓸기", "cone", { back: 1 }], ["군주의 일격", "blast"]],
     phases: [
-      { at: 0.66, gap: 4300, pats: [["균열 파편", "fan2"], ["군주의 연속 돌진", "charge2"], ["갈라진 땅", "pools"], ["균열 휩쓸기", "cone", { back: 1 }], ["균열 표식", "mark", { n: 3 }], ["군주의 일격", "blast"]] },
-      { at: 0.33, gap: 3500, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["균열 폭풍", "fan3"], ["군주의 연속 돌진", "charge2"], ["갈라진 땅", "pools"], ["균열 휩쓸기", "cone", { back: 1, ms: 800 }], ["균열 표식", "mark", { n: 4 }], ["군주의 일격", "blast"]] },
+      { at: 0.5, gap: 4300, pats: [["균열 파편", "fan2"], ["군주의 연속 돌진", "charge2"], ["갈라진 땅", "pools"], ["균열 휩쓸기", "cone", { back: 1 }], ["균열 표식", "mark", { n: 3 }], ["군주의 일격", "blast"]] },
+      { at: 0.25, gap: 3500, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["균열 폭풍", "fan3"], ["군주의 연속 돌진", "charge2"], ["갈라진 땅", "pools"], ["균열 휩쓸기", "cone", { back: 1, ms: 800 }], ["균열 표식", "mark", { n: 4 }], ["군주의 일격", "blast"]] },
     ] },
   abyssboss: { cast: "심연의 해일", castMs: 6000, stunMs: 5000, gap: 4800, enrage: 260000, reach: 240,
     pats: [["심연 가시", "fan"], ["어미의 돌진", "charge"], ["젖은 어둠", "pools"], ["품어 안기", "donut"], ["탯줄 휩쓸기", "cone", { back: 1 }], ["핏빛 표식", "mark", { n: 2 }]],
     phases: [
-      { at: 0.66, gap: 4100, pats: [["심연 가시", "fan2"], ["어미의 연속 돌진", "charge2"], ["젖은 어둠", "pools"], ["품어 안기", "donut", { rings: 1 }], ["탯줄 휩쓸기", "cone", { back: 1 }], ["핏빛 표식", "mark", { n: 3 }], ["새끼 부르기", "adds", { kind: "bloodshard", n: 2, cap: 3, d: 48 }]] },
-      { at: 0.33, gap: 3300, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["심연 폭풍", "fan3"], ["어미의 연속 돌진", "charge2"], ["젖은 어둠", "pools"], ["품어 안기", "donut", { rings: 1, ms: 1100 }], ["탯줄 휩쓸기", "cone", { back: 1, ms: 800 }], ["핏빛 표식", "mark", { n: 4 }], ["새끼 부르기", "adds", { kind: "bloodshard", n: 3, cap: 4, d: 48 }]] },
+      { at: 0.5, gap: 4100, pats: [["심연 가시", "fan2"], ["어미의 연속 돌진", "charge2"], ["젖은 어둠", "pools"], ["품어 안기", "donut", { rings: 1 }], ["탯줄 휩쓸기", "cone", { back: 1 }], ["핏빛 표식", "mark", { n: 3 }], ["새끼 부르기", "adds", { kind: "bloodshard", n: 2, cap: 3, d: 48 }]] },
+      { at: 0.25, gap: 3300, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["심연 폭풍", "fan3"], ["어미의 연속 돌진", "charge2"], ["젖은 어둠", "pools"], ["품어 안기", "donut", { rings: 1, ms: 1100 }], ["탯줄 휩쓸기", "cone", { back: 1, ms: 800 }], ["핏빛 표식", "mark", { n: 4 }], ["새끼 부르기", "adds", { kind: "bloodshard", n: 3, cap: 4, d: 48 }]] },
     ] },
   crownstag: { cast: "서리왕관 개화", castMs: 6000, stunMs: 5000, gap: 4800, enrage: 300000, reach: 240,
     pats: [["성에 가시", "fan"], ["뿔 돌진", "charge"], ["서리 웅덩이", "pools"], ["얼음 뿔 휘두르기", "cone", { both: 1 }], ["한파 고리", "donut"]],
     phases: [
-      { at: 0.66, gap: 4100, pats: [["성에 가시", "fan2"], ["뿔 연속 돌진", "charge2"], ["서리 웅덩이", "pools"], ["얼음 뿔 휘두르기", "cone", { both: 1 }], ["한파 고리", "donut", { rings: 1 }], ["서리 표식", "mark", { n: 3 }]] },
-      { at: 0.33, gap: 3300, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["성에 폭풍", "fan3"], ["뿔 연속 돌진", "charge2"], ["서리 웅덩이", "pools"], ["얼음 뿔 휘두르기", "cone", { both: 1, ms: 800 }], ["한파 고리", "donut", { rings: 1, ms: 1100 }], ["서리 표식", "mark", { n: 4 }], ["성에 해일", "blast"]] },
+      { at: 0.5, gap: 4100, pats: [["성에 가시", "fan2"], ["뿔 연속 돌진", "charge2"], ["서리 웅덩이", "pools"], ["얼음 뿔 휘두르기", "cone", { both: 1 }], ["한파 고리", "donut", { rings: 1 }], ["서리 표식", "mark", { n: 3 }]] },
+      { at: 0.25, gap: 3300, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["성에 폭풍", "fan3"], ["뿔 연속 돌진", "charge2"], ["서리 웅덩이", "pools"], ["얼음 뿔 휘두르기", "cone", { both: 1, ms: 800 }], ["한파 고리", "donut", { rings: 1, ms: 1100 }], ["서리 표식", "mark", { n: 4 }], ["성에 해일", "blast"]] },
     ] },
   mistiger: { cast: "운해 포효", castMs: 6000, stunMs: 5000, gap: 4800, enrage: 260000, reach: 230,
     pats: [["구름 발톱", "fan"], ["범의 돌진", "charge"], ["뛰어 덮치기", "leapslam"], ["발톱 휩쓸기", "cone"], ["안개 표식", "mark", { n: 2 }]],
     phases: [
-      { at: 0.66, gap: 4100, pats: [["구름 발톱", "fan2"], ["범의 연속 돌진", "charge2"], ["뛰어 덮치기", "leapslam"], ["발톱 휩쓸기", "cone", { both: 1 }], ["안개 표식", "mark", { n: 3 }]] },
-      { at: 0.33, gap: 3300, cast: 1, steps: [{ f: "charge", dt: 700 }], pats: [["구름 폭풍", "fan3"], ["범의 연속 돌진", "charge2"], ["뛰어 덮치기", "leapslam"], ["발톱 휩쓸기", "cone", { both: 1, ms: 800 }], ["안개 표식", "mark", { n: 4 }]] },
+      { at: 0.5, gap: 4100, pats: [["구름 발톱", "fan2"], ["범의 연속 돌진", "charge2"], ["뛰어 덮치기", "leapslam"], ["발톱 휩쓸기", "cone", { both: 1 }], ["안개 표식", "mark", { n: 3 }]] },
+      { at: 0.25, gap: 3300, cast: 1, steps: [{ f: "charge", dt: 700 }], pats: [["구름 폭풍", "fan3"], ["범의 연속 돌진", "charge2"], ["뛰어 덮치기", "leapslam"], ["발톱 휩쓸기", "cone", { both: 1, ms: 800 }], ["안개 표식", "mark", { n: 4 }]] },
     ] },
 
   // ── field bosses: two phases, 3–4 patterns. The newbie two (lambmaw, ribdeer) are slow and plain: long telegraphs, wide gaps, no adds. ──
@@ -2838,8 +2838,8 @@ const BOSS_SCRIPTS = {
   jianmentiger: { cast: "천검 백호 포효", castMs: 6000, stunMs: 5000, gap: 4600, enrage: 300000, reach: 240,
     pats: [["검풍 발톱", "fan"], ["백호 강습", "charge"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1 }], ["천검 고리", "donut"]],
     phases: [
-      { at: 0.66, gap: 3900, pats: [["검풍 발톱", "fan2"], ["백호 연속 강습", "charge2"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1 }], ["천검 고리", "donut", { rings: 1 }], ["검문 표식", "mark", { n: 3 }]] },
-      { at: 0.33, gap: 3200, cast: 1, steps: [{ f: "charge", dt: 650 }], pats: [["천검 폭풍", "fan3"], ["백호 연속 강습", "charge2"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1, ms: 800 }], ["천검 고리", "donut", { rings: 1, ms: 1050 }], ["검문 표식", "mark", { n: 4 }], ["협곡 대지진", "blast"]] },
+      { at: 0.5, gap: 3900, pats: [["검풍 발톱", "fan2"], ["백호 연속 강습", "charge2"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1 }], ["천검 고리", "donut", { rings: 1 }], ["검문 표식", "mark", { n: 3 }]] },
+      { at: 0.25, gap: 3200, cast: 1, steps: [{ f: "charge", dt: 650 }], pats: [["천검 폭풍", "fan3"], ["백호 연속 강습", "charge2"], ["절벽 도약 강타", "leapslam"], ["성채 베어내기", "cone", { both: 1, ms: 800 }], ["천검 고리", "donut", { rings: 1, ms: 1050 }], ["검문 표식", "mark", { n: 4 }], ["협곡 대지진", "blast"]] },
     ] },
   sanctumstag: { cast: "이끼 왕관 개화", castMs: 6000, stunMs: 5000, stag: 0.04, blast: 2.3, gap: 5000, enrage: 270000, reach: 240,
     pats: [["이끼 뿔 돌진", "charge"], ["포자 산탄", "fan"], ["성소 웅덩이", "pools"], ["뿌리 파동", "donut"]],
@@ -2847,21 +2847,21 @@ const BOSS_SCRIPTS = {
   sanctumwyrm: { cast: "지하강 수류 해일", castMs: 6000, stunMs: 5000, gap: 4500, enrage: 300000, reach: 250,
     pats: [["비취 물줄기", "jet"], ["지하강 잠행", "dive"], ["수정 비늘 산탄", "fan"], ["수류 웅덩이", "pools"], ["용꼬리 휩쓸기", "cone", { back: 1 }]],
     phases: [
-      { at: 0.66, gap: 3800, pats: [["비취 물줄기", "jet", { n: 6, len: 185 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan2"], ["수류 웅덩이", "pools"], ["용꼬리 휩쓸기", "cone", { back: 1, both: 1 }], ["비취 표식", "mark", { n: 3 }]] },
-      { at: 0.33, gap: 3200, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["비취 물줄기", "jet", { n: 7, len: 195 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan3"], ["수류 웅덩이", "pools"], ["성소 소용돌이", "donut", { rings: 1, ms: 1050 }], ["비취 표식", "mark", { n: 4 }], ["신전 대범람", "blast"]] },
+      { at: 0.5, gap: 3800, pats: [["비취 물줄기", "jet", { n: 6, len: 185 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan2"], ["수류 웅덩이", "pools"], ["용꼬리 휩쓸기", "cone", { back: 1, both: 1 }], ["비취 표식", "mark", { n: 3 }]] },
+      { at: 0.25, gap: 3200, cast: 1, steps: [{ f: "pool", dt: 500 }], pats: [["비취 물줄기", "jet", { n: 7, len: 195 }], ["지하강 잠행", "dive"], ["수정 비늘 폭풍", "fan3"], ["수류 웅덩이", "pools"], ["성소 소용돌이", "donut", { rings: 1, ms: 1050 }], ["비취 표식", "mark", { n: 4 }], ["신전 대범람", "blast"]] },
     ] },
   // ── CBT-03: standalone 3-phase scripts for cloakbat & bloomwhale (weekly raids continue using DIM_CHAL.bosses) ──
   cloakbat: { cast: "심장의 포효", castMs: 6000, stunMs: 5000, gap: 4800, enrage: 280000, reach: 240,
     pats: [["장막 휘감기", "cone", { half: 1.25, r: 60, k: 1.7 }], ["초음파 고리", "rings"], ["거꾸로 낙하", "leapslam"], ["날개 탄막", "fan2"]],
     phases: [
-      { at: 0.68, gap: 4200, pats: [["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3200, k: 3.2 }], ["핏빛 메아리", "pools"], ["박쥐떼 소집", "adds", { kind: "nightbat", n: 3, cap: 3, d: 52, feed: 18000, heal: 0.02 }], ["장막 휘감기", "cone", { half: 1.25, r: 60, k: 1.8 }], ["날개 탄막", "fan2"]] },
-      { at: 0.34, gap: 3500, cast: 1, steps: [{ f: "pool", dt: 550 }], pats: [["양면 장막", "cone", { half: 1.25, r: 60, k: 1.9, both: 1 }], ["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3000, k: 3.6 }], ["거꾸로 낙하", "leapslam"], ["날개 폭풍", "fan3"], ["박쥐떼 소집", "adds", { kind: "nightbat", n: 4, cap: 4, d: 52, feed: 16000, heal: 0.02 }]] },
+      { at: 0.5, gap: 4200, pats: [["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3200, k: 3.2 }], ["핏빛 메아리", "pools"], ["박쥐떼 소집", "adds", { kind: "nightbat", n: 3, cap: 3, d: 52, feed: 18000, heal: 0.02 }], ["장막 휘감기", "cone", { half: 1.25, r: 60, k: 1.8 }], ["날개 탄막", "fan2"]] },
+      { at: 0.25, gap: 3500, cast: 1, steps: [{ f: "pool", dt: 550 }], pats: [["양면 장막", "cone", { half: 1.25, r: 60, k: 1.9, both: 1 }], ["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3000, k: 3.6 }], ["거꾸로 낙하", "leapslam"], ["날개 폭풍", "fan3"], ["박쥐떼 소집", "adds", { kind: "nightbat", n: 4, cap: 4, d: 52, feed: 16000, heal: 0.02 }]] },
     ] },
   bloomwhale: { cast: "고래의 장송곡", castMs: 6500, stunMs: 5500, gap: 4800, enrage: 320000, reach: 260,
     pats: [["고래 낙하", "dive"], ["수정 갈비 탄막", "fan2"], ["꼬리 지느러미", "cone", { back: 1, r: 68, ms: 1100, k: 2.0 }], ["심해의 노래", "donut", { r0: 30, r: 100, ms: 1450, k: 2.2, rings: 1 }]],
     phases: [
-      { at: 0.66, gap: 4100, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 2, cap: 2, d: 84, shield: 1 }], ["혼꽃 표식", "mark", { n: 3, r: 36, ms: 3500, k: 2.0 }], ["서리 결정 웅덩이", "pools"], ["수정 갈비 폭풍", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 68, ms: 1100, k: 2.1 }], ["고래 낙하", "dive"]] },
-      { at: 0.33, gap: 3400, cast: 1, steps: [{ f: "pool", dt: 550 }], pats: [["심해의 노래", "donut", { r0: 30, r: 104, ms: 1300, k: 2.4, rings: 1 }], ["양면 지느러미", "cone", { both: 1, r: 68, ms: 950, k: 2.2 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 3200, k: 2.2 }], ["수정 갈비 폭풍", "fan3"], ["고래 낙하", "dive"], ["꽃무덤 대폭발", "blast"]] },
+      { at: 0.5, gap: 4100, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 2, cap: 2, d: 84, shield: 1 }], ["혼꽃 표식", "mark", { n: 3, r: 36, ms: 3500, k: 2.0 }], ["서리 결정 웅덩이", "pools"], ["수정 갈비 폭풍", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 68, ms: 1100, k: 2.1 }], ["고래 낙하", "dive"]] },
+      { at: 0.25, gap: 3400, cast: 1, steps: [{ f: "pool", dt: 550 }], pats: [["심해의 노래", "donut", { r0: 30, r: 104, ms: 1300, k: 2.4, rings: 1 }], ["양면 지느러미", "cone", { both: 1, r: 68, ms: 950, k: 2.2 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 3200, k: 2.2 }], ["수정 갈비 폭풍", "fan3"], ["고래 낙하", "dive"], ["꽃무덤 대폭발", "blast"]] },
     ] },
 };
 for (const k of Object.keys(BOSS_SCRIPTS)) MOBS[k].script = BOSS_SCRIPTS[k];
@@ -5422,23 +5422,23 @@ const DIM_CHAL = {
       pats: [["장막 휘감기", "cone", { half: 1.309, r: 60, k: 2 }], ["초음파 고리", "rings"], ["거꾸로 낙하", "leapslam"], ["날개 탄막", "fan2"]],
       phases: [
         // 비행: it flies — the shared mark, its bats every third turn, blood pools
-        { at: 0.7, pats: [["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3500, k: 5 }], ["핏빛 메아리", "pools"], ["박쥐떼", "adds", { kind: "nightbat", n: 4, cap: 4, d: 56, feed: 20000, heal: 0.02 }],
+        { at: 0.5, pats: [["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3500, k: 5 }], ["핏빛 메아리", "pools"], ["박쥐떼", "adds", { kind: "nightbat", n: 4, cap: 4, d: 56, feed: 20000, heal: 0.02 }],
           ["장막 휘감기", "cone", { half: 1.309, r: 60, k: 2 }], ["날개 탄막", "fan2"], ["박쥐떼", "adds", { kind: "nightbat", n: 4, cap: 4, d: 56, feed: 20000, heal: 0.02 }]] },
         // 장막 붕괴: pools round the rim for good, two cones, a quicker beat, its cast hits harder
-        { at: 0.35, gap: 3900, blast: 4, rim: { n: 8, pr: 30 }, pats: [["장막 휘감기", "cone", { half: 1.309, r: 60, k: 2, both: 1 }], ["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3500, k: 5 }],
+        { at: 0.25, gap: 3900, blast: 4, rim: { n: 8, pr: 30 }, pats: [["장막 휘감기", "cone", { half: 1.309, r: 60, k: 2, both: 1 }], ["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3500, k: 5 }],
           ["초음파 고리", "rings"], ["박쥐떼", "adds", { kind: "nightbat", n: 4, cap: 4, d: 56, feed: 20000, heal: 0.02 }], ["거꾸로 낙하", "leapslam"], ["날개 탄막", "fan2"]] },
       ] },
     bloomwhale: { theme: "cave", cast: "고래의 장송곡", w: 40, h: 28, castMs: 7000, stunMs: 6000, blast: 6, vuln: 0.3, diveMs: 1800, diveR: 70, diveK: 6,
       enrage: 360000, hard: 480000, hardEvery: 4000, hardK: 10, big: { gold: 600, xp: 0.375, stone: 12, rune: 3, gear: 4, gearQ: 3 },
       pats: [["고래 낙하", "dive"], ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }]],
-      // four burst windows (65 %, 45 %, 30 %, 10 %): each phase opens with the song; heads come first at 65 % and 45 %
+      // four burst windows (75 %, 50 %, 25 %, 10 %): each phase opens with the song; heads come first at 75 % and 50 %
       phases: [
-        { at: 0.65, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 3, cap: 3, d: 96, shield: 1 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 4000, k: 2.5 }], ["서리 결정 웅덩이", "pools"],
+        { at: 0.75, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 3, cap: 3, d: 96, shield: 1 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 4000, k: 2.5 }], ["서리 결정 웅덩이", "pools"],
           ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }], ["고래 낙하", "dive"]] },
-        { at: 0.45, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 3, cap: 3, d: 96, shield: 1 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 4000, k: 2.5 }], ["서리 결정 웅덩이", "pools"],
+        { at: 0.5, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 3, cap: 3, d: 96, shield: 1 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 4000, k: 2.5 }], ["서리 결정 웅덩이", "pools"],
           ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }], ["고래 낙하", "dive"]] },
         // 꽃무덤: the shared mark in place of the spread, a dive every third turn
-        { at: 0.3, cast: 1, pats: [["혼꽃 표식", "mark", { share: 1, n: 1, r: 40, ms: 4000, k: 5 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }], ["고래 낙하", "dive"],
+        { at: 0.25, cast: 1, pats: [["혼꽃 표식", "mark", { share: 1, n: 1, r: 40, ms: 4000, k: 5 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }], ["고래 낙하", "dive"],
           ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["고래 낙하", "dive"]] },
         { at: 0.1, cast: 1 },
       ] },
@@ -13676,8 +13676,8 @@ function jobTraitSpend(S, rt, p, st, sk, id, cost) {
 // that phase (queued like a pattern's own follow-ups: f "fan" {off} | "pool" | "charge" | "land" {x, y}); `cast: 1`
 // opens the phase with the marked cast. Pattern kinds: charge fan fan2 fan3 rings pools charge2 leapslam dive blast jet punch,
 // and the shaped ones donut cone mark adds (bosses-2 §8), written `[name, kind, { …BS_PAT[kind] overrides }]`.
-// State `mob.bs` (bsNew; a challenge's boss shares it with `dim.chal`). Events `["bc", id, i]` pattern i, 9 cast, 8 broken,
-// 7 failed ("bc", not "dc": that is the tracker's lure); `["bt", shape, x, y, r, ms, …]` a shaped telegraph (bsShape).
+// State `mob.bs` (bsNew; a challenge's boss shares it with `dim.chal`). Events `["bc", id, i]` pattern i, 10 a new phase
+// (`["bc", id, 10, ph]`), 9 cast, 8 broken, 7 failed ("bc", not "dc": that is the tracker's lure); `["bt", shape, x, y, r, ms, …]` a shaped telegraph (bsShape).
 // Scripted rows: bloodhorn (mesa's lair boss) and clubshrimp (the coast's field boss), 10-tables.js; the weekly raids
 // cloakbat and bloomwhale (DIM_CHAL.bosses, 31-maps-dim.js) — tests/bosses2.mjs. A phase may also carry `blast` (its cast's
 // fail), `rim` {n, r} (slow pools round the arena's rim for the rest of the fight); each phase starts its pattern list from the top.
@@ -13686,7 +13686,11 @@ function jobTraitSpend(S, rt, p, st, sk, id, cost) {
 const BOSS_SCRIPT = {
   every: 4, castMs: 6000, stunMs: 5000, stag: 0.03, blast: 2.4, fury: 0.15, gap: 5200, vuln: 0.3,
   enrage: 240000, enrageStep: 10000, enrageK: 0.12, hard: 0, hardEvery: 3000, hardK: 3, reach: 320, diveMs: 1800, diveR: 70, diveK: 2,
+  // × its blows by phase (owner 2026-11-21: phases at 50 % and 25 %); a phase's own `ak` overrides, past the list the last holds
+  phaseK: [1, 1.15, 1.3],
 };
+/** Its blows' phase multiplier. */
+const bsPhaseK = (B, ph) => (ph > 1 && B.phases[ph - 2].ak) || B.phaseK[Math.min(ph, B.phaseK.length) - 1];
 /** The shaped kinds' defaults: `ms` until it lands, reach `r` (a donut is safe inside `r0`), a cone's `half` angle (rad)
  *  and `back` (aimed away from its target; `both`: front and back at once), `k` × atk; `rings` after a donut: the in-then-out
  *  rings at once; a mark on `n` heroes (`share`: its burst split between everyone inside); adds: `n` of `kind` at `d` px,
@@ -13710,7 +13714,10 @@ function bsDef(mob) {
   const C = DIM_CHAL, own = mob.chal ? C.bosses[mob.k] : MOBS[mob.k].script;
   const pick = mob.chal ? { every: C.every, castMs: C.castMs, stunMs: C.stunMs, stag: C.stag, blast: C.blast, fury: C.fury, gap: C.gap,
     enrage: C.enrage, enrageStep: C.enrageStep, enrageK: C.enrageK, vuln: 0 } : {};
-  return (BS_DEFS[key] = own ? { ...BOSS_SCRIPT, ...pick, phases: [], ...own } : null);
+  if (!own) return (BS_DEFS[key] = null);
+  // a two-phase boss gains a third at 25 %: its second phase again, only harder (phaseK); no second opening cast or rim
+  const ph = own.phases || [], phases = ph.length === 1 ? [ph[0], { ...ph[0], at: 0.25, cast: 0, rim: null }] : ph;
+  return (BS_DEFS[key] = { ...BOSS_SCRIPT, ...pick, ...own, phases });
 }
 /** A fight's state, fresh: turns taken, next pattern, follow-ups, fury, when it began, enrage steps, base blows, phase. */
 const bsNew = (ak) => ({ n: 0, pi: 0, q: [], fury: 0, engAt: 0, rage: 0, ak, ph: 1, force: 0, hard: 0 });
@@ -13905,6 +13912,7 @@ function bsTick(S, m, rt, mob, folk, alive) {
     const P = B.phases[ph - 2];
     if (P.rim) bsRim(S, rt, mob, P.rim);
     if (P.cast && !mob.cast) { c.force = 1; mob.castAt = Math.min(mob.castAt, now); }
+    rt.ev.push(["bc", mob.id, 10, ph]);   // the client: a roar, a shake and a banner
     for (const o of folk) toast(o, `${d.name}${pp(d.name, "이가")} 더욱 사나워집니다! (${ph}단계)`);
   }
   if (mob.cast) {
@@ -13938,7 +13946,7 @@ function bsTick(S, m, rt, mob, folk, alive) {
   const over = now - c.engAt - B.enrage, steps = B.enrage && over >= 0 ? 1 + Math.floor(over / B.enrageStep) : 0;
   if (steps && !c.rage) for (const o of folk) toast(o, `${d.name}${pp(d.name, "이가")} 광폭화합니다! 공격이 점점 거세집니다.`);
   c.rage = steps;
-  mob.ak = c.ak * (1 + B.fury * c.fury) * (1 + B.enrageK * steps);
+  mob.ak = c.ak * (1 + B.fury * c.fury) * (1 + B.enrageK * steps) * bsPhaseK(B, c.ph);
   // the hard enrage: past `hard`, `hardK` × atk on everyone in the fight every `hardEvery`
   if (B.hard && now - c.engAt >= B.hard && now >= c.hard) {
     if (!c.hard) for (const o of folk) toast(o, `${d.name}${pp(d.name, "이가")} 모든 것을 끝내려 합니다!`);

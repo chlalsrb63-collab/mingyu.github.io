@@ -737,10 +737,10 @@ function quickClear(S, _dim, shares, fight) {
       assert.ok(done(), "the boss turn has a bounded wait");
     };
     wait(() => turns.some((e) => e[4] === "휘어진 촉수" && e[3] === 1150));
-    boss.hp = Math.round(max * 0.64);
+    boss.hp = Math.round(max * 0.49);
     wait(() => turns.some((e) => e[4] === "갈비뼈의 고리"));
     assert.equal(last("ha", "M").find((m) => m[0] === boss.id)[10], 2);
-    boss.hp = Math.round(max * 0.29);
+    boss.hp = Math.round(max * 0.24);
     wait(() => !!boss.cast);
     const row = last("ha", "M").find((m) => m[0] === boss.id);
     assert.deepEqual(row.slice(10, 13), [3, 1, 100], "phase 3 displays the stagger cast");

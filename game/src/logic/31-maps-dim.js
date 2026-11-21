@@ -633,23 +633,23 @@ const DIM_CHAL = {
       pats: [["장막 휘감기", "cone", { half: 1.309, r: 60, k: 2 }], ["초음파 고리", "rings"], ["거꾸로 낙하", "leapslam"], ["날개 탄막", "fan2"]],
       phases: [
         // 비행: it flies — the shared mark, its bats every third turn, blood pools
-        { at: 0.7, pats: [["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3500, k: 5 }], ["핏빛 메아리", "pools"], ["박쥐떼", "adds", { kind: "nightbat", n: 4, cap: 4, d: 56, feed: 20000, heal: 0.02 }],
+        { at: 0.5, pats: [["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3500, k: 5 }], ["핏빛 메아리", "pools"], ["박쥐떼", "adds", { kind: "nightbat", n: 4, cap: 4, d: 56, feed: 20000, heal: 0.02 }],
           ["장막 휘감기", "cone", { half: 1.309, r: 60, k: 2 }], ["날개 탄막", "fan2"], ["박쥐떼", "adds", { kind: "nightbat", n: 4, cap: 4, d: 56, feed: 20000, heal: 0.02 }]] },
         // 장막 붕괴: pools round the rim for good, two cones, a quicker beat, its cast hits harder
-        { at: 0.35, gap: 3900, blast: 4, rim: { n: 8, pr: 30 }, pats: [["장막 휘감기", "cone", { half: 1.309, r: 60, k: 2, both: 1 }], ["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3500, k: 5 }],
+        { at: 0.25, gap: 3900, blast: 4, rim: { n: 8, pr: 30 }, pats: [["장막 휘감기", "cone", { half: 1.309, r: 60, k: 2, both: 1 }], ["흡혈 표식", "mark", { share: 1, n: 1, r: 40, ms: 3500, k: 5 }],
           ["초음파 고리", "rings"], ["박쥐떼", "adds", { kind: "nightbat", n: 4, cap: 4, d: 56, feed: 20000, heal: 0.02 }], ["거꾸로 낙하", "leapslam"], ["날개 탄막", "fan2"]] },
       ] },
     bloomwhale: { theme: "cave", cast: "고래의 장송곡", w: 40, h: 28, castMs: 7000, stunMs: 6000, blast: 6, vuln: 0.3, diveMs: 1800, diveR: 70, diveK: 6,
       enrage: 360000, hard: 480000, hardEvery: 4000, hardK: 10, big: { gold: 600, xp: 0.375, stone: 12, rune: 3, gear: 4, gearQ: 3 },
       pats: [["고래 낙하", "dive"], ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }]],
-      // four burst windows (65 %, 45 %, 30 %, 10 %): each phase opens with the song; heads come first at 65 % and 45 %
+      // four burst windows (75 %, 50 %, 25 %, 10 %): each phase opens with the song; heads come first at 75 % and 50 %
       phases: [
-        { at: 0.65, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 3, cap: 3, d: 96, shield: 1 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 4000, k: 2.5 }], ["서리 결정 웅덩이", "pools"],
+        { at: 0.75, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 3, cap: 3, d: 96, shield: 1 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 4000, k: 2.5 }], ["서리 결정 웅덩이", "pools"],
           ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }], ["고래 낙하", "dive"]] },
-        { at: 0.45, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 3, cap: 3, d: 96, shield: 1 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 4000, k: 2.5 }], ["서리 결정 웅덩이", "pools"],
+        { at: 0.5, cast: 1, pats: [["먹장어 머리", "adds", { kind: "hagfishhead", n: 3, cap: 3, d: 96, shield: 1 }], ["혼꽃 표식", "mark", { n: 4, r: 36, ms: 4000, k: 2.5 }], ["서리 결정 웅덩이", "pools"],
           ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }], ["고래 낙하", "dive"]] },
         // 꽃무덤: the shared mark in place of the spread, a dive every third turn
-        { at: 0.3, cast: 1, pats: [["혼꽃 표식", "mark", { share: 1, n: 1, r: 40, ms: 4000, k: 5 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }], ["고래 낙하", "dive"],
+        { at: 0.25, cast: 1, pats: [["혼꽃 표식", "mark", { share: 1, n: 1, r: 40, ms: 4000, k: 5 }], ["심해의 노래", "donut", { r0: 30, r: 110, ms: 1500, k: 3, rings: 1 }], ["고래 낙하", "dive"],
           ["수정 갈비 탄막", "fan3"], ["꼬리 지느러미", "cone", { back: 1, r: 72, ms: 1100, k: 3 }], ["고래 낙하", "dive"]] },
         { at: 0.1, cast: 1 },
       ] },

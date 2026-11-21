@@ -626,7 +626,7 @@ const MOBS = {
     lv: 28, hp: 4300, atk: 101, def: 13, spd: 36, xp: 0, gold: [0, 0], aggro: 125, range: 70, cd: 1500, shot: true, boss: true, questOnly: true,
     fan: 112, script: { cast: "정찰등 폭발", castMs: 5500, stunMs: 4800, gap: 5600, reach: 148,
       pats: [["검댕 깃털", "fan"], ["돛대 덮치기", "leapslam"], ["정찰등 섬광", "cone", { ms: 1050, r: 58, half: 0.9, k: 1.35 }]],
-      phases: [{ at: 0.55, gap: 4600, pats: [["검댕 폭풍", "fan2"], ["갑판 급강하", "dive"], ["정찰 표식", "mark", { n: 2, ms: 2600, r: 30, k: 1.4 }], ["돛대 덮치기", "leapslam"]] }] } },
+      phases: [{ at: 0.5, gap: 4600, pats: [["검댕 폭풍", "fan2"], ["갑판 급강하", "dive"], ["정찰 표식", "mark", { n: 2, ms: 2600, r: 30, k: 1.4 }], ["돛대 덮치기", "leapslam"]] }] } },
   jaemaei: {
     name: "재매이", epithet: "절망의 친칠라 재매이", lore: "제례전의 회색 털짐승. 금테 안경 너머로 초를 세던 두 눈은 아직 남아 있고, 등에 돋은 뼈와 촉수는 저마다의 박자로 몸을 끌어당긴다.",
     lv: 10, hp: 330, atk: 36, def: 5, spd: 34, xp: 160, gold: [18, 36], aggro: 120, range: 25, cd: 1400,
@@ -640,13 +640,13 @@ const MOBS = {
         ["골절의 파동", "punch", { ms: 1000, r: 17, ms2: 650, r2: 30 }],
       ],
       phases: [
-        { at: 0.65, gap: 2700, pats: [
+        { at: 0.5, gap: 2700, pats: [
           ["갈비뼈의 고리", "donut", { ms: 1350, r0: 26, r: 69, k: 1.6 }],
           ["뒤틀린 연속 돌진", "charge2"],
           ["뼛가시 탄막", "fan2"],
           ["절망의 낙인", "mark", { ms: 2200, r: 23, n: 2, k: 1.25 }],
         ] },
-        { at: 0.30, cast: 1, gap: 2150, blast: 2.35, pats: [
+        { at: 0.25, cast: 1, gap: 2150, blast: 2.35, pats: [
           ["쌍촉수 난타", "cone", { both: 1, ms: 1050, r: 65, half: 0.78, k: 1.6 }],
           ["갈비뼈의 고리", "donut", { ms: 1150, r0: 23, r: 74, k: 1.75 }],
           ["뒤틀린 연속 돌진", "charge2"],
@@ -664,7 +664,7 @@ const MOBS = {
     script: { cast: "혈루 대분출", castMs: 4000, stunMs: 4000, stag: 0.04, blast: 2.2, gap: 5000, enrage: 150000, reach: 220,
       pats: [["혈루 사출", "jet"], ["뿔관 돌진", "charge"], ["결정 가시 산탄", "fan"], ["모래 잠행", "leapslam"], ["꼬리 휩쓸기", "cone", { back: 1 }], ["피의 비", "blast"]],
       phases: [
-        { at: 0.6, cast: 1, pats: [["혈루 사출", "jet"], ["뿔관 연속 돌진", "charge2"], ["결정 가시 폭풍", "fan3"], ["모래 잠행", "leapslam"], ["꼬리 휩쓸기", "cone", { back: 1 }],
+        { at: 0.5, cast: 1, pats: [["혈루 사출", "jet"], ["뿔관 연속 돌진", "charge2"], ["결정 가시 폭풍", "fan3"], ["모래 잠행", "leapslam"], ["꼬리 휩쓸기", "cone", { back: 1 }],
           ["붉은 결정 성장", "adds", { kind: "bloodshard", n: 3, cap: 3, d: 48 }], ["피의 비", "blast"]] },
         // 혈루 폭주: every pattern leaves a burn pool, the gap a quarter shorter
         { at: 0.25, cast: 1, gap: 3750, steps: [{ f: "pool", dt: 400 }], pats: [["혈루 사출", "jet"], ["뿔관 연속 돌진", "charge2"], ["결정 가시 폭풍", "fan3"], ["모래 잠행", "leapslam"],
