@@ -211,7 +211,7 @@ function srcText(d) {
     token: `의상실에서 버드나무토큰 ${d.price.toLocaleString()}개`, rareBoss: "우두머리 토벌 시 매우 낮은 확률로 미보유 희귀 외형 한 점 획득",
     daily: "토벌 의뢰 보상 상자",
     ach: ach ? `${ach.desc} (업적 「${ach.name}」)` : `업적 「${d.ach}」 달성`,
-    quest: "의뢰·퀘스트를 마치면 가끔", weekly: "주간 토벌 큰 보상에서 가끔", sew: sewText(d), fair: fairText(d),
+    quest: "의뢰·퀘스트를 마치면 가끔", weekly: "레이드 주간 첫 클리어에서 가끔", sew: sewText(d), fair: fairText(d),
   }[d.src] || "";
 }
 /** The catalogue in groups: each themed set (in the catalogue's order), then everything that is in no set. */

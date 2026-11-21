@@ -20,8 +20,11 @@ const DIM = {
   // 하강의 문 (everyone inside goes down after `downMs`, sooner once all standing stepped within `downR`); floor 3's 100%
   // wakes the final boss in its hall at the far end. Per floor: monster health and blows ×, pack leaders made elite,
   // elite traits; `boss` the final boss's traits.
-  floors: 3, minTier: 10, downMs: 10000, downR: 16, ckR: 12, hallR: 30,   // (minTier: the lowest world tier a raid is made for = Lv.37 shown, defs().dim.minLv; ckR: the fallen get up this many steps short of the final boss's hall; hallR: 균열의 문 opens past this)
-  floor: [{ hp: 1, atk: 1, elites: 0, traits: 1 }, { hp: 1.1, atk: 1.03, elites: 1, traits: 1 }, { hp: 1.2, atk: 1.06, elites: 1, traits: 1, boss: 2 }],
+  floors: 1, minTier: 5, downMs: 10000, downR: 16, ckR: 12, hallR: 30,   // (minTier: the lowest world tier a raid is made for = Lv.37 shown, defs().dim.minLv; ckR: the fallen get up this many steps short of the final boss's hall; hallR: 균열의 문 opens past this)
+  // the one floor (owner 2026-11-21): its monsters hit harder and lead more elites with two traits than the old floors did, the mid-boss two traits
+  floor: [{ hp: 1.15, atk: 1.15, elites: 2, traits: 2, boss: 2 }],
+  // the mid-boss portal: everyone inside goes on after `gateMs` (sooner once all standing step in); the raid boss x [hp, atk] over the challenge numbers
+  gateMs: 30000, raidBoss: [1, 1], raidUp: 0.66,
   emptyMs: 20000, portalMs: 90000, failMs: 8000, memberMs: 180000, rcMs: 20000, near: 80,
   // the gauge: a kill, an elite (guardians too), an orb an elite leaves behind, each × `gK` percent — fixed, so 100% takes
   // about 26 kills (gK 4.2; was 44 at 2.5) however many monsters a big floor holds: the party picks a route, never clears it all
@@ -124,8 +127,8 @@ const HANOK_DRESS = {
 
 /** Floor `n`'s look, from the run's seed (`raid`: a RAID key, 31-raids-field.js; a field raid's floor has the one look it is built for). */
 const dimTheme = (seed, n, raid) => {
-  const i = clamp(n | 0, 1, DIM_FLOORS.length) - 1, row = RAID[dimRaidKey(raid)].floors[i], t = row.look ? [row.look] : DIM_FLOORS[i].themes;
-  return t[((seed >>> 3) >>> 0) % t.length];
+  const row = dimRow(raid, seed), t = row.look ? [row.look] : row.themes || ["crypt"];
+  return t[((seed >>> 5) >>> 0) % t.length];
 };
 /** Where the town's obelisk stands, its keeper, and where someone coming back from an instance lands (tiles). */
 const DIM_TOWN = { ob: [58, 34], keeper: [57, 35], land: [56, 34] };
@@ -175,13 +178,14 @@ function dimension(cfg) {
 }
 function dimBuild(cfg, seed) {
   const box = { seed };
-  const W = DIM.w, H = DIM.h, lv = cfg.lv | 0 || 10, floor = clamp(cfg.floor | 0 || 1, 1, DIM_FLOORS.length);
-  const raid = dimRaidKey(cfg.hanok === true ? "hanok" : cfg.raid), hanok = raid === "hanok", field = !!RAID[raid].field;
-  const cc = RAID[raid].floors[floor - 1], style = hanok ? "halls" : cc.style;
-  const theme = field ? cc.look : DIM_THEMES[cfg.theme] ? cfg.theme : DIM_FLOORS[floor - 1].themes[0];
+  const W = DIM.w, H = DIM.h, lv = cfg.lv | 0 || 10, floor = 1;
+  // the raid's floor plan from the run's seed (not this try's: dimension() lays a plan out again with other seeds)
+  const raid = dimRaidKey(cfg.raid), cc = dimRow(raid, (cfg.seed | 0) || 1), hanok = !!cc.hanok, field = !!cc.look;
+  const style = hanok ? "halls" : cc.style;
+  const theme = field ? cc.look : DIM_THEMES[cfg.theme] ? cfg.theme : cc.themes[0];
   const look = hanok ? { rooms: HANOK_DRESS } : DIM_THEMES[theme];
   const art = field ? look.theme : theme;   // the client's art set (a field look is named for its floor)
-  const m = blank(cfg.id || "dim:0", `레이드던전 ${floor}단 · ${cc.name}`, W, H, "W");
+  const m = blank(cfg.id || "dim:0", `${RAID[raid].name} · ${cc.name}`, W, H, "W");
   m.theme = hanok ? "interior" : art; m.bgm = "dim"; m.band = null; m.marks = [];
   if (hanok) m.style = "hanok_raid";
   const pick = (a) => a[ri(box, 0, a.length - 1)];
@@ -542,7 +546,7 @@ function dimBuild(cfg, seed) {
     }
   }
   // ── who lives here
-  const pool = dimPool(art, lv, field ? RAID[raid].map : "");
+  const pool = dimPool(art, lv, "");   // the look's own kinds near the level, else every ground's: a raid of any level keeps its monsters level
   const tOf = (r) => dS[tileOf(r)] / Math.max(1, span);
   const spawns = [];
   const openIn = (k) => tilesOf(k).filter(([x, y]) => m.o[y][x] === " " && !SOLID_G.includes(m.g[y][x]));
@@ -589,7 +593,7 @@ function dimBuild(cfg, seed) {
     elites++;
   });
   const bs = rooms[bossK];
-  const bossScaleK = dimBossKind(art, lv, pool), master = floor === DIM.floors && RAID[raid].master;
+  const bossScaleK = dimBossKind(art, lv, pool), master = RAID[raid].master;
   m.dim = {
     rooms: rooms.map(({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt }) => ({ x0, y0, x1, y1, cx, cy, kind, shape, area, rt })),
     start: [st.cx, st.cy], boss: [bs.cx, bs.cy], bossRoom: bossK, startRoom: startK, door, dead, spawns, pool,
@@ -679,17 +683,34 @@ function chalSteps(k) {
   return out;
 }
 
+/** The props a raid's boss room stands about it, by its art theme (each theme's own rock and pillar chars). */
+const ARENA_PROPS = { crypt: ["q", "R", "q"], sewer: ["R", "q", "R"], cave: ["K", "S", "R"], abyss: ["R", "q", "R"] };
 /** A boss challenge's arena: one oval hall, the party at its west end, the boss in the middle. Pure. */
 function dimArena(cfg) {
   // (also a story fight's arena, 67-trophies.js: any boss kind, the ground's theme and its own name)
   const k = cfg.k, own = (Object.hasOwn(DIM_CHAL.bosses, k) && DIM_CHAL.bosses[k]) || {}, W = own.w || DIM_CHAL.w, H = own.h || DIM_CHAL.h, theme = cfg.theme || own.theme;
   const m = blank(cfg.id || "dim:0", cfg.name || `보스 도전: ${MOBS[k].name}`, W, H, "W");
   m.theme = theme; m.bgm = "dim"; m.band = null; m.marks = [];
-  const cx = W >> 1, cy = H >> 1, rx = cx - 3, ry = cy - 3;
+  const box = { seed: (cfg.seed | 0) || 1 }, vary = !!cfg.vary;
+  // a raid's room: a little narrower or flatter, its rim ragged where the noise bites (never past the inner 80 %)
+  const cx = W >> 1, cy = H >> 1, rx = cx - 3 - (vary ? ri(box, 0, 2) : 0), ry = cy - 3 - (vary ? ri(box, 0, 1) : 0);
   let area = 0;
   for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) {
-    if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1) continue;
+    const e = ((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2;
+    if (e > 1 || (vary && e > 0.8 && fbm(x, y, (cfg.seed | 0) + 7, 3) > 0.62)) continue;
     m.g[y][x] = fbm(x, y, cfg.seed | 0, 5) > 0.6 ? "d" : "c"; area++;
+  }
+  if (vary) {
+    // pillars to step behind: single tiles in the ring between the boss's reach and the rim, two apart (an open oval stays one piece)
+    const props = ARENA_PROPS[theme] || ARENA_PROPS.crypt, n = ri(box, 4, 9);
+    for (let i = 0, tries = 0; i < n && tries < 80; tries++) {
+      const a = rnd(box) * Math.PI * 2, rr = 0.45 + rnd(box) * 0.3, x = Math.round(cx + Math.cos(a) * rx * rr), y = Math.round(cy + Math.sin(a) * ry * rr);
+      if (m.g[y][x] === "W" || x <= cx - rx + 5) continue;   // the west end stays clear: the party comes in there
+      let near = false;
+      for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) if (m.o[y + dy]?.[x + dx] && m.o[y + dy][x + dx] !== " ") near = true;
+      if (near) continue;
+      m.o[y][x] = props[ri(box, 0, props.length - 1)]; i++;
+    }
   }
   const start = [cx - rx + 3, cy], door = [cx - rx + 1, cy - 1];
   m.g[door[1]][door[0]] = "c";

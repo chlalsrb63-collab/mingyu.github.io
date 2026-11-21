@@ -130,7 +130,7 @@ function raidParty(t, gear = true, n = 4) {
   const W = L.setup(); W.now = W.last = 5_000_000;
   const pids = WKS.slice(0, n).map((_, i) => "r" + i);
   pids.forEach((pid, i) => {
-    const ch = L.hero("공대" + i, { wk: WKS[i], lvl: Math.min(197, 4 * t - 3), migrate: true });
+    const ch = L.hero("공대" + i, { wk: WKS[i], lvl: Math.min(200, 4 * t - 3), migrate: true });
     if (gear) {
       const tier = X.tierFor(t);
       ch.eq.weapon = X.rollGear(W, `w_${X.WK_ID[WKS[i]]}_${tier}`, 1, t);
@@ -145,12 +145,17 @@ function raidParty(t, gear = true, n = 4) {
   for (const pid of pids.slice(1)) { assert.ok(act(pids[0], { t: "pinv", e: W.players[pid].eid }).ok); assert.ok(act(pid, { t: "pacc" }).ok); }
   return { W, ps, pids, act };
 }
+/** The raid of boss `k` (owner 2026-11-21: the challenge is a raid now): its floor's mid-boss down, its portal taken, the boss's room. */
 function raidOpen(R, k) {
-  const { W, ps, pids, act } = R, v = act(pids[0], { t: "dim_open", boss: k });
+  const { W, ps, pids, act } = R, v = act(pids[0], { t: "dim_open", raid: k });
   assert.ok(v.ok, v.error);
   if (ps.length > 1) { const rc = W.parties[ps[0].party].rc; for (const pid of pids.slice(1)) act(pid, { t: "dim_ready", id: rc.id, ok: 1 }); }
+  const floor = W.dims[ps[0].map], mid = floor.rt.mobs.find((m) => m.id === floor.boss);
+  mid.by = { [ps[0].pid]: 1 }; X.killMob(W, floor.rt, mid);
+  for (const o of ps) { o.x = floor.portal.x; o.y = floor.portal.y; o.dead = false; o.ghost = W.now + 3000; }   // (the floor's monsters are not what this measures)
+  for (let i = 0; i < 20 && ps[0].map === floor.id; i++) { W.now += 100; L.tick(W, W.now); L.endTick(W); }
   const dim = W.dims[ps[0].map];
-  assert.ok(dim && dim.chal && dim.chal.k === k && dim.state === "boss", k + ": the challenge opens on it");
+  assert.ok(dim && dim.fin && dim.chal && dim.chal.k === k && dim.state === "boss", k + ": the raid's boss room");
   return dim;
 }
 
@@ -164,8 +169,9 @@ function scripted(k, t) {
   const tick = (n = 1) => { for (let i = 0; i < n; i++) { for (const o of ps) { o.dead = false; o.hp = 1e7; } W.now += 100; L.tick(W, W.now); ev.push(...rt.ev); L.endTick(W); } };
   const turns = () => ev.filter((e) => e[0] === "bc" && e[1] === mob.id).map((e) => e[2]);
   const allPats = (n, what) => { const t0 = W.now; while (new Set(turns().filter((i) => i < n)).size < n) { tick(); assert.ok(W.now - t0 < 300000, what + ": every pattern comes round"); } };
-  const hit = (n) => { const hp = mob.hp; X.dealMob(W, rt, mob, ps[0], n * mob.hk, 0); return hp - mob.hp; };
-  const breakCast = () => { while (!mob.cast) tick(); X.dealMob(W, rt, mob, ps[0], Math.ceil(mob.cast.need * mob.hk) + 10, 0); assert.ok(mob.stag > W.now && !mob.cast, k + ": the cast broke"); };
+  // (a light-element boss of its level wards itself at full health: the measures take that off first)
+  const hit = (n) => { if (mob.ail) delete mob.ail.ward; const hp = mob.hp; X.dealMob(W, rt, mob, ps[0], n * mob.hk, 0); return hp - mob.hp; };
+  const breakCast = () => { while (!mob.cast) tick(); if (mob.ail) delete mob.ail.ward; X.dealMob(W, rt, mob, ps[0], Math.ceil((mob.cast.need + 2) * mob.hk), 0); assert.ok(mob.stag > W.now && !mob.cast, k + ": the cast broke"); };
   allPats(B.pats.length, k + " P1");
   assert.ok(turns().includes(9), k + ": its marked cast");
   // broken: stunned, and +30 % damage taken while it reels
@@ -185,15 +191,13 @@ function rewards(F, k, piece, weapons) {
   for (const suffix of ["h", "a", "r", "n"]) assert.ok(mine.some((d) => d.g.id === `${piece}_${suffix}` && d.g.q === 3 && !d.g.set), k + ": its named legendary gear");
   for (const id of weapons) assert.ok(mine.some((d) => d.g.id === id && d.g.q === 3), k + ": " + id + " legendary");
   for (let i = 0; i < 5; i++) F.tick();
-  const big = X.DIM_CHAL.bosses[k].big, bit = 1 << X.CHAL_KEYS.indexOf(k);
-  assert.ok(ps[0].dimRes && ps[0].dimRes[4] === big.gold * dim.lv, k + ": its own weekly reward");
-  assert.equal(ps[0].ch.dim.bw & bit, bit);
+  assert.ok(ps[0].dimRes && ps[0].dimRes[3] & 8 && ps[0].dimRes[4] > 0, k + ": the raid's chest, the week's first-clear bonus");
 }
 
 {
   // 밤장막 박쥐군주
   assert.deepEqual(X.CHAL_KEYS.slice(0, 4), ["boss", "abyssboss", "cloakbat", "bloomwhale"], "fixed challenges keep their weekly reward bits");
-  const F = scripted("cloakbat", 25), { W, ps, rt, mob, max, B } = F;
+  const F = scripted("cloakbat", 47), { W, ps, rt, mob, max, B } = F;
   assert.ok(F.ev().some((e) => e[0] === "bt" && e[1] === 1 && e[7] === 1309), "장막 휘감기: a 150° cone");
   // 비행 under 50 %: the shared mark, bats that feed it
   mob.hp = Math.floor(max * 0.49); mob.cast = null; F.clear(); F.tick(2);
@@ -226,7 +230,7 @@ function rewards(F, k, piece, weapons) {
 }
 {
   // 꽃무덤 고래
-  const F = scripted("bloomwhale", 50), { rt, mob, max } = F;
+  const F = scripted("bloomwhale", 51), { rt, mob, max } = F;
   assert.ok(F.ev().some((e) => e[0] === "bt" && e[1] === 0 && e[4] === 110 && e[6] === 30), "심해의 노래: a donut r30–110");
   // its dive: out of reach until it lands
   F.clear(); while (!mob.dive) F.tick();
@@ -295,7 +299,7 @@ function botRaid(k, t, gear, n = 4) {
   const boss = rt.mobs.find((m) => m.id === dim.boss);
   return { state: dim.state, min: (W.now - t0) / 60000, tries: dim.chal.tries, deaths, fury: dim.chal.fury, left: boss && !boss.dead ? boss.hp / X.mobMax(boss) : 0 };
 }
-for (const [k, t] of [["cloakbat", 25], ["bloomwhale", 50]]) {
+for (const [k, t] of [["cloakbat", 47], ["bloomwhale", 51]]) {
   const win = botRaid(k, t, true), lose = botRaid(k, t, false, 2);
   console.log(`  ${k}: 4 geared bots ${win.state} in ${win.min.toFixed(1)} min (${win.tries} tries, ${win.deaths} deaths, fury ${win.fury}, ${(win.left * 100).toFixed(0)} % left); 2 bare bots ${lose.state} (${(lose.left * 100).toFixed(0)} % left, ${lose.tries} tries)`);
   if (process.env.NOCLEAR) continue;

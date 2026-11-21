@@ -165,9 +165,9 @@ const ACH = [
   // bosses-2 (docs/design/bosses-2.md): first kills earn a title
   ["clubshrimp", "사냥", "파도를 꺾은 자", "딱파랑 처치", 30, (c) => (c.mk.clubshrimp || 0) >= 1, "파도를 꺾은 자", [["hp", 3]]],
   ["bloodhorn", "사냥", "피눈물을 닦은 자", "루비악 처치", 40, (c) => (c.mk.bloodhorn || 0) >= 1, "피눈물을 닦은 자", [["atkp", 3]]],
-  ["cloakbat", "사냥", "장막을 걷은 자", "벨모라 처치 (주간 토벌)", 40, (c) => (c.mk.cloakbat || 0) >= 1, "장막을 걷은 자", [["crit", 2]]],
+  ["cloakbat", "사냥", "장막을 걷은 자", "벨모라 처치 (레이드)", 40, (c) => (c.mk.cloakbat || 0) >= 1, "장막을 걷은 자", [["crit", 2]]],
   ["mvp10", "사냥", "선봉장", "보스·수문장 피해 기여도 1위 10번", 30, (c) => c.cnt.mvp >= 10, "선봉장"],
-  ["bloomwhale", "사냥", "고래의 장송곡", "모비화 처치 (주간 토벌)", 60, (c) => (c.mk.bloomwhale || 0) >= 1, "고래의 장송곡", [["atkp", 4], ["hp", 4]]],
+  ["bloomwhale", "사냥", "고래의 장송곡", "모비화 처치 (레이드)", 60, (c) => (c.mk.bloomwhale || 0) >= 1, "고래의 장송곡", [["atkp", 4], ["hp", 4]]],
   // the retired 균열 침공 (removed by owner order): kept so holders keep the achievement and title; nobody earns them now (gone)
   ["evt1", "사냥", "침공 저지", "균열 침공에 참여", 10, () => false, null, null, 1],
   ["evt10", "사냥", "균열 수호자", "균열 침공 10번 참여", 25, () => false, "균열 수호자", [["def", 3]], 1],

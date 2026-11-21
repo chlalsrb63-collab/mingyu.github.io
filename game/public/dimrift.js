@@ -37,7 +37,7 @@ const stepWord = (i, s) => { const c = D().chal || {}, st = ((chalDef(i) || [])[
 /** Floors in a run (defs().dim.raid). */
 const floors = () => (D().raid && D().raid.floors) || 3;
 /** The clock's text: the way home's or the way down's countdown, a failing rift's seconds, else the run's time left. */
-const clock = (state, s) => (state === 2 ? `문 ${mmss(s)}` : state === 4 ? `하강 ${s}초` : state === 3 ? `${s}초` : mmss(s));
+const clock = (state, s) => (state === 2 ? `문 ${mmss(s)}` : state === 4 ? `포탈 ${s}초` : state === 3 ? `${s}초` : mmss(s));
 export const inside = () => !!(A && A.G.map && String(A.G.map.id).startsWith("dim:"));
 
 // ───────────────────────────── snapshots ─────────────────────────────
@@ -146,19 +146,17 @@ function renderHud() {
   box.hidden = false;
   if (box.classList.contains("story")) box.classList.remove("story");
   const secs = Math.max(0, d[1] - Math.floor((now() - st.at) / 1000));
-  const pct = Math.min(100, d[0] / 10);
-  const name = D().themes[d[10]] || "레이드던전";
-  const label = ["", d[8] ? "최종 보스 출현! 균열의 문으로 보스의 방 앞까지" : "최종 보스 출현! 가장 먼 방으로", "정화 완료 — 귀환의 문까지", "균열이 닫힙니다…", "하강의 문 — 다음 단으로"][d[2]];
-  // the floor's own concept (defs().dim.raid.names: 1단 무너진 지하 회랑 …), else the look's name
-  const names = raidOf(d[16])?.floors || (d[16] ? D().raid?.hanokNames : D().raid?.names);
-  const fname = names?.[d[14] - 1] || name;
-  // (the wire carries the rift's world tier; players see levels as 4·tier − 3, like monsters and doors)
-  const chal = d[15], bossName = chal && chalDef(chal[0]) ? `${chalDef(chal[0])[1]} · ${stepWord(chal[0], chal[7])}` : "";
-  put($("#dim-title"), chal ? `보스 도전 · ${bossName}` : `레이드던전${difTag(d[17])} Lv.${4 * d[4] - 3} · ${d[14]}단 · ${fname} (${d[14]}/${floors()})`);
+  // one floor, its mid-boss, then the boss's own room (owner 2026-11-21): the bar shows the stage, not a gauge
+  const R = raidOf(d[16]), chal = d[15], boss = R && A.G.defs.mobs[R.boss];
+  const mid = d[3] && A.G.mobs.get(d[3]), midName = (mid && A.G.defs.mobs[mid.k]?.name) || "중간보스";
+  const label = [`중간보스 [${midName}]를 찾아 쓰러뜨리세요`, "보스를 쓰러뜨리세요!", "클리어 — 보상 상자를 열고 귀환의 문으로", "레이드가 닫힙니다…", `포탈이 열렸습니다 — ${boss ? boss.name : "보스"}의 방으로`][d[2]];
+  const where = chal ? `${boss ? boss.name : "보스"}의 방` : (A.G.map?.name || "").split(" · ").pop();
+  // (the wire carries the raid's world tier; players see levels as 4·tier − 3, like monsters and doors)
+  put($("#dim-title"), `${R ? R.name : "레이드"}${difTag(d[17])} Lv.${4 * d[4] - 3} · ${where}`);
   put($("#dim-time"), clock(d[2], secs));
   $("#dim-time").classList.toggle("low", (d[2] <= 1 && secs <= 180) || d[2] === 4);
-  $("#dim-fill").style.width = `${pct}%`;
-  put($("#dim-pct"), d[2] === 0 ? `${pct.toFixed(1)}%` : d[15] && d[2] === 1 ? "보스를 쓰러뜨리세요!" : label);
+  $("#dim-fill").style.width = `${chal || d[2] === 2 ? 100 : d[2] === 4 ? 50 : 0}%`;
+  put($("#dim-pct"), label);
   box.classList.toggle("boss", d[2] === 1);
   box.classList.toggle("clear", d[2] === 2);
   // the party inside: a chip per member, their health
@@ -175,7 +173,7 @@ function renderHud() {
   if (m && A.G.defs.mobs[m.k]) {
     const def = A.G.defs.mobs[m.k], max = def.hp * (A.G.defs.eliteHp[m.el] || 1);
     bar.hidden = false;
-    put($("#dim-boss-name"), chal ? `${def.name} · ${chal[5]}번째 시도${chal[4] ? ` · 광폭 ${chal[4]}` : ""}${chal[6] ? ` · 분노 ${chal[6]}` : ""}` : `최종 보스 · ${def.name}`);
+    put($("#dim-boss-name"), chal ? `${def.name} · ${chal[5]}번째 시도${chal[4] ? ` · 광폭 ${chal[4]}` : ""}${chal[6] ? ` · 분노 ${chal[6]}` : ""}` : `중간보스 · ${def.name}`);
     $("#dim-boss-fill").style.width = `${Math.max(0, Math.min(100, (100 * m.hp) / max))}%`;
   } else if (!bar.hidden) bar.hidden = true;
   // the stagger gauge of a marked cast: empty it with damage before the time runs out
@@ -216,8 +214,7 @@ function renderRc() {
   const left = Math.max(0, rc[1] - Math.floor((now() - st.rcAt) / 1000));
   const me = rc[2].find((r) => r[0] === A.G.you);
   const WORD = ["대기 중", "수락", "거절", "입장 불가"];
-  $("#rc-lv").textContent = rc[6] ? `보스 도전 · ${(chalDef(rc[6] - 1) || [])[1] || "?"} · ${stepWord(rc[6] - 1, rc[7])} · 최대 ${D().party}명`
-    : `${rc[8] ? raidOf(rc[8])?.name || "레이드던전" : "레이드던전"}${difTag(rc[9])} Lv.${4 * rc[3] - 3} · ${floors()}단 레이드 · 최대 ${D().party}명`;
+  $("#rc-lv").textContent = `${raidOf(rc[8])?.name || "레이드"}${difTag(rc[9])} Lv.${4 * rc[3] - 3} · 최대 ${D().party}명`;
   $("#rc-time").textContent = `${left}초`;
   $("#rc-fill").style.width = `${(100 * left) / Math.max(1, D().rcMs / 1000)}%`;
   const rows = rc[2].map(([eid, name, s]) => `<li class="rc-${s}"><span class="rc-mark"></span><b>${esc(name)}</b><em>${WORD[s]}</em></li>`).join("");
@@ -233,16 +230,11 @@ export function bindUi() {
   $("#rc-no").addEventListener("click", () => { if (st.rc) { A.act({ t: "dim_ready", id: st.rc[0], ok: 0 }); A.Sound.play("rc_decline"); } });
   $("#rc-cancel").addEventListener("click", () => { A.act({ t: "dim_cancel" }); A.Sound.play("rc_decline"); });
   $("#dim-open").addEventListener("click", () => { A.act({ t: "dim_open" }); A.Sound.play("raid_enter"); });
-  $("#dim-hanok").addEventListener("click", () => { A.act({ t: "dim_open", hanok: true }); A.Sound.play("raid_enter"); });
   $("#dim-pick").addEventListener("click", (e) => {
     const r = e.target.closest("button[data-a=raid]");
     if (r) { A.act({ t: "dim_open", raid: r.dataset.k, ...(st.dif ? { dif: st.dif } : {}) }); A.Sound.play("raid_enter"); return; }
     const df = e.target.closest("button[data-a=dif]");
-    if (df) { st.dif = +df.dataset.i || 0; renderKeeper(); return; }
-    const b = e.target.closest("button[data-a=boss]");
-    if (!b) return;
-    A.act({ t: "dim_open", boss: b.dataset.k, step: +b.dataset.s || 0 });
-    A.Sound.play("raid_enter");
+    if (df) { st.dif = +df.dataset.i || 0; renderKeeper(); }
   });
   $("#dim-join").addEventListener("click", () => { A.act({ t: "dim_join" }); A.Sound.play("raid_enter"); });
   $("#dim-leave").addEventListener("click", () => {
@@ -255,50 +247,31 @@ export function tick() { if (st.rc && A.isOpen("rc")) renderRc(); frame(); }
 
 // ───────────────────────────── the keeper by the obelisk ─────────────────────────────
 
-/** A raid row of defs().dim.raids by its key (the wire carries the key; an old `1` meant the hanok raid). */
-const raidOf = (k) => (D().raids || []).find((r) => r.k === (k === 1 ? "hanok" : k));
+/** A raid row of defs().dim.raids by its key (the wire carries the key). */
+const raidOf = (k) => (D().raids || []).find((r) => r.k === k);
 export function openKeeper() { A.openWin("dim"); renderKeeper(); }
 function renderKeeper() {
-  const d = D(), s = A.G.self, party = A.G.party || [], dj = st.dj;
+  const d = D(), s = A.G.self, party = A.G.party || [], dj = st.dj, mobs = A.G.defs.mobs || {};
   const lead = !party.length || party[0][0] === A.G.you;
-  const n = floors();
   // the how-to is 도움말 → 레이드던전 (the "?" in the title bar)
-  $("#dim-info").innerHTML = `<b>${n}단 레이드 · 파티 최대 ${d.party}명 · ${Math.round(d.limit / 60000)}분 제한</b>` + (s && s.st ? `<br><span class="dim-n">정화한 균열 ${s.st.dim | 0}번</span>` : "");
-  // the record and the weekly boss challenge
-  const r = (s && s.dimr) || [n, 0, 0, 0, 0, 0], ch = d.chal || { bosses: [] }, lvl = (s && s.lvl) || 0;
-  // dimr[6]: best step + 1 per boss; dimr[7]: this week's rotating boss. Row: [k, name, need, cast, pats, steps, reward bit, rotating]
-  const shown = ch.bosses.map((b, i) => [b, i]).filter(([b, i]) => !b[7] || i === r[7]);
-  const challenges = shown.map(([[k, name, need, cast, , steps, bit, rotating], i]) => {
-    return `<div class="dim-chal"><span>${rotating ? "순환" : "주간"} · <b>${esc(name)}</b>${r[6] && r[6][i] ? ` <em>최고 ${esc((ch.stepNames || [])[r[6][i] - 1] || "")}</em>` : ""}</span>` +
-      // one button a difficulty step: its level, what it adds; greyed under the step's level (the server checks every member)
-      (steps || [[0, need]]).map(([L, min], s) => `<button class="btn small" data-a="boss" data-k="${esc(k)}" data-s="${s}"${!lead || (lvl && lvl < min) ? " disabled" : ""} ` +
-        `title="Lv.${min}부터 · 골드·경험치 Lv.${L} 기준${s && ch.stepR ? ` · 큰 보상 강화석 +${Math.floor(ch.stepR.stone * s)}${Math.floor(ch.stepR.rune * s) ? ` · 룬 +${Math.floor(ch.stepR.rune * s)}` : ""}${Math.floor(ch.stepR.gear * s) ? ` · 장비 +${Math.floor(ch.stepR.gear * s)}` : ""}` : ""} · [${esc(cast)}]을(를) 무력화하세요">${esc((ch.stepNames || [])[s] || "도전")} ${L ? `Lv.${L}` : ""}</button>`).join("") + `</div>`;
-  }).join("") +
-    (shown.length ? `<div class="dim-rw"><b>주간 토벌 보상</b> <em>(보스마다 주 1회 · 월요일 06:00 초기화)</em>` + shown.map(([[, name, , , , , bit, , big], i]) => {
-      const done = r[5] & (bit ?? (1 << i)), [st, ru, ge] = big || [];
-      return `<div class="${done ? "got" : ""}"><b>${esc(name)}</b> 강화석 ${st} · 룬 ${ru} · 장비 ${ge} · 참 상자 <em>${done ? "받음" : "남음"}</em></div>`;
-    }).join("") + (ch.stepR ? `<div><em>난이도 한 단계마다 강화석 +${ch.stepR.stone}</em></div>` : "") + `</div>` : "");
-  // the raids by level (defs().dim.raids): the leader picks one; the server checks every member's level
+  $("#dim-info").innerHTML = `<b>레이드 10종 · 던전 탐험 → 중간보스 → 보스방 · 파티 최대 ${d.party}명 · ${Math.round(d.limit / 60000)}분 제한</b>` + (s && s.st ? `<br><span class="dim-n">클리어한 레이드 ${s.st.dim | 0}번</span>` : "");
+  const r = (s && s.dimr) || [1, 0, 0, 0, 0, 0], lvl = (s && s.lvl) || 0;
   // the difficulty step for the raid picked below (defs().dim.difs: [name, level needed, gold ×, xp ×, extra gear, extra stones]); 헬 has no level window
   const difs = d.difs || [], dif = Math.min(st.dif | 0, Math.max(0, difs.length - 1)), D0 = difs[dif], hell = !!(D0 && D0[1]);
   const difRow = dj || !difs.length ? "" : `<div class="dim-chal dim-dif"><span><b>난이도</b></span>` + difs.map(([name, need, g, x, ge, stn], i) =>
     `<button class="btn small${i === dif ? " gold" : ""}" data-a="dif" data-i="${i}"${need && lvl && lvl < need ? " disabled" : ""} title="${need ? `Lv.${need}부터 · 레이드마다 하루 1회 · 모든 몬스터가 최고 레벨로 · 낮은 확률로 &lt;고대&gt; 장비(아이템 레벨 210) · ` : ""}${i ? `보상 골드 ×${g} · 경험치 ×${x} · 장비 +${ge} · 강화석 +${stn}` : "기본 난이도"}">${esc(name)}</button>`).join("") + `</div>`;
-  const raids = dj ? "" : difRow + (d.raids || []).map((x) => {
-    const ok = !lvl || (hell ? lvl >= D0[1] : lvl >= x.minLv && (!x.maxLv || lvl <= x.maxLv));
-    return `<div class="dim-chal"><span><b>${esc(x.name)}</b> <em>${hell ? `Lv.${D0[1]}+ · 최고 레벨 · 하루 1회` : `Lv.${x.minLv}${x.maxLv ? `~${x.maxLv}` : "+"}`}</em></span>` +
-      `<button class="btn small${ok ? " gold" : ""}" data-a="raid" data-k="${esc(x.k)}"${!lead || !ok ? " disabled" : ""} title="${ok ? (party.length ? "파티 입장 준비" : "혼자 입장") : "레벨이 맞지 않습니다"}">${lead ? "입장" : "파티장만"}</button></div>`;
+  // the ten raids in the order they open (defs().dim.raids): the leader picks one; the server checks every member's level
+  const raids = dj ? "" : difRow + (d.raids || []).map((x, i) => {
+    const ok = !lvl || (hell ? lvl >= D0[1] : lvl >= x.minLv), b = mobs[x.boss];
+    return `<div class="dim-chal"><span>${i + 1}. <b>${esc(x.name)}</b> · ${esc(b ? b.name : "")} <em>${hell ? `Lv.${D0[1]}+ · 최고 레벨 · 하루 1회` : x.maxLv > x.minLv ? `Lv.${x.minLv}~${x.maxLv}` : `Lv.${x.minLv}`}</em></span>` +
+      `<button class="btn small${ok ? " gold" : ""}" data-a="raid" data-k="${esc(x.k)}"${!lead || !ok ? " disabled" : ""} title="${esc(x.floors.join(" · "))}${ok ? (party.length ? " · 파티 입장 준비" : " · 혼자 입장") : " · 레벨이 부족합니다"}">${lead ? "입장" : "파티장만"}</button></div>`;
   }).join("");
-  const pick = dj ? "" : raids + `<div class="dim-rec">최고 기록 ${r[1] >= r[0] ? mmss(r[2]) : r[1] ? `${r[1]}단까지` : "없음"} · 오늘 전체 보상 ${r[3]}번 남음 · 주간 첫 정화 보너스 ${r[4] ? "받음" : "남음"}</div>` +
-    challenges;
+  const pick = dj ? "" : raids + `<div class="dim-rec">최고 기록 ${r[1] >= r[0] ? mmss(r[2]) : "없음"} · 오늘 전체 보상 ${r[3]}번 남음 · 주간 첫 클리어 보너스 ${r[4] ? "받음" : "남음"}</div>`;
   if ($("#dim-pick").dataset.k !== pick) { $("#dim-pick").innerHTML = pick; $("#dim-pick").dataset.k = pick; }
-  $("#dim-hanok").hidden = true;   // the raid list (defs().dim.raids) has every raid
-  $("#dim-hanok").disabled = !lead;
-  $("#dim-open").hidden = !!dj || !!(d.raids && d.raids.length);
-  $("#dim-open").disabled = !lead;
-  $("#dim-open").textContent = party.length ? (lead ? "균열 열기 (파티 입장 준비)" : "파티장만 열 수 있습니다") : "혼자 균열 열기";
+  $("#dim-hanok").hidden = true;
+  $("#dim-open").hidden = true;   // every raid opens from its own row
   $("#dim-join").hidden = !dj;
-  if (dj) $("#dim-join").textContent = dj[5] ? `합류하기 — 보스 도전 · ${(chalDef(dj[5] - 1) || [])[1] || "?"} · ${stepWord(dj[5] - 1, dj[6])} · ${dj[1]}명 · ${mmss(dj[0])}`
-    : `합류하기 — ${dj[7] ? `${raidOf(dj[7])?.name || "달그림자 한옥"}${difTag(dj[8])} · ` : ""}Lv.${4 * dj[3] - 3} · ${dj[4]}/${floors()}단 · ${dj[1]}명 · ${(dj[2] / 10).toFixed(0)}% · ${mmss(dj[0])}`;
+  if (dj) $("#dim-join").textContent = `합류하기 — ${raidOf(dj[7])?.name || "레이드"}${difTag(dj[8])} · Lv.${4 * dj[3] - 3} · ${dj[1]}명 · ${mmss(dj[0])}`;
 }
 
 // ───────────────────────────── the minimap ─────────────────────────────
