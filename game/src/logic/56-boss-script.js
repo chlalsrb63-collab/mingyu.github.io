@@ -11,8 +11,8 @@
 // that phase (queued like a pattern's own follow-ups: f "fan" {off} | "pool" | "charge" | "land" {x, y}); `cast: 1`
 // opens the phase with the marked cast. Pattern kinds: charge fan fan2 fan3 rings pools charge2 leapslam dive blast jet punch,
 // and the shaped ones donut cone mark adds (bosses-2 §8), written `[name, kind, { …BS_PAT[kind] overrides }]`.
-// State `mob.bs` (bsNew; a challenge's boss shares it with `dim.chal`). Events `["bc", id, i]` pattern i, 9 cast, 8 broken,
-// 7 failed ("bc", not "dc": that is the tracker's lure); `["bt", shape, x, y, r, ms, …]` a shaped telegraph (bsShape).
+// State `mob.bs` (bsNew; a challenge's boss shares it with `dim.chal`). Events `["bc", id, i]` pattern i, 10 a new phase
+// (`["bc", id, 10, ph]`), 9 cast, 8 broken, 7 failed ("bc", not "dc": that is the tracker's lure); `["bt", shape, x, y, r, ms, …]` a shaped telegraph (bsShape).
 // Scripted rows: bloodhorn (mesa's lair boss) and clubshrimp (the coast's field boss), 10-tables.js; the weekly raids
 // cloakbat and bloomwhale (DIM_CHAL.bosses, 31-maps-dim.js) — tests/bosses2.mjs. A phase may also carry `blast` (its cast's
 // fail), `rim` {n, r} (slow pools round the arena's rim for the rest of the fight); each phase starts its pattern list from the top.
@@ -21,7 +21,11 @@
 const BOSS_SCRIPT = {
   every: 4, castMs: 6000, stunMs: 5000, stag: 0.03, blast: 2.4, fury: 0.15, gap: 5200, vuln: 0.3,
   enrage: 240000, enrageStep: 10000, enrageK: 0.12, hard: 0, hardEvery: 3000, hardK: 3, reach: 320, diveMs: 1800, diveR: 70, diveK: 2,
+  // × its blows by phase (owner 2026-11-21: phases at 50 % and 25 %); a phase's own `ak` overrides, past the list the last holds
+  phaseK: [1, 1.15, 1.3],
 };
+/** Its blows' phase multiplier. */
+const bsPhaseK = (B, ph) => (ph > 1 && B.phases[ph - 2].ak) || B.phaseK[Math.min(ph, B.phaseK.length) - 1];
 /** The shaped kinds' defaults: `ms` until it lands, reach `r` (a donut is safe inside `r0`), a cone's `half` angle (rad)
  *  and `back` (aimed away from its target; `both`: front and back at once), `k` × atk; `rings` after a donut: the in-then-out
  *  rings at once; a mark on `n` heroes (`share`: its burst split between everyone inside); adds: `n` of `kind` at `d` px,
@@ -45,7 +49,10 @@ function bsDef(mob) {
   const C = DIM_CHAL, own = mob.chal ? C.bosses[mob.k] : MOBS[mob.k].script;
   const pick = mob.chal ? { every: C.every, castMs: C.castMs, stunMs: C.stunMs, stag: C.stag, blast: C.blast, fury: C.fury, gap: C.gap,
     enrage: C.enrage, enrageStep: C.enrageStep, enrageK: C.enrageK, vuln: 0 } : {};
-  return (BS_DEFS[key] = own ? { ...BOSS_SCRIPT, ...pick, phases: [], ...own } : null);
+  if (!own) return (BS_DEFS[key] = null);
+  // a two-phase boss gains a third at 25 %: its second phase again, only harder (phaseK); no second opening cast or rim
+  const ph = own.phases || [], phases = ph.length === 1 ? [ph[0], { ...ph[0], at: 0.25, cast: 0, rim: null }] : ph;
+  return (BS_DEFS[key] = { ...BOSS_SCRIPT, ...pick, ...own, phases });
 }
 /** A fight's state, fresh: turns taken, next pattern, follow-ups, fury, when it began, enrage steps, base blows, phase. */
 const bsNew = (ak) => ({ n: 0, pi: 0, q: [], fury: 0, engAt: 0, rage: 0, ak, ph: 1, force: 0, hard: 0 });
@@ -240,6 +247,7 @@ function bsTick(S, m, rt, mob, folk, alive) {
     const P = B.phases[ph - 2];
     if (P.rim) bsRim(S, rt, mob, P.rim);
     if (P.cast && !mob.cast) { c.force = 1; mob.castAt = Math.min(mob.castAt, now); }
+    rt.ev.push(["bc", mob.id, 10, ph]);   // the client: a roar, a shake and a banner
     for (const o of folk) toast(o, `${d.name}${pp(d.name, "이가")} 더욱 사나워집니다! (${ph}단계)`);
   }
   if (mob.cast) {
@@ -273,7 +281,7 @@ function bsTick(S, m, rt, mob, folk, alive) {
   const over = now - c.engAt - B.enrage, steps = B.enrage && over >= 0 ? 1 + Math.floor(over / B.enrageStep) : 0;
   if (steps && !c.rage) for (const o of folk) toast(o, `${d.name}${pp(d.name, "이가")} 광폭화합니다! 공격이 점점 거세집니다.`);
   c.rage = steps;
-  mob.ak = c.ak * (1 + B.fury * c.fury) * (1 + B.enrageK * steps);
+  mob.ak = c.ak * (1 + B.fury * c.fury) * (1 + B.enrageK * steps) * bsPhaseK(B, c.ph);
   // the hard enrage: past `hard`, `hardK` × atk on everyone in the fight every `hardEvery`
   if (B.hard && now - c.engAt >= B.hard && now >= c.hard) {
     if (!c.hard) for (const o of folk) toast(o, `${d.name}${pp(d.name, "이가")} 모든 것을 끝내려 합니다!`);

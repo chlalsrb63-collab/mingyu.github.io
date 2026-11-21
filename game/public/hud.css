@@ -2369,6 +2369,17 @@ body::before { top: 0; } body::after { bottom: 0; }
 body.talkq::before, body.talkq::after { height: 9vh; }
 @media (prefers-reduced-motion: reduce) { body.talkcam #hud > *, body::before, body::after { transition: none; } }
 
+/* ─────────────────── a boss fight's opening (bossintro.js): wide letterbox, red WARNING, name, epithet ─────────────────── */
+body.bossintro::before, body.bossintro::after { height: 13vh; }
+body.bossintro #hud > * { opacity: 0 !important; pointer-events: none !important; transition: opacity .3s ease-out; }
+#boss-intro { position: fixed; left: 0; right: 0; bottom: 15vh; z-index: 55; text-align: center; pointer-events: none; opacity: 0; transform: translateY(8px); transition: opacity .35s ease-out, transform .35s ease-out; text-shadow: 2px 0 0 #000, -2px 0 0 #000, 0 2px 0 #000, 0 -2px 0 #000; }
+body.bossintro #boss-intro { opacity: 1; transform: none; transition-delay: .25s; }
+#boss-intro .bi-warn { display: inline-block; padding: 2px 18px; font: 700 30px/1.1 var(--pix); letter-spacing: .35em; color: #ff3022; border-top: 2px solid #ff3022; border-bottom: 2px solid #ff3022; animation: bi-blink .6s steps(2, jump-none) infinite; }
+#boss-intro .bi-name { margin-top: 10px; font: 700 34px/1.15 var(--pix); color: #fff3e0; }
+#boss-intro .bi-sub { margin-top: 4px; font: 18px/1.2 var(--pix); color: #ffb0a0; }
+@keyframes bi-blink { 50% { color: #8a1008; border-color: #8a1008; } }
+@media (prefers-reduced-motion: reduce) { #boss-intro, #boss-intro .bi-warn { transition: none; animation: none; } }
+
 /* ─────────────────── talk window, visual-novel style (talkui.js): wide box low-centre, portrait beside the text ─────────────────── */
 #w-talk { left: 50% !important; top: auto !important; bottom: 5vh; transform: translateX(-50%); width: clamp(560px, 66vw, 1180px) !important; max-width: 97vw; max-height: 56vh !important; z-index: 60; }
 #w-talk > header { padding: 4px 10px; }

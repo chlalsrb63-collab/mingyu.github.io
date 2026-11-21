@@ -120,6 +120,15 @@ export function onEvent(e, t) {
     if (G.me && dist(G.me.x, G.me.y, x, y) < 180) Sound.play("thunder");
     return;
   }
+  // a scripted boss's new phase (56-boss-script.js ["bc", id, 10, phase]): a roar, a shake and flash, a banner
+  if (e[0] === "bc" && e[2] === 10) {
+    const m = G.mobs.get(e[1]), d = m && G.defs.mobs[m.k];
+    if (m && d && G.me && dist(G.me.x, G.me.y, m.x, m.y) < 420) {
+      S3.fx.ring(m.x, m.y, 110, "#ff3a2a", 520, true); S3.fx.burst(m.x, m.y, 0.8, "#ffd0a0", 24, 2.4); S3.shake(9);
+      Sound.play("boss_enrage"); banner(`${d.name} ${e[3]}단계 — 더욱 사나워집니다!`, true);
+    }
+    return;
+  }
   if (SkillFx.skillEvent(e, { G, S3, Sound, entityPos, heightOf, t })) return;
   if (Dim.onEvent(e)) return;
   if (Housing.onEvent(e)) return;
@@ -229,6 +238,8 @@ export function onEvent(e, t) {
         G.gone.delete(e[1]);
         const d = G.defs.mobs[m.k], col = MOB_COL[m.k] || MOB_COL[d?.sp] || "#fff";
         S3.fx.mobDeath(m.x, m.y, heightOf(m), col, m.el | 0, !!d?.boss);
+        // a boss's killing blow: the scene holds still ~100 ms (client.js frame) and shakes; 설정 → 보스 연출 turns it off
+        if (d?.boss && G.bossFx && G.me && dist(G.me.x, G.me.y, m.x, m.y) < 420) { G.stopAt = t; G.stopUntil = t + 100; S3.shake(10); }
         Sound.play(d?.boss ? "die_boss" : m.el ? "die_big" : "die_small", mobBody(m.k));
         G.mobs.delete(e[1]);
       }

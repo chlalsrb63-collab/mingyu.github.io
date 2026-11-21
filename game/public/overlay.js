@@ -19,6 +19,7 @@ import * as Dim from "./dimrift.js";
 import * as Housing from "./housing.js";
 import { G, T, dpr, tg, text, $ } from "./state.js";
 import * as TalkCam from "./talkcam.js";
+import * as BossIntro from "./bossintro.js";
 import * as Intro from "./intro.js";
 import { entityPos } from "./wire.js";
 import { mobMax, DUNGEONS, RANK_NAME } from "./events.js";
@@ -62,7 +63,7 @@ function questMark(mk, sx, sy, t) {
 export function render(t, dt) {
   if (!G.map) return;
   S3.sync(G, dt, t);
-  const [fx, fy] = Intro.isCamActive() ? Intro.cameraTick(dt, t) : TalkCam.tick(dt);
+  const [fx, fy] = Intro.isCamActive() ? Intro.cameraTick(dt, t) : BossIntro.active(t) ? BossIntro.tick(dt, t) : TalkCam.tick(dt);
   S3.render(fx, fy, dt, t, G.snapCam || Intro.snapping());
   G.snapCam = false;
   Dim.tick();

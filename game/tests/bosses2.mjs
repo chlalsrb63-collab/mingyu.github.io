@@ -83,8 +83,8 @@ evs = [];
 allPats(rt, mob, X.MOBS.bloodhorn.script.pats.length, "bloodhorn P1");
 assert.ok(evs.some((e) => e[0] === "bt" && e[1] === 1), "the tail sweep is a cone");
 assert.ok(rt.pools.length || evs.some((e) => e[0] === "g"), "the blood jet leaves burn pools");
-// under 60 %: phase 2 opens with the marked cast, then crystals sprout
-mob.hp = Math.floor(X.mobMax(mob) * 0.59); mob.cast = null; evs = [];
+// under 50 %: phase 2 opens with the marked cast, then crystals sprout
+mob.hp = Math.floor(X.mobMax(mob) * 0.49); mob.cast = null; evs = [];
 step(rt, mob, 2);
 assert.equal(mob.bs.ph, 2);
 while (!turns(mob).includes(9)) step(rt, mob);
@@ -195,14 +195,14 @@ function rewards(F, k, piece, weapons) {
   assert.deepEqual(X.CHAL_KEYS.slice(0, 4), ["boss", "abyssboss", "cloakbat", "bloomwhale"], "fixed challenges keep their weekly reward bits");
   const F = scripted("cloakbat", 25), { W, ps, rt, mob, max, B } = F;
   assert.ok(F.ev().some((e) => e[0] === "bt" && e[1] === 1 && e[7] === 1309), "장막 휘감기: a 150° cone");
-  // 비행 under 70 %: the shared mark, bats that feed it
-  mob.hp = Math.floor(max * 0.69); mob.cast = null; F.clear(); F.tick(2);
+  // 비행 under 50 %: the shared mark, bats that feed it
+  mob.hp = Math.floor(max * 0.49); mob.cast = null; F.clear(); F.tick(2);
   assert.equal(mob.bs.ph, 2);
   F.allPats(B.phases[0].pats.length, "cloakbat P2");
   const bats = rt.mobs.filter((a) => a.add === mob.id && !a.dead);
   assert.ok(bats.length >= 1 && bats.length <= 4 && bats.every((a) => a.k === "nightbat"), "its bats, four at most");
   assert.ok(F.ev().some((e) => e[0] === "bt" && e[1] === 2), "the blood mark is drawn");
-  const hp0 = mob.hp = Math.floor(max * 0.5); bats[0].feedAt = W.now;
+  const hp0 = mob.hp = Math.floor(max * 0.4); bats[0].feedAt = W.now;
   F.tick();
   assert.ok(bats[0].dead && mob.hp >= hp0 + Math.round(0.02 * max) - 1 && F.turns().includes(6), "a bat still alive after 20 s heals it 2 %");
   // the shared mark: split between everyone inside — stack on the marked hero
@@ -212,8 +212,8 @@ function rewards(F, k, piece, weapons) {
   };
   const alone = share(1), four = share(4);
   assert.ok(alone > 0 && four < alone * 0.5, `four share it: ${four} each, ${alone} alone`);
-  // 장막 붕괴 under 35 %: pools round the rim for good, two cones at once
-  mob.hp = Math.floor(max * 0.34); mob.cast = null; F.clear(); F.tick(2);
+  // 장막 붕괴 under 25 %: pools round the rim for good, two cones at once
+  mob.hp = Math.floor(max * 0.24); mob.cast = null; F.clear(); F.tick(2);
   assert.equal(mob.bs.ph, 3);
   assert.ok(rt.pools.filter((p) => p.until - W.now > 500000).length >= 8, "the rim's pools");
   F.allPats(B.phases[1].pats.length, "cloakbat P3");
@@ -236,7 +236,7 @@ function rewards(F, k, piece, weapons) {
   F.clear(); while (!F.ev().some((e) => e[0] === "bt" && e[1] === 0)) F.tick();
   const tr = F.ev().filter((e) => e[0] === "t").length; F.tick(17);
   assert.ok(F.ev().filter((e) => e[0] === "t").length >= tr + 5, "the rings follow the donut");
-  // under 65 %: the song first, then the hagfish heads that shield it
+  // under 75 %: the song first, then the hagfish heads that shield it
   mob.hp = Math.floor(max * 0.64); mob.cast = null; F.clear(); F.tick(2);
   assert.equal(mob.bs.ph, 2);
   F.breakCast();

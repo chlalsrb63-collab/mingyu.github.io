@@ -84,11 +84,14 @@ mob.stag = mob.stun = 0; mob.castAt = now;
 mob.hp = Math.round(max * 0.45);
 step();
 assert.equal(mob.bs.ph, 2); assert.equal(row()[10], 2, "phase 2 on the wire");
+assert.ok(evs.some((e) => e[0] === "bc" && e[1] === mob.id && e[2] === 10 && e[3] === 2), "the new phase is an event (the client's roar)");
+const pk = B.phaseK[1];
+assert.equal(pk, 1.15); assert.deepEqual(B.phases.map((P) => P.at), [0.5, 0.25], "a two-phase script gains a third at 25 %");
 while (!mob.cast) step();
 const n0 = dcs().length;
 while (mob.cast) step();
 assert.deepEqual(dcs().slice(n0), [7], "the cast went off");
-assert.equal(mob.bs.fury, 1); assert.ok(Math.abs(mob.ak - mob.bs.ak * (1 + B.fury)) < 1e-9, "angrier");
+assert.equal(mob.bs.fury, 1); assert.ok(Math.abs(mob.ak - mob.bs.ak * (1 + B.fury) * pk) < 1e-9, "angrier, and phase 2 hits 15 % harder");
 // phase 2's own pattern list and its extra step: a dive, and a puddle after it
 const g0 = evs.filter((e) => e[0] === "g").length;
 while (!mob.dive) step();
@@ -100,11 +103,15 @@ mob.hp = Math.round(max * 0.8); step();
 assert.equal(mob.bs.ph, 2, "a phase never goes back while the fight lasts");
 // the soft enrage, then the hard one
 mob.bs.engAt = now - B.enrage - B.enrageStep - 50; step();
-assert.equal(mob.bs.rage, 2); assert.ok(Math.abs(mob.ak - mob.bs.ak * (1 + B.fury) * (1 + 2 * B.enrageK)) < 1e-9, "soft enrage: blows grow");
+assert.equal(mob.bs.rage, 2); assert.ok(Math.abs(mob.ak - mob.bs.ak * (1 + B.fury) * (1 + 2 * B.enrageK) * pk) < 1e-9, "soft enrage: blows grow");
 mob.cast = null; mob.bs.engAt = now - B.hard - 50; p.hp = 1e7;
 let hit = false;
 for (let i = 0; i < 3; i++) { now += 100; S.now = now; L.tick(S, now); if (p.hp < 1e7) hit = true; L.endTick(S); p.x = spot[0]; p.y = spot[1]; }
 assert.ok(hit && mob.bs.hard > now, "hard enrage: a blow on everyone in the fight");
+// under a quarter: phase 3 (the second again), its blows ×1.3
+mob.hp = Math.round(max * 0.2); step();
+assert.equal(mob.bs.ph, 3); assert.ok(evs.some((e) => e[0] === "bc" && e[1] === mob.id && e[2] === 10 && e[3] === 3), "phase 3 on the wire");
+assert.ok(Math.abs(mob.ak - mob.bs.ak * (1 + B.fury * mob.bs.fury) * (1 + mob.bs.rage * B.enrageK) * B.phaseK[2]) < 1e-9 && B.phaseK[2] === 1.3, "phase 3 hits 30 % harder");
 // it gives up and walks home: the fight is forgotten
 mob.tgt = null; mob.st = 2; p.x = spot[0] + 3000;
 const ak = mob.bs.ak;

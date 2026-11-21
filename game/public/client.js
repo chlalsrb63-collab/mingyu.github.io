@@ -136,13 +136,14 @@ function frame() {
   const dt = Math.min(0.05, (t - last) / 1000);
   last = t;
   if (G.playing) {
-    update(dt, t);
+    const hold = t < (G.stopUntil || 0);         // a boss's death blow: the scene stands still (events.js "k")
+    if (!hold) update(dt, t);
     Gather.tick(t);
     Coop.tick(t);
     Alba.tick(t);                                // the 일일 아르바이트 window's clock and stage (alba.js)
     Guide.tick();                                // a <Guide> tip in the chat when one is due (guide.js)
     PMenu.tick(t); SX.tick(t);
-    render(t, dt);
+    render(hold ? G.stopAt : t, hold ? 0 : dt);
     Radar.draw(t);
     Radar.drawWin(t);
     hudTick(t);
