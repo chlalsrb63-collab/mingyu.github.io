@@ -1,4 +1,4 @@
-// Regional weekly boss roster, entry validation, and rewards at the weekly reset.
+// Regional weekly boss roster and its weekly reset (the tables). The challenge entry itself is gone: the bosses are raids now (tests/raids.mjs).
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
@@ -45,89 +45,11 @@ function hero(S, id = "leader") {
   L.addPlayer(S, id, ch);
   return S.players[id];
 }
-
-const open = (boss) => ({ t: "dim_open", boss });
-
-function act(S, p, action) {
-  const result = L.validateAction(S, p.pid, action);
-  if (result.ok) L.applyAction(S, p.pid, action);
-  return result;
-}
-
-function snap(S, p, now) {
-  L.tick(S, now);
-  const view = L.viewFor(S, p.pid);
-  L.endTick(S);
-  return view;
-}
-
-function enter(S, p, key) {
-  const result = act(S, p, open(key));
-  assert.ok(result.ok, result.error);
-  const dim = S.dims[p.map];
-  assert.equal(dim?.chal.k, key);
-  assert.equal(dim.map.dim.bossK, key);
-  return dim;
-}
-
-function defeat(S, p, dim, big) {
-  const boss = dim.rt.mobs.find((m) => m.id === dim.boss);
-  assert.equal(boss?.k, dim.chal.k);
-  // Use the damage path and the regular chest tick; no synthetic carry or reward flags.
-  p.x = boss.x;
-  p.y = boss.y;
-  assert.ok(dealMob(S, dim.rt, boss, p, Math.ceil(boss.hp * boss.hk), 0));
-  assert.equal(dim.state, "clear");
-  const { dr } = snap(S, p, S.now + 100);
-  assert.deepEqual(dr.slice(0, 2), [1, CHAL_KEYS.indexOf(boss.k)]);
-  assert.equal(dr[3] & 8, big ? 8 : 0);
-  const def = DIM_CHAL.bosses[boss.k];
-  const reward = big ? (def.rotation ? DIM_CHAL.rotationBig : def.big || DIM_CHAL.big) : DIM_CHAL.small;
-  assert.equal(dr[4], reward.gold * dim.lv);
-  assert.equal(act(S, p, { t: "dim_leave" }).ok, true);
-}
-
 {
-  const S = world(MONDAY - 60_000), p = hero(S);
-  assert.equal(snap(S, p, S.now + 10).self.dimr[7], CHAL_KEYS.indexOf(activeBefore));
-  for (const key of FIXED) assert.ok(L.validateAction(S, p.pid, open(key)).ok, `${key} stays available`);
-  for (const key of ROTATION.filter((key) => key !== activeBefore)) {
-    assert.equal(act(S, p, open(key)).ok, false, `${key} is outside this week's rotation`);
-  }
-  assert.equal(Object.keys(S.dims).length, 0);
-  defeat(S, p, enter(S, p, FIXED[0]), true);
-  assert.equal(p.ch.dim.bw, 1);
-  defeat(S, p, enter(S, p, activeBefore), true);
-  assert.equal(p.ch.dim.bw, 1 | ROTATION_BIT, "regional clear leaves the original boss flag intact");
-  defeat(S, p, enter(S, p, activeBefore), false);
-  assert.equal(p.ch.dim.bw, 1 | ROTATION_BIT, "a regional repeat earns only the small chest");
+  const S = world(MONDAY), p = hero(S);
+  L.tick(S, S.now);
+  const v = L.validateAction(S, p.pid, { t: "dim_open", boss: CHAL_KEYS[0] });
+  assert.ok(!v.ok && /레이드/.test(v.error), "the old challenge entry points to the raids");
 }
 
-{
-  const S = world(MONDAY - 1000), p = hero(S);
-  const dim = enter(S, p, activeBefore);
-  assert.equal(snap(S, p, S.now + 10).self.dimr[7], CHAL_KEYS.indexOf(activeBefore));
-  assert.deepEqual(snap(S, p, MONDAY).self.dimr.filter((_, i) => i === 4 || i === 5 || i === 7), [0, 0, CHAL_KEYS.indexOf(activeAfter)]);
-  assert.equal(S.dims[p.map]?.chal.k, activeBefore, "an existing arena survives the rotation");
-  defeat(S, p, dim, false);
-  assert.equal(p.ch.dim.bw, 0, "the previous week's arena cannot spend the new week's allowance");
-  assert.equal(act(S, p, open(activeBefore)).ok, false, "new entries use the new selection");
-  defeat(S, p, enter(S, p, activeAfter), true);
-  assert.equal(p.ch.dim.bw, ROTATION_BIT);
-}
-
-{
-  const S = world(MONDAY - 1000), p = hero(S), other = hero(S, "member");
-  assert.ok(act(S, p, { t: "pinv", e: other.eid }).ok);
-  assert.ok(act(S, other, { t: "pacc" }).ok);
-  assert.ok(act(S, p, open(activeBefore)).ok);
-  const pending = S.parties[p.party].rc;
-  assert.ok(pending);
-  snap(S, p, MONDAY);
-  assert.equal(act(S, other, { t: "dim_ready", id: pending.id, ok: 1 }).ok, false);
-  assert.equal(p.map, "town");
-  assert.equal(other.map, "town");
-  assert.equal(Object.keys(S.dims).length, 0, "an unanswered old invitation cannot open an arena after reset");
-}
-
-console.log("regional bosses ok — roster, weekly reset, entry and chest eligibility");
+console.log("regional bosses ok — roster, weekly reset, the old entry refused");

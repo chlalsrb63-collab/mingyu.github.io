@@ -114,15 +114,43 @@ const FIELD_RAIDS = {
     { name: "얼음 왕릉 앞", style: "arena", look: "maple_tomb", rooms: [16, 19], loops: [4, 8], packs: 1.1 },
   ] },
 };
-/** Every raid, in display order: `under` (the four underground themes), `hanok`, then the four field raids. `maxLv` 0: no ceiling. */
-const RAID = {
-  under: { name: "차원의 균열", minLv: 37, maxLv: 0, floors: DIM_FLOORS },
-  hanok: { name: "달그림자 한옥", minLv: 37, maxLv: 0, floors: HANOK_FLOORS, master: "jaemaei" },
-  ...Object.fromEntries(Object.entries(FIELD_RAIDS).map(([k, r]) => [k, { ...r, field: 1 }])),
+/**
+ * The floor plans a raid's single floor may take (owner 2026-11-21: one floor, its mid-boss, then the boss's own room), one
+ * picked from the run's seed: the underground looks (DIM_FLOORS' layouts), the hanok halls and the field looks above.
+ */
+const RAID_ROWS = {
+  crypt: { ...DIM_FLOORS[0], themes: ["crypt"] },
+  sewer: { ...DIM_FLOORS[0], name: "오수 회랑", themes: ["sewer"] },
+  cave: DIM_FLOORS[1],
+  abyss: DIM_FLOORS[2],
+  ...Object.fromEntries(HANOK_FLOORS.map((r, i) => ["hanok" + (i + 1), { ...r, hanok: 1 }])),
+  ...Object.fromEntries(Object.values(FIELD_RAIDS).flatMap((R) => R.floors.map((r) => [r.look, r]))),
 };
-const dimRaidKey = (k) => (typeof k === "string" && Object.hasOwn(RAID, k) ? k : "under");
-/** Floor `floor`'s name in `raid` (an old caller's `true` is the hanok raid). */
-const dimFloorName = (floor, raid) => RAID[dimRaidKey(raid === true ? "hanok" : raid)].floors[clamp(floor | 0, 1, DIM.floors) - 1].name;
+/**
+ * The ten raids (owner 2026-11-21: the raids and the boss challenges are one content), in the order they open. Each is one
+ * of the boss challenge's bosses (DIM_CHAL.bosses: its patterns and phases, 56-boss-script.js), fought in its own room
+ * (dimArena) behind a procedural floor of one of its `looks` (RAID_ROWS) and that floor's mid-boss (dimBuild: the look's field
+ * boss near the level, else its toughest kind; `master` names one). 보통 is made for the hero's level inside `minLv`–`maxLv`
+ * (a hero past it gets the ceiling); 헬 for Lv.200+ whatever the raid (RAID_DIF).
+ */
+const RAID = {
+  wickregent: { name: "밀랍 지하묘", minLv: 20, maxLv: 40, looks: ["crypt", "sewer"] },
+  knotwidow: { name: "등불매듭 숲", minLv: 40, maxLv: 60, looks: ["forest_gorge", "forest_bog"] },
+  knellkeeper: { name: "달그림자 한옥", minLv: 60, maxLv: 80, looks: ["hanok1", "hanok2", "hanok3"], master: "jaemaei" },
+  loomcolossus: { name: "모래 직조탑", minLv: 80, maxLv: 100, looks: ["oasis_ruin", "oasis_dunes"] },
+  sluiceleviathan: { name: "난파 배수만", minLv: 100, maxLv: 120, looks: ["coast_wreck", "coast_reef"] },
+  prismcantor: { name: "공명 수정굴", minLv: 120, maxLv: 140, looks: ["cave", "oasis_palm"] },
+  boss: { name: "균열 군주의 왕도", minLv: 140, maxLv: 160, looks: ["maple_gate", "maple_trail"] },
+  abyssboss: { name: "핏빛 심연", minLv: 160, maxLv: 180, looks: ["abyss", "forest_temple"] },
+  cloakbat: { name: "밤장막 왕릉", minLv: 180, maxLv: 200, looks: ["maple_tomb", "crypt"] },
+  bloomwhale: { name: "꽃무덤 해구", minLv: 200, maxLv: 200, looks: ["coast_reef", "coast_beach", "cave"] },
+};
+const RAID_KEYS = Object.keys(RAID);
+const dimRaidKey = (k) => (typeof k === "string" && Object.hasOwn(RAID, k) ? k : RAID_KEYS[0]);
+/** The floor plan of a run of `raid` from its seed. */
+const dimRow = (raid, seed) => { const L = RAID[dimRaidKey(raid)].looks; return RAID_ROWS[L[((seed >>> 3) >>> 0) % L.length]]; };
+/** The world tier a run of `raid` is made for: the best hero's, kept inside the raid's window. */
+const dimRaidLv = (raid, tier) => { const R = RAID[dimRaidKey(raid)], lo = Math.floor(toTier(R.minLv)); return clamp(tier, lo, Math.max(lo, Math.floor(toTier(R.maxLv)))); };
 /**
  * Difficulty steps of every raid (owner 2026-11-21). 보통 is the raid as tuned; 어려움 and 악몽 keep the raid's own levels
  * but want strong gear for them; 헬 (Lv.200+, any raid, no level window) scales every monster to the world's top
@@ -138,13 +166,9 @@ const RAID_DIF = [
   { name: "헬", hp: 2.5, atk: 1.8, gold: 3.5, xp: 2.5, gear: 3, stone: 6, hell: 1, ancient: 0.04 },
 ];
 const dimDif = (d) => (Number.isInteger(d) ? clamp(d, 0, RAID_DIF.length - 1) : 0);
-/** Why a hero of shown level `lv` may not go into a raid at difficulty `dif` ("" when they may): 헬 wants Lv.200; else a field raid's window (the first two bar nobody: the level is clamped up). */
+/** Why a hero of shown level `lv` may not go into a raid at difficulty `dif` ("" when they may): 헬 wants Lv.200; else the raid's own floor. */
 const dimRaidBar = (raid, lv, dif = 0) => {
   if (RAID_DIF[dimDif(dif)].hell) return lv < RAID_HELL_LV ? `헬 난이도는 Lv.${RAID_HELL_LV}부터 들어갈 수 있습니다.` : "";
   const R = RAID[dimRaidKey(raid)];
-  return R.field && (lv < R.minLv || lv > R.maxLv) ? `이 레이드는 Lv.${R.minLv}~${R.maxLv} 파티만 들어갈 수 있습니다.` : "";
+  return lv < R.minLv ? `[${R.name}]은 Lv.${R.minLv}부터 들어갈 수 있습니다.` : "";
 };
-/** A raid's toughness scale (RAID `hk`, default 1): the forest's low band (Lv.37–60) is the underground raid's steepest hp ramp, so it is eased to keep the 10-minute pace (bots: 8.2–14.4 min at 1, see tests/dimrift.mjs). */
-const dimRaidHk = (raid) => RAID[dimRaidKey(raid)].hk || 1;
-/** A raid's final-boss scale `[hp, atk]` (RAID `boss`, default [1, 1]): the maple raid's master is the Lv.46 field boss across a Lv.155–200 window, so it is raised to its band (owner 2026-11-18; bots: boss fight ≈1 min → ≈2, like the other raids). */
-const dimRaidBoss = (raid) => RAID[dimRaidKey(raid)].boss || [1, 1];
