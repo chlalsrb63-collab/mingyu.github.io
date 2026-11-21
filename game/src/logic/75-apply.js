@@ -14,9 +14,9 @@ export function applyAction(S, pid, a) {
   const ch = p.ch;
   const now = S.now;
   const m = mapOfS(p.S, p.map);
-  switch (a.t) {
-    case "buddy": buddyApply(S, p, a); break;
-    case "mingyutest": devTestApply(S, p, a); break;
+  const h = Object.hasOwn(ACTIONS, a.t) ? ACTIONS[a.t] : null;
+  if (h) h.run(S, p, a);
+  else switch (a.t) {
     case "nw": p.npcWhereAt = now + 5000; p.npcWhere = true; break;
     case "mv": {
       if (p.dance || p.ab || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; break; }
@@ -296,9 +296,6 @@ export function applyAction(S, pid, a) {
       if (p.sit) p.sit = false;
       else { rouse(S, p); sitDown(S, p); fieldFire(S, p, now); }
       break;
-    case "camp":
-      campApply(S, p, a);
-      break;
     case "fish": {
       rouse(S, p);
       const [wx, wy] = waterNear(m, p);
@@ -385,7 +382,6 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
-    case "sq": sqApply(S, p, a); break;
     case "quest": {
       const quest = QUESTS[ch.q.i];
       tutStep(S, p, "talk");
@@ -611,12 +607,6 @@ export function applyAction(S, pid, a) {
       leaveParty(S, p);
       toast(p, "파티를 떠났습니다.");
       break;
-    // ── 레이드던전 (64-dim.js)
-    case "dim_open": case "dim_ready": case "dim_cancel": case "dim_leave": case "dim_join": dimApply(S, p, a); break;
-    // ── the bag's size and housing (46-bag.js, 64-housing.js)
-    case "bag_expand": bagApply(S, p, a); break;
-    case "house_buy": case "house_upgrade": case "house_style": case "house_visit": case "house_leave":
-    case "furn_buy": case "furn_place": case "furn_rot": case "furn_pick": case "h_dep": case "h_wd": case "h_sort": case "h_rest": homeApply(S, p, a); break;
     // ── jobs and stats (45-jobs.js)
     case "respec": {
       const fee = statResetCost(ch);
@@ -660,12 +650,6 @@ export function applyAction(S, pid, a) {
       checkAch(S, p);
       break;
     }
-    // life skills L2 (58-life.js): gathering, the stations, the 알바 board
-    case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": lifeApply(S, p, a); break;
-    // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
-    case "blk": case "w": case "wk": socialApply(S, p, a); break;
-    case "job_reset": case "lv_reset": case "lo": jfApply(S, p, a); break;
-    case "ske": skeApply(S, p, a); break;
     case "wsw": {
       // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops. Anyone else: as a re-equip.
       const was = inHand(ch);
@@ -677,18 +661,6 @@ export function applyAction(S, pid, a) {
       S.maps[p.map].ev.push(["ws", p.eid]);
       break;
     }
-    // charms (66-charms.js)
-    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": case "charm_preset": case "charm_fuse": charmApply(S, p, a); break;
-    // enchant scrolls, extraction hammer & rune fusion/extraction (65-enchant.js, ITM-02 / ITM-08)
-    case "enc_apply": case "enc_extract": case "enc_craft": case "rune_fuse": case "rune_extract": encApply(S, p, a); break;
-    // 협동 아르바이트 (68-coop.js)
-    case "coop_start": case "coop_act": case "coop_leave": coopApply(S, p, a); break;
-    case "ab_start": case "ab_act": case "ab_leave": case "ab_close": albaApply(S, p, a); break;
-    case "rest": restApply(S, p, a); break;
-    case "fair_buy": fairApply(S, p, a); break;
-    case "fair_open": case "fair_shop": fairMktApply(S, p, a); break;
-    // player to player: requests, trade, mini-games (69-social-play.js)
-    case "sx": sxApply(S, p, a); break;
   }
   if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;

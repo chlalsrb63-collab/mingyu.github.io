@@ -25957,11 +25957,9 @@ export function validateAction(S, pid, a) {
   if (cg) return bad(cg);
   // a 일일 아르바이트 shift (66-alba.js): the hero stays at the counter
   if (p.ab && !a.t.startsWith("ab_") && !ALBA_OK.has(a.t)) return bad("아르바이트 중에는 할 수 없습니다");
+  const h = Object.hasOwn(ACTIONS, a.t) ? ACTIONS[a.t] : null;
+  if (h) return !h.down && p.dead ? bad("쓰러진 상태입니다") : h.check(S, p, a);
   switch (a.t) {
-    case "buddy": return buddyValidate(S, p, a);
-    case "mingyutest": return devTestValidate(S, p, a);
-    case "ab_start": case "ab_act": case "ab_leave": case "ab_close": return albaValidate(S, p, a);
-    case "rest": return restValidate(S, p, a);
     case "nw": return p.npcWhereAt === undefined || now >= p.npcWhereAt ? OK : bad("잠시 뒤 주민 위치를 다시 확인하세요");
     case "respawn":
       if (!p.dead) return bad("살아 있습니다");
@@ -26121,9 +26119,6 @@ export function validateAction(S, pid, a) {
       if (a.s === "talk" && !npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
       return OK;
     }
-    case "camp":
-      if (p.dead) return bad("쓰러진 상태입니다");
-      return campValidate(S, p, a);
   }
   if (p.dead) return bad("쓰러진 상태입니다");
   switch (a.t) {
@@ -26374,7 +26369,6 @@ export function validateAction(S, pid, a) {
       if (a.a === "done") return ch.bq && ch.bq.n >= ch.bq.need ? OK : bad("아직 의뢰를 마치지 못했습니다");
       return bad("잘못된 요청입니다");
     }
-    case "sq": return sqValidate(S, p, a);
     case "quest": {
       if (!npcNear(p, "elder")) return bad("관리자가 너무 멉니다");
       const quest = QUESTS[ch.q.i];
@@ -26392,12 +26386,6 @@ export function validateAction(S, pid, a) {
       }
       return bad("잘못된 요청입니다");
     }
-    // ── 레이드던전 (64-dim.js): open, answer the ready check, cancel it, leave, join again
-    case "dim_open": case "dim_ready": case "dim_cancel": case "dim_leave": case "dim_join": return dimValidate(S, p, a);
-    // ── the bag's size and housing (46-bag.js, 64-housing.js)
-    case "bag_expand": return bagValidate(S, p, a);
-    case "house_buy": case "house_upgrade": case "house_style": case "house_visit": case "house_leave":
-    case "furn_buy": case "furn_place": case "furn_rot": case "furn_pick": case "h_dep": case "h_wd": case "h_sort": case "h_rest": return homeValidate(S, p, a);
     // ── jobs and stats (45-jobs.js): reset, the starter weapon, a job, a hybrid's swap
     case "respec": {
       if (p.dead) return bad("쓰러진 상태입니다");
@@ -26424,34 +26412,48 @@ export function validateAction(S, pid, a) {
       if (!ch.jobs[a.j] && ch.gold < JOBS[a.j].cost) return bad("골드가 부족합니다");
       return OK;
     }
-    case "job_reset": case "lv_reset": case "lo": return jfValidate(S, p, a);
-    case "ske": return skeValidate(S, p, a);
     case "wsw": {
       if (p.dead || p.fish) return bad("지금은 무기를 바꿀 수 없습니다");
       if (!ch.eq.weapon2) return bad("Ⅱ에 장착한 무기가 없습니다");
       if (now < (p.wswAt || 0)) return bad("wsw");
       return OK;
     }
-    // life skills L2 (58-life.js): gathering, the stations, the 알바 board
-    case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": return lifeValidate(S, p, a);
-    // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
-    case "blk": case "w": case "wk": return socialValidate(S, p, a);
-    // charms (66-charms.js): 주아나's quests, appraisal, the board, presets, fusion
-    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": case "charm_preset": case "charm_fuse": return charmValidate(S, p, a);
-    // enchant scrolls, extraction hammer & rune fusion/extraction (65-enchant.js, ITM-02 / ITM-08)
-    case "enc_apply": case "enc_extract": case "enc_craft": case "rune_fuse": case "rune_extract": return encValidate(S, p, a);
-    // 협동 아르바이트 (68-coop.js)
-    case "coop_start": case "coop_act": case "coop_leave": return coopValidate(S, p, a);
-    case "fair_buy": return fairValidate(S, p, a);
-    // the 장날 merchants (64-fair-market.js)
-    case "fair_open": case "fair_shop": return fairMktValidate(S, p, a);
-    // player to player: requests, trade, mini-games (69-social-play.js)
-    case "sx": return sxValidate(S, p, a);
     default:
       return bad("알 수 없는 행동");
   }
 }
 
+// ───────────────────────────── the action table ─────────────────────────────
+// One row per action `t`, its check and its mutation side by side:
+//   check(S, p, a) → OK or bad(…)   asked by validateAction (70-validate.js) after its shared guards
+//   run(S, p, a)                     done by applyAction (75-apply.js) once the check said OK
+// A row with `down: true` may be asked while the hero is down; any other row is refused first with
+// "쓰러진 상태입니다". A name missing here is "알 수 없는 행동".
+const ACTIONS = {
+};
+
+// Whole systems keep their check and mutation in their own part; these names go straight to them.
+for (const [names, check, run, down] of [
+  ["buddy", buddyValidate, buddyApply, true],                 // 69-buddy.js
+  ["mingyutest", devTestValidate, devTestApply, true],        // 74-dev-test.js
+  ["ab_start ab_act ab_leave ab_close", albaValidate, albaApply, true],   // 일일 아르바이트 (66-alba.js)
+  ["rest", restValidate, restApply, true],                    // 69-rest.js
+  ["camp", campValidate, campApply],                          // 62-daynight.js
+  ["sq", sqValidate, sqApply],                                // 62-side-quests.js
+  ["dim_open dim_ready dim_cancel dim_leave dim_join", dimValidate, dimApply],   // 레이드던전 (64-dim.js)
+  ["bag_expand", bagValidate, bagApply],                      // 46-bag.js
+  ["house_buy house_upgrade house_style house_visit house_leave furn_buy furn_place furn_rot furn_pick h_dep h_wd h_sort h_rest", homeValidate, homeApply],   // 64-housing.js
+  ["job_reset lv_reset lo", jfValidate, jfApply],             // 47-job-freedom.js
+  ["ske", skeValidate, skeApply],                             // 48-skill-enh.js
+  ["gat gat_tap craft_open craft jb", lifeValidate, lifeApply],   // life skills L2 (58-life.js): gathering, the stations, the 알바 board
+  ["blk w wk", socialValidate, socialApply],                  // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
+  ["charm_quest charm_id charm_place charm_move charm_remove charm_expand charm_claim charm_destroy charm_preset charm_fuse", charmValidate, charmApply],   // 66-charms.js
+  ["enc_apply enc_extract enc_craft rune_fuse rune_extract", encValidate, encApply],   // enchant scrolls, extraction hammer, rune fusion (65-enchant.js)
+  ["coop_start coop_act coop_leave", coopValidate, coopApply],   // 협동 아르바이트 (68-coop.js)
+  ["fair_buy", fairValidate, fairApply],                      // 63-festival.js
+  ["fair_open fair_shop", fairMktValidate, fairMktApply],     // the 장날 merchants (64-fair-market.js)
+  ["sx", sxValidate, sxApply],                                // player to player (69-social-play.js)
+]) for (const t of names.split(" ")) ACTIONS[t] = { down, check, run };
 // ───────────────────────────── /mingyutest: the owner's local test character ─────────────────────────────
 // Chat `/mingyutest [직업]` (public/windows.js chatAction) sends { t: "mingyutest", j? }. Local build only: room.ts
 // sets S.dev from the PLAYTEST env var (wrangler.local.jsonc), the same gate as the editor's devPlace.
@@ -26513,9 +26515,9 @@ export function applyAction(S, pid, a) {
   const ch = p.ch;
   const now = S.now;
   const m = mapOfS(p.S, p.map);
-  switch (a.t) {
-    case "buddy": buddyApply(S, p, a); break;
-    case "mingyutest": devTestApply(S, p, a); break;
+  const h = Object.hasOwn(ACTIONS, a.t) ? ACTIONS[a.t] : null;
+  if (h) h.run(S, p, a);
+  else switch (a.t) {
     case "nw": p.npcWhereAt = now + 5000; p.npcWhere = true; break;
     case "mv": {
       if (p.dance || p.ab || elementFrozen(S, p)) { p.fix = true; p.mvAt = now; break; }
@@ -26795,9 +26797,6 @@ export function applyAction(S, pid, a) {
       if (p.sit) p.sit = false;
       else { rouse(S, p); sitDown(S, p); fieldFire(S, p, now); }
       break;
-    case "camp":
-      campApply(S, p, a);
-      break;
     case "fish": {
       rouse(S, p);
       const [wx, wy] = waterNear(m, p);
@@ -26884,7 +26883,6 @@ export function applyAction(S, pid, a) {
       p.dirty = true;
       break;
     }
-    case "sq": sqApply(S, p, a); break;
     case "quest": {
       const quest = QUESTS[ch.q.i];
       tutStep(S, p, "talk");
@@ -27110,12 +27108,6 @@ export function applyAction(S, pid, a) {
       leaveParty(S, p);
       toast(p, "파티를 떠났습니다.");
       break;
-    // ── 레이드던전 (64-dim.js)
-    case "dim_open": case "dim_ready": case "dim_cancel": case "dim_leave": case "dim_join": dimApply(S, p, a); break;
-    // ── the bag's size and housing (46-bag.js, 64-housing.js)
-    case "bag_expand": bagApply(S, p, a); break;
-    case "house_buy": case "house_upgrade": case "house_style": case "house_visit": case "house_leave":
-    case "furn_buy": case "furn_place": case "furn_rot": case "furn_pick": case "h_dep": case "h_wd": case "h_sort": case "h_rest": homeApply(S, p, a); break;
     // ── jobs and stats (45-jobs.js)
     case "respec": {
       const fee = statResetCost(ch);
@@ -27159,12 +27151,6 @@ export function applyAction(S, pid, a) {
       checkAch(S, p);
       break;
     }
-    // life skills L2 (58-life.js): gathering, the stations, the 알바 board
-    case "gat": case "gat_tap": case "craft_open": case "craft": case "jb": lifeApply(S, p, a); break;
-    // 차단, 귓속말, 주간 수첩 (63-social-weekly.js)
-    case "blk": case "w": case "wk": socialApply(S, p, a); break;
-    case "job_reset": case "lv_reset": case "lo": jfApply(S, p, a); break;
-    case "ske": skeApply(S, p, a); break;
     case "wsw": {
       // a hybrid's swap keeps both weapons' gauges; only a dance in progress stops. Anyone else: as a re-equip.
       const was = inHand(ch);
@@ -27176,18 +27162,6 @@ export function applyAction(S, pid, a) {
       S.maps[p.map].ev.push(["ws", p.eid]);
       break;
     }
-    // charms (66-charms.js)
-    case "charm_quest": case "charm_id": case "charm_place": case "charm_move": case "charm_remove": case "charm_expand": case "charm_claim": case "charm_destroy": case "charm_preset": case "charm_fuse": charmApply(S, p, a); break;
-    // enchant scrolls, extraction hammer & rune fusion/extraction (65-enchant.js, ITM-02 / ITM-08)
-    case "enc_apply": case "enc_extract": case "enc_craft": case "rune_fuse": case "rune_extract": encApply(S, p, a); break;
-    // 협동 아르바이트 (68-coop.js)
-    case "coop_start": case "coop_act": case "coop_leave": coopApply(S, p, a); break;
-    case "ab_start": case "ab_act": case "ab_leave": case "ab_close": albaApply(S, p, a); break;
-    case "rest": restApply(S, p, a); break;
-    case "fair_buy": fairApply(S, p, a); break;
-    case "fair_open": case "fair_shop": fairMktApply(S, p, a); break;
-    // player to player: requests, trade, mini-games (69-social-play.js)
-    case "sx": sxApply(S, p, a); break;
   }
   if (SAVE_SOON.has(a.t)) saveSoon(p);
   return S;
