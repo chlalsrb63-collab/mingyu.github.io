@@ -541,142 +541,181 @@ export function tick(S, now) {
     npcLifeTick(rt, now);
     const m = mapOfS(S, id);
     cellPass(S, m, rt, pids);
-    // how many monsters are already after each player here
-    const here = [];
-    for (const pid of pids) if (S.players[pid].map === id) { S.players[pid].foes = 0; here.push(S.players[pid]); }
-    for (const mob of rt.mobs) { const o = !mob.dead && mob.tgt ? S.players[mob.tgt] : null; if (o && o.map === id) o.foes++; }
-    for (const mob of rt.mobs) tickMob(S, m, rt, mob, dt, here);
-    shotTick(S, rt, dt);
-    for (let i = rt.mobs.length - 1; i >= 0; i--) if ((rt.mobs[i].temp || rt.mobs[i].cellGone) && rt.mobs[i].dead) rt.mobs.splice(i, 1);
-    for (let i = rt.zones.length - 1; i >= 0; i--) {
-      const z = rt.zones[i];
-      if (now < z.next) continue;
-      const p = S.players[z.pid];
-      if (!p || p.map !== id || (z.follow && p.dead)) { rt.zones.splice(i, 1); continue; }
-      if (z.follow) { z.x = p.x; z.y = p.y; }
-      z.next = now + z.every;
-      rt.ev.push(["b", Math.round(z.x), Math.round(z.y), z.r, z.kind]);
-      for (const o of mobsWithin(rt, z.x, z.y, z.r)) {
-        if (z.slow) o.slow = now + 2500;
-        if (z.knock) { const d = dist(z.x, z.y, o.x, o.y) || 1; knock(m, o, (o.x - z.x) / d, (o.y - z.y) / d, z.knock); }
-        const before = o.hp;
-        hurtMob(S, rt, o, p, z.mult, false, { px: z.px, elem: z.elem });
-        if (!o.dead && o.hp < before && z.pfx === "hellfire") elementMark(S, o, "burn", z.every * 2);
-      }
-      if (--z.left <= 0) rt.zones.splice(i, 1);
-    }
+    mobsTick(S, id, m, rt, pids, dt);
+    zonesTick(S, id, m, rt, now);
     skillProps(S, rt, m, now);
-    for (let i = rt.tele.length - 1; i >= 0; i--) {
-      const t = rt.tele[i];
-      if (now < t.at) continue;
-      rt.tele.splice(i, 1);
-      rt.ev.push([t.ev || "b", Math.round(t.x), Math.round(t.y), t.r]);
-      for (const pid of pids) {
-        const p = S.players[pid];
-        if (p.map !== id || p.dead || dist(p.x, p.y, t.x, t.y) > t.r) continue;
-        mobHit(S, rt, p, t.dmg, t.by, t.how || (t.ev === "q" ? "shot" : "tele"));
-      }
-    }
-    for (let i = rt.pools.length - 1; i >= 0; i--) {
-      // a puddle bites whoever is standing in it, and leaves its mark on them
-      const q = rt.pools[i];
-      if (now >= q.until) { rt.pools.splice(i, 1); continue; }
-      if (now < q.next) continue;
-      q.next = now + 700;
-      for (const pid of pids) {
-        const p = S.players[pid];
-        if (p.map !== id || p.dead || dist(p.x, p.y, q.x, q.y) > q.r) continue;
-        // overlapping puddles do not add up: one bite at a time
-        if (now < (p.poolAt || 0) + 600 || dodged(S, rt, p)) continue;
-        p.poolAt = now;
-        p.blame = { by: q.kind === 1 ? "불길" : q.kind === 2 ? "얼음 웅덩이" : "독 웅덩이", lv: 0, el: 0 };
-        hurtPlayer(S, rt, p, q.dmg, null, q.kind === 1 ? "fire" : q.kind === 2 ? "cold" : "poison");
-        if (!p.dead) afflict(S, p, q.kind === 1 ? "burn" : q.kind === 2 ? "slow" : "poison", q.atk);
-      }
-    }
+    teleTick(S, id, rt, pids, now);
+    poolsTick(S, id, rt, pids, now);
     for (let i = rt.fires.length - 1; i >= 0; i--) if (rt.fires[i].until && now >= rt.fires[i].until) rt.fires.splice(i, 1);
-    for (let i = rt.drops.length - 1; i >= 0; i--) {
-      const dr = rt.drops[i];
-      if (now >= dr.dieAt) { rt.drops.splice(i, 1); continue; }
-      for (const pid of pids) {
-        const p = S.players[pid];
-        if (p.map !== id || p.dead) continue;
-        if (dr.own !== pid && now < dr.freeAt) continue;
-        if (dist(p.x, p.y, dr.x, dr.y) > 15) continue;
-        if (!pickUp(S, p, dr)) continue;
-        rt.drops.splice(i, 1);
-        break;
-      }
+    dropsTick(S, id, rt, pids, now);
+    if (rt.drops.length) petPickTick(S, id, rt, pids, now);
+  }
+  for (const pid of pids) playerTick(S, S.players[pid], now);
+  return S;
+}
+
+/** One map's monsters: count who is after whom, move and fight, fly the shots, clear the spent temporaries. */
+function mobsTick(S, id, m, rt, pids, dt) {
+  // how many monsters are already after each player here
+  const here = [];
+  for (const pid of pids) if (S.players[pid].map === id) { S.players[pid].foes = 0; here.push(S.players[pid]); }
+  for (const mob of rt.mobs) { const o = !mob.dead && mob.tgt ? S.players[mob.tgt] : null; if (o && o.map === id) o.foes++; }
+  for (const mob of rt.mobs) tickMob(S, m, rt, mob, dt, here);
+  shotTick(S, rt, dt);
+  for (let i = rt.mobs.length - 1; i >= 0; i--) if ((rt.mobs[i].temp || rt.mobs[i].cellGone) && rt.mobs[i].dead) rt.mobs.splice(i, 1);
+}
+
+/** Players' ground zones (and following auras) pulse on their beat. */
+function zonesTick(S, id, m, rt, now) {
+  for (let i = rt.zones.length - 1; i >= 0; i--) {
+    const z = rt.zones[i];
+    if (now < z.next) continue;
+    const p = S.players[z.pid];
+    if (!p || p.map !== id || (z.follow && p.dead)) { rt.zones.splice(i, 1); continue; }
+    if (z.follow) { z.x = p.x; z.y = p.y; }
+    z.next = now + z.every;
+    rt.ev.push(["b", Math.round(z.x), Math.round(z.y), z.r, z.kind]);
+    for (const o of mobsWithin(rt, z.x, z.y, z.r)) {
+      if (z.slow) o.slow = now + 2500;
+      if (z.knock) { const d = dist(z.x, z.y, o.x, o.y) || 1; knock(m, o, (o.x - z.x) / d, (o.y - z.y) / d, z.knock); }
+      const before = o.hp;
+      hurtMob(S, rt, o, p, z.mult, false, { px: z.px, elem: z.elem });
+      if (!o.dead && o.hp < before && z.pfx === "hellfire") elementMark(S, o, "burn", z.every * 2);
     }
-    // a pet runs for its owner's own drops within its reach, one at a time, minding the
-    // loot filter and the room in the bag (메이플 펫의 줍기)
-    if (rt.drops.length) for (const pid of pids) {
+    if (--z.left <= 0) rt.zones.splice(i, 1);
+  }
+}
+
+/** Monsters' telegraphed blows land on whoever is still inside the circle. */
+function teleTick(S, id, rt, pids, now) {
+  for (let i = rt.tele.length - 1; i >= 0; i--) {
+    const t = rt.tele[i];
+    if (now < t.at) continue;
+    rt.tele.splice(i, 1);
+    rt.ev.push([t.ev || "b", Math.round(t.x), Math.round(t.y), t.r]);
+    for (const pid of pids) {
       const p = S.players[pid];
-      if (p.map !== id || p.dead || !p.ch.pet || now < (p.petAt || 0)) continue;
-      const reach = ITEMS[p.ch.pet].radius;
-      let best = -1, bd = reach;
-      for (let i = 0; i < rt.drops.length; i++) {
-        const dr = rt.drops[i];
-        if (dr.own !== pid || !wanted(p.ch, dr) || !fits(p.ch, dr)) continue;
-        const d = dist(p.x, p.y, dr.x, dr.y);
-        if (d <= bd) { bd = d; best = i; }
-      }
-      if (best < 0) continue;
-      p.petAt = now + pfxNum(p, "pet", PET_MS);
-      const dr = rt.drops[best];
-      if (pickUp(S, p, dr)) { rt.drops.splice(best, 1); rt.ev.push(["pk", p.eid, Math.round(dr.x), Math.round(dr.y)]); }
+      if (p.map !== id || p.dead || dist(p.x, p.y, t.x, t.y) > t.r) continue;
+      mobHit(S, rt, p, t.dmg, t.by, t.how || (t.ev === "q" ? "shot" : "tele"));
     }
   }
+}
+
+/** A puddle bites whoever is standing in it, and leaves its mark on them. */
+function poolsTick(S, id, rt, pids, now) {
+  for (let i = rt.pools.length - 1; i >= 0; i--) {
+    const q = rt.pools[i];
+    if (now >= q.until) { rt.pools.splice(i, 1); continue; }
+    if (now < q.next) continue;
+    q.next = now + 700;
+    for (const pid of pids) {
+      const p = S.players[pid];
+      if (p.map !== id || p.dead || dist(p.x, p.y, q.x, q.y) > q.r) continue;
+      // overlapping puddles do not add up: one bite at a time
+      if (now < (p.poolAt || 0) + 600 || dodged(S, rt, p)) continue;
+      p.poolAt = now;
+      p.blame = { by: q.kind === 1 ? "불길" : q.kind === 2 ? "얼음 웅덩이" : "독 웅덩이", lv: 0, el: 0 };
+      hurtPlayer(S, rt, p, q.dmg, null, q.kind === 1 ? "fire" : q.kind === 2 ? "cold" : "poison");
+      if (!p.dead) afflict(S, p, q.kind === 1 ? "burn" : q.kind === 2 ? "slow" : "poison", q.atk);
+    }
+  }
+}
+
+/** Drops expire, or go to the first player standing on one who may take it. */
+function dropsTick(S, id, rt, pids, now) {
+  for (let i = rt.drops.length - 1; i >= 0; i--) {
+    const dr = rt.drops[i];
+    if (now >= dr.dieAt) { rt.drops.splice(i, 1); continue; }
+    for (const pid of pids) {
+      const p = S.players[pid];
+      if (p.map !== id || p.dead) continue;
+      if (dr.own !== pid && now < dr.freeAt) continue;
+      if (dist(p.x, p.y, dr.x, dr.y) > 15) continue;
+      if (!pickUp(S, p, dr)) continue;
+      rt.drops.splice(i, 1);
+      break;
+    }
+  }
+}
+
+/** A pet runs for its owner's own drops within its reach, one at a time, minding the
+ *  loot filter and the room in the bag (메이플 펫의 줍기). */
+function petPickTick(S, id, rt, pids, now) {
   for (const pid of pids) {
     const p = S.players[pid];
-    if (p.pinv && now - p.pinv.at > 30000) p.pinv = null;
-    if (p.ginv && now - p.ginv.at > 30000) p.ginv = null;
-    if (p.fish) {
-      // a bite, then a short moment to reel it in
-      const rt = S.maps[p.map];
-      if (!p.fish.bite && now >= p.fish.at) { p.fish.bite = now; rt.ev.push(["f", p.eid, 2]); }
-      else if ((p.fish.bite && !p.fish.hook && now > p.fish.bite + 1800) || (p.fish.hook && now > p.fish.hook + 25000)) { p.fish = null; rt.ev.push(["f", p.eid, 0]); toast(p, "물고기가 달아났습니다."); }
+    if (p.map !== id || p.dead || !p.ch.pet || now < (p.petAt || 0)) continue;
+    const reach = ITEMS[p.ch.pet].radius;
+    let best = -1, bd = reach;
+    for (let i = 0; i < rt.drops.length; i++) {
+      const dr = rt.drops[i];
+      if (dr.own !== pid || !wanted(p.ch, dr) || !fits(p.ch, dr)) continue;
+      const d = dist(p.x, p.y, dr.x, dr.y);
+      if (d <= bd) { bd = d; best = i; }
     }
-    if (!p.dead) {
-      // fire and poison bite once a second until they run out
-      for (const key of ["burn", "poison"]) {
-        const s = p[key];
-        if (!s) continue;
-        if (now >= s.until) { p[key] = null; continue; }
-        if (now >= s.next) {
-          s.next = now + 1000;
-          const type = key === "burn" ? "fire" : "poison";
-          wound(S, S.maps[p.map], p, s.dmg * elementResist(S, p, type), type);
-          if (p.dead) break;
-        }
-      }
-      if (!p.dead) elementTick(S, S.maps[p.map], p);
-    }
-    if (p.recall && now >= p.recall.at && !p.dead) finishRecall(S, p);
-    // life skills: gathering channels, parcels, node cooldowns, the 알바 board's day (58-life.js)
-    lifeTick(S, p, now);
-    windTouch(S, p, now);
-    if (p.rallyAt && now >= p.rallyAt) { p.rallyAt = 0; p.dirty = true; }
-    if (!p.dead && !elementFrozen(S, p)) weaponTick(S, p, now);
-    if (p.dead || now - p.regenAt < 1000) continue;
-    p.regenAt = now;
-    ensureDaily(S, p);
-    if (!S.dims[p.map]?.story?.airship) explore(S, p);
-    const st = stats(p);
-    const calm = now - p.hitAt > 5000;
-    // a campfire is a place to catch your breath; sitting by it is better still
-    const fire = calm ? fireNear(S.maps[p.map], p) : null;
-    const rest = fire ? pfxNum(p, "rest", p.sit ? 0.12 : 0.06) : mapOfS(p.S, p.map).safe ? 0.08 : 0.02;
-    // a fire's warmth carries on after you stand up, as long as you keep out of a fight
-    const wr = calm ? warmRegen(p, now) : 0;
-    if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + (st.mhp * (rest + wr) + 1) * elementHealFactor(S, p));
-    if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr + st.mpReg) + 1);
-    if (fire && p.sit) warmTick(S, p, fire, now);
-    else p.warmT = 0;
-    restTick(S, p, now);   // 쉼표 수첩: sitting by a resting spot (69-rest.js)
-    pfxTick(S, S.maps[p.map], p, st, now, calm);   // the prefix powers that work once a second (regen, cleanse, resting)
+    if (best < 0) continue;
+    p.petAt = now + pfxNum(p, "pet", PET_MS);
+    const dr = rt.drops[best];
+    if (pickUp(S, p, dr)) { rt.drops.splice(best, 1); rt.ev.push(["pk", p.eid, Math.round(dr.x), Math.round(dr.y)]); }
   }
-  return S;
+}
+
+/** Everything a player's own clock runs, on every map (frozen maps included). */
+function playerTick(S, p, now) {
+  if (p.pinv && now - p.pinv.at > 30000) p.pinv = null;
+  if (p.ginv && now - p.ginv.at > 30000) p.ginv = null;
+  if (p.fish) fishTick(S, p, now);
+  if (!p.dead) dotTick(S, p, now);
+  if (p.recall && now >= p.recall.at && !p.dead) finishRecall(S, p);
+  // life skills: gathering channels, parcels, node cooldowns, the 알바 board's day (58-life.js)
+  lifeTick(S, p, now);
+  windTouch(S, p, now);
+  if (p.rallyAt && now >= p.rallyAt) { p.rallyAt = 0; p.dirty = true; }
+  if (!p.dead && !elementFrozen(S, p)) weaponTick(S, p, now);
+  regenTick(S, p, now);
+}
+
+/** A bite, then a short moment to reel it in. */
+function fishTick(S, p, now) {
+  const rt = S.maps[p.map];
+  if (!p.fish.bite && now >= p.fish.at) { p.fish.bite = now; rt.ev.push(["f", p.eid, 2]); }
+  else if ((p.fish.bite && !p.fish.hook && now > p.fish.bite + 1800) || (p.fish.hook && now > p.fish.hook + 25000)) { p.fish = null; rt.ev.push(["f", p.eid, 0]); toast(p, "물고기가 달아났습니다."); }
+}
+
+/** Fire and poison bite once a second until they run out; then the element statuses tick. */
+function dotTick(S, p, now) {
+  for (const key of ["burn", "poison"]) {
+    const s = p[key];
+    if (!s) continue;
+    if (now >= s.until) { p[key] = null; continue; }
+    if (now >= s.next) {
+      s.next = now + 1000;
+      const type = key === "burn" ? "fire" : "poison";
+      wound(S, S.maps[p.map], p, s.dmg * elementResist(S, p, type), type);
+      if (p.dead) break;
+    }
+  }
+  if (!p.dead) elementTick(S, S.maps[p.map], p);
+}
+
+/** Once a second while alive: dailies, exploring, HP/MP regen, campfire warmth and resting, prefix powers. */
+function regenTick(S, p, now) {
+  if (p.dead || now - p.regenAt < 1000) return;
+  p.regenAt = now;
+  ensureDaily(S, p);
+  if (!S.dims[p.map]?.story?.airship) explore(S, p);
+  const st = stats(p);
+  const calm = now - p.hitAt > 5000;
+  // a campfire is a place to catch your breath; sitting by it is better still
+  const fire = calm ? fireNear(S.maps[p.map], p) : null;
+  const rest = fire ? pfxNum(p, "rest", p.sit ? 0.12 : 0.06) : mapOfS(p.S, p.map).safe ? 0.08 : 0.02;
+  // a fire's warmth carries on after you stand up, as long as you keep out of a fight
+  const wr = calm ? warmRegen(p, now) : 0;
+  if (calm && p.hp < st.mhp) p.hp = Math.min(st.mhp, p.hp + (st.mhp * (rest + wr) + 1) * elementHealFactor(S, p));
+  if (p.mp < st.mmp) p.mp = Math.min(st.mmp, p.mp + st.mmp * ((fire ? rest : 0.03) + wr + st.mpReg) + 1);
+  if (fire && p.sit) warmTick(S, p, fire, now);
+  else p.warmT = 0;
+  restTick(S, p, now);   // 쉼표 수첩: sitting by a resting spot (69-rest.js)
+  pfxTick(S, S.maps[p.map], p, st, now, calm);   // the prefix powers that work once a second (regen, cleanse, resting)
 }
 
 /** Call once every player's view for this tick has been taken. */
